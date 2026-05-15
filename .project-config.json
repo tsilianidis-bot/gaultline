@@ -1,0 +1,45 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "server",
+    "db",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://6pmA6URkCNVHHY3.dc8cac32b931:q90Q73X2Ricws8fYjIEu@gateway05.us-east-1.prod.aws.tidbcloud.com:4000/ku53W5dbP75KrrkLcmMoUG?ssl={\"rejectUnauthorized\":true}",
+    "DRIZZLE_DATABASE_URL": "mysql://6pmA6URkCNVHHY3.dc8cac32b931:q90Q73X2Ricws8fYjIEu@gateway05.us-east-1.prod.aws.tidbcloud.com:4000/ku53W5dbP75KrrkLcmMoUG?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": [
+    "no_db_push"
+  ],
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663562889431/ku53W5dbP75KrrkLcmMoUG",
+    "access_key_id": "ASIAZV3A2ECZLZ7IGJ5E",
+    "secret_access_key": "NiM99nMPRVmUf00p2Bkku6LcjKMjMaMvKGFDOM8Z",
+    "session_token": "IQoJb3JpZ2luX2VjELD//////////wEaCXVzLWVhc3QtMSJHMEUCIQCZ/j76WQ/x80opfbUnnbw0mRK9QIXlInll80EsMaVnjAIgb9ApxUC7otYoDfm4UYhVl5dmPWAREhgns13ZC9hQQ9Uq9gMIeRAEGgw2NjUzODYwOTg4NjYiDKVxl8nkWeI/KHffUCrTA4CFNsDjUv2mne/U4ofVV88z4rsTSVIdbvtWYZ1vkX6WLdnSygeRarTvxX+bahLZ50lU86x1nSgqPVBirkFGcxUuKsuzw1xcFHF+TM+tB/S1IVnKizmh/HWuwqAx2kH3CTq94s93W1YfrVDk2NPS48xzQ4xiXsFh6VjRkSRTU3cSWpUv8Znczf2eJ4z6JNflxI/wb+9GtaPxAmUS5+CAChf0nUgGmK7g2L0vd7ri1ykQjdm2IO647nnn/NcOqQePX1yCgVduwwx1CySqmhl2t+umOQ7Fz+PdxCE6ZN1dVbTkKMPZqZgqQOZFuDq9lHvKaZ51nDHBw34YtJZiztZmTQPs3xY93ZYRijOKXFHhdqjD89RXJKF5IhMYqGJ2cRfBPWlErgY1Ol4kdHR4Lu7C8YwN34b+srHlvGexACy29GRxh3NvPGJWBsjvy7Ds7Z8YkRX+FWyO8h9XgJLFM9VleTmwxj3dsOzYGegC+T7KIu6NzpOR8ibDoWsFxRXCqAez8s5chihbObC9K/HmJn4VRHvwXdWF4kmtt5tO35iu6v9bMUP/8/UGVnJYneFgklZxKopwmWezDCpo9OCy0MAWigL3ldxHihvanCl0fTJziN6RtJnMMKr8nNAGOp0BlqJZQ5sfbLharY3T64UWSem5Hba3o4+8B33SRtxWmC7tVl1fJ1jtNW97W2wq0xf0/fkypdS2M5nBuXG43yMWZecuwHo3k6nlitG0u6dmbHPaMdsGfo8DJLtXgy6ZcctIEjIEEnYndLHZVjIc6WeU04zm1ECBrWhYfVyAB0SikYHncZrwDIksuTr77iw+/z7/jQR2KKESHAksGmTZmQ==",
+    "expiration": "2026-05-16T03:39:22.000Z"
+  },
+  "name": "copy-of-faultline",
+  "path": "/home/ubuntu/copy-of-faultline",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "cLQagEKrFcYDvLNwTSoCxX",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "PoHkC4EYiZRT7xt4yT3yt8",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "james tsilianidis",
+    "OWNER_OPEN_ID": "4yxv9bMLTHpYyTypQ9v98H",
+    "POLYGON_API_KEY": "pnYS8GwH72gIJ_oMREH4pp2vtvmh4M5g",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "cf338e88-fd30-4bbd-b252-a10be00a0d7c",
+    "VITE_APP_ID": "ku53W5dbP75KrrkLcmMoUG",
+    "VITE_APP_LOGO": "https://files.manuscdn.com/user_upload_by_module/web_dev_logo/310519663562889431/XhEGRCBVEDlvGaRJ.png",
+    "VITE_APP_TITLE": "Copy of FAULTLINE",
+    "VITE_FRONTEND_FORGE_API_KEY": "2Xce4Dg8tDuQEC4BuJ9V9C",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}
