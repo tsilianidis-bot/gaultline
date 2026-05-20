@@ -99,3 +99,14 @@
 - [x] Browser QA: NVDA card renders with all sections
 - [x] Verified: API key never exposed in any response
 - [x] Save checkpoint
+
+## Pressure Engine Feature
+
+- [x] Create server/pressure/engine.ts with calculateFaultlinePressure() function
+- [x] Add pressure.getCurrentPressure tRPC procedure to routers
+- [x] Create client/src/pages/Pressure.tsx cinematic dashboard
+- [x] Add Pressure as first/main tab in navigation (App.tsx + nav component)
+- [x] Write Vitest tests for pressure engine (12 tests, all passing)
+- [ ] Add dedicated Liquidity Stress Meter section to Pressure.tsx
+- [ ] Add Contagion visualization to Pressure.tsx
+- [x] Browser-QA Pressure tab at /pressure across viewport sizes

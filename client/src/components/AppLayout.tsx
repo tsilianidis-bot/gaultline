@@ -6,13 +6,14 @@
 import { useLocation } from "wouter";
 import { ReactNode } from "react";
 import {
-  Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp, LayoutDashboard, Zap, FileText, Bell, Radio
+  Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp, LayoutDashboard, Zap, FileText, Bell, Radio, Gauge
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
 
 const tabs = [
+  { id: "pressure", label: "Pressure", icon: Gauge, path: "/pressure" },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/" },
   { id: "scores", label: "Scores", icon: Activity, path: "/scores" },
   { id: "charts", label: "Charts", icon: BarChart2, path: "/charts" },

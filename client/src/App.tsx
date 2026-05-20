@@ -22,6 +22,7 @@ import SimulatePressure from "./pages/SimulatePressure";
 import DailyReport from "./pages/DailyReport";
 import Watchlist from './pages/Watchlist';
 import Signals from './pages/Signals';
+import Pressure from './pages/Pressure';
 import FREDDebugConsole from "./components/FREDDebugConsole";
 
 // ── Session key: show intro once per browser session ──────────
@@ -31,6 +32,7 @@ function Router() {
   return (
     <AppLayout>
       <Switch>
+        <Route path="/pressure" component={Pressure} />
         <Route path="/" component={Dashboard} />
         <Route path="/scores" component={Scores} />
         <Route path="/charts" component={Charts} />

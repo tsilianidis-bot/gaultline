@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
+import { calculateFaultlinePressure } from "./pressure/engine";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -65,6 +66,13 @@ export const appRouter = router({
     // Get classification cache stats
     cacheStats: publicProcedure.query(() => {
       return getClassCacheStats();
+    }),
+  }),
+
+  pressure: router({
+    // Get the current FAULTLINE Pressure Index with all risk vectors
+    getCurrentPressure: publicProcedure.query(async () => {
+      return calculateFaultlinePressure();
     }),
   }),
 });
