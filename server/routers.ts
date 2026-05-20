@@ -24,7 +24,7 @@ export const appRouter = router({
     // Classify any ticker with FAULTLINE signal labels using LLM + regime context
     classifyTicker: publicProcedure
       .input(z.object({
-        ticker: z.string().min(1).max(5).regex(/^[A-Za-z]+$/).transform(s => s.toUpperCase()),
+        ticker: z.string().min(1).max(10).trim().regex(/^[A-Za-z0-9.\-]+$/).transform(s => s.toUpperCase()),
         regime: z.object({
           label: z.string(),
           score: z.number().min(0).max(10),
