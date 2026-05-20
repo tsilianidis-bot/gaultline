@@ -110,3 +110,12 @@
 - [x] Add dedicated Liquidity Stress Meter section to Pressure.tsx
 - [x] Add Contagion visualization to Pressure.tsx
 - [x] Browser-QA Pressure tab at /pressure across viewport sizes
+
+## User Guidance Feature
+
+- [x] Create client/src/pages/Guide.tsx with comprehensive feature documentation (14 sections)
+- [x] Add Guide route to App.tsx
+- [x] Add Guide tab to AppLayout navigation (BookOpen icon)
+- [x] Verified 0 TypeScript errors, page renders correctly in browser
+- [x] Inspect Guide.tsx fully to verify all sections have complete content (no placeholders)
+- [x] Add Vitest test for Guide page route rendering (server/guide.route.test.ts — 5 tests, all passing)

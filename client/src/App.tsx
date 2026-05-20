@@ -23,6 +23,7 @@ import DailyReport from "./pages/DailyReport";
 import Watchlist from './pages/Watchlist';
 import Signals from './pages/Signals';
 import Pressure from './pages/Pressure';
+import Guide from './pages/Guide';
 import FREDDebugConsole from "./components/FREDDebugConsole";
 
 // ── Session key: show intro once per browser session ──────────
@@ -44,6 +45,7 @@ function Router() {
         <Route path="/report" component={DailyReport} />
         <Route path="/watchlist" component={Watchlist} />
         <Route path="/signals" component={Signals} />
+        <Route path="/guide" component={Guide} />
         <Route component={Dashboard} />
       </Switch>
     </AppLayout>
