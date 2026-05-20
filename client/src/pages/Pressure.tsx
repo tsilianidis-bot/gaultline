@@ -365,6 +365,293 @@ function AnalogBar({ analog, index, isTop }: { analog: HistoricalAnalog; index: 
   );
 }
 
+// ── Liquidity Stress Meter ───────────────────────────────────
+function LiquidityStressMeter({ vectors }: { vectors: RiskVector[] }) {
+  const liq = vectors.find(v => v.id === "liquidity-stress");
+  const credit = vectors.find(v => v.id === "credit-contagion");
+  const vol = vectors.find(v => v.id === "volatility-regime");
+
+  const meters = [
+    { label: "HY SPREAD STRESS",   value: liq?.rawInputs?.hySpread ?? null,   max: 1000, unit: "bps",  color: "#FF6B00", desc: "High-yield credit spread above 300bps signals funding stress" },
+    { label: "YIELD CURVE INVERSION", value: vol?.rawInputs?.t10y2y ?? null, max: 300, unit: "bps", color: "#FFB800", desc: "Negative 10Y-2Y spread historically precedes recession" },
+    { label: "NFCI STRESS INDEX",   value: liq?.rawInputs?.nfci ?? null,       max: 3,   unit: "",    color: "#00D4FF", desc: "Chicago Fed National Financial Conditions Index — positive = tighter" },
+    { label: "CREDIT SPREAD",       value: credit?.rawInputs?.hySpread ?? null, max: 1000, unit: "bps", color: "#FF2D55", desc: "Investment-grade and high-yield spread composite" },
+  ].filter(m => m.value !== null);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.55 }}
+      style={{
+        position: "relative",
+        background: "rgba(10,12,16,0.85)",
+        border: "1px solid rgba(0,212,255,0.12)",
+        borderRadius: "8px",
+        padding: "20px",
+        overflow: "hidden",
+      }}
+    >
+      <CornerBrackets color="rgba(0,212,255,0.25)" size={8} />
+
+      {/* Ambient glow */}
+      <div style={{
+        position: "absolute", top: 0, right: 0,
+        width: "120px", height: "120px",
+        background: "radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "16px" }}>
+        LIQUIDITY STRESS METER
+      </div>
+
+      {/* Overall liquidity score */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "20px" }}>
+        <div style={{
+          fontFamily: "'Rajdhani', sans-serif",
+          fontWeight: 900,
+          fontSize: "44px",
+          color: getLevelColor(liq?.level ?? "Moderate").primary,
+          textShadow: `0 0 20px ${getLevelColor(liq?.level ?? "Moderate").glow}`,
+          lineHeight: 1,
+        }}>
+          {liq?.score ?? "—"}
+        </div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>/100</div>
+        <div style={{
+          marginLeft: "auto",
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "10px",
+          color: getLevelColor(liq?.level ?? "Moderate").text,
+          background: getLevelColor(liq?.level ?? "Moderate").bg,
+          border: `1px solid ${getLevelColor(liq?.level ?? "Moderate").primary}33`,
+          borderRadius: "3px",
+          padding: "2px 8px",
+          letterSpacing: "0.1em",
+        }}>
+          {(liq?.level ?? "MODERATE").toUpperCase()}
+        </div>
+      </div>
+
+      {/* Sub-metric bars */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        {meters.map((m, i) => {
+          // Normalize: for NFCI, higher = worse; for spreads, higher = worse
+          const pct = m.label === "NFCI STRESS INDEX"
+            ? Math.min(100, Math.max(0, ((m.value! + 0.5) / 3.5) * 100))
+            : Math.min(100, Math.max(0, (m.value! / m.max) * 100));
+          return (
+            <div key={m.label}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", letterSpacing: "0.08em" }}>
+                  {m.label}
+                </span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: m.color, fontWeight: 700 }}>
+                  {m.label === "NFCI STRESS INDEX" ? m.value!.toFixed(3) : Math.round(m.value!)} {m.unit}
+                </span>
+              </div>
+              <div style={{ height: "6px", background: "rgba(255,255,255,0.05)", borderRadius: "3px", overflow: "hidden" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 1.2, ease: [0.23, 1, 0.32, 1], delay: 0.6 + i * 0.1 }}
+                  style={{
+                    height: "100%",
+                    background: `linear-gradient(90deg, ${m.color}88, ${m.color})`,
+                    borderRadius: "3px",
+                    boxShadow: `0 0 8px ${m.color}66`,
+                  }}
+                />
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "10px", color: "#374151", marginTop: "3px", lineHeight: 1.3 }}>
+                {m.desc}
+              </div>
+            </div>
+          );
+        })}
+        {meters.length === 0 && (
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#374151", textAlign: "center", padding: "16px" }}>
+            LIVE DATA UNAVAILABLE — USING FALLBACK
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "10px", color: "#4B5563", lineHeight: 1.5 }}>
+          {liq?.driver ?? "Liquidity conditions monitoring HY spreads, NFCI, and funding markets."}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Contagion Cascade Visualization ──────────────────────────
+const CONTAGION_ORDER = [
+  { id: "liquidity-stress",   label: "LIQUIDITY",    icon: "💧" },
+  { id: "credit-contagion",   label: "CREDIT",       icon: "📉" },
+  { id: "volatility-regime", label: "VOLATILITY",   icon: "⚡" },
+  { id: "macro-sensitivity", label: "MACRO",         icon: "🏛" },
+  { id: "market-breadth",    label: "BREADTH",       icon: "📊" },
+  { id: "ai-bubble",         label: "SPECULATIVE",   icon: "🤖" },
+];
+
+function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVector[]; overallPressure: number }) {
+  // Build ordered nodes from vectors
+  const nodes = CONTAGION_ORDER.map(o => {
+    const v = vectors.find(v2 => v2.id === o.id);
+    return { ...o, score: v?.score ?? 0, level: v?.level ?? ("Low" as PressureLevel), trend: v?.trend ?? "stable" as const };
+  });
+
+  // Contagion threshold: a node "fires" if score > 35
+  const THRESHOLD = 35;
+  const fired = nodes.filter(n => n.score > THRESHOLD);
+  const contagionPct = Math.round((fired.length / nodes.length) * 100);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.6 }}
+      style={{
+        position: "relative",
+        background: "rgba(10,12,16,0.85)",
+        border: "1px solid rgba(255,45,85,0.1)",
+        borderRadius: "8px",
+        padding: "20px",
+        overflow: "hidden",
+      }}
+    >
+      <CornerBrackets color="rgba(255,45,85,0.2)" size={8} />
+
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "16px" }}>
+        CONTAGION RISK CASCADE
+      </div>
+
+      {/* Contagion spread % */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "20px" }}>
+        <div style={{
+          fontFamily: "'Rajdhani', sans-serif",
+          fontWeight: 900,
+          fontSize: "44px",
+          color: contagionPct >= 67 ? "#FF2D55" : contagionPct >= 33 ? "#FFB800" : "#00FF88",
+          textShadow: contagionPct >= 67 ? "0 0 20px rgba(255,45,85,0.5)" : contagionPct >= 33 ? "0 0 20px rgba(255,184,0,0.4)" : "0 0 20px rgba(0,255,136,0.4)",
+          lineHeight: 1,
+        }}>
+          {contagionPct}%
+        </div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>SPREAD</div>
+        <div style={{
+          marginLeft: "auto",
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "10px",
+          color: contagionPct >= 67 ? "#FF2D55" : contagionPct >= 33 ? "#FFB800" : "#00FF88",
+          background: contagionPct >= 67 ? "rgba(255,45,85,0.08)" : contagionPct >= 33 ? "rgba(255,184,0,0.06)" : "rgba(0,255,136,0.06)",
+          border: `1px solid ${contagionPct >= 67 ? "rgba(255,45,85,0.3)" : contagionPct >= 33 ? "rgba(255,184,0,0.3)" : "rgba(0,255,136,0.3)"}`,
+          borderRadius: "3px",
+          padding: "2px 8px",
+          letterSpacing: "0.1em",
+        }}>
+          {fired.length}/{nodes.length} VECTORS
+        </div>
+      </div>
+
+      {/* Cascade nodes */}
+      <div style={{ position: "relative" }}>
+        {/* Vertical connector line */}
+        <div style={{
+          position: "absolute",
+          left: "19px",
+          top: "20px",
+          bottom: "20px",
+          width: "1px",
+          background: "linear-gradient(to bottom, rgba(255,45,85,0.3), rgba(0,212,255,0.1))",
+        }} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {nodes.map((node, i) => {
+            const active = node.score > THRESHOLD;
+            const nodeColor = active ? getLevelColor(node.level).primary : "#1F2937";
+            const glowColor = active ? getLevelColor(node.level).glow : "transparent";
+            return (
+              <motion.div
+                key={node.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.7 + i * 0.07, ease: [0.23, 1, 0.32, 1] }}
+                style={{ display: "flex", alignItems: "center", gap: "12px", paddingLeft: "4px" }}
+              >
+                {/* Node dot */}
+                <div style={{
+                  width: "12px",
+                  height: "12px",
+                  borderRadius: "50%",
+                  background: nodeColor,
+                  boxShadow: active ? `0 0 10px ${glowColor}` : "none",
+                  border: `1px solid ${active ? nodeColor : "#374151"}`,
+                  flexShrink: 0,
+                  zIndex: 1,
+                  position: "relative",
+                  transition: "all 0.3s ease",
+                }} />
+
+                {/* Node content */}
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "10px",
+                    color: active ? nodeColor : "#374151",
+                    letterSpacing: "0.08em",
+                    fontWeight: active ? 700 : 400,
+                    transition: "color 0.3s ease",
+                  }}>
+                    {node.label}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {/* Mini score bar */}
+                    <div style={{ width: "60px", height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${node.score}%` }}
+                        transition={{ duration: 1, ease: [0.23, 1, 0.32, 1], delay: 0.8 + i * 0.08 }}
+                        style={{
+                          height: "100%",
+                          background: nodeColor,
+                          borderRadius: "2px",
+                          boxShadow: active ? `0 0 4px ${glowColor}` : "none",
+                        }}
+                      />
+                    </div>
+                    <div style={{
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: "10px",
+                      color: active ? nodeColor : "#374151",
+                      fontWeight: 700,
+                      minWidth: "24px",
+                      textAlign: "right",
+                    }}>
+                      {node.score}
+                    </div>
+                    <TrendIcon trend={node.trend} />
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "10px", color: "#4B5563", lineHeight: 1.5 }}>
+          {fired.length === 0
+            ? "No active contagion vectors — systemic linkages contained."
+            : `${fired.length} vector${fired.length > 1 ? "s" : ""} above stress threshold (35/100). Contagion risk is ${contagionPct >= 67 ? "elevated" : contagionPct >= 33 ? "moderate" : "low"}.`}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Loading skeleton ──────────────────────────────────────────
 function PressureSkeleton() {
   return (
@@ -628,6 +915,16 @@ export default function Pressure() {
               <VectorCard key={vector.id} vector={vector} index={i} />
             ))}
           </div>
+        </div>
+
+        {/* ── Liquidity Stress Meter + Contagion visualization ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
+
+          {/* Liquidity Stress Meter */}
+          <LiquidityStressMeter vectors={data.vectors} />
+
+          {/* Contagion Cascade */}
+          <ContagionVisualization vectors={data.vectors} overallPressure={data.overallPressure} />
         </div>
 
         {/* ── Bottom row: Analog matches + extra alerts ─────── */}
