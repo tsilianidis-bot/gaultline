@@ -5,6 +5,7 @@ import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
 import { calculateFaultlinePressure } from "./pressure/engine";
+import { computeTradingSignals, computeTradingSignal, clearSignalCache, getSignalCacheStats } from "./tradingSignals";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -66,6 +67,64 @@ export const appRouter = router({
     // Get classification cache stats
     cacheStats: publicProcedure.query(() => {
       return getClassCacheStats();
+    }),
+
+    // Compute trading signals (BUY/SELL/HOLD) for a batch of tickers
+    getTradingSignals: publicProcedure
+      .input(z.object({
+        tickers: z.array(z.object({
+          ticker: z.string().min(1).max(10),
+          price: z.number(),
+          open: z.number(),
+          high: z.number(),
+          low: z.number(),
+          changePercent: z.number(),
+          volumeMillions: z.number(),
+          avgVolume: z.number(),
+          sparkline: z.array(z.number()),
+          relativeStrength: z.number().min(0).max(100),
+        })).max(50),
+        regime: z.object({
+          label: z.string(),
+          score: z.number().min(0).max(10),
+        }),
+      }))
+      .query(({ input }) => {
+        return computeTradingSignals(input.tickers, input.regime);
+      }),
+
+    // Compute trading signal for a single ticker
+    getTradingSignal: publicProcedure
+      .input(z.object({
+        ticker: z.string().min(1).max(10),
+        price: z.number(),
+        open: z.number(),
+        high: z.number(),
+        low: z.number(),
+        changePercent: z.number(),
+        volumeMillions: z.number(),
+        avgVolume: z.number(),
+        sparkline: z.array(z.number()),
+        relativeStrength: z.number().min(0).max(100),
+        regime: z.object({
+          label: z.string(),
+          score: z.number().min(0).max(10),
+        }),
+      }))
+      .query(({ input }) => {
+        const { regime, ...tickerInput } = input;
+        return computeTradingSignal(tickerInput, regime);
+      }),
+
+    // Clear the trading signal cache
+    clearSignalCache: publicProcedure.mutation(() => {
+      clearSignalCache();
+      return { success: true };
+    }),
+
+    // Get trading signal cache stats
+    signalCacheStats: publicProcedure.query(() => {
+      return getSignalCacheStats();
     }),
   }),
 

@@ -119,3 +119,17 @@
 - [x] Verified 0 TypeScript errors, page renders correctly in browser
 - [x] Inspect Guide.tsx fully to verify all sections have complete content (no placeholders)
 - [x] Add Vitest test for Guide page route rendering (server/guide.route.test.ts — 5 tests, all passing)
+
+## Trading Signals Upgrade (Signals Tab)
+
+- [x] Create server/tradingSignals.ts — compute BUY/SELL/HOLD from OHLC data (RSI, MACD, SMA crossover, volume confirmation) + regime weighting
+- [x] Add signals.getTradingSignals tRPC procedure in server/routers.ts — accepts array of tickers + regime, returns TradingSignalResult per ticker
+- [x] Add TradingSignalBadge component to Signals.tsx (BUY=cyan, SELL=red, HOLD=amber, WATCH=gray)
+- [x] Add signal confidence bar (0–100%) to each StockCard
+- [x] Add key price levels section to expanded StockCard (support, resistance, entry zone, stop-loss)
+- [x] Add regime-weighted signal strength indicator to each card
+- [x] Add "TRADING SIGNALS" aggregate summary bar above the stock grid
+- [x] Wire trading signals to the existing screener cards
+- [x] Add Vitest tests for tradingSignals.ts (server/tradingSignals.test.ts — 37 tests, all passing)
+- [x] Run full test suite (pnpm test) — 77 tests passing (37 new + 40 existing)
+- [x] Save checkpoint after trading signals upgrade complete

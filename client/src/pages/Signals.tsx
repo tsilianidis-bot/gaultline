@@ -1,9 +1,11 @@
 /* ============================================================
    FAULTLINE — Signals Tab
-   Macro-regime-aware market scanner with live Polygon.io data.
+   Macro-regime-aware market scanner with live Polygon.io data
+   + actionable BUY / SELL / HOLD trading signals.
    ============================================================ */
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useEngine } from '@/contexts/EngineContext';
+import { trpc } from '@/lib/trpc';
 import { TickerSearch } from '@/components/TickerSearch';
 import {
   SIGNAL_STOCKS, SIGNAL_COLORS, CATEGORY_META, ALL_SECTORS, ALL_MARKET_CAPS, ALL_CATEGORIES,
@@ -40,6 +42,36 @@ interface QuotesResponse {
   error?: string;
 }
 
+// ── Trading Signal Types (mirror server/tradingSignals.ts) ────
+type TradingAction = 'BUY' | 'SELL' | 'HOLD' | 'WATCH';
+
+interface TradingSignalResult {
+  ticker: string;
+  action: TradingAction;
+  confidence: number;
+  strength: 'Strong' | 'Moderate' | 'Weak';
+  timeframe: 'Short-Term' | 'Swing' | 'Watch';
+  rationale: string;
+  technicals: {
+    rsiEstimate: number;
+    rsiLabel: 'Overbought' | 'Neutral' | 'Oversold';
+    trend: 'Uptrend' | 'Downtrend' | 'Sideways';
+    volumeSignal: 'Surge' | 'Normal' | 'Low';
+    momentumScore: number;
+    smaSignal: 'Golden Cross' | 'Death Cross' | 'Neutral';
+  };
+  priceLevels: {
+    support: number;
+    resistance: number;
+    entryZone: number;
+    stopLoss: number;
+    targetPrice: number;
+  };
+  regimeAlignment: 'Aligned' | 'Neutral' | 'Counter-Trend';
+  regimeAlignmentScore: number;
+  computedAt: number;
+}
+
 // ── Helpers ───────────────────────────────────────────────────
 function fmt(n: number, decimals = 2) {
   return n.toFixed(decimals);
@@ -59,6 +91,111 @@ function fmtTimestamp(ts: string | null): string {
     const d = new Date(ts);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } catch { return '—'; }
+}
+
+// ── Trading Action Colors ─────────────────────────────────────
+const ACTION_COLORS: Record<TradingAction, { bg: string; text: string; glow: string; border: string }> = {
+  BUY:   { bg: 'rgba(0,212,255,0.15)',  text: '#00D4FF', glow: 'rgba(0,212,255,0.5)',  border: 'rgba(0,212,255,0.4)' },
+  SELL:  { bg: 'rgba(255,45,85,0.15)',  text: '#FF2D55', glow: 'rgba(255,45,85,0.5)',  border: 'rgba(255,45,85,0.4)' },
+  HOLD:  { bg: 'rgba(255,215,0,0.12)',  text: '#FFD700', glow: 'rgba(255,215,0,0.4)',  border: 'rgba(255,215,0,0.3)' },
+  WATCH: { bg: 'rgba(100,116,139,0.1)', text: '#64748B', glow: 'rgba(100,116,139,0.2)', border: 'rgba(100,116,139,0.2)' },
+};
+
+// ── Trading Signal Badge ──────────────────────────────────────
+function TradingSignalBadge({ action, confidence, strength }: {
+  action: TradingAction;
+  confidence: number;
+  strength: 'Strong' | 'Moderate' | 'Weak';
+}) {
+  const c = ACTION_COLORS[action];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: '4px',
+        padding: '3px 10px',
+        borderRadius: '2px',
+        fontSize: '10px',
+        fontFamily: "'IBM Plex Mono', monospace",
+        letterSpacing: '0.12em',
+        fontWeight: 700,
+        background: c.bg,
+        color: c.text,
+        border: `1px solid ${c.border}`,
+        boxShadow: `0 0 8px ${c.glow}`,
+        whiteSpace: 'nowrap',
+      }}>
+        {action === 'BUY' && '▲ '}
+        {action === 'SELL' && '▼ '}
+        {action === 'HOLD' && '◆ '}
+        {action === 'WATCH' && '◎ '}
+        {action}
+      </span>
+      <span style={{
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '8px', color: 'rgba(100,116,139,0.6)',
+        letterSpacing: '0.06em',
+      }}>{strength.toUpperCase()}</span>
+    </div>
+  );
+}
+
+// ── Confidence Bar ────────────────────────────────────────────
+function ConfidenceBar({ confidence, action }: { confidence: number; action: TradingAction }) {
+  const c = ACTION_COLORS[action];
+  return (
+    <div>
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: '3px',
+      }}>
+        <span style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em',
+        }}>CONFIDENCE</span>
+        <span style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '8px', fontWeight: 700, color: c.text,
+        }}>{confidence}%</span>
+      </div>
+      <div style={{
+        height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${confidence}%`,
+          background: `linear-gradient(90deg, ${c.text}80, ${c.text})`,
+          boxShadow: `0 0 6px ${c.glow}`,
+          borderRadius: '2px',
+          transition: 'width 0.6s cubic-bezier(0.23,1,0.32,1)',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Regime Alignment Badge ────────────────────────────────────
+function RegimeAlignmentBadge({ alignment, score }: {
+  alignment: 'Aligned' | 'Neutral' | 'Counter-Trend';
+  score: number;
+}) {
+  const color = alignment === 'Aligned' ? '#00D4FF'
+    : alignment === 'Counter-Trend' ? '#FF2D55'
+    : '#FFD700';
+  const icon = alignment === 'Aligned' ? '✓' : alignment === 'Counter-Trend' ? '✗' : '~';
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '3px',
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize: '7px', letterSpacing: '0.08em',
+      color, padding: '1px 5px',
+      background: `${color}10`,
+      border: `1px solid ${color}25`,
+      borderRadius: '2px',
+    }}>
+      {icon} {alignment === 'Counter-Trend' ? 'COUNTER' : alignment.toUpperCase()} {score.toFixed(0)}/10
+    </span>
+  );
 }
 
 // ── Signal Tag ────────────────────────────────────────────────
@@ -97,10 +234,7 @@ function MiniSparkline({ data, positive }: { data: number[]; positive: boolean }
           stroke={color} strokeWidth={1.5}
           isAnimationActive={false}
         />
-        <RTooltip
-          contentStyle={{ display: 'none' }}
-          cursor={false}
-        />
+        <RTooltip contentStyle={{ display: 'none' }} cursor={false} />
       </LineChart>
     </ResponsiveContainer>
   );
@@ -137,10 +271,14 @@ function SkeletonCard() {
 }
 
 // ── Stock Card ────────────────────────────────────────────────
-function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regimeScore: number; liveQuote?: LiveQuote }) {
+function StockCard({ stock, regimeScore, liveQuote, tradingSignal }: {
+  stock: SignalStock;
+  regimeScore: number;
+  liveQuote?: LiveQuote;
+  tradingSignal?: TradingSignalResult;
+}) {
   const [expanded, setExpanded] = useState(false);
 
-  // Use live data if available, fall back to catalog data
   const price = liveQuote?.price && liveQuote.price > 0 ? liveQuote.price : stock.price;
   const changePercent = liveQuote?.price && liveQuote.price > 0 ? liveQuote.changePercent : stock.changePercent;
   const volumeMillions = liveQuote?.volumeMillions ?? stock.volume;
@@ -151,12 +289,18 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
   const surge = parseFloat(volumeSurge(stock, liveQuote?.volumeMillions));
   const highSurge = surge >= 1.5;
 
+  // Trading signal colors for card border
+  const actionColor = tradingSignal
+    ? ACTION_COLORS[tradingSignal.action].text
+    : positive ? '#00D4FF' : '#FF2D55';
+  const actionBorderOpacity = tradingSignal ? '0.25' : '0.12';
+
   return (
     <div
       onClick={() => setExpanded(e => !e)}
       style={{
         background: 'rgba(8,10,14,0.9)',
-        border: `1px solid ${positive ? 'rgba(0,212,255,0.12)' : 'rgba(255,45,85,0.12)'}`,
+        border: `1px solid ${actionColor}${actionBorderOpacity}`,
         borderRadius: '4px',
         padding: '12px',
         cursor: 'pointer',
@@ -165,11 +309,11 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
         overflow: 'hidden',
       }}
       onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = positive ? 'rgba(0,212,255,0.3)' : 'rgba(255,45,85,0.3)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = `${actionColor}45`;
         (e.currentTarget as HTMLDivElement).style.background = 'rgba(12,15,20,0.95)';
       }}
       onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.borderColor = positive ? 'rgba(0,212,255,0.12)' : 'rgba(255,45,85,0.12)';
+        (e.currentTarget as HTMLDivElement).style.borderColor = `${actionColor}${actionBorderOpacity}`;
         (e.currentTarget as HTMLDivElement).style.background = 'rgba(8,10,14,0.9)';
       }}
     >
@@ -178,12 +322,14 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
         position: 'absolute', top: 0, left: 0,
         height: '2px',
         width: `${regimeScore}%`,
-        background: `linear-gradient(90deg, #00D4FF, #FFD700)`,
-        opacity: 0.6,
+        background: tradingSignal
+          ? `linear-gradient(90deg, ${ACTION_COLORS[tradingSignal.action].text}, ${ACTION_COLORS[tradingSignal.action].glow})`
+          : `linear-gradient(90deg, #00D4FF, #FFD700)`,
+        opacity: 0.7,
       }} />
 
       {/* Header row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{
@@ -198,7 +344,6 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
               background: 'rgba(255,255,255,0.04)',
               padding: '1px 5px', borderRadius: '2px',
             }}>{stock.marketCap}</span>
-            {/* Live data badge */}
             {isLiveData && (
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -241,6 +386,36 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
         </div>
       </div>
 
+      {/* ── Trading Signal Row ─────────────────────────────── */}
+      {tradingSignal && (
+        <div style={{
+          marginBottom: '8px',
+          padding: '7px 8px',
+          background: `${ACTION_COLORS[tradingSignal.action].text}08`,
+          border: `1px solid ${ACTION_COLORS[tradingSignal.action].text}18`,
+          borderRadius: '3px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+            <TradingSignalBadge
+              action={tradingSignal.action}
+              confidence={tradingSignal.confidence}
+              strength={tradingSignal.strength}
+            />
+            <RegimeAlignmentBadge
+              alignment={tradingSignal.regimeAlignment}
+              score={tradingSignal.regimeAlignmentScore}
+            />
+          </div>
+          <ConfidenceBar confidence={tradingSignal.confidence} action={tradingSignal.action} />
+          <div style={{
+            marginTop: '5px',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '8px', color: 'rgba(100,116,139,0.6)',
+            lineHeight: 1.4,
+          }}>{tradingSignal.rationale}</div>
+        </div>
+      )}
+
       {/* Sparkline */}
       <div style={{ marginBottom: '8px' }}>
         <MiniSparkline data={sparklineData} positive={positive} />
@@ -252,9 +427,9 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
         gap: '4px', marginBottom: '8px',
       }}>
         {[
-          { label: 'RS', value: stock.relativeStrength.toString(), color: stock.relativeStrength > 70 ? '#00D4FF' : stock.relativeStrength < 40 ? '#FF2D55' : '#94A3B8' },
+          { label: 'RSI~', value: tradingSignal ? tradingSignal.technicals.rsiEstimate.toFixed(0) : stock.relativeStrength.toString(), color: (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) > 70 ? '#FF2D55' : (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) < 30 ? '#00D4FF' : '#94A3B8' },
           { label: 'VOL', value: `${surge}x`, color: highSurge ? '#FFD700' : '#94A3B8' },
-          { label: 'SECTOR', value: stock.sector.split(' ')[0], color: '#94A3B8' },
+          { label: tradingSignal ? 'TREND' : 'SECTOR', value: tradingSignal ? tradingSignal.technicals.trend.split('trend')[0].toUpperCase() || tradingSignal.technicals.trend.toUpperCase() : stock.sector.split(' ')[0], color: tradingSignal?.technicals.trend === 'Uptrend' ? '#00D4FF' : tradingSignal?.technicals.trend === 'Downtrend' ? '#FF2D55' : '#94A3B8' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
             background: 'rgba(255,255,255,0.03)',
@@ -286,6 +461,58 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
           borderTop: '1px solid rgba(255,255,255,0.06)',
           paddingTop: '8px', marginTop: '4px',
         }}>
+          {/* Key Price Levels (only when trading signal available) */}
+          {tradingSignal && (
+            <div style={{
+              marginBottom: '10px',
+              padding: '8px',
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: '3px',
+            }}>
+              <div style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '7px', letterSpacing: '0.15em',
+                color: 'rgba(100,116,139,0.5)',
+                marginBottom: '6px',
+              }}>KEY PRICE LEVELS</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px' }}>
+                {[
+                  { label: 'SUPPORT', value: tradingSignal.priceLevels.support, color: '#22C55E' },
+                  { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone, color: ACTION_COLORS[tradingSignal.action].text },
+                  { label: 'STOP', value: tradingSignal.priceLevels.stopLoss, color: '#FF2D55' },
+                  { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice, color: '#00D4FF' },
+                  { label: 'RESIST', value: tradingSignal.priceLevels.resistance, color: '#FF9500' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color }}>${value.toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Technical indicators */}
+          {tradingSignal && (
+            <div style={{
+              marginBottom: '10px',
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px',
+            }}>
+              {[
+                { label: 'RSI~', value: `${tradingSignal.technicals.rsiEstimate.toFixed(0)} ${tradingSignal.technicals.rsiLabel.toUpperCase()}`, color: tradingSignal.technicals.rsiLabel === 'Overbought' ? '#FF2D55' : tradingSignal.technicals.rsiLabel === 'Oversold' ? '#00D4FF' : '#94A3B8' },
+                { label: 'SMA', value: tradingSignal.technicals.smaSignal.toUpperCase(), color: tradingSignal.technicals.smaSignal === 'Golden Cross' ? '#00D4FF' : tradingSignal.technicals.smaSignal === 'Death Cross' ? '#FF2D55' : '#94A3B8' },
+                { label: 'VOLUME', value: tradingSignal.technicals.volumeSignal.toUpperCase(), color: tradingSignal.technicals.volumeSignal === 'Surge' ? '#FFD700' : tradingSignal.technicals.volumeSignal === 'Low' ? '#FF2D55' : '#94A3B8' },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2px', padding: '4px 6px' }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>{label}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color }}>{value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Fundamentals grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
             {[
               { label: 'Market Cap', value: fmtCap(stock.marketCapValue) },
@@ -305,10 +532,12 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
               </div>
             ))}
           </div>
+
           {/* All signals */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {stock.signals.map(sig => <SignalTag key={sig} signal={sig} />)}
           </div>
+
           {/* Data source */}
           <div style={{
             marginTop: '8px',
@@ -317,6 +546,7 @@ function StockCard({ stock, regimeScore, liveQuote }: { stock: SignalStock; regi
             letterSpacing: '0.08em',
           }}>
             {isLiveData ? 'SOURCE: POLYGON.IO · /api/signals/quotes' : `API: ${stock.apiSources.quote}`}
+            {tradingSignal && ' · SIGNALS: FAULTLINE ENGINE'}
           </div>
         </div>
       )}
@@ -432,6 +662,121 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
   );
 }
 
+// ── Trading Signals Aggregate Bar ─────────────────────────────
+function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] }) {
+  const counts = useMemo(() => {
+    const c = { BUY: 0, SELL: 0, HOLD: 0, WATCH: 0 };
+    for (const s of signals) c[s.action]++;
+    return c;
+  }, [signals]);
+
+  const total = signals.length;
+  if (total === 0) return null;
+
+  const strongBuys = signals.filter(s => s.action === 'BUY' && s.strength === 'Strong').length;
+  const strongSells = signals.filter(s => s.action === 'SELL' && s.strength === 'Strong').length;
+  const avgConf = signals.length > 0
+    ? Math.round(signals.reduce((s, v) => s + v.confidence, 0) / signals.length)
+    : 0;
+
+  const sentiment = counts.BUY > counts.SELL + counts.HOLD
+    ? { label: 'BULLISH BIAS', color: '#00D4FF' }
+    : counts.SELL > counts.BUY + counts.HOLD
+    ? { label: 'BEARISH BIAS', color: '#FF2D55' }
+    : { label: 'MIXED / NEUTRAL', color: '#FFD700' };
+
+  return (
+    <div style={{
+      margin: '12px 16px 0',
+      padding: '12px 14px',
+      background: 'rgba(8,10,14,0.95)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: '4px',
+      position: 'relative', overflow: 'hidden',
+    }}>
+      {/* Corner brackets */}
+      <div style={{ position: 'absolute', top: '4px', left: '4px', width: '8px', height: '8px', borderTop: '1px solid rgba(0,212,255,0.3)', borderLeft: '1px solid rgba(0,212,255,0.3)' }} />
+      <div style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', borderTop: '1px solid rgba(0,212,255,0.3)', borderRight: '1px solid rgba(0,212,255,0.3)' }} />
+      <div style={{ position: 'absolute', bottom: '4px', left: '4px', width: '8px', height: '8px', borderBottom: '1px solid rgba(0,212,255,0.3)', borderLeft: '1px solid rgba(0,212,255,0.3)' }} />
+      <div style={{ position: 'absolute', bottom: '4px', right: '4px', width: '8px', height: '8px', borderBottom: '1px solid rgba(0,212,255,0.3)', borderRight: '1px solid rgba(0,212,255,0.3)' }} />
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '9px', letterSpacing: '0.2em',
+            color: 'rgba(100,116,139,0.5)',
+          }}>TRADING SIGNALS</span>
+          <span style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '9px', fontWeight: 700,
+            color: sentiment.color, letterSpacing: '0.1em',
+          }}>{sentiment.label}</span>
+        </div>
+        <span style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '8px', color: 'rgba(100,116,139,0.4)',
+        }}>AVG CONFIDENCE: <span style={{ color: '#94A3B8' }}>{avgConf}%</span></span>
+      </div>
+
+      {/* Signal count row */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+        {(['BUY', 'SELL', 'HOLD', 'WATCH'] as TradingAction[]).map(action => {
+          const c = ACTION_COLORS[action];
+          const count = counts[action];
+          const strong = action === 'BUY' ? strongBuys : action === 'SELL' ? strongSells : 0;
+          return (
+            <div key={action} style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '5px 10px',
+              background: count > 0 ? `${c.text}10` : 'rgba(255,255,255,0.02)',
+              border: `1px solid ${count > 0 ? c.border : 'rgba(255,255,255,0.05)'}`,
+              borderRadius: '3px',
+            }}>
+              <span style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '9px', fontWeight: 700,
+                color: count > 0 ? c.text : 'rgba(100,116,139,0.3)',
+                letterSpacing: '0.1em',
+              }}>{action}</span>
+              <span style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                fontSize: '18px', fontWeight: 700,
+                color: count > 0 ? c.text : 'rgba(100,116,139,0.2)',
+                lineHeight: 1,
+              }}>{count}</span>
+              {strong > 0 && (
+                <span style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '7px', color: c.text,
+                  background: `${c.text}15`,
+                  padding: '1px 4px', borderRadius: '2px',
+                }}>{strong} STRONG</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Stacked bar */}
+      <div style={{ height: '4px', display: 'flex', borderRadius: '2px', overflow: 'hidden', gap: '1px' }}>
+        {(['BUY', 'SELL', 'HOLD', 'WATCH'] as TradingAction[]).map(action => {
+          const pct = total > 0 ? (counts[action] / total) * 100 : 0;
+          if (pct === 0) return null;
+          return (
+            <div key={action} style={{
+              height: '100%', width: `${pct}%`,
+              background: ACTION_COLORS[action].text,
+              opacity: 0.8,
+              transition: 'width 0.6s cubic-bezier(0.23,1,0.32,1)',
+            }} />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Signals Page ─────────────────────────────────────────
 export default function Signals() {
   const engine = useEngine();
@@ -441,7 +786,7 @@ export default function Signals() {
   const [quotesLoading, setQuotesLoading] = useState(true);
   const [quotesError, setQuotesError] = useState<string | null>(null);
   const fetchCountRef = useRef(0);
-  const REFRESH_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+  const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
   const fetchQuotes = useCallback(async () => {
     const myCount = ++fetchCountRef.current;
@@ -467,14 +812,12 @@ export default function Signals() {
     }
   }, []);
 
-  // Initial fetch + periodic refresh
   useEffect(() => {
     fetchQuotes();
     const interval = setInterval(fetchQuotes, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchQuotes]);
 
-  // Build a map of ticker → live quote for fast lookup
   const quoteMap = useMemo(() => {
     const map = new Map<string, LiveQuote>();
     for (const q of quotesData?.quotes ?? []) {
@@ -483,7 +826,6 @@ export default function Signals() {
     return map;
   }, [quotesData]);
 
-  // Merge live quotes into SIGNAL_STOCKS for use in scoring/filtering
   const enrichedStocks = useMemo((): SignalStock[] => {
     return SIGNAL_STOCKS.map(s => {
       const q = quoteMap.get(s.ticker);
@@ -498,12 +840,17 @@ export default function Signals() {
     });
   }, [quoteMap]);
 
-  // Derive regime code from engine
+  // ── Regime context ─────────────────────────────────────────
   const regimeCode = useMemo(() => mapRegimeToCode(engine?.output?.regime?.label ?? 'MODERATE RISK'), [engine?.output?.regime?.label]);
   const regimeCtx = REGIME_CONTEXT[regimeCode];
   const priorityCats = REGIME_PRIORITY_CATEGORIES[regimeCode];
 
-  // Filters state
+  const regimeForSignals = useMemo(() => ({
+    label: engine?.output?.regime?.label ?? 'MODERATE RISK',
+    score: engine?.output?.overall?.score ?? 5,
+  }), [engine?.output?.regime?.label, engine?.output?.overall?.score]);
+
+  // ── Filters state ──────────────────────────────────────────
   const [filters, setFilters] = useState<SignalFilters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
   const [activeCategory, setActiveCategory] = useState<ScreeningCategory | 'All'>('All');
@@ -512,7 +859,7 @@ export default function Signals() {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // Scored and filtered stocks (using enriched data)
+  // ── Scored and filtered stocks ─────────────────────────────
   const displayedStocks = useMemo(() => {
     const filtersWithCat: SignalFilters = { ...filters, category: activeCategory };
     const filtered = filterStocks(enrichedStocks, filtersWithCat);
@@ -522,10 +869,47 @@ export default function Signals() {
     })).sort((a, b) => b.score - a.score);
   }, [filters, activeCategory, regimeCode, enrichedStocks]);
 
-  // Today's top signals (using enriched data when available)
+  // ── Trading signals query ──────────────────────────────────
+  // Build input for tRPC query — stable reference via useMemo
+  // Use real OHLC from live quote map when available; fall back to catalog estimates
+  const tradingSignalsInput = useMemo(() => ({
+    tickers: displayedStocks.map(({ stock }) => {
+      const lq = quoteMap.get(stock.ticker);
+      const hasLive = !!(lq && lq.price > 0);
+      return {
+        ticker: stock.ticker,
+        price: hasLive ? lq!.price : stock.price,
+        open: hasLive ? lq!.open : stock.price * 0.995,
+        high: hasLive ? lq!.high : stock.price * 1.02,
+        low: hasLive ? lq!.low : stock.price * 0.98,
+        changePercent: hasLive ? lq!.changePercent : stock.changePercent,
+        volumeMillions: hasLive ? lq!.volumeMillions : stock.volume,
+        avgVolume: stock.avgVolume,
+        sparkline: (hasLive && lq!.sparkline.length > 0) ? lq!.sparkline : stock.sparkline,
+        relativeStrength: stock.relativeStrength,
+      };
+    }),
+    regime: regimeForSignals,
+  }), [displayedStocks, quoteMap, regimeForSignals]);
+
+  const { data: tradingSignalsData } = trpc.signals.getTradingSignals.useQuery(
+    tradingSignalsInput,
+    { staleTime: 5 * 60 * 1000 }
+  );
+
+  // Build a map of ticker → trading signal
+  const tradingSignalMap = useMemo(() => {
+    const map = new Map<string, TradingSignalResult>();
+    for (const sig of tradingSignalsData ?? []) {
+      map.set(sig.ticker, sig);
+    }
+    return map;
+  }, [tradingSignalsData]);
+
+  // ── Today's top signals ────────────────────────────────────
   const topSignals = useMemo(() => getTodaysTopSignals(regimeCode, enrichedStocks.length > 0 ? enrichedStocks : undefined), [regimeCode, enrichedStocks]);
 
-  // Regime color
+  // ── Regime color ───────────────────────────────────────────
   const regimeColor = useMemo(() => {
     if (!engine?.output?.regime) return '#00D4FF';
     return engine.output.regime.color ?? '#00D4FF';
@@ -546,7 +930,6 @@ export default function Signals() {
         padding: '16px 16px 14px',
         position: 'relative', overflow: 'hidden',
       }}>
-        {/* Background glow */}
         <div style={{
           position: 'absolute', top: '-40px', right: '-40px',
           width: '200px', height: '200px',
@@ -585,7 +968,6 @@ export default function Signals() {
           </div>
         </div>
 
-        {/* Bullish/Bearish context */}
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>FAVORS:</span>
@@ -597,7 +979,6 @@ export default function Signals() {
           </div>
         </div>
 
-        {/* API Health Monitor */}
         <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           <ApiHealthBadge
             source={quotesData?.source ?? null}
@@ -619,7 +1000,6 @@ export default function Signals() {
         />
       </div>
 
-      {/* ── Divider ──────────────────────────────────────── */}
       <div style={{ margin: '4px 16px 0', height: '1px', background: 'rgba(255,255,255,0.04)' }} />
 
       {/* ── Today's Top Signals ───────────────────────────── */}
@@ -638,6 +1018,11 @@ export default function Signals() {
           <TopSignalCard label="AI Momentum" stock={topSignals.strongestAI} color="#A855F7" icon="◈" liveQuote={quoteMap.get(topSignals.strongestAI.ticker)} />
         </div>
       </div>
+
+      {/* ── Trading Signals Summary Bar ───────────────────── */}
+      {tradingSignalsData && tradingSignalsData.length > 0 && (
+        <TradingSignalsSummaryBar signals={tradingSignalsData} />
+      )}
 
       {/* ── Category Filter Tabs ──────────────────────────── */}
       <div style={{ padding: '16px 16px 0' }}>
@@ -688,7 +1073,6 @@ export default function Signals() {
           {quotesLoading ? 'LOADING...' : `${displayedStocks.length} SIGNALS FOUND`}
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {/* Manual refresh button */}
           <button
             onClick={fetchQuotes}
             disabled={quotesLoading}
@@ -782,7 +1166,7 @@ export default function Signals() {
         {quotesLoading && displayedStocks.length === 0 ? (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
             gap: '8px',
           }}>
             {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
@@ -796,7 +1180,7 @@ export default function Signals() {
         ) : (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
             gap: '8px',
           }}>
             {displayedStocks.map(({ stock, score }) => (
@@ -805,6 +1189,7 @@ export default function Signals() {
                 stock={stock}
                 regimeScore={score}
                 liveQuote={quoteMap.get(stock.ticker)}
+                tradingSignal={tradingSignalMap.get(stock.ticker)}
               />
             ))}
           </div>
@@ -837,6 +1222,9 @@ export default function Signals() {
               Showing static catalog prices. Connect Polygon.io for live quotes.
             </>
           )}
+          {tradingSignalsData && (
+            <> · <span style={{ color: '#00D4FF' }}>TRADING SIGNALS</span> — FAULTLINE Engine · {tradingSignalsData.length} signals computed.</>
+          )}
         </div>
       </div>
 
@@ -847,7 +1235,7 @@ export default function Signals() {
         color: 'rgba(55,65,81,0.5)',
         textAlign: 'center', lineHeight: 1.5,
       }}>
-        Probabilistic macro-regime intelligence. Not financial advice. Past performance does not guarantee future results.
+        Probabilistic macro-regime intelligence. Not financial advice. Trading signals are algorithmic estimates only — not investment recommendations. Past performance does not guarantee future results.
       </div>
     </div>
   );
