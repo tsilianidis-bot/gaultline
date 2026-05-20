@@ -51,35 +51,35 @@
 /* ── FAULTLINE color tokens ────────────────────────────────── */
 :root {
   --fl-void: #050608;
-  --fl-surface: #0A0C10;
-  --fl-surface-2: #0F1117;
-  --fl-border: rgba(255,255,255,0.07);
-  --fl-border-accent: rgba(0,212,255,0.15);
+  --fl-surface: #0C0F16;
+  --fl-surface-2: #111520;
+  --fl-border: rgba(255,255,255,0.10);
+  --fl-border-accent: rgba(0,212,255,0.22);
   --fl-gold: #FFD700;
   --fl-electric: #00D4FF;
   --fl-crimson: #FF2D55;
   --fl-amber: #FF9500;
   --fl-green: #00FF88;
   --fl-purple: #C084FC;
-  --fl-text-primary: #F0F4FF;
-  --fl-text-secondary: #94A3B8;
-  --fl-text-muted: #4B5563;
-  --fl-text-dim: #374151;
+  --fl-text-primary: #F4F8FF;
+  --fl-text-secondary: #A8B8CC;
+  --fl-text-muted: #64748B;
+  --fl-text-dim: #4B5563;
 
   /* shadcn tokens — dark theme */
   --primary: #00D4FF;
   --primary-foreground: #050608;
   --radius: 0.25rem;
   --background: #050608;
-  --foreground: #F0F4FF;
-  --card: #0A0C10;
-  --card-foreground: #F0F4FF;
-  --popover: #0F1117;
-  --popover-foreground: #F0F4FF;
-  --secondary: #0F1117;
-  --secondary-foreground: #94A3B8;
-  --muted: #0F1117;
-  --muted-foreground: #6B7280;
+  --foreground: #F4F8FF;
+  --card: #0C0F16;
+  --card-foreground: #F4F8FF;
+  --popover: #111520;
+  --popover-foreground: #F4F8FF;
+  --secondary: #111520;
+  --secondary-foreground: #A8B8CC;
+  --muted: #111520;
+  --muted-foreground: #94A3B8;
   --accent: rgba(0,212,255,0.08);
   --accent-foreground: #00D4FF;
   --destructive: #FF2D55;
