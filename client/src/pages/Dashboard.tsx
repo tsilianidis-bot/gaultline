@@ -406,10 +406,10 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Main hero content */}
-        <div style={{ position: 'relative', zIndex: 2, padding: '52px 20px 0' }}>
+        {/* Main hero content — 3-panel command center */}
+        <div style={{ position: 'relative', zIndex: 2, padding: '44px 20px 0' }}>
           {/* Regime pill row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
             <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, transparent, ${color}50)` }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '5px 16px', background: `${color}14`, border: `1px solid ${color}50`, borderRadius: '20px', boxShadow: `0 0 20px ${color}15` }}>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 10px ${color}`, animation: 'blink-alert 2s ease-in-out infinite' }} />
@@ -418,17 +418,75 @@ export default function Dashboard() {
             <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, ${color}50, transparent)` }} />
           </div>
 
-          {/* Giant score */}
-          <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '88px', lineHeight: 1, color, textShadow: `0 0 40px ${color}90, 0 0 80px ${color}40, 0 0 120px ${color}20`, letterSpacing: '-0.02em', animation: 'fade-in 0.8s ease both' }}>{overall.score.toFixed(1)}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '18px', color: 'rgba(255,255,255,0.28)', marginBottom: '14px' }}>/10</span>
+          {/* 3-panel row: ring | score | threat+analog */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '16px', marginBottom: '0' }}>
+
+            {/* LEFT — Pressure Ring */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+              <PressureRing score={overall.score} color={color} size={88} />
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center' }}>SYSTEMIC RISK</div>
+              {/* Mini domain bars */}
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                {domains.slice(0, 3).map(d => {
+                  const dc = getRiskColor(d.riskLevel);
+                  return (
+                    <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', width: '44px', textAlign: 'right', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.label.split(' ')[0]}</div>
+                      <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${d.score * 10}%`, background: `linear-gradient(90deg, ${dc}80, ${dc})`, boxShadow: `0 0 4px ${dc}60`, transition: 'width 1.2s cubic-bezier(0.23,1,0.32,1)' }} />
+                      </div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: dc, width: '20px', flexShrink: 0 }}>{d.score.toFixed(1)}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(240,244,255,0.45)', letterSpacing: '0.12em', marginTop: '-4px' }}>{regime.sublabel}</div>
+
+            {/* CENTER — Giant score */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '4px' }}>
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: 'clamp(72px, 18vw, 96px)', lineHeight: 1, color, textShadow: `0 0 40px ${color}90, 0 0 80px ${color}40, 0 0 120px ${color}20`, letterSpacing: '-0.02em', animation: 'fade-in 0.8s ease both' }}>{overall.score.toFixed(1)}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '16px', color: 'rgba(255,255,255,0.25)', marginBottom: '12px' }}>/10</span>
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(240,244,255,0.4)', letterSpacing: '0.12em', marginTop: '-2px' }}>{regime.sublabel}</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '8px' }}>
+                <div style={{ height: '1px', width: '24px', background: `${color}40` }} />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: `${color}80`, letterSpacing: '0.15em' }}>
+                  {overall.delta >= 0 ? '+' : ''}{overall.delta.toFixed(1)} vs baseline
+                </span>
+                <div style={{ height: '1px', width: '24px', background: `${color}40` }} />
+              </div>
+            </div>
+
+            {/* RIGHT — Top Threat + Closest Analog */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Top Threat */}
+              <div style={{ background: 'rgba(255,45,85,0.06)', border: '1px solid rgba(255,45,85,0.18)', borderRadius: '6px', padding: '10px 12px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(255,45,85,0.3)', borderRight: '1px solid rgba(255,45,85,0.3)' }} />
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>TOP THREAT</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topThreat.label}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.7)', lineHeight: 1 }}>{topThreat.score.toFixed(1)}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,45,85,0.5)' }}>/10</span>
+                </div>
+              </div>
+
+              {/* Closest Analog */}
+              <div style={{ background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.14)', borderRadius: '6px', padding: '10px 12px', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(0,212,255,0.25)', borderRight: '1px solid rgba(0,212,255,0.25)' }} />
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(0,212,255,0.55)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>CLOSEST ANALOG</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '3px' }}>{analogs[0]?.era ?? '—'}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#00D4FF', textShadow: '0 0 16px rgba(0,212,255,0.6)', lineHeight: 1 }}>{analogs[0]?.similarity ?? 0}%</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.5)' }}>{analogs[0]?.year ?? ''}</span>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* Seismic waveform */}
-          <div style={{ margin: '10px -20px 0' }}>
+          <div style={{ margin: '14px -20px 0' }}>
             <SeismicWave color={color} score={overall.score} />
           </div>
         </div>
