@@ -849,21 +849,23 @@ export default function Pressure() {
           {/* Regime banner + alerts */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 
-            {/* Regime banner */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              style={{
-                position: "relative",
-                background: `linear-gradient(135deg, ${levelColors.bg} 0%, rgba(10,12,16,0.9) 100%)`,
-                border: `1px solid ${levelColors.primary}33`,
-                borderRadius: "8px",
-                padding: "20px 24px",
-                overflow: "hidden",
-              }}
-            >
-              <CornerBrackets color={`${levelColors.primary}44`} size={10} />
+          {/* Regime banner */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            style={{
+              position: "relative",
+              background: `linear-gradient(135deg, ${levelColors.bg} 0%, rgba(10,12,16,0.9) 100%)`,
+              border: `1px solid ${levelColors.primary}44`,
+              borderRadius: "8px",
+              padding: "20px 24px",
+              overflow: "hidden",
+            }}
+          >
+            {/* top gradient rule */}
+            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: `linear-gradient(90deg, transparent, ${levelColors.primary}55, transparent)` }} />
+            <CornerBrackets color={`${levelColors.primary}55`} size={10} />
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "6px" }}>
                 CURRENT REGIME
               </div>
@@ -883,7 +885,20 @@ export default function Pressure() {
             </motion.div>
 
             {/* Top alerts */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", overflow: "hidden" }}>
+            <div style={{
+              flex: 1,
+              position: "relative",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              overflow: "hidden",
+              background: "rgba(10,12,16,0.7)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "8px",
+              padding: "16px",
+            }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg, transparent, rgba(255,184,0,0.2), transparent)" }} />
+              <CornerBrackets color="rgba(255,184,0,0.25)" size={8} />
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "2px" }}>
                 TOP RISK ALERTS
               </div>
@@ -906,7 +921,23 @@ export default function Pressure() {
         </div>
 
         {/* ── Risk Vectors Grid ─────────────────────────────── */}
-        <div style={{ marginBottom: "24px" }}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          style={{
+            position: "relative",
+            background: "rgba(10,12,16,0.88)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "8px",
+            padding: "20px",
+            marginBottom: "24px",
+            overflow: "hidden",
+          }}
+        >
+          {/* top gradient rule */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "1px", background: "linear-gradient(90deg, transparent, rgba(0,212,255,0.25), transparent)" }} />
+          <CornerBrackets color="rgba(0,212,255,0.25)" size={10} />
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.15em", marginBottom: "14px" }}>
             RISK VECTORS — {data.vectors.length} ACTIVE
           </div>
@@ -915,7 +946,7 @@ export default function Pressure() {
               <VectorCard key={vector.id} vector={vector} index={i} />
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* ── Liquidity Stress Meter + Contagion visualization ── */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
