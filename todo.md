@@ -133,3 +133,13 @@
 - [x] Add Vitest tests for tradingSignals.ts (server/tradingSignals.test.ts — 37 tests, all passing)
 - [x] Run full test suite (pnpm test) — 77 tests passing (37 new + 40 existing)
 - [x] Save checkpoint after trading signals upgrade complete
+
+## UX Refinement Pass 2 (Brief 2)
+
+- [x] Add "CURRENT REGIME" anchor section at top of dashboard — regime name, live narrative sentence, key shifts list, last updated timestamp
+- [x] Add signal severity labels (Stable / Building / Elevated / Accelerating / Critical) to domain heatmap cells
+- [x] Add signal prioritization tiers (PRIMARY SIGNALS / DEVELOPING PRESSURES / STABLE CONDITIONS) to heatmap section
+- [x] Add "What Changed" micro-summaries to major signal sections
+- [x] Add "How FAULTLINE Works" collapsible panel to the dashboard
+- [x] Add live "Updated X min ago" relative timestamp to hero stat strip
+- [x] Save checkpoint after all refinements complete

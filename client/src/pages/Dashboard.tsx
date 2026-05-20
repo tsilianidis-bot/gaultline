@@ -227,12 +227,14 @@ function HeatCell({ label, score, delay }: { label: string; score: number; delay
   const color = getRiskColor(level);
   const intensity = score / 10;
   const hexAlpha = (v: number) => Math.round(v * 255).toString(16).padStart(2, '0');
+  const severityMap: Record<string, string> = { low: 'Stable', moderate: 'Building', elevated: 'Elevated', high: 'Accelerating', critical: 'Critical' };
+  const severityText = severityMap[level] ?? 'Stable';
   return (
     <div style={{
       background: `${color}${hexAlpha(intensity * 0.12)}`,
       border: `1px solid ${color}${hexAlpha(intensity * 0.25)}`,
       borderRadius: '4px', padding: '10px 6px',
-      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
       animation: `fade-slide-up 0.5s cubic-bezier(0.23,1,0.32,1) ${delay}ms both`,
       transition: 'transform 0.2s ease',
     }}
@@ -244,6 +246,9 @@ function HeatCell({ label, score, delay }: { label: string; score: number; delay
       </span>
       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.3 }}>
         {label}
+      </span>
+      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: `${color}90`, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center', lineHeight: 1 }}>
+        {severityText}
       </span>
     </div>
   );
@@ -354,6 +359,32 @@ export default function Dashboard() {
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Severity label from riskLevel
+  const severityLabel = (riskLevel: string): string => {
+    const map: Record<string, string> = { low: 'Stable', moderate: 'Building', elevated: 'Elevated', high: 'Accelerating', critical: 'Critical' };
+    return map[riskLevel] ?? 'Stable';
+  };
+
+  // Relative timestamp
+  const updatedAgo = useMemo(() => {
+    if (!lastUpdated) return null;
+    const mins = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins === 1) return '1m ago';
+    return `${mins}m ago`;
+  }, [lastUpdated]);
+
+  // Key shifts for Current Regime section
+  const keyShifts = useMemo(() => {
+    const sorted = [...domains].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    return sorted.slice(0, 4).map(d => ({
+      label: d.label.split(' ')[0],
+      direction: d.delta > 0.05 ? 'rising' : d.delta < -0.05 ? 'easing' : 'stable',
+      severity: severityLabel(d.riskLevel),
+      color: getRiskColor(d.riskLevel),
+    }));
+  }, [domains]);
 
   // Stable memoized derived data
   const heatmapScores = useMemo(() => domains.map(d => ({ label: d.label.split(' ')[0], score: d.score })), [domains]);
@@ -524,6 +555,42 @@ export default function Dashboard() {
         {/* Data Integrity panel */}
         <DataIntegrity />
 
+        {/* ── CURRENT REGIME ANCHOR ─────────────────────────────── */}
+        <div style={{ background: `linear-gradient(135deg, ${color}08 0%, rgba(12,15,22,0.98) 60%)`, border: `1px solid ${color}30`, borderLeft: `3px solid ${color}`, borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 80ms both' }}>
+          {/* Header row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, animation: 'blink-alert 2s ease-in-out infinite' }} />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: color, textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Current Regime</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {updatedAgo && (
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.55)', letterSpacing: '0.1em' }}>Updated {updatedAgo}</span>
+              )}
+              <div style={{ padding: '2px 7px', background: `${color}15`, border: `1px solid ${color}35`, borderRadius: '3px' }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{severityLabel(overall.riskLevel)}</span>
+              </div>
+            </div>
+          </div>
+          {/* Regime name */}
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#F0F4FF', marginBottom: '6px', lineHeight: 1.2 }}>{regime.label}</div>
+          {/* Narrative sentence */}
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#94A3B8', lineHeight: 1.65, marginBottom: '12px' }}>{regime.description}</div>
+          {/* Key Shifts */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '7px' }}>Key Shifts</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {keyShifts.map(shift => (
+                <div key={shift.label} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', background: `${shift.color}10`, border: `1px solid ${shift.color}25`, borderRadius: '3px' }}>
+                  <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: shift.color, flexShrink: 0 }} />
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: shift.color, letterSpacing: '0.08em' }}>{shift.label}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.6)' }}>{shift.direction}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Bull vs Crash */}
         <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '6px', padding: '16px', marginBottom: '10px', boxShadow: '0 0 0 1px rgba(0,212,255,0.04), 0 4px 24px rgba(0,0,0,0.4)', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 150ms both' }}>
           <div style={{ marginBottom: '12px' }}>
@@ -549,15 +616,55 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Risk heatmap */}
+        {/* Risk heatmap with signal prioritization tiers */}
         <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 220ms both' }}>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Risk Domain Heatmap</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Each domain measures a distinct source of structural stress — liquidity conditions, credit pressure, speculative excess, and macro instability. Darker cells indicate elevated pressure.</div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-            {heatmapScores.map((item, i) => <HeatCell key={item.label} label={item.label} score={item.score} delay={i * 45} />)}
-          </div>
+          {/* Tier 1: Primary Signals */}
+          {(() => {
+            const primary = domains.filter(d => d.riskLevel === 'critical' || d.riskLevel === 'high');
+            const developing = domains.filter(d => d.riskLevel === 'elevated');
+            const stable = domains.filter(d => d.riskLevel === 'moderate' || d.riskLevel === 'low');
+            return (
+              <>
+                {primary.length > 0 && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#FF2D55', animation: 'blink-alert 1.5s ease-in-out infinite' }} />
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Primary Signals</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                      {primary.map((d, i) => <HeatCell key={d.id} label={d.label.split(' ')[0]} score={d.score} delay={i * 45} />)}
+                    </div>
+                  </div>
+                )}
+                {developing.length > 0 && (
+                  <div style={{ marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#FFD700' }} />
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FFD700', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Developing Pressures</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                      {developing.map((d, i) => <HeatCell key={d.id} label={d.label.split(' ')[0]} score={d.score} delay={i * 45} />)}
+                    </div>
+                  </div>
+                )}
+                {stable.length > 0 && (
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00FF88' }} />
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Stable Conditions</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                      {stable.map((d, i) => <HeatCell key={d.id} label={d.label.split(' ')[0]} score={d.score} delay={i * 45} />)}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Narrative intelligence */}
@@ -572,6 +679,20 @@ export default function Dashboard() {
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Regime Shift Signals</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Domains where pressure has moved meaningfully since the prior reading. Sustained directional moves signal emerging regime conditions.</div>
           </div>
+            {/* What Changed micro-summary */}
+            {changedDomains.length > 0 && (() => {
+              const topMover = changedDomains[0];
+              const direction = topMover.delta > 0 ? 'increased' : 'eased';
+              const pct = Math.abs(Math.round(topMover.delta * 10));
+              return (
+                <div style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', marginBottom: '10px', borderLeft: `2px solid ${getRiskColor(topMover.riskLevel)}40` }}>
+                  <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.5, fontStyle: 'italic' }}>
+                    {topMover.label.split(' ')[0]} pressure {direction}{pct > 0 ? ` ${pct}% since last reading` : ''}.{' '}
+                    {topMover.delta > 0.2 ? 'Sustained directional moves of this magnitude often precede regime reclassification.' : 'Monitor for continuation.'}
+                  </span>
+                </div>
+              );
+            })()}
             {changedDomains.map(d => (
               <ChangeItem key={d.id} label={d.label} delta={d.delta} color={getRiskColor(d.riskLevel)} detail={d.drivers[0] ?? d.description} />
             ))}
@@ -605,6 +726,21 @@ export default function Dashboard() {
               </div>
             )}
           </div>
+          {/* What Changed — Market Stress */}
+          {indicators.hySpread > 400 && (
+            <div style={{ padding: '7px 10px', background: 'rgba(255,45,85,0.04)', borderLeft: '2px solid rgba(255,45,85,0.3)', borderRadius: '3px', marginBottom: '10px' }}>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', fontStyle: 'italic', lineHeight: 1.5 }}>
+                Credit spreads widened while equities remain elevated — a divergence historically associated with deteriorating credit conditions.
+              </span>
+            </div>
+          )}
+          {indicators.yield10Y > 4.5 && indicators.hySpread <= 400 && (
+            <div style={{ padding: '7px 10px', background: 'rgba(255,149,0,0.04)', borderLeft: '2px solid rgba(255,149,0,0.3)', borderRadius: '3px', marginBottom: '10px' }}>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', fontStyle: 'italic', lineHeight: 1.5 }}>
+                Elevated long-end yields continue to pressure rate-sensitive sectors and increase the cost of refinancing.
+              </span>
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
             <MiniWidget label="10Y Treasury" value={(rawFred['DGS10'] ?? indicators.yield10Y).toFixed(2)} unit="%" color="#00D4FF" seed={11} trend={(rawFred['DGS10'] ?? indicators.yield10Y) > 4.5 ? 'up' : 'flat'} />
             <MiniWidget label="SOFR Rate" value={(rawFred['SOFR'] ?? indicators.fedFundsRate).toFixed(2)} unit="%" color="#00D4FF" seed={66} trend={(rawFred['SOFR'] ?? indicators.fedFundsRate) > 5 ? 'up' : 'flat'} />
@@ -627,6 +763,14 @@ export default function Dashboard() {
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Historical Regime Analogs</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Current macro conditions most closely resemble these historical periods based on domain score patterns. Similarity reflects structural alignment, not price prediction.</div>
           </div>
+          {/* What Changed — Analog context */}
+          {analogs[0] && (
+            <div style={{ padding: '7px 10px', background: 'rgba(0,212,255,0.04)', borderLeft: '2px solid rgba(0,212,255,0.2)', borderRadius: '3px', marginBottom: '10px' }}>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', fontStyle: 'italic', lineHeight: 1.5 }}>
+                Structural alignment with {analogs[0].era} ({analogs[0].year.slice(0, 4)}) at {analogs[0].similarity}% similarity. {analogs[0].matchReasons?.[0] ?? 'Pattern overlap across multiple pressure domains.'}
+              </span>
+            </div>
+          )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
             {analogs.slice(0, 3).map((analog, i) => {
               const aColor = i === 0 ? '#00D4FF' : i === 1 ? '#FFD700' : '#FF9500';
@@ -675,6 +819,37 @@ export default function Dashboard() {
             {metrics.map((metric, i) => <MetricCardItem key={metric.id} metric={metric} index={i} />)}
           </div>
         </div>
+
+        {/* How FAULTLINE Works */}
+        <details style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '6px', padding: '14px 16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 700ms both' }}>
+          <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em' }}>How FAULTLINE Works</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', marginLeft: 'auto' }}>tap to expand</span>
+          </summary>
+          <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.7, marginBottom: '10px' }}>
+              FAULTLINE monitors six distinct sources of systemic stress and converts them into a real-time Pressure Index designed to identify elevated market risk before broader instability becomes obvious.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {[
+                ['Liquidity Conditions', 'Treasury market depth, repo stress, and funding pressure'],
+                ['Credit Market Stress', 'High-yield spreads, investment-grade conditions, and default risk'],
+                ['Market Concentration', 'Mega-cap dominance, breadth divergence, and index fragility'],
+                ['Speculative Excess', 'AI/tech bubble dynamics, leverage, and momentum extremes'],
+                ['Volatility Behavior', 'VIX regime, suppression patterns, and tail-risk pricing'],
+                ['Macro Regime Pressure', 'Inflation trajectory, Fed policy stance, and recession risk'],
+              ].map(([label, desc]) => (
+                <div key={label} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#00D4FF', marginTop: '2px', flexShrink: 0 }}>›</span>
+                  <div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#D1D5DB' }}>{label}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563' }}> — {desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </details>
 
         {/* Disclaimer */}
         <div style={{ textAlign: 'center', padding: '12px 0 4px' }}>
