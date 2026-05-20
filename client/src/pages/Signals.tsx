@@ -892,15 +892,25 @@ export default function Signals() {
     regime: regimeForSignals,
   }), [displayedStocks, quoteMap, regimeForSignals]);
 
-  const { data: tradingSignalsData } = trpc.signals.getTradingSignals.useQuery(
-    tradingSignalsInput,
-    { staleTime: 5 * 60 * 1000 }
-  );
+  const [tradingSignalsData, setTradingSignalsData] = useState<TradingSignalResult[]>([]);
+  const computeSignalsMutation = trpc.signals.getTradingSignals.useMutation({
+    onSuccess: (data) => setTradingSignalsData(data),
+  });
+
+  // Re-run the mutation whenever the input changes (debounced to avoid thrashing)
+  const signalsInputRef = useRef<string>('');
+  useEffect(() => {
+    const key = JSON.stringify(tradingSignalsInput);
+    if (key === signalsInputRef.current) return;
+    signalsInputRef.current = key;
+    computeSignalsMutation.mutate(tradingSignalsInput);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tradingSignalsInput]);
 
   // Build a map of ticker → trading signal
   const tradingSignalMap = useMemo(() => {
     const map = new Map<string, TradingSignalResult>();
-    for (const sig of tradingSignalsData ?? []) {
+    for (const sig of tradingSignalsData) {
       map.set(sig.ticker, sig);
     }
     return map;

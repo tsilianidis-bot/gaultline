@@ -70,6 +70,7 @@ export const appRouter = router({
     }),
 
     // Compute trading signals (BUY/SELL/HOLD) for a batch of tickers
+    // Uses mutation (POST) to avoid 414 URI Too Large with large sparkline payloads
     getTradingSignals: publicProcedure
       .input(z.object({
         tickers: z.array(z.object({
@@ -89,7 +90,7 @@ export const appRouter = router({
           score: z.number().min(0).max(10),
         }),
       }))
-      .query(({ input }) => {
+      .mutation(({ input }) => {
         return computeTradingSignals(input.tickers, input.regime);
       }),
 
@@ -111,7 +112,7 @@ export const appRouter = router({
           score: z.number().min(0).max(10),
         }),
       }))
-      .query(({ input }) => {
+      .mutation(({ input }) => {
         const { regime, ...tickerInput } = input;
         return computeTradingSignal(tickerInput, regime);
       }),
