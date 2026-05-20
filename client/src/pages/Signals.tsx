@@ -66,6 +66,8 @@ interface TradingSignalResult {
     entryZone: number;
     stopLoss: number;
     targetPrice: number;
+    riskReward: number;
+    atr: number;
   };
   regimeAlignment: 'Aligned' | 'Neutral' | 'Counter-Trend';
   regimeAlignmentScore: number;
@@ -441,6 +443,30 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal }: {
         ))}
       </div>
 
+      {/* ── Inline Entry / Stop / Target (collapsed view) ─── */}
+      {tradingSignal && (tradingSignal.action === 'BUY' || tradingSignal.action === 'SELL') && (
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '4px', marginBottom: '8px',
+        }}>
+          {[
+            { label: 'ENTRY', value: `$${tradingSignal.priceLevels.entryZone.toFixed(2)}`, color: ACTION_COLORS[tradingSignal.action].text },
+            { label: 'STOP', value: `$${tradingSignal.priceLevels.stopLoss.toFixed(2)}`, color: '#FF2D55' },
+            { label: 'TARGET', value: `$${tradingSignal.priceLevels.targetPrice.toFixed(2)}`, color: '#00D4FF' },
+            { label: 'R:R', value: `${tradingSignal.priceLevels.riskReward}:1`, color: tradingSignal.priceLevels.riskReward >= 2 ? '#22C55E' : tradingSignal.priceLevels.riskReward >= 1.5 ? '#FFD700' : '#FF9500' },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{
+              background: 'rgba(255,255,255,0.03)',
+              borderRadius: '2px', padding: '4px 6px',
+              borderTop: `2px solid ${color}30`,
+            }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>{label}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Signal tags */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: expanded ? '8px' : 0 }}>
         {stock.signals.slice(0, 2).map(sig => (
@@ -476,15 +502,28 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal }: {
                 color: 'rgba(100,116,139,0.5)',
                 marginBottom: '6px',
               }}>KEY PRICE LEVELS</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px' }}>
+              {/* Top row: entry/stop/target/R:R */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '6px' }}>
+                {[
+                  { label: 'ENTRY', value: `$${tradingSignal.priceLevels.entryZone.toFixed(2)}`, color: ACTION_COLORS[tradingSignal.action].text, sub: tradingSignal.action === 'BUY' ? 'BUY ZONE' : tradingSignal.action === 'SELL' ? 'SHORT ZONE' : 'LEVEL' },
+                  { label: 'STOP LOSS', value: `$${tradingSignal.priceLevels.stopLoss.toFixed(2)}`, color: '#FF2D55', sub: `ATR ×1.5` },
+                  { label: 'TARGET', value: `$${tradingSignal.priceLevels.targetPrice.toFixed(2)}`, color: '#00D4FF', sub: '2:1 R:R' },
+                  { label: 'RISK/REWARD', value: `${tradingSignal.priceLevels.riskReward}:1`, color: tradingSignal.priceLevels.riskReward >= 2 ? '#22C55E' : tradingSignal.priceLevels.riskReward >= 1.5 ? '#FFD700' : '#FF9500', sub: `ATR $${tradingSignal.priceLevels.atr.toFixed(2)}` },
+                ].map(({ label, value, color, sub }) => (
+                  <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '5px 4px', borderTop: `2px solid ${color}30` }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.4)', marginTop: '1px' }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Bottom row: support/resistance */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                 {[
                   { label: 'SUPPORT', value: tradingSignal.priceLevels.support, color: '#22C55E' },
-                  { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone, color: ACTION_COLORS[tradingSignal.action].text },
-                  { label: 'STOP', value: tradingSignal.priceLevels.stopLoss, color: '#FF2D55' },
-                  { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice, color: '#00D4FF' },
-                  { label: 'RESIST', value: tradingSignal.priceLevels.resistance, color: '#FF9500' },
+                  { label: 'RESISTANCE', value: tradingSignal.priceLevels.resistance, color: '#FF9500' },
                 ].map(({ label, value, color }) => (
-                  <div key={label} style={{ textAlign: 'center' }}>
+                  <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '4px' }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color }}>${value.toFixed(2)}</div>
                   </div>

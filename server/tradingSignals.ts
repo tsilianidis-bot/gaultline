@@ -22,8 +22,10 @@ export interface PriceLevels {
   support: number;       // estimated support (recent low area)
   resistance: number;    // estimated resistance (recent high area)
   entryZone: number;     // suggested entry price
-  stopLoss: number;      // suggested stop-loss
-  targetPrice: number;   // 5-10% target based on direction
+  stopLoss: number;      // ATR-based stop-loss
+  targetPrice: number;   // 2:1 R:R target based on direction
+  riskReward: number;    // (target - entry) / (entry - stop), rounded to 1dp
+  atr: number;           // estimated ATR (high - low range proxy)
 }
 
 export interface TradingSignalResult {
@@ -157,7 +159,8 @@ function volumeSignal(volumeMillions: number, avgVolume: number): "Surge" | "Nor
 }
 
 /**
- * Estimate key price levels from OHLC and sparkline.
+ * Estimate key price levels from OHLC using ATR-based stops and 2:1 R:R targets.
+ * ATR proxy = intraday high - low range (single-bar ATR).
  */
 function computePriceLevels(
   price: number,
@@ -166,28 +169,45 @@ function computePriceLevels(
   action: TradingAction
 ): PriceLevels {
   const range = high - low;
-  const support = parseFloat((low - range * 0.05).toFixed(2));
-  const resistance = parseFloat((high + range * 0.05).toFixed(2));
+  // ATR proxy: use intraday range, floor at 0.5% of price to avoid zero
+  const atr = Math.max(range, price * 0.005);
+
+  const support = parseFloat((low - atr * 0.1).toFixed(2));
+  const resistance = parseFloat((high + atr * 0.1).toFixed(2));
 
   let entryZone: number;
   let stopLoss: number;
   let targetPrice: number;
 
   if (action === "BUY") {
-    entryZone = parseFloat((price * 0.995).toFixed(2));           // 0.5% below current
-    stopLoss = parseFloat(Math.max(support, price * 0.94).toFixed(2)); // 6% or support
-    targetPrice = parseFloat((price * 1.08).toFixed(2));          // 8% target
-  } else if (action === "SELL") {
-    entryZone = parseFloat((price * 1.005).toFixed(2));           // 0.5% above current (short entry)
-    stopLoss = parseFloat(Math.min(resistance, price * 1.06).toFixed(2)); // 6% above
-    targetPrice = parseFloat((price * 0.92).toFixed(2));          // 8% downside target
-  } else {
+    // Entry: current price (buy at market / slight pullback)
     entryZone = parseFloat(price.toFixed(2));
-    stopLoss = parseFloat((price * 0.93).toFixed(2));
-    targetPrice = parseFloat((price * 1.05).toFixed(2));
+    // ATR stop: 1.5× ATR below entry, but no worse than the day's low
+    stopLoss = parseFloat(Math.max(low - atr * 0.1, entryZone - atr * 1.5).toFixed(2));
+    // Target: 2:1 R:R from entry
+    const riskPerShare = entryZone - stopLoss;
+    targetPrice = parseFloat((entryZone + riskPerShare * 2).toFixed(2));
+  } else if (action === "SELL") {
+    // Short entry: current price
+    entryZone = parseFloat(price.toFixed(2));
+    // ATR stop: 1.5× ATR above entry, but no worse than the day's high
+    stopLoss = parseFloat(Math.min(high + atr * 0.1, entryZone + atr * 1.5).toFixed(2));
+    // Target: 2:1 R:R downside
+    const riskPerShare = stopLoss - entryZone;
+    targetPrice = parseFloat((entryZone - riskPerShare * 2).toFixed(2));
+  } else {
+    // HOLD / WATCH: neutral levels
+    entryZone = parseFloat(price.toFixed(2));
+    stopLoss = parseFloat((price - atr * 1.5).toFixed(2));
+    targetPrice = parseFloat((price + atr * 2).toFixed(2));
   }
 
-  return { support, resistance, entryZone, stopLoss, targetPrice };
+  // Risk/reward ratio (always positive; represents reward units per 1 unit of risk)
+  const risk = Math.abs(entryZone - stopLoss);
+  const reward = Math.abs(targetPrice - entryZone);
+  const riskReward = risk > 0 ? parseFloat((reward / risk).toFixed(1)) : 0;
+
+  return { support, resistance, entryZone, stopLoss, targetPrice, riskReward, atr: parseFloat(atr.toFixed(2)) };
 }
 
 /**
