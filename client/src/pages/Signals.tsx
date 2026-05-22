@@ -868,6 +868,7 @@ export default function Signals() {
   const [quotesError, setQuotesError] = useState<string | null>(null);
   const fetchCountRef = useRef(0);
   const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+  const [signalsRefreshCounter, setSignalsRefreshCounter] = useState(0);
 
   // ── Daily bars state (for true RSI/SMA/MACD) ──────────────
   const [dailyBarsMap, setDailyBarsMap] = useState<Record<string, DailyBar[]>>({});
@@ -914,7 +915,10 @@ export default function Signals() {
 
   useEffect(() => {
     fetchQuotes();
-    const interval = setInterval(fetchQuotes, REFRESH_INTERVAL_MS);
+    const interval = setInterval(() => {
+      fetchQuotes();
+      setSignalsRefreshCounter(c => c + 1); // force signals re-run even if prices unchanged
+    }, REFRESH_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [fetchQuotes]);
 
@@ -1007,15 +1011,15 @@ export default function Signals() {
     onSuccess: (data) => setTradingSignalsData(data),
   });
 
-  // Re-run the mutation whenever the input changes (debounced to avoid thrashing)
+  // Re-run the mutation whenever the input changes OR a manual/periodic refresh is triggered
   const signalsInputRef = useRef<string>('');
   useEffect(() => {
-    const key = JSON.stringify(tradingSignalsInput);
+    const key = JSON.stringify(tradingSignalsInput) + ':' + signalsRefreshCounter;
     if (key === signalsInputRef.current) return;
     signalsInputRef.current = key;
     computeSignalsMutation.mutate(tradingSignalsInput);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tradingSignalsInput]);
+  }, [tradingSignalsInput, signalsRefreshCounter]);
 
   // Build a map of ticker → trading signal
   const tradingSignalMap = useMemo(() => {
@@ -1208,6 +1212,21 @@ export default function Signals() {
               transition: 'all 0.15s ease',
             }}
           >↻ REFRESH</button>
+          <button
+            onClick={() => { fetchQuotes(); setSignalsRefreshCounter(c => c + 1); }}
+            disabled={computeSignalsMutation.isPending}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '8px', letterSpacing: '0.1em',
+              padding: '4px 8px',
+              border: '1px solid rgba(0,212,255,0.15)',
+              borderRadius: '2px',
+              background: 'rgba(0,212,255,0.05)',
+              color: computeSignalsMutation.isPending ? 'rgba(100,116,139,0.3)' : '#00D4FF',
+              cursor: computeSignalsMutation.isPending ? 'default' : 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >⚡ SIGNALS</button>
           <button
             onClick={() => setShowFilters(f => !f)}
             style={{
