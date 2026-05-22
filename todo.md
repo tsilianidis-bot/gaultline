@@ -145,13 +145,26 @@
 - [x] Save checkpoint after all refinements complete
 
 ## Cinematic Intelligence Terminal Upgrade (Brief 07)
-- [ ] Install Framer Motion + GSAP animation libraries
-- [ ] Upgrade global CSS — glassmorphism tokens, Space Grotesk + IBM Plex Mono fonts, reactive ambient lighting CSS vars
-- [ ] Build CinematicBackground component — animated grid, floating particles, volumetric depth layers
-- [ ] Redesign hero section — multi-layer waveform, pressure rings, radar scan animation, live AI analysis feed
-- [ ] Upgrade all dashboard cards to glassmorphic panels with edge glow, hover illumination, animated entrances
-- [ ] Add reactive ambient lighting — teal (bullish), amber (moderate), red (elevated), dark red (crisis)
-- [ ] Add scrolling intelligence ticker bar at top of dashboard
-- [ ] Add terminal-style live signal indicators and blinking status dots
-- [ ] Add card tilt effect on hover (Framer Motion)
+- [x] Install Framer Motion + GSAP animation libraries
+- [x] Upgrade global CSS — glassmorphism tokens, Space Grotesk + IBM Plex Mono fonts, reactive ambient lighting CSS vars
+- [x] Build CinematicBackground component — animated grid, floating particles, volumetric depth layers (AmbientParticles + regime-ambient overlay)
+- [x] Redesign hero section — multi-layer waveform, pressure rings, radar scan animation, live AI analysis feed
+- [x] Upgrade all dashboard cards to glassmorphic panels with edge glow, hover illumination, animated entrances (intel-module class)
+- [x] Add reactive ambient lighting — teal (bullish), amber (moderate), red (elevated), dark red (crisis) (data-regime + regime-ambient)
+- [x] Add scrolling intelligence ticker bar at top of dashboard (IntelTicker component)
+- [x] Add terminal-style live signal indicators and blinking status dots (blink-alert, pulse-gold animations)
+- [x] Add card tilt effect on hover (intel-module translateY(-1px) hover lift)
+- [x] TypeScript check (0 errors), test suite (57 pass), checkpoint saved (77432bf0)
+
+## Level 1 Signal Upgrade — True RSI/SMA/MACD from Polygon.io Daily Bars
+- [ ] Extend signalsProxy.ts — add fetchDailyBars(symbol, days) using /v2/aggs/ticker/{sym}/range/1/day
+- [ ] Add /api/signals/daily-bars bulk endpoint for fetching bars for all screener tickers
+- [ ] Upgrade tradingSignals.ts — replace sparkline RSI with true Wilder's 14-period RSI
+- [ ] Upgrade tradingSignals.ts — replace SMA proxy with real 50-day/200-day SMA crossover from daily bars
+- [ ] Upgrade tradingSignals.ts — add proper MACD (12/26/9 EMA) from daily bars
+- [ ] Add dailyBars field to TradingSignalInput type
+- [ ] Update routers.ts getTradingSignals to fetch and pass daily bars
+- [ ] Update Signals.tsx to show "True RSI" / "MACD" labels instead of "RSI~" approximation labels
+- [ ] Graceful fallback to sparkline approximations when daily bars unavailable (free tier)
+- [ ] Write/update Vitest tests for new RSI/SMA/MACD functions
 - [ ] TypeScript check, test suite, save checkpoint

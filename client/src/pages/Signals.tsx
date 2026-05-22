@@ -45,6 +45,15 @@ interface QuotesResponse {
 // ── Trading Signal Types (mirror server/tradingSignals.ts) ────
 type TradingAction = 'BUY' | 'SELL' | 'HOLD' | 'WATCH';
 
+interface DailyBar {
+  close: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number;
+  timestamp: number;
+}
+
 interface TradingSignalResult {
   ticker: string;
   action: TradingAction;
@@ -54,11 +63,19 @@ interface TradingSignalResult {
   rationale: string;
   technicals: {
     rsiEstimate: number;
+    rsiIsTrue?: boolean;          // true = real Wilder's RSI from daily bars
     rsiLabel: 'Overbought' | 'Neutral' | 'Oversold';
     trend: 'Uptrend' | 'Downtrend' | 'Sideways';
     volumeSignal: 'Surge' | 'Normal' | 'Low';
     momentumScore: number;
     smaSignal: 'Golden Cross' | 'Death Cross' | 'Neutral';
+    smaIsTrue?: boolean;          // true = real 50/200-day SMA from daily bars
+    macd?: {
+      macdLine: number;    // EMA(12) - EMA(26)
+      signalLine: number;  // EMA(9) of macdLine
+      histogram: number;   // macdLine - signalLine
+      signal: 'Bullish' | 'Bearish' | 'Neutral';
+    } | null;
   };
   priceLevels: {
     support: number;
@@ -429,7 +446,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal }: {
         gap: '4px', marginBottom: '8px',
       }}>
         {[
-          { label: 'RSI~', value: tradingSignal ? tradingSignal.technicals.rsiEstimate.toFixed(0) : stock.relativeStrength.toString(), color: (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) > 70 ? '#FF2D55' : (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) < 30 ? '#00D4FF' : '#94A3B8' },
+          { label: tradingSignal?.technicals.rsiIsTrue ? 'RSI(14)' : 'RSI~', value: tradingSignal ? tradingSignal.technicals.rsiEstimate.toFixed(0) : stock.relativeStrength.toString(), color: (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) > 70 ? '#FF2D55' : (tradingSignal?.technicals.rsiEstimate ?? stock.relativeStrength) < 30 ? '#00D4FF' : '#94A3B8' },
           { label: 'VOL', value: `${surge}x`, color: highSurge ? '#FFD700' : '#94A3B8' },
           { label: tradingSignal ? 'TREND' : 'SECTOR', value: tradingSignal ? tradingSignal.technicals.trend.split('trend')[0].toUpperCase() || tradingSignal.technicals.trend.toUpperCase() : stock.sector.split(' ')[0], color: tradingSignal?.technicals.trend === 'Uptrend' ? '#00D4FF' : tradingSignal?.technicals.trend === 'Downtrend' ? '#FF2D55' : '#94A3B8' },
         ].map(({ label, value, color }) => (
@@ -539,15 +556,40 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal }: {
               display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px',
             }}>
               {[
-                { label: 'RSI~', value: `${tradingSignal.technicals.rsiEstimate.toFixed(0)} ${tradingSignal.technicals.rsiLabel.toUpperCase()}`, color: tradingSignal.technicals.rsiLabel === 'Overbought' ? '#FF2D55' : tradingSignal.technicals.rsiLabel === 'Oversold' ? '#00D4FF' : '#94A3B8' },
-                { label: 'SMA', value: tradingSignal.technicals.smaSignal.toUpperCase(), color: tradingSignal.technicals.smaSignal === 'Golden Cross' ? '#00D4FF' : tradingSignal.technicals.smaSignal === 'Death Cross' ? '#FF2D55' : '#94A3B8' },
-                { label: 'VOLUME', value: tradingSignal.technicals.volumeSignal.toUpperCase(), color: tradingSignal.technicals.volumeSignal === 'Surge' ? '#FFD700' : tradingSignal.technicals.volumeSignal === 'Low' ? '#FF2D55' : '#94A3B8' },
-              ].map(({ label, value, color }) => (
+                { label: tradingSignal.technicals.rsiIsTrue ? 'RSI(14)' : 'RSI~', value: `${tradingSignal.technicals.rsiEstimate.toFixed(0)} ${tradingSignal.technicals.rsiLabel.toUpperCase()}`, color: tradingSignal.technicals.rsiLabel === 'Overbought' ? '#FF2D55' : tradingSignal.technicals.rsiLabel === 'Oversold' ? '#00D4FF' : '#94A3B8', badge: tradingSignal.technicals.rsiIsTrue ? 'TRUE' : undefined },
+                { label: tradingSignal.technicals.smaIsTrue ? 'SMA(50/200)' : 'SMA~', value: tradingSignal.technicals.smaSignal.toUpperCase(), color: tradingSignal.technicals.smaSignal === 'Golden Cross' ? '#00D4FF' : tradingSignal.technicals.smaSignal === 'Death Cross' ? '#FF2D55' : '#94A3B8', badge: tradingSignal.technicals.smaIsTrue ? 'TRUE' : undefined },
+                { label: 'VOLUME', value: tradingSignal.technicals.volumeSignal.toUpperCase(), color: tradingSignal.technicals.volumeSignal === 'Surge' ? '#FFD700' : tradingSignal.technicals.volumeSignal === 'Low' ? '#FF2D55' : '#94A3B8', badge: undefined },
+              ].map(({ label, value, color, badge }) => (
                 <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2px', padding: '4px 6px' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>{label}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                    {label}
+                    {badge && <span style={{ fontSize: '5px', color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '0 3px', borderRadius: '2px' }}>{badge}</span>}
+                  </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color }}>{value}</div>
                 </div>
               ))}
+              {/* MACD row — only shown when real daily bars are available */}
+              {tradingSignal.technicals.macd && (
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2px', padding: '4px 6px', gridColumn: '1 / -1' }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
+                    MACD (12/26/9)
+                    <span style={{ fontSize: '5px', color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '0 3px', borderRadius: '2px' }}>TRUE</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {[
+                      { label: 'MACD', value: tradingSignal.technicals.macd.macdLine.toFixed(3) },
+                      { label: 'SIGNAL', value: tradingSignal.technicals.macd.signalLine.toFixed(3) },
+                      { label: 'HIST', value: tradingSignal.technicals.macd.histogram.toFixed(3), color: tradingSignal.technicals.macd.histogram > 0 ? '#00D4FF' : '#FF2D55' },
+                      { label: 'TREND', value: tradingSignal.technicals.macd.signal.toUpperCase(), color: tradingSignal.technicals.macd.signal === 'Bullish' ? '#00D4FF' : tradingSignal.technicals.macd.signal === 'Bearish' ? '#FF2D55' : '#94A3B8' },
+                    ].map(({ label, value, color: c }) => (
+                      <div key={label}>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.4)' }}>{label}</div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color: c ?? '#94A3B8' }}>{value}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -827,6 +869,25 @@ export default function Signals() {
   const fetchCountRef = useRef(0);
   const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
+  // ── Daily bars state (for true RSI/SMA/MACD) ──────────────
+  const [dailyBarsMap, setDailyBarsMap] = useState<Record<string, DailyBar[]>>({});
+  const dailyBarsFetchedRef = useRef(false);
+
+  const fetchDailyBars = useCallback(async (tickers: string[]) => {
+    if (tickers.length === 0) return;
+    try {
+      const tickerParam = tickers.slice(0, 20).join(',');
+      const res = await fetch(`/api/signals/daily-bars?tickers=${encodeURIComponent(tickerParam)}&days=200`, {
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!res.ok) return; // graceful — signal engine falls back to sparkline
+      const data = await res.json() as { bars: Record<string, DailyBar[]> };
+      if (data.bars) setDailyBarsMap(prev => ({ ...prev, ...data.bars }));
+    } catch {
+      // silent — free tier may not support this endpoint; engine falls back gracefully
+    }
+  }, []);
+
   const fetchQuotes = useCallback(async () => {
     const myCount = ++fetchCountRef.current;
     setQuotesLoading(true);
@@ -926,10 +987,12 @@ export default function Signals() {
         avgVolume: stock.avgVolume,
         sparkline: (hasLive && lq!.sparkline.length > 0) ? lq!.sparkline : stock.sparkline,
         relativeStrength: stock.relativeStrength,
+        // Pass real daily bars when available — engine uses them for true RSI/SMA/MACD
+        ...(dailyBarsMap[stock.ticker]?.length >= 14 ? { dailyBars: dailyBarsMap[stock.ticker] } : {}),
       };
     }),
     regime: regimeForSignals,
-  }), [displayedStocks, quoteMap, regimeForSignals]);
+  }), [displayedStocks, quoteMap, dailyBarsMap, regimeForSignals]);
 
   const [tradingSignalsData, setTradingSignalsData] = useState<TradingSignalResult[]>([]);
   const computeSignalsMutation = trpc.signals.getTradingSignals.useMutation({

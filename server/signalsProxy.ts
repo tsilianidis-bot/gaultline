@@ -431,6 +431,55 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
   };
 }
 
+// ── Daily bars cache ─────────────────────────────────────────
+interface DailyBarsEntry {
+  bars: Array<{ close: number; open: number; high: number; low: number; volume: number; timestamp: number }>;
+  fetchedAt: number;
+}
+
+const dailyBarsCache = new Map<string, DailyBarsEntry>();
+const DAILY_BARS_TTL_MS = 60 * 60 * 1000; // 1 hour (bars don't change intraday)
+
+/**
+ * Fetch up to `days` daily OHLC bars for a single ticker.
+ * Uses the /v2/aggs/ticker/{sym}/range/1/day endpoint.
+ * Returns empty array on failure (graceful degradation for free tier).
+ */
+async function fetchDailyBars(
+  apiKey: string,
+  symbol: string,
+  days: number
+): Promise<DailyBarsEntry["bars"]> {
+  const cached = dailyBarsCache.get(symbol);
+  if (cached && Date.now() - cached.fetchedAt < DAILY_BARS_TTL_MS) {
+    return cached.bars;
+  }
+
+  const tradeDate = getLastTradingDate();
+  const fromDate = getNTradingDaysBefore(tradeDate, days + 5); // buffer for weekends
+  const url = `${POLYGON_BASE}/v2/aggs/ticker/${symbol}/range/1/day/${fromDate}/${tradeDate}?adjusted=true&sort=asc&limit=${days + 10}&apiKey=${apiKey}`;
+
+  try {
+    const res = await fetchWithRetry(url, 2);
+    const data = await res.json() as unknown as PolygonRangeResponse;
+    if (!data.results || !Array.isArray(data.results)) return [];
+
+    const bars = data.results.slice(-(days)).map(r => ({
+      close: r.c ?? 0,
+      open: r.o ?? 0,
+      high: r.h ?? 0,
+      low: r.l ?? 0,
+      volume: r.v ?? 0,
+      timestamp: r.t ?? 0,
+    }));
+
+    dailyBarsCache.set(symbol, { bars, fetchedAt: Date.now() });
+    return bars;
+  } catch {
+    return []; // graceful fallback — signal engine will use sparkline approximations
+  }
+}
+
 // ── Register Express routes ───────────────────────────────────
 export function registerSignalsProxy(app: Express) {
   // GET /api/signals/quotes — fetch live quotes for all priority tickers
@@ -559,7 +608,51 @@ export function registerSignalsProxy(app: Express) {
     quotesCache = null;
     sparklineCache.clear();
     sparklineFetchedAt = null;
+    dailyBarsCache.clear();
     res.json({ success: true, message: "Signals quote cache cleared" });
+  });
+
+  // GET /api/signals/daily-bars?tickers=NVDA,MSFT&days=20
+  // Bulk fetch of daily OHLC bars for multiple tickers (for true RSI/SMA/MACD)
+  app.get("/api/signals/daily-bars", async (req: Request, res: Response) => {
+    const apiKey = process.env.POLYGON_API_KEY;
+    if (!apiKey) {
+      res.status(503).json({ error: "Market data service not configured", bars: {} });
+      return;
+    }
+
+    const tickersParam = (req.query.tickers as string ?? "").trim();
+    const days = Math.min(parseInt(req.query.days as string ?? "20", 10) || 20, 200);
+
+    if (!tickersParam) {
+      res.status(400).json({ error: "tickers query parameter required" });
+      return;
+    }
+
+    const symbols = tickersParam.split(",").map(s => s.trim().toUpperCase()).filter(isValidTicker).slice(0, 20);
+    if (symbols.length === 0) {
+      res.status(400).json({ error: "No valid ticker symbols provided" });
+      return;
+    }
+
+    // Fetch in batches of 3 to respect rate limits on free tier
+    const result: Record<string, DailyBarsEntry["bars"]> = {};
+    const BATCH_SIZE = 3;
+    const BATCH_DELAY_MS = 1500;
+
+    for (let i = 0; i < symbols.length; i += BATCH_SIZE) {
+      const batch = symbols.slice(i, i + BATCH_SIZE);
+      await Promise.allSettled(
+        batch.map(async sym => {
+          result[sym] = await fetchDailyBars(apiKey, sym, days);
+        })
+      );
+      if (i + BATCH_SIZE < symbols.length) {
+        await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+      }
+    }
+
+    res.json({ bars: result, days, tickers: symbols, timestamp: new Date().toISOString() });
   });
 
   // GET /api/signals/ticker/:symbol — fetch profile for any ticker
@@ -641,5 +734,5 @@ export function registerSignalsProxy(app: Express) {
     }
   });
 
-  console.log("[Signals Proxy] Routes registered: GET /api/signals/quotes, GET /api/signals/ticker/:symbol, GET /api/signals/health, POST /api/signals/clear-cache");
+  console.log("[Signals Proxy] Routes registered: GET /api/signals/quotes, GET /api/signals/ticker/:symbol, GET /api/signals/health, GET /api/signals/daily-bars, POST /api/signals/clear-cache");
 }
