@@ -81,6 +81,13 @@ interface CacheEntry {
 let quotesCache: CacheEntry | null = null;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+// Full grouped daily bar maps — populated when quotes are fetched.
+// Allows any ticker search to be served instantly from the grouped data
+// without making additional Polygon.io API calls.
+let fullBarMap: Map<string, PolygonAggBar> | null = null;
+let fullPrevBarMap: Map<string, PolygonAggBar> | null = null;
+let fullBarMapTradeDate: string | null = null;
+
 // Sparkline cache (longer TTL — 5-day bars don't change intraday)
 const sparklineCache = new Map<string, number[]>();
 let sparklineFetchedAt: number | null = null;
@@ -239,11 +246,13 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     throw new Error(`Grouped aggs failed: ${JSON.stringify(groupedData).slice(0, 200)}`);
   }
 
-  // Build a map of ticker → bar
+  // Build a map of ticker → bar (store globally so any ticker search can use it)
   const barMap = new Map<string, PolygonAggBar>();
   for (const bar of groupedData.results) {
     if (bar.T) barMap.set(bar.T, bar);
   }
+  fullBarMap = barMap;
+  fullBarMapTradeDate = tradeDate;
 
   // 2. Fetch previous day grouped for change% calculation
   const prevGroupedUrl = `${POLYGON_BASE}/v2/aggs/grouped/locale/us/market/stocks/${prevDate}?adjusted=true&apiKey=${apiKey}`;
@@ -256,6 +265,7 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       if (bar.T) prevBarMap.set(bar.T, bar);
     }
   }
+  fullPrevBarMap = prevBarMap;
 
   const marketStatus = deriveMarketStatus(tradeDate);
 
@@ -710,6 +720,53 @@ export function registerSignalsProxy(app: Express) {
       }
     }
 
+    // Check the full grouped daily barMap — populated when any quotes fetch completes.
+    // This covers ALL US-listed tickers (not just the 19 priority ones) with zero extra API calls.
+    if (fullBarMap && fullBarMap.has(raw) && fullBarMapTradeDate) {
+      const bar = fullBarMap.get(raw)!;
+      const prevBar = fullPrevBarMap?.get(raw);
+      const price = parseFloat((bar.c ?? 0).toFixed(2));
+      const prevClose = prevBar?.c ?? bar.o ?? price;
+      const changePercent = prevClose > 0
+        ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3))
+        : 0;
+      const volumeRaw = bar.v ?? 0;
+      const marketStatus = deriveMarketStatus(fullBarMapTradeDate);
+      const profile: TickerProfile = {
+        ticker: raw,
+        name: raw,  // name not available from grouped data — reference fetch is non-fatal
+        price,
+        open: parseFloat((bar.o ?? 0).toFixed(2)),
+        high: parseFloat((bar.h ?? 0).toFixed(2)),
+        low: parseFloat((bar.l ?? 0).toFixed(2)),
+        changePercent,
+        volume: volumeRaw,
+        volumeMillions: parseFloat((volumeRaw / 1_000_000).toFixed(2)),
+        avgVolume: null,
+        marketCap: null,
+        sector: null,
+        industry: null,
+        description: null,
+        sparkline: sparklineCache.get(raw) ?? [],
+        tradeDate: fullBarMapTradeDate,
+        marketStatus,
+        isLive: marketStatus === "open" || marketStatus === "extended",
+        source: "live" as const,
+      };
+      tickerCache.set(raw, { profile, fetchedAt: Date.now() });
+      res.setHeader("X-Cache", "GROUPED-HIT");
+      res.json({ ...profile, cached: false });
+      // Fire a background enrichment fetch to get name/sector/description
+      // and update the ticker cache for the next request
+      const apiKeyForEnrich = process.env.POLYGON_API_KEY;
+      if (apiKeyForEnrich) {
+        fetchTickerProfile(apiKeyForEnrich, raw)
+          .then(enriched => tickerCache.set(raw, { profile: enriched, fetchedAt: Date.now() }))
+          .catch(() => {}); // non-fatal
+      }
+      return;
+    }
+
     try {
       const profile = await fetchTickerProfile(apiKey, raw);
       tickerCache.set(raw, { profile, fetchedAt: Date.now() });
@@ -731,7 +788,7 @@ export function registerSignalsProxy(app: Express) {
         res.status(404).json({ error: `Ticker "${raw}" not found. Check the symbol and try again (e.g. AAPL, NVDA, TSLA).` });
       } else if (errMsg.includes("429") || errMsg.includes("rate")) {
         res.status(429).json({ error: "Polygon.io rate limit reached. Please wait a few seconds and try again.", source: "fallback" });
-      } else if (errMsg.includes("timeout") || errMsg.includes("abort") || errMsg.includes("AbortError")) {
+      } else if (errMsg.includes("timeout") || errMsg.includes("abort") || errMsg.includes("AbortError") || errMsg.includes("TimeoutError") || (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError"))) {
         res.status(504).json({ error: `Polygon.io is responding slowly. Please try again in a moment.`, source: "fallback" });
       } else {
         res.status(502).json({ error: `Could not fetch data for ${raw}. Please try again shortly.`, source: "fallback" });
