@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,45 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ── Portfolio position helpers ────────────────────────────────────
+
+export async function getPositionsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(positions).where(eq(positions.userId, userId));
+}
+
+export async function addPosition(data: Omit<InsertPosition, 'id' | 'createdAt' | 'updatedAt'>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(positions).values(data);
+  return result;
+}
+
+export async function updatePosition(
+  id: number,
+  userId: number,
+  data: Partial<Pick<InsertPosition, 'ticker' | 'name' | 'shares' | 'costBasis' | 'assetType' | 'notes' | 'openedAt'>>
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(positions)
+    .set({ ...data, updatedAt: new Date() })
+    .where(and(eq(positions.id, id), eq(positions.userId, userId)));
+}
+
+export async function deletePosition(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.delete(positions)
+    .where(and(eq(positions.id, id), eq(positions.userId, userId)));
+}
+
+export async function getPositionById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(positions)
+    .where(and(eq(positions.id, id), eq(positions.userId, userId)))
+    .limit(1);
+  return result[0] ?? undefined;
+}

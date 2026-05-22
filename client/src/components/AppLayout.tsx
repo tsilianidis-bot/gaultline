@@ -9,7 +9,7 @@ import { ReactNode, useState, useCallback } from "react";
 import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
-  Cpu, MoreHorizontal, X,
+  Cpu, MoreHorizontal, X, Briefcase,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -38,6 +38,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "dashboard",  label: "Dashboard",    shortLabel: "Dash",    icon: LayoutDashboard, path: "/" },
       { id: "pressure",   label: "Pressure",     shortLabel: "Pressure",icon: Gauge,           path: "/pressure" },
       { id: "scores",     label: "Scores",       shortLabel: "Scores",  icon: Activity,        path: "/scores" },
+      { id: "portfolio",  label: "Portfolio",    shortLabel: "Port",    icon: Briefcase,       path: "/portfolio" },
     ],
   },
   {
@@ -72,7 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
 // Mobile primary tabs (bottom bar — 5 most important)
-const MOBILE_PRIMARY_IDS = ["dashboard", "pressure", "diagnostic", "signals", "watchlist"];
+const MOBILE_PRIMARY_IDS = ["dashboard", "portfolio", "diagnostic", "signals", "watchlist"];
 const MOBILE_PRIMARY = ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id));
 
 interface AppLayoutProps {

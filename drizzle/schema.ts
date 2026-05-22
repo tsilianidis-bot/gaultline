@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -25,4 +25,26 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+// ── Portfolio positions ──────────────────────────────────────
+
+/**
+ * Stores each user's portfolio positions.
+ * One row per position (user + ticker combination).
+ * Supports stocks, ETFs, and crypto.
+ */
+export const positions = mysqlTable("positions", {
+  id:        int("id").autoincrement().primaryKey(),
+  userId:    int("userId").notNull(),            // FK → users.id
+  ticker:    varchar("ticker", { length: 20 }).notNull(),
+  name:      varchar("name", { length: 120 }).notNull(),
+  shares:    decimal("shares", { precision: 18, scale: 8 }).notNull(),   // supports fractional crypto
+  costBasis: decimal("costBasis", { precision: 18, scale: 4 }).notNull(), // avg cost per share/unit
+  assetType: mysqlEnum("assetType", ["Stock", "ETF", "Crypto", "Other"]).default("Stock").notNull(),
+  notes:     text("notes"),
+  openedAt:  timestamp("openedAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Position = typeof positions.$inferSelect;
+export type InsertPosition = typeof positions.$inferInsert;

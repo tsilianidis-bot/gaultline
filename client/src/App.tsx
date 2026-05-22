@@ -25,6 +25,7 @@ import Signals from './pages/Signals';
 import Pressure from './pages/Pressure';
 import Guide from './pages/Guide';
 import DiagnosticAI from './pages/DiagnosticAI';
+import Portfolio from './pages/Portfolio';
 import FREDDebugConsole from "./components/FREDDebugConsole";
 
 // ── Session key: show intro once per browser session ──────────
@@ -48,6 +49,7 @@ function Router() {
         <Route path="/signals" component={Signals} />
         <Route path="/guide" component={Guide} />
         <Route path="/diagnostic" component={DiagnosticAI} />
+        <Route path="/portfolio" component={Portfolio} />
         <Route component={Dashboard} />
       </Switch>
     </AppLayout>

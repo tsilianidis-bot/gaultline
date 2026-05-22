@@ -7,7 +7,10 @@ import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsCl
 import { calculateFaultlinePressure } from "./pressure/engine";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
-import { getPositionGuidance, clearGuidanceCache } from "./positionGuidance";
+import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
+import { getPositionsByUser, addPosition, updatePosition, deletePosition } from "./db";
+import { getQuotes } from "./yahooProxy";
+import { protectedProcedure } from "./_core/trpc";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -181,6 +184,166 @@ export const appRouter = router({
       clearGuidanceCache();
       return { success: true };
     }),
+  }),
+
+  portfolio: router({
+    // Get all positions for the authenticated user
+    getPositions: protectedProcedure.query(async ({ ctx }) => {
+      return getPositionsByUser(ctx.user.id);
+    }),
+
+    // Add a new position
+    addPosition: protectedProcedure
+      .input(z.object({
+        ticker:    z.string().min(1).max(20).trim().transform(s => s.toUpperCase()),
+        name:      z.string().min(1).max(120).trim(),
+        shares:    z.number().positive(),
+        costBasis: z.number().positive(),
+        assetType: z.enum(["Stock", "ETF", "Crypto", "Other"]).default("Stock"),
+        notes:     z.string().max(500).optional(),
+        openedAt:  z.string().datetime().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await addPosition({
+          userId:    ctx.user.id,
+          ticker:    input.ticker,
+          name:      input.name,
+          shares:    String(input.shares),
+          costBasis: String(input.costBasis),
+          assetType: input.assetType,
+          notes:     input.notes ?? null,
+          openedAt:  input.openedAt ? new Date(input.openedAt) : new Date(),
+        });
+        return { success: true };
+      }),
+
+    // Update an existing position
+    updatePosition: protectedProcedure
+      .input(z.object({
+        id:        z.number().int().positive(),
+        ticker:    z.string().min(1).max(20).trim().transform(s => s.toUpperCase()).optional(),
+        name:      z.string().min(1).max(120).trim().optional(),
+        shares:    z.number().positive().optional(),
+        costBasis: z.number().positive().optional(),
+        assetType: z.enum(["Stock", "ETF", "Crypto", "Other"]).optional(),
+        notes:     z.string().max(500).nullable().optional(),
+        openedAt:  z.string().datetime().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, ...fields } = input;
+        const data: Record<string, unknown> = {};
+        if (fields.ticker    !== undefined) data.ticker    = fields.ticker;
+        if (fields.name      !== undefined) data.name      = fields.name;
+        if (fields.shares    !== undefined) data.shares    = String(fields.shares);
+        if (fields.costBasis !== undefined) data.costBasis = String(fields.costBasis);
+        if (fields.assetType !== undefined) data.assetType = fields.assetType;
+        if (fields.notes     !== undefined) data.notes     = fields.notes;
+        if (fields.openedAt  !== undefined) data.openedAt  = new Date(fields.openedAt);
+        await updatePosition(id, ctx.user.id, data as any);
+        return { success: true };
+      }),
+
+    // Delete a position
+    deletePosition: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        await deletePosition(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
+    // Get live portfolio: positions + Yahoo Finance quotes + P&L + AI guidance
+    getLivePortfolio: protectedProcedure.query(async ({ ctx }) => {
+      const rows = await getPositionsByUser(ctx.user.id);
+      if (rows.length === 0) return { positions: [], summary: null, pressure: null };
+
+      // Fetch live quotes for all tickers
+      const tickers = Array.from(new Set(rows.map(r => r.ticker)));
+      const quotes = await getQuotes(tickers);
+      const quoteMap = new Map(quotes.map(q => [q.ticker, q]));
+
+      // Fetch current FAULTLINE pressure for AI guidance
+      const pressure = await calculateFaultlinePressure();
+
+      // Build enriched positions
+      const enriched = rows.map(row => {
+        const quote = quoteMap.get(row.ticker);
+        const shares    = parseFloat(String(row.shares));
+        const costBasis = parseFloat(String(row.costBasis));
+        const currentPrice = quote?.price ?? null;
+        const totalCost    = shares * costBasis;
+        const marketValue  = currentPrice != null ? shares * currentPrice : null;
+        const unrealizedPnl    = marketValue != null ? marketValue - totalCost : null;
+        const unrealizedPnlPct = totalCost > 0 && unrealizedPnl != null
+          ? (unrealizedPnl / totalCost) * 100 : null;
+        const dayChange    = quote?.change    != null ? shares * quote.change    : null;
+        const dayChangePct = quote?.changePercent ?? null;
+
+        return {
+          id:            row.id,
+          ticker:        row.ticker,
+          name:          row.name,
+          shares,
+          costBasis,
+          assetType:     row.assetType,
+          notes:         row.notes,
+          openedAt:      row.openedAt,
+          // Live quote data
+          currentPrice,
+          prevClose:     quote?.prevClose    ?? null,
+          dayHigh:       quote?.high         ?? null,
+          dayLow:        quote?.low          ?? null,
+          volume:        quote?.volume       ?? null,
+          marketState:   quote?.marketState  ?? "UNKNOWN",
+          isDelayed:     quote?.isDelayed    ?? true,
+          quoteError:    quote?.error        ?? null,
+          // P&L
+          totalCost,
+          marketValue,
+          unrealizedPnl,
+          unrealizedPnlPct,
+          dayChange,
+          dayChangePct,
+        };
+      });
+
+      // Portfolio summary
+      const totalCostAll    = enriched.reduce((s, p) => s + p.totalCost, 0);
+      const totalValueAll   = enriched.reduce((s, p) => s + (p.marketValue ?? p.totalCost), 0);
+      const totalPnl        = totalValueAll - totalCostAll;
+      const totalPnlPct     = totalCostAll > 0 ? (totalPnl / totalCostAll) * 100 : 0;
+      const totalDayChange  = enriched.reduce((s, p) => s + (p.dayChange ?? 0), 0);
+
+      const summary = {
+        totalCost:       totalCostAll,
+        totalValue:      totalValueAll,
+        totalPnl,
+        totalPnlPct,
+        totalDayChange,
+        positionCount:   enriched.length,
+        pressureScore:   pressure.overallPressure,
+        pressureRegime:  pressure.regime,
+      };
+
+      return { positions: enriched, summary, pressure };
+    }),
+
+    // Get AI guidance for a single user position (supports any ticker)
+    getPositionGuidance: protectedProcedure
+      .input(z.object({
+        ticker:    z.string().min(1).max(20).transform(s => s.toUpperCase()),
+        name:      z.string().min(1).max(120).optional(),
+        assetType: z.enum(["Stock", "ETF", "Crypto", "Other"]),
+      }))
+      .query(async ({ input, ctx }) => {
+        // Look up name from user's positions if not provided
+        let name = input.name;
+        if (!name) {
+          const positions = await getPositionsByUser(ctx.user.id);
+          const match = positions.find(p => p.ticker === input.ticker);
+          name = match?.name ?? input.ticker;
+        }
+        return await getGuidanceForTicker(input.ticker, name, input.assetType);
+      }),
   }),
 });
 

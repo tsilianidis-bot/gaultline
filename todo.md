@@ -212,3 +212,27 @@
 - [x] Mobile "More" drawer: full grouped grid of all 14 modules with section labels
 - [x] Diagnostic AI promoted to INTELLIGENCE group (was buried last)
 - [x] 135/135 tests passing, 0 TypeScript errors
+
+## Portfolio Monitor System
+
+### Backend
+- [x] Build server/yahooProxy.ts — server-side Yahoo Finance intraday quote fetcher with 60s cache, User-Agent header, fallback to Polygon prev-close on error
+- [x] Add drizzle schema: positions table (id, userId, ticker, name, shares, costBasis, assetType, notes, openedAt, createdAt, updatedAt)
+- [x] Run pnpm drizzle-kit generate and apply migration SQL via webdev_execute_sql
+- [x] Add DB helpers in server/db.ts: getPositionsByUser, addPosition, updatePosition, deletePosition
+- [x] Add tRPC procedures in server/routers.ts: portfolio.getPositions, portfolio.addPosition, portfolio.updatePosition, portfolio.deletePosition, portfolio.getLivePortfolio (quotes + P&L + AI guidance per position)
+- [x] Wire Yahoo Finance proxy into portfolio.getLivePortfolio — fetch intraday quote per ticker, compute unrealized P&L, percent gain/loss
+- [x] Per-position AI guidance: run positionGuidance scoring engine against user's actual holdings using live FAULTLINE pressure data
+
+### Frontend
+- [x] Create client/src/pages/Portfolio.tsx — Portfolio Monitor page
+- [x] Position entry form: ticker search, shares, cost basis, asset type, optional notes
+- [x] Live position cards: ticker, current price, cost basis, shares, market value, unrealized P&L ($), unrealized P&L (%), day change, AI action badge (Add/Hold/Trim/Exit/Sell)
+- [x] Portfolio summary header: total market value, total cost basis, total unrealized P&L, day change
+- [x] Per-position expandable AI guidance panel (reuse DiagnosticAI card pattern)
+- [x] Empty state: prompt to add first position
+- [x] Loading skeleton while quotes fetch
+- [x] Edit and delete position actions
+- [x] Add /portfolio route to App.tsx
+- [x] Add Portfolio tab to CORE group in AppLayout navigation
+- [x] Require login to access portfolio (redirect to login if not authenticated)

@@ -543,4 +543,86 @@ export function clearGuidanceCache(): void {
   guidanceCache.clear();
 }
 
+// ── Arbitrary ticker guidance (user portfolio) ────────────────
+// Synthesises an AssetProfile from asset type + ticker name so
+// any user-entered holding can receive guidance scoring.
+
+export async function getGuidanceForTicker(
+  ticker: string,
+  name: string,
+  assetType: "Stock" | "ETF" | "Crypto" | "Other",
+  pressureData?: FaultlinePressureOutput
+): Promise<PositionGuidanceCard> {
+  const pressure = pressureData ?? await calculateFaultlinePressure();
+
+  // Check if we have a demo profile for this ticker first
+  const demoAsset = (DEMO_ASSETS as AssetProfile[]).find(
+    a => a.ticker.toUpperCase() === ticker.toUpperCase()
+  );
+  if (demoAsset) {
+    const cards = await getPositionGuidance([demoAsset.ticker], pressure);
+    return cards[0];
+  }
+
+  // Synthesise a generic AssetProfile based on asset type
+  const isCrypto = assetType === "Crypto";
+  const isETF    = assetType === "ETF";
+  const syntheticProfile: AssetProfile = {
+    ticker:               ticker.toUpperCase(),
+    name,
+    assetType:            isCrypto ? "Crypto" : isETF ? "ETF" : "Stock",
+    sector:               isCrypto ? "Digital Assets" : isETF ? "Broad Market" : "Equity",
+    aiExposure:           isCrypto ? 40 : isETF ? 30 : 45,
+    debtRisk:             isCrypto ? 10 : isETF ? 20 : 35,
+    recessionSensitivity: isCrypto ? 85 : isETF ? 60 : 65,
+    volatilityBase:       isCrypto ? 85 : isETF ? 35 : 50,
+    momentumBase:         55,
+    sectorStrengthBase:   55,
+    priceNote:            "See Portfolio tab for live price",
+  };
+
+  const cacheKey = `${ticker.toUpperCase()}:${pressure.overallPressure}:${new Date().toISOString().slice(0, 13)}`;
+  const cached = guidanceCache.get(cacheKey);
+  if (cached && Date.now() - cached.fetchedAt < GUIDANCE_CACHE_TTL_MS) {
+    return { ...cached.result, cached: true };
+  }
+
+  const scores = computeAssetScores(syntheticProfile, pressure);
+  const action = scoreToAction(scores.compositeScore);
+  const conviction = scoreToConviction(scores.compositeScore, pressure.overallPressure);
+  const trendCondition = deriveTrendCondition(syntheticProfile, pressure.overallPressure);
+  const supportLevel = deriveSupportLevel(syntheticProfile, pressure.overallPressure);
+  const keyDrivers = deriveKeyDrivers(syntheticProfile, scores, pressure);
+  const timeframe: PositionTimeframe =
+    pressure.overallPressure >= 70 ? "Today" :
+    pressure.overallPressure >= 50 ? "Week" :
+    "Month";
+
+  const interpretation = await generatePositionInterpretation(
+    syntheticProfile, action, conviction, scores, pressure, keyDrivers
+  );
+
+  const card: PositionGuidanceCard = {
+    ticker: ticker.toUpperCase(),
+    name,
+    assetType: syntheticProfile.assetType,
+    action,
+    conviction,
+    timeframe,
+    currentPrice: syntheticProfile.priceNote,
+    pressureIndex: pressure.overallPressure,
+    regime: pressure.regime,
+    regimeLabel: pressure.level,
+    scores,
+    trendCondition,
+    supportLevel,
+    keyDrivers,
+    ...interpretation,
+    cached: false,
+  };
+
+  guidanceCache.set(cacheKey, { result: card, fetchedAt: Date.now() });
+  return card;
+}
+
 export { DEMO_ASSETS };
