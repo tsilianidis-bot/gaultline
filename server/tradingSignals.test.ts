@@ -433,7 +433,8 @@ describe("computeTradingSignal — with dailyBars (true indicators)", () => {
     const result = computeTradingSignal(makeTicker({ dailyBars: bars }), MODERATE_REGIME);
     if (result.technicals.macd) {
       const { macdLine, signalLine, histogram } = result.technicals.macd;
-      expect(Math.abs(histogram - (macdLine - signalLine))).toBeLessThan(0.0001);
+      // Each value is rounded to 4dp independently, so max rounding error is 3×0.00005 = 0.00015
+      expect(Math.abs(histogram - (macdLine - signalLine))).toBeLessThan(0.001);
     }
   });
 

@@ -168,3 +168,13 @@
 - [x] Graceful fallback to sparkline approximations when daily bars unavailable (free tier)
 - [x] Write/update Vitest tests for new RSI/SMA/MACD functions (50 tests in tradingSignals.test.ts)
 - [x] TypeScript check (0 errors), test suite (90 tests passing), checkpoint saved (f3c86da6)
+
+## Systems Check (May 22, 2026)
+- [x] TypeScript compilation: 0 errors (npx tsc --noEmit)
+- [x] Test suite: 90/90 tests passing across 6 test files
+- [x] Fixed MACD histogram floating-point rounding test (tolerance 0.0001 → 0.001 to account for 3 independent 4dp roundings)
+- [x] Server health: healthy, 19 tickers cached, prev close data from May 21
+- [x] Browser console: no errors in recent logs
+- [x] Network requests: all 200 OK, no client-side failures
+- [x] Endpoints verified: /api/signals/health, /api/signals/quotes, /api/signals/ticker/AAPL
+- [x] No open todo items remaining
