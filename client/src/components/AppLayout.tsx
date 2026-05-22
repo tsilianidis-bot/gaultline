@@ -1,33 +1,79 @@
 /* ============================================================
-   FAULTLINE — AppLayout
-   Mobile: bottom tab navigation | Desktop: left rail navigation
+   FAULTLINE — AppLayout v2
+   Desktop: top nav with grouped sections + dividers
+   Mobile: bottom tab bar (5 primary) + "More" overflow drawer
    Design: Palantir Noir — void black, neon accents, scanlines
    ============================================================ */
 import { useLocation } from "wouter";
-import { ReactNode } from "react";
+import { ReactNode, useState, useCallback } from "react";
 import {
-  Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp, LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen, Cpu
+  Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
+  LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
+  Cpu, MoreHorizontal, X,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
 
-const tabs = [
-  { id: "pressure", label: "Pressure", icon: Gauge, path: "/pressure" },
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { id: "scores", label: "Scores", icon: Activity, path: "/scores" },
-  { id: "charts", label: "Charts", icon: BarChart2, path: "/charts" },
-  { id: "ai-watch", label: "AI Watch", icon: Brain, path: "/ai-watch" },
-  { id: "scenarios", label: "Scenarios", icon: TrendingUp, path: "/scenarios" },
-  { id: "alerts", label: "Alerts", icon: AlertTriangle, path: "/alerts" },
-  { id: "analogs", label: "Analogs", icon: Clock, path: "/analogs" },
-  { id: "simulate", label: "Simulate", icon: Zap, path: "/simulate" },
-  { id: "report", label: "Report", icon: FileText, path: "/report" },
-  { id: "watchlist", label: "Watch", icon: Bell, path: "/watchlist" },
-  { id: "signals", label: "Signals", icon: Radio, path: "/signals" },
-  { id: "guide", label: "Guide", icon: BookOpen, path: "/guide" },
-  { id: "diagnostic", label: "Diagnostic", icon: Cpu, path: "/diagnostic" },
+// ── Navigation structure ──────────────────────────────────────
+// Groups define the cognitive flow: situational → interpretation → analysis → manage
+
+type NavItem = {
+  id: string;
+  label: string;
+  shortLabel: string;
+  icon: React.ElementType;
+  path: string;
+};
+
+type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: "CORE",
+    items: [
+      { id: "dashboard",  label: "Dashboard",    shortLabel: "Dash",    icon: LayoutDashboard, path: "/" },
+      { id: "pressure",   label: "Pressure",     shortLabel: "Pressure",icon: Gauge,           path: "/pressure" },
+      { id: "scores",     label: "Scores",       shortLabel: "Scores",  icon: Activity,        path: "/scores" },
+    ],
+  },
+  {
+    label: "INTELLIGENCE",
+    items: [
+      { id: "diagnostic", label: "Diagnostic AI",shortLabel: "AI Diag", icon: Cpu,             path: "/diagnostic" },
+      { id: "ai-watch",   label: "AI Watch",     shortLabel: "AI Watch",icon: Brain,           path: "/ai-watch" },
+      { id: "signals",    label: "Signals",      shortLabel: "Signals", icon: Radio,           path: "/signals" },
+    ],
+  },
+  {
+    label: "ANALYSIS",
+    items: [
+      { id: "charts",     label: "Charts",       shortLabel: "Charts",  icon: BarChart2,       path: "/charts" },
+      { id: "scenarios",  label: "Scenarios",    shortLabel: "Scen",    icon: TrendingUp,      path: "/scenarios" },
+      { id: "analogs",    label: "Analogs",      shortLabel: "Analogs", icon: Clock,           path: "/analogs" },
+      { id: "simulate",   label: "Simulate",     shortLabel: "Sim",     icon: Zap,             path: "/simulate" },
+    ],
+  },
+  {
+    label: "MANAGE",
+    items: [
+      { id: "watchlist",  label: "Watchlist",    shortLabel: "Watch",   icon: Bell,            path: "/watchlist" },
+      { id: "alerts",     label: "Alerts",       shortLabel: "Alerts",  icon: AlertTriangle,   path: "/alerts" },
+      { id: "report",     label: "Report",       shortLabel: "Report",  icon: FileText,        path: "/report" },
+      { id: "guide",      label: "Guide",        shortLabel: "Guide",   icon: BookOpen,        path: "/guide" },
+    ],
+  },
 ];
+
+// Flat list for convenience
+const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
+
+// Mobile primary tabs (bottom bar — 5 most important)
+const MOBILE_PRIMARY_IDS = ["dashboard", "pressure", "diagnostic", "signals", "watchlist"];
+const MOBILE_PRIMARY = ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id));
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -35,6 +81,7 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location, navigate] = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
   const { output, rawFred, isLoading, isLive, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators } = useEngine();
 
   // Count breached watchlist items for badge
@@ -55,11 +102,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
     });
     return count;
   }, [output, indicators]);
+
   const { tickerValues, regime } = output;
 
-  // Build live ticker items — prefer rawFred values over engine-computed
+  // Build live ticker items
   const liveTickerItems = tickerValues.map(item => {
-    // Override specific items with direct FRED values
     if (item.label === '10Y' && rawFred['DGS10'] != null) {
       const v = rawFred['DGS10']!;
       return { ...item, value: `${v.toFixed(2)}%`, direction: v > 4.5 ? 'up' as const : 'neutral' as const };
@@ -73,9 +120,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
       const bps = v > 20 ? Math.round(v) : Math.round(v * 100);
       return { ...item, value: `${bps}bps`, direction: bps > 400 ? 'up' as const : 'neutral' as const };
     }
-    if (item.label === 'CPI' && rawFred['CPIAUCSL'] != null) {
-      return item; // CPI shown as YoY from engine
-    }
     if (item.label === 'SOFR' && rawFred['SOFR'] != null) {
       const v = rawFred['SOFR']!;
       return { ...item, value: `${v.toFixed(2)}%`, direction: v > 5 ? 'up' as const : 'neutral' as const };
@@ -87,16 +131,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return item;
   });
 
-  const isActive = (path: string) => {
+  const isActive = useCallback((path: string) => {
     if (path === "/") return location === "/";
     return location.startsWith(path);
-  };
+  }, [location]);
+
+  const handleNavigate = useCallback((path: string) => {
+    navigate(path);
+    setMoreOpen(false);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#050608', fontFamily: "'IBM Plex Sans', sans-serif" }}>
-      {/* Top header bar */}
+
+      {/* ── Top header bar ── */}
       <header style={{
-        background: 'rgba(10, 12, 16, 0.95)',
+        background: 'rgba(10, 12, 16, 0.97)',
         borderBottom: '1px solid rgba(0, 212, 255, 0.1)',
         backdropFilter: 'blur(12px)',
         position: 'sticky',
@@ -106,7 +156,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {/* Ticker strip */}
         <div style={{
           background: 'rgba(0, 212, 255, 0.04)',
-          borderBottom: '1px solid rgba(0, 212, 255, 0.08)',
+          borderBottom: '1px solid rgba(0, 212, 255, 0.06)',
           overflow: 'hidden',
           height: '24px',
           display: 'flex',
@@ -126,7 +176,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#94A3B8', marginLeft: '2px' }}>{item.direction === 'up' ? '▲' : item.direction === 'down' ? '▼' : '—'}</span>
               </span>
             ))}
-            {/* Duplicate for seamless loop */}
             {liveTickerItems.slice(0, 5).map((item, i) => (
               <span key={`dup-${i}`} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em' }}>
                 <span style={{ color: '#6B7280' }}>{item.label} </span>
@@ -137,8 +186,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           </div>
         </div>
 
-        {/* Main header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px' }}>
+        {/* Logo row + status */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+          {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '28px', height: '28px',
@@ -163,58 +213,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
           </div>
 
-          {/* Desktop nav — hidden on mobile */}
-          <nav className="hidden lg:flex" style={{ gap: '2px' }}>
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const active = isActive(tab.path);
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => navigate(tab.path)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    padding: '6px 12px',
-                    borderRadius: '4px',
-                    background: active ? 'rgba(0, 212, 255, 0.1)' : 'transparent',
-                    border: active ? '1px solid rgba(0, 212, 255, 0.2)' : '1px solid transparent',
-                    color: active ? '#00D4FF' : '#6B7280',
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: '11px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s cubic-bezier(0.23, 1, 0.32, 1)',
-                  }}
-                  onMouseEnter={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.color = '#94A3B8';
-                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!active) {
-                      (e.currentTarget as HTMLElement).style.color = '#6B7280';
-                      (e.currentTarget as HTMLElement).style.background = 'transparent';
-                    }
-                  }}
-                >
-                  <Icon size={12} />
-                  {tab.label}
-                  {tab.id === 'watchlist' && breachCount > 0 && (
-                    <span style={{ marginLeft: '4px', background: '#FF2D55', color: '#fff', borderRadius: '8px', fontSize: '8px', fontFamily: "'IBM Plex Mono', monospace", padding: '0 4px', lineHeight: '14px', minWidth: '14px', textAlign: 'center', display: 'inline-block' }}>{breachCount}</span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Cinematic refresh flash overlay */}
-          {isRefreshing && (
-            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 9999, background: 'rgba(0,212,255,0.03)', animation: 'data-refresh-flash 0.8s ease-out forwards' }} />
-          )}
-
-          {/* Status indicator — live data + simulate state */}
+          {/* Status + refresh */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {isSimulating && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 7px', background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.3)', borderRadius: '3px' }}>
@@ -248,14 +247,108 @@ export default function AppLayout({ children }: AppLayoutProps) {
             )}
           </div>
         </div>
+
+        {/* ── Desktop grouped nav ── */}
+        <nav className="hidden lg:flex" style={{
+          alignItems: 'center',
+          padding: '0 12px',
+          gap: '0',
+          overflowX: 'auto',
+          scrollbarWidth: 'none',
+        }}>
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+              {/* Group divider (not before first group) */}
+              {gi > 0 && (
+                <div style={{
+                  width: '1px',
+                  height: '28px',
+                  background: 'rgba(255,255,255,0.07)',
+                  margin: '0 8px',
+                  flexShrink: 0,
+                }} />
+              )}
+              {/* Group label */}
+              <span style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '8px',
+                color: '#374151',
+                letterSpacing: '0.18em',
+                textTransform: 'uppercase',
+                padding: '0 6px',
+                flexShrink: 0,
+                userSelect: 'none',
+              }}>
+                {group.label}
+              </span>
+              {/* Group items */}
+              {group.items.map(tab => {
+                const Icon = tab.icon;
+                const active = isActive(tab.path);
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleNavigate(tab.path)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '5px',
+                      padding: '7px 10px',
+                      borderRadius: '4px',
+                      background: active ? 'rgba(0, 212, 255, 0.1)' : 'transparent',
+                      border: 'none',
+                      borderBottom: active ? '2px solid #00D4FF' : '2px solid transparent',
+                      color: active ? '#00D4FF' : '#6B7280',
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: '10px',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s cubic-bezier(0.23, 1, 0.32, 1)',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
+                      position: 'relative',
+                    }}
+                    onMouseEnter={e => {
+                      if (!active) {
+                        (e.currentTarget as HTMLElement).style.color = '#94A3B8';
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (!active) {
+                        (e.currentTarget as HTMLElement).style.color = '#6B7280';
+                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                      }
+                    }}
+                  >
+                    <Icon size={11} />
+                    {tab.label}
+                    {tab.id === 'watchlist' && breachCount > 0 && (
+                      <span style={{
+                        background: '#FF2D55', color: '#fff', borderRadius: '8px',
+                        fontSize: '7px', fontFamily: "'IBM Plex Mono', monospace",
+                        padding: '0 4px', lineHeight: '14px', minWidth: '14px',
+                        textAlign: 'center', display: 'inline-block',
+                      }}>{breachCount}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
       </header>
 
-      {/* Main content */}
+      {/* Cinematic refresh flash overlay */}
+      {isRefreshing && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 9999, background: 'rgba(0,212,255,0.03)', animation: 'data-refresh-flash 0.8s ease-out forwards' }} />
+      )}
+
+      {/* ── Main content ── */}
       <main style={{ flex: 1, paddingBottom: '72px' }} className="lg:pb-0">
         {children}
       </main>
 
-      {/* Bottom tab navigation — mobile only */}
+      {/* ── Mobile: bottom primary tabs ── */}
       <nav className="lg:hidden" style={{
         position: 'fixed',
         bottom: 0, left: 0, right: 0,
@@ -266,33 +359,26 @@ export default function AppLayout({ children }: AppLayoutProps) {
         zIndex: 50,
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}>
-        {tabs.map((tab) => {
+        {MOBILE_PRIMARY.map(tab => {
           const Icon = tab.icon;
           const active = isActive(tab.path);
           return (
             <button
               key={tab.id}
-              onClick={() => navigate(tab.path)}
+              onClick={() => handleNavigate(tab.path)}
               style={{
                 flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '8px 2px',
-                gap: '3px',
-                background: 'transparent',
-                border: 'none',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: '8px 2px', gap: '3px',
+                background: 'transparent', border: 'none',
                 color: active ? '#00D4FF' : '#4B5563',
-                cursor: 'pointer',
-                position: 'relative',
+                cursor: 'pointer', position: 'relative',
                 transition: 'color 0.15s ease',
               }}
             >
               {active && (
                 <div style={{
-                  position: 'absolute',
-                  top: 0, left: '20%', right: '20%',
+                  position: 'absolute', top: 0, left: '20%', right: '20%',
                   height: '2px',
                   background: 'linear-gradient(90deg, transparent, #00D4FF, transparent)',
                   borderRadius: '0 0 2px 2px',
@@ -301,21 +387,138 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <div style={{ position: 'relative' }}>
                 <Icon size={18} style={{ filter: active ? 'drop-shadow(0 0 6px rgba(0, 212, 255, 0.6))' : 'none' }} />
                 {tab.id === 'watchlist' && breachCount > 0 && (
-                  <span style={{ position: 'absolute', top: '-4px', right: '-5px', background: '#FF2D55', color: '#fff', borderRadius: '50%', fontSize: '7px', fontFamily: "'IBM Plex Mono', monospace", width: '13px', height: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 8px rgba(255,45,85,0.8)', animation: 'blink-alert 2s ease-in-out infinite' }}>{breachCount}</span>
+                  <span style={{
+                    position: 'absolute', top: '-4px', right: '-5px',
+                    background: '#FF2D55', color: '#fff', borderRadius: '50%',
+                    fontSize: '7px', fontFamily: "'IBM Plex Mono', monospace",
+                    width: '13px', height: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 0 8px rgba(255,45,85,0.8)', animation: 'blink-alert 2s ease-in-out infinite',
+                  }}>{breachCount}</span>
                 )}
               </div>
-              <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '8px',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}>
-                {tab.label}
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                {tab.shortLabel}
               </span>
             </button>
           );
         })}
+
+        {/* "More" button */}
+        <button
+          onClick={() => setMoreOpen(true)}
+          style={{
+            flex: 1,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            padding: '8px 2px', gap: '3px',
+            background: 'transparent', border: 'none',
+            color: moreOpen ? '#00D4FF' : '#4B5563',
+            cursor: 'pointer',
+            transition: 'color 0.15s ease',
+          }}
+        >
+          <MoreHorizontal size={18} />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            More
+          </span>
+        </button>
       </nav>
+
+      {/* ── Mobile: "More" drawer ── */}
+      {moreOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="lg:hidden"
+            onClick={() => setMoreOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 60,
+              background: 'rgba(0,0,0,0.7)',
+              backdropFilter: 'blur(4px)',
+            }}
+          />
+          {/* Drawer */}
+          <div
+            className="lg:hidden"
+            style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 70,
+              background: 'rgba(10, 12, 16, 0.99)',
+              borderTop: '1px solid rgba(0, 212, 255, 0.15)',
+              borderRadius: '16px 16px 0 0',
+              padding: '16px 16px calc(env(safe-area-inset-bottom) + 80px)',
+              animation: 'drawer-up 0.25s cubic-bezier(0.23, 1, 0.32, 1)',
+            }}
+          >
+            {/* Drawer handle */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#6B7280', letterSpacing: '0.15em' }}>
+                ALL MODULES
+              </span>
+              <button
+                onClick={() => setMoreOpen(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Groups in drawer */}
+            {NAV_GROUPS.map(group => (
+              <div key={group.label} style={{ marginBottom: 16 }}>
+                <div style={{
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',
+                  color: '#374151', letterSpacing: '0.2em', textTransform: 'uppercase',
+                  marginBottom: 8, paddingLeft: 4,
+                }}>
+                  {group.label}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {group.items.map(tab => {
+                    const Icon = tab.icon;
+                    const active = isActive(tab.path);
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => handleNavigate(tab.path)}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          gap: 6, padding: '12px 8px',
+                          borderRadius: 8,
+                          background: active ? 'rgba(0, 212, 255, 0.1)' : 'rgba(255,255,255,0.04)',
+                          border: active ? '1px solid rgba(0, 212, 255, 0.3)' : '1px solid rgba(255,255,255,0.06)',
+                          color: active ? '#00D4FF' : '#94A3B8',
+                          cursor: 'pointer',
+                          position: 'relative',
+                        }}
+                      >
+                        <Icon size={20} />
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>
+                          {tab.shortLabel}
+                        </span>
+                        {tab.id === 'watchlist' && breachCount > 0 && (
+                          <span style={{
+                            position: 'absolute', top: 6, right: 6,
+                            background: '#FF2D55', color: '#fff', borderRadius: '50%',
+                            fontSize: '7px', width: '13px', height: '13px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>{breachCount}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Drawer animation keyframe */}
+      <style>{`
+        @keyframes drawer-up {
+          from { transform: translateY(100%); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

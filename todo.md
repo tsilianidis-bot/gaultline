@@ -202,3 +202,13 @@
 - [x] Add /diagnostic route to App.tsx
 - [x] Add Diagnostic AI tab to AppLayout navigation
 - [x] Mobile-responsive layout
+
+## Navigation Reorganization
+
+- [x] Audit all 14 pages and define 4 logical groups: CORE / INTELLIGENCE / ANALYSIS / MANAGE
+- [x] Rewrite AppLayout desktop nav with grouped sections, group labels, and visual dividers
+- [x] Reorder tabs to match cognitive flow: situational awareness → interpretation → analysis → manage
+- [x] Mobile bottom bar: 5 primary tabs (Dashboard, Pressure, Diagnostic AI, Signals, Watchlist) + More button
+- [x] Mobile "More" drawer: full grouped grid of all 14 modules with section labels
+- [x] Diagnostic AI promoted to INTELLIGENCE group (was buried last)
+- [x] 135/135 tests passing, 0 TypeScript errors
