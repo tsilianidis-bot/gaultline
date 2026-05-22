@@ -679,7 +679,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
 
     try {
       const res = await fetch(`/api/signals/ticker/${t}`, {
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(25000),
       });
       const data = await res.json() as TickerProfile & { error?: string };
 
@@ -899,7 +899,24 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
           display: 'flex', alignItems: 'center', gap: '8px',
         }}>
           <span style={{ fontSize: '14px' }}>⚠</span>
-          <span>{profileError}</span>
+          <span style={{ flex: 1 }}>{profileError}</span>
+          {searchedTicker && (
+            <button
+              onClick={() => fetchProfile(searchedTicker)}
+              style={{
+                background: 'rgba(255,45,85,0.15)',
+                border: '1px solid rgba(255,45,85,0.3)',
+                borderRadius: '3px',
+                color: 'rgba(255,45,85,0.9)',
+                fontSize: '9px',
+                fontFamily: "'IBM Plex Mono', monospace",
+                letterSpacing: '0.08em',
+                padding: '3px 8px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >RETRY</button>
+          )}
         </div>
       )}
 

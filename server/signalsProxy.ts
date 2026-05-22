@@ -115,13 +115,13 @@ function getNTradingDaysBefore(dateStr: string, n: number): string {
 }
 
 // ── Retry helper ──────────────────────────────────────────────
-async function fetchWithRetry(url: string, maxAttempts = 3): Promise<globalThis.Response> {
+async function fetchWithRetry(url: string, maxAttempts = 3, timeoutMs = 8000): Promise<globalThis.Response> {
   let lastError: Error | null = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       const res = await fetch(url, {
         headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
       if (res.ok) return res;
       if (res.status === 429) {
@@ -342,8 +342,9 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
   const sparklineFrom = getNTradingDaysBefore(tradeDate, 5);
 
   // 1. Fetch prev-day agg for price/OHLC/volume (single ticker, fast)
+  // Use 2 attempts max (8s each = 16s max) to stay within the 20s client timeout
   const prevUrl = `${POLYGON_BASE}/v2/aggs/ticker/${symbol}/prev?adjusted=true&apiKey=${apiKey}`;
-  const prevRes = await fetchWithRetry(prevUrl);
+  const prevRes = await fetchWithRetry(prevUrl, 2);
   const prevData = await prevRes.json() as unknown as PolygonRangeResponse;
 
   const bar = prevData.results?.[0];
@@ -727,9 +728,13 @@ export function registerSignalsProxy(app: Express) {
 
       // Determine if it's a "not found" vs network error
       if (errMsg.includes("No data found") || errMsg.includes("HTTP 404")) {
-        res.status(404).json({ error: `Ticker "${raw}" not found or has no recent trading data.` });
+        res.status(404).json({ error: `Ticker "${raw}" not found. Check the symbol and try again (e.g. AAPL, NVDA, TSLA).` });
+      } else if (errMsg.includes("429") || errMsg.includes("rate")) {
+        res.status(429).json({ error: "Polygon.io rate limit reached. Please wait a few seconds and try again.", source: "fallback" });
+      } else if (errMsg.includes("timeout") || errMsg.includes("abort") || errMsg.includes("AbortError")) {
+        res.status(504).json({ error: `Polygon.io is responding slowly. Please try again in a moment.`, source: "fallback" });
       } else {
-        res.status(502).json({ error: "Market data temporarily unavailable. Please try again.", source: "fallback" });
+        res.status(502).json({ error: `Could not fetch data for ${raw}. Please try again shortly.`, source: "fallback" });
       }
     }
   });
