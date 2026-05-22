@@ -178,3 +178,27 @@
 - [x] Network requests: all 200 OK, no client-side failures
 - [x] Endpoints verified: /api/signals/health, /api/signals/quotes, /api/signals/ticker/AAPL
 - [x] No open todo items remaining
+
+## FAULTLINE Diagnostic AI™ + Position Guidance™
+
+### Backend
+- [x] Create server/diagnosticAI.ts — 4-timeframe scoring engine (Today/Week/Month/Year) with all 17 metric fields per timeframe
+- [x] Add LLM interpretation function to diagnosticAI.ts — generates AI interpretation paragraph + action bias from structured scores
+- [x] Add diagnostic.getDiagnostic tRPC procedure in routers.ts
+- [x] Create server/positionGuidance.ts — asset scoring engine (weighted blend of 10 factors) → Add/Hold/Trim/Watch/Exit/Sell labels
+- [x] Add LLM interpretation for each position card (AI interpretation + suggested behavior + invalidation + next condition)
+- [x] Add guidance.getPositionGuidance tRPC procedure in routers.ts
+- [x] Write Vitest tests for diagnosticAI.ts and positionGuidance.ts
+
+### Frontend
+- [x] Create client/src/pages/DiagnosticAI.tsx — full page with 4-tab layout (Today/Week/Month/Year)
+- [x] Each tab: Pressure Index score, regime, trend, crash risk, bull continuation, volatility, treasury/yield, credit risk, liquidity, breadth, sector leadership, AI concentration, stock signal, key drivers, what changed, why it matters, AI interpretation, action bias
+- [x] Action bias badge component (Bullish/Neutral/Cautious/Defensive/Critical) with color coding
+- [x] Metric row component with score bar, label, and trend arrow
+- [x] FAULTLINE Position Guidance™ section below tabs — 7 demo asset cards (SPY/QQQ/NVDA/AAPL/TSLA/BTC/ETH)
+- [x] Position card: ticker, action badge (Add/Hold/Trim/Watch/Exit Watch/Sell Bias), conviction level, timeframe, pressure index, asset score, sector strength, momentum, volatility, macro risk, trend, support level, key drivers, AI interpretation, suggested behavior, invalidation, next condition
+- [x] "Why This Signal?" expandable panel on every position card
+- [x] Disclaimer text near both modules
+- [x] Add /diagnostic route to App.tsx
+- [x] Add Diagnostic AI tab to AppLayout navigation
+- [x] Mobile-responsive layout

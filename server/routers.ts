@@ -6,6 +6,8 @@ import { z } from "zod";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
 import { calculateFaultlinePressure } from "./pressure/engine";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
+import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
+import { getPositionGuidance, clearGuidanceCache } from "./positionGuidance";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -144,6 +146,40 @@ export const appRouter = router({
     // Get the current FAULTLINE Pressure Index with all risk vectors
     getCurrentPressure: publicProcedure.query(async () => {
       return calculateFaultlinePressure();
+    }),
+  }),
+
+  diagnostic: router({
+    // Get FAULTLINE Diagnostic AI™ report for a given timeframe
+    getReport: publicProcedure
+      .input(z.object({
+        timeframe: z.enum(["today", "week", "month", "year"]),
+      }))
+      .query(async ({ input }) => {
+        return getDiagnosticReport(input.timeframe);
+      }),
+
+    // Clear diagnostic cache
+    clearCache: publicProcedure.mutation(() => {
+      clearDiagnosticCache();
+      return { success: true };
+    }),
+  }),
+
+  guidance: router({
+    // Get FAULTLINE Position Guidance™ for demo assets
+    getGuidance: publicProcedure
+      .input(z.object({
+        tickers: z.array(z.string().min(1).max(10)).optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getPositionGuidance(input?.tickers);
+      }),
+
+    // Clear guidance cache
+    clearCache: publicProcedure.mutation(() => {
+      clearGuidanceCache();
+      return { success: true };
     }),
   }),
 });

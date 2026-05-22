@@ -6,7 +6,7 @@
 import { useLocation } from "wouter";
 import { ReactNode } from "react";
 import {
-  Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp, LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen
+  Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp, LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen, Cpu
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -26,6 +26,7 @@ const tabs = [
   { id: "watchlist", label: "Watch", icon: Bell, path: "/watchlist" },
   { id: "signals", label: "Signals", icon: Radio, path: "/signals" },
   { id: "guide", label: "Guide", icon: BookOpen, path: "/guide" },
+  { id: "diagnostic", label: "Diagnostic", icon: Cpu, path: "/diagnostic" },
 ];
 
 interface AppLayoutProps {
