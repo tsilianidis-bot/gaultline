@@ -157,14 +157,14 @@
 - [x] TypeScript check (0 errors), test suite (57 pass), checkpoint saved (77432bf0)
 
 ## Level 1 Signal Upgrade — True RSI/SMA/MACD from Polygon.io Daily Bars
-- [ ] Extend signalsProxy.ts — add fetchDailyBars(symbol, days) using /v2/aggs/ticker/{sym}/range/1/day
-- [ ] Add /api/signals/daily-bars bulk endpoint for fetching bars for all screener tickers
-- [ ] Upgrade tradingSignals.ts — replace sparkline RSI with true Wilder's 14-period RSI
-- [ ] Upgrade tradingSignals.ts — replace SMA proxy with real 50-day/200-day SMA crossover from daily bars
-- [ ] Upgrade tradingSignals.ts — add proper MACD (12/26/9 EMA) from daily bars
-- [ ] Add dailyBars field to TradingSignalInput type
-- [ ] Update routers.ts getTradingSignals to fetch and pass daily bars
-- [ ] Update Signals.tsx to show "True RSI" / "MACD" labels instead of "RSI~" approximation labels
-- [ ] Graceful fallback to sparkline approximations when daily bars unavailable (free tier)
-- [ ] Write/update Vitest tests for new RSI/SMA/MACD functions
-- [ ] TypeScript check, test suite, save checkpoint
+- [x] Extend signalsProxy.ts — add fetchDailyBars(symbol, days) using /v2/aggs/ticker/{sym}/range/1/day
+- [x] Add /api/signals/daily-bars bulk endpoint for fetching bars for all screener tickers
+- [x] Upgrade tradingSignals.ts — replace sparkline RSI with true Wilder's 14-period RSI
+- [x] Upgrade tradingSignals.ts — replace SMA proxy with real 50-day/200-day SMA crossover from daily bars
+- [x] Upgrade tradingSignals.ts — add proper MACD (12/26/9 EMA) from daily bars
+- [x] Add dailyBars field to TradingSignalInput type
+- [x] Update routers.ts getTradingSignals to fetch and pass daily bars
+- [x] Update Signals.tsx to show "True RSI" / "MACD" labels instead of "RSI~" approximation labels
+- [x] Graceful fallback to sparkline approximations when daily bars unavailable (free tier)
+- [x] Write/update Vitest tests for new RSI/SMA/MACD functions (50 tests in tradingSignals.test.ts)
+- [x] TypeScript check (0 errors), test suite (90 tests passing), checkpoint saved (f3c86da6)

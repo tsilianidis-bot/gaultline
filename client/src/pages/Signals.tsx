@@ -918,6 +918,14 @@ export default function Signals() {
     return () => clearInterval(interval);
   }, [fetchQuotes]);
 
+  // Fetch daily bars once after quotes load (server caches for 1 hour)
+  useEffect(() => {
+    if (!quotesData || dailyBarsFetchedRef.current) return;
+    dailyBarsFetchedRef.current = true;
+    const tickers = (quotesData.quotes ?? []).map(q => q.ticker).filter(Boolean);
+    if (tickers.length > 0) fetchDailyBars(tickers);
+  }, [quotesData, fetchDailyBars]);
+
   const quoteMap = useMemo(() => {
     const map = new Map<string, LiveQuote>();
     for (const q of quotesData?.quotes ?? []) {
