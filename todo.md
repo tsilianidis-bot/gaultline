@@ -143,3 +143,15 @@
 - [x] Add "How FAULTLINE Works" collapsible panel to the dashboard
 - [x] Add live "Updated X min ago" relative timestamp to hero stat strip
 - [x] Save checkpoint after all refinements complete
+
+## Cinematic Intelligence Terminal Upgrade (Brief 07)
+- [ ] Install Framer Motion + GSAP animation libraries
+- [ ] Upgrade global CSS — glassmorphism tokens, Space Grotesk + IBM Plex Mono fonts, reactive ambient lighting CSS vars
+- [ ] Build CinematicBackground component — animated grid, floating particles, volumetric depth layers
+- [ ] Redesign hero section — multi-layer waveform, pressure rings, radar scan animation, live AI analysis feed
+- [ ] Upgrade all dashboard cards to glassmorphic panels with edge glow, hover illumination, animated entrances
+- [ ] Add reactive ambient lighting — teal (bullish), amber (moderate), red (elevated), dark red (crisis)
+- [ ] Add scrolling intelligence ticker bar at top of dashboard
+- [ ] Add terminal-style live signal indicators and blinking status dots
+- [ ] Add card tilt effect on hover (Framer Motion)
+- [ ] TypeScript check, test suite, save checkpoint

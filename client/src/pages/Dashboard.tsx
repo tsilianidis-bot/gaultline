@@ -83,7 +83,7 @@ function AmbientParticles({ riskLevel }: { riskLevel: string }) {
   );
 }
 
-// ── Animated seismic waveform ─────────────────────────────────
+// ── Multi-layer seismic waveform ─────────────────────────────
 function SeismicWave({ color, score }: { color: string; score: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -92,42 +92,105 @@ function SeismicWave({ color, score }: { color: string; score: number }) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     let t = 0;
-    const amplitude = 8 + score * 2.5;
-    const freq = 0.025 + score * 0.004;
+    const amplitude = 10 + score * 3;
+    const freq1 = 0.022 + score * 0.003;
+    const freq2 = 0.015 + score * 0.002;
+    const freq3 = 0.035 + score * 0.005;
     let animId: number;
     const draw = () => {
       canvas.width = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
       const w = canvas.width; const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
-      // Glow layer
+
+      // Layer 1 — deep glow (widest)
       ctx.beginPath();
       ctx.moveTo(0, h / 2);
       for (let x = 0; x < w; x++) {
-        const y = h / 2 + Math.sin(x * freq + t) * amplitude * Math.sin(x * 0.008 + t * 0.3) * 1.4;
+        const y = h / 2 + Math.sin(x * freq1 + t) * amplitude * Math.sin(x * 0.007 + t * 0.25) * 1.6;
         ctx.lineTo(x, y);
       }
-      ctx.strokeStyle = color + '30';
-      ctx.lineWidth = 6;
+      ctx.strokeStyle = color + '18';
+      ctx.lineWidth = 10;
       ctx.stroke();
-      // Sharp line
+
+      // Layer 2 — mid glow
       ctx.beginPath();
       ctx.moveTo(0, h / 2);
       for (let x = 0; x < w; x++) {
-        const y = h / 2 + Math.sin(x * freq + t) * amplitude * Math.sin(x * 0.008 + t * 0.3);
+        const y = h / 2 + Math.sin(x * freq2 + t * 0.85) * (amplitude * 0.7) * Math.sin(x * 0.01 + t * 0.4);
         ctx.lineTo(x, y);
       }
-      ctx.strokeStyle = color + 'CC';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = color + '28';
+      ctx.lineWidth = 5;
       ctx.stroke();
-      t += 0.04;
+
+      // Layer 3 — sharp primary line
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x * freq1 + t) * amplitude * Math.sin(x * 0.007 + t * 0.25);
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color + 'D0';
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+
+      // Layer 4 — high-freq noise overlay
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x * freq3 + t * 1.3) * (amplitude * 0.25);
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color + '50';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+
+      // Horizontal center line
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      t += 0.038;
       animId = requestAnimationFrame(draw);
     };
     draw();
     return () => cancelAnimationFrame(animId);
   }, [color, score]);
   return (
-    <canvas ref={canvasRef} style={{ width: '100%', height: '40px', display: 'block', opacity: 0.85 }} />
+    <canvas ref={canvasRef} style={{ width: '100%', height: '52px', display: 'block', opacity: 0.9 }} />
+  );
+}
+
+// ── Radar scan overlay ────────────────────────────────────────
+function RadarScan({ color, size = 60 }: { color: string; size?: number }) {
+  return (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      {/* Rings */}
+      {[1, 0.66, 0.33].map((scale, i) => (
+        <div key={i} style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: `1px solid ${color}${i === 0 ? '20' : i === 1 ? '14' : '08'}`, transform: `scale(${scale})`, top: `${(1 - scale) * 50}%`, left: `${(1 - scale) * 50}%`, width: `${scale * 100}%`, height: `${scale * 100}%` }} />
+      ))}
+      {/* Cross hairs */}
+      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', background: `${color}15`, transform: 'translateY(-50%)' }} />
+      <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: `${color}15`, transform: 'translateX(-50%)' }} />
+      {/* Sweep arm */}
+      <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden' }}>
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          width: '50%', height: '2px',
+          transformOrigin: '0% 50%',
+          background: `linear-gradient(90deg, ${color}80, transparent)`,
+          animation: 'radar-sweep 3s linear infinite',
+          boxShadow: `0 0 6px ${color}60`,
+        }} />
+      </div>
+      {/* Center dot */}
+      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '4px', height: '4px', borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}` }} />
+    </div>
   );
 }
 
@@ -354,6 +417,23 @@ function MetricCardItem({ metric, index }: { metric: MetricCard; index: number }
 }
 
 // ── Main Dashboard ────────────────────────────────────────────
+// ── Intelligence ticker bar ─────────────────────────────────────────────
+function IntelTicker({ items }: { items: { label: string; value: string; color: string }[] }) {
+  const doubled = [...items, ...items];
+  return (
+    <div className="intel-ticker" style={{ height: '26px', display: 'flex', alignItems: 'center', position: 'relative', zIndex: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0', animation: 'ticker-scroll 28s linear infinite', whiteSpace: 'nowrap', willChange: 'transform' }}>
+        {doubled.map((item, i) => (
+          <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{item.label}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: item.color, fontWeight: 600, letterSpacing: '0.05em' }}>{item.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { output, rawFred, indicators, isLoading, isLive, lastUpdated, isSimulating } = useEngine();
   const { overall, domains, regime, probability, analogs, narrative } = output;
@@ -394,9 +474,26 @@ export default function Dashboard() {
   const aiDomain = useMemo(() => domains.find(d => d.id === 'ai-bubble'), [domains]);
   const color = regime.color;
 
+  // Map riskLevel to data-regime attribute for reactive CSS lighting
+  const regimeAttr = overall.riskLevel === 'low' ? 'bullish' : overall.riskLevel === 'moderate' ? 'moderate' : overall.riskLevel === 'elevated' ? 'elevated' : 'crisis';
+
   return (
-    <div style={{ background: '#050608', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
+    <div data-regime={regimeAttr} style={{ background: '#050608', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
+      {/* Regime ambient overlay */}
+      <div className="regime-ambient" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, transition: 'background 2s ease' }} />
       <AmbientParticles riskLevel={overall.riskLevel} />
+
+      {/* Intelligence Ticker */}
+      <IntelTicker items={[
+        { label: 'FAULTLINE', value: `${overall.score.toFixed(1)}/10`, color },
+        { label: 'REGIME', value: regime.label, color },
+        { label: 'BULL', value: `${probability.bullProbability}%`, color: '#00FF88' },
+        { label: 'CRASH', value: `${probability.crashProbability}%`, color: '#FF2D55' },
+        { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
+        { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00D4FF' },
+        { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, color },
+        { label: 'STATUS', value: isLive ? 'LIVE FEED' : 'SIMULATED', color: isLive ? '#00FF88' : '#FF9500' },
+      ]} />
 
       {/* Onboarding */}
       <Onboarding forceOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
@@ -411,8 +508,11 @@ export default function Dashboard() {
         borderBottom: `1px solid ${color}35`,
         overflow: 'hidden',
       }}>
-        {/* Deep radial glow */}
-        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '300px', background: `radial-gradient(ellipse at center, ${color}18 0%, ${color}06 40%, transparent 70%)`, pointerEvents: 'none' }} />
+        {/* Deep radial glow — reactive to regime */}
+        <div style={{ position: 'absolute', top: '-60px', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '350px', background: `radial-gradient(ellipse at center, ${color}22 0%, ${color}08 40%, transparent 70%)`, pointerEvents: 'none', transition: 'background 2s ease' }} />
+        {/* Secondary glow orbs */}
+        <div style={{ position: 'absolute', top: '20%', left: '10%', width: '200px', height: '200px', background: `radial-gradient(ellipse, ${color}06 0%, transparent 70%)`, pointerEvents: 'none', animation: 'ambient-float 18s ease-in-out infinite' }} />
+        <div style={{ position: 'absolute', top: '30%', right: '8%', width: '160px', height: '160px', background: `radial-gradient(ellipse, rgba(255,45,85,0.04) 0%, transparent 70%)`, pointerEvents: 'none', animation: 'ambient-float 24s ease-in-out 6s infinite' }} />
         {/* Corner brackets */}
         <div style={{ position: 'absolute', top: 12, left: 12, width: 20, height: 20, borderTop: `2px solid ${color}70`, borderLeft: `2px solid ${color}70`, pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: 12, right: 12, width: 20, height: 20, borderTop: `2px solid ${color}70`, borderRight: `2px solid ${color}70`, pointerEvents: 'none' }} />
@@ -452,9 +552,14 @@ export default function Dashboard() {
           {/* 3-panel row: ring | score | threat+analog */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '16px', marginBottom: '0' }}>
 
-            {/* LEFT — Pressure Ring */}
+            {/* LEFT — Pressure Ring + Radar */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <PressureRing score={overall.score} color={color} size={88} />
+              <div style={{ position: 'relative' }}>
+                <PressureRing score={overall.score} color={color} size={88} />
+                <div style={{ position: 'absolute', bottom: -8, right: -8, opacity: 0.7 }}>
+                  <RadarScan color={color} size={32} />
+                </div>
+              </div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center' }}>SYSTEMIC RISK</div>
               {/* Mini domain bars */}
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
@@ -592,7 +697,7 @@ export default function Dashboard() {
         </div>
 
         {/* Bull vs Crash */}
-        <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '6px', padding: '16px', marginBottom: '10px', boxShadow: '0 0 0 1px rgba(0,212,255,0.04), 0 4px 24px rgba(0,0,0,0.4)', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 150ms both' }}>
+        <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 150ms both' }}>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Market Outcome Probability</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Derived from the weighted composite of all domain scores. Historically, rising systemic pressure has preceded periods of increased volatility and liquidity stress.</div>
@@ -617,7 +722,7 @@ export default function Dashboard() {
         </div>
 
         {/* Risk heatmap with signal prioritization tiers */}
-        <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 220ms both' }}>
+        <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 220ms both' }}>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Risk Domain Heatmap</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Each domain measures a distinct source of structural stress — liquidity conditions, credit pressure, speculative excess, and macro instability. Darker cells indicate elevated pressure.</div>
@@ -674,7 +779,7 @@ export default function Dashboard() {
 
         {/* What Changed Today */}
         {changedDomains.length > 0 && (
-          <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 340ms both' }}>
+          <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 340ms both' }}>
             <div style={{ marginBottom: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Regime Shift Signals</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Domains where pressure has moved meaningfully since the prior reading. Sustained directional moves signal emerging regime conditions.</div>
@@ -701,13 +806,13 @@ export default function Dashboard() {
 
         {/* Top Threat / Stabilizer */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 400ms both' }}>
-          <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderLeft: '3px solid #FF2D55', borderRadius: '6px', padding: '14px' }}>
+          <div className="intel-module" style={{ padding: '14px', borderLeft: '3px solid #FF2D55' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Top Threat</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '4px' }}>{topThreat.label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.6)', marginBottom: '5px', lineHeight: 1 }}>{topThreat.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#64748B' }}>/10</span></div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{topThreat.drivers[0] ?? topThreat.description}</div>
           </div>
-          <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderLeft: '3px solid #00FF88', borderRadius: '6px', padding: '14px' }}>
+          <div className="intel-module" style={{ padding: '14px', borderLeft: '3px solid #00FF88' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Stabilizer</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '4px' }}>{topStabilizer.label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#00FF88', textShadow: '0 0 16px rgba(0,255,136,0.6)', marginBottom: '5px', lineHeight: 1 }}>{topStabilizer.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#64748B' }}>/10</span></div>
@@ -758,7 +863,7 @@ export default function Dashboard() {
         </div>
 
         {/* Historical analog */}
-        <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 520ms both' }}>
+        <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 520ms both' }}>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Historical Regime Analogs</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Current macro conditions most closely resemble these historical periods based on domain score patterns. Similarity reflects structural alignment, not price prediction.</div>
@@ -794,7 +899,7 @@ export default function Dashboard() {
 
         {/* Daily AI Risk Update */}
         {aiDomain && (
-          <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderLeft: '3px solid #C084FC', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 580ms both' }}>
+          <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', borderLeft: '3px solid #C084FC', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 580ms both' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#C084FC', boxShadow: '0 0 8px #C084FC', animation: 'blink-alert 2s ease-in-out infinite' }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#C084FC', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Speculative Concentration Risk</span>
@@ -810,7 +915,7 @@ export default function Dashboard() {
         )}
 
         {/* Core metrics */}
-        <div style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.10)', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 640ms both' }}>
+        <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 640ms both' }}>
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Core High-Signal Metrics</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Key indicators that carry the highest predictive weight in the pressure model. Deviations from historical norms are flagged as regime stress signals.</div>
@@ -821,7 +926,7 @@ export default function Dashboard() {
         </div>
 
         {/* How FAULTLINE Works */}
-        <details style={{ background: 'rgba(12,15,22,0.95)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '6px', padding: '14px 16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 700ms both' }}>
+        <details className="intel-module" style={{ padding: '14px 16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 700ms both' }}>
           <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em' }}>How FAULTLINE Works</span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', marginLeft: 'auto' }}>tap to expand</span>
