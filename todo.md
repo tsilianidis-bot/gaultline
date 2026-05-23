@@ -300,15 +300,15 @@
 
 ## Homepage: Digital Asset & Crypto Intelligence Section
 
-- [ ] Read Dashboard/Home.tsx to understand existing section patterns and style
-- [ ] Create client/src/components/HomeCryptoSection.tsx — full crypto intelligence section
-- [ ] Feature blocks: Search Any Crypto, Systemic Risk Engine, Stablecoin Liquidity, BTC Macro Correlation, AI Token Speculation, Volatility Regimes, Exchange Liquidity & Flow, Momentum Signals, Risk-On/Off Conditions
-- [ ] Visual crypto search module: ticker search bar, live intelligence cards, signal labels, probability visuals
-- [ ] Demo signal labels: Speculative Acceleration, Liquidity Fragile, Momentum Breakout, AI Narrative Exposure, Macro Sensitive, Deleveraging Risk, Stablecoin Stress, Risk-Off Vulnerable
-- [ ] Live crypto metrics panel: Crypto Risk Score, BTC Dominance, Stablecoin Liquidity, AI Token Speculation, Volatility Regime
-- [ ] CTA button: "Request Founding Access"
-- [ ] Integrate HomeCryptoSection into homepage at correct position
-- [ ] TypeScript check passes, all tests still pass
+- [x] Read Dashboard/Home.tsx to understand existing section patterns and style
+- [x] Create client/src/components/HomeCryptoSection.tsx — full crypto intelligence section
+- [x] Feature blocks: Search Any Crypto, Systemic Risk Engine, Stablecoin Liquidity, BTC Macro Correlation, AI Token Speculation, Volatility Regimes, Exchange Liquidity & Flow, Momentum Signals, Risk-On/Off Conditions
+- [x] Visual crypto search module: ticker search bar, live intelligence cards, signal labels, probability visuals
+- [x] Demo signal labels: Speculative Acceleration, Liquidity Fragile, Momentum Breakout, AI Narrative Exposure, Macro Sensitive, Deleveraging Risk, Stablecoin Stress, Risk-Off Vulnerable
+- [x] Live crypto metrics panel: Crypto Risk Score, BTC Dominance, Stablecoin Liquidity, AI Token Speculation, Volatility Regime
+- [x] CTA button: "Open Crypto Intelligence" (navigates to /crypto-search)
+- [x] Integrate HomeCryptoSection into homepage (before disclaimer in Dashboard.tsx)
+- [x] TypeScript check passes (0 errors), all 203 tests still pass
 
 ## Full Crypto Intelligence Layer (Live Market Data)
 

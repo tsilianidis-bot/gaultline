@@ -11,6 +11,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import DataIntegrity from "@/components/DataIntegrity";
+import HomeCryptoSection from "@/components/HomeCryptoSection";
 import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 
@@ -962,6 +963,9 @@ export default function Dashboard() {
             </div>
           </div>
         </details>
+
+        {/* Digital Asset & Crypto Intelligence */}
+        <HomeCryptoSection />
 
         {/* Disclaimer */}
         <div style={{ textAlign: 'center', padding: '12px 0 4px' }}>
