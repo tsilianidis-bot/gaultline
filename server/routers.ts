@@ -9,7 +9,8 @@ import { calculateFaultlinePressure } from "./pressure/engine";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
-import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers } from "./db";
+import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers,
+  getCryptoWatchlist, addCryptoWatchlistItem, removeCryptoWatchlistItem, isCryptoWatchlisted } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats } from "./coingeckoProxy";
@@ -472,6 +473,46 @@ export const appRouter = router({
       clearCryptoCache();
       clearCryptoEngineCache();
       return { success: true };
+    }),
+
+    // ── Watchlist procedures ──────────────────────────────────
+    watchlist: router({
+      // List all saved tokens for the current user
+      list: protectedProcedure
+        .query(async ({ ctx }) => {
+          return await getCryptoWatchlist(ctx.user.id);
+        }),
+
+      // Add a token to the watchlist
+      add: protectedProcedure
+        .input(z.object({
+          symbol: z.string().min(1).max(20),
+          name:   z.string().min(1).max(120),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const id = await addCryptoWatchlistItem({
+            userId: ctx.user.id,
+            symbol: input.symbol.toUpperCase(),
+            name:   input.name,
+          });
+          return { success: true, id };
+        }),
+
+      // Remove a token from the watchlist
+      remove: protectedProcedure
+        .input(z.object({ symbol: z.string().min(1).max(20) }))
+        .mutation(async ({ ctx, input }) => {
+          await removeCryptoWatchlistItem(ctx.user.id, input.symbol);
+          return { success: true };
+        }),
+
+      // Check if a specific token is watchlisted
+      check: protectedProcedure
+        .input(z.object({ symbol: z.string().min(1).max(20) }))
+        .query(async ({ ctx, input }) => {
+          const watchlisted = await isCryptoWatchlisted(ctx.user.id, input.symbol);
+          return { watchlisted };
+        }),
     }),
   }),
   admin: router({

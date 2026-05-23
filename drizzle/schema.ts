@@ -48,3 +48,19 @@ export const positions = mysqlTable("positions", {
 
 export type Position = typeof positions.$inferSelect;
 export type InsertPosition = typeof positions.$inferInsert;
+
+// ── Crypto Watchlist ─────────────────────────────────────────
+/**
+ * Stores each user's saved crypto tokens for the watchlist.
+ * One row per (userId, symbol) pair — unique constraint prevents duplicates.
+ */
+export const cryptoWatchlist = mysqlTable("cryptoWatchlist", {
+  id:      int("id").autoincrement().primaryKey(),
+  userId:  int("userId").notNull(),
+  symbol:  varchar("symbol", { length: 20 }).notNull(),
+  name:    varchar("name", { length: 120 }).notNull(),
+  addedAt: timestamp("addedAt").defaultNow().notNull(),
+});
+
+export type CryptoWatchlistItem = typeof cryptoWatchlist.$inferSelect;
+export type InsertCryptoWatchlistItem = typeof cryptoWatchlist.$inferInsert;

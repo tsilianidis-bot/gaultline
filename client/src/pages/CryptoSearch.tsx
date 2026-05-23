@@ -4,8 +4,10 @@
    Design: Palantir Noir — void black, neon accents, scanlines.
    ============================================================ */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Search, X, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activity, BarChart2, Shield, RefreshCw } from "lucide-react";
+import { useLocation } from "wouter";
+import { Search, X, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activity, BarChart2, Shield, RefreshCw, Bookmark, BookmarkCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 // ── Inline types (mirrored from server/cryptoEngine.ts) ─────────
 type CryptoSignalLabel =
   | "Speculative Acceleration"
@@ -425,6 +427,82 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
   );
 }
 
+// ── Watchlist save/unsave button ────────────────────────────
+function WatchlistButton({ symbol, name }: { symbol: string; name: string }) {
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+
+  const { data: checkData } = trpc.crypto.watchlist.check.useQuery(
+    { symbol },
+    { enabled: !!user, staleTime: 30_000 }
+  );
+  const isWatchlisted = checkData?.watchlisted ?? false;
+
+  const addMutation = trpc.crypto.watchlist.add.useMutation({
+    onSuccess: () => {
+      utils.crypto.watchlist.check.invalidate({ symbol });
+      utils.crypto.watchlist.list.invalidate();
+    },
+  });
+  const removeMutation = trpc.crypto.watchlist.remove.useMutation({
+    onSuccess: () => {
+      utils.crypto.watchlist.check.invalidate({ symbol });
+      utils.crypto.watchlist.list.invalidate();
+    },
+  });
+
+  if (!user) return null;
+
+  const isPending = addMutation.isPending || removeMutation.isPending;
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+      <button
+        onClick={() => {
+          if (isWatchlisted) {
+            removeMutation.mutate({ symbol });
+          } else {
+            addMutation.mutate({ symbol, name });
+          }
+        }}
+        disabled={isPending}
+        style={{
+          display: "flex", alignItems: "center", gap: "5px",
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
+          letterSpacing: "0.12em", textTransform: "uppercase",
+          color: isWatchlisted ? "#000" : "#00D4FF",
+          background: isWatchlisted ? "#00D4FF" : "rgba(0,212,255,0.06)",
+          border: `1px solid ${isWatchlisted ? "#00D4FF" : "rgba(0,212,255,0.3)"}`,
+          borderRadius: "3px", padding: "5px 10px", cursor: isPending ? "wait" : "pointer",
+          transition: "all 0.15s ease", opacity: isPending ? 0.6 : 1,
+        }}
+      >
+        {isWatchlisted
+          ? <><BookmarkCheck size={11} /> Saved to Watchlist</>
+          : <><Bookmark size={11} /> Save to Watchlist</>}
+      </button>
+      {isWatchlisted && (
+        <button
+          onClick={() => navigate("/crypto-watchlist")}
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
+            letterSpacing: "0.12em", textTransform: "uppercase",
+            color: "#64748B", background: "transparent",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "3px", padding: "5px 10px", cursor: "pointer",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = "#94A3B8")}
+          onMouseLeave={e => (e.currentTarget.style.color = "#64748B")}
+        >
+          View Watchlist →
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────
 export default function CryptoSearch() {
   const [query, setQuery]           = useState("");
@@ -673,6 +751,7 @@ export default function CryptoSearch() {
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em" }}>REFRESH</span>
                   </button>
                 </div>
+                <WatchlistButton symbol={intelligenceData.asset.symbol} name={intelligenceData.asset.name} />
                 <AssetCard asset={intelligenceData.asset} risk={intelligenceData.systemicRisk} />
               </div>
             ) : null}

@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -147,4 +147,60 @@ export async function getPositionById(id: number, userId: number) {
     .where(and(eq(positions.id, id), eq(positions.userId, userId)))
     .limit(1);
   return result[0] ?? undefined;
+}
+
+// ── Crypto Watchlist helpers ─────────────────────────────────────────
+
+export async function getCryptoWatchlist(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(cryptoWatchlist)
+    .where(eq(cryptoWatchlist.userId, userId))
+    .orderBy(cryptoWatchlist.addedAt);
+}
+
+export async function addCryptoWatchlistItem(
+  data: Omit<InsertCryptoWatchlistItem, 'id' | 'addedAt'>
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  // Prevent duplicates silently
+  const existing = await db.select({ id: cryptoWatchlist.id })
+    .from(cryptoWatchlist)
+    .where(and(
+      eq(cryptoWatchlist.userId, data.userId),
+      eq(cryptoWatchlist.symbol, data.symbol.toUpperCase())
+    ))
+    .limit(1);
+  if (existing.length > 0) return existing[0].id;
+  const result = await db.insert(cryptoWatchlist).values({
+    ...data,
+    symbol: data.symbol.toUpperCase(),
+  });
+  // mysql2 returns OkPacket array; first element has insertId
+  const okPacket = result[0] as unknown as { insertId: number };
+  return okPacket?.insertId ?? null;
+}
+
+export async function removeCryptoWatchlistItem(userId: number, symbol: string) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.delete(cryptoWatchlist)
+    .where(and(
+      eq(cryptoWatchlist.userId, userId),
+      eq(cryptoWatchlist.symbol, symbol.toUpperCase())
+    ));
+}
+
+export async function isCryptoWatchlisted(userId: number, symbol: string) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.select({ id: cryptoWatchlist.id })
+    .from(cryptoWatchlist)
+    .where(and(
+      eq(cryptoWatchlist.userId, userId),
+      eq(cryptoWatchlist.symbol, symbol.toUpperCase())
+    ))
+    .limit(1);
+  return result.length > 0;
 }

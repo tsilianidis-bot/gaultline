@@ -326,3 +326,21 @@
 - [x] CryptoSystemicRisk panel — inline in CryptoSearch.tsx (SystemicRiskPanel)
 - [x] CryptoWatchlist integration — Portfolio page already supports Crypto assetType
 - [x] Wire /crypto-search route in App.tsx and nav (Crypto Intel in INTELLIGENCE group)
+
+## Crypto Watchlist Feature
+
+### Backend
+- [x] Add cryptoWatchlist table to drizzle/schema.ts (id, userId, symbol, name, addedAt)
+- [x] Generate migration SQL and apply via webdev_execute_sql
+- [x] Add DB helpers: getCryptoWatchlist, addCryptoWatchlistItem, removeCryptoWatchlistItem, isCryptoWatchlisted
+- [x] Add tRPC procedures: crypto.watchlist.list, crypto.watchlist.add, crypto.watchlist.remove, crypto.watchlist.check
+- [x] Write Vitest tests for watchlist procedures — 14/14 passing (server/cryptoWatchlist.test.ts)
+
+### Frontend
+- [x] Create CryptoWatchlist.tsx page — saved tokens list with live signal labels
+- [x] Side-by-side comparison panel: up to 4 tokens, signal bias, risk level, momentum, primary label, signal score
+- [x] Save/unsave button on CryptoSearch page (requires login) — WatchlistButton component
+- [x] Add /crypto-watchlist route to App.tsx
+- [x] Add Crypto Watch entry to INTELLIGENCE nav group (Bookmark icon)
+- [x] Empty state: prompt to search and save first token
+- [x] TypeScript check passes (0 errors), 217/217 tests pass
