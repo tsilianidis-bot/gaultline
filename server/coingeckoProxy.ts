@@ -96,8 +96,15 @@ export interface GlobalStats {
 // Retry once on 429 with exponential backoff; throws on all other errors.
 async function cgFetch<T>(path: string, attempt = 0): Promise<T> {
   const url = `${COINGECKO_BASE}${path}`;
+  const headers: Record<string, string> = {
+    "Accept": "application/json",
+    "User-Agent": "FAULTLINE/1.0",
+  };
+  // CoinGecko Demo API key — raises rate limit from 30 to 500 req/min
+  const cgApiKey = process.env.COINGECKO_API_KEY;
+  if (cgApiKey) headers["x-cg-demo-api-key"] = cgApiKey;
   const res = await fetch(url, {
-    headers: { "Accept": "application/json", "User-Agent": "FAULTLINE/1.0" },
+    headers,
     signal: AbortSignal.timeout(12_000),
   });
   if (res.status === 429 && attempt === 0) {
