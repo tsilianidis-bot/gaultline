@@ -11,6 +11,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -600,7 +601,7 @@ function CryptoQuickSearch() {
 
 // ── Main Page ─────────────────────────────────────────────────
 
-export default function CryptoSignals() {
+function CryptoSignalsInner() {
   const engine = useEngine();
   const { user } = useAuth();
 
@@ -890,5 +891,14 @@ export default function CryptoSignals() {
         Probabilistic macro-regime intelligence. Not financial advice. Crypto signals are algorithmic estimates only — not investment recommendations. Digital assets are highly volatile. Past performance does not guarantee future results.
       </div>
     </div>
+  );
+}
+
+// ── Premium Gate Wrapper ──────────────────────────────────────
+export default function CryptoSignals() {
+  return (
+    <PremiumGateFull variant="crypto">
+      <CryptoSignalsInner />
+    </PremiumGateFull>
   );
 }

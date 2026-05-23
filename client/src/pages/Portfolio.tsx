@@ -13,6 +13,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (inferred from tRPC) ────────────────────────────────
 type LivePosition = {
@@ -667,7 +668,7 @@ function SummaryHeader({ summary }: { summary: NonNullable<any> }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────
-export default function Portfolio() {
+function PortfolioInner() {
   const { user, loading: authLoading } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editPosition, setEditPosition] = useState<LivePosition | null>(null);
@@ -880,5 +881,14 @@ export default function Portfolio() {
         @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
       `}</style>
     </div>
+  );
+}
+
+// ── Premium Gate Wrapper ──────────────────────────────────────
+export default function Portfolio() {
+  return (
+    <PremiumGateFull variant="portfolio">
+      <PortfolioInner />
+    </PremiumGateFull>
   );
 }

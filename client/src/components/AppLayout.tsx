@@ -10,11 +10,13 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
+  User, LogIn, Crown, ChevronDown, LogOut,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: situational → interpretation → analysis → manage
@@ -70,6 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "alerts",     label: "Alerts",       shortLabel: "Alerts",  icon: AlertTriangle,   path: "/alerts" },
       { id: "report",     label: "Report",       shortLabel: "Report",  icon: FileText,        path: "/report" },
       { id: "guide",      label: "Guide",        shortLabel: "Guide",   icon: BookOpen,        path: "/guide" },
+      { id: "account",    label: "Account",      shortLabel: "Acct",    icon: User,            path: "/account" },
     ],
   },
 ];
@@ -89,8 +92,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const { output, rawFred, isLoading, isLive, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators } = useEngine();
-  const { user: authUser } = useAuth();
+  const { user: authUser, logout } = useAuth();
   const isAdmin = authUser?.role === "admin";
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   // Count breached watchlist items for badge
   const breachCount = useMemo(() => {
@@ -221,7 +225,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
           </div>
 
-          {/* Status + refresh */}
+          {/* Status + refresh + auth controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {isSimulating && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 7px', background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.3)', borderRadius: '3px' }}>
@@ -252,6 +256,139 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   <path d="M1.5 5A3.5 3.5 0 1 0 5 1.5M1.5 5V2.5M1.5 5H4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </button>
+            )}
+
+            {/* ── Auth controls ── */}
+            {authUser ? (
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setUserMenuOpen(o => !o)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px',
+                    padding: '4px 10px 4px 6px',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(0,212,255,0.3)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+                >
+                  <div style={{
+                    width: '20px', height: '20px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, rgba(0,212,255,0.3) 0%, rgba(0,102,255,0.3) 100%)',
+                    border: '1px solid rgba(0,212,255,0.4)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <User size={10} style={{ color: '#00D4FF' }} />
+                  </div>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#9CA3AF', letterSpacing: '0.08em', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {authUser.name?.split(' ')[0] ?? 'USER'}
+                  </span>
+                  <ChevronDown size={10} style={{ color: '#6B7280', flexShrink: 0 }} />
+                </button>
+
+                {/* Dropdown */}
+                {userMenuOpen && (
+                  <>
+                    <div onClick={() => setUserMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
+                    <div style={{
+                      position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 100,
+                      background: 'rgba(10,12,18,0.98)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '10px',
+                      padding: '8px',
+                      minWidth: '180px',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+                      backdropFilter: 'blur(12px)',
+                    }}>
+                      {/* User info */}
+                      <div style={{ padding: '8px 10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '6px' }}>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#E2E8F0', fontWeight: 600 }}>
+                          {authUser.name ?? 'FAULTLINE USER'}
+                        </div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', marginTop: '2px' }}>
+                          {authUser.email ?? ''}
+                        </div>
+                      </div>
+
+                      {/* Account link */}
+                      <button
+                        onClick={() => { navigate('/account'); setUserMenuOpen(false); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                          padding: '8px 10px', background: 'transparent', border: 'none',
+                          borderRadius: '6px', color: '#9CA3AF', cursor: 'pointer',
+                          fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em',
+                          textAlign: 'left', transition: 'all 0.12s ease',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(255,255,255,0.06)'); (e.currentTarget.style.color = '#E2E8F0'); }}
+                        onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = '#9CA3AF'); }}
+                      >
+                        <User size={12} /> MY ACCOUNT
+                      </button>
+
+                      {/* Admin link */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => { navigate('/admin/users'); setUserMenuOpen(false); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                            padding: '8px 10px', background: 'transparent', border: 'none',
+                            borderRadius: '6px', color: '#FF9500', cursor: 'pointer',
+                            fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em',
+                            textAlign: 'left', transition: 'all 0.12s ease',
+                          }}
+                          onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(255,149,0,0.08)'); }}
+                          onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); }}
+                        >
+                          <Shield size={12} /> ADMIN PANEL
+                        </button>
+                      )}
+
+                      {/* Logout */}
+                      <button
+                        onClick={() => { logout(); setUserMenuOpen(false); }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                          padding: '8px 10px', background: 'transparent', border: 'none',
+                          borderRadius: '6px', color: '#6B7280', cursor: 'pointer',
+                          fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em',
+                          textAlign: 'left', transition: 'all 0.12s ease',
+                          marginTop: '4px', borderTop: '1px solid rgba(255,255,255,0.05)',
+                          paddingTop: '12px',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget.style.color = '#FF4444'); }}
+                        onMouseLeave={e => { (e.currentTarget.style.color = '#6B7280'); }}
+                      >
+                        <LogOut size={12} /> SIGN OUT
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <a
+                href={getLoginUrl()}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '5px 12px',
+                  background: 'rgba(0,212,255,0.08)',
+                  border: '1px solid rgba(0,212,255,0.25)',
+                  borderRadius: '20px',
+                  color: '#00D4FF',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '9px', letterSpacing: '0.1em',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.15)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.08)'; }}
+              >
+                <LogIn size={11} /> SIGN IN
+              </a>
             )}
           </div>
         </div>

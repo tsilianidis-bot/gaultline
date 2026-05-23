@@ -1,6 +1,8 @@
-import { Lock, Zap, Shield, TrendingUp } from "lucide-react";
+import { Lock, Zap, Shield, TrendingUp, Crown, LogIn } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -178,9 +180,14 @@ export function PremiumGateFull({
   children,
 }: PremiumGateFullProps) {
   const { isAuthenticated, loading } = useAuth();
+  const tierQuery = trpc.user.getAccessTier.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+    staleTime: 60_000,
+  });
 
-  // While auth is loading, show nothing to avoid flash
-  if (loading) {
+  // While auth or tier is loading, show spinner
+  if (loading || (isAuthenticated && tierQuery.isLoading)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin" />
@@ -188,10 +195,16 @@ export function PremiumGateFull({
     );
   }
 
-  // Authenticated users see full content
-  if (isAuthenticated) {
+  const tier = tierQuery.data?.tier ?? 'free';
+  const hasPremiumAccess = isAuthenticated && (tier === 'premium' || tier === 'founding');
+
+  // Premium / founding users see full content
+  if (hasPremiumAccess) {
     return <>{children}</>;
   }
+
+  // Free-tier logged-in users: show upgrade gate (not login gate)
+  const isFreeTier = isAuthenticated && tier === 'free';
 
   const cfg = GATE_CONFIGS[variant];
   const loginUrl = getLoginUrl();
@@ -272,28 +285,47 @@ export function PremiumGateFull({
             ))}
           </div>
 
-          {/* CTA buttons */}
+          {/* CTA buttons — different for free-tier vs unauthenticated */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href={loginUrl}
-              className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${cfg.accentColor.replace("text-", "bg-").replace("-400", "-500")} text-black`}
-              style={{
-                boxShadow: `0 0 20px ${cfg.glowColor.replace("0.15", "0.4")}`,
-              }}
-            >
-              <Zap className="w-4 h-4" />
-              {cfg.ctaPrimary}
-            </a>
-            <a
-              href={loginUrl}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-              style={{
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.1)",
-              }}
-            >
-              {cfg.ctaSecondary}
-            </a>
+            {isFreeTier ? (
+              // Free-tier logged-in: show upgrade / account link
+              <>
+                <a
+                  href="/account"
+                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${cfg.accentColor.replace("text-", "bg-").replace("-400", "-500")} text-black`}
+                  style={{ boxShadow: `0 0 20px ${cfg.glowColor.replace("0.15", "0.4")}` }}
+                >
+                  <Crown className="w-4 h-4" />
+                  Request Founding Access
+                </a>
+                <a
+                  href="/account"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  View My Account
+                </a>
+              </>
+            ) : (
+              // Unauthenticated: show login / sign up
+              <>
+                <a
+                  href={loginUrl}
+                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${cfg.accentColor.replace("text-", "bg-").replace("-400", "-500")} text-black`}
+                  style={{ boxShadow: `0 0 20px ${cfg.glowColor.replace("0.15", "0.4")}` }}
+                >
+                  <LogIn className="w-4 h-4" />
+                  {cfg.ctaPrimary}
+                </a>
+                <a
+                  href={loginUrl}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  {cfg.ctaSecondary}
+                </a>
+              </>
+            )}
           </div>
 
           {/* Footer note */}

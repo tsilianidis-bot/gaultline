@@ -11,6 +11,7 @@ import type {
   CryptoRisk,
   MomentumDir,
 } from "../../../server/cryptoIntelligence";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Colour helpers ────────────────────────────────────────────
 
@@ -332,7 +333,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 // ── Main page ─────────────────────────────────────────────────
 
-export default function CryptoIntelligence() {
+function CryptoIntelligenceInner() {
   const { data, isLoading, error, refetch } = trpc.crypto.getSignals.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
@@ -746,5 +747,14 @@ export default function CryptoIntelligence() {
 
       </div>
     </div>
+  );
+}
+
+// ── Premium Gate Wrapper ──────────────────────────────────────
+export default function CryptoIntelligence() {
+  return (
+    <PremiumGateFull variant="crypto">
+      <CryptoIntelligenceInner />
+    </PremiumGateFull>
   );
 }

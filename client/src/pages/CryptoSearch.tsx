@@ -9,6 +9,7 @@ import { Search, X, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activit
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { RecoveryStatusCard, RecoveryStatusBadge } from "@/components/RecoveryStatus";
+import { PremiumGateFull } from "@/components/PremiumGate";
 // ── Inline types (mirrored from server/cryptoEngine.ts) ─────────
 type CryptoSignalLabel =
   | "Speculative Acceleration"
@@ -505,7 +506,7 @@ function WatchlistButton({ symbol, name }: { symbol: string; name: string }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────
-export default function CryptoSearch() {
+function CryptoSearchInner() {
   const [query, setQuery]           = useState("");
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [searchInput, setSearchInput]   = useState("");
@@ -840,5 +841,14 @@ export default function CryptoSearch() {
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
     </div>
+  );
+}
+
+// ── Premium Gate Wrapper ──────────────────────────────────────
+export default function CryptoSearch() {
+  return (
+    <PremiumGateFull variant="crypto">
+      <CryptoSearchInner />
+    </PremiumGateFull>
   );
 }

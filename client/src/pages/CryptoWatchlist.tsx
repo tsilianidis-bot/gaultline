@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Style constants ───────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
@@ -324,7 +325,7 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
 }
 
 // ── Main page ─────────────────────────────────────────────────
-export default function CryptoWatchlist() {
+function CryptoWatchlistInner() {
   const [, navigate] = useLocation();
   const { user, loading: authLoading } = useAuth();
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());
@@ -561,5 +562,14 @@ export default function CryptoWatchlist() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Premium Gate Wrapper ──────────────────────────────────────
+export default function CryptoWatchlist() {
+  return (
+    <PremiumGateFull variant="watchlist">
+      <CryptoWatchlistInner />
+    </PremiumGateFull>
   );
 }

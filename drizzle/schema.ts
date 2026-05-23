@@ -17,6 +17,13 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  /**
+   * Access tier controls which features a user can access.
+   * - free: basic dashboard, limited previews
+   * - premium: full intelligence platform, all signals, all engines
+   * - founding: same as premium, early-access badge, lifetime benefits
+   */
+  accessTier: mysqlEnum("accessTier", ["free", "premium", "founding"]).default("free").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -64,3 +71,21 @@ export const cryptoWatchlist = mysqlTable("cryptoWatchlist", {
 
 export type CryptoWatchlistItem = typeof cryptoWatchlist.$inferSelect;
 export type InsertCryptoWatchlistItem = typeof cryptoWatchlist.$inferInsert;
+
+// ── Founding Access Requests ─────────────────────────────────
+/**
+ * Stores founding access / waitlist requests from users and visitors.
+ * Admins review these and can manually promote users to founding tier.
+ */
+export const foundingAccessRequests = mysqlTable("foundingAccessRequests", {
+  id:        int("id").autoincrement().primaryKey(),
+  userId:    int("userId"),                                             // null for unauthenticated visitors
+  email:     varchar("email", { length: 320 }).notNull(),
+  name:      varchar("name", { length: 200 }),
+  message:   text("message"),                                           // optional "why I want access" note
+  status:    mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FoundingAccessRequest = typeof foundingAccessRequests.$inferSelect;
+export type InsertFoundingAccessRequest = typeof foundingAccessRequests.$inferInsert;

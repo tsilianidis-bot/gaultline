@@ -428,3 +428,42 @@
 - [ ] Apply PremiumGate to Alerts page
 - [ ] Update Dashboard homepage — add founding access CTA section and limited live metrics teaser
 - [ ] TypeScript check passes, all tests still pass
+
+## Authentication & Access-Tier System
+- [ ] Schema: add accessTier enum (free, premium, founding) to users table
+- [ ] Schema: create foundingAccessRequests table (id, userId, email, message, status, createdAt)
+- [ ] DB migration: apply schema changes via webdev_execute_sql
+- [ ] DB helpers: getUserTier, setUserTier, createFoundingRequest, getFoundingRequests
+- [ ] tRPC: user.getProfile — returns user + tier + stats
+- [ ] tRPC: user.requestFoundingAccess — creates founding access request
+- [ ] tRPC: user.getAccessTier — returns current tier
+- [ ] tRPC: admin.setUserTier — admin-only tier management
+- [ ] tRPC: admin.getFoundingRequests — admin-only view of requests
+- [ ] UserAccount.tsx page — account dashboard with tier badge, watchlists, alerts, preferences
+- [ ] AppLayout: add auth controls to header (login button for guests, user avatar/tier pill for logged-in)
+- [ ] AppLayout: add Account nav item to MANAGE group
+- [ ] Apply PremiumGateFull to Signals.tsx
+- [ ] Apply PremiumGateFull to CryptoSignals.tsx
+- [ ] Apply PremiumGateFull to CryptoSearch.tsx
+- [ ] Apply PremiumGateFull to CryptoWatchlist.tsx
+- [ ] Apply PremiumGateFull to AftershockEngine.tsx
+- [ ] Apply PremiumGateFull to CryptoIntelligence.tsx
+- [ ] Apply PremiumGateFull to Portfolio.tsx
+- [ ] Apply PremiumGateFull to Alerts.tsx
+- [ ] Dashboard: add founding access request form / waitlist section
+- [ ] Vitest tests for new tRPC procedures
+- [ ] TypeScript check passes, all tests still pass
+
+## Authentication & Access-Tier System
+- [x] Schema migration: add accessTier to users table
+- [x] Create foundingAccessRequests table
+- [x] DB helpers: getUserTier, setUserTier, createFoundingRequest, getFoundingRequests, updateFoundingRequestStatus, getAllUsersWithTier
+- [x] tRPC procedures: user.getProfile, user.getAccessTier, user.requestFoundingAccess
+- [x] tRPC procedures: admin.getUsersWithTier, admin.setUserTier, admin.getFoundingRequests, admin.updateFoundingRequestStatus
+- [x] UserAccount page with tier badge, profile info, founding access form
+- [x] /account route registered in App.tsx
+- [x] AppLayout header: auth pill (login/logout/profile dropdown) with user menu
+- [x] PremiumGateFull upgraded to check accessTier (free-tier users also gated)
+- [x] Premium pages gated: Signals, AftershockEngine, Portfolio, CryptoSignals, CryptoSearch, CryptoWatchlist, Alerts, CryptoIntelligence
+- [x] Vitest tests: 14 new tests for tier/founding access procedures (285 total passing)
+

@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -203,4 +203,75 @@ export async function isCryptoWatchlisted(userId: number, symbol: string) {
     ))
     .limit(1);
   return result.length > 0;
+}
+
+// ── Access Tier helpers ─────────────────────────────────────────────
+
+export async function getUserTier(userId: number): Promise<'free' | 'premium' | 'founding'> {
+  const db = await getDb();
+  if (!db) return 'free';
+  const result = await db.select({ accessTier: users.accessTier })
+    .from(users).where(eq(users.id, userId)).limit(1);
+  return result[0]?.accessTier ?? 'free';
+}
+
+export async function setUserTier(
+  userId: number,
+  tier: 'free' | 'premium' | 'founding'
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(users)
+    .set({ accessTier: tier, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
+// ── Founding Access Request helpers ───────────────────────────────
+
+export async function createFoundingRequest(
+  data: Omit<InsertFoundingAccessRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>
+): Promise<number | null> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(foundingAccessRequests).values({
+    ...data,
+    status: 'pending',
+  });
+  const okPacket = result[0] as unknown as { insertId: number };
+  return okPacket?.insertId ?? null;
+}
+
+export async function getFoundingRequests() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(foundingAccessRequests)
+    .orderBy(desc(foundingAccessRequests.createdAt));
+}
+
+export async function updateFoundingRequestStatus(
+  id: number,
+  status: 'pending' | 'approved' | 'rejected'
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(foundingAccessRequests)
+    .set({ status, updatedAt: new Date() })
+    .where(eq(foundingAccessRequests.id, id));
+}
+
+export async function getAllUsersWithTier() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      accessTier: users.accessTier,
+      createdAt: users.createdAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(users)
+    .orderBy(users.createdAt);
 }

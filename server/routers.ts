@@ -10,7 +10,9 @@ import { computeTradingSignals, computeTradingSignal, clearSignalCache } from ".
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
 import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers,
-  getCryptoWatchlist, addCryptoWatchlistItem, removeCryptoWatchlistItem, isCryptoWatchlisted } from "./db";
+  getCryptoWatchlist, addCryptoWatchlistItem, removeCryptoWatchlistItem, isCryptoWatchlisted,
+  getUserTier, setUserTier, createFoundingRequest, getFoundingRequests, updateFoundingRequestStatus,
+  getAllUsersWithTier } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
@@ -678,6 +680,60 @@ export const appRouter = router({
       }),
   }),
 
+  // ── User profile & tier procedures ──────────────────────────────────
+  user: router({
+    // Get current user profile including access tier
+    getProfile: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        const tier = await getUserTier(ctx.user.id);
+        return {
+          id: ctx.user.id,
+          name: ctx.user.name,
+          email: ctx.user.email,
+          role: ctx.user.role,
+          accessTier: tier,
+          loginMethod: ctx.user.loginMethod,
+          createdAt: ctx.user.createdAt,
+          lastSignedIn: ctx.user.lastSignedIn,
+        };
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch profile", cause: err });
+      }
+    }),
+
+    // Get just the access tier (lightweight, used by PremiumGate)
+    getAccessTier: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        const tier = await getUserTier(ctx.user.id);
+        return { tier };
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch tier", cause: err });
+      }
+    }),
+
+    // Submit a founding access / waitlist request
+    requestFoundingAccess: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        name: z.string().min(1).max(200).optional(),
+        message: z.string().max(2000).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const userId = ctx.user?.id ?? null;
+          const id = await createFoundingRequest({
+            userId,
+            email: input.email,
+            name: input.name ?? null,
+            message: input.message ?? null,
+          });
+          return { success: true, id };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to submit request", cause: err });
+        }
+      }),
+  }),
+
   admin: router({
     // List all registered users — admin only
     getUsers: protectedProcedure
@@ -690,6 +746,72 @@ export const appRouter = router({
         } catch (err) {
           if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch users", cause: err });
+        }
+      }),
+
+    // List all users with tier info — admin only
+    getUsersWithTier: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          if (ctx.user.role !== "admin") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+          return await getAllUsersWithTier();
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch users", cause: err });
+        }
+      }),
+
+    // Set a user's access tier — admin only
+    setUserTier: protectedProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+        tier: z.enum(['free', 'premium', 'founding']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          if (ctx.user.role !== "admin") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+          await setUserTier(input.userId, input.tier);
+          return { success: true };
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to set tier", cause: err });
+        }
+      }),
+
+    // List all founding access requests — admin only
+    getFoundingRequests: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          if (ctx.user.role !== "admin") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+          return await getFoundingRequests();
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch requests", cause: err });
+        }
+      }),
+
+    // Update founding request status — admin only
+    updateFoundingRequestStatus: protectedProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        status: z.enum(['pending', 'approved', 'rejected']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          if (ctx.user.role !== "admin") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+          await updateFoundingRequestStatus(input.id, input.status);
+          return { success: true };
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update request", cause: err });
         }
       }),
   }),

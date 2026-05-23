@@ -12,6 +12,7 @@ import {
   mergeAlerts, acknowledgeAlert, clearAcknowledged,
   severityColor, severityLabel, categoryLabel, THRESHOLD_RULES,
 } from '@/lib/regimeAlerts';
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Pressure gauge ─────────────────────────────────────────────
 function PressureGauge({ label, value, color }: { label: string; value: number; color: string }) {
@@ -234,7 +235,7 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
 }
 
 // ── Main Alerts page ──────────────────────────────────────────
-export default function Alerts() {
+function AlertsInner() {
   const { output, indicators, isLive } = useEngine();
   const { overall, domains, regime, alertPressure } = output;
 
@@ -507,5 +508,14 @@ export default function Alerts() {
         PROBABILISTIC RISK INTELLIGENCE · NOT FINANCIAL ADVICE · ALERTS ARE INFORMATIONAL ONLY
       </div>
     </div>
+  );
+}
+
+// ── Premium Gate Wrapper ──────────────────────────────────────
+export default function Alerts() {
+  return (
+    <PremiumGateFull variant="risk">
+      <AlertsInner />
+    </PremiumGateFull>
   );
 }

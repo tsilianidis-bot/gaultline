@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ───────────────────────────────
 type AftershockLabel =
@@ -471,7 +472,7 @@ function ChainView({ chain }: { chain: AftershockChain }) {
 
 // ── Main Page ──────────────────────────────────────────────────
 
-export default function AftershockEnginePage() {
+function AftershockEnginePageInner() {
   const { data, isLoading, error, refetch } = trpc.aftershock.getAnalysis.useQuery(undefined, {
     refetchInterval: 3 * 60 * 1000, // refresh every 3 min
     staleTime: 2 * 60 * 1000,
@@ -806,5 +807,14 @@ export default function AftershockEnginePage() {
         )}
       </div>
     </div>
+  );
+}
+
+// ── Premium Gate Wrapper ──────────────────────────────────────
+export default function AftershockEnginePage() {
+  return (
+    <PremiumGateFull variant="aftershock">
+      <AftershockEnginePageInner />
+    </PremiumGateFull>
   );
 }

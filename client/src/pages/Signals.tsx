@@ -14,6 +14,7 @@ import {
   type SignalStock, type FaultlineSignal, type ScreeningCategory, type SignalFilters,
 } from '@/lib/signalsData';
 import { LineChart, Line, ResponsiveContainer, Tooltip as RTooltip } from 'recharts';
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -859,7 +860,7 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
 }
 
 // ── Main Signals Page ─────────────────────────────────────────
-export default function Signals() {
+function SignalsInner() {
   const engine = useEngine();
 
   // ── Live Polygon.io data state ─────────────────────────────
@@ -1439,5 +1440,14 @@ function FilterToggle({ label, value, onChange }: { label: string; value: boolea
     >
       {value ? '✓ ' : ''}{label}
     </button>
+  );
+}
+
+// ── Premium Gate Wrapper ──────────────────────────────────────
+export default function Signals() {
+  return (
+    <PremiumGateFull variant="signals">
+      <SignalsInner />
+    </PremiumGateFull>
   );
 }

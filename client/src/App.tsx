@@ -37,6 +37,7 @@ const CryptoSearch = lazy(() => import("./pages/CryptoSearch"));
 const CryptoWatchlist = lazy(() => import("./pages/CryptoWatchlist"));
 const AftershockEngine = lazy(() => import("./pages/AftershockEngine"));
 const CryptoSignals    = lazy(() => import("./pages/CryptoSignals"));
+const UserAccount      = lazy(() => import("./pages/UserAccount"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -87,6 +88,7 @@ function Router() {
           <Route path="/aftershock" component={AftershockEngine} />
           <Route path="/crypto-signals" component={CryptoSignals} />
           <Route path="/admin/users" component={AdminUsers} />
+          <Route path="/account" component={UserAccount} />
           <Route component={Dashboard} />
         </Switch>
       </Suspense>
