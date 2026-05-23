@@ -345,11 +345,55 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
   }
 }
 
+// ── OHLC daily bars (for true RSI/MACD/SMA on crypto) ────────
+export interface CoinOHLCBar {
+  timestamp: number;  // Unix ms
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+const ohlcCache = new LRUCache<string, CoinOHLCBar[]>(200, 5 * 60 * 1000); // 5 min TTL
+
+/**
+ * Fetch daily OHLC bars for a coin from CoinGecko.
+ * Uses /coins/{id}/ohlc?vs_currency=usd&days=30 (returns ~30 daily bars).
+ */
+export async function getCoinOHLC(idOrSymbol: string, days = 30): Promise<CoinOHLCBar[]> {
+  const upper = idOrSymbol.toUpperCase();
+  const cgId = SYMBOL_MAP[upper] ?? idOrSymbol.toLowerCase();
+  const key = `${cgId}:${days}`;
+  const cached = ohlcCache.peek(key);
+  if (cached) return cached.value;
+
+  return dedupe<CoinOHLCBar[]>(`ohlc:${key}`, async () => {
+    try {
+      // CoinGecko returns array of [timestamp, open, high, low, close]
+      const raw = await cgFetch<number[][]>(`/coins/${cgId}/ohlc?vs_currency=usd&days=${days}`);
+      const bars: CoinOHLCBar[] = (raw ?? []).map(([ts, o, h, l, c]) => ({
+        timestamp: ts,
+        open: o,
+        high: h,
+        low: l,
+        close: c,
+      }));
+      ohlcCache.set(key, bars);
+      return bars;
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      log.warn("[CoinGecko] OHLC fetch failed", { id: cgId, errMsg });
+      return [];
+    }
+  });
+}
+
 export function clearCoinGeckoCache() {
   searchCache.clear();
   marketCache.clear();
   globalCache.clear();
   assetCache.clear();
+  ohlcCache.clear();
 }
 
 // ── Express route registration ────────────────────────────────

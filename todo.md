@@ -347,18 +347,39 @@
 
 ## Aftershock Engine™
 
-- [ ] server/aftershockEngine.ts — rupture detection, contagion graph, aftershock scoring, signal labels
-- [ ] Rupture detection: volatility spikes, unusual volume, breakout momentum, macro events, crypto breakouts
-- [ ] Contagion graph: asset relationship map (stocks/ETFs/crypto/sectors/macro-sensitive)
-- [ ] Aftershock signal labels: Primary Rupture, First-Wave Aftershock, Delayed Reaction, Sympathy Momentum, Sector Echo, Liquidity Spillover, Macro Shockwave, Fading Aftershock, False Aftershock
-- [ ] Aftershock intelligence card: trigger asset, related asset, probability score, timing window, strength score, relationship type, bullish/bearish, confidence, confirmation status, "Why This Aftershock?" explanation
-- [ ] tRPC procedures: aftershock.getActiveRuptures, aftershock.getAftershocks, aftershock.getAssetChain
-- [ ] AftershockEngine.tsx page — Aftershock Map, ripple visualization, intelligence cards, delayed reaction watchlist
-- [ ] Aftershock Map: visual contagion network showing ripple paths between assets
-- [ ] Strength Meter and Timing Window Indicator components
-- [ ] Macro Shockwave visualization
-- [ ] Wire /aftershock route in App.tsx
-- [ ] Add Aftershock Engine™ to INTELLIGENCE nav group
-- [ ] Integration: reference from Signals, Crypto Intel, and Dashboard pages
-- [ ] Vitest tests for aftershockEngine.ts
-- [ ] TypeScript check passes, all tests still pass
+- [x] server/aftershockEngine.ts — rupture detection, contagion graph, aftershock scoring, signal labels
+- [x] Rupture detection: volatility spikes, unusual volume, breakout momentum, macro events, crypto breakouts
+- [x] Contagion graph: asset relationship map (stocks/ETFs/crypto/sectors/macro-sensitive)
+- [x] Aftershock signal labels: Primary Rupture, First-Wave Aftershock, Delayed Reaction, Sympathy Momentum, Sector Echo, Liquidity Spillover, Macro Shockwave, Fading Aftershock, False Aftershock
+- [x] Aftershock intelligence card: trigger asset, related asset, probability score, timing window, strength score, relationship type, bullish/bearish, confidence, confirmation status, "Why This Aftershock?" explanation
+- [x] tRPC procedures: aftershock.getAnalysis, aftershock.getAssetChain, aftershock.clearCache
+- [x] AftershockEngine.tsx page — Aftershock Map, ripple visualization, intelligence cards, delayed reaction watchlist
+- [x] Aftershock Map: canvas-based ripple visualization with animated rings and contagion paths
+- [x] Strength Meter and Timing Window Indicator components — inline in AftershockEngine.tsx
+- [x] Macro Shockwave visualization — Macro Shockwave label + ripple map
+- [x] Wire /aftershock route in App.tsx
+- [x] Add Aftershock Engine™ to INTELLIGENCE nav group (Waves icon)
+- [x] Integration: Aftershock Engine accessible from INTELLIGENCE nav group
+- [x] Vitest tests for aftershockEngine.ts — 24/24 passing (server/aftershockEngine.test.ts)
+- [x] TypeScript check passes (0 errors), 243/243 tests pass
+
+## Crypto Signals Page
+
+### Backend
+- [x] Create server/cryptoSignals.ts — RSI/momentum/MACD scoring engine for crypto using CoinGecko OHLC data
+- [x] Crypto screener: top 20 assets with live prices, 24h change, volume, RSI, momentum, signal label
+- [x] Per-asset classify: BUY/SELL/HOLD/WATCH signal + confidence + key levels + regime fit
+- [x] Add crypto.getSignalScreener and crypto.getAssetSignal tRPC procedures
+- [x] Write Vitest tests for cryptoSignals.ts — 15/15 passing (server/cryptoSignals.test.ts)
+
+### Frontend
+- [x] Create client/src/pages/CryptoSignals.tsx — mirrors stock Signals page layout
+- [x] Regime banner: current macro regime + crypto-specific risk context
+- [x] Crypto ticker search bar (any CoinGecko symbol)
+- [x] CryptoIntelligenceCard: live price, 24h %, volume, market cap, RSI bar, momentum score, signal badge (BUY/SELL/HOLD/WATCH), regime fit, key levels, bullish/bearish factors, "Why This Signal?" panel
+- [x] Top Crypto Signals grid: 20 asset cards sorted by signal strength
+- [x] Trading signal aggregate bar: count of BUY/SELL/HOLD/WATCH across screener
+- [x] LIVE/STALE badge + manual refresh button
+- [x] Add /crypto-signals route to App.tsx
+- [x] Add Crypto Signals to INTELLIGENCE nav group (BarChart3 icon)
+- [x] TypeScript check passes (0 errors), 258/258 tests pass

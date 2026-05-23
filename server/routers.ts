@@ -13,9 +13,10 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getCryptoWatchlist, addCryptoWatchlistItem, removeCryptoWatchlistItem, isCryptoWatchlisted } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
-import { searchCoins, getTopMarkets, getGlobalStats } from "./coingeckoProxy";
+import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
 import { getQuotes } from "./yahooProxy";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
+import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
 import { protectedProcedure } from "./_core/trpc";
 
 export const appRouter = router({
@@ -469,10 +470,67 @@ export const appRouter = router({
         }
       }),
 
+    // ── Crypto Trading Signals ────────────────────────────────
+    // Get trading signal (BUY/SELL/HOLD/WATCH) for a single crypto asset
+    getSignal: publicProcedure
+      .input(z.object({ idOrSymbol: z.string().min(1).max(50) }))
+      .query(async ({ input }) => {
+        try {
+          const [market, ohlcBars, globalStats, pressure] = await Promise.all([
+            getCoinMarketData(input.idOrSymbol),
+            getCoinOHLC(input.idOrSymbol, 30),
+            getGlobalStats(),
+            calculateFaultlinePressure(),
+          ]);
+          if (!market) throw new TRPCError({ code: "NOT_FOUND", message: `Asset not found: ${input.idOrSymbol}` });
+          const result = computeCryptoSignal({
+            market,
+            ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
+            btcDominance: globalStats?.btcDominance ?? 55,
+            regime: { label: pressure.regime, score: pressure.overallPressure },
+          });
+          return result;
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto signal computation failed", cause: err });
+        }
+      }),
+
+    // Get trading signals screener for top N crypto assets
+    getScreener: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+      .query(async ({ input }) => {
+        try {
+          const limit = input?.limit ?? 20;
+          const [markets, globalStats, pressure] = await Promise.all([
+            getTopMarkets(limit),
+            getGlobalStats(),
+            calculateFaultlinePressure(),
+          ]);
+          const regime = { label: pressure.regime, score: pressure.overallPressure };
+          const btcDominance = globalStats?.btcDominance ?? 55;
+          // Compute signals without OHLC for screener speed (sparkline fallback)
+          const results = computeCryptoSignals(
+            markets.map(m => ({ market: m, btcDominance, regime }))
+          );
+          return {
+            signals: results,
+            regime,
+            btcDominance,
+            totalMarketCap: globalStats?.totalMarketCap ?? 0,
+            marketCapChange24h: globalStats?.marketCapChangePercent24h ?? 0,
+            computedAt: Date.now(),
+          };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto screener failed", cause: err });
+        }
+      }),
+
     // Clear all crypto caches
     clearCache: publicProcedure.mutation(() => {
       clearCryptoCache();
       clearCryptoEngineCache();
+      clearCryptoSignalCache();
       return { success: true };
     }),
 
