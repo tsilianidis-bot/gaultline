@@ -101,8 +101,8 @@ export interface CryptoIntelligenceResult {
 }
 
 // ── Cache ─────────────────────────────────────────────────────
-const ASSET_CACHE_TTL = 2 * 60 * 1000;
-const RISK_CACHE_TTL  = 3 * 60 * 1000;
+const ASSET_CACHE_TTL = 90 * 1000;       // 90 sec — matches proxy TTL; catches intraday moves
+const RISK_CACHE_TTL  = 3 * 60 * 1000;  // 3 min — systemic risk changes slowly
 const assetCache  = new LRUCache<string, CryptoAssetIntelligence>(200, ASSET_CACHE_TTL);
 const riskCache   = new LRUCache<string, CryptoSystemicRisk>(5, RISK_CACHE_TTL);
 
@@ -127,7 +127,7 @@ function scoreToRiskLevel(score: number): CryptoRiskLevel {
 
 function scoreToSignalBias(signalScore: number): CryptoSignalBias {
   if (signalScore >= 60) return "Bullish";
-  if (signalScore <= 40) return "Bearish";
+  if (signalScore <= 43) return "Bearish";  // raised from 40 — catches borderline drops like -3% to -5%
   return "Neutral";
 }
 
@@ -297,8 +297,8 @@ export async function computeAssetIntelligence(
   // ── Signal scoring (0–100, 100 = max bullish) ──────────────
   const vectors: CryptoSignalVector[] = [];
 
-  // 1. Price momentum (24h)
-  const momScore24h = clamp(50 + c.priceChangePercent24h * 3, 0, 100);
+  // 1. Price momentum (24h) — higher sensitivity: multiplier 5 (was 3) so −5% = score 25 (Bearish)
+  const momScore24h = clamp(50 + c.priceChangePercent24h * 5, 0, 100);
   vectors.push({
     label: "24h Momentum",
     score: momScore24h,
@@ -306,9 +306,9 @@ export async function computeAssetIntelligence(
     description: `${c.priceChangePercent24h >= 0 ? "+" : ""}${c.priceChangePercent24h.toFixed(2)}% in 24h`,
   });
 
-  // 2. Weekly momentum
+  // 2. Weekly momentum — multiplier 2 (was 1.5) for stronger trend signal
   const weekly = c.priceChangePercent7d ?? 0;
-  const momScore7d = clamp(50 + weekly * 1.5, 0, 100);
+  const momScore7d = clamp(50 + weekly * 2, 0, 100);
   vectors.push({
     label: "7d Momentum",
     score: momScore7d,
@@ -355,13 +355,15 @@ export async function computeAssetIntelligence(
   });
 
   // Composite signal score (weighted)
+  // 24h momentum gets highest weight (0.35) so intraday moves dominate the signal.
+  // ATH distance weight reduced (0.10) — a distant ATH should not mask a sharp daily drop.
   const signalScore = Math.round(
-    momScore24h  * 0.25 +
-    momScore7d   * 0.20 +
-    athScore     * 0.15 +
-    volScore     * 0.15 +
-    volRisk      * 0.10 +
-    macroAlignScore * 0.15
+    momScore24h     * 0.35 +  // was 0.25 — intraday move is the primary signal
+    momScore7d      * 0.20 +  // unchanged — weekly trend context
+    athScore        * 0.10 +  // was 0.15 — ATH distance is structural, not tactical
+    volScore        * 0.15 +  // unchanged — liquidity proxy
+    volRisk         * 0.05 +  // was 0.10 — volatility is a risk modifier, not a directional signal
+    macroAlignScore * 0.15    // unchanged — macro regime context
   );
 
   // ── Risk score (0–10) ──────────────────────────────────────
@@ -396,11 +398,21 @@ export async function computeAssetIntelligence(
   if (sr.stablecoinLiquidity === "Tightening" || sr.stablecoinLiquidity === "Contracting") {
     labels.push("Stablecoin Stress");
   }
-  if (c.priceChangePercent24h < -8 && sr.score > 6) {
+  // Deleveraging Risk: triggered at -5% with moderate systemic risk
+  if (c.priceChangePercent24h < -5 && sr.score > 5) {
     labels.push("Deleveraging Risk");
   }
+  // Macro Sensitive: moderate daily drop (-3% to -5%) with any systemic risk present
+  if (c.priceChangePercent24h < -3 && c.priceChangePercent24h >= -5 && sr.score >= 4) {
+    labels.push("Macro Sensitive");
+  }
+  // Risk-Off Vulnerable: high systemic risk or extreme volatility regime
   if (sr.score > 7 || sr.volatilityRegime === "Extreme") {
     labels.push("Risk-Off Vulnerable");
+  }
+  // Downside Pressure: any bearish signal score without a more specific label yet
+  if (labels.length === 0 && signalScore <= 43) {
+    labels.push("Macro Sensitive");
   }
   if (labels.length === 0) {
     labels.push("Neutral / Watch");

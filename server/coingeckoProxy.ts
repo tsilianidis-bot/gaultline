@@ -22,7 +22,7 @@ const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
 const SEARCH_TTL    = 10 * 60 * 1000;  // 10 min — search results stable
 const MARKET_TTL    =  5 * 60 * 1000;  //  5 min — top markets
 const GLOBAL_TTL    =  5 * 60 * 1000;  //  5 min — global stats
-const ASSET_TTL     =  5 * 60 * 1000;  //  5 min — individual asset (was 2 min, caused 429s)
+const ASSET_TTL     = 90 * 1000;        // 90 sec — individual asset; short enough to catch intraday moves
 
 const searchCache = new LRUCache<string, CoinSearchResult[]>(100, SEARCH_TTL);
 const marketCache = new LRUCache<string, CoinMarketData[]>(10,  MARKET_TTL);
