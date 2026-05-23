@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
+import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -612,6 +613,12 @@ export default function CryptoSignals() {
   const [screenerLimit] = useState(30);
   const [lastRefresh, setLastRefresh] = useState<string | null>(null);
 
+  // ── BTC market recovery (compact panel in regime banner) ──
+  const { data: btcRecovery } = trpc.recovery.getMarketRecovery.useQuery(
+    undefined,
+    { staleTime: 90_000, refetchOnWindowFocus: false }
+  );
+
   // ── Screener query ─────────────────────────────────────────
   const screenerQuery = trpc.crypto.getScreener.useQuery(
     { limit: screenerLimit },
@@ -706,6 +713,15 @@ export default function CryptoSignals() {
             </div>
           )}
         </div>
+
+        {/* BTC Recovery Status compact row */}
+        {btcRecovery && (
+          <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>BTC RECOVERY:</span>
+            <RecoveryStatusBadge status={btcRecovery.status} color={btcRecovery.statusColor} confidence={btcRecovery.recoveryConfidence} />
+            <AftershockRiskInline risk={btcRecovery.aftershockRisk} />
+          </div>
+        )}
 
         {/* Data freshness */}
         <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: "6px" }}>

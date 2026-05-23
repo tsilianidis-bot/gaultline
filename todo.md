@@ -383,3 +383,31 @@
 - [x] Add /crypto-signals route to App.tsx
 - [x] Add Crypto Signals to INTELLIGENCE nav group (BarChart3 icon)
 - [x] TypeScript check passes (0 errors), 258/258 tests pass
+
+## Recovery Confirmation System
+
+### Backend
+- [ ] Create server/recoveryEngine.ts — Recovery Confirmation System with asymmetric risk decay
+- [ ] Recovery status enum: Breakdown Continuing / Relief Bounce / Recovery Attempt / Stabilizing / Confirmed Recovery
+- [ ] Recovery Confidence Score 0–100 with 8 weighted components
+- [ ] Aftershock Risk metric: Low / Moderate / Elevated / High
+- [ ] Confirmation rules: 3-close (5-close for crypto) consecutive closes, volume, volatility, breadth, macro pressure
+- [ ] Asymmetric decay: risk rises fast, falls slowly (only after confirmation)
+- [ ] BTC-specific logic: stricter 5-close confirmation, specific language for weak bounces
+- [ ] Add recovery.getAssetRecovery and recovery.getMarketRecovery tRPC procedures
+
+### Frontend
+- [ ] Build RecoveryStatus.tsx component — color-coded status card (Red/Orange/Yellow/Blue/Green)
+- [ ] Recovery Confidence gauge bar (0–100, labeled tiers)
+- [ ] Aftershock Risk badge (Low/Moderate/Elevated/High with color coding)
+- [ ] Confirmation Status panel: checklist of 8 confirmation rules with pass/fail indicators
+- [ ] Key Reasoning text block (BTC-specific language when applicable)
+- [ ] Tooltip explanations for: Recovery Confidence, Aftershock Risk, Recovery Attempt, Confirmed Recovery, Relief Bounce, Breakdown Level
+- [ ] Dashboard fields: Market Regime, Recovery Confidence, Aftershock Risk, Trend Bias, Confirmation Status, Key Reasoning
+- [ ] Integrate RecoveryStatus into CryptoSignals page (per-asset recovery panel)
+- [ ] Integrate RecoveryStatus into CryptoSearch intelligence card
+- [ ] Add Recovery Overview panel to Dashboard homepage
+
+### Tests & QA
+- [ ] Write Vitest tests for recoveryEngine.ts
+- [ ] TypeScript check passes, all tests still pass

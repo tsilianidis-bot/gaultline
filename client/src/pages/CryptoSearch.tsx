@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { Search, X, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activity, BarChart2, Shield, RefreshCw, Bookmark, BookmarkCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { RecoveryStatusCard, RecoveryStatusBadge } from "@/components/RecoveryStatus";
 // ── Inline types (mirrored from server/cryptoEngine.ts) ─────────
 type CryptoSignalLabel =
   | "Speculative Acceleration"
@@ -543,6 +544,12 @@ export default function CryptoSearch() {
     { staleTime: 3 * 60_000, refetchOnWindowFocus: false }
   );
 
+  // Recovery confirmation analysis — fetched when an asset is searched
+  const { data: recoveryData, isLoading: isLoadingRecovery } = trpc.recovery.getAssetRecovery.useQuery(
+    { symbol: activeSymbol ?? "" },
+    { enabled: !!activeSymbol, staleTime: 90_000, refetchOnWindowFocus: false }
+  );
+
   const handleSearch = useCallback((symbol: string) => {
     setActiveSymbol(symbol.trim());
     setSearchInput("");
@@ -753,6 +760,13 @@ export default function CryptoSearch() {
                 </div>
                 <WatchlistButton symbol={intelligenceData.asset.symbol} name={intelligenceData.asset.name} />
                 <AssetCard asset={intelligenceData.asset} risk={intelligenceData.systemicRisk} />
+                {/* Recovery Confirmation System */}
+                {recoveryData && !isLoadingRecovery && (
+                  <div style={{ marginTop: "12px" }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.15em", marginBottom: "8px" }}>RECOVERY CONFIRMATION SYSTEM</div>
+                    <RecoveryStatusCard data={recoveryData} />
+                  </div>
+                )}
               </div>
             ) : null}
           </div>

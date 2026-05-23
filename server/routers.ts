@@ -17,6 +17,7 @@ import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinO
 import { getQuotes } from "./yahooProxy";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
+import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
 import { protectedProcedure } from "./_core/trpc";
 
 export const appRouter = router({
@@ -602,6 +603,77 @@ export const appRouter = router({
     clearCache: publicProcedure
       .mutation(async () => {
         clearAftershockCache();
+        return { success: true };
+      }),
+  }),
+
+  recovery: router({
+    // Get recovery confirmation analysis for a single crypto asset
+    getAssetRecovery: publicProcedure
+      .input(z.object({ symbol: z.string().min(1).max(20) }))
+      .query(async ({ input }) => {
+        try {
+          const sym = input.symbol.toUpperCase();
+          const [market, ohlcBars, globalStats, pressure] = await Promise.all([
+            getCoinMarketData(sym),
+            getCoinOHLC(sym, 30).catch(() => []),
+            getGlobalStats().catch(() => null),
+            calculateFaultlinePressure().catch(() => null),
+          ]);
+          if (!market) {
+            throw new TRPCError({ code: "NOT_FOUND", message: `Asset not found: ${sym}` });
+          }
+          const btcDominance = globalStats?.btcDominance ?? undefined;
+          return getRecoveryAnalysis({
+            symbol: sym,
+            name: market.name,
+            market,
+            ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
+            btcDominance,
+            pressure,
+            isCrypto: true,
+          });
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          const msg = err instanceof Error ? err.message : String(err);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });
+        }
+      }),
+
+    // Get recovery analysis for the overall crypto market (using BTC as proxy)
+    getMarketRecovery: publicProcedure
+      .query(async () => {
+        try {
+          const [market, ohlcBars, globalStats, pressure] = await Promise.all([
+            getCoinMarketData("BTC"),
+            getCoinOHLC("BTC", 30).catch(() => []),
+            getGlobalStats().catch(() => null),
+            calculateFaultlinePressure().catch(() => null),
+          ]);
+          if (!market) {
+            throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch BTC market data" });
+          }
+          const btcDominance = globalStats?.btcDominance ?? undefined;
+          return getRecoveryAnalysis({
+            symbol: "BTC",
+            name: "Bitcoin",
+            market,
+            ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
+            btcDominance,
+            pressure,
+            isCrypto: true,
+          });
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          const msg = err instanceof Error ? err.message : String(err);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });
+        }
+      }),
+
+    // Clear the recovery engine cache
+    clearCache: publicProcedure
+      .mutation(async () => {
+        clearRecoveryCache();
         return { success: true };
       }),
   }),
