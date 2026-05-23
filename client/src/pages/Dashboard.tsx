@@ -15,6 +15,7 @@ import HomeCryptoSection from "@/components/HomeCryptoSection";
 import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663562889431/oAHJBBc62GHpVJwTBFZPAm/faultline-hero-bg-5aiJwmUWM5RkwbakA3ZsnX.webp";
 
@@ -444,6 +445,7 @@ function IntelTicker({ items }: { items: { label: string; value: string; color: 
 }
 
 export default function Dashboard() {
+  useSEO(PAGE_SEO.home);
   const { output, rawFred, indicators, isLoading, isLive, lastUpdated, isSimulating } = useEngine();
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
@@ -488,6 +490,10 @@ export default function Dashboard() {
 
   return (
     <div data-regime={regimeAttr} style={{ background: '#050608', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
+      {/* SEO: Visually hidden H1 for search engine crawlers */}
+      <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
+        FAULTLINE — Macroeconomic &amp; Market Risk Intelligence Platform
+      </h1>
       {/* Regime ambient overlay */}
       <div className="regime-ambient" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, transition: 'background 2s ease' }} />
       <AmbientParticles riskLevel={overall.riskLevel} />
@@ -971,6 +977,76 @@ export default function Dashboard() {
         {/* Digital Asset & Crypto Intelligence */}
         <HomeCryptoSection />
 
+        {/* SEO Content Section — Institutional copy for search engine indexing */}
+        <section
+          aria-label="Platform Intelligence Overview"
+          style={{
+            padding: '48px 24px 32px',
+            borderTop: '1px solid rgba(255,255,255,0.04)',
+            maxWidth: '900px',
+            margin: '0 auto',
+          }}
+        >
+          <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '11px', fontWeight: 600, color: 'rgba(0,212,255,0.5)', letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '32px', textAlign: 'center' }}>
+            Platform Intelligence Architecture
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
+            {/* FAULTLINE Pressure Index */}
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+              <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(0,212,255,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                FAULTLINE Pressure Index™
+              </h3>
+              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
+                A composite macroeconomic risk intelligence score synthesizing credit spreads, volatility regimes, liquidity conditions, and systemic market pressure across equity, bond, and credit markets. Updated in real time.
+              </p>
+            </article>
+            {/* Aftershock Engine */}
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+              <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(255,149,0,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                Aftershock Engine™
+              </h3>
+              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
+                Detects contagion risk, sector cascade patterns, and systemic aftershock sequences following primary market ruptures. Classifies signals as Primary Rupture, First-Wave Aftershock, Macro Shockwave, and more.
+              </p>
+            </article>
+            {/* Stock Intelligence */}
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+              <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(0,255,136,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                Stock Intelligence Engine
+              </h3>
+              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
+                Combines live market data, momentum analysis, volatility conditions, liquidity trends, and macroeconomic intelligence to classify stocks with signal labels: Momentum Breakout, AI Bubble Exposure, Macro Beneficiary, Recession Defensive, and more.
+              </p>
+            </article>
+            {/* Crypto Intelligence */}
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+              <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(139,92,246,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                Crypto Intelligence System
+              </h3>
+              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
+                Institutional-grade digital asset risk analysis covering BTC dominance, altcoin systemic risk, crypto market regime alignment, contagion exposure, and liquidity conditions across the digital asset ecosystem.
+              </p>
+            </article>
+            {/* Market Regime Analysis */}
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+              <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(255,215,0,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                Market Regime Analysis
+              </h3>
+              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
+                Probabilistic bull, bear, and crash regime classification using macro pressure, credit conditions, volatility regimes, and historical analog pattern recognition. Identifies regime transitions before they become consensus.
+              </p>
+            </article>
+            {/* AI Market Analytics */}
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+              <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(255,45,85,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
+                AI-Powered Macro Analytics
+              </h3>
+              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
+                Scenario simulation, AI sector concentration monitoring, systemic risk stress-testing, and natural language intelligence narratives. FAULTLINE synthesizes macro data into actionable institutional intelligence.
+              </p>
+            </article>
+          </div>
+        </section>
         {/* Disclaimer */}
         <div style={{ textAlign: 'center', padding: '12px 0 4px' }}>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.1em' }}>

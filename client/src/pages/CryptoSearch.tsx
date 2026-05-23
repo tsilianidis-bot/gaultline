@@ -10,6 +10,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { RecoveryStatusCard, RecoveryStatusBadge } from "@/components/RecoveryStatus";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 // ── Inline types (mirrored from server/cryptoEngine.ts) ─────────
 type CryptoSignalLabel =
   | "Speculative Acceleration"
@@ -507,6 +508,7 @@ function WatchlistButton({ symbol, name }: { symbol: string; name: string }) {
 
 // ── Main Page ─────────────────────────────────────────────────
 function CryptoSearchInner() {
+  useSEO(PAGE_SEO.cryptoSearch);
   const [query, setQuery]           = useState("");
   const [activeSymbol, setActiveSymbol] = useState<string | null>(null);
   const [searchInput, setSearchInput]   = useState("");

@@ -8,6 +8,7 @@ import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, Chec
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { getLoginUrl } from '@/const';
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Tier config ────────────────────────────────────────────────
 const TIER_CONFIG = {
@@ -241,6 +242,7 @@ function FoundingAccessForm({ userEmail }: { userEmail?: string | null }) {
 
 // ── Main Page ──────────────────────────────────────────────────
 export default function UserAccount() {
+  useSEO(PAGE_SEO.account);
   const { user, isAuthenticated, loading, logout } = useAuth();
   const profileQuery = trpc.user.getProfile.useQuery(undefined, {
     enabled: isAuthenticated,

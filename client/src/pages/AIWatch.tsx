@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { aiWatchItems, AIWatchItem } from "@/lib/data";
 import { Brain, TrendingUp, TrendingDown, AlertTriangle, Minus } from "lucide-react";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 const sentimentConfig = {
   bullish: { color: '#00FF88', label: 'BULLISH', icon: TrendingUp },
@@ -126,6 +127,7 @@ function AIWatchCard({ item, index }: { item: AIWatchItem; index: number }) {
 }
 
 export default function AIWatch() {
+  useSEO(PAGE_SEO.aiWatch);
   const [activeCategory, setActiveCategory] = useState('All');
 
   const filtered = activeCategory === 'All'

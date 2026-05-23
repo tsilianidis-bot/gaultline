@@ -14,6 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Types (inferred from tRPC) ────────────────────────────────
 type LivePosition = {
@@ -669,6 +670,7 @@ function SummaryHeader({ summary }: { summary: NonNullable<any> }) {
 
 // ── Main Page ─────────────────────────────────────────────────
 function PortfolioInner() {
+  useSEO(PAGE_SEO.portfolio);
   const { user, loading: authLoading } = useAuth();
   const [showForm, setShowForm] = useState(false);
   const [editPosition, setEditPosition] = useState<LivePosition | null>(null);

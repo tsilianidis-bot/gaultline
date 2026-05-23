@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Style constants ───────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
@@ -326,6 +327,7 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
 
 // ── Main page ─────────────────────────────────────────────────
 function CryptoWatchlistInner() {
+  useSEO(PAGE_SEO.cryptoWatchlist);
   const [, navigate] = useLocation();
   const { user, loading: authLoading } = useAuth();
   const [compareSet, setCompareSet] = useState<Set<string>>(new Set());

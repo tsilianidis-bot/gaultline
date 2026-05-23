@@ -12,6 +12,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -602,6 +603,7 @@ function CryptoQuickSearch() {
 // ── Main Page ─────────────────────────────────────────────────
 
 function CryptoSignalsInner() {
+  useSEO(PAGE_SEO.cryptoSignals);
   const engine = useEngine();
   const { user } = useAuth();
 

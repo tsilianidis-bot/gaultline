@@ -20,6 +20,7 @@ import {
   loadWatchlist, saveWatchlist, evaluateBreach, getBreachDistance, nanoid8,
   AlertCondition, AlertSeverity,
 } from '@/lib/watchlist';
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Helpers ───────────────────────────────────────────────────
 function seededRand(seed: number) {
@@ -573,6 +574,7 @@ function SummaryBar({ items, liveValues }: { items: WatchlistItem[]; liveValues:
 
 // ── Main Watchlist page ───────────────────────────────────────
 export default function Watchlist() {
+  useSEO(PAGE_SEO.watchlist);
   const { indicators, output } = useEngine();
   const [items, setItems] = useState<WatchlistItem[]>(() => loadWatchlist());
   const [editingItem, setEditingItem] = useState<WatchlistItem | null | undefined>(undefined);

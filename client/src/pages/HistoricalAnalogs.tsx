@@ -12,6 +12,7 @@ import {
 import { useEngine } from '@/contexts/EngineContext';
 import { getRiskColor } from '@/components/RiskBadge';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Era data ──────────────────────────────────────────────────
 interface HistoricalEra {
@@ -205,6 +206,7 @@ function MatchTag({ text, type }: { text: string; type: 'match' | 'diverge' }) {
 }
 
 export default function HistoricalAnalogs() {
+  useSEO(PAGE_SEO.analogs);
   const { output } = useEngine();
   const { analogs: liveAnalogs, domains, overall } = output;
   const [selectedId, setSelectedId] = useState<string>('dotcom');

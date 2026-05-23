@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 const TT: React.CSSProperties = {
   background: '#0A0C10', border: '1px solid rgba(0,212,255,0.18)',
@@ -209,6 +210,7 @@ function CascadeItem({ step, label, trigger, color, delay }: {
 
 // ── Main Scenarios page ───────────────────────────────────────
 export default function Scenarios() {
+  useSEO(PAGE_SEO.scenarios);
   // ── ALL HOOKS MUST BE CALLED BEFORE ANY CONDITIONAL RETURN ──
   const { output, isLoading } = useEngine();
 

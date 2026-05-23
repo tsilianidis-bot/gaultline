@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Types (mirrored from server) ───────────────────────────────
 type AftershockLabel =
@@ -473,6 +474,7 @@ function ChainView({ chain }: { chain: AftershockChain }) {
 // ── Main Page ──────────────────────────────────────────────────
 
 function AftershockEnginePageInner() {
+  useSEO(PAGE_SEO.aftershock);
   const { data, isLoading, error, refetch } = trpc.aftershock.getAnalysis.useQuery(undefined, {
     refetchInterval: 3 * 60 * 1000, // refresh every 3 min
     staleTime: 2 * 60 * 1000,

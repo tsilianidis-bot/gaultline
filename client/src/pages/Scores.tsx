@@ -8,6 +8,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { DomainScore } from "@/lib/engine";
 import RiskBadge, { getRiskColor } from "@/components/RiskBadge";
 import ScoreRing from "@/components/ScoreRing";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Seeded deterministic sparkline ───────────────────────────
 function seededRand(seed: number) {
@@ -180,6 +181,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
 
 // ── Main Scores page ──────────────────────────────────────────
 export default function Scores() {
+  useSEO(PAGE_SEO.scores);
   const [mounted, setMounted] = useState(false);
   const { output } = useEngine();
   const { overall, domains } = output;

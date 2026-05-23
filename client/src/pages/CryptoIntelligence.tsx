@@ -12,6 +12,7 @@ import type {
   MomentumDir,
 } from "../../../server/cryptoIntelligence";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Colour helpers ────────────────────────────────────────────
 
@@ -334,6 +335,7 @@ function Skeleton({ className = "" }: { className?: string }) {
 // ── Main page ─────────────────────────────────────────────────
 
 function CryptoIntelligenceInner() {
+  useSEO(PAGE_SEO.crypto);
   const { data, isLoading, error, refetch } = trpc.crypto.getSignals.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,

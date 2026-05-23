@@ -13,6 +13,7 @@ import {
   severityColor, severityLabel, categoryLabel, THRESHOLD_RULES,
 } from '@/lib/regimeAlerts';
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Pressure gauge ─────────────────────────────────────────────
 function PressureGauge({ label, value, color }: { label: string; value: number; color: string }) {
@@ -236,6 +237,7 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
 
 // ── Main Alerts page ──────────────────────────────────────────
 function AlertsInner() {
+  useSEO(PAGE_SEO.alerts);
   const { output, indicators, isLive } = useEngine();
   const { overall, domains, regime, alertPressure } = output;
 

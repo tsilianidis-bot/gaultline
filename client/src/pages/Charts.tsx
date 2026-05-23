@@ -29,6 +29,7 @@ import {
 import { getRiskColor } from "@/components/RiskBadge";
 import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Shared tooltip style ──────────────────────────────────────
 const TT: React.CSSProperties = {
@@ -765,6 +766,7 @@ function InstitutionalWidgets() {
 
 // ── Main Charts Page ────────────────────────────────────────────
 export default function Charts() {
+  useSEO(PAGE_SEO.charts);
   const { isLive, lastUpdated } = useEngine();
   return (
     <div style={{ minHeight: '100vh', background: '#050608', padding: '20px 16px 32px', maxWidth: '800px', margin: '0 auto' }}>

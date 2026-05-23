@@ -15,6 +15,7 @@ import {
 } from '@/lib/signalsData';
 import { LineChart, Line, ResponsiveContainer, Tooltip as RTooltip } from 'recharts';
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -861,6 +862,7 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
 
 // ── Main Signals Page ─────────────────────────────────────────
 function SignalsInner() {
+  useSEO(PAGE_SEO.signals);
   const engine = useEngine();
 
   // ── Live Polygon.io data state ─────────────────────────────

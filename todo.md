@@ -387,72 +387,72 @@
 ## Recovery Confirmation System
 
 ### Backend
-- [ ] Create server/recoveryEngine.ts — Recovery Confirmation System with asymmetric risk decay
-- [ ] Recovery status enum: Breakdown Continuing / Relief Bounce / Recovery Attempt / Stabilizing / Confirmed Recovery
-- [ ] Recovery Confidence Score 0–100 with 8 weighted components
-- [ ] Aftershock Risk metric: Low / Moderate / Elevated / High
-- [ ] Confirmation rules: 3-close (5-close for crypto) consecutive closes, volume, volatility, breadth, macro pressure
-- [ ] Asymmetric decay: risk rises fast, falls slowly (only after confirmation)
-- [ ] BTC-specific logic: stricter 5-close confirmation, specific language for weak bounces
-- [ ] Add recovery.getAssetRecovery and recovery.getMarketRecovery tRPC procedures
+- [x] Create server/recoveryEngine.ts — Recovery Confirmation System with asymmetric risk decay
+- [x] Recovery status enum: Breakdown Continuing / Relief Bounce / Recovery Attempt / Stabilizing / Confirmed Recovery
+- [x] Recovery Confidence Score 0–100 with 8 weighted components
+- [x] Aftershock Risk metric: Low / Moderate / Elevated / High
+- [x] Confirmation rules: 3-close (5-close for crypto) consecutive closes, volume, volatility, breadth, macro pressure
+- [x] Asymmetric decay: risk rises fast, falls slowly (only after confirmation)
+- [x] BTC-specific logic: stricter 5-close confirmation, specific language for weak bounces
+- [x] Add recovery.getAssetRecovery and recovery.getMarketRecovery tRPC procedures
 
 ### Frontend
-- [ ] Build RecoveryStatus.tsx component — color-coded status card (Red/Orange/Yellow/Blue/Green)
-- [ ] Recovery Confidence gauge bar (0–100, labeled tiers)
-- [ ] Aftershock Risk badge (Low/Moderate/Elevated/High with color coding)
-- [ ] Confirmation Status panel: checklist of 8 confirmation rules with pass/fail indicators
-- [ ] Key Reasoning text block (BTC-specific language when applicable)
-- [ ] Tooltip explanations for: Recovery Confidence, Aftershock Risk, Recovery Attempt, Confirmed Recovery, Relief Bounce, Breakdown Level
-- [ ] Dashboard fields: Market Regime, Recovery Confidence, Aftershock Risk, Trend Bias, Confirmation Status, Key Reasoning
-- [ ] Integrate RecoveryStatus into CryptoSignals page (per-asset recovery panel)
-- [ ] Integrate RecoveryStatus into CryptoSearch intelligence card
-- [ ] Add Recovery Overview panel to Dashboard homepage
+- [x] Build RecoveryStatus.tsx component — color-coded status card (Red/Orange/Yellow/Blue/Green)
+- [x] Recovery Confidence gauge bar (0–100, labeled tiers)
+- [x] Aftershock Risk badge (Low/Moderate/Elevated/High with color coding)
+- [x] Confirmation Status panel: checklist of 8 confirmation rules with pass/fail indicators
+- [x] Key Reasoning text block (BTC-specific language when applicable)
+- [x] Tooltip explanations for: Recovery Confidence, Aftershock Risk, Recovery Attempt, Confirmed Recovery, Relief Bounce, Breakdown Level
+- [x] Dashboard fields: Market Regime, Recovery Confidence, Aftershock Risk, Trend Bias, Confirmation Status, Key Reasoning
+- [x] Integrate RecoveryStatus into CryptoSignals page (per-asset recovery panel)
+- [x] Integrate RecoveryStatus into CryptoSearch intelligence card
+- [x] Add Recovery Overview panel to Dashboard homepage
 
 ### Tests & QA
-- [ ] Write Vitest tests for recoveryEngine.ts
-- [ ] TypeScript check passes, all tests still pass
+- [x] Write Vitest tests for recoveryEngine.ts
+- [x] TypeScript check passes, all tests still pass
 
 ## Premium Access Gating Layer
 
-- [ ] Build PremiumGate.tsx component — glass-blur overlay, lock icon, tier label, CTA buttons
-- [ ] PremiumGate variants: "Founding Access Required", "Advanced Signals Restricted", "Real-Time Risk Engine Locked", "Premium Intelligence Locked"
-- [ ] CTA buttons: "Request Founding Access", "Unlock Full Intelligence", "Join Early Access"
-- [ ] Cinematic gating transition (fade-in overlay on scroll into view)
-- [ ] Apply PremiumGate to Signals page (full page gate for unauthenticated users)
-- [ ] Apply PremiumGate to CryptoSignals page
-- [ ] Apply PremiumGate to CryptoSearch page (basic search allowed, advanced analytics gated)
-- [ ] Apply PremiumGate to CryptoWatchlist page
-- [ ] Apply PremiumGate to AftershockEngine page
-- [ ] Apply PremiumGate to CryptoIntelligence page
-- [ ] Apply PremiumGate to Portfolio page
-- [ ] Apply PremiumGate to Alerts page
-- [ ] Update Dashboard homepage — add founding access CTA section and limited live metrics teaser
-- [ ] TypeScript check passes, all tests still pass
+- [x] Build PremiumGate.tsx component — glass-blur overlay, lock icon, tier label, CTA buttons
+- [x] PremiumGate variants: "Founding Access Required", "Advanced Signals Restricted", "Real-Time Risk Engine Locked", "Premium Intelligence Locked"
+- [x] CTA buttons: "Request Founding Access", "Unlock Full Intelligence", "Join Early Access"
+- [x] Cinematic gating transition (fade-in overlay on scroll into view)
+- [x] Apply PremiumGate to Signals page (full page gate for unauthenticated users)
+- [x] Apply PremiumGate to CryptoSignals page
+- [x] Apply PremiumGate to CryptoSearch page (basic search allowed, advanced analytics gated)
+- [x] Apply PremiumGate to CryptoWatchlist page
+- [x] Apply PremiumGate to AftershockEngine page
+- [x] Apply PremiumGate to CryptoIntelligence page
+- [x] Apply PremiumGate to Portfolio page
+- [x] Apply PremiumGate to Alerts page
+- [x] Update Dashboard homepage — add founding access CTA section and limited live metrics teaser
+- [x] TypeScript check passes, all tests still pass
 
 ## Authentication & Access-Tier System
-- [ ] Schema: add accessTier enum (free, premium, founding) to users table
-- [ ] Schema: create foundingAccessRequests table (id, userId, email, message, status, createdAt)
-- [ ] DB migration: apply schema changes via webdev_execute_sql
-- [ ] DB helpers: getUserTier, setUserTier, createFoundingRequest, getFoundingRequests
-- [ ] tRPC: user.getProfile — returns user + tier + stats
-- [ ] tRPC: user.requestFoundingAccess — creates founding access request
-- [ ] tRPC: user.getAccessTier — returns current tier
-- [ ] tRPC: admin.setUserTier — admin-only tier management
-- [ ] tRPC: admin.getFoundingRequests — admin-only view of requests
-- [ ] UserAccount.tsx page — account dashboard with tier badge, watchlists, alerts, preferences
-- [ ] AppLayout: add auth controls to header (login button for guests, user avatar/tier pill for logged-in)
-- [ ] AppLayout: add Account nav item to MANAGE group
-- [ ] Apply PremiumGateFull to Signals.tsx
-- [ ] Apply PremiumGateFull to CryptoSignals.tsx
-- [ ] Apply PremiumGateFull to CryptoSearch.tsx
-- [ ] Apply PremiumGateFull to CryptoWatchlist.tsx
-- [ ] Apply PremiumGateFull to AftershockEngine.tsx
-- [ ] Apply PremiumGateFull to CryptoIntelligence.tsx
-- [ ] Apply PremiumGateFull to Portfolio.tsx
-- [ ] Apply PremiumGateFull to Alerts.tsx
-- [ ] Dashboard: add founding access request form / waitlist section
-- [ ] Vitest tests for new tRPC procedures
-- [ ] TypeScript check passes, all tests still pass
+- [x] Schema: add accessTier enum (free, premium, founding) to users table
+- [x] Schema: create foundingAccessRequests table (id, userId, email, message, status, createdAt)
+- [x] DB migration: apply schema changes via webdev_execute_sql
+- [x] DB helpers: getUserTier, setUserTier, createFoundingRequest, getFoundingRequests
+- [x] tRPC: user.getProfile — returns user + tier + stats
+- [x] tRPC: user.requestFoundingAccess — creates founding access request
+- [x] tRPC: user.getAccessTier — returns current tier
+- [x] tRPC: admin.setUserTier — admin-only tier management
+- [x] tRPC: admin.getFoundingRequests — admin-only view of requests
+- [x] UserAccount.tsx page — account dashboard with tier badge, watchlists, alerts, preferences
+- [x] AppLayout: add auth controls to header (login button for guests, user avatar/tier pill for logged-in)
+- [x] AppLayout: add Account nav item to MANAGE group
+- [x] Apply PremiumGateFull to Signals.tsx
+- [x] Apply PremiumGateFull to CryptoSignals.tsx
+- [x] Apply PremiumGateFull to CryptoSearch.tsx
+- [x] Apply PremiumGateFull to CryptoWatchlist.tsx
+- [x] Apply PremiumGateFull to AftershockEngine.tsx
+- [x] Apply PremiumGateFull to CryptoIntelligence.tsx
+- [x] Apply PremiumGateFull to Portfolio.tsx
+- [x] Apply PremiumGateFull to Alerts.tsx
+- [x] Dashboard: add founding access request form / waitlist section
+- [x] Vitest tests for new tRPC procedures
+- [x] TypeScript check passes, all tests still pass
 
 ## Authentication & Access-Tier System
 - [x] Schema migration: add accessTier to users table
@@ -467,3 +467,18 @@
 - [x] Premium pages gated: Signals, AftershockEngine, Portfolio, CryptoSignals, CryptoSearch, CryptoWatchlist, Alerts, CryptoIntelligence
 - [x] Vitest tests: 14 new tests for tier/founding access procedures (285 total passing)
 
+
+## SEO Optimization
+- [x] index.html: full meta description, keywords, author, robots directives
+- [x] index.html: Open Graph tags (og:type, og:url, og:title, og:description, og:image, og:locale)
+- [x] index.html: Twitter/X card tags (summary_large_image, title, description, image)
+- [x] index.html: favicon metadata (theme-color, apple-touch-icon, apple-mobile-web-app)
+- [x] index.html: JSON-LD structured data (SoftwareApplication + Organization schemas)
+- [x] index.html: canonical URL pointing to https://getfaultline.live/
+- [x] useSEO hook: per-route dynamic document.title, meta description, OG/Twitter updates
+- [x] useSEO hook: PAGE_SEO config for all 18 routes with optimized titles and descriptions
+- [x] Dashboard.tsx: visually hidden H1 for search engine crawlers
+- [x] Dashboard.tsx: SEO content section with H2/H3 hierarchy (6 platform intelligence articles)
+- [x] seoRoutes.ts: Express routes for /sitemap.xml (9 public URLs) and /robots.txt
+- [x] robots.txt: Disallow for all gated/premium paths, Sitemap directive
+- [x] sitemap.xml: changefreq and priority for all public pages

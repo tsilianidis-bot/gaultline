@@ -13,6 +13,7 @@ import {
   ChevronDown, ChevronRight, Search, Shield, Cpu, Database,
   Target, Eye, Layers, Info, ArrowRight,
 } from "lucide-react";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -690,6 +691,7 @@ const SECTIONS: Section[] = [
 // ─── Main Guide Component ─────────────────────────────────────────────────────
 
 export default function Guide() {
+  useSEO(PAGE_SEO.guide);
   const [activeId, setActiveId] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
 

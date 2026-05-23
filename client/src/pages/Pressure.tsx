@@ -7,6 +7,7 @@ import { useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap } from "lucide-react";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Types (mirror server output) ─────────────────────────────
 type PressureLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
@@ -676,6 +677,7 @@ function PressureSkeleton() {
 
 // ── Main Pressure Page ────────────────────────────────────────
 export default function Pressure() {
+  useSEO(PAGE_SEO.pressure);
   const { data, isLoading, error, refetch, isFetching } = trpc.pressure.getCurrentPressure.useQuery(
     undefined,
     { refetchInterval: 5 * 60 * 1000 } // auto-refresh every 5 minutes

@@ -18,6 +18,7 @@ import {
   FileText, Download, Share2, Printer, AlertTriangle,
   TrendingUp, TrendingDown, Shield, Zap, Clock, Info,
 } from 'lucide-react';
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Typewriter hook ──────────────────────────────────────────
 function useTypewriter(text: string, speed = 18): { displayed: string; done: boolean } {
@@ -72,6 +73,7 @@ const PRINT_STYLES = `
 `;
 
 export default function DailyReport() {
+  useSEO(PAGE_SEO.report);
   const { output, indicators, isLive, lastUpdated, isSimulating } = useEngine();
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const reportRef = useRef<HTMLDivElement>(null);

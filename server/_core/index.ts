@@ -9,6 +9,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { registerFredProxy } from "../fredProxy";
 import { registerSignalsProxy } from "../signalsProxy";
 import { registerCoinGeckoProxy } from "../coingeckoProxy";
+import { registerSEORoutes } from "../seoRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -79,6 +80,7 @@ async function startServer() {
   registerFredProxy(app);
   registerSignalsProxy(app);
   registerCoinGeckoProxy(app);
+  registerSEORoutes(app);
 
   // tRPC API
   app.use(
