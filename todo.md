@@ -275,3 +275,25 @@
 - [x] Fix test: diagnostic.getReport is the correct procedure name (not getDiagnostic)
 - [x] Fix signals.proxy.test.ts caching test — cached:false on first fetch is valid behavior
 - [x] Full test suite: 175/175 passing, 0 TypeScript errors
+
+## Crypto Market Intelligence Layer
+
+### Backend
+- [x] Create server/cryptoIntelligence.ts — scoring engine for 6 crypto assets (BTC/ETH/SOL/Total Market Cap/Altcoin Season/Stablecoin Liquidity)
+- [x] Add crypto.getSignals tRPC procedure in routers.ts
+- [x] Add crypto.getBitcoinDashboard tRPC procedure (BTC trend, liquidity, DXY pressure, yield pressure, ETF flow, cycle phase)
+- [x] Write Vitest tests for cryptoIntelligence.ts — 12/12 passing
+
+### Frontend
+- [x] Create client/src/pages/CryptoIntelligence.tsx with all 5 feature blocks
+- [x] Block 1: Crypto Market Signals — 6 signal cards (BTC/ETH/SOL/Market Cap/Altcoin Season/Stablecoin Liquidity)
+- [x] Block 2: Bitcoin Macro Dashboard — 6 metric tiles (trend, liquidity, DXY, yields, ETF flow, cycle phase)
+- [x] Block 3: Altcoin Risk Engine — explanatory section with risk factor chips
+- [x] Block 4: Crypto + Macro Correlation — Fed policy, rates, dollar, liquidity, equity risk, bond stress
+- [x] Block 5: Portfolio Action Guidance — Add/Hold/Trim/Reduce/Cash labels with conditions
+- [x] Hero headline: "Crypto moves first when liquidity changes. FAULTLINE is built to detect the shift."
+- [x] CTA: "Join early access and track crypto, stocks, macro risk, and systemic pressure from one intelligence dashboard."
+- [x] Visual: dark bg, neon blue/red/orange accents, BTC/ETH iconography, glowing charts, liquidity wave, risk gauges
+- [x] Add /crypto route to App.tsx
+- [x] Add Crypto to INTELLIGENCE group in AppLayout navigation (desktop + mobile More drawer)
+- [x] Update feature summary tagline: Macro • Stocks • Crypto • Liquidity • Systemic Risk

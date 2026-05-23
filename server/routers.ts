@@ -10,6 +10,7 @@ import { computeTradingSignals, computeTradingSignal, clearSignalCache } from ".
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
 import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers } from "./db";
+import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getQuotes } from "./yahooProxy";
 import { protectedProcedure } from "./_core/trpc";
 
@@ -393,6 +394,22 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Position guidance failed", cause: err });
         }
       }),
+  }),
+  crypto: router({
+    // Get FAULTLINE Crypto Intelligence™ report
+    getSignals: publicProcedure
+      .query(async () => {
+        try {
+          return await getCryptoIntelligence();
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto intelligence failed", cause: err });
+        }
+      }),
+    // Clear crypto cache
+    clearCache: publicProcedure.mutation(() => {
+      clearCryptoCache();
+      return { success: true };
+    }),
   }),
   admin: router({
     // List all registered users — admin only

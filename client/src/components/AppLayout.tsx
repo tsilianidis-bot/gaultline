@@ -9,7 +9,7 @@ import { ReactNode, useState, useCallback } from "react";
 import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
-  Cpu, MoreHorizontal, X, Briefcase, Shield,
+  Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -48,6 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "diagnostic", label: "Diagnostic AI",shortLabel: "AI Diag", icon: Cpu,             path: "/diagnostic" },
       { id: "ai-watch",   label: "AI Watch",     shortLabel: "AI Watch",icon: Brain,           path: "/ai-watch" },
       { id: "signals",    label: "Signals",      shortLabel: "Signals", icon: Radio,           path: "/signals" },
+      { id: "crypto",     label: "Crypto",       shortLabel: "Crypto",  icon: Bitcoin,         path: "/crypto" },
     ],
   },
   {

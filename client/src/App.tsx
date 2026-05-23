@@ -32,6 +32,7 @@ const Guide           = lazy(() => import("./pages/Guide"));
 const DiagnosticAI    = lazy(() => import("./pages/DiagnosticAI"));
 const Portfolio       = lazy(() => import("./pages/Portfolio"));
 const AdminUsers      = lazy(() => import("./pages/AdminUsers"));
+const CryptoIntelligence = lazy(() => import("./pages/CryptoIntelligence"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -73,6 +74,7 @@ function Router() {
           <Route path="/report" component={DailyReport} />
           <Route path="/watchlist" component={Watchlist} />
           <Route path="/signals" component={Signals} />
+          <Route path="/crypto" component={CryptoIntelligence} />
           <Route path="/guide" component={Guide} />
           <Route path="/diagnostic" component={DiagnosticAI} />
           <Route path="/portfolio" component={Portfolio} />
