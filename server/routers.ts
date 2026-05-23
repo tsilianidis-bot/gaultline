@@ -15,6 +15,7 @@ import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats } from "./coingeckoProxy";
 import { getQuotes } from "./yahooProxy";
+import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { protectedProcedure } from "./_core/trpc";
 
 export const appRouter = router({
@@ -515,6 +516,38 @@ export const appRouter = router({
         }),
     }),
   }),
+  aftershock: router({
+    // Run the full Aftershock Engine™ — detect ruptures and map aftershock chains
+    getAnalysis: publicProcedure
+      .query(async () => {
+        try {
+          return await runAftershockEngine();
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Aftershock Engine failed", cause: err });
+        }
+      }),
+
+    // Get the contagion chain for a specific asset
+    getAssetChain: publicProcedure
+      .input(z.object({ symbol: z.string().min(1).max(10) }))
+      .query(async ({ input }) => {
+        try {
+          const edges = getAssetContagionChain(input.symbol.toUpperCase());
+          const allAssets = getAllContagionAssets();
+          return { symbol: input.symbol.toUpperCase(), edges, allAssets };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Asset chain lookup failed", cause: err });
+        }
+      }),
+
+    // Clear the aftershock engine cache
+    clearCache: publicProcedure
+      .mutation(async () => {
+        clearAftershockCache();
+        return { success: true };
+      }),
+  }),
+
   admin: router({
     // List all registered users — admin only
     getUsers: protectedProcedure

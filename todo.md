@@ -344,3 +344,21 @@
 - [x] Add Crypto Watch entry to INTELLIGENCE nav group (Bookmark icon)
 - [x] Empty state: prompt to search and save first token
 - [x] TypeScript check passes (0 errors), 217/217 tests pass
+
+## Aftershock Engine™
+
+- [ ] server/aftershockEngine.ts — rupture detection, contagion graph, aftershock scoring, signal labels
+- [ ] Rupture detection: volatility spikes, unusual volume, breakout momentum, macro events, crypto breakouts
+- [ ] Contagion graph: asset relationship map (stocks/ETFs/crypto/sectors/macro-sensitive)
+- [ ] Aftershock signal labels: Primary Rupture, First-Wave Aftershock, Delayed Reaction, Sympathy Momentum, Sector Echo, Liquidity Spillover, Macro Shockwave, Fading Aftershock, False Aftershock
+- [ ] Aftershock intelligence card: trigger asset, related asset, probability score, timing window, strength score, relationship type, bullish/bearish, confidence, confirmation status, "Why This Aftershock?" explanation
+- [ ] tRPC procedures: aftershock.getActiveRuptures, aftershock.getAftershocks, aftershock.getAssetChain
+- [ ] AftershockEngine.tsx page — Aftershock Map, ripple visualization, intelligence cards, delayed reaction watchlist
+- [ ] Aftershock Map: visual contagion network showing ripple paths between assets
+- [ ] Strength Meter and Timing Window Indicator components
+- [ ] Macro Shockwave visualization
+- [ ] Wire /aftershock route in App.tsx
+- [ ] Add Aftershock Engine™ to INTELLIGENCE nav group
+- [ ] Integration: reference from Signals, Crypto Intel, and Dashboard pages
+- [ ] Vitest tests for aftershockEngine.ts
+- [ ] TypeScript check passes, all tests still pass

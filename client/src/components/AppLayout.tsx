@@ -9,7 +9,7 @@ import { ReactNode, useState, useCallback } from "react";
 import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
-  Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark,
+  Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -50,6 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "signals",    label: "Signals",      shortLabel: "Signals", icon: Radio,           path: "/signals" },
       { id: "crypto",     label: "Crypto Intel", shortLabel: "Crypto",  icon: Bitcoin,         path: "/crypto-search" },
       { id: "crypto-watchlist", label: "Crypto Watch", shortLabel: "CWatch", icon: Bookmark,       path: "/crypto-watchlist" },
+      { id: "aftershock",       label: "Aftershock™",  shortLabel: "Shock",  icon: Waves,           path: "/aftershock" },
     ],
   },
   {
