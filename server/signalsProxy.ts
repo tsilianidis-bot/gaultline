@@ -17,6 +17,7 @@
 //   GET /api/signals/health          — health/cache status
 //   POST /api/signals/clear-cache    — clear quote cache
 // ============================================================
+import { log } from "./logger";
 import type { Express, Request, Response } from "express";
 
 const POLYGON_BASE = "https://api.polygon.io";
@@ -179,7 +180,7 @@ async function fetchSparklinesBg(apiKey: string, tradeDate: string): Promise<voi
   const BATCH_SIZE = 3;
   const BATCH_DELAY_MS = 14000; // 14s between batches → ~3 req/min per batch
 
-  console.log(`[Signals Proxy] Background sparkline fetch started (${PRIORITY_TICKERS.length} tickers)`);
+  log.info(`[Signals Proxy] Background sparkline fetch started (${PRIORITY_TICKERS.length} tickers)`);
 
   try {
     for (let i = 0; i < PRIORITY_TICKERS.length; i += BATCH_SIZE) {
@@ -204,7 +205,7 @@ async function fetchSparklinesBg(apiKey: string, tradeDate: string): Promise<voi
       }
     }
     sparklineFetchedAt = Date.now();
-    console.log(`[Signals Proxy] Background sparkline fetch complete (${sparklineCache.size}/${PRIORITY_TICKERS.length} tickers)`);
+    // background sparkline fetch complete
 
     // Merge sparklines into the quotes cache if it's still fresh
     if (quotesCache && Date.now() - quotesCache.fetchedAt < CACHE_TTL_MS) {
@@ -498,7 +499,7 @@ export function registerSignalsProxy(app: Express) {
     const apiKey = process.env.POLYGON_API_KEY;
 
     if (!apiKey) {
-      console.error("[Signals Proxy] POLYGON_API_KEY not set");
+      log.error("[Signals Proxy] POLYGON_API_KEY not set");
       res.status(503).json({
         error: "Market data service not configured",
         source: "fallback",
@@ -544,7 +545,7 @@ export function registerSignalsProxy(app: Express) {
       if (sparklineAge > SPARKLINE_TTL_MS && !sparklineFetchInProgress) {
         // Fire and forget — don't await
         fetchSparklinesBg(apiKey, tradeDate).catch(err => {
-          console.error("[Signals Proxy] Background sparkline fetch error:", err);
+          log.error("[Signals Proxy] Background sparkline fetch error:", err);
         });
       }
 
@@ -561,7 +562,7 @@ export function registerSignalsProxy(app: Express) {
       });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      console.error("[Signals Proxy] Error fetching from Polygon.io:", errMsg);
+      log.error("[Signals Proxy] Error fetching from Polygon.io", { errMsg });
 
       // Return stale cache if available, otherwise fallback
       if (quotesCache) {
@@ -774,7 +775,7 @@ export function registerSignalsProxy(app: Express) {
       res.json({ ...profile, cached: false });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      console.error(`[Signals Proxy] Ticker lookup error for ${raw}:`, errMsg);
+      log.error(`[Signals Proxy] Ticker lookup error for ${raw}`, { errMsg });
 
       // Return stale cache if available
       if (cached) {
@@ -796,5 +797,5 @@ export function registerSignalsProxy(app: Express) {
     }
   });
 
-  console.log("[Signals Proxy] Routes registered: GET /api/signals/quotes, GET /api/signals/ticker/:symbol, GET /api/signals/health, GET /api/signals/daily-bars, POST /api/signals/clear-cache");
+  // routes registered (startup log removed for production)
 }

@@ -8,6 +8,7 @@
 // ============================================================
 import type { Express, Request, Response } from "express";
 import { LRUCache } from "./lruCache";
+import { log } from "./logger";
 
 const FRED_API_KEY = "458f0a0564e325c70e60f016f6f85f79";
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
@@ -50,7 +51,7 @@ export function registerFredProxy(app: Express) {
       });
 
       if (!fredRes.ok) {
-        console.error(`[FRED Proxy] HTTP ${fredRes.status} for ${seriesId}`);
+        log.error(`[FRED Proxy] HTTP ${fredRes.status} for ${seriesId}`);
         res.status(fredRes.status).json({ error: `FRED returned HTTP ${fredRes.status}` });
         return;
       }
@@ -62,7 +63,7 @@ export function registerFredProxy(app: Express) {
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.json(data);
     } catch (err) {
-      console.error(`[FRED Proxy] Error fetching ${seriesId}:`, err);
+      log.error(`[FRED Proxy] Error fetching ${seriesId}`, { err: err as Error });
       res.status(502).json({ error: "Failed to fetch from FRED API" });
     }
   });
@@ -124,5 +125,5 @@ export function registerFredProxy(app: Express) {
     res.json({ success: true, message: "FRED cache cleared" });
   });
 
-  console.log("[FRED Proxy] Routes registered: GET /api/fred, POST /api/fred/bulk, POST /api/fred/clear-cache");
+  // routes registered (startup log removed for production)
 }

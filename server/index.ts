@@ -1,4 +1,5 @@
 import express from "express";
+import { log } from "./logger";
 import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -26,8 +27,8 @@ async function startServer() {
   const port = process.env.PORT || 3000;
 
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+    log.info(`Server running on http://localhost:${port}/`);
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((err) => log.error("Server startup failed", { err }));

@@ -97,9 +97,16 @@ function SeismicWave({ color, score }: { color: string; score: number }) {
     const freq2 = 0.015 + score * 0.002;
     const freq3 = 0.035 + score * 0.005;
     let animId: number;
+    // Size canvas once (not every frame — avoids per-frame layout reflow)
+    canvas.width = canvas.offsetWidth || 400;
+    canvas.height = canvas.offsetHeight || 52;
+    // Resize observer to handle container size changes
+    const ro = new ResizeObserver(() => {
+      canvas.width = canvas.offsetWidth || 400;
+      canvas.height = canvas.offsetHeight || 52;
+    });
+    ro.observe(canvas);
     const draw = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
       const w = canvas.width; const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
@@ -159,7 +166,7 @@ function SeismicWave({ color, score }: { color: string; score: number }) {
       animId = requestAnimationFrame(draw);
     };
     draw();
-    return () => cancelAnimationFrame(animId);
+    return () => { cancelAnimationFrame(animId); ro.disconnect(); };
   }, [color, score]);
   return (
     <canvas ref={canvasRef} style={{ width: '100%', height: '52px', display: 'block', opacity: 0.9 }} />

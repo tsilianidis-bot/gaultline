@@ -12,6 +12,8 @@
 //  • Extensible: add new vectors by pushing to VECTOR_CONFIGS.
 // ============================================================
 
+import { log } from "../logger";
+
 // ── Types ────────────────────────────────────────────────────
 
 export type PressureLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
@@ -513,7 +515,7 @@ export async function calculateFaultlinePressure(
       dataSource = "live";
     }
   } catch (err) {
-    console.warn("[Pressure Engine] FRED fetch failed, using fallback values:", err);
+    log.warn("[Pressure Engine] FRED fetch failed, using fallback values", { err: err as Error });
   }
 
   // ── 2. Apply fallback values if FRED unavailable ───────────

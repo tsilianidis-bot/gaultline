@@ -114,10 +114,16 @@
   * {
     @apply border-border outline-ring/50;
     -webkit-tap-highlight-color: transparent;
+    /* Sharper text rendering — Bloomberg terminal precision */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   html {
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
+    /* Prevent layout shift from scrollbar appearing */
+    scrollbar-gutter: stable;
   }
   body {
     background: var(--fl-void);
@@ -759,4 +765,193 @@
       animation: fade-slide-up 0.3s ease both;
     }
   }
+
+  /* ── Bloomberg × Apple premium visual refinements ──────────────────────── */
+
+  /* Premium stat value — Bloomberg terminal number style */
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+    letter-spacing: -0.02em;
+  }
+
+  /* Premium label — Apple SF-inspired uppercase label */
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(148, 163, 184, 0.7);
+    font-weight: 500;
+  }
+
+  /* Tectonic divider — hairline with glow */
+  .tectonic-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(0,212,255,0.15) 30%, rgba(0,212,255,0.25) 50%, rgba(0,212,255,0.15) 70%, transparent 100%);
+    margin: 0;
+  }
+
+  /* Premium input — terminal-style focus ring */
+  .terminal-input {
+    background: rgba(5,6,8,0.8);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    color: #E2E8F0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    transition: border-color 0.15s cubic-bezier(0.23,1,0.32,1), box-shadow 0.15s cubic-bezier(0.23,1,0.32,1);
+  }
+  .terminal-input:focus {
+    outline: none;
+    border-color: rgba(0,212,255,0.4);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08), 0 0 12px rgba(0,212,255,0.1);
+  }
+  .terminal-input::placeholder {
+    color: rgba(100,116,139,0.6);
+  }
+
+  /* Premium button — Apple-style with terminal glow */
+  .btn-terminal {
+    background: linear-gradient(135deg, rgba(0,212,255,0.12) 0%, rgba(0,102,255,0.08) 100%);
+    border: 1px solid rgba(0,212,255,0.25);
+    border-radius: 5px;
+    color: #00D4FF;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: all 0.15s cubic-bezier(0.23,1,0.32,1);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-terminal:hover {
+    background: linear-gradient(135deg, rgba(0,212,255,0.18) 0%, rgba(0,102,255,0.12) 100%);
+    border-color: rgba(0,212,255,0.45);
+    box-shadow: 0 0 16px rgba(0,212,255,0.15), 0 2px 8px rgba(0,0,0,0.4);
+    transform: translateY(-1px);
+  }
+  .btn-terminal:active {
+    transform: scale(0.97) translateY(0);
+    transition-duration: 0.08s;
+  }
+
+  /* Danger variant */
+  .btn-terminal-danger {
+    background: linear-gradient(135deg, rgba(255,45,85,0.1) 0%, rgba(180,0,40,0.07) 100%);
+    border-color: rgba(255,45,85,0.25);
+    color: #FF2D55;
+  }
+  .btn-terminal-danger:hover {
+    background: linear-gradient(135deg, rgba(255,45,85,0.18) 0%, rgba(180,0,40,0.12) 100%);
+    border-color: rgba(255,45,85,0.45);
+    box-shadow: 0 0 16px rgba(255,45,85,0.15), 0 2px 8px rgba(0,0,0,0.4);
+  }
+
+  /* Premium badge — Bloomberg status chip */
+  .badge-terminal {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    border: 1px solid currentColor;
+    opacity: 0.9;
+  }
+
+  /* Premium section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .section-header-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.06) 0%, transparent 100%);
+  }
+  .section-header-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(100,116,139,0.8);
+    white-space: nowrap;
+  }
+
+  /* Metric tile — Bloomberg data cell */
+  .metric-tile {
+    background: rgba(8,10,16,0.7);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 12px 14px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+  }
+  .metric-tile:hover {
+    border-color: rgba(255,255,255,0.1);
+    background: rgba(10,13,20,0.85);
+  }
+
+  /* Positive / negative color utilities */
+  .text-positive { color: #00FF88; }
+  .text-negative { color: #FF2D55; }
+  .text-warning  { color: #FF9500; }
+  .text-neutral  { color: #94A3B8; }
+  .text-electric { color: #00D4FF; }
+
+  /* Background tint utilities */
+  .bg-positive-tint { background: rgba(0,255,136,0.08); }
+  .bg-negative-tint { background: rgba(255,45,85,0.08); }
+  .bg-warning-tint  { background: rgba(255,149,0,0.08); }
+  .bg-electric-tint { background: rgba(0,212,255,0.08); }
+
+  /* ── Improved mobile card padding ────────────────────────── */
+  @media (max-width: 768px) {
+    .glass-card,
+    .glass-card-accent,
+    .intel-module {
+      border-radius: 6px;
+    }
+    /* Tighter spacing on mobile for data-dense views */
+    .metric-tile {
+      padding: 10px 12px;
+    }
+  }
+
+  /* ── Focus visible ring — Apple-style ───────────────────── */
+  :focus-visible {
+    outline: 2px solid rgba(0,212,255,0.5);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+  /* Remove focus ring for mouse users */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* ── Selection color ─────────────────────────────────────── */
+  ::selection {
+    background: rgba(0,212,255,0.2);
+    color: #E2E8F0;
+  }
+
+  /* ── Improved scrollbar — thinner, more premium ─────────── */
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0,212,255,0.15);
+    border-radius: 2px;
+    transition: background 0.2s ease;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.35); }
+  ::-webkit-scrollbar-corner { background: transparent; }
 }

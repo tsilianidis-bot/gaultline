@@ -13,6 +13,7 @@
 // ============================================================
 
 import { LRUCache } from "./lruCache";
+import { log } from "./logger";
 
 const CACHE_TTL_MS = 60_000; // 60 seconds
 
@@ -121,16 +122,16 @@ async function fetchQuoteWithFallback(ticker: string): Promise<YahooQuote> {
   try {
     return await fetchYahooQuote(ticker);
   } catch (yahooErr: any) {
-    console.warn(`[Yahoo Proxy] Yahoo failed for ${ticker}: ${yahooErr?.message} — trying Polygon fallback`);
+    log.warn(`[Yahoo Proxy] Yahoo failed for ${ticker}: ${yahooErr?.message} — trying Polygon fallback`);
   }
 
   // 2. Try Polygon prev-close
   try {
     const q = await fetchPolygonPrevClose(ticker);
-    console.info(`[Yahoo Proxy] Polygon fallback succeeded for ${ticker}`);
+    log.info(`[Yahoo Proxy] Polygon fallback succeeded for ${ticker}`);
     return q;
   } catch (polyErr: any) {
-    console.warn(`[Yahoo Proxy] Polygon fallback also failed for ${ticker}: ${polyErr?.message}`);
+    log.warn(`[Yahoo Proxy] Polygon fallback also failed for ${ticker}: ${polyErr?.message}`);
   }
 
   // 3. Return error placeholder
