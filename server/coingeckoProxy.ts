@@ -18,16 +18,27 @@ import { log } from "./logger";
 
 const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
 
-// Cache TTLs (ms)
-const SEARCH_TTL    = 5  * 60 * 1000;  // 5 min — search results stable
-const MARKET_TTL    = 2  * 60 * 1000;  // 2 min — prices
-const GLOBAL_TTL    = 3  * 60 * 1000;  // 3 min — global stats
-const ASSET_TTL     = 2  * 60 * 1000;  // 2 min — individual asset
+// Cache TTLs (ms) — generous to stay within CoinGecko free-tier 30 req/min
+const SEARCH_TTL    = 10 * 60 * 1000;  // 10 min — search results stable
+const MARKET_TTL    =  5 * 60 * 1000;  //  5 min — top markets
+const GLOBAL_TTL    =  5 * 60 * 1000;  //  5 min — global stats
+const ASSET_TTL     =  5 * 60 * 1000;  //  5 min — individual asset (was 2 min, caused 429s)
 
 const searchCache = new LRUCache<string, CoinSearchResult[]>(100, SEARCH_TTL);
 const marketCache = new LRUCache<string, CoinMarketData[]>(10,  MARKET_TTL);
 const globalCache = new LRUCache<string, GlobalStats>(5,    GLOBAL_TTL);
 const assetCache  = new LRUCache<string, CoinMarketData>(200, ASSET_TTL);
+
+// In-flight deduplication — prevents duplicate concurrent fetches for the same key
+const inFlight = new Map<string, Promise<unknown>>();
+
+function dedupe<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const existing = inFlight.get(key);
+  if (existing) return existing as Promise<T>;
+  const p = fn().finally(() => inFlight.delete(key));
+  inFlight.set(key, p);
+  return p;
+}
 
 // ── Types ─────────────────────────────────────────────────────
 export interface CoinSearchResult {
@@ -82,12 +93,21 @@ export interface GlobalStats {
 }
 
 // ── Helpers ───────────────────────────────────────────────────
-async function cgFetch<T>(path: string): Promise<T> {
+// Retry once on 429 with exponential backoff; throws on all other errors.
+async function cgFetch<T>(path: string, attempt = 0): Promise<T> {
   const url = `${COINGECKO_BASE}${path}`;
   const res = await fetch(url, {
     headers: { "Accept": "application/json", "User-Agent": "FAULTLINE/1.0" },
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(12_000),
   });
+  if (res.status === 429 && attempt === 0) {
+    // CoinGecko free tier: back off 3 seconds then retry once
+    const retryAfter = Number(res.headers.get("Retry-After") ?? 3);
+    const delay = Math.min(retryAfter * 1000, 5_000);
+    log.warn("[CoinGecko] Rate limited (429), retrying after " + delay + "ms", { path });
+    await new Promise(r => setTimeout(r, delay));
+    return cgFetch<T>(path, 1);
+  }
   if (!res.ok) {
     throw new Error(`CoinGecko ${res.status}: ${path}`);
   }
@@ -221,7 +241,8 @@ export async function searchCoins(query: string): Promise<CoinSearchResult[]> {
       results.sort((a, b) => (a.id === cgId ? -1 : b.id === cgId ? 1 : 0));
     }
   } catch (err) {
-    log.warn("[CoinGecko] Search failed", { query, err });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    log.warn("[CoinGecko] Search failed", { query, errMsg });
   }
   searchCache.set(key, results);
   return results;
@@ -233,21 +254,24 @@ export async function getCoinMarketData(idOrSymbol: string): Promise<CoinMarketD
   const cached = assetCache.peek(cgId);
   if (cached) return cached.value;
 
-  try {
-    interface RawMarketItem {
-      [key: string]: unknown;
+  return dedupe<CoinMarketData | null>(`asset:${cgId}`, async () => {
+    try {
+      interface RawMarketItem {
+        [key: string]: unknown;
+      }
+      const data = await cgFetch<RawMarketItem[]>(
+        `/coins/markets?vs_currency=usd&ids=${cgId}&order=market_cap_desc&per_page=1&page=1&sparkline=true&price_change_percentage=24h,7d,30d`
+      );
+      if (!data || data.length === 0) return null;
+      const coin = mapRawCoin(data[0]);
+      assetCache.set(cgId, coin);
+      return coin;
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      log.warn("[CoinGecko] Asset fetch failed", { id: cgId, errMsg });
+      return null;
     }
-    const data = await cgFetch<RawMarketItem[]>(
-      `/coins/markets?vs_currency=usd&ids=${cgId}&order=market_cap_desc&per_page=1&page=1&sparkline=true&price_change_percentage=24h,7d,30d`
-    );
-    if (!data || data.length === 0) return null;
-    const coin = mapRawCoin(data[0]);
-    assetCache.set(cgId, coin);
-    return coin;
-  } catch (err) {
-    log.warn("[CoinGecko] Asset fetch failed", { id: cgId, err });
-    return null;
-  }
+  });
 }
 
 export async function getTopMarkets(limit = 50): Promise<CoinMarketData[]> {
@@ -255,20 +279,27 @@ export async function getTopMarkets(limit = 50): Promise<CoinMarketData[]> {
   const cached = marketCache.peek(key);
   if (cached) return cached.value;
 
-  try {
-    interface RawMarketItem {
-      [key: string]: unknown;
+  return dedupe<CoinMarketData[]>(`markets:${limit}`, async () => {
+    try {
+      interface RawMarketItem {
+        [key: string]: unknown;
+      }
+      const data = await cgFetch<RawMarketItem[]>(
+        `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=true&price_change_percentage=24h,7d,30d`
+      );
+      const coins = (data ?? []).map(mapRawCoin);
+      marketCache.set(key, coins);
+      // Also populate individual asset cache from the bulk fetch — saves future single-asset calls
+      for (const coin of coins) {
+        assetCache.set(coin.id, coin);
+      }
+      return coins;
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      log.warn("[CoinGecko] Top markets fetch failed", { errMsg });
+      return [];
     }
-    const data = await cgFetch<RawMarketItem[]>(
-      `/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${limit}&page=1&sparkline=true&price_change_percentage=24h,7d,30d`
-    );
-    const coins = (data ?? []).map(mapRawCoin);
-    marketCache.set(key, coins);
-    return coins;
-  } catch (err) {
-    log.warn("[CoinGecko] Top markets fetch failed", { err });
-    return [];
-  }
+  });
 }
 
 export async function getGlobalStats(): Promise<GlobalStats | null> {
@@ -301,7 +332,8 @@ export async function getGlobalStats(): Promise<GlobalStats | null> {
     globalCache.set("global", stats);
     return stats;
   } catch (err) {
-    log.warn("[CoinGecko] Global stats fetch failed", { err });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    log.warn("[CoinGecko] Global stats fetch failed", { errMsg });
     return null;
   }
 }
@@ -326,7 +358,7 @@ export function registerCoinGeckoProxy(app: Express) {
       const results = await searchCoins(q);
       res.json({ results, cached: false });
     } catch (err) {
-      log.error("[CoinGecko] /search error", { err });
+      log.error("[CoinGecko] /search error", { err: err instanceof Error ? err.message : String(err) });
       res.status(500).json({ error: "Search failed" });
     }
   });
@@ -342,7 +374,7 @@ export function registerCoinGeckoProxy(app: Express) {
       }
       res.json(coin);
     } catch (err) {
-      log.error("[CoinGecko] /asset error", { id, err });
+      log.error("[CoinGecko] /asset error", { id, err: err instanceof Error ? err.message : String(err) });
       res.status(500).json({ error: "Asset fetch failed" });
     }
   });
@@ -353,7 +385,7 @@ export function registerCoinGeckoProxy(app: Express) {
       const coins = await getTopMarkets(50);
       res.json({ coins, fetchedAt: Date.now() });
     } catch (err) {
-      log.error("[CoinGecko] /markets error", { err });
+      log.error("[CoinGecko] /markets error", { err: err instanceof Error ? err.message : String(err) });
       res.status(500).json({ error: "Markets fetch failed" });
     }
   });
@@ -368,7 +400,7 @@ export function registerCoinGeckoProxy(app: Express) {
       }
       res.json(stats);
     } catch (err) {
-      log.error("[CoinGecko] /global error", { err });
+      log.error("[CoinGecko] /global error", { err: err instanceof Error ? err.message : String(err) });
       res.status(500).json({ error: "Global stats failed" });
     }
   });
