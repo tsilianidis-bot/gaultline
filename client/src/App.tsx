@@ -31,6 +31,7 @@ const Signals         = lazy(() => import("./pages/Signals"));
 const Guide           = lazy(() => import("./pages/Guide"));
 const DiagnosticAI    = lazy(() => import("./pages/DiagnosticAI"));
 const Portfolio       = lazy(() => import("./pages/Portfolio"));
+const AdminUsers      = lazy(() => import("./pages/AdminUsers"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -75,6 +76,7 @@ function Router() {
           <Route path="/guide" component={Guide} />
           <Route path="/diagnostic" component={DiagnosticAI} />
           <Route path="/portfolio" component={Portfolio} />
+          <Route path="/admin/users" component={AdminUsers} />
           <Route component={Dashboard} />
         </Switch>
       </Suspense>

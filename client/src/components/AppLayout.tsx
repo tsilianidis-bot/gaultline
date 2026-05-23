@@ -9,11 +9,12 @@ import { ReactNode, useState, useCallback } from "react";
 import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
-  Cpu, MoreHorizontal, X, Briefcase,
+  Cpu, MoreHorizontal, X, Briefcase, Shield,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: situational → interpretation → analysis → manage
@@ -84,6 +85,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const { output, rawFred, isLoading, isLive, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators } = useEngine();
+  const { user: authUser } = useAuth();
+  const isAdmin = authUser?.role === "admin";
 
   // Count breached watchlist items for badge
   const breachCount = useMemo(() => {
@@ -257,7 +260,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
           overflowX: 'auto',
           scrollbarWidth: 'none',
         }}>
-          {NAV_GROUPS.map((group, gi) => (
+          {NAV_GROUPS.map((group) =>
+            // Inject admin item into MANAGE group for admins
+            group.label === "MANAGE" && isAdmin
+              ? { ...group, items: [...group.items, { id: "admin-users", label: "Users", shortLabel: "Users", icon: Shield, path: "/admin/users" }] }
+              : group
+          ).map((group, gi) => (
             <div key={group.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
               {/* Group divider (not before first group) */}
               {gi > 0 && (
@@ -463,7 +471,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
 
             {/* Groups in drawer */}
-            {NAV_GROUPS.map(group => (
+            {NAV_GROUPS.map(group =>
+              group.label === "MANAGE" && isAdmin
+                ? { ...group, items: [...group.items, { id: "admin-users", label: "Users", shortLabel: "Users", icon: Shield, path: "/admin/users" }] }
+                : group
+            ).map(group => (
               <div key={group.label} style={{ marginBottom: 16 }}>
                 <div style={{
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',

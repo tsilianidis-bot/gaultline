@@ -9,7 +9,7 @@ import { calculateFaultlinePressure } from "./pressure/engine";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
-import { getPositionsByUser, addPosition, updatePosition, deletePosition } from "./db";
+import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers } from "./db";
 import { getQuotes } from "./yahooProxy";
 import { protectedProcedure } from "./_core/trpc";
 
@@ -394,6 +394,20 @@ export const appRouter = router({
         }
       }),
   }),
+  admin: router({
+    // List all registered users — admin only
+    getUsers: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          if (ctx.user.role !== "admin") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+          return await getAllUsers();
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch users", cause: err });
+        }
+      }),
+  }),
 });
-
 export type AppRouter = typeof appRouter;

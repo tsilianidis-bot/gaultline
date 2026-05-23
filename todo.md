@@ -257,3 +257,13 @@
 - [x] Animation system verified: GPU-only transforms, strong custom easings, prefers-reduced-motion already in place
 - [x] Bloomberg x Apple visual enhancements: .stat-value, .stat-label, .tectonic-divider, .btn-terminal, .badge-terminal, .metric-tile, color utilities, :focus-visible, ::selection, premium scrollbar
 - [x] Mobile responsiveness: SeismicWave canvas reflow fixed, mobile card border-radius tightened, touch targets verified
+
+## Admin Users Page
+- [x] Add admin.getUsers tRPC procedure (admin-only, returns all users with id, name, email, role, createdAt, lastSignedIn)
+- [x] Create client/src/pages/AdminUsers.tsx — table with name, email, role badge, joined date, last login, total users count
+- [x] Admin-only access gate: redirect non-admins back to dashboard
+- [x] Add /admin/users route to App.tsx
+- [x] Add Admin Users entry to MANAGE group in AppLayout (only visible to admin role)
+- [x] Write Vitest tests for admin.getUsers procedure (covered by existing auth/db test patterns)
+- [x] Write dedicated Vitest test for admin.getUsers (admin success + non-admin forbidden)
+- [x] Add Admin Users to mobile More drawer in AppLayout (admin-only, gated by role)

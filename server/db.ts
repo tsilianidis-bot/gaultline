@@ -124,6 +124,22 @@ export async function deletePosition(id: number, userId: number) {
     .where(and(eq(positions.id, id), eq(positions.userId, userId)));
 }
 
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      role: users.role,
+      createdAt: users.createdAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(users)
+    .orderBy(users.createdAt);
+}
+
 export async function getPositionById(id: number, userId: number) {
   const db = await getDb();
   if (!db) return undefined;
