@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
 import { calculateFaultlinePressure } from "./pressure/engine";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
@@ -60,7 +61,11 @@ export const appRouter = router({
         }),
       }))
       .mutation(async ({ input }) => {
-        return classifyTicker(input.profile, input.regime);
+        try {
+          return await classifyTicker(input.profile, input.regime);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Signal classification failed", cause: err });
+        }
       }),
 
     // Clear the classification cache (admin utility)
@@ -104,7 +109,11 @@ export const appRouter = router({
         }),
       }))
       .mutation(({ input }) => {
-        return computeTradingSignals(input.tickers, input.regime);
+        try {
+          return computeTradingSignals(input.tickers, input.regime);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
+        }
       }),
 
     // Compute trading signal for a single ticker
@@ -134,8 +143,12 @@ export const appRouter = router({
         }),
       }))
       .mutation(({ input }) => {
-        const { regime, ...tickerInput } = input;
-        return computeTradingSignal(tickerInput, regime);
+        try {
+          const { regime, ...tickerInput } = input;
+          return computeTradingSignal(tickerInput, regime);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
+        }
       }),
 
     // Clear the trading signal cache
@@ -148,7 +161,11 @@ export const appRouter = router({
   pressure: router({
     // Get the current FAULTLINE Pressure Index with all risk vectors
     getCurrentPressure: publicProcedure.query(async () => {
-      return calculateFaultlinePressure();
+      try {
+        return await calculateFaultlinePressure();
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Pressure engine failed", cause: err });
+      }
     }),
   }),
 
@@ -159,7 +176,11 @@ export const appRouter = router({
         timeframe: z.enum(["today", "week", "month", "year"]),
       }))
       .query(async ({ input }) => {
-        return getDiagnosticReport(input.timeframe);
+        try {
+          return await getDiagnosticReport(input.timeframe);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Diagnostic report failed", cause: err });
+        }
       }),
 
     // Clear diagnostic cache
@@ -176,7 +197,11 @@ export const appRouter = router({
         tickers: z.array(z.string().min(1).max(10)).optional(),
       }).optional())
       .query(async ({ input }) => {
-        return getPositionGuidance(input?.tickers);
+        try {
+          return await getPositionGuidance(input?.tickers);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Position guidance failed", cause: err });
+        }
       }),
 
     // Clear guidance cache
@@ -189,7 +214,11 @@ export const appRouter = router({
   portfolio: router({
     // Get all positions for the authenticated user
     getPositions: protectedProcedure.query(async ({ ctx }) => {
-      return getPositionsByUser(ctx.user.id);
+      try {
+        return await getPositionsByUser(ctx.user.id);
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to load positions", cause: err });
+      }
     }),
 
     // Add a new position
@@ -204,17 +233,21 @@ export const appRouter = router({
         openedAt:  z.string().datetime().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        await addPosition({
-          userId:    ctx.user.id,
-          ticker:    input.ticker,
-          name:      input.name,
-          shares:    String(input.shares),
-          costBasis: String(input.costBasis),
-          assetType: input.assetType,
-          notes:     input.notes ?? null,
-          openedAt:  input.openedAt ? new Date(input.openedAt) : new Date(),
-        });
-        return { success: true };
+        try {
+          await addPosition({
+            userId:    ctx.user.id,
+            ticker:    input.ticker,
+            name:      input.name,
+            shares:    String(input.shares),
+            costBasis: String(input.costBasis),
+            assetType: input.assetType,
+            notes:     input.notes ?? null,
+            openedAt:  input.openedAt ? new Date(input.openedAt) : new Date(),
+          });
+          return { success: true };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to add position", cause: err });
+        }
       }),
 
     // Update an existing position
@@ -230,101 +263,113 @@ export const appRouter = router({
         openedAt:  z.string().datetime().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const { id, ...fields } = input;
-        const data: Record<string, unknown> = {};
-        if (fields.ticker    !== undefined) data.ticker    = fields.ticker;
-        if (fields.name      !== undefined) data.name      = fields.name;
-        if (fields.shares    !== undefined) data.shares    = String(fields.shares);
-        if (fields.costBasis !== undefined) data.costBasis = String(fields.costBasis);
-        if (fields.assetType !== undefined) data.assetType = fields.assetType;
-        if (fields.notes     !== undefined) data.notes     = fields.notes;
-        if (fields.openedAt  !== undefined) data.openedAt  = new Date(fields.openedAt);
-        await updatePosition(id, ctx.user.id, data as any);
-        return { success: true };
+        try {
+          const { id, ...fields } = input;
+          const data: Record<string, unknown> = {};
+          if (fields.ticker    !== undefined) data.ticker    = fields.ticker;
+          if (fields.name      !== undefined) data.name      = fields.name;
+          if (fields.shares    !== undefined) data.shares    = String(fields.shares);
+          if (fields.costBasis !== undefined) data.costBasis = String(fields.costBasis);
+          if (fields.assetType !== undefined) data.assetType = fields.assetType;
+          if (fields.notes     !== undefined) data.notes     = fields.notes;
+          if (fields.openedAt  !== undefined) data.openedAt  = new Date(fields.openedAt);
+          await updatePosition(id, ctx.user.id, data as any);
+          return { success: true };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update position", cause: err });
+        }
       }),
 
     // Delete a position
     deletePosition: protectedProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
-        await deletePosition(input.id, ctx.user.id);
-        return { success: true };
+        try {
+          await deletePosition(input.id, ctx.user.id);
+          return { success: true };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete position", cause: err });
+        }
       }),
 
     // Get live portfolio: positions + Yahoo Finance quotes + P&L + AI guidance
     getLivePortfolio: protectedProcedure.query(async ({ ctx }) => {
-      const rows = await getPositionsByUser(ctx.user.id);
-      if (rows.length === 0) return { positions: [], summary: null, pressure: null };
+      try {
+        const rows = await getPositionsByUser(ctx.user.id);
+        if (rows.length === 0) return { positions: [], summary: null, pressure: null };
 
-      // Fetch live quotes for all tickers
-      const tickers = Array.from(new Set(rows.map(r => r.ticker)));
-      const quotes = await getQuotes(tickers);
-      const quoteMap = new Map(quotes.map(q => [q.ticker, q]));
+        // Fetch live quotes for all tickers
+        const tickers = Array.from(new Set(rows.map(r => r.ticker)));
+        const quotes = await getQuotes(tickers);
+        const quoteMap = new Map(quotes.map(q => [q.ticker, q]));
 
-      // Fetch current FAULTLINE pressure for AI guidance
-      const pressure = await calculateFaultlinePressure();
+        // Fetch current FAULTLINE pressure for AI guidance
+        const pressure = await calculateFaultlinePressure();
 
-      // Build enriched positions
-      const enriched = rows.map(row => {
-        const quote = quoteMap.get(row.ticker);
-        const shares    = parseFloat(String(row.shares));
-        const costBasis = parseFloat(String(row.costBasis));
-        const currentPrice = quote?.price ?? null;
-        const totalCost    = shares * costBasis;
-        const marketValue  = currentPrice != null ? shares * currentPrice : null;
-        const unrealizedPnl    = marketValue != null ? marketValue - totalCost : null;
-        const unrealizedPnlPct = totalCost > 0 && unrealizedPnl != null
-          ? (unrealizedPnl / totalCost) * 100 : null;
-        const dayChange    = quote?.change    != null ? shares * quote.change    : null;
-        const dayChangePct = quote?.changePercent ?? null;
+        // Build enriched positions
+        const enriched = rows.map(row => {
+          const quote = quoteMap.get(row.ticker);
+          const shares    = parseFloat(String(row.shares));
+          const costBasis = parseFloat(String(row.costBasis));
+          const currentPrice = quote?.price ?? null;
+          const totalCost    = shares * costBasis;
+          const marketValue  = currentPrice != null ? shares * currentPrice : null;
+          const unrealizedPnl    = marketValue != null ? marketValue - totalCost : null;
+          const unrealizedPnlPct = totalCost > 0 && unrealizedPnl != null
+            ? (unrealizedPnl / totalCost) * 100 : null;
+          const dayChange    = quote?.change    != null ? shares * quote.change    : null;
+          const dayChangePct = quote?.changePercent ?? null;
 
-        return {
-          id:            row.id,
-          ticker:        row.ticker,
-          name:          row.name,
-          shares,
-          costBasis,
-          assetType:     row.assetType,
-          notes:         row.notes,
-          openedAt:      row.openedAt,
-          // Live quote data
-          currentPrice,
-          prevClose:     quote?.prevClose    ?? null,
-          dayHigh:       quote?.high         ?? null,
-          dayLow:        quote?.low          ?? null,
-          volume:        quote?.volume       ?? null,
-          marketState:   quote?.marketState  ?? "UNKNOWN",
-          isDelayed:     quote?.isDelayed    ?? true,
-          quoteError:    quote?.error        ?? null,
-          // P&L
-          totalCost,
-          marketValue,
-          unrealizedPnl,
-          unrealizedPnlPct,
-          dayChange,
-          dayChangePct,
+          return {
+            id:            row.id,
+            ticker:        row.ticker,
+            name:          row.name,
+            shares,
+            costBasis,
+            assetType:     row.assetType,
+            notes:         row.notes,
+            openedAt:      row.openedAt,
+            // Live quote data
+            currentPrice,
+            prevClose:     quote?.prevClose    ?? null,
+            dayHigh:       quote?.high         ?? null,
+            dayLow:        quote?.low          ?? null,
+            volume:        quote?.volume       ?? null,
+            marketState:   quote?.marketState  ?? "UNKNOWN",
+            isDelayed:     quote?.isDelayed    ?? true,
+            quoteError:    quote?.error        ?? null,
+            // P&L
+            totalCost,
+            marketValue,
+            unrealizedPnl,
+            unrealizedPnlPct,
+            dayChange,
+            dayChangePct,
+          };
+        });
+
+        // Portfolio summary
+        const totalCostAll    = enriched.reduce((s, p) => s + p.totalCost, 0);
+        const totalValueAll   = enriched.reduce((s, p) => s + (p.marketValue ?? p.totalCost), 0);
+        const totalPnl        = totalValueAll - totalCostAll;
+        const totalPnlPct     = totalCostAll > 0 ? (totalPnl / totalCostAll) * 100 : 0;
+        const totalDayChange  = enriched.reduce((s, p) => s + (p.dayChange ?? 0), 0);
+
+        const summary = {
+          totalCost:       totalCostAll,
+          totalValue:      totalValueAll,
+          totalPnl,
+          totalPnlPct,
+          totalDayChange,
+          positionCount:   enriched.length,
+          pressureScore:   pressure.overallPressure,
+          pressureRegime:  pressure.regime,
         };
-      });
 
-      // Portfolio summary
-      const totalCostAll    = enriched.reduce((s, p) => s + p.totalCost, 0);
-      const totalValueAll   = enriched.reduce((s, p) => s + (p.marketValue ?? p.totalCost), 0);
-      const totalPnl        = totalValueAll - totalCostAll;
-      const totalPnlPct     = totalCostAll > 0 ? (totalPnl / totalCostAll) * 100 : 0;
-      const totalDayChange  = enriched.reduce((s, p) => s + (p.dayChange ?? 0), 0);
-
-      const summary = {
-        totalCost:       totalCostAll,
-        totalValue:      totalValueAll,
-        totalPnl,
-        totalPnlPct,
-        totalDayChange,
-        positionCount:   enriched.length,
-        pressureScore:   pressure.overallPressure,
-        pressureRegime:  pressure.regime,
-      };
-
-      return { positions: enriched, summary, pressure };
+        return { positions: enriched, summary, pressure };
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to load live portfolio", cause: err });
+      }
     }),
 
     // Get AI guidance for a single user position (supports any ticker)
@@ -335,14 +380,18 @@ export const appRouter = router({
         assetType: z.enum(["Stock", "ETF", "Crypto", "Other"]),
       }))
       .query(async ({ input, ctx }) => {
-        // Look up name from user's positions if not provided
-        let name = input.name;
-        if (!name) {
-          const positions = await getPositionsByUser(ctx.user.id);
-          const match = positions.find(p => p.ticker === input.ticker);
-          name = match?.name ?? input.ticker;
+        try {
+          // Look up name from user's positions if not provided
+          let name = input.name;
+          if (!name) {
+            const positions = await getPositionsByUser(ctx.user.id);
+            const match = positions.find(p => p.ticker === input.ticker);
+            name = match?.name ?? input.ticker;
+          }
+          return await getGuidanceForTicker(input.ticker, name, input.assetType);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Position guidance failed", cause: err });
         }
-        return await getGuidanceForTicker(input.ticker, name, input.assetType);
       }),
   }),
 });

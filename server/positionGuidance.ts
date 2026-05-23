@@ -19,6 +19,7 @@
 
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
+import { LRUCache } from "./lruCache";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -355,8 +356,9 @@ function deriveKeyDrivers(
 
 // ── LLM interpretation ────────────────────────────────────────
 
-const guidanceCache = new Map<string, { result: PositionGuidanceCard; fetchedAt: number }>();
 const GUIDANCE_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+// Max 200 entries — LRU evicts oldest when full
+const guidanceCache = new LRUCache<string, PositionGuidanceCard>(200, GUIDANCE_CACHE_TTL_MS);
 
 async function generatePositionInterpretation(
   asset: AssetProfile,
@@ -491,8 +493,8 @@ export async function getPositionGuidance(
     assetsToProcess.map(async (asset) => {
       const cacheKey = `${asset.ticker}:${pressure.overallPressure}:${new Date().toISOString().slice(0, 13)}`;
       const cached = guidanceCache.get(cacheKey);
-      if (cached && Date.now() - cached.fetchedAt < GUIDANCE_CACHE_TTL_MS) {
-        return { ...cached.result, cached: true };
+      if (cached) {
+        return { ...cached, cached: true };
       }
 
       const scores = computeAssetScores(asset, pressure);
@@ -531,14 +533,12 @@ export async function getPositionGuidance(
         cached: false,
       };
 
-      guidanceCache.set(cacheKey, { result: card, fetchedAt: Date.now() });
+            guidanceCache.set(cacheKey, card);
       return card;
     })
   );
-
   return results;
 }
-
 export function clearGuidanceCache(): void {
   guidanceCache.clear();
 }
@@ -583,8 +583,8 @@ export async function getGuidanceForTicker(
 
   const cacheKey = `${ticker.toUpperCase()}:${pressure.overallPressure}:${new Date().toISOString().slice(0, 13)}`;
   const cached = guidanceCache.get(cacheKey);
-  if (cached && Date.now() - cached.fetchedAt < GUIDANCE_CACHE_TTL_MS) {
-    return { ...cached.result, cached: true };
+  if (cached) {
+    return { ...cached, cached: true };
   }
 
   const scores = computeAssetScores(syntheticProfile, pressure);
@@ -621,8 +621,7 @@ export async function getGuidanceForTicker(
     cached: false,
   };
 
-  guidanceCache.set(cacheKey, { result: card, fetchedAt: Date.now() });
+    guidanceCache.set(cacheKey, card);
   return card;
 }
-
 export { DEMO_ASSETS };

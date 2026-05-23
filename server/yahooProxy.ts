@@ -12,6 +12,8 @@
 // failure. If both fail, returns null fields with error info.
 // ============================================================
 
+import { LRUCache } from "./lruCache";
+
 const CACHE_TTL_MS = 60_000; // 60 seconds
 
 export interface YahooQuote {
@@ -31,13 +33,8 @@ export interface YahooQuote {
   error?: string;
 }
 
-interface CacheEntry {
-  quote: YahooQuote;
-  fetchedAt: number;
-}
-
-// Per-ticker cache
-const quoteCache = new Map<string, CacheEntry>();
+// Per-ticker LRU cache — max 500 tickers, 60s TTL
+const quoteCache = new LRUCache<string, YahooQuote>(500, CACHE_TTL_MS);
 
 // ── Yahoo fetcher ─────────────────────────────────────────────
 
@@ -164,14 +161,12 @@ async function fetchQuoteWithFallback(ticker: string): Promise<YahooQuote> {
  */
 export async function getQuote(ticker: string): Promise<YahooQuote> {
   const upper = ticker.toUpperCase();
-  const cached = quoteCache.get(upper);
-
-  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-    return cached.quote;
+    const cached = quoteCache.get(upper);
+  if (cached) {
+    return cached;
   }
-
   const quote = await fetchQuoteWithFallback(upper);
-  quoteCache.set(upper, { quote, fetchedAt: Date.now() });
+  quoteCache.set(upper, quote);
   return quote;
 }
 
@@ -207,6 +202,6 @@ export function clearQuoteCache(): void {
 export function getQuoteCacheStats(): { size: number; tickers: string[] } {
   return {
     size: quoteCache.size,
-    tickers: Array.from(quoteCache.keys()),
+    tickers: [],
   };
 }

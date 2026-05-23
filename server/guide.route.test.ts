@@ -22,7 +22,8 @@ describe("Guide page", () => {
 
   it("/guide route is registered in App.tsx", () => {
     expect(appSrc).toContain('path="/guide"');
-    expect(appSrc).toContain("import Guide from './pages/Guide'");
+    // Guide uses React.lazy — check for lazy import pattern
+    expect(appSrc).toContain('import("./pages/Guide")');
   });
 
   it("Guide page contains all 14 required sections", () => {

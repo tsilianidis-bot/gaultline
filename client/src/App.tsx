@@ -2,7 +2,7 @@
    FAULTLINE — Palantir Noir Intelligence Terminal
    App shell with cinematic intro screen + bottom tab navigation
    ============================================================ */
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Route, Switch } from "wouter";
@@ -11,22 +11,46 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { EngineProvider } from "./contexts/EngineContext";
 import AppLayout from "./components/AppLayout";
 import IntroScreen from "./components/IntroScreen";
-import Dashboard from "./pages/Dashboard";
-import Scores from "./pages/Scores";
-import Charts from "./pages/Charts";
-import AIWatch from "./pages/AIWatch";
-import Scenarios from "./pages/Scenarios";
-import Alerts from "./pages/Alerts";
-import HistoricalAnalogs from "./pages/HistoricalAnalogs";
-import SimulatePressure from "./pages/SimulatePressure";
-import DailyReport from "./pages/DailyReport";
-import Watchlist from './pages/Watchlist';
-import Signals from './pages/Signals';
-import Pressure from './pages/Pressure';
-import Guide from './pages/Guide';
-import DiagnosticAI from './pages/DiagnosticAI';
-import Portfolio from './pages/Portfolio';
 import FREDDebugConsole from "./components/FREDDebugConsole";
+
+// ── Lazy-loaded pages — each page is a separate chunk ─────────
+// Dashboard is eager (first page, must be instant)
+import Dashboard from "./pages/Dashboard";
+
+const Pressure        = lazy(() => import("./pages/Pressure"));
+const Scores          = lazy(() => import("./pages/Scores"));
+const Charts          = lazy(() => import("./pages/Charts"));
+const AIWatch         = lazy(() => import("./pages/AIWatch"));
+const Scenarios       = lazy(() => import("./pages/Scenarios"));
+const Alerts          = lazy(() => import("./pages/Alerts"));
+const HistoricalAnalogs = lazy(() => import("./pages/HistoricalAnalogs"));
+const SimulatePressure = lazy(() => import("./pages/SimulatePressure"));
+const DailyReport     = lazy(() => import("./pages/DailyReport"));
+const Watchlist       = lazy(() => import("./pages/Watchlist"));
+const Signals         = lazy(() => import("./pages/Signals"));
+const Guide           = lazy(() => import("./pages/Guide"));
+const DiagnosticAI    = lazy(() => import("./pages/DiagnosticAI"));
+const Portfolio       = lazy(() => import("./pages/Portfolio"));
+
+// ── Page loading fallback — minimal, non-jarring ──────────────
+function PageLoader() {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '60vh',
+      color: 'rgba(0,255,200,0.4)',
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize: '11px',
+      letterSpacing: '0.15em',
+    }}>
+      <span style={{ animation: 'fl-pulse 1.4s ease-in-out infinite' }}>
+        LOADING MODULE…
+      </span>
+    </div>
+  );
+}
 
 // ── Session key: show intro once per browser session ──────────
 const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
@@ -34,24 +58,26 @@ const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 function Router() {
   return (
     <AppLayout>
-      <Switch>
-        <Route path="/pressure" component={Pressure} />
-        <Route path="/" component={Dashboard} />
-        <Route path="/scores" component={Scores} />
-        <Route path="/charts" component={Charts} />
-        <Route path="/ai-watch" component={AIWatch} />
-        <Route path="/scenarios" component={Scenarios} />
-        <Route path="/alerts" component={Alerts} />
-        <Route path="/analogs" component={HistoricalAnalogs} />
-        <Route path="/simulate" component={SimulatePressure} />
-        <Route path="/report" component={DailyReport} />
-        <Route path="/watchlist" component={Watchlist} />
-        <Route path="/signals" component={Signals} />
-        <Route path="/guide" component={Guide} />
-        <Route path="/diagnostic" component={DiagnosticAI} />
-        <Route path="/portfolio" component={Portfolio} />
-        <Route component={Dashboard} />
-      </Switch>
+      <Suspense fallback={<PageLoader />}>
+        <Switch>
+          <Route path="/pressure" component={Pressure} />
+          <Route path="/" component={Dashboard} />
+          <Route path="/scores" component={Scores} />
+          <Route path="/charts" component={Charts} />
+          <Route path="/ai-watch" component={AIWatch} />
+          <Route path="/scenarios" component={Scenarios} />
+          <Route path="/alerts" component={Alerts} />
+          <Route path="/analogs" component={HistoricalAnalogs} />
+          <Route path="/simulate" component={SimulatePressure} />
+          <Route path="/report" component={DailyReport} />
+          <Route path="/watchlist" component={Watchlist} />
+          <Route path="/signals" component={Signals} />
+          <Route path="/guide" component={Guide} />
+          <Route path="/diagnostic" component={DiagnosticAI} />
+          <Route path="/portfolio" component={Portfolio} />
+          <Route component={Dashboard} />
+        </Switch>
+      </Suspense>
     </AppLayout>
   );
 }

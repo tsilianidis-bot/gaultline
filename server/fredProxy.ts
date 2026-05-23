@@ -7,17 +7,14 @@
 // Endpoint: GET /api/fred?series_id=DGS10&limit=2
 // ============================================================
 import type { Express, Request, Response } from "express";
+import { LRUCache } from "./lruCache";
 
 const FRED_API_KEY = "458f0a0564e325c70e60f016f6f85f79";
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
 
-// In-memory cache per series (TTL: 15 minutes)
-interface CacheEntry {
-  data: unknown;
-  fetchedAt: number;
-}
-const cache = new Map<string, CacheEntry>();
+// In-memory LRU cache per series (TTL: 15 minutes, max 200 entries)
 const CACHE_TTL_MS = 15 * 60 * 1000;
+const cache = new LRUCache<string, unknown>(200, CACHE_TTL_MS);
 
 export function registerFredProxy(app: Express) {
   app.get("/api/fred", async (req: Request, res: Response) => {
@@ -31,11 +28,11 @@ export function registerFredProxy(app: Express) {
     }
 
     const cacheKey = `${seriesId}:${limit}:${sortOrder}`;
-    const cached = cache.get(cacheKey);
-    if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
+    const cachedEntry = cache.peek(cacheKey);
+    if (cachedEntry) {
       res.setHeader("X-Cache", "HIT");
-      res.setHeader("X-Cache-Age", String(Math.round((Date.now() - cached.fetchedAt) / 1000)));
-      res.json(cached.data);
+      res.setHeader("X-Cache-Age", String(Math.round((Date.now() - cachedEntry.fetchedAt) / 1000)));
+      res.json(cachedEntry.value);
       return;
     }
 
@@ -59,7 +56,7 @@ export function registerFredProxy(app: Express) {
       }
 
       const data = await fredRes.json();
-      cache.set(cacheKey, { data, fetchedAt: Date.now() });
+      cache.set(cacheKey, data);
 
       res.setHeader("X-Cache", "MISS");
       res.setHeader("Access-Control-Allow-Origin", "*");
@@ -84,9 +81,9 @@ export function registerFredProxy(app: Express) {
     await Promise.allSettled(
       series.map(async ({ id, limit }) => {
         const cacheKey = `${id}:${limit}:desc`;
-        const cached = cache.get(cacheKey);
-        if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-          const d = cached.data as { observations: { date: string; value: string }[] };
+        const cachedBulk = cache.get(cacheKey);
+        if (cachedBulk) {
+          const d = cachedBulk as { observations: { date: string; value: string }[] };
           results[id] = { observations: d.observations ?? [], cached: true };
           return;
         }
@@ -110,7 +107,7 @@ export function registerFredProxy(app: Express) {
           }
 
           const data = await fredRes.json() as { observations: { date: string; value: string }[] };
-          cache.set(cacheKey, { data, fetchedAt: Date.now() });
+          cache.set(cacheKey, data);
           results[id] = { observations: data.observations ?? [], cached: false };
         } catch (err) {
           results[id] = { observations: [], cached: false, error: String(err) };

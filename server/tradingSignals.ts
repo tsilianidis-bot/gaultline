@@ -92,13 +92,15 @@ export interface RegimeInput {
 }
 
 // ── In-memory cache ───────────────────────────────────────────
+import { LRUCache } from "./lruCache";
+
 interface SignalCacheEntry {
   result: TradingSignalResult;
   computedAt: number;
 }
-
-const signalCache = new Map<string, SignalCacheEntry>();
 const SIGNAL_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// Max 1000 entries (one per ticker:regime:price combo) — LRU evicts oldest
+const signalCache = new LRUCache<string, SignalCacheEntry>(1000, SIGNAL_CACHE_TTL_MS);
 
 // ── EMA helper ────────────────────────────────────────────────
 
@@ -434,9 +436,9 @@ export function computeTradingSignal(
   regime: RegimeInput
 ): TradingSignalResult {
   const cacheKey = `${input.ticker}:${regime.label}:${input.price}:${input.dailyBars?.length ?? 0}`;
-  const cached = signalCache.get(cacheKey);
-  if (cached && Date.now() - cached.computedAt < SIGNAL_CACHE_TTL_MS) {
-    return cached.result;
+  const cached = signalCache.peek(cacheKey);
+  if (cached) {
+    return cached.value.result;
   }
 
   const { price, high, low, changePercent, volumeMillions, avgVolume, sparkline, relativeStrength, dailyBars } = input;

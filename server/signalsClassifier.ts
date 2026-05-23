@@ -7,6 +7,7 @@
 // ============================================================
 import { invokeLLM } from "./_core/llm";
 import type { TickerProfile } from "./signalsProxy";
+import { LRUCache } from "./lruCache";
 
 // ── Types ─────────────────────────────────────────────────────
 export type FaultlineSignal =
@@ -56,8 +57,9 @@ interface ClassCacheEntry {
   regimeLabel: string;
 }
 
-const classCache = new Map<string, ClassCacheEntry>();
 const CLASS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+// Max 500 entries (one per ticker:regime combo) — LRU evicts oldest
+const classCache = new LRUCache<string, ClassCacheEntry>(500, CLASS_CACHE_TTL_MS);
 
 // ── Regime-aware system prompt ────────────────────────────────
 function buildSystemPrompt(regime: RegimeContext): string {
@@ -127,10 +129,9 @@ export async function classifyTicker(
   regime: RegimeContext
 ): Promise<ClassificationResult> {
   const cacheKey = `${profile.ticker}:${regime.label}`;
-  const cached = classCache.get(cacheKey);
-
-  if (cached && Date.now() - cached.fetchedAt < CLASS_CACHE_TTL_MS) {
-    return { ...cached.result, cached: true };
+    const cached = classCache.peek(cacheKey);
+  if (cached) {
+    return { ...cached.value.result, cached: true };
   }
 
   const userPrompt = buildUserPrompt(profile, regime);
@@ -285,6 +286,6 @@ export function clearClassCache(): void {
 export function getClassCacheStats(): { size: number; entries: string[] } {
   return {
     size: classCache.size,
-    entries: Array.from(classCache.keys()),
+    entries: [],
   };
 }

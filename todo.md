@@ -236,3 +236,24 @@
 - [x] Add /portfolio route to App.tsx
 - [x] Add Portfolio tab to CORE group in AppLayout navigation
 - [x] Require login to access portfolio (redirect to login if not authenticated)
+
+## Production Audit Fixes (May 23, 2026)
+
+### Critical / High
+- [ ] Upgrade drizzle-orm to 0.45.2 (SQL injection CVE)
+- [ ] Upgrade axios to latest (prototype pollution CVEs)
+- [ ] Reduce body parser limit from 50mb to 1mb (DoS risk)
+- [ ] Add try/catch error handling to all tRPC procedures
+- [ ] Add React.lazy code splitting for all 14 pages
+- [ ] Add express-rate-limit to /api/trpc and /api/signals
+
+### Medium
+- [ ] Add LRU max-size eviction to all 8 in-memory caches
+- [ ] Replace console.log with structured logging in server
+- [ ] Replace width CSS transitions with transform:scaleX() on progress bars
+
+### Visual Polish
+- [ ] Optimize dashboard rendering with React.memo and useMemo
+- [ ] Improve animation smoothness (GPU-only transforms, easing)
+- [ ] Enhance Bloomberg x Apple terminal visual feel
+- [ ] Improve mobile responsiveness across all pages

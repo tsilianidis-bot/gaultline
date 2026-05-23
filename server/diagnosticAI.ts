@@ -14,6 +14,7 @@
 
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
+import { LRUCache } from "./lruCache";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -379,8 +380,9 @@ function deriveWhatChanged(
 
 // ── LLM interpretation ────────────────────────────────────────
 
-const diagnosticCache = new Map<string, { result: DiagnosticReport; fetchedAt: number }>();
 const DIAG_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+// Max 20 entries (4 timeframes × 5 hours) — LRU evicts oldest
+const diagnosticCache = new LRUCache<string, DiagnosticReport>(20, DIAG_CACHE_TTL_MS);
 
 async function generateAIInterpretation(
   metrics: Omit<DiagnosticReport, "aiInterpretation" | "whyItMatters">,
@@ -462,8 +464,8 @@ export async function getDiagnosticReport(
 ): Promise<DiagnosticReport> {
   const cacheKey = `${timeframe}:${new Date().toISOString().slice(0, 13)}`; // hourly cache
   const cached = diagnosticCache.get(cacheKey);
-  if (cached && Date.now() - cached.fetchedAt < DIAG_CACHE_TTL_MS) {
-    return { ...cached.result, cached: true };
+  if (cached) {
+    return { ...cached, cached: true };
   }
 
   // Use provided pressure data or fetch fresh
@@ -504,7 +506,7 @@ export async function getDiagnosticReport(
     cached: false,
   };
 
-  diagnosticCache.set(cacheKey, { result: report, fetchedAt: Date.now() });
+  diagnosticCache.set(cacheKey, report);
   return report;
 }
 
