@@ -48,7 +48,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "diagnostic", label: "Diagnostic AI",shortLabel: "AI Diag", icon: Cpu,             path: "/diagnostic" },
       { id: "ai-watch",   label: "AI Watch",     shortLabel: "AI Watch",icon: Brain,           path: "/ai-watch" },
       { id: "signals",    label: "Signals",      shortLabel: "Signals", icon: Radio,           path: "/signals" },
-      { id: "crypto",     label: "Crypto",       shortLabel: "Crypto",  icon: Bitcoin,         path: "/crypto" },
+      { id: "crypto",     label: "Crypto Intel", shortLabel: "Crypto",  icon: Bitcoin,         path: "/crypto-search" },
     ],
   },
   {

@@ -11,6 +11,8 @@ import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
 import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
+import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
+import { searchCoins, getTopMarkets, getGlobalStats } from "./coingeckoProxy";
 import { getQuotes } from "./yahooProxy";
 import { protectedProcedure } from "./_core/trpc";
 
@@ -396,7 +398,7 @@ export const appRouter = router({
       }),
   }),
   crypto: router({
-    // Get FAULTLINE Crypto Intelligence™ report
+    // Get FAULTLINE Crypto Intelligence™ report (legacy)
     getSignals: publicProcedure
       .query(async () => {
         try {
@@ -405,9 +407,70 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto intelligence failed", cause: err });
         }
       }),
-    // Clear crypto cache
+
+    // Search cryptocurrencies by symbol or name
+    search: publicProcedure
+      .input(z.object({ query: z.string().min(1).max(50) }))
+      .query(async ({ input }) => {
+        try {
+          return await searchCoins(input.query);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto search failed", cause: err });
+        }
+      }),
+
+    // Full intelligence card for a single asset
+    getAssetIntelligence: publicProcedure
+      .input(z.object({ idOrSymbol: z.string().min(1).max(50) }))
+      .query(async ({ input }) => {
+        try {
+          const result = await getCryptoIntelligenceResult(input.idOrSymbol);
+          if (!result) throw new TRPCError({ code: "NOT_FOUND", message: `Asset not found: ${input.idOrSymbol}` });
+          return result;
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Asset intelligence failed", cause: err });
+        }
+      }),
+
+    // Crypto systemic risk score
+    getSystemicRisk: publicProcedure
+      .query(async () => {
+        try {
+          return await computeCryptoSystemicRisk();
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Systemic risk computation failed", cause: err });
+        }
+      }),
+
+    // Top 50 markets for heatmap
+    getTopMarkets: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getTopMarkets(input?.limit ?? 50);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Top markets fetch failed", cause: err });
+        }
+      }),
+
+    // Global market stats
+    getGlobalStats: publicProcedure
+      .query(async () => {
+        try {
+          const stats = await getGlobalStats();
+          if (!stats) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Global stats unavailable" });
+          return stats;
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Global stats failed", cause: err });
+        }
+      }),
+
+    // Clear all crypto caches
     clearCache: publicProcedure.mutation(() => {
       clearCryptoCache();
+      clearCryptoEngineCache();
       return { success: true };
     }),
   }),

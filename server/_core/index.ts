@@ -8,6 +8,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerFredProxy } from "../fredProxy";
 import { registerSignalsProxy } from "../signalsProxy";
+import { registerCoinGeckoProxy } from "../coingeckoProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -71,11 +72,13 @@ async function startServer() {
   app.use("/api/trpc", apiLimiter);
   app.use("/api/signals", signalsLimiter);
   app.use("/api/fred", apiLimiter);
+  app.use("/api/crypto", signalsLimiter);
 
   registerStorageProxy(app);
   registerOAuthRoutes(app);
   registerFredProxy(app);
   registerSignalsProxy(app);
+  registerCoinGeckoProxy(app);
 
   // tRPC API
   app.use(

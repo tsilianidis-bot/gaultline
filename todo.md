@@ -297,3 +297,32 @@
 - [x] Add /crypto route to App.tsx
 - [x] Add Crypto to INTELLIGENCE group in AppLayout navigation (desktop + mobile More drawer)
 - [x] Update feature summary tagline: Macro • Stocks • Crypto • Liquidity • Systemic Risk
+
+## Homepage: Digital Asset & Crypto Intelligence Section
+
+- [ ] Read Dashboard/Home.tsx to understand existing section patterns and style
+- [ ] Create client/src/components/HomeCryptoSection.tsx — full crypto intelligence section
+- [ ] Feature blocks: Search Any Crypto, Systemic Risk Engine, Stablecoin Liquidity, BTC Macro Correlation, AI Token Speculation, Volatility Regimes, Exchange Liquidity & Flow, Momentum Signals, Risk-On/Off Conditions
+- [ ] Visual crypto search module: ticker search bar, live intelligence cards, signal labels, probability visuals
+- [ ] Demo signal labels: Speculative Acceleration, Liquidity Fragile, Momentum Breakout, AI Narrative Exposure, Macro Sensitive, Deleveraging Risk, Stablecoin Stress, Risk-Off Vulnerable
+- [ ] Live crypto metrics panel: Crypto Risk Score, BTC Dominance, Stablecoin Liquidity, AI Token Speculation, Volatility Regime
+- [ ] CTA button: "Request Founding Access"
+- [ ] Integrate HomeCryptoSection into homepage at correct position
+- [ ] TypeScript check passes, all tests still pass
+
+## Full Crypto Intelligence Layer (Live Market Data)
+
+### Backend
+- [x] CoinGecko proxy server (server/coingeckoProxy.ts) — search, market data, global stats, trending
+- [x] Crypto intelligence engine (server/cryptoEngine.ts) — signal classification, systemic risk 0-10, regime integration
+- [x] tRPC procedures: crypto.search, crypto.getAssetIntelligence, crypto.getGlobalStats, crypto.getSystemicRisk, crypto.getTopMarkets
+- [x] Crypto watchlist: existing positions table supports Crypto assetType (no new schema needed)
+- [x] Vitest tests for crypto engine and proxy — 16/16 passing (server/coingeckoProxy.test.ts)
+
+### Frontend
+- [x] CryptoSearch.tsx page — search bar, intelligence cards, live visuals
+- [x] CryptoIntelligenceCard component — inline in CryptoSearch.tsx (AssetCard)
+- [x] CryptoHeatmap component — inline in CryptoSearch.tsx (HeatCell + grid)
+- [x] CryptoSystemicRisk panel — inline in CryptoSearch.tsx (SystemicRiskPanel)
+- [x] CryptoWatchlist integration — Portfolio page already supports Crypto assetType
+- [x] Wire /crypto-search route in App.tsx and nav (Crypto Intel in INTELLIGENCE group)
