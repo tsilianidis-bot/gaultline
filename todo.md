@@ -267,3 +267,11 @@
 - [x] Write Vitest tests for admin.getUsers procedure (covered by existing auth/db test patterns)
 - [x] Write dedicated Vitest test for admin.getUsers (admin success + non-admin forbidden)
 - [x] Add Admin Users to mobile More drawer in AppLayout (admin-only, gated by role)
+
+## Auth Flow Test Suite (May 23, 2026)
+- [x] Write server/auth.flow.test.ts — 19 tests covering all auth edge cases
+- [x] Fix test: auth.logout is publicProcedure (not protected) — unauthenticated callers succeed
+- [x] Fix test: portfolio.getPositionGuidance is under portfolio router (not guidance router)
+- [x] Fix test: diagnostic.getReport is the correct procedure name (not getDiagnostic)
+- [x] Fix signals.proxy.test.ts caching test — cached:false on first fetch is valid behavior
+- [x] Full test suite: 175/175 passing, 0 TypeScript errors
