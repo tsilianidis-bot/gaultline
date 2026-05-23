@@ -411,3 +411,20 @@
 ### Tests & QA
 - [ ] Write Vitest tests for recoveryEngine.ts
 - [ ] TypeScript check passes, all tests still pass
+
+## Premium Access Gating Layer
+
+- [ ] Build PremiumGate.tsx component — glass-blur overlay, lock icon, tier label, CTA buttons
+- [ ] PremiumGate variants: "Founding Access Required", "Advanced Signals Restricted", "Real-Time Risk Engine Locked", "Premium Intelligence Locked"
+- [ ] CTA buttons: "Request Founding Access", "Unlock Full Intelligence", "Join Early Access"
+- [ ] Cinematic gating transition (fade-in overlay on scroll into view)
+- [ ] Apply PremiumGate to Signals page (full page gate for unauthenticated users)
+- [ ] Apply PremiumGate to CryptoSignals page
+- [ ] Apply PremiumGate to CryptoSearch page (basic search allowed, advanced analytics gated)
+- [ ] Apply PremiumGate to CryptoWatchlist page
+- [ ] Apply PremiumGate to AftershockEngine page
+- [ ] Apply PremiumGate to CryptoIntelligence page
+- [ ] Apply PremiumGate to Portfolio page
+- [ ] Apply PremiumGate to Alerts page
+- [ ] Update Dashboard homepage — add founding access CTA section and limited live metrics teaser
+- [ ] TypeScript check passes, all tests still pass

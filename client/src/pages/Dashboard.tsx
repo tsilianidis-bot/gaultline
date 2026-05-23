@@ -12,6 +12,7 @@ import { getRiskColor } from "@/components/RiskBadge";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import DataIntegrity from "@/components/DataIntegrity";
 import HomeCryptoSection from "@/components/HomeCryptoSection";
+import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 
@@ -963,6 +964,9 @@ export default function Dashboard() {
             </div>
           </div>
         </details>
+
+        {/* Real-Time Market & Stock Intelligence */}
+        <HomeStockIntelSection />
 
         {/* Digital Asset & Crypto Intelligence */}
         <HomeCryptoSection />
