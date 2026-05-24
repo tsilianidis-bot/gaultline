@@ -495,3 +495,17 @@
 - [x] Platform Health tab: data sources, pressure engine live stats, env checks, platform info
 - [x] /admin route registered in App.tsx
 - [x] Header dropdown updated: "OWNER PORTAL" link for admin users pointing to /admin
+
+## Marketing Site (getfaultline.live)
+- [x] Create MarketingSite.tsx page with full single-page layout
+- [x] Hero section with Launch Platform + Request Founding Access CTAs
+- [x] Live status ticker bar
+- [x] Platform features section (8 modules)
+- [x] Platform module cards (Pressure Index, Aftershock, Stock Intel, Crypto Intel)
+- [x] How It Works 3-step pipeline
+- [x] Who It's Built For (3 profiles)
+- [x] Pricing tiers (Observer / Founding / Institutional)
+- [x] Founding access form connected to platform API
+- [x] Footer with nav links and social
+- [x] Add /marketing route in App.tsx
+- [x] Mobile responsive layout

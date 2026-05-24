@@ -39,6 +39,7 @@ const AftershockEngine = lazy(() => import("./pages/AftershockEngine"));
 const CryptoSignals    = lazy(() => import("./pages/CryptoSignals"));
 const UserAccount      = lazy(() => import("./pages/UserAccount"));
 const AdminPortal      = lazy(() => import("./pages/AdminPortal"));
+const MarketingSite    = lazy(() => import("./pages/MarketingSite"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -65,36 +66,47 @@ const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 
 function Router() {
   return (
-    <AppLayout>
-      <Suspense fallback={<PageLoader />}>
-        <Switch>
-          <Route path="/pressure" component={Pressure} />
-          <Route path="/" component={Dashboard} />
-          <Route path="/scores" component={Scores} />
-          <Route path="/charts" component={Charts} />
-          <Route path="/ai-watch" component={AIWatch} />
-          <Route path="/scenarios" component={Scenarios} />
-          <Route path="/alerts" component={Alerts} />
-          <Route path="/analogs" component={HistoricalAnalogs} />
-          <Route path="/simulate" component={SimulatePressure} />
-          <Route path="/report" component={DailyReport} />
-          <Route path="/watchlist" component={Watchlist} />
-          <Route path="/signals" component={Signals} />
-          <Route path="/crypto" component={CryptoIntelligence} />
-          <Route path="/crypto-search" component={CryptoSearch} />
-          <Route path="/crypto-watchlist" component={CryptoWatchlist} />
-          <Route path="/guide" component={Guide} />
-          <Route path="/diagnostic" component={DiagnosticAI} />
-          <Route path="/portfolio" component={Portfolio} />
-          <Route path="/aftershock" component={AftershockEngine} />
-          <Route path="/crypto-signals" component={CryptoSignals} />
-          <Route path="/admin" component={AdminPortal} />
-          <Route path="/admin/users" component={AdminUsers} />
-          <Route path="/account" component={UserAccount} />
-          <Route component={Dashboard} />
-        </Switch>
-      </Suspense>
-    </AppLayout>
+    <Switch>
+      {/* Standalone marketing site — no AppLayout wrapper */}
+      <Route path="/marketing">
+        <Suspense fallback={<PageLoader />}>
+          <MarketingSite />
+        </Suspense>
+      </Route>
+      {/* All platform routes inside AppLayout */}
+      <Route>
+        <AppLayout>
+          <Suspense fallback={<PageLoader />}>
+            <Switch>
+              <Route path="/pressure" component={Pressure} />
+              <Route path="/" component={Dashboard} />
+              <Route path="/scores" component={Scores} />
+              <Route path="/charts" component={Charts} />
+              <Route path="/ai-watch" component={AIWatch} />
+              <Route path="/scenarios" component={Scenarios} />
+              <Route path="/alerts" component={Alerts} />
+              <Route path="/analogs" component={HistoricalAnalogs} />
+              <Route path="/simulate" component={SimulatePressure} />
+              <Route path="/report" component={DailyReport} />
+              <Route path="/watchlist" component={Watchlist} />
+              <Route path="/signals" component={Signals} />
+              <Route path="/crypto" component={CryptoIntelligence} />
+              <Route path="/crypto-search" component={CryptoSearch} />
+              <Route path="/crypto-watchlist" component={CryptoWatchlist} />
+              <Route path="/guide" component={Guide} />
+              <Route path="/diagnostic" component={DiagnosticAI} />
+              <Route path="/portfolio" component={Portfolio} />
+              <Route path="/aftershock" component={AftershockEngine} />
+              <Route path="/crypto-signals" component={CryptoSignals} />
+              <Route path="/admin" component={AdminPortal} />
+              <Route path="/admin/users" component={AdminUsers} />
+              <Route path="/account" component={UserAccount} />
+              <Route component={Dashboard} />
+            </Switch>
+          </Suspense>
+        </AppLayout>
+      </Route>
+    </Switch>
   );
 }
 
