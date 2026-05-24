@@ -79,7 +79,7 @@ export const appRouter = router({
       }),
 
     // Clear the classification cache (admin utility)
-    clearCache: publicProcedure.mutation(() => {
+    clearCache: protectedProcedure.mutation(() => {
       clearClassCache();
       return { success: true };
     }),
@@ -162,7 +162,7 @@ export const appRouter = router({
       }),
 
     // Clear the trading signal cache
-    clearSignalCache: publicProcedure.mutation(() => {
+    clearSignalCache: protectedProcedure.mutation(() => {
       clearSignalCache();
       return { success: true };
     }),
@@ -194,7 +194,7 @@ export const appRouter = router({
       }),
 
     // Clear diagnostic cache
-    clearCache: publicProcedure.mutation(() => {
+    clearCache: protectedProcedure.mutation(() => {
       clearDiagnosticCache();
       return { success: true };
     }),
@@ -215,7 +215,7 @@ export const appRouter = router({
       }),
 
     // Clear guidance cache
-    clearCache: publicProcedure.mutation(() => {
+    clearCache: protectedProcedure.mutation(() => {
       clearGuidanceCache();
       return { success: true };
     }),
@@ -531,7 +531,7 @@ export const appRouter = router({
       }),
 
     // Clear all crypto caches
-    clearCache: publicProcedure.mutation(() => {
+    clearCache: protectedProcedure.mutation(() => {
       clearCryptoCache();
       clearCryptoEngineCache();
       clearCryptoSignalCache();
@@ -603,7 +603,7 @@ export const appRouter = router({
       }),
 
     // Clear the aftershock engine cache
-    clearCache: publicProcedure
+    clearCache: protectedProcedure
       .mutation(async () => {
         clearAftershockCache();
         return { success: true };
@@ -674,7 +674,7 @@ export const appRouter = router({
       }),
 
     // Clear the recovery engine cache
-    clearCache: publicProcedure
+    clearCache: protectedProcedure
       .mutation(async () => {
         clearRecoveryCache();
         return { success: true };
@@ -738,13 +738,15 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         try {
           const userId = ctx.user?.id ?? null;
-          const id = await createFoundingRequest({
+          const result = await createFoundingRequest({
             userId,
             email: input.email,
             name: input.name ?? null,
             message: input.message ?? null,
           });
-          return { success: true, id };
+          // Return success silently even on duplicate — don't reveal whether the email exists
+          if (result.duplicate) return { success: true, id: null };
+          return { success: true, id: result.id };
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to submit request", cause: err });
         }

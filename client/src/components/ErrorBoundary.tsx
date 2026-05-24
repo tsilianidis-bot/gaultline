@@ -4,6 +4,8 @@ import { Component, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
+  /** When true, renders a compact inline error card instead of full-page overlay */
+  inline?: boolean;
 }
 
 interface State {
@@ -23,6 +25,27 @@ class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      if (this.props.inline) {
+        return (
+          <div className="flex flex-col items-center justify-center p-8 gap-4 text-center">
+            <AlertTriangle size={32} className="text-destructive" />
+            <p className="text-sm text-muted-foreground">
+              This section encountered an error.
+            </p>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className={cn(
+                "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm",
+                "bg-primary text-primary-foreground hover:opacity-90 cursor-pointer"
+              )}
+            >
+              <RotateCcw size={14} />
+              Try again
+            </button>
+          </div>
+        );
+      }
+
       return (
         <div className="flex items-center justify-center min-h-screen p-8 bg-background">
           <div className="flex flex-col items-center w-full max-w-2xl p-8">

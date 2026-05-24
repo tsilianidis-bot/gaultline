@@ -9,7 +9,7 @@ vi.mock("./db", async (importOriginal) => {
     ...actual,
     getUserTier: vi.fn().mockResolvedValue("free"),
     setUserTier: vi.fn().mockResolvedValue(undefined),
-    createFoundingRequest: vi.fn().mockResolvedValue(42),
+    createFoundingRequest: vi.fn().mockResolvedValue({ id: 42, duplicate: false }),
     getFoundingRequests: vi.fn().mockResolvedValue([]),
     updateFoundingRequestStatus: vi.fn().mockResolvedValue(undefined),
     getAllUsersWithTier: vi.fn().mockResolvedValue([]),

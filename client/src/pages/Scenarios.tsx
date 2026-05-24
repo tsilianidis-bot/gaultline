@@ -5,7 +5,7 @@
    FIXED: All probability/score values safely defaulted.
    Added: loading skeleton, hydration diagnostics, null guards.
    ============================================================ */
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import {
   ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -232,20 +232,6 @@ export default function Scenarios() {
   const softP    = safeNum(probability.softLandingProbability, 25);
   const bullP    = safeNum(probability.bullProbability, 20);
   const overallScore = safeNum(overall.score, 5.0);
-
-  // Hydration diagnostic logging
-  const loggedRef = useRef(false);
-  useEffect(() => {
-    if (!isLoading && !loggedRef.current) {
-      loggedRef.current = true;
-      console.log('[FAULTLINE Scenarios] Hydration complete:', {
-        crashP, recP, stagP, softP, bullP,
-        domainsCount: domains.length,
-        overallScore,
-        domains: domains.map(d => ({ id: d.id, score: d.score, riskLevel: d.riskLevel })),
-      });
-    }
-  }, [isLoading, crashP, recP, stagP, softP, bullP, domains, overallScore]);
 
   // Stable memoized chart series — all built unconditionally
   const bearTrend  = useMemo(() => buildStableSeries(77, 20, crashP - 10, 4),  [crashP]);

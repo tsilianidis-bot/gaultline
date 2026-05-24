@@ -167,6 +167,32 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Core React runtime — loaded on every page
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+            return "vendor-react";
+          }
+          // Heavy charting library — only loaded on chart pages
+          if (id.includes("node_modules/recharts") || id.includes("node_modules/d3-")) {
+            return "vendor-charts";
+          }
+          // Animation libraries
+          if (id.includes("node_modules/framer-motion") || id.includes("node_modules/gsap")) {
+            return "vendor-animation";
+          }
+          // tRPC + query client
+          if (id.includes("node_modules/@trpc") || id.includes("node_modules/@tanstack")) {
+            return "vendor-trpc";
+          }
+          // All other node_modules go into a shared vendor chunk
+          if (id.includes("node_modules/")) {
+            return "vendor";
+          }
+        },
+      },
+    },
   },
   server: {
     host: true,

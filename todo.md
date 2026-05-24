@@ -509,3 +509,16 @@
 - [x] Footer with nav links and social
 - [x] Add /marketing route in App.tsx
 - [x] Mobile responsive layout
+
+## Audit Fixes (May 24, 2026)
+
+- [x] Generate and upload OG social share image (1200×630), fix og:image reference
+- [x] Fix sitemap — remove app routes, keep only /
+- [x] Lock down clearCache mutations behind protectedProcedure
+- [x] Add duplicate waitlist submission guard (check email before insert)
+- [x] Remove maximum-scale=1 from viewport meta (mobile zoom / WCAG fix)
+- [x] Add Content Security Policy header
+- [x] Add Vite bundle chunking (manualChunks for vendor + routes)
+- [x] Wire waitlist count stat from publicStats API (replace "Open")
+- [x] Remove console.log from Scenarios.tsx
+- [x] Add route-level error boundaries

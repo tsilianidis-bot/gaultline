@@ -230,15 +230,24 @@ export async function setUserTier(
 
 export async function createFoundingRequest(
   data: Omit<InsertFoundingAccessRequest, 'id' | 'createdAt' | 'updatedAt' | 'status'>
-): Promise<number | null> {
+): Promise<{ id: number; duplicate: false } | { duplicate: true }> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
+  // Prevent duplicate submissions for the same email address
+  const normalizedEmail = data.email.toLowerCase().trim();
+  const existing = await db
+    .select({ id: foundingAccessRequests.id })
+    .from(foundingAccessRequests)
+    .where(eq(foundingAccessRequests.email, normalizedEmail))
+    .limit(1);
+  if (existing.length > 0) return { duplicate: true };
   const result = await db.insert(foundingAccessRequests).values({
     ...data,
+    email: normalizedEmail,
     status: 'pending',
   });
   const okPacket = result[0] as unknown as { insertId: number };
-  return okPacket?.insertId ?? null;
+  return { id: okPacket?.insertId ?? 0, duplicate: false };
 }
 
 export async function getFoundingRequests() {

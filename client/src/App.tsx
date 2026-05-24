@@ -69,13 +69,16 @@ function Router() {
     <Switch>
       {/* Marketing site at root — standalone, no AppLayout */}
       <Route path="/">
-        <Suspense fallback={<PageLoader />}>
-          <MarketingSite />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <MarketingSite />
+          </Suspense>
+        </ErrorBoundary>
       </Route>
       {/* All platform routes inside AppLayout under /app */}
       <Route>
         <AppLayout>
+          <ErrorBoundary inline>
           <Suspense fallback={<PageLoader />}>
             <Switch>
               <Route path="/app/pressure" component={Pressure} />
@@ -104,6 +107,7 @@ function Router() {
               <Route component={Dashboard} />
             </Switch>
           </Suspense>
+          </ErrorBoundary>
         </AppLayout>
       </Route>
     </Switch>

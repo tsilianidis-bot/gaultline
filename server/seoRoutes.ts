@@ -6,34 +6,17 @@ import type { Express } from "express";
 
 const BASE_URL = "https://getfaultline.live";
 
-// Public routes included in the sitemap (premium/auth-gated pages excluded)
+// Only the marketing homepage is publicly indexable.
+// All feature pages live under /app/* and are auth-gated.
 const PUBLIC_ROUTES = [
-  { path: "/",               changefreq: "daily",   priority: "1.0" },
-  { path: "/pressure",       changefreq: "hourly",  priority: "0.9" },
-  { path: "/scores",         changefreq: "daily",   priority: "0.8" },
-  { path: "/charts",         changefreq: "daily",   priority: "0.8" },
-  { path: "/ai-watch",       changefreq: "daily",   priority: "0.8" },
-  { path: "/scenarios",      changefreq: "weekly",  priority: "0.7" },
-  { path: "/analogs",        changefreq: "weekly",  priority: "0.7" },
-  { path: "/report",         changefreq: "daily",   priority: "0.8" },
-  { path: "/guide",          changefreq: "monthly", priority: "0.6" },
+  { path: "/", changefreq: "weekly", priority: "1.0" },
 ];
 
-// Premium/gated routes — excluded from sitemap, disallowed in robots.txt
+// Gated/admin paths — disallowed in robots.txt
 const GATED_PATHS = [
-  "/signals",
-  "/aftershock",
-  "/portfolio",
-  "/crypto",
-  "/crypto-search",
-  "/crypto-watchlist",
-  "/crypto-signals",
-  "/alerts",
-  "/watchlist",
+  "/app",
   "/admin",
-  "/account",
-  "/diagnostic",
-  "/simulate",
+  "/api",
 ];
 
 export function registerSEORoutes(app: Express): void {
