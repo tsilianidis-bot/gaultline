@@ -67,40 +67,40 @@ const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 function Router() {
   return (
     <Switch>
-      {/* Standalone marketing site — no AppLayout wrapper */}
-      <Route path="/marketing">
+      {/* Marketing site at root — standalone, no AppLayout */}
+      <Route path="/">
         <Suspense fallback={<PageLoader />}>
           <MarketingSite />
         </Suspense>
       </Route>
-      {/* All platform routes inside AppLayout */}
+      {/* All platform routes inside AppLayout under /app */}
       <Route>
         <AppLayout>
           <Suspense fallback={<PageLoader />}>
             <Switch>
-              <Route path="/pressure" component={Pressure} />
-              <Route path="/" component={Dashboard} />
-              <Route path="/scores" component={Scores} />
-              <Route path="/charts" component={Charts} />
-              <Route path="/ai-watch" component={AIWatch} />
-              <Route path="/scenarios" component={Scenarios} />
-              <Route path="/alerts" component={Alerts} />
-              <Route path="/analogs" component={HistoricalAnalogs} />
-              <Route path="/simulate" component={SimulatePressure} />
-              <Route path="/report" component={DailyReport} />
-              <Route path="/watchlist" component={Watchlist} />
-              <Route path="/signals" component={Signals} />
-              <Route path="/crypto" component={CryptoIntelligence} />
-              <Route path="/crypto-search" component={CryptoSearch} />
-              <Route path="/crypto-watchlist" component={CryptoWatchlist} />
-              <Route path="/guide" component={Guide} />
-              <Route path="/diagnostic" component={DiagnosticAI} />
-              <Route path="/portfolio" component={Portfolio} />
-              <Route path="/aftershock" component={AftershockEngine} />
-              <Route path="/crypto-signals" component={CryptoSignals} />
-              <Route path="/admin" component={AdminPortal} />
-              <Route path="/admin/users" component={AdminUsers} />
-              <Route path="/account" component={UserAccount} />
+              <Route path="/app/pressure" component={Pressure} />
+              <Route path="/app" component={Dashboard} />
+              <Route path="/app/scores" component={Scores} />
+              <Route path="/app/charts" component={Charts} />
+              <Route path="/app/ai-watch" component={AIWatch} />
+              <Route path="/app/scenarios" component={Scenarios} />
+              <Route path="/app/alerts" component={Alerts} />
+              <Route path="/app/analogs" component={HistoricalAnalogs} />
+              <Route path="/app/simulate" component={SimulatePressure} />
+              <Route path="/app/report" component={DailyReport} />
+              <Route path="/app/watchlist" component={Watchlist} />
+              <Route path="/app/signals" component={Signals} />
+              <Route path="/app/crypto" component={CryptoIntelligence} />
+              <Route path="/app/crypto-search" component={CryptoSearch} />
+              <Route path="/app/crypto-watchlist" component={CryptoWatchlist} />
+              <Route path="/app/guide" component={Guide} />
+              <Route path="/app/diagnostic" component={DiagnosticAI} />
+              <Route path="/app/portfolio" component={Portfolio} />
+              <Route path="/app/aftershock" component={AftershockEngine} />
+              <Route path="/app/crypto-signals" component={CryptoSignals} />
+              <Route path="/app/admin" component={AdminPortal} />
+              <Route path="/app/admin/users" component={AdminUsers} />
+              <Route path="/app/account" component={UserAccount} />
               <Route component={Dashboard} />
             </Switch>
           </Suspense>

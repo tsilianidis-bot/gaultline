@@ -291,7 +291,7 @@ export function PremiumGateFull({
               // Free-tier logged-in: show upgrade / account link
               <>
                 <a
-                  href="/account"
+                  href="/app/account"
                   className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${cfg.accentColor.replace("text-", "bg-").replace("-400", "-500")} text-black`}
                   style={{ boxShadow: `0 0 20px ${cfg.glowColor.replace("0.15", "0.4")}` }}
                 >
@@ -299,7 +299,7 @@ export function PremiumGateFull({
                   Request Founding Access
                 </a>
                 <a
-                  href="/account"
+                  href="/app/account"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                   style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
                 >

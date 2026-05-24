@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 
-const PLATFORM_URL = "https://faultline-ku53w5db.manus.space";
+const PLATFORM_URL = "/app";
 
 // ── Animated counter ──────────────────────────────────────────
 function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {

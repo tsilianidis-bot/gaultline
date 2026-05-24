@@ -38,41 +38,41 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "CORE",
     items: [
-      { id: "dashboard",  label: "Dashboard",    shortLabel: "Dash",    icon: LayoutDashboard, path: "/" },
-      { id: "pressure",   label: "Pressure",     shortLabel: "Pressure",icon: Gauge,           path: "/pressure" },
-      { id: "scores",     label: "Scores",       shortLabel: "Scores",  icon: Activity,        path: "/scores" },
-      { id: "portfolio",  label: "Portfolio",    shortLabel: "Port",    icon: Briefcase,       path: "/portfolio" },
+      { id: "dashboard",  label: "Dashboard",    shortLabel: "Dash",    icon: LayoutDashboard, path: "/app" },
+      { id: "pressure",   label: "Pressure",     shortLabel: "Pressure",icon: Gauge,           path: "/app/pressure" },
+      { id: "scores",     label: "Scores",       shortLabel: "Scores",  icon: Activity,        path: "/app/scores" },
+      { id: "portfolio",  label: "Portfolio",    shortLabel: "Port",    icon: Briefcase,       path: "/app/portfolio" },
     ],
   },
   {
     label: "INTELLIGENCE",
     items: [
-      { id: "diagnostic", label: "Diagnostic AI",shortLabel: "AI Diag", icon: Cpu,             path: "/diagnostic" },
-      { id: "ai-watch",   label: "AI Watch",     shortLabel: "AI Watch",icon: Brain,           path: "/ai-watch" },
-      { id: "signals",    label: "Signals",      shortLabel: "Signals", icon: Radio,           path: "/signals" },
-      { id: "crypto",          label: "Crypto Intel",    shortLabel: "Crypto",  icon: Bitcoin,    path: "/crypto-search" },
-      { id: "crypto-signals",   label: "Crypto Signals",  shortLabel: "CSig",    icon: BarChart3,   path: "/crypto-signals" },
-      { id: "crypto-watchlist", label: "Crypto Watch", shortLabel: "CWatch", icon: Bookmark,       path: "/crypto-watchlist" },
-      { id: "aftershock",       label: "Aftershock™",  shortLabel: "Shock",  icon: Waves,           path: "/aftershock" },
+      { id: "diagnostic", label: "Diagnostic AI",shortLabel: "AI Diag", icon: Cpu,             path: "/app/diagnostic" },
+      { id: "ai-watch",   label: "AI Watch",     shortLabel: "AI Watch",icon: Brain,           path: "/app/ai-watch" },
+      { id: "signals",    label: "Signals",      shortLabel: "Signals", icon: Radio,           path: "/app/signals" },
+      { id: "crypto",          label: "Crypto Intel",    shortLabel: "Crypto",  icon: Bitcoin,    path: "/app/crypto-search" },
+      { id: "crypto-signals",   label: "Crypto Signals",  shortLabel: "CSig",    icon: BarChart3,   path: "/app/crypto-signals" },
+      { id: "crypto-watchlist", label: "Crypto Watch", shortLabel: "CWatch", icon: Bookmark,       path: "/app/crypto-watchlist" },
+      { id: "aftershock",       label: "Aftershock™",  shortLabel: "Shock",  icon: Waves,           path: "/app/aftershock" },
     ],
   },
   {
     label: "ANALYSIS",
     items: [
-      { id: "charts",     label: "Charts",       shortLabel: "Charts",  icon: BarChart2,       path: "/charts" },
-      { id: "scenarios",  label: "Scenarios",    shortLabel: "Scen",    icon: TrendingUp,      path: "/scenarios" },
-      { id: "analogs",    label: "Analogs",      shortLabel: "Analogs", icon: Clock,           path: "/analogs" },
-      { id: "simulate",   label: "Simulate",     shortLabel: "Sim",     icon: Zap,             path: "/simulate" },
+      { id: "charts",     label: "Charts",       shortLabel: "Charts",  icon: BarChart2,       path: "/app/charts" },
+      { id: "scenarios",  label: "Scenarios",    shortLabel: "Scen",    icon: TrendingUp,      path: "/app/scenarios" },
+      { id: "analogs",    label: "Analogs",      shortLabel: "Analogs", icon: Clock,           path: "/app/analogs" },
+      { id: "simulate",   label: "Simulate",     shortLabel: "Sim",     icon: Zap,             path: "/app/simulate" },
     ],
   },
   {
     label: "MANAGE",
     items: [
-      { id: "watchlist",  label: "Watchlist",    shortLabel: "Watch",   icon: Bell,            path: "/watchlist" },
-      { id: "alerts",     label: "Alerts",       shortLabel: "Alerts",  icon: AlertTriangle,   path: "/alerts" },
-      { id: "report",     label: "Report",       shortLabel: "Report",  icon: FileText,        path: "/report" },
-      { id: "guide",      label: "Guide",        shortLabel: "Guide",   icon: BookOpen,        path: "/guide" },
-      { id: "account",    label: "Account",      shortLabel: "Acct",    icon: User,            path: "/account" },
+      { id: "watchlist",  label: "Watchlist",    shortLabel: "Watch",   icon: Bell,            path: "/app/watchlist" },
+      { id: "alerts",     label: "Alerts",       shortLabel: "Alerts",  icon: AlertTriangle,   path: "/app/alerts" },
+      { id: "report",     label: "Report",       shortLabel: "Report",  icon: FileText,        path: "/app/report" },
+      { id: "guide",      label: "Guide",        shortLabel: "Guide",   icon: BookOpen,        path: "/app/guide" },
+      { id: "account",    label: "Account",      shortLabel: "Acct",    icon: User,            path: "/app/account" },
     ],
   },
 ];
@@ -144,7 +144,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   });
 
   const isActive = useCallback((path: string) => {
-    if (path === "/") return location === "/";
+    if (path === "/app") return location === "/app";
     return location.startsWith(path);
   }, [location]);
 
@@ -316,7 +316,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
                       {/* Account link */}
                       <button
-                        onClick={() => { navigate('/account'); setUserMenuOpen(false); }}
+                        onClick={() => { navigate('/app/account'); setUserMenuOpen(false); }}
                         style={{
                           display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
                           padding: '8px 10px', background: 'transparent', border: 'none',
@@ -333,7 +333,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       {/* Admin link */}
                       {isAdmin && (
                         <button
-                          onClick={() => { navigate('/admin'); setUserMenuOpen(false); }}
+                          onClick={() => { navigate('/app/admin'); setUserMenuOpen(false); }}
                           style={{
                             display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
                             padding: '8px 10px', background: 'transparent', border: 'none',
@@ -404,7 +404,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           {NAV_GROUPS.map((group) =>
             // Inject admin item into MANAGE group for admins
             group.label === "MANAGE" && isAdmin
-              ? { ...group, items: [...group.items, { id: "admin-users", label: "Users", shortLabel: "Users", icon: Shield, path: "/admin/users" }] }
+              ? { ...group, items: [...group.items, { id: "admin-users", label: "Users", shortLabel: "Users", icon: Shield, path: "/app/admin/users" }] }
               : group
           ).map((group, gi) => (
             <div key={group.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
@@ -614,7 +614,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             {/* Groups in drawer */}
             {NAV_GROUPS.map(group =>
               group.label === "MANAGE" && isAdmin
-                ? { ...group, items: [...group.items, { id: "admin-users", label: "Users", shortLabel: "Users", icon: Shield, path: "/admin/users" }] }
+                ? { ...group, items: [...group.items, { id: "admin-users", label: "Users", shortLabel: "Users", icon: Shield, path: "/app/admin/users" }] }
                 : group
             ).map(group => (
               <div key={group.label} style={{ marginBottom: 16 }}>
