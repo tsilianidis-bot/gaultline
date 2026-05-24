@@ -482,3 +482,16 @@
 - [x] seoRoutes.ts: Express routes for /sitemap.xml (9 public URLs) and /robots.txt
 - [x] robots.txt: Disallow for all gated/premium paths, Sitemap directive
 - [x] sitemap.xml: changefreq and priority for all public pages
+
+## Owner Intelligence Portal
+- [x] getPlatformStats DB helper (user counts, tier breakdown, waitlist stats)
+- [x] getActivityFeed DB helper (recent signups + waitlist submissions)
+- [x] admin.getPlatformStats tRPC procedure
+- [x] admin.getActivityFeed tRPC procedure
+- [x] AdminPortal.tsx page with 4 tabs: Overview, Waitlist, Users, Platform Health
+- [x] Overview tab: stat cards + activity feed
+- [x] Waitlist tab: all requests, filter by status, approve/reject/reset actions, grant founding tier
+- [x] Users tab: all users, tier badges, promote/demote controls, search, last seen
+- [x] Platform Health tab: data sources, pressure engine live stats, env checks, platform info
+- [x] /admin route registered in App.tsx
+- [x] Header dropdown updated: "OWNER PORTAL" link for admin users pointing to /admin

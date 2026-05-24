@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -257,6 +257,66 @@ export async function updateFoundingRequestStatus(
   await db.update(foundingAccessRequests)
     .set({ status, updatedAt: new Date() })
     .where(eq(foundingAccessRequests.id, id));
+}
+
+export async function getPlatformStats() {
+  const db = await getDb();
+  if (!db) return null;
+  const [userRows, requestRows] = await Promise.all([
+    db.select({
+      total: count(),
+      freeCount: sql<number>`SUM(CASE WHEN ${users.accessTier} = 'free' THEN 1 ELSE 0 END)`,
+      premiumCount: sql<number>`SUM(CASE WHEN ${users.accessTier} = 'premium' THEN 1 ELSE 0 END)`,
+      foundingCount: sql<number>`SUM(CASE WHEN ${users.accessTier} = 'founding' THEN 1 ELSE 0 END)`,
+    }).from(users),
+    db.select({
+      total: count(),
+      pendingCount: sql<number>`SUM(CASE WHEN ${foundingAccessRequests.status} = 'pending' THEN 1 ELSE 0 END)`,
+      approvedCount: sql<number>`SUM(CASE WHEN ${foundingAccessRequests.status} = 'approved' THEN 1 ELSE 0 END)`,
+      rejectedCount: sql<number>`SUM(CASE WHEN ${foundingAccessRequests.status} = 'rejected' THEN 1 ELSE 0 END)`,
+    }).from(foundingAccessRequests),
+  ]);
+  return {
+    users: {
+      total: Number(userRows[0]?.total ?? 0),
+      free: Number(userRows[0]?.freeCount ?? 0),
+      premium: Number(userRows[0]?.premiumCount ?? 0),
+      founding: Number(userRows[0]?.foundingCount ?? 0),
+    },
+    waitlist: {
+      total: Number(requestRows[0]?.total ?? 0),
+      pending: Number(requestRows[0]?.pendingCount ?? 0),
+      approved: Number(requestRows[0]?.approvedCount ?? 0),
+      rejected: Number(requestRows[0]?.rejectedCount ?? 0),
+    },
+  };
+}
+
+export async function getActivityFeed(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  const [recentUsers, recentRequests] = await Promise.all([
+    db.select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      accessTier: users.accessTier,
+      createdAt: users.createdAt,
+    }).from(users).orderBy(desc(users.createdAt)).limit(limit),
+    db.select({
+      id: foundingAccessRequests.id,
+      name: foundingAccessRequests.name,
+      email: foundingAccessRequests.email,
+      status: foundingAccessRequests.status,
+      createdAt: foundingAccessRequests.createdAt,
+    }).from(foundingAccessRequests).orderBy(desc(foundingAccessRequests.createdAt)).limit(limit),
+  ]);
+  const feed = [
+    ...recentUsers.map(u => ({ type: 'signup' as const, id: u.id, name: u.name, email: u.email, tier: u.accessTier, status: null as string | null, createdAt: u.createdAt })),
+    ...recentRequests.map(r => ({ type: 'waitlist' as const, id: r.id, name: r.name, email: r.email, tier: null as string | null, status: r.status, createdAt: r.createdAt })),
+  ];
+  feed.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+  return feed.slice(0, limit);
 }
 
 export async function getAllUsersWithTier() {

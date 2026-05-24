@@ -12,7 +12,7 @@ import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from ".
 import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers,
   getCryptoWatchlist, addCryptoWatchlistItem, removeCryptoWatchlistItem, isCryptoWatchlisted,
   getUserTier, setUserTier, createFoundingRequest, getFoundingRequests, updateFoundingRequestStatus,
-  getAllUsersWithTier } from "./db";
+  getAllUsersWithTier, getPlatformStats, getActivityFeed } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
@@ -793,6 +793,30 @@ export const appRouter = router({
         } catch (err) {
           if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch requests", cause: err });
+        }
+      }),
+
+    // Platform stats — admin only
+    getPlatformStats: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+          return await getPlatformStats();
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch stats', cause: err });
+        }
+      }),
+
+    // Activity feed — admin only
+    getActivityFeed: protectedProcedure
+      .query(async ({ ctx }) => {
+        try {
+          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+          return await getActivityFeed(30);
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch activity', cause: err });
         }
       }),
 

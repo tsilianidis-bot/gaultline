@@ -333,7 +333,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       {/* Admin link */}
                       {isAdmin && (
                         <button
-                          onClick={() => { navigate('/admin/users'); setUserMenuOpen(false); }}
+                          onClick={() => { navigate('/admin'); setUserMenuOpen(false); }}
                           style={{
                             display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
                             padding: '8px 10px', background: 'transparent', border: 'none',
@@ -344,7 +344,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                           onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(255,149,0,0.08)'); }}
                           onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); }}
                         >
-                          <Shield size={12} /> ADMIN PANEL
+                          <Shield size={12} /> OWNER PORTAL
                         </button>
                       )}
 
