@@ -12,6 +12,7 @@ import { getRiskColor } from "@/components/RiskBadge";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import DataIntegrity from "@/components/DataIntegrity";
 import HomeCryptoSection from "@/components/HomeCryptoSection";
+import WaitlistSection from "@/components/WaitlistSection";
 import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
@@ -976,6 +977,9 @@ export default function Dashboard() {
 
         {/* Digital Asset & Crypto Intelligence */}
         <HomeCryptoSection />
+
+        {/* Waitlist / Founding Access Form */}
+        <WaitlistSection />
 
         {/* SEO Content Section — Institutional copy for search engine indexing */}
         <section
