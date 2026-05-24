@@ -1,4 +1,5 @@
 import { COOKIE_NAME } from "@shared/const";
+import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
@@ -746,6 +747,15 @@ export const appRouter = router({
           });
           // Return success silently even on duplicate — don't reveal whether the email exists
           if (result.duplicate) return { success: true, id: null };
+          // Notify the owner of the new founding access request
+          await notifyOwner({
+            title: "New Founding Access Request",
+            content: [
+              `**Email:** ${input.email}`,
+              input.name ? `**Name:** ${input.name}` : null,
+              input.message ? `**Message:** ${input.message}` : null,
+            ].filter(Boolean).join("\n"),
+          }).catch(() => { /* non-fatal — don't block the response */ });
           return { success: true, id: result.id };
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to submit request", cause: err });

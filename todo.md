@@ -522,3 +522,8 @@
 - [x] Wire waitlist count stat from publicStats API (replace "Open")
 - [x] Remove console.log from Scenarios.tsx
 - [x] Add route-level error boundaries
+
+## New Features (May 24, 2026)
+- [x] /legal page with Privacy Policy and Terms of Use sections
+- [x] Owner notification on founding access request submission
+- [x] Social share buttons (Twitter/X, LinkedIn) on marketing hero

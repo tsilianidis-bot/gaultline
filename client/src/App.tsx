@@ -40,6 +40,7 @@ const CryptoSignals    = lazy(() => import("./pages/CryptoSignals"));
 const UserAccount      = lazy(() => import("./pages/UserAccount"));
 const AdminPortal      = lazy(() => import("./pages/AdminPortal"));
 const MarketingSite    = lazy(() => import("./pages/MarketingSite"));
+const Legal            = lazy(() => import("./pages/Legal"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -67,6 +68,14 @@ const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 function Router() {
   return (
     <Switch>
+      {/* Legal page — standalone, no AppLayout */}
+      <Route path="/legal">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Legal />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
       {/* Marketing site at root — standalone, no AppLayout */}
       <Route path="/">
         <ErrorBoundary>
