@@ -896,7 +896,7 @@ function FoundingAccessForm({ formRef }: { formRef: React.RefObject<HTMLDivEleme
 
   const mutation = trpc.user.requestFoundingAccess.useMutation({
     onSuccess: () => setSubmitted(true),
-    onError: (err) => setError(err.message || "Something went wrong. Please email admin@getfaultline.live"),
+    onError: (err) => setError(err.message || "Something went wrong. Please email info@getfaultline.live"),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -986,8 +986,8 @@ function FoundingAccessForm({ formRef }: { formRef: React.RefObject<HTMLDivEleme
             </button>
             <p className="text-center text-[#4B5563] text-[10px] font-mono">
               Or email us directly at{" "}
-              <a href="mailto:admin@getfaultline.live" className="text-[#00D4FF]/60 hover:text-[#00D4FF]">
-                admin@getfaultline.live
+              <a href="mailto:info@getfaultline.live" className="text-[#00D4FF]/60 hover:text-[#00D4FF]">
+                info@getfaultline.live
               </a>
             </p>
           </form>
@@ -1054,7 +1054,8 @@ function Footer() {
               </li>
               <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">Request Founding Access</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">Pricing Tiers</a></li>
-              <li><a href="mailto:admin@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">Contact</a></li>
+              <li><a href="mailto:info@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">General Inquiries</a></li>
+              <li><a href="mailto:admin@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">Admin</a></li>
             </ul>
           </div>
         </div>
@@ -1067,9 +1068,11 @@ function Footer() {
             MONITOR THE PRESSURE. BEFORE THE SHIFT.
           </div>
           <div className="text-[#4B5563] text-[10px] font-mono">
-            <a href="mailto:admin@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">
-              admin@getfaultline.live
-            </a>
+            <span className="flex gap-3">
+              <a href="mailto:info@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">info@getfaultline.live</a>
+              <span className="opacity-30">·</span>
+              <a href="mailto:admin@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">admin@getfaultline.live</a>
+            </span>
           </div>
         </div>
       </div>
