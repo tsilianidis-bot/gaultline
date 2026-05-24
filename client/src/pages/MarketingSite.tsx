@@ -1,7 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-
 const PLATFORM_URL = "/app";
+
+// ── Asset URLs ────────────────────────────────────────────────
+const ASSETS = {
+  heroBg: "/manus-storage/faultline_hero_bg_7d6aaf14.jpg",
+  dashboardMockup: "/manus-storage/faultline_dashboard_mockup_456bb973.jpg",
+  macroIntel: "/manus-storage/faultline_macro_intel_09b4c85d.jpg",
+  riskEngine: "/manus-storage/faultline_risk_engine_fd070c61.jpg",
+  ctaAtmosphere: "/manus-storage/faultline_cta_atmosphere_93bd4048.jpg",
+};
 
 // ── Animated counter ──────────────────────────────────────────
 function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
@@ -164,16 +172,28 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
 function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050608]">
+      {/* Cinematic hero background image */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url(${ASSETS.heroBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      {/* Dark overlay to keep text readable */}
+      <div className="absolute inset-0 bg-[#050608]/70" />
       {/* Grid background */}
       <div
-        className="absolute inset-0 opacity-[0.04]"
+        className="absolute inset-0 opacity-[0.03]"
         style={{
           backgroundImage: "linear-gradient(rgba(0,212,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,1) 1px, transparent 1px)",
           backgroundSize: "60px 60px",
         }}
       />
       {/* Radial glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(0,212,255,0.06)_0%,transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_40%,rgba(0,212,255,0.08)_0%,transparent_70%)]" />
       {/* Bottom fade */}
       <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#050608] to-transparent" />
 
@@ -228,6 +248,82 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
               <div className="text-[10px] font-mono tracking-widest text-[#64748B] mt-1">{label.toUpperCase()}</div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Visual Showcase ──────────────────────────────────────────
+function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => void }) {
+  return (
+    <section className="py-0 bg-[#050608] relative overflow-hidden">
+      {/* Dashboard mockup — full bleed cinematic reveal */}
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#050608] via-transparent to-[#050608] z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#050608]/80 via-transparent to-[#050608]/80 z-10 pointer-events-none" />
+        <img
+          src={ASSETS.dashboardMockup}
+          alt="FAULTLINE Intelligence Platform Dashboard"
+          className="w-full object-cover"
+          style={{ maxHeight: "70vh", objectPosition: "top center" }}
+          loading="lazy"
+        />
+        {/* Overlay label */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 text-center">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#050608]/90 border border-[#00D4FF]/20 rounded-lg backdrop-blur-sm">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
+            <span className="text-[11px] font-mono tracking-[0.25em] text-[#00D4FF]/80">LIVE INTELLIGENCE TERMINAL — FOUNDING ACCESS OPEN</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Macro Intel image + copy side by side */}
+      <div className="max-w-7xl mx-auto px-6 py-24">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="order-2 lg:order-1">
+            <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 border border-[#00D4FF]/20 px-4 py-1.5 rounded-full mb-6">
+              SYSTEMIC INTELLIGENCE
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 leading-[1.1]">
+              Every asset class.<br />
+              <span className="text-[#00D4FF]">Every pressure point.</span><br />
+              One terminal.
+            </h2>
+            <p className="text-[#A8B8CC] text-base leading-relaxed mb-8">
+              FAULTLINE maps contagion pathways across equities, bonds, crypto, commodities, and currencies — showing you where stress is concentrating before it cascades into a visible market event.
+            </p>
+            <div className="space-y-3 mb-8">
+              {[
+                "Cross-asset contagion detection in real time",
+                "AI concentration risk mapped to individual holdings",
+                "Liquidity stress propagation across market layers",
+                "Regime-aware signal classification for every asset",
+              ].map((item) => (
+                <div key={item} className="flex items-start gap-3">
+                  <span className="text-[#00D4FF] mt-0.5 flex-shrink-0">◈</span>
+                  <span className="text-[#A8B8CC] text-sm">{item}</span>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={onRequestAccess}
+              className="px-8 py-4 bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#050608] font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97]"
+            >
+              REQUEST FOUNDING ACCESS
+            </button>
+          </div>
+          <div className="order-1 lg:order-2 relative">
+            <div className="absolute -inset-4 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,rgba(0,212,255,0.08)_0%,transparent_70%)]" />
+            <div className="relative rounded-xl overflow-hidden border border-[rgba(0,212,255,0.15)] shadow-[0_0_60px_rgba(0,212,255,0.08)]">
+              <img
+                src={ASSETS.macroIntel}
+                alt="Cross-asset systemic risk intelligence network"
+                className="w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -382,6 +478,46 @@ function ModulesSection() {
   );
 }
 
+// ── Risk Engine Visual Section ────────────────────────────────
+function RiskEngineSection({ onRequestAccess }: { onRequestAccess: () => void }) {
+  return (
+    <section className="relative py-0 overflow-hidden bg-[#050608]">
+      <div className="relative">
+        {/* Risk engine image — full bleed */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#050608] via-transparent to-[#050608] z-10 pointer-events-none" />
+        <img
+          src={ASSETS.riskEngine}
+          alt="FAULTLINE Aftershock Risk Detection Engine"
+          className="w-full object-cover opacity-60"
+          style={{ maxHeight: "60vh" }}
+          loading="lazy"
+        />
+        {/* Centered overlay content */}
+        <div className="absolute inset-0 z-20 flex items-center justify-center">
+          <div className="text-center px-6 max-w-3xl">
+            <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#FF2D55]/80 border border-[#FF2D55]/30 px-4 py-1.5 rounded-full mb-6 bg-[#FF2D55]/5">
+              AFTERSHOCK ENGINE™
+            </div>
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 leading-[1.05]">
+              Detect the cascade<br />
+              <span className="text-[#00D4FF]">before it hits.</span>
+            </h2>
+            <p className="text-[#A8B8CC] text-base sm:text-lg max-w-xl mx-auto mb-8">
+              The Aftershock Engine™ maps contagion pathways and systemic pressure cascades — identifying which markets will fracture next when stress begins to propagate.
+            </p>
+            <button
+              onClick={onRequestAccess}
+              className="px-8 py-4 bg-[#FF2D55] hover:bg-[#FF2D55]/90 text-white font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97] shadow-[0_0_30px_rgba(255,45,85,0.3)]"
+            >
+              UNLOCK AFTERSHOCK ENGINE™
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── How It Works ──────────────────────────────────────────────
 function HowItWorksSection() {
   const steps = [
@@ -485,6 +621,119 @@ function AudienceSection() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── I WANT IN — Sleeper CTA Section ──────────────────────────
+function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
+  const [revealed, setRevealed] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setRevealed(true); obs.disconnect(); } },
+      { threshold: 0.3 }
+    );
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <section className="relative overflow-hidden bg-[#050608]">
+      {/* Atmosphere background image */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url(${ASSETS.ctaAtmosphere})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center top",
+          backgroundRepeat: "no-repeat",
+        }}
+      />
+      {/* Heavy dark overlay */}
+      <div className="absolute inset-0 bg-[#050608]/80" />
+      {/* Gradient fade top and bottom */}
+      <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#050608] to-transparent z-10" />
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050608] to-transparent z-10" />
+
+      <div ref={ref} className="relative z-20 min-h-[70vh] flex items-center justify-center py-32 px-6">
+        <div className="text-center max-w-4xl mx-auto">
+          {/* Eyebrow */}
+          <div className="inline-block text-[10px] font-mono tracking-[0.4em] text-[#FFD700]/60 border border-[#FFD700]/20 px-4 py-1.5 rounded-full mb-10">
+            FOUNDING ACCESS — LIMITED AVAILABILITY
+          </div>
+
+          {/* Sleeper headline — reveals on scroll */}
+          <div className="overflow-hidden mb-4">
+            <h2
+              className="text-[clamp(3rem,10vw,9rem)] font-black tracking-[-0.02em] leading-none transition-all duration-1000"
+              style={{
+                transform: revealed ? "translateY(0)" : "translateY(100%)",
+                opacity: revealed ? 1 : 0,
+                color: "transparent",
+                WebkitTextStroke: "1px rgba(255,255,255,0.15)",
+                transitionDelay: "0ms",
+              }}
+            >
+              I WANT IN.
+            </h2>
+          </div>
+
+          {/* Filled version layered on top — slightly delayed */}
+          <div className="overflow-hidden -mt-[clamp(3rem,10vw,9rem)] mb-12">
+            <h2
+              className="text-[clamp(3rem,10vw,9rem)] font-black tracking-[-0.02em] leading-none transition-all duration-1000"
+              style={{
+                transform: revealed ? "translateY(0)" : "translateY(100%)",
+                opacity: revealed ? 1 : 0,
+                color: "#FFD700",
+                transitionDelay: "150ms",
+                textShadow: revealed ? "0 0 80px rgba(255,215,0,0.4), 0 0 160px rgba(255,215,0,0.15)" : "none",
+              }}
+            >
+              I WANT IN.
+            </h2>
+          </div>
+
+          {/* Supporting copy */}
+          <p
+            className="text-lg sm:text-xl text-[#A8B8CC] max-w-2xl mx-auto mb-10 leading-relaxed transition-all duration-700"
+            style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(20px)", transitionDelay: "400ms" }}
+          >
+            The intelligence advantage is real. The window is narrow. Founding access gives you the full platform — signals, pressure engine, Aftershock™, crypto intelligence — before the price changes.
+          </p>
+
+          {/* CTA buttons */}
+          <div
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-700"
+            style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(20px)", transitionDelay: "600ms" }}
+          >
+            <button
+              onClick={onRequestAccess}
+              className="w-full sm:w-auto px-10 py-5 bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#050608] font-mono font-black text-base tracking-[0.2em] rounded transition-all duration-150 active:scale-[0.97] shadow-[0_0_40px_rgba(255,215,0,0.3)] hover:shadow-[0_0_60px_rgba(255,215,0,0.5)]"
+            >
+              REQUEST FOUNDING ACCESS
+            </button>
+            <a
+              href={PLATFORM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-10 py-5 border border-[#00D4FF]/40 hover:border-[#00D4FF] text-[#00D4FF] font-mono font-bold text-base tracking-[0.2em] rounded transition-all duration-150 active:scale-[0.97]"
+            >
+              LAUNCH PLATFORM →
+            </a>
+          </div>
+
+          {/* Scarcity signal */}
+          <div
+            className="mt-10 flex items-center justify-center gap-2 transition-all duration-700"
+            style={{ opacity: revealed ? 1 : 0, transitionDelay: "800ms" }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
+            <span className="text-[10px] font-mono tracking-[0.3em] text-[#64748B]">FOUNDING SPOTS FILLING — ACCESS CLOSES WHEN CAPACITY IS REACHED</span>
+          </div>
         </div>
       </div>
     </section>
@@ -833,10 +1082,13 @@ export default function MarketingSite() {
       <StatusTicker />
       <Nav onRequestAccess={scrollToForm} />
       <Hero onRequestAccess={scrollToForm} />
+      <VisualShowcaseSection onRequestAccess={scrollToForm} />
       <FeaturesSection />
       <ModulesSection />
+      <RiskEngineSection onRequestAccess={scrollToForm} />
       <HowItWorksSection />
       <AudienceSection />
+      <IWantInSection onRequestAccess={scrollToForm} />
       <PricingSection onRequestAccess={scrollToForm} />
       <FoundingAccessForm formRef={formRef} />
       <Footer />
