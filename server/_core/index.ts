@@ -66,11 +66,14 @@ async function startServer() {
       "Content-Security-Policy",
       [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://us.umami.is",
+        // 'unsafe-inline' required for manus-runtime platform script injected at deploy time
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://manus-analytics.com https://us.umami.is",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com",
-        "img-src 'self' data: blob: https://d2xsxph8kpxj0f.cloudfront.net https://assets.coingecko.com",
-        "connect-src 'self' https://us.umami.is",
+        "font-src 'self' https://fonts.gstatic.com data:",
+        // Allow manus storage CDN for OG image and uploaded assets
+        "img-src 'self' data: blob: https://d2xsxph8kpxj0f.cloudfront.net https://assets.coingecko.com https://*.manus.space https://*.cloudfront.net",
+        // Allow connections to manus analytics and storage
+        "connect-src 'self' https://manus-analytics.com https://us.umami.is https://*.manus.space",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",
