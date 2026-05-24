@@ -22,7 +22,7 @@ import { getQuotes } from "./yahooProxy";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
 import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
-import { protectedProcedure } from "./_core/trpc";
+import { protectedProcedure, premiumProcedure } from "./_core/trpc";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -92,7 +92,7 @@ export const appRouter = router({
 
     // Compute trading signals (BUY/SELL/HOLD) for a batch of tickers
     // Uses mutation (POST) to avoid 414 URI Too Large with large sparkline payloads
-    getTradingSignals: publicProcedure
+    getTradingSignals: premiumProcedure
       .input(z.object({
         tickers: z.array(z.object({
           ticker: z.string().min(1).max(10),
@@ -128,7 +128,7 @@ export const appRouter = router({
       }),
 
     // Compute trading signal for a single ticker
-    getTradingSignal: publicProcedure
+    getTradingSignal: premiumProcedure
       .input(z.object({
         ticker: z.string().min(1).max(10),
         price: z.number(),
@@ -407,7 +407,7 @@ export const appRouter = router({
   }),
   crypto: router({
     // Get FAULTLINE Crypto Intelligence™ report (legacy)
-    getSignals: publicProcedure
+    getSignals: premiumProcedure
       .query(async () => {
         try {
           return await getCryptoIntelligence();
@@ -417,7 +417,7 @@ export const appRouter = router({
       }),
 
     // Search cryptocurrencies by symbol or name
-    search: publicProcedure
+    search: premiumProcedure
       .input(z.object({ query: z.string().min(1).max(50) }))
       .query(async ({ input }) => {
         try {
@@ -428,7 +428,7 @@ export const appRouter = router({
       }),
 
     // Full intelligence card for a single asset
-    getAssetIntelligence: publicProcedure
+    getAssetIntelligence: premiumProcedure
       .input(z.object({ idOrSymbol: z.string().min(1).max(50) }))
       .query(async ({ input }) => {
         try {
@@ -442,7 +442,7 @@ export const appRouter = router({
       }),
 
     // Crypto systemic risk score
-    getSystemicRisk: publicProcedure
+    getSystemicRisk: premiumProcedure
       .query(async () => {
         try {
           return await computeCryptoSystemicRisk();
@@ -452,7 +452,7 @@ export const appRouter = router({
       }),
 
     // Top 50 markets for heatmap
-    getTopMarkets: publicProcedure
+    getTopMarkets: premiumProcedure
       .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
       .query(async ({ input }) => {
         try {
@@ -463,7 +463,7 @@ export const appRouter = router({
       }),
 
     // Global market stats
-    getGlobalStats: publicProcedure
+    getGlobalStats: premiumProcedure
       .query(async () => {
         try {
           const stats = await getGlobalStats();
@@ -477,7 +477,7 @@ export const appRouter = router({
 
     // ── Crypto Trading Signals ────────────────────────────────
     // Get trading signal (BUY/SELL/HOLD/WATCH) for a single crypto asset
-    getSignal: publicProcedure
+    getSignal: premiumProcedure
       .input(z.object({ idOrSymbol: z.string().min(1).max(50) }))
       .query(async ({ input }) => {
         try {
@@ -502,7 +502,7 @@ export const appRouter = router({
       }),
 
     // Get trading signals screener for top N crypto assets
-    getScreener: publicProcedure
+    getScreener: premiumProcedure
       .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
       .query(async ({ input }) => {
         try {
@@ -581,7 +581,7 @@ export const appRouter = router({
   }),
   aftershock: router({
     // Run the full Aftershock Engine™ — detect ruptures and map aftershock chains
-    getAnalysis: publicProcedure
+    getAnalysis: premiumProcedure
       .query(async () => {
         try {
           return await runAftershockEngine();
@@ -613,7 +613,7 @@ export const appRouter = router({
 
   recovery: router({
     // Get recovery confirmation analysis for a single crypto asset
-    getAssetRecovery: publicProcedure
+    getAssetRecovery: premiumProcedure
       .input(z.object({ symbol: z.string().min(1).max(20) }))
       .query(async ({ input }) => {
         try {
@@ -645,7 +645,7 @@ export const appRouter = router({
       }),
 
     // Get recovery analysis for the overall crypto market (using BTC as proxy)
-    getMarketRecovery: publicProcedure
+    getMarketRecovery: premiumProcedure
       .query(async () => {
         try {
           const [market, ohlcBars, globalStats, pressure] = await Promise.all([
