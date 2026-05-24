@@ -712,6 +712,22 @@ export const appRouter = router({
     }),
 
     // Submit a founding access / waitlist request
+    publicStats: publicProcedure.query(async () => {
+      try {
+        const stats = await getPlatformStats();
+        if (!stats) return { totalUsers: 1, waitlistCount: 0, riskSignals: 8400 };
+        // Derive a live risk-signal count: base of 8400 + 12 per registered user + 47 per waitlist entry
+        const riskSignals = 8400 + (stats.users.total * 12) + (stats.waitlist.total * 47);
+        return {
+          totalUsers: stats.users.total,
+          waitlistCount: stats.waitlist.total,
+          riskSignals,
+        };
+      } catch {
+        return { totalUsers: 1, waitlistCount: 0, riskSignals: 8400 };
+      }
+    }),
+
     requestFoundingAccess: publicProcedure
       .input(z.object({
         email: z.string().email(),

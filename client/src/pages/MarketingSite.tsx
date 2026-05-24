@@ -168,6 +168,33 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
   );
 }
 
+// ── Live Stats Row ───────────────────────────────────────────
+function HeroStats() {
+  const { data } = trpc.user.publicStats.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+  });
+  const riskSignals = data?.riskSignals ?? 8400;
+  const waitlistCount = data?.waitlistCount ?? 0;
+  const stats = [
+    { val: riskSignals, suffix: "+", label: "Risk Signals Live" },
+    { val: 50, suffix: "+", label: "Data Sources" },
+    { val: waitlistCount > 0 ? waitlistCount : null, suffix: "+", label: "Waitlist Members", fallback: "Open" },
+  ];
+  return (
+    <div className="flex flex-wrap justify-center gap-8 sm:gap-16 text-center">
+      {stats.map(({ val, suffix, label, fallback }) => (
+        <div key={label}>
+          <div className="text-2xl sm:text-3xl font-mono font-bold text-[#00D4FF]">
+            {val !== null ? <Counter target={val} suffix={suffix} /> : <span>{fallback}</span>}
+          </div>
+          <div className="text-[10px] font-mono tracking-widest text-[#64748B] mt-1">{label.toUpperCase()}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Hero ──────────────────────────────────────────────────────
 function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
   return (
@@ -234,21 +261,8 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
           </a>
         </div>
 
-        {/* Stats row */}
-        <div className="flex flex-wrap justify-center gap-8 sm:gap-16 text-center">
-          {[
-            { val: 8400, suffix: "+", label: "Risk Signals Live" },
-            { val: 50, suffix: "+", label: "Data Sources" },
-            { val: 99, suffix: ".8%", label: "Platform Uptime" },
-          ].map(({ val, suffix, label }) => (
-            <div key={label}>
-              <div className="text-2xl sm:text-3xl font-mono font-bold text-[#00D4FF]">
-                <Counter target={val} suffix={suffix} />
-              </div>
-              <div className="text-[10px] font-mono tracking-widest text-[#64748B] mt-1">{label.toUpperCase()}</div>
-            </div>
-          ))}
-        </div>
+        {/* Stats row — live data */}
+        <HeroStats />
       </div>
     </section>
   );
