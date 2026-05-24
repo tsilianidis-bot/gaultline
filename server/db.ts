@@ -335,3 +335,57 @@ export async function getAllUsersWithTier() {
     .from(users)
     .orderBy(users.createdAt);
 }
+
+// ── Statistics helpers ────────────────────────────────────────
+
+export async function getSignupTimeSeries(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({
+    day: sql<string>`DATE(FROM_UNIXTIME(${users.createdAt} / 1000))`,
+    count: count(),
+  })
+    .from(users)
+    .where(sql`${users.createdAt} >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ${days} DAY)) * 1000`)
+    .groupBy(sql`DATE(FROM_UNIXTIME(${users.createdAt} / 1000))`)
+    .orderBy(sql`DATE(FROM_UNIXTIME(${users.createdAt} / 1000))`);
+  return rows.map(r => ({ day: String(r.day), count: Number(r.count) }));
+}
+
+export async function getWaitlistTimeSeries(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({
+    day: sql<string>`DATE(FROM_UNIXTIME(${foundingAccessRequests.createdAt} / 1000))`,
+    count: count(),
+  })
+    .from(foundingAccessRequests)
+    .where(sql`${foundingAccessRequests.createdAt} >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ${days} DAY)) * 1000`)
+    .groupBy(sql`DATE(FROM_UNIXTIME(${foundingAccessRequests.createdAt} / 1000))`)
+    .orderBy(sql`DATE(FROM_UNIXTIME(${foundingAccessRequests.createdAt} / 1000))`);
+  return rows.map(r => ({ day: String(r.day), count: Number(r.count) }));
+}
+
+export async function getConversionStats() {
+  const db = await getDb();
+  if (!db) return null;
+  const [userRows, requestRows] = await Promise.all([
+    db.select({ total: count(), tier: users.accessTier }).from(users).groupBy(users.accessTier),
+    db.select({ total: count(), status: foundingAccessRequests.status }).from(foundingAccessRequests).groupBy(foundingAccessRequests.status),
+  ]);
+  const totalUsers = userRows.reduce((s, r) => s + Number(r.total), 0);
+  const premiumUsers = userRows.filter(r => r.tier === 'premium' || r.tier === 'founding').reduce((s, r) => s + Number(r.total), 0);
+  const totalRequests = requestRows.reduce((s, r) => s + Number(r.total), 0);
+  const approvedRequests = requestRows.filter(r => r.status === 'approved').reduce((s, r) => s + Number(r.total), 0);
+  const pendingRequests = requestRows.filter(r => r.status === 'pending').reduce((s, r) => s + Number(r.total), 0);
+  return {
+    totalUsers,
+    premiumUsers,
+    freeUsers: totalUsers - premiumUsers,
+    totalWaitlistRequests: totalRequests,
+    approvedRequests,
+    pendingRequests,
+    conversionRate: totalUsers > 0 ? Math.round((premiumUsers / totalUsers) * 100) : 0,
+    waitlistApprovalRate: totalRequests > 0 ? Math.round((approvedRequests / totalRequests) * 100) : 0,
+  };
+}

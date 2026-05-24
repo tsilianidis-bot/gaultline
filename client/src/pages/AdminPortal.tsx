@@ -522,14 +522,187 @@ function HealthTab() {
   );
 }
 
+// ── Tab: Statistics ──────────────────────────────────────────────────────────
+
+function StatsTab() {
+  const { data, isLoading } = trpc.admin.getStats.useQuery(undefined, { staleTime: 60_000 });
+
+  // Build a 30-day date spine so missing days show as 0
+  function buildSeries(raw: { day: string; count: number }[]) {
+    const map = Object.fromEntries(raw.map(r => [r.day, r.count]));
+    const result: { day: string; count: number; cumulative: number }[] = [];
+    let cum = 0;
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const c = map[key] ?? 0;
+      cum += c;
+      result.push({ day: key.slice(5), count: c, cumulative: cum });
+    }
+    return result;
+  }
+
+  const signupSeries = buildSeries(data?.signups ?? []);
+  const waitlistSeries = buildSeries(data?.waitlist ?? []);
+  const conv = data?.conversion;
+
+  // Simple SVG sparkline
+  function Sparkline({ series, color, height = 60 }: { series: { cumulative: number }[]; color: string; height?: number }) {
+    const maxVal = Math.max(...series.map(s => s.cumulative), 1);
+    const w = 300; const h = height;
+    const pts = series.map((s, i) => {
+      const x = (i / (series.length - 1)) * w;
+      const y = h - (s.cumulative / maxVal) * h;
+      return `${x},${y}`;
+    }).join(" ");
+    const area = `0,${h} ${pts} ${w},${h}`;
+    return (
+      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: `${h}px` }}>
+        <defs>
+          <linearGradient id={`grad-${color.replace(/[^a-z]/gi, '')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={area} fill={`url(#grad-${color.replace(/[^a-z]/gi, '')})`} />
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  // Bar chart for daily new items
+  function BarChart({ series, color }: { series: { day: string; count: number }[]; color: string }) {
+    const maxVal = Math.max(...series.map(s => s.count), 1);
+    return (
+      <div style={{ display: "flex", alignItems: "flex-end", gap: "2px", height: "48px", padding: "0 2px" }}>
+        {series.map((s, i) => (
+          <div key={i} title={`${s.day}: ${s.count}`} style={{
+            flex: 1, minWidth: 0,
+            height: `${Math.max((s.count / maxVal) * 100, s.count > 0 ? 8 : 2)}%`,
+            background: s.count > 0 ? color : "rgba(255,255,255,0.04)",
+            borderRadius: "2px 2px 0 0",
+            transition: "height 0.3s",
+          }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return <p style={{ ...MONO, fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>Loading statistics...</p>;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+
+      {/* Conversion KPIs */}
+      <div>
+        <SectionHeader title="Conversion Metrics" sub="Platform funnel — from visitor to premium" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+          <StatCard label="Total Users" value={conv?.totalUsers ?? 0} sub="registered accounts" />
+          <StatCard label="Premium / Founding" value={conv?.premiumUsers ?? 0} sub="paid / invited" color="rgba(251,191,36,0.9)" />
+          <StatCard label="Free Tier" value={conv?.freeUsers ?? 0} sub="limited access" color="rgba(100,116,139,0.7)" />
+          <StatCard label="Conversion Rate" value={`${conv?.conversionRate ?? 0}%`} sub="free → premium" color="rgba(0,212,255,0.9)" />
+          <StatCard label="Waitlist Total" value={conv?.totalWaitlistRequests ?? 0} sub="all requests" color="rgba(168,85,247,0.9)" />
+          <StatCard label="Pending" value={conv?.pendingRequests ?? 0} sub="awaiting review" color="rgba(251,191,36,0.9)" />
+          <StatCard label="Approved" value={conv?.approvedRequests ?? 0} sub="granted access" color="rgba(0,212,255,0.9)" />
+          <StatCard label="Approval Rate" value={`${conv?.waitlistApprovalRate ?? 0}%`} sub="waitlist → approved" color="rgba(0,212,255,0.9)" />
+        </div>
+      </div>
+
+      {/* Signup Growth */}
+      <div>
+        <SectionHeader title="User Signup Growth" sub="Cumulative registered users — last 30 days" />
+        <div style={{
+          background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: "12px", padding: "20px 20px 12px",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <p style={{ ...MONO, fontSize: "10px", color: "rgba(0,212,255,0.6)", letterSpacing: "0.12em" }}>CUMULATIVE USERS</p>
+            <p style={{ ...MONO, fontSize: "12px", color: "rgba(0,212,255,0.9)", fontWeight: 700 }}>
+              {signupSeries[signupSeries.length - 1]?.cumulative ?? 0} total
+            </p>
+          </div>
+          <Sparkline series={signupSeries} color="rgba(0,212,255,0.8)" height={80} />
+          <div style={{ marginTop: "8px" }}>
+            <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.4)", marginBottom: "4px" }}>DAILY NEW SIGNUPS</p>
+            <BarChart series={signupSeries} color="rgba(0,212,255,0.5)" />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "6px" }}>
+            <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.3)" }}>{signupSeries[0]?.day}</p>
+            <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.3)" }}>{signupSeries[signupSeries.length - 1]?.day}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Waitlist Growth */}
+      <div>
+        <SectionHeader title="Waitlist Growth" sub="Cumulative founding access requests — last 30 days" />
+        <div style={{
+          background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: "12px", padding: "20px 20px 12px",
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <p style={{ ...MONO, fontSize: "10px", color: "rgba(168,85,247,0.6)", letterSpacing: "0.12em" }}>CUMULATIVE REQUESTS</p>
+            <p style={{ ...MONO, fontSize: "12px", color: "rgba(168,85,247,0.9)", fontWeight: 700 }}>
+              {waitlistSeries[waitlistSeries.length - 1]?.cumulative ?? 0} total
+            </p>
+          </div>
+          <Sparkline series={waitlistSeries} color="rgba(168,85,247,0.8)" height={80} />
+          <div style={{ marginTop: "8px" }}>
+            <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.4)", marginBottom: "4px" }}>DAILY NEW REQUESTS</p>
+            <BarChart series={waitlistSeries} color="rgba(168,85,247,0.5)" />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "6px" }}>
+            <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.3)" }}>{waitlistSeries[0]?.day}</p>
+            <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.3)" }}>{waitlistSeries[waitlistSeries.length - 1]?.day}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tier Distribution */}
+      <div>
+        <SectionHeader title="Tier Distribution" sub="Current breakdown of user access levels" />
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+          {([
+            { label: "FREE",     value: conv?.freeUsers ?? 0,    total: conv?.totalUsers ?? 1, color: "rgba(100,116,139,0.7)" },
+            { label: "PREMIUM",  value: Math.max(0, (conv?.premiumUsers ?? 0) - (conv?.approvedRequests ?? 0)), total: conv?.totalUsers ?? 1, color: "rgba(251,191,36,0.9)" },
+            { label: "FOUNDING", value: conv?.approvedRequests ?? 0, total: conv?.totalUsers ?? 1, color: "rgba(0,212,255,0.9)" },
+          ]).map(({ label, value, total, color }) => {
+            const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+            return (
+              <div key={label} style={{
+                background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "10px", padding: "18px 20px", flex: "1 1 200px", minWidth: 0,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.15em" }}>{label}</p>
+                  <p style={{ ...HEADING, fontSize: "22px", fontWeight: 700, color }}>{value}</p>
+                </div>
+                <div style={{ height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: "2px", transition: "width 0.6s" }} />
+                </div>
+                <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.4)", marginTop: "6px" }}>{pct}% of users</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
 // ── Main Portal ───────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "waitlist" | "users" | "health";
+type Tab = "overview" | "waitlist" | "users" | "health" | "stats";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: "overview", label: "Overview", icon: "◈" },
-  { id: "waitlist", label: "Waitlist", icon: "◎" },
-  { id: "users",    label: "Users",    icon: "◉" },
+  { id: "overview", label: "Overview",       icon: "◈" },
+  { id: "waitlist", label: "Waitlist",        icon: "◎" },
+  { id: "users",    label: "Users",           icon: "◉" },
+  { id: "stats",    label: "Statistics",      icon: "◑" },
   { id: "health",   label: "Platform Health", icon: "◌" },
 ];
 
@@ -604,6 +777,7 @@ export default function AdminPortal() {
       {activeTab === "overview" && <OverviewTab />}
       {activeTab === "waitlist" && <WaitlistTab />}
       {activeTab === "users"    && <UsersTab />}
+      {activeTab === "stats"    && <StatsTab />}
       {activeTab === "health"   && <HealthTab />}
     </div>
   );

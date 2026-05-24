@@ -12,7 +12,8 @@ import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from ".
 import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers,
   getCryptoWatchlist, addCryptoWatchlistItem, removeCryptoWatchlistItem, isCryptoWatchlisted,
   getUserTier, setUserTier, createFoundingRequest, getFoundingRequests, updateFoundingRequestStatus,
-  getAllUsersWithTier, getPlatformStats, getActivityFeed } from "./db";
+  getAllUsersWithTier, getPlatformStats, getActivityFeed,
+  getSignupTimeSeries, getWaitlistTimeSeries, getConversionStats } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
@@ -854,6 +855,16 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update request", cause: err });
         }
       }),
+
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+      const [signups, waitlist, conversion] = await Promise.all([
+        getSignupTimeSeries(30),
+        getWaitlistTimeSeries(30),
+        getConversionStats(),
+      ]);
+      return { signups, waitlist, conversion };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;
