@@ -533,6 +533,11 @@
 - [x] Stripe integration: webhook handler to upgrade user tier on payment
 - [x] Stripe integration: upgrade prompt UI in PremiumGate on FORBIDDEN error
 - [x] Stripe integration: billing/manage subscription link in UserAccount
-- [ ] Charts page: replace simulated data with real FRED/Polygon API data
-- [ ] Scenarios page: remove console.log and replace placeholder scenario data
-- [ ] GDPR cookie consent banner with localStorage persistence
+- [x] Charts page: replace simulated data with real FRED/Polygon API data
+- [x] Scenarios page: remove console.log and replace placeholder scenario data
+- [x] GDPR cookie consent banner with localStorage persistence
+
+## Marketing Site Content Improvements (May 24, 2026)
+- [x] Fix CTA copy — clarify "LAUNCH PLATFORM" with context about free access and no credit card
+- [x] Add About/Origin narrative section explaining the problem FAULTLINE solves in plain language
+- [x] Add real pricing ($59/mo, $49/mo founding) to pricing cards

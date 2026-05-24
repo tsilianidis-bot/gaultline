@@ -118,7 +118,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
             rel="noopener noreferrer"
             className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold"
           >
-            LAUNCH PLATFORM →
+            EXPLORE FREE →
           </a>
         </div>
 
@@ -160,7 +160,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
             rel="noopener noreferrer"
             className="block w-full text-center text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] rounded py-2 font-bold"
           >
-            LAUNCH PLATFORM →
+            EXPLORE FREE →
           </a>
         </div>
       )}
@@ -257,7 +257,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
             rel="noopener noreferrer"
             className="w-full sm:w-auto px-8 py-4 border border-[#00D4FF]/40 hover:border-[#00D4FF] text-[#00D4FF] font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97]"
           >
-            LAUNCH PLATFORM →
+            EXPLORE FREE — NO CARD REQUIRED →
           </a>
         </div>
 
@@ -822,8 +822,9 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
     },
     {
       name: "FOUNDING MEMBER",
-      price: "Limited Access",
-      desc: "Full intelligence platform. Founding pricing locked for life.",
+      price: "$49/mo",
+      priceSub: "locked for life — reg. $59/mo",
+      desc: "Full intelligence platform at the founding rate, locked forever. Never increases.",
       features: [
         "Full FAULTLINE intelligence platform",
         "Aftershock Engine™",
@@ -832,10 +833,10 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         "Real-time risk alerts",
         "Proprietary scoring systems",
         "Full watchlists & search",
-        "Founding pricing locked for life",
+        "Rate locked for life — never increases",
         "Priority onboarding",
       ],
-      cta: "Request Founding Access",
+      cta: "Lock In $49/mo",
       ctaAction: onRequestAccess,
       featured: true,
     },
@@ -890,7 +891,10 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
               )}
               <div className="mb-5">
                 <div className="text-[10px] font-mono tracking-[0.3em] text-[#64748B] mb-1">{tier.name}</div>
-                <div className={`text-2xl font-bold mb-1 ${tier.featured ? "text-[#FFD700]" : "text-white"}`}>{tier.price}</div>
+                <div className={`text-2xl font-bold mb-0.5 ${tier.featured ? "text-[#FFD700]" : "text-white"}`}>{tier.price}</div>
+                {'priceSub' in tier && tier.priceSub && (
+                  <div className="text-[10px] font-mono text-[#64748B] mb-1">{(tier as {priceSub: string}).priceSub}</div>
+                )}
                 <div className="text-[#A8B8CC] text-xs leading-relaxed">{tier.desc}</div>
               </div>
               <ul className="space-y-2 mb-6">
@@ -1132,6 +1136,52 @@ function Footer() {
   );
 }
 
+// ── About / Origin ──────────────────────────────────────────
+function AboutSection() {
+  return (
+    <section id="about" className="py-24 bg-[#0C0F16] relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_60%_at_0%_50%,rgba(0,212,255,0.04)_0%,transparent_70%)]" />
+      <div className="max-w-5xl mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+          {/* Left: narrative */}
+          <div>
+            <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 border border-[#00D4FF]/20 px-4 py-1.5 rounded-full mb-6">
+              WHY FAULTLINE EXISTS
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6 leading-tight">
+              Most traders see the crash.<br />
+              <span className="text-[#00D4FF]">We built the tool to see it coming.</span>
+            </h2>
+            <p className="text-[#A8B8CC] text-sm leading-relaxed mb-4">
+              Every major market dislocation — 2008, 2020, 2022 — had a pressure signature weeks before the break. Yield curves inverted. Liquidity dried up. Volatility suppression gave way. The signals were there. Most people just didn't have a single place to read them.
+            </p>
+            <p className="text-[#A8B8CC] text-sm leading-relaxed mb-4">
+              FAULTLINE was built to solve that. We aggregate macro stress indicators, credit spreads, Treasury liquidity, AI concentration risk, and regime telemetry into one unified pressure score — the <span className="text-[#00D4FF] font-mono">FAULTLINE Pressure Index™</span>.
+            </p>
+            <p className="text-[#A8B8CC] text-sm leading-relaxed">
+              It's not a prediction engine. It's a pressure gauge. When the gauge is elevated, you pay attention. When it spikes, you act. That's the edge.
+            </p>
+          </div>
+          {/* Right: stats/facts */}
+          <div className="space-y-4">
+            {[
+              { num: "8,400+", label: "Risk signals processed daily", color: "#00D4FF" },
+              { num: "50+", label: "Macro data sources (FRED, Polygon, CoinGecko)", color: "#00D4FF" },
+              { num: "6", label: "Proprietary intelligence engines", color: "#FFD700" },
+              { num: "Real-time", label: "Pressure Index updates — not end-of-day", color: "#00FF88" },
+            ].map(({ num, label, color }) => (
+              <div key={label} className="flex items-start gap-4 p-4 border border-[rgba(255,255,255,0.05)] rounded-lg bg-[#050608] hover:border-[rgba(0,212,255,0.15)] transition-colors">
+                <div className="flex-shrink-0 font-mono font-bold text-xl" style={{ color }}>{num}</div>
+                <div className="text-[#A8B8CC] text-sm leading-relaxed">{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Main export ───────────────────────────────────────────────
 export default function MarketingSite() {
   const formRef = useRef<HTMLDivElement>(null);
@@ -1151,6 +1201,7 @@ export default function MarketingSite() {
       <StatusTicker />
       <Nav onRequestAccess={scrollToForm} />
       <Hero onRequestAccess={scrollToForm} />
+      <AboutSection />
       <VisualShowcaseSection onRequestAccess={scrollToForm} />
       <FeaturesSection />
       <ModulesSection />

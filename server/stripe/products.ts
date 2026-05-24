@@ -23,17 +23,17 @@ export const PLANS: Record<PlanId, Plan> = {
     name: 'FAULTLINE Premium',
     description: 'Full access to all intelligence features, signals, and engines.',
     priceId: process.env.STRIPE_PREMIUM_PRICE_ID ?? null,
-    amount: 2900, // $29/month
+    amount: 5900, // $59/month
     interval: 'month',
     tier: 'premium',
   },
   founding: {
     id: 'founding',
     name: 'FAULTLINE Founding Member',
-    description: 'Lifetime founding access — all premium features + early-access badge.',
+    description: 'Founding member rate — all premium features locked at $49/mo for life.',
     priceId: process.env.STRIPE_FOUNDING_PRICE_ID ?? null,
-    amount: 29900, // $299 one-time
-    interval: 'one_time',
+    amount: 4900, // $49/month (founding rate, locked for life)
+    interval: 'month',
     tier: 'founding',
   },
 };
