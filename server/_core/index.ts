@@ -10,6 +10,7 @@ import { registerFredProxy } from "../fredProxy";
 import { registerSignalsProxy } from "../signalsProxy";
 import { registerCoinGeckoProxy } from "../coingeckoProxy";
 import { registerSEORoutes } from "../seoRoutes";
+import { handleStripeWebhook } from "../stripe/webhook";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -81,6 +82,9 @@ async function startServer() {
     );
     next();
   });
+
+  // Stripe webhook MUST use raw body BEFORE express.json() for signature verification
+  app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
   // Body parser — 1mb default, storage proxy registers its own 50mb limit before this
   app.use(express.json({ limit: "1mb" }));

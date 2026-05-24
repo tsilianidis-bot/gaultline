@@ -398,3 +398,30 @@ export async function getConversionStats() {
     waitlistApprovalRate: totalRequests > 0 ? Math.round((approvedRequests / totalRequests) * 100) : 0,
   };
 }
+
+// ── Stripe helpers ─────────────────────────────────────────────
+
+export async function updateUserStripe(
+  userId: number,
+  data: {
+    stripeCustomerId?: string | null;
+    stripeSubscriptionId?: string | null;
+    accessTier?: 'free' | 'premium' | 'founding';
+  }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(users)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
+export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const [user] = await db.select({ id: users.id })
+    .from(users)
+    .where(eq(users.stripeCustomerId, customerId))
+    .limit(1);
+  return user ?? null;
+}

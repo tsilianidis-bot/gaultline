@@ -24,6 +24,10 @@ export const users = mysqlTable("users", {
    * - founding: same as premium, early-access badge, lifetime benefits
    */
   accessTier: mysqlEnum("accessTier", ["free", "premium", "founding"]).default("free").notNull(),
+  /** Stripe customer ID — set on first checkout, used for billing portal and subscription lookups. */
+  stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
+  /** Active Stripe subscription ID — set by webhook on successful payment, cleared on cancellation. */
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

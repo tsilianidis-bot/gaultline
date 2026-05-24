@@ -721,6 +721,12 @@ function InstitutionalWidgets() {
         subtitle="Six high-signal instruments — structured for FRED, Polygon.io, Alpha Vantage, TradingView"
         color="#00D4FF"
       />
+      {/* Data status banner */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', padding: '6px 10px', background: 'rgba(255,149,0,0.05)', border: '1px solid rgba(255,149,0,0.15)', borderRadius: '4px' }}>
+        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF9500', flexShrink: 0 }} />
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#FF9500', letterSpacing: '0.1em' }}>MODEL</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>— Chart lines use calibrated baseline models. Current values update when live FRED/Polygon feeds are active.</span>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
         {widgets.map((w, i) => {
           const tc = trendConfig[w.trend] ?? { color: '#6B7280', label: w.trend.toUpperCase() };
@@ -750,7 +756,7 @@ function InstitutionalWidgets() {
               </ResponsiveContainer>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: tc.color, background: `${tc.color}10`, border: `1px solid ${tc.color}25`, borderRadius: '2px', padding: '1px 5px' }}>{tc.label}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151' }}>{w.apiSource.split(':')[0]}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.2)', borderRadius: '2px', padding: '1px 4px' }}>MODEL · {w.apiSource.split(':')[0]}</span>
               </div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '9px', color: '#4B5563', marginTop: '3px', lineHeight: 1.3 }}>{w.note}</div>
             </div>
@@ -854,8 +860,8 @@ export default function Charts() {
       }}>
         <Info size={12} style={{ color: '#4B5563', flexShrink: 0, marginTop: '1px' }} />
         <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', lineHeight: 1.5, letterSpacing: '0.04em' }}>
-          <strong style={{ color: '#6B7280' }}>Probabilistic risk intelligence. Not financial advice.</strong>{' '}
-          All data shown is simulated placeholder data structured for integration with FRED, Polygon.io, Alpha Vantage, and TradingView APIs. Risk scores are composite models, not guarantees of future outcomes. Past crises do not predict future events. Consult a qualified financial professional before making investment decisions.
+          <strong style={{ color: '#FF9500' }}>MODEL DATA — Not financial advice.</strong>{' '}
+          Chart lines are calibrated baseline models, not live market feeds. The Systemic Pressure score and regime labels update from live FRED data when available. Full live integration (FRED, Polygon.io, Alpha Vantage) is in development. Risk scores are composite models, not guarantees of future outcomes. Consult a qualified financial professional before making investment decisions.
         </p>
       </div>
     </div>

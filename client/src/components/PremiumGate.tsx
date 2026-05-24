@@ -2,6 +2,7 @@ import { Lock, Zap, Shield, TrendingUp, Crown, LogIn } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -180,6 +181,17 @@ export function PremiumGateFull({
   children,
 }: PremiumGateFullProps) {
   const { isAuthenticated, loading } = useAuth();
+  const checkoutMutation = trpc.billing.createCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info('Redirecting to checkout...', { description: 'Opening Stripe secure payment page.' });
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (err) => {
+      toast.error('Checkout unavailable', { description: err.message });
+    },
+  });
   const tierQuery = trpc.user.getAccessTier.useQuery(undefined, {
     enabled: isAuthenticated,
     retry: false,
@@ -288,23 +300,25 @@ export function PremiumGateFull({
           {/* CTA buttons — different for free-tier vs unauthenticated */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             {isFreeTier ? (
-              // Free-tier logged-in: show upgrade / account link
+              // Free-tier logged-in: show Stripe upgrade buttons
               <>
-                <a
-                  href="/app/account"
-                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${cfg.accentColor.replace("text-", "bg-").replace("-400", "-500")} text-black`}
-                  style={{ boxShadow: `0 0 20px ${cfg.glowColor.replace("0.15", "0.4")}` }}
+                <button
+                  onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
+                  disabled={checkoutMutation.isPending}
+                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${cfg.accentColor.replace('text-', 'bg-').replace('-400', '-500')} text-black`}
+                  style={{ boxShadow: `0 0 20px ${cfg.glowColor.replace('0.15', '0.4')}` }}
                 >
                   <Crown className="w-4 h-4" />
-                  Request Founding Access
-                </a>
-                <a
-                  href="/app/account"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  {checkoutMutation.isPending ? 'Loading...' : 'Upgrade to Premium — $29/mo'}
+                </button>
+                <button
+                  onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
+                  disabled={checkoutMutation.isPending}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
-                  View My Account
-                </a>
+                  Founding Member — $299 lifetime
+                </button>
               </>
             ) : (
               // Unauthenticated: show login / sign up

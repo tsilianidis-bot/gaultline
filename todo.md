@@ -527,3 +527,12 @@
 - [x] /legal page with Privacy Policy and Terms of Use sections
 - [x] Owner notification on founding access request submission
 - [x] Social share buttons (Twitter/X, LinkedIn) on marketing hero
+
+## New Features (May 24, 2026)
+- [x] Stripe integration: checkout session creation procedure
+- [x] Stripe integration: webhook handler to upgrade user tier on payment
+- [x] Stripe integration: upgrade prompt UI in PremiumGate on FORBIDDEN error
+- [x] Stripe integration: billing/manage subscription link in UserAccount
+- [ ] Charts page: replace simulated data with real FRED/Polygon API data
+- [ ] Scenarios page: remove console.log and replace placeholder scenario data
+- [ ] GDPR cookie consent banner with localStorage persistence

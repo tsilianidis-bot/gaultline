@@ -12,6 +12,7 @@ import { EngineProvider } from "./contexts/EngineContext";
 import AppLayout from "./components/AppLayout";
 import IntroScreen from "./components/IntroScreen";
 import FREDDebugConsole from "./components/FREDDebugConsole";
+import CookieConsent from "./components/CookieConsent";
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -173,6 +174,9 @@ function App() {
               <Router />
               <FREDDebugConsole />
             </div>
+
+            {/* GDPR Cookie Consent Banner */}
+            <CookieConsent />
 
           </TooltipProvider>
         </EngineProvider>

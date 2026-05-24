@@ -4,11 +4,13 @@
    and founding access request form.
    ============================================================ */
 import { useState, useEffect } from 'react';
-import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, CheckCircle, Send, AlertCircle } from 'lucide-react';
+import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, CheckCircle, Send, AlertCircle, CreditCard } from 'lucide-react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { getLoginUrl } from '@/const';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { toast } from 'sonner';
+import { useSearch } from 'wouter';
 
 // ── Tier config ────────────────────────────────────────────────
 const TIER_CONFIG = {
@@ -253,6 +255,43 @@ export default function UserAccount() {
   const tier = (profile?.accessTier ?? 'free') as 'free' | 'premium' | 'founding';
   const tierCfg = TIER_CONFIG[tier];
   const isPremium = tier === 'premium' || tier === 'founding';
+  const search = useSearch();
+
+  // Handle Stripe redirect query params
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    if (params.get('payment') === 'success') {
+      toast.success('Payment successful!', { description: 'Your account has been upgraded. Welcome to FAULTLINE.' });
+      window.history.replaceState({}, '', '/app/account');
+    } else if (params.get('payment') === 'cancelled') {
+      toast.error('Checkout cancelled', { description: 'No charge was made. You can upgrade anytime.' });
+      window.history.replaceState({}, '', '/app/account');
+    }
+  }, [search]);
+
+  const checkoutMutation = trpc.billing.createCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info('Redirecting to checkout...', { description: 'Opening Stripe secure payment page.' });
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (err) => {
+      toast.error('Checkout unavailable', { description: err.message });
+    },
+  });
+
+  const portalMutation = trpc.billing.createPortalSession.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info('Opening billing portal...', { description: 'Manage your subscription and invoices.' });
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (err) => {
+      toast.error('Billing portal unavailable', { description: err.message });
+    },
+  });
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -423,6 +462,51 @@ export default function UserAccount() {
         </div>
       </div>
 
+      {/* ── Billing management for premium/founding users ── */}
+      {isPremium && (
+        <div style={{
+          marginTop: '24px',
+          background: 'rgba(6,182,212,0.03)',
+          border: '1px solid rgba(6,182,212,0.15)',
+          borderRadius: '12px',
+          padding: '24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px',
+          flexWrap: 'wrap',
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <CreditCard size={16} style={{ color: '#06B6D4' }} />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#06B6D4', letterSpacing: '0.1em' }}>
+                BILLING & SUBSCRIPTION
+              </span>
+            </div>
+            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', margin: 0 }}>
+              Manage your subscription, view invoices, and update payment details.
+            </p>
+          </div>
+          <button
+            onClick={() => portalMutation.mutate({ origin: window.location.origin })}
+            disabled={portalMutation.isPending}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '10px 18px',
+              background: 'rgba(6,182,212,0.1)',
+              border: '1px solid rgba(6,182,212,0.3)',
+              borderRadius: '8px',
+              color: '#06B6D4',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '10px', letterSpacing: '0.1em',
+              cursor: portalMutation.isPending ? 'not-allowed' : 'pointer',
+              flexShrink: 0,
+              opacity: portalMutation.isPending ? 0.6 : 1,
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {portalMutation.isPending ? 'LOADING...' : 'MANAGE BILLING'} <ChevronRight size={12} />
+          </button>
+        </div>
+      )}
+
       {/* ── Founding Access Request section (only for free tier) ── */}
       {!isPremium && (
         <div style={{
@@ -464,6 +548,50 @@ export default function UserAccount() {
                 {item.label}
               </div>
             ))}
+          </div>
+
+          {/* Quick upgrade via Stripe */}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
+              disabled={checkoutMutation.isPending}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '12px 20px',
+                background: 'rgba(6,182,212,0.12)',
+                border: '1px solid rgba(6,182,212,0.4)',
+                borderRadius: '8px',
+                color: '#06B6D4',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px', letterSpacing: '0.08em',
+                cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
+                opacity: checkoutMutation.isPending ? 0.6 : 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <CreditCard size={13} />
+              {checkoutMutation.isPending ? 'LOADING...' : 'UPGRADE — $29/MONTH'}
+            </button>
+            <button
+              onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
+              disabled={checkoutMutation.isPending}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '12px 20px',
+                background: 'rgba(255,215,0,0.1)',
+                border: '1px solid rgba(255,215,0,0.35)',
+                borderRadius: '8px',
+                color: '#FFD700',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px', letterSpacing: '0.08em',
+                cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
+                opacity: checkoutMutation.isPending ? 0.6 : 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Crown size={13} />
+              {checkoutMutation.isPending ? 'LOADING...' : 'FOUNDING — $299 LIFETIME'}
+            </button>
           </div>
 
           <FoundingAccessForm userEmail={profile?.email ?? user?.email} />
