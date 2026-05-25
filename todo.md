@@ -541,3 +541,13 @@
 - [x] Fix CTA copy — clarify "LAUNCH PLATFORM" with context about free access and no credit card
 - [x] Add About/Origin narrative section explaining the problem FAULTLINE solves in plain language
 - [x] Add real pricing ($59/mo, $49/mo founding) to pricing cards
+
+## Snapshot Period View (Daily / Monthly / Yearly)
+
+- [x] Add SnapshotPeriodView component to Pressure.tsx — tab toggle (Daily / Monthly / Yearly) showing current data reframed in each time context
+- [x] Daily tab: today's date, current Pressure Index, regime, top 3 vectors, top alert
+- [x] Monthly tab: current month/year, same data framed as "May 2026 snapshot", monthly risk summary sentence
+- [x] Yearly tab: current year, same data framed as annual macro picture, yearly risk context sentence
+- [x] Insert SnapshotPeriodView panel below the hero gauge section in Pressure.tsx
+- [x] TypeScript check passes (0 errors)
+- [ ] Save checkpoint

@@ -3,7 +3,7 @@
    Palantir Noir aesthetic: void black, neon cyan, scanlines,
    corner brackets, Framer Motion animations.
    ============================================================ */
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap } from "lucide-react";
@@ -653,6 +653,156 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
   );
 }
 
+// ── Snapshot Period View ─────────────────────────────────────
+type SnapshotPeriod = 'daily' | 'monthly' | 'yearly';
+
+function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: PressureLevel; regime: string; vectors: RiskVector[]; alerts: PressureAlert[]; timestamp: string | number } }) {
+  const [period, setPeriod] = useState<SnapshotPeriod>('daily');
+  const colors = getLevelColor(data.level);
+  const now = new Date(data.timestamp);
+
+  const periodLabels: Record<SnapshotPeriod, string> = {
+    daily: now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+    monthly: now.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
+    yearly: now.getFullYear().toString(),
+  };
+  const periodLabel = periodLabels[period];
+
+  const contextSentences: Record<SnapshotPeriod, string> = {
+    daily: `As of today, systemic pressure stands at ${data.overallPressure}/100 under a ${data.regime} regime. The reading reflects current macro, credit, and liquidity conditions.`,
+    monthly: `For ${now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}, the FAULTLINE Pressure Index is reading ${data.overallPressure}/100 — ${data.level} risk. This snapshot captures the macro environment as it stands this month.`,
+    yearly: `In ${now.getFullYear()}, the FAULTLINE Pressure Index is registering ${data.overallPressure}/100 under a ${data.regime} regime. This annual snapshot reflects the dominant macro fault lines active this year.`,
+  };
+  const contextSentence = contextSentences[period];
+
+  const topVectors = [...data.vectors]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
+
+  const topAlert = data.alerts[0];
+
+  const tabs: { id: SnapshotPeriod; label: string }[] = [
+    { id: 'daily', label: 'DAILY' },
+    { id: 'monthly', label: 'MONTHLY' },
+    { id: 'yearly', label: 'YEARLY' },
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.35 }}
+      style={{
+        position: 'relative',
+        background: 'rgba(10,12,16,0.88)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: '8px',
+        padding: '20px',
+        marginBottom: '24px',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: `linear-gradient(90deg, transparent, ${colors.primary}33, transparent)` }} />
+      <CornerBrackets color={`${colors.primary}33`} size={8} />
+
+      {/* Header + tabs */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', letterSpacing: '0.15em' }}>
+          SNAPSHOT VIEW
+        </div>
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setPeriod(t.id)}
+              style={{
+                padding: '4px 10px',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '9px',
+                letterSpacing: '0.1em',
+                cursor: 'pointer',
+                borderRadius: '3px',
+                border: period === t.id ? `1px solid ${colors.primary}66` : '1px solid rgba(255,255,255,0.08)',
+                background: period === t.id ? colors.bg : 'transparent',
+                color: period === t.id ? colors.primary : '#4B5563',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Period label */}
+      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#E2E8F0', letterSpacing: '0.06em', marginBottom: '6px' }}>
+        {periodLabel}
+      </div>
+
+      {/* Context sentence */}
+      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#94A3B8', lineHeight: 1.6, marginBottom: '16px' }}>
+        {contextSentence}
+      </div>
+
+      {/* Data row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: '16px', alignItems: 'start' }}>
+
+        {/* Pressure score */}
+        <div style={{ textAlign: 'center', minWidth: '72px' }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '4px' }}>PRESSURE</div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: '36px', color: colors.primary, textShadow: `0 0 16px ${colors.glow}`, lineHeight: 1 }}>
+            {data.overallPressure}
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/100</div>
+          <div style={{ marginTop: '6px', padding: '2px 8px', background: colors.bg, border: `1px solid ${colors.primary}33`, borderRadius: '3px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: colors.primary, letterSpacing: '0.1em', display: 'inline-block' }}>
+            {data.level.toUpperCase()}
+          </div>
+        </div>
+
+        {/* Top vectors */}
+        <div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '8px' }}>TOP RISK VECTORS</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {topVectors.map((v) => {
+              const vc = getLevelColor(v.level);
+              return (
+                <div key={v.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: vc.primary, fontWeight: 700, minWidth: '28px' }}>{v.score}</div>
+                  <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${v.score}%`, background: vc.primary, borderRadius: '2px' }} />
+                  </div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.06em', minWidth: '120px' }}>{v.label.toUpperCase()}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Top alert */}
+        {topAlert && (
+          <div style={{ maxWidth: '220px' }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '8px' }}>ACTIVE ALERT</div>
+            <div style={{
+              padding: '8px 10px',
+              background: `${SEVERITY_COLORS[topAlert.severity]}08`,
+              border: `1px solid ${SEVERITY_COLORS[topAlert.severity]}22`,
+              borderLeft: `3px solid ${SEVERITY_COLORS[topAlert.severity]}`,
+              borderRadius: '4px',
+            }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: SEVERITY_COLORS[topAlert.severity], fontWeight: 700, letterSpacing: '0.06em', marginBottom: '3px' }}>
+                {topAlert.title}
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', lineHeight: 1.4 }}>
+                {topAlert.detail}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Loading skeleton ──────────────────────────────────────────
 function PressureSkeleton() {
   return (
@@ -921,6 +1071,9 @@ export default function Pressure() {
             </div>
           </div>
         </div>
+
+        {/* ── Snapshot Period View ─────────────────────────── */}
+        <SnapshotPeriodView data={data} />
 
         {/* ── Risk Vectors Grid ─────────────────────────────── */}
         <motion.div
