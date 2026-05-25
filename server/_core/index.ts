@@ -11,6 +11,7 @@ import { registerSignalsProxy } from "../signalsProxy";
 import { registerCoinGeckoProxy } from "../coingeckoProxy";
 import { registerSEORoutes } from "../seoRoutes";
 import { handleStripeWebhook } from "../stripe/webhook";
+import { handleScheduledPublishBlog } from "../scheduledBlog";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -102,6 +103,9 @@ async function startServer() {
   registerSignalsProxy(app);
   registerCoinGeckoProxy(app);
   registerSEORoutes(app);
+
+  // Scheduled cron endpoints — must be before tRPC / Vite fallthrough
+  app.post("/api/scheduled/publish-blog", handleScheduledPublishBlog);
 
   // tRPC API
   app.use(

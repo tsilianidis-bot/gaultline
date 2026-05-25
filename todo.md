@@ -564,4 +564,12 @@
 - [x] Add Blog Management link to AdminPortal header
 - [x] Wire routes in App.tsx (/blog, /blog/:slug, /app/admin/blog)
 - [x] TypeScript check passes (0 errors)
-- [ ] Save checkpoint
+- [x] Save checkpoint
+
+## Daily Blog Auto-Publisher (AGENT Cron)
+- [ ] Build POST /api/scheduled/publish-blog endpoint — accepts { title, subtitle, content, slug, category, tags } from agent, inserts as published post
+- [ ] Mount handler in server/_core/index.ts before Vite fallthrough
+- [ ] TypeScript check passes
+- [ ] Checkpoint + ask user to deploy
+- [ ] Create AGENT cron (daily 9am UTC) with ordered topic list prompt
+- [ ] Verify cron registered via manus-heartbeat list
