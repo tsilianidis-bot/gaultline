@@ -42,6 +42,9 @@ const UserAccount      = lazy(() => import("./pages/UserAccount"));
 const AdminPortal      = lazy(() => import("./pages/AdminPortal"));
 const MarketingSite    = lazy(() => import("./pages/MarketingSite"));
 const Legal            = lazy(() => import("./pages/Legal"));
+const Blog             = lazy(() => import("./pages/Blog"));
+const BlogPost         = lazy(() => import("./pages/BlogPost"));
+const AdminBlog        = lazy(() => import("./pages/AdminBlog"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -69,6 +72,21 @@ const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 function Router() {
   return (
     <Switch>
+      {/* Blog — standalone public pages */}
+      <Route path="/blog/:slug">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <BlogPost />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      <Route path="/blog">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Blog />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
       {/* Legal page — standalone, no AppLayout */}
       <Route path="/legal">
         <ErrorBoundary>
@@ -113,6 +131,7 @@ function Router() {
               <Route path="/app/crypto-signals" component={CryptoSignals} />
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
+              <Route path="/app/admin/blog" component={AdminBlog} />
               <Route path="/app/account" component={UserAccount} />
               <Route component={Dashboard} />
             </Switch>

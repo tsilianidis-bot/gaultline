@@ -551,3 +551,17 @@
 - [x] Insert SnapshotPeriodView panel below the hero gauge section in Pressure.tsx
 - [x] TypeScript check passes (0 errors)
 - [x] Save checkpoint
+
+## Blog Feature
+- [x] Add blogPosts table to drizzle/schema.ts (id, slug, title, subtitle, content, author, category, tags, published, publishedAt, createdAt, updatedAt)
+- [x] Run migration and apply SQL via webdev_execute_sql
+- [x] Add blog tRPC procedures: blog.list (public), blog.getBySlug (public), blog.getCategories (public), blog.adminList, blog.adminGetById, blog.create, blog.update, blog.delete (all admin)
+- [x] Build /blog page — post index with category filter, featured post hero, post cards
+- [x] Build /blog/:slug page — full post with markdown rendering, dynamic SEO meta
+- [x] Build admin blog management UI at /app/admin/blog — post list, create/edit form with markdown editor, draft/publish toggle
+- [x] Add Briefings link to marketing site desktop nav
+- [x] Add Briefings link to AppLayout MANAGE group
+- [x] Add Blog Management link to AdminPortal header
+- [x] Wire routes in App.tsx (/blog, /blog/:slug, /app/admin/blog)
+- [x] TypeScript check passes (0 errors)
+- [ ] Save checkpoint

@@ -93,3 +93,26 @@ export const foundingAccessRequests = mysqlTable("foundingAccessRequests", {
 });
 export type FoundingAccessRequest = typeof foundingAccessRequests.$inferSelect;
 export type InsertFoundingAccessRequest = typeof foundingAccessRequests.$inferInsert;
+
+// ── Blog Posts ─────────────────────────────────────────────
+/**
+ * Stores FAULTLINE macro intelligence blog posts.
+ * Admin-authored, publicly readable.
+ */
+export const blogPosts = mysqlTable("blogPosts", {
+  id:          int("id").autoincrement().primaryKey(),
+  slug:        varchar("slug", { length: 200 }).notNull().unique(),
+  title:       varchar("title", { length: 300 }).notNull(),
+  subtitle:    varchar("subtitle", { length: 400 }),
+  content:     text("content").notNull(),           // Markdown
+  author:      varchar("author", { length: 100 }).default("FAULTLINE").notNull(),
+  category:    varchar("category", { length: 80 }).default("Macro Intelligence").notNull(),
+  tags:        text("tags"),                        // comma-separated
+  published:   int("published").default(0).notNull(), // 0=draft, 1=published
+  publishedAt: timestamp("publishedAt"),
+  createdAt:   timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:   timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BlogPost = typeof blogPosts.$inferSelect;
+export type InsertBlogPost = typeof blogPosts.$inferInsert;

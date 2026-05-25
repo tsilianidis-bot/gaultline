@@ -747,9 +747,17 @@ export default function AdminPortal() {
             </p>
           </div>
         </div>
-        <p style={{ ...SANS, fontSize: "12px", color: "rgba(100,116,139,0.5)", marginTop: "8px" }}>
-          Signed in as <strong style={{ color: "rgba(0,212,255,0.7)" }}>{user?.name || user?.email || "Owner"}</strong> · Admin
-        </p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px" }}>
+          <p style={{ ...SANS, fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>
+            Signed in as <strong style={{ color: "rgba(0,212,255,0.7)" }}>{user?.name || user?.email || "Owner"}</strong> · Admin
+          </p>
+          <a
+            href="/app/admin/blog"
+            style={{ ...MONO, fontSize: "10px", letterSpacing: "0.12em", color: "rgba(0,212,255,0.7)", textDecoration: "none", padding: "6px 14px", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "4px", background: "rgba(0,212,255,0.05)" }}
+          >
+            ✦ BLOG MANAGEMENT
+          </a>
+        </div>
       </div>
 
       {/* Tab Navigation */}

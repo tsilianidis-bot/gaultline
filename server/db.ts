@@ -1,6 +1,6 @@
-import { eq, and, desc, count, sql } from "drizzle-orm";
+import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -424,4 +424,78 @@ export async function getUserByStripeCustomerId(customerId: string): Promise<{ i
     .where(eq(users.stripeCustomerId, customerId))
     .limit(1);
   return user ?? null;
+}
+
+// ── Blog Post helpers ──────────────────────────────────────────
+
+export async function getBlogPosts(opts: { publishedOnly?: boolean; limit?: number; offset?: number; category?: string } = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  const { publishedOnly = true, limit = 20, offset = 0, category } = opts;
+  let query = db.select({
+    id: blogPosts.id,
+    slug: blogPosts.slug,
+    title: blogPosts.title,
+    subtitle: blogPosts.subtitle,
+    author: blogPosts.author,
+    category: blogPosts.category,
+    tags: blogPosts.tags,
+    published: blogPosts.published,
+    publishedAt: blogPosts.publishedAt,
+    createdAt: blogPosts.createdAt,
+    updatedAt: blogPosts.updatedAt,
+  }).from(blogPosts).$dynamic();
+
+  const conditions = [];
+  if (publishedOnly) conditions.push(eq(blogPosts.published, 1));
+  if (category) conditions.push(eq(blogPosts.category, category));
+  if (conditions.length > 0) query = query.where(and(...conditions)) as typeof query;
+
+  return query.orderBy(desc(blogPosts.publishedAt)).limit(limit).offset(offset);
+}
+
+export async function getBlogPostBySlug(slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(blogPosts).where(eq(blogPosts.slug, slug)).limit(1);
+  return result[0] ?? undefined;
+}
+
+export async function getBlogPostById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+  return result[0] ?? undefined;
+}
+
+export async function createBlogPost(data: Omit<InsertBlogPost, 'id' | 'createdAt' | 'updatedAt'>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(blogPosts).values(data);
+  const okPacket = result[0] as unknown as { insertId: number };
+  return okPacket?.insertId ?? null;
+}
+
+export async function updateBlogPost(
+  id: number,
+  data: Partial<Omit<InsertBlogPost, 'id' | 'createdAt' | 'updatedAt'>>
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(blogPosts).set({ ...data, updatedAt: new Date() }).where(eq(blogPosts.id, id));
+}
+
+export async function deleteBlogPost(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.delete(blogPosts).where(eq(blogPosts.id, id));
+}
+
+export async function getBlogCategories(): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.selectDistinct({ category: blogPosts.category })
+    .from(blogPosts)
+    .where(eq(blogPosts.published, 1));
+  return rows.map(r => r.category).filter(Boolean) as string[];
 }
