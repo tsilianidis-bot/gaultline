@@ -5,7 +5,7 @@
  * In production, replace with live price IDs.
  */
 
-export type PlanId = 'premium' | 'founding';
+export type PlanId = 'premium' | 'founding' | 'lifetime';
 
 export interface Plan {
   id: PlanId;
@@ -34,6 +34,15 @@ export const PLANS: Record<PlanId, Plan> = {
     priceId: process.env.STRIPE_FOUNDING_PRICE_ID ?? null,
     amount: 4900, // $49/month (founding rate, locked for life)
     interval: 'month',
+    tier: 'founding',
+  },
+  lifetime: {
+    id: 'lifetime',
+    name: 'FAULTLINE Founding Lifetime',
+    description: 'One-time payment — full founding access forever, no recurring charges.',
+    priceId: process.env.STRIPE_LIFETIME_PRICE_ID ?? null,
+    amount: 120000, // $1,200 one-time
+    interval: 'one_time',
     tier: 'founding',
   },
 };

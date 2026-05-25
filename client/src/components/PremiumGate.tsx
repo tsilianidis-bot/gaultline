@@ -309,7 +309,7 @@ export function PremiumGateFull({
                   style={{ boxShadow: `0 0 20px ${cfg.glowColor.replace('0.15', '0.4')}` }}
                 >
                   <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : 'Upgrade to Premium — $29/mo'}
+                  {checkoutMutation.isPending ? 'Loading...' : 'Upgrade to Premium — $59/mo'}
                 </button>
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
@@ -317,7 +317,15 @@ export function PremiumGateFull({
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
-                  Founding Member — $299 lifetime
+                  Founding Member — $49/mo for life
+                </button>
+                <button
+                  onClick={() => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin })}
+                  disabled={checkoutMutation.isPending}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-[#FFD700]/80 hover:text-[#FFD700] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
+                >
+                  Founding Lifetime — $1,200 one-time
                 </button>
               </>
             ) : (

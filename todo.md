@@ -550,4 +550,4 @@
 - [x] Yearly tab: current year, same data framed as annual macro picture, yearly risk context sentence
 - [x] Insert SnapshotPeriodView panel below the hero gauge section in Pressure.tsx
 - [x] TypeScript check passes (0 errors)
-- [ ] Save checkpoint
+- [x] Save checkpoint

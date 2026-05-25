@@ -570,7 +570,7 @@ export default function UserAccount() {
               }}
             >
               <CreditCard size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : 'UPGRADE — $29/MONTH'}
+              {checkoutMutation.isPending ? 'LOADING...' : 'UPGRADE — $59/MONTH'}
             </button>
             <button
               onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
@@ -590,7 +590,27 @@ export default function UserAccount() {
               }}
             >
               <Crown size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : 'FOUNDING — $299 LIFETIME'}
+              {checkoutMutation.isPending ? 'LOADING...' : 'FOUNDING — $49/MONTH FOR LIFE'}
+            </button>
+            <button
+              onClick={() => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin })}
+              disabled={checkoutMutation.isPending}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '12px 20px',
+                background: 'rgba(255,215,0,0.05)',
+                border: '1px solid rgba(255,215,0,0.2)',
+                borderRadius: '8px',
+                color: '#FFD700',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px', letterSpacing: '0.08em',
+                cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
+                opacity: checkoutMutation.isPending ? 0.6 : 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Crown size={13} />
+              {checkoutMutation.isPending ? 'LOADING...' : 'LIFETIME — $1,200 ONE-TIME'}
             </button>
           </div>
 
