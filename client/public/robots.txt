@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Disallow internal app routes from indexing
+Disallow: /app/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://getfaultline.live/sitemap.xml
