@@ -73,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "report",     label: "Report",       shortLabel: "Report",  icon: FileText,        path: "/app/report" },
       { id: "guide",      label: "Guide",        shortLabel: "Guide",   icon: BookOpen,        path: "/app/guide" },
       { id: "blog",       label: "Briefings",    shortLabel: "Blog",    icon: FileText,        path: "/blog" },
+      { id: "x-posts",    label: "X Posts",       shortLabel: "X Posts", icon: Zap,             path: "/app/x-posts" },
       { id: "account",    label: "Account",      shortLabel: "Acct",    icon: User,            path: "/app/account" },
     ],
   },

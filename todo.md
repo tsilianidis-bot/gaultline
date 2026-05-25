@@ -573,3 +573,17 @@
 - [ ] Checkpoint + ask user to deploy
 - [ ] Create AGENT cron (daily 9am UTC) with ordered topic list prompt
 - [ ] Verify cron registered via manus-heartbeat list
+
+## X Post Generator (Admin Feature)
+- [x] Build server/xPostGenerator.ts — LLM-powered post generator using live pressure data
+- [x] Add xPost.generate tRPC procedure (postType: premarket|midday|closing|breaking, headline?: string)
+- [x] Returns 5 post variants: short (280 chars), thread, founder, institutional, breaking-alert
+- [x] Build client/src/pages/XPostGenerator.tsx — dark cinematic admin page
+- [x] Four trigger buttons: Premarket / Midday Update / Closing Summary / Breaking Alert
+- [x] Optional headline input for breaking alert mode
+- [x] Display all 5 post variants with copy buttons
+- [x] Dynamic tone logic based on live Pressure Index
+- [x] Add /app/x-posts route to App.tsx
+- [x] Add X Post Generator link to AppLayout MANAGE group
+- [x] TypeScript check passes (0 errors)
+- [ ] Save checkpoint

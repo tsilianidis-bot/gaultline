@@ -45,6 +45,7 @@ const Legal            = lazy(() => import("./pages/Legal"));
 const Blog             = lazy(() => import("./pages/Blog"));
 const BlogPost         = lazy(() => import("./pages/BlogPost"));
 const AdminBlog        = lazy(() => import("./pages/AdminBlog"));
+const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -132,6 +133,7 @@ function Router() {
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
               <Route path="/app/admin/blog" component={AdminBlog} />
+              <Route path="/app/x-posts" component={XPostGenerator} />
               <Route path="/app/account" component={UserAccount} />
               <Route component={Dashboard} />
             </Switch>

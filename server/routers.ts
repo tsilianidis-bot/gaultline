@@ -26,6 +26,7 @@ import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
 import { protectedProcedure, premiumProcedure } from "./_core/trpc";
 import { stripe } from './stripe/client';
 import { PLANS } from './stripe/products';
+import { generateXPosts } from './xPostGenerator';
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -1067,6 +1068,28 @@ export const appRouter = router({
           return { success: true };
         } catch (err) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete post', cause: err });
+        }
+      }),
+  }),
+
+  xPost: router({
+    generate: protectedProcedure
+      .input(z.object({
+        postType: z.enum(['premarket', 'midday', 'closing', 'breaking']),
+        headline: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+        try {
+          const pressure = await calculateFaultlinePressure();
+          const variants = await generateXPosts({
+            postType: input.postType,
+            pressure,
+            headline: input.headline,
+          });
+          return { variants, pressure: { overallPressure: pressure.overallPressure, regime: pressure.regime, level: pressure.level } };
+        } catch (err) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to generate X posts', cause: err });
         }
       }),
   }),
