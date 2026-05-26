@@ -292,11 +292,12 @@ function SkeletonCard() {
 }
 
 // ── Stock Card ────────────────────────────────────────────────
-function StockCard({ stock, regimeScore, liveQuote, tradingSignal }: {
+function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked }: {
   stock: SignalStock;
   regimeScore: number;
   liveQuote?: LiveQuote;
   tradingSignal?: TradingSignalResult;
+  signalBlocked?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -506,6 +507,53 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal }: {
           borderTop: '1px solid rgba(255,255,255,0.06)',
           paddingTop: '8px', marginTop: '4px',
         }}>
+          {/* Upgrade prompt when tier gate blocks signals */}
+          {!tradingSignal && signalBlocked && (
+            <div style={{
+              marginBottom: '10px',
+              padding: '12px 10px',
+              background: 'rgba(255,153,0,0.04)',
+              border: '1px solid rgba(255,153,0,0.18)',
+              borderRadius: '3px',
+              display: 'flex', flexDirection: 'column', gap: '8px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '10px', color: '#FF9500' }}>⚠</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', letterSpacing: '0.15em', color: 'rgba(255,153,0,0.7)' }}>PRO INTELLIGENCE LOCKED</span>
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.5 }}>
+                Stop loss, resistance, support, entry zone, and target price require a <span style={{ color: '#FF9500' }}>Premium or Founding</span> membership.
+              </div>
+              {/* Blurred placeholder grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', opacity: 0.25, pointerEvents: 'none', filter: 'blur(2px)' }}>
+                {['ENTRY', 'STOP LOSS', 'TARGET', 'R:R'].map(lbl => (
+                  <div key={lbl} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '5px 4px', borderTop: '2px solid rgba(255,153,0,0.2)' }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>{lbl}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color: '#FF9500' }}>———</div>
+                  </div>
+                ))}
+              </div>
+              <a
+                href="/app/account"
+                onClick={e => e.stopPropagation()}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  gap: '5px', padding: '6px 12px',
+                  background: 'rgba(255,153,0,0.12)',
+                  border: '1px solid rgba(255,153,0,0.35)',
+                  borderRadius: '3px',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: '8px', letterSpacing: '0.12em',
+                  color: '#FF9500', textDecoration: 'none',
+                  transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,153,0,0.2)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,153,0,0.12)')}
+              >
+                ⚡ UPGRADE TO PRO — UNLOCK PRICE LEVELS
+              </a>
+            </div>
+          )}
           {/* Key Price Levels (only when trading signal available) */}
           {tradingSignal && (
             <div style={{
@@ -1010,8 +1058,19 @@ function SignalsInner() {
   }), [displayedStocks, quoteMap, dailyBarsMap, regimeForSignals]);
 
   const [tradingSignalsData, setTradingSignalsData] = useState<TradingSignalResult[]>([]);
+  const [signalBlocked, setSignalBlocked] = useState(false);
   const computeSignalsMutation = trpc.signals.getTradingSignals.useMutation({
-    onSuccess: (data) => setTradingSignalsData(data),
+    onSuccess: (data) => {
+      setTradingSignalsData(data);
+      setSignalBlocked(false);
+    },
+    onError: (err) => {
+      // FORBIDDEN = user is logged in but not premium; UNAUTHORIZED = not logged in
+      const code = (err as { data?: { code?: string } }).data?.code;
+      if (code === 'FORBIDDEN' || code === 'UNAUTHORIZED') {
+        setSignalBlocked(true);
+      }
+    },
   });
 
   // Re-run the mutation whenever the input changes OR a manual/periodic refresh is triggered
@@ -1332,6 +1391,7 @@ function SignalsInner() {
                 regimeScore={score}
                 liveQuote={quoteMap.get(stock.ticker)}
                 tradingSignal={tradingSignalMap.get(stock.ticker)}
+                signalBlocked={signalBlocked}
               />
             ))}
           </div>
