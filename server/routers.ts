@@ -31,6 +31,9 @@ import { protectedProcedure, coreProcedure } from "./_core/trpc";
 import { stripe } from './stripe/client';
 import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
+import { postTweet, postThread, parseThread } from './xPoster';
+import { xPostQueue } from '../drizzle/schema';
+import { getDb } from './db';
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -1157,6 +1160,96 @@ export const appRouter = router({
           return { variants, pressure: { overallPressure: pressure.overallPressure, regime: pressure.regime, level: pressure.level } };
         } catch (err) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to generate X posts', cause: err });
+        }
+      }),
+    post: protectedProcedure
+      .input(z.object({
+        text: z.string().min(1).max(280),
+        postType: z.enum(['premarket', 'midday', 'closing', 'breaking']).optional(),
+        variant: z.enum(['short', 'thread', 'founder', 'institutional', 'breaking']).optional(),
+        pressureScore: z.number().optional(),
+        pressureRegime: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+        try {
+          const result = await postTweet(input.text);
+          const db = await getDb();
+          if (db) {
+            await db.insert(xPostQueue).values({
+              postType: input.postType ?? 'premarket',
+              variant: input.variant ?? 'short',
+              content: input.text,
+              status: 'posted',
+              xPostId: result.id,
+              pressureScore: input.pressureScore,
+              pressureRegime: input.pressureRegime,
+              postedAt: new Date(),
+            });
+          }
+          return { success: true, id: result.id };
+        } catch (err: any) {
+          // Log failed attempt to queue
+          try {
+            const db = await getDb();
+            if (db) {
+              await db.insert(xPostQueue).values({
+                postType: input.postType ?? 'premarket',
+                variant: input.variant ?? 'short',
+                content: input.text,
+                status: 'failed',
+                errorMsg: err?.message ?? 'Unknown error',
+                pressureScore: input.pressureScore,
+                pressureRegime: input.pressureRegime,
+              });
+            }
+          } catch (_) { /* ignore queue write failure */ }
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err?.message ?? 'Failed to post tweet', cause: err });
+        }
+      }),
+    postThread: protectedProcedure
+      .input(z.object({
+        threadText: z.string().min(1),
+        postType: z.enum(['premarket', 'midday', 'closing', 'breaking']).optional(),
+        pressureScore: z.number().optional(),
+        pressureRegime: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+        try {
+          const tweets = parseThread(input.threadText);
+          if (tweets.length === 0) throw new Error('No tweets parsed from thread text');
+          const result = await postThread(tweets);
+          const db = await getDb();
+          if (db) {
+            await db.insert(xPostQueue).values({
+              postType: input.postType ?? 'premarket',
+              variant: 'thread',
+              content: input.threadText,
+              status: 'posted',
+              xPostId: result.ids[0],
+              pressureScore: input.pressureScore,
+              pressureRegime: input.pressureRegime,
+              postedAt: new Date(),
+            });
+          }
+          return { success: true, ids: result.ids, tweetCount: tweets.length };
+        } catch (err: any) {
+          try {
+            const db = await getDb();
+            if (db) {
+              await db.insert(xPostQueue).values({
+                postType: input.postType ?? 'premarket',
+                variant: 'thread',
+                content: input.threadText,
+                status: 'failed',
+                errorMsg: err?.message ?? 'Unknown error',
+                pressureScore: input.pressureScore,
+                pressureRegime: input.pressureRegime,
+              });
+            }
+          } catch (_) { /* ignore */ }
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: err?.message ?? 'Failed to post thread', cause: err });
         }
       }),
   }),

@@ -700,3 +700,15 @@
 - [x] Update PremiumGate.tsx copy to match finalized tier messaging
 - [x] Update UserAccount.tsx tier configs and upgrade CTAs
 - [x] Add "Founding Access Closing Soon" scarcity messaging throughout
+
+## Automated Blog Posts
+- [x] Audit existing blog schema, DB helpers, and procedures
+- [x] /api/scheduled/publish-blog endpoint already built and deployed
+- [x] AdminBlog editor page already built at /app/admin/blog
+- [x] Daily AGENT cron created: "FAULTLINE Daily Blog Post" fires at 12:00 UTC daily (task_uid: nqZ2cLgTLM33VcWx4cNZ6x)
+
+## X Post Deploy Fix
+- [x] Add xPost.post tRPC mutation that calls postTweet() and logs to xPostQueue
+- [x] Add "POST TO X" button to XPostGenerator page
+- [x] Add "POST THREAD" button for thread variant
+- [ ] Create heartbeat crons for 3x daily scheduled X posts (premarket/midday/closing)

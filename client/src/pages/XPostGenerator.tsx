@@ -57,6 +57,10 @@ export default function XPostGenerator() {
   const [activeVariant, setActiveVariant] = useState<VariantKey>("short");
 
   const generate = trpc.xPost.generate.useMutation();
+  const postToX = trpc.xPost.post.useMutation();
+  const postThreadMutation = trpc.xPost.postThread.useMutation();
+  const [postSuccess, setPostSuccess] = useState<string | null>(null);
+  const [postError, setPostError] = useState<string | null>(null);
 
   if (authLoading) return null;
   if (!user || user.role !== "admin") {
@@ -205,8 +209,57 @@ export default function XPostGenerator() {
                   </span>
                   {activeVariant === "short" && <CharCount text={currentVariantText} />}
                 </div>
-                <CopyButton text={currentVariantText} />
+                <div className="flex items-center gap-2">
+                  <CopyButton text={currentVariantText} />
+                  {activeVariant === "thread" ? (
+                    <button
+                      onClick={() => {
+                        setPostSuccess(null);
+                        setPostError(null);
+                        postThreadMutation.mutate(
+                          { threadText: currentVariantText, postType: activeType, pressureScore: result.pressure.overallPressure, pressureRegime: result.pressure.regime },
+                          {
+                            onSuccess: (data) => setPostSuccess(`Thread posted — ${data.tweetCount} tweets (ID: ${data.ids[0]})`),
+                            onError: (err) => setPostError(err.message),
+                          }
+                        );
+                      }}
+                      disabled={postThreadMutation.isPending || !currentVariantText}
+                      className="px-3 py-1 rounded text-xs font-bold tracking-widest border border-orange-500/50 text-orange-400 hover:bg-orange-500/10 transition-all disabled:opacity-40"
+                    >
+                      {postThreadMutation.isPending ? "POSTING..." : "POST THREAD →"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setPostSuccess(null);
+                        setPostError(null);
+                        postToX.mutate(
+                          { text: currentVariantText, postType: activeType, variant: activeVariant, pressureScore: result.pressure.overallPressure, pressureRegime: result.pressure.regime },
+                          {
+                            onSuccess: (data) => setPostSuccess(`Posted to X — ID: ${data.id}`),
+                            onError: (err) => setPostError(err.message),
+                          }
+                        );
+                      }}
+                      disabled={postToX.isPending || !currentVariantText || currentVariantText.length > 280}
+                      className="px-3 py-1 rounded text-xs font-bold tracking-widest border border-orange-500/50 text-orange-400 hover:bg-orange-500/10 transition-all disabled:opacity-40"
+                    >
+                      {postToX.isPending ? "POSTING..." : "POST TO X →"}
+                    </button>
+                  )}
+                </div>
               </div>
+              {postSuccess && (
+                <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/20 text-emerald-400 text-xs font-mono tracking-wider">
+                  ✓ {postSuccess}
+                </div>
+              )}
+              {postError && (
+                <div className="px-4 py-2 bg-red-500/10 border-b border-red-500/20 text-red-400 text-xs font-mono tracking-wider">
+                  ✗ {postError}
+                </div>
+              )}
               <div className="p-5 bg-zinc-950/40">
                 <pre className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed font-mono">
                   {currentVariantText}
