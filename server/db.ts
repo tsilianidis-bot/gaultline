@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -498,4 +498,49 @@ export async function getBlogCategories(): Promise<string[]> {
     .from(blogPosts)
     .where(eq(blogPosts.published, 1));
   return rows.map(r => r.category).filter(Boolean) as string[];
+}
+
+// ── X Post Queue helpers ─────────────────────────────────────
+
+export async function getXPostQueue(filters: {
+  limit?: number;
+  postType?: "premarket" | "midday" | "closing" | "breaking";
+  status?: "pending" | "posted" | "failed" | "skipped";
+} = {}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+  if (filters.postType) conditions.push(eq(xPostQueue.postType, filters.postType));
+  if (filters.status) conditions.push(eq(xPostQueue.status, filters.status));
+
+  return db
+    .select()
+    .from(xPostQueue)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(xPostQueue.createdAt))
+    .limit(filters.limit ?? 50);
+}
+
+export async function getXPostQueueStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, posted: 0, failed: 0, skipped: 0, lastPostedAt: null };
+
+  const [stats] = await db
+    .select({
+      total: sql<number>`count(*)`,
+      posted: sql<number>`sum(case when ${xPostQueue.status} = 'posted' then 1 else 0 end)`,
+      failed: sql<number>`sum(case when ${xPostQueue.status} = 'failed' then 1 else 0 end)`,
+      skipped: sql<number>`sum(case when ${xPostQueue.status} = 'skipped' then 1 else 0 end)`,
+      lastPostedAt: sql<Date | null>`max(${xPostQueue.postedAt})`,
+    })
+    .from(xPostQueue);
+
+  return {
+    total: Number(stats?.total ?? 0),
+    posted: Number(stats?.posted ?? 0),
+    failed: Number(stats?.failed ?? 0),
+    skipped: Number(stats?.skipped ?? 0),
+    lastPostedAt: stats?.lastPostedAt ?? null,
+  };
 }

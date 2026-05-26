@@ -43,6 +43,13 @@
       "when": 1779723498071,
       "tag": "0005_uneven_jamie_braddock",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1779754510518,
+      "tag": "0006_parallel_arclight",
+      "breakpoints": true
     }
   ]
 }

@@ -15,7 +15,8 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getUserTier, setUserTier, createFoundingRequest, getFoundingRequests, updateFoundingRequestStatus,
   getAllUsersWithTier, getPlatformStats, getActivityFeed,
   getSignupTimeSeries, getWaitlistTimeSeries, getConversionStats,
-  getBlogPosts, getBlogPostBySlug, getBlogPostById, createBlogPost, updateBlogPost, deleteBlogPost, getBlogCategories } from "./db";
+  getBlogPosts, getBlogPostBySlug, getBlogPostById, createBlogPost, updateBlogPost, deleteBlogPost, getBlogCategories,
+  getXPostQueue, getXPostQueueStats } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
@@ -1069,6 +1070,24 @@ export const appRouter = router({
         } catch (err) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete post', cause: err });
         }
+      }),
+  }),
+
+  xPostQueue: router({
+    list: protectedProcedure
+      .input(z.object({
+        limit: z.number().int().min(1).max(100).default(50),
+        postType: z.enum(['premarket', 'midday', 'closing', 'breaking']).optional(),
+        status: z.enum(['pending', 'posted', 'failed', 'skipped']).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        return getXPostQueue(input);
+      }),
+    stats: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        return getXPostQueueStats();
       }),
   }),
 

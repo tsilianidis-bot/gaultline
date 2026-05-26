@@ -12,6 +12,7 @@ import { registerCoinGeckoProxy } from "../coingeckoProxy";
 import { registerSEORoutes } from "../seoRoutes";
 import { handleStripeWebhook } from "../stripe/webhook";
 import { handleScheduledPublishBlog } from "../scheduledBlog";
+import { handleScheduledXPost, handleXNewsMonitor } from "../scheduledXPost";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -106,6 +107,8 @@ async function startServer() {
 
   // Scheduled cron endpoints — must be before tRPC / Vite fallthrough
   app.post("/api/scheduled/publish-blog", handleScheduledPublishBlog);
+  app.post("/api/scheduled/x-post-scheduled", handleScheduledXPost);
+  app.post("/api/scheduled/x-news-monitor", handleXNewsMonitor);
 
   // tRPC API
   app.use(

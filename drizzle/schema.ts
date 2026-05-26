@@ -116,3 +116,25 @@ export const blogPosts = mysqlTable("blogPosts", {
 
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = typeof blogPosts.$inferInsert;
+
+// ── X Post Queue ────────────────────────────────────────────
+/**
+ * Tracks auto-generated and auto-posted X (Twitter) posts.
+ * One row per post attempt. Status tracks the lifecycle.
+ */
+export const xPostQueue = mysqlTable("xPostQueue", {
+  id:          int("id").autoincrement().primaryKey(),
+  postType:    mysqlEnum("postType", ["premarket", "midday", "closing", "breaking"]).notNull(),
+  variant:     mysqlEnum("variant", ["short", "thread", "founder", "institutional", "breaking"]).notNull(),
+  content:     text("content").notNull(),           // The actual post text
+  headline:    varchar("headline", { length: 500 }), // For breaking alerts
+  status:      mysqlEnum("status", ["pending", "posted", "failed", "skipped"]).default("pending").notNull(),
+  xPostId:     varchar("xPostId", { length: 64 }),  // Twitter post ID after posting
+  errorMsg:    text("errorMsg"),                    // Error message if failed
+  pressureScore: int("pressureScore"),              // Pressure index at time of generation
+  pressureRegime: varchar("pressureRegime", { length: 100 }), // Regime label
+  postedAt:    timestamp("postedAt"),
+  createdAt:   timestamp("createdAt").defaultNow().notNull(),
+});
+export type XPostQueue = typeof xPostQueue.$inferSelect;
+export type InsertXPostQueue = typeof xPostQueue.$inferInsert;

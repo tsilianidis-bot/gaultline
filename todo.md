@@ -586,4 +586,18 @@
 - [x] Add /app/x-posts route to App.tsx
 - [x] Add X Post Generator link to AppLayout MANAGE group
 - [x] TypeScript check passes (0 errors)
+- [x] Save checkpoint
+
+## X Auto-Posting Automation
+- [ ] Store X API credentials as secrets (X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET)
+- [ ] Install twitter-api-v2 npm package
+- [ ] Build server/xPoster.ts — Twitter API v2 client, postTweet(), postThread() helpers
+- [ ] Build server/newsMonitor.ts — Polygon.io news polling, significance scoring via LLM, cooldown logic
+- [ ] Add xPostQueue table to drizzle schema (id, postType, variant, content, status, postedAt, xPostId, headline, createdAt)
+- [ ] Apply migration SQL for xPostQueue table
+- [ ] Build /api/scheduled/x-post-scheduled endpoint (premarket/midday/closing trigger)
+- [ ] Build /api/scheduled/x-news-monitor endpoint (polls news, triggers breaking alerts)
+- [ ] Register 3 daily cron jobs (8:10am, 12pm, 3:45pm ET) + news monitor every 15 min
+- [ ] Build X Post Queue admin UI at /app/x-posts (shows queue, status, posted content)
+- [ ] TypeScript check passes
 - [ ] Save checkpoint
