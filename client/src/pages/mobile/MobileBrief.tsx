@@ -5,8 +5,7 @@
    ============================================================ */
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { useEngine } from "@/contexts/EngineContext";
-import { TrendingUp, TrendingDown, Zap, Shield, RotateCcw, ChevronRight, Clock } from "lucide-react";
+import { TrendingUp, Zap, Shield, RotateCcw, ChevronRight, Clock } from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getRegimeColor(regime: string): string {
@@ -73,11 +72,8 @@ export default function MobileBrief() {
     retry: false,
   });
 
-  // Engine context for narrative
-  const { output } = useEngine();
-  const { narrative, regime, probability } = output;
-
-  const regimeColor = useMemo(() => getRegimeColor(pressure?.regime ?? regime.label), [pressure?.regime, regime.label]);
+  // Derive narrative from pressure data directly (no EngineContext dependency)
+  const regimeColor = useMemo(() => getRegimeColor(pressure?.regime ?? ""), [pressure?.regime]);
 
   // Top signal: highest pressure vector
   const topVector = useMemo(() => {
@@ -139,10 +135,12 @@ export default function MobileBrief() {
           </div>
         </div>
         <div className="text-base font-bold font-mono text-white mb-1">
-          {pressure?.regime ?? regime.label}
+          {pressure?.regime ?? "LOADING..."}
         </div>
         <p className="text-[11px] font-mono text-[#A8B8CC] leading-relaxed">
-          {narrative.regimeAssessment || narrative.summary}
+          {pressure?.regime
+            ? `Market operating in ${pressure.regime} regime. Pressure Index at ${pressureScore.toFixed(0)}/100. ${pressureScore > 65 ? "Elevated systemic risk — reduce exposure." : pressureScore > 40 ? "Moderate risk conditions — maintain discipline." : "Low-stress environment — risk-on conditions favored."}`
+            : "Analyzing current macro conditions..."}
         </p>
         {/* Bull/crash probabilities */}
         <div className="flex gap-4 mt-3">
@@ -176,13 +174,13 @@ export default function MobileBrief() {
         />
       )}
 
-      {/* Key risks from narrative */}
-      {narrative.keyRisks?.length > 0 && (
+      {/* Top signal from pressure vectors */}
+      {topVector && (
         <BriefCard
           icon={<Zap size={12} />}
           label="TOP SIGNAL"
-          title={narrative.keyRisks[0]}
-          body={narrative.keyRisks[1] ?? "Monitor closely for regime confirmation."}
+          title={topVector.label}
+          body={topVector.driver || topVector.description || "Monitor closely for regime confirmation."}
           accentColor="#00D4FF"
         />
       )}
