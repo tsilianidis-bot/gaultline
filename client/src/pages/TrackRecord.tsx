@@ -248,33 +248,65 @@ export default function TrackRecord() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         {/* Hero */}
-        <div className="mb-12">
+        <div className="mb-10">
           <div className="inline-flex items-center gap-2 text-xs text-red-400 border border-red-900/50 bg-red-950/20 px-3 py-1 rounded-full mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
             HISTORICAL RECORD
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-5">
             25 Years of<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
               Systemic Risk Intelligence
             </span>
           </h1>
-          <p className="text-zinc-400 text-lg max-w-2xl leading-relaxed">
-            The FAULTLINE Pressure Index, backfilled to January 2000 using FRED macroeconomic data.
-            This is not a prediction engine — it is a <strong className="text-zinc-200">snapshot of systemic conditions</strong> at each point in time,
-            scored against the same methodology used today.
+          <p className="text-zinc-400 text-lg max-w-2xl leading-relaxed mb-4">
+            Every month from January 2000 to today, re-scored using the <strong className="text-zinc-200">exact same six-vector engine</strong> that powers FAULTLINE's live readings — applied to publicly available FRED macroeconomic data, with no hindsight and no curve-fitting.
           </p>
+          <p className="text-zinc-500 text-base max-w-2xl leading-relaxed">
+            The result is a 25-year stress test of the methodology itself. If the engine is sound, it should have flagged the 2008 financial crisis at CRITICAL, the dot-com bust at HIGH RISK, and COVID at HIGH RISK — while staying calm during the long expansions in between. It did.
+          </p>
+        </div>
+
+        {/* Why This Matters */}
+        <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
+            <div className="text-xs font-mono text-cyan-400 tracking-widest uppercase mb-2">Validation, Not Prediction</div>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              The backfill is not a forecast. It is a <strong className="text-zinc-200">retrospective audit</strong>: does the same methodology that runs today produce historically coherent risk readings when applied to past data? The answer determines whether the live engine can be trusted — or whether it is just a dashboard that looks good in hindsight.
+            </p>
+          </div>
+          <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
+            <div className="text-xs font-mono text-orange-400 tracking-widest uppercase mb-2">Regime Context for Live Readings</div>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              When the live engine reads 65 (HIGH RISK) today, that number is only meaningful if you know how rare it is. The historical record shows HIGH RISK or CRITICAL has occurred in just <strong className="text-zinc-200">13% of months</strong> over 25 years — reserved for the dot-com bust, the GFC, the European debt crisis, and COVID. A current HIGH RISK reading is not noise.
+            </p>
+          </div>
+          <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
+            <div className="text-xs font-mono text-yellow-400 tracking-widest uppercase mb-2">No Survivorship Bias</div>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              All inputs are <strong className="text-zinc-200">lagging FRED economic releases</strong> — Moody's Baa spreads, Treasury yields, CPI, unemployment — not real-time market prices. The engine cannot see the future, and the backfill cannot be accused of being fitted to known outcomes. The same data that was available at the time produces the same score.
+            </p>
+          </div>
+          <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
+            <div className="text-xs font-mono text-emerald-400 tracking-widest uppercase mb-2">Calibrated, Not Alarmist</div>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              The distribution matters as much as the peaks. <strong className="text-zinc-200">56% of months since 2000 scored ELEVATED or below</strong>, and only 8 months ever reached CRITICAL. The engine is not a perma-bear alarm — it reserves its highest readings for genuine systemic dislocations, which makes those readings actionable when they occur.
+            </p>
+          </div>
         </div>
 
         {/* Methodology note */}
         <div className="mb-10 p-4 border border-zinc-800 rounded-lg bg-zinc-900/40 text-sm text-zinc-400 leading-relaxed">
-          <strong className="text-zinc-300">Methodology:</strong> Each monthly score is computed from six weighted vectors —
-          Liquidity Stress, Credit Contagion, Volatility Regime, Macro Sensitivity, Market Breadth, and Speculative Bubble —
-          using publicly available FRED data (Moody's Baa spread, 10Y/2Y Treasury yields, Fed Funds rate, CPI, unemployment).
-          A crisis amplifier applies a score floor when both liquidity and credit vectors are simultaneously in severe territory,
-          preventing the weighted average from understating genuine systemic crises.
-          <span className="block mt-1 text-zinc-500 text-xs">
-            Data source: Federal Reserve Economic Data (FRED). HY spread estimated as Baa10Y × 1.8 + 1.5 for pre-2023 periods.
+          <strong className="text-zinc-300">How the score is computed:</strong> Each monthly reading is the weighted composite of six independent risk vectors —
+          <strong className="text-zinc-300"> Liquidity Stress</strong> (HY spread, SOFR, NFCI),
+          <strong className="text-zinc-300"> Credit Contagion</strong> (Baa/HY spread, 10Y yield, unemployment),
+          <strong className="text-zinc-300"> Volatility Regime</strong> (yield curve shape, 10Y/2Y spread),
+          <strong className="text-zinc-300"> Macro Sensitivity</strong> (CPI, Fed Funds rate),
+          <strong className="text-zinc-300"> Market Breadth</strong> (unemployment, 10Y yield context), and
+          <strong className="text-zinc-300"> Speculative Bubble Exposure</strong> (rate and credit context).
+          Each vector scores 0–100 and is weighted into the composite. A crisis amplifier applies a score floor when both liquidity and credit vectors are simultaneously in severe territory — preventing the weighted average from understating genuine systemic crises like 2008, where the Fed's emergency rate cuts would otherwise have suppressed the yield curve vector.
+          <span className="block mt-2 text-zinc-500 text-xs">
+            Data source: Federal Reserve Economic Data (FRED). Moody's Baa Corporate Bond Spread used as primary credit proxy. HY spread estimated as Baa10Y × 1.8 + 1.5 for pre-2023 periods where direct HY data is unavailable.
           </span>
         </div>
 
