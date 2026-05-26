@@ -1130,8 +1130,268 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   );
 }
 
+// ── FAULTLINE Core Mobile Showcase ──────────────────────────
+function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void }) {
+  const tabs = [
+    { label: "PULSE", icon: "◉", desc: "Live Pressure Index, regime status, bull/crash probability" },
+    { label: "SIGNALS", icon: "⚡", desc: "Stock & crypto signals with BUY/SELL/HOLD labels" },
+    { label: "WATCHLIST", icon: "★", desc: "Add any ticker or crypto, track signal status live" },
+    { label: "ROTATION", icon: "↻", desc: "BTC dominance, sector momentum, risk-on/off status" },
+    { label: "BRIEF", icon: "▤", desc: "Daily macro brief, top signal, top rotation note" },
+  ];
+
+  const sc = { score: 61, regime: "ELEVATED", regimeColor: "#FF9500", bull: 45, crash: 43 };
+  const circumference = 2 * Math.PI * 44;
+
+  return (
+    <section className="py-24 bg-[#050608] relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_60%_at_30%_50%,rgba(34,211,238,0.04)_0%,transparent_70%)]" />
+      <div className="max-w-7xl mx-auto px-6 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+
+          {/* Left — copy */}
+          <div>
+            <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#22D3EE]/60 border border-[#22D3EE]/20 px-4 py-1.5 rounded-full mb-6">
+              MOBILE COMPANION
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+              FAULTLINE Core —<br />
+              <span className="text-[#22D3EE]">Mobile Market Intelligence</span>
+            </h2>
+            <p className="text-[#A8B8CC] text-base leading-relaxed mb-4">
+              Fast access to market signals, crypto rotation, volatility shifts, and daily macro intelligence — all in your pocket.
+            </p>
+            <p className="text-[#A8B8CC] text-sm leading-relaxed mb-8">
+              FAULTLINE Core is a $9.99/month mobile companion. Install it to your iPhone or Android home screen and get institutional-grade signals without the institutional price.
+            </p>
+
+            {/* 5 tabs */}
+            <div className="space-y-3 mb-8">
+              {tabs.map((t) => (
+                <div key={t.label} className="flex items-start gap-3">
+                  <span className="text-[#22D3EE] font-mono text-sm mt-0.5 w-4 flex-shrink-0">{t.icon}</span>
+                  <div>
+                    <span className="text-[9px] font-mono tracking-widest text-[#22D3EE]/80 block mb-0.5">{t.label}</span>
+                    <span className="text-xs text-[#A8B8CC]">{t.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Install instructions */}
+            <div
+              className="rounded-xl p-5 mb-8"
+              style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.12)" }}
+            >
+              <div className="text-[9px] font-mono tracking-[0.25em] text-[#22D3EE]/60 mb-3">ADD TO HOME SCREEN</div>
+              <div className="space-y-2">
+                {[
+                  { step: "1", text: "Open FAULTLINE Core in Safari on iPhone" },
+                  { step: "2", text: "Tap the Share button (□↑) at the bottom" },
+                  { step: "3", text: 'Scroll down and tap "Add to Home Screen"' },
+                  { step: "4", text: "Tap Add — it launches like a native app" },
+                ].map((s) => (
+                  <div key={s.step} className="flex items-center gap-3">
+                    <span
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-mono font-bold flex-shrink-0"
+                      style={{ background: "rgba(34,211,238,0.15)", color: "#22D3EE" }}
+                    >{s.step}</span>
+                    <span className="text-xs text-[#A8B8CC]">{s.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="/mobile"
+                className="px-6 py-3 font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200 active:scale-[0.97]"
+                style={{
+                  background: "rgba(34,211,238,0.15)",
+                  border: "1px solid rgba(34,211,238,0.4)",
+                  color: "#22D3EE",
+                  boxShadow: "0 0 20px rgba(34,211,238,0.1)",
+                }}
+              >
+                OPEN CORE APP →
+              </a>
+              <button
+                onClick={onRequestAccess}
+                className="px-6 py-3 font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#A8B8CC" }}
+              >
+                UPGRADE TO PRO
+              </button>
+            </div>
+          </div>
+
+          {/* Right — iPhone mockup */}
+          <div className="flex justify-center">
+            <div className="relative">
+              {/* Ambient glow */}
+              <div
+                className="absolute inset-0 rounded-[40px] blur-3xl"
+                style={{ background: "radial-gradient(ellipse, rgba(34,211,238,0.15) 0%, transparent 70%)", transform: "scale(1.3)" }}
+              />
+
+              {/* Phone frame */}
+              <div
+                className="relative rounded-[40px] overflow-hidden"
+                style={{
+                  width: 280,
+                  height: 580,
+                  background: "#0A0C12",
+                  border: "2px solid rgba(255,255,255,0.1)",
+                  boxShadow: "0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
+                }}
+              >
+                {/* Status bar */}
+                <div className="flex items-center justify-between px-5 pt-3 pb-1">
+                  <span className="text-[9px] font-mono text-[#64748B]">9:41</span>
+                  <div className="w-20 h-5 rounded-full bg-[#0A0C12] border border-[rgba(255,255,255,0.1)]" />
+                  <span className="text-[9px] font-mono text-[#64748B]">●●●</span>
+                </div>
+
+                {/* App top bar */}
+                <div className="px-4 py-2 flex items-center justify-between">
+                  <div>
+                    <div className="text-[7px] font-mono tracking-[0.3em] text-[#22D3EE]/50">FAULTLINE CORE</div>
+                    <div className="text-[8px] font-mono text-[#64748B]">PRESSURE ENGINE™</div>
+                  </div>
+                  <div className="w-6 h-6 rounded-full bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.2)] flex items-center justify-center">
+                    <span className="text-[8px] text-[#22D3EE]">↻</span>
+                  </div>
+                </div>
+
+                {/* Screen content */}
+                <div className="px-4 py-2 flex flex-col items-center gap-3">
+                  {/* Gauge */}
+                  <div className="relative" style={{ width: 110, height: 110 }}>
+                    <svg width={110} height={110} style={{ transform: "rotate(-90deg)" }}>
+                      <circle cx={55} cy={55} r={44} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={6} />
+                      <circle
+                        cx={55} cy={55} r={44}
+                        fill="none"
+                        stroke={sc.regimeColor}
+                        strokeWidth={6}
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={circumference * (1 - sc.score / 100)}
+                        style={{ filter: `drop-shadow(0 0 6px ${sc.regimeColor}80)` }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-2xl font-bold font-mono" style={{ color: sc.regimeColor }}>{sc.score}</span>
+                      <span className="text-[7px] font-mono text-[#64748B]">/100</span>
+                    </div>
+                  </div>
+
+                  {/* Regime badge */}
+                  <div
+                    className="px-3 py-1 rounded-full text-[8px] font-mono font-bold tracking-widest"
+                    style={{ background: `${sc.regimeColor}15`, border: `1px solid ${sc.regimeColor}40`, color: sc.regimeColor }}
+                  >
+                    {sc.regime}
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    {[
+                      { label: "BULL CONT.", value: `${sc.bull}%`, color: "#34D399" },
+                      { label: "CRASH RISK", value: `${sc.crash}%`, color: "#FF9500" },
+                    ].map((s) => (
+                      <div
+                        key={s.label}
+                        className="rounded-lg p-2 flex flex-col gap-0.5"
+                        style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                      >
+                        <span className="text-[6px] font-mono tracking-widest" style={{ color: s.color + "80" }}>{s.label}</span>
+                        <span className="text-sm font-bold font-mono" style={{ color: s.color }}>{s.value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Risk bar */}
+                  <div className="w-full rounded-lg p-2" style={{ background: "rgba(255,45,85,0.05)", border: "1px solid rgba(255,45,85,0.12)" }}>
+                    <div className="text-[6px] font-mono tracking-widest text-[#FF9500]/70 mb-1">TOP RISK TODAY</div>
+                    <div className="text-[9px] font-mono font-bold text-white">Credit Spread Widening</div>
+                  </div>
+
+                  {/* Locked Pro card */}
+                  <div
+                    className="w-full rounded-lg p-2 flex items-center justify-between"
+                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+                  >
+                    <div>
+                      <div className="text-[6px] font-mono tracking-widest text-[#64748B]">PRO REQUIRED</div>
+                      <div className="text-[8px] font-mono text-[#A8B8CC]">Diagnostic AI™ + Aftershock™</div>
+                    </div>
+                    <span
+                      className="text-[7px] font-mono px-2 py-1 rounded"
+                      style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)", color: "#00D4FF" }}
+                    >UPGRADE</span>
+                  </div>
+                </div>
+
+                {/* Bottom nav */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 flex items-center justify-around px-2 py-2"
+                  style={{ background: "rgba(5,6,8,0.95)", borderTop: "1px solid rgba(255,255,255,0.06)" }}
+                >
+                  {["PULSE", "SIGNALS", "WATCH", "ROTATE", "BRIEF"].map((tab, i) => (
+                    <div key={tab} className="flex flex-col items-center gap-0.5">
+                      <div
+                        className="w-5 h-5 rounded-md flex items-center justify-center"
+                        style={{ background: i === 0 ? "rgba(34,211,238,0.15)" : "transparent" }}
+                      >
+                        <span className="text-[8px]" style={{ color: i === 0 ? "#22D3EE" : "#64748B" }}>
+                          {["◉", "⚡", "★", "↻", "▤"][i]}
+                        </span>
+                      </div>
+                      <span className="text-[5px] font-mono" style={{ color: i === 0 ? "#22D3EE" : "#64748B" }}>{tab}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Price badge floating — bottom right */}
+              <div
+                className="absolute -bottom-4 -right-4 rounded-xl px-4 py-3"
+                style={{
+                  background: "rgba(12,15,22,0.95)",
+                  border: "1px solid rgba(34,211,238,0.3)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(34,211,238,0.1)",
+                }}
+              >
+                <div className="text-[8px] font-mono tracking-widest text-[#22D3EE]/60 mb-0.5">FAULTLINE CORE</div>
+                <div className="text-xl font-bold text-[#22D3EE]">$9.99<span className="text-xs font-normal text-[#64748B]">/mo</span></div>
+                <div className="text-[8px] font-mono text-[#64748B]">MOST POPULAR ENTRY</div>
+              </div>
+
+              {/* Pro badge floating — top left */}
+              <div
+                className="absolute -top-4 -left-4 rounded-xl px-4 py-3"
+                style={{
+                  background: "rgba(12,15,22,0.95)",
+                  border: "1px solid rgba(0,212,255,0.3)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.1)",
+                }}
+              >
+                <div className="text-[8px] font-mono tracking-widest text-[#00D4FF]/60 mb-0.5">FAULTLINE PRO</div>
+                <div className="text-xl font-bold text-[#00D4FF]">$59<span className="text-xs font-normal text-[#64748B]">/mo</span></div>
+                <div className="text-[8px] font-mono text-[#64748B]">FULL INTELLIGENCE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Founding Access Form ──────────────────────────────────────
-function FoundingAccessForm({ formRef }: { formRef: React.RefObject<HTMLDivElement | null> }) {
+function FoundingAccessForm
+({ formRef }: { formRef: React.RefObject<HTMLDivElement | null> }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -1296,7 +1556,7 @@ function Footer() {
                   Launch Platform →
                 </a>
               </li>
-              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Request Founding Access</a></li>
+              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founding Access — $49/mo</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
               <li><a href="mailto:info@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">General Inquiries</a></li>
               <li><a href="mailto:admin@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Admin</a></li>
@@ -1402,6 +1662,7 @@ export default function MarketingSite() {
       <AudienceSection />
       <IWantInSection onRequestAccess={scrollToForm} />
       <PricingSection onRequestAccess={scrollToForm} />
+      <CoreMobileSection onRequestAccess={scrollToForm} />
       <FoundingAccessForm formRef={formRef} />
       <Footer />
     </div>

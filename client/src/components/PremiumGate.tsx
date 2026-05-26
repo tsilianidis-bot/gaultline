@@ -37,16 +37,16 @@ interface PremiumGateConfig {
 
 const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
   founding: {
-    title: "Founding Access Required",
-    subtitle: "EXCLUSIVE INTELLIGENCE PLATFORM",
+    title: "Pro Intelligence Required",
+    subtitle: "INSTITUTIONAL INTELLIGENCE PLATFORM",
     description:
-      "This module is reserved for FAULTLINE founding members. Gain access to the full institutional intelligence suite — macro, signals, crypto, and systemic risk.",
+      "This module requires FAULTLINE Pro or Founding Access. Unlock the full institutional intelligence suite — macro, signals, crypto, systemic risk, and AI diagnostics.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
-    accentHex: "#22D3EE",
-    glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: "Request Founding Access",
-    ctaSecondary: "Join Early Access",
+    accentHex: "#00D4FF",
+    glowColor: "rgba(0,212,255,0.15)",
+    ctaPrimary: "Upgrade to Pro — $59/mo",
+    ctaSecondary: "Founding Access — $49/mo",
     features: [
       "Full macro regime intelligence",
       "Advanced trading signals",
@@ -122,7 +122,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Request Founding Access",
+    ctaSecondary: "Founding Access — $49/mo",
     features: [
       "FAULTLINE Pressure Index™",
       "Liquidity stress monitoring",
@@ -141,7 +141,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Request Founding Access",
+    ctaSecondary: "Founding Access — $49/mo",
     features: [
       "Diagnostic AI™ analysis",
       "Position Guidance™",
@@ -160,7 +160,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Request Founding Access",
+    ctaSecondary: "Founding Access — $49/mo",
     features: [
       "Crypto systemic risk score",
       "BTC macro correlation tracking",
@@ -179,7 +179,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Request Founding Access",
+    ctaSecondary: "Founding Access — $49/mo",
     features: [
       "Primary rupture detection",
       "Contagion chain mapping",
@@ -198,7 +198,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Request Founding Access",
+    ctaSecondary: "Founding Access — $49/mo",
     features: [
       "Save any crypto token",
       "Live signal label monitoring",
@@ -332,7 +332,7 @@ export function PremiumGateFull({
           <div className="flex items-center justify-center gap-2 mb-6">
             <Lock className="w-3.5 h-3.5 text-white/20" />
             <span className="text-white/30 text-xs font-mono tracking-[0.25em] uppercase">
-              Restricted Access
+              Intelligence Locked
             </span>
             <Lock className="w-3.5 h-3.5 text-white/20" />
           </div>

@@ -451,7 +451,7 @@ export default function HomeStockIntelSection() {
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#00D4FF', letterSpacing: '0.15em', marginBottom: '4px' }}>495+ MORE ASSETS LOCKED</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>Full screener available to founding members</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>Full screener available on Core, Pro &amp; Founding</div>
           </div>
         </div>
 
@@ -495,7 +495,7 @@ export default function HomeStockIntelSection() {
                 boxShadow: '0 0 20px rgba(0,212,255,0.2)',
                 transition: 'all 0.2s ease',
               }}>
-                Request Founding Access →
+                Unlock Core Access →
               </button>
             </a>
           )}

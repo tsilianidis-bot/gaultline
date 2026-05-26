@@ -680,16 +680,23 @@
 - [x] Update UserAccount.tsx tier configs to match new positioning
 
 ## Core Mobile PWA (/mobile)
-- [ ] Add PWA manifest.json with FAULTLINE icons and standalone display mode
-- [ ] Add iOS meta tags for Add-to-Home-Screen support
-- [ ] Create MobileLayout.tsx with bottom nav (Pulse/Signals/Watchlist/Rotation/Brief)
-- [ ] Add /mobile/* routes to App.tsx with MobileLayout
-- [ ] Build MobilePulse.tsx (Pressure Index, regime, bull/crash probability, top risk, daily summary)
-- [ ] Build MobileSignals.tsx (limited stock + crypto signals, locked Pro cards)
-- [ ] Build MobileWatchlist.tsx (add tickers/crypto, basic signal status, persisted to DB)
-- [ ] Build MobileRotation.tsx (alt rotation snapshot, BTC dominance, AI token momentum, risk-on/off)
-- [ ] Build MobileBrief.tsx (daily brief, top signal, top macro, top rotation note)
-- [ ] Add watchlist DB table and tRPC procedures (add/remove/list per user)
-- [ ] Add Core tier gate to mobile routes (redirect to upgrade if free tier)
-- [ ] Add iPhone Add-to-Home-Screen guidance banner
-- [ ] Run tests and save checkpoint
+- [x] Add PWA manifest.json with FAULTLINE icons and standalone display mode
+- [x] Add iOS meta tags for Add-to-Home-Screen support
+- [x] Create MobileLayout.tsx with bottom nav (Pulse/Signals/Watchlist/Rotation/Brief)
+- [x] Add /mobile/* routes to App.tsx with MobileLayout
+- [x] Build MobilePulse.tsx (Pressure Index, regime, bull/crash probability, top risk, daily summary)
+- [x] Build MobileSignals.tsx (limited stock + crypto signals, locked Pro cards)
+- [x] Build MobileWatchlist.tsx (add tickers/crypto, basic signal status, persisted to DB)
+- [x] Build MobileRotation.tsx (alt rotation snapshot, BTC dominance, AI token momentum, risk-on/off)
+- [x] Build MobileBrief.tsx (daily brief, top signal, top macro, top rotation note)
+- [x] Add watchlist DB table and tRPC procedures (add/remove/list per user)
+- [x] Add Core tier gate to mobile routes (redirect to upgrade if free tier)
+- [x] Add iPhone Add-to-Home-Screen guidance banner
+- [x] Run tests and save checkpoint
+
+## Site-Wide Pricing & Core Mobile Showcase (v3)
+- [x] Update MarketingSite.tsx pricing section: finalized tier names, copy, and feature lists
+- [x] Add FAULTLINE Core mobile showcase section to marketing homepage (iPhone mockups, install instructions)
+- [x] Update PremiumGate.tsx copy to match finalized tier messaging
+- [x] Update UserAccount.tsx tier configs and upgrade CTAs
+- [x] Add "Founding Access Closing Soon" scarcity messaging throughout
