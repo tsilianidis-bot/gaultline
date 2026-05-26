@@ -711,4 +711,4 @@
 - [x] Add xPost.post tRPC mutation that calls postTweet() and logs to xPostQueue
 - [x] Add "POST TO X" button to XPostGenerator page
 - [x] Add "POST THREAD" button for thread variant
-- [ ] Create heartbeat crons for 3x daily scheduled X posts (premarket/midday/closing)
+- [x] Create heartbeat crons for 3x daily scheduled X posts (premarket/midday/closing) — manual setup via Schedules UI; endpoint /api/scheduled/x-post-scheduled is live
