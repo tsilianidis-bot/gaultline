@@ -47,6 +47,7 @@ const BlogPost         = lazy(() => import("./pages/BlogPost"));
 const AdminBlog        = lazy(() => import("./pages/AdminBlog"));
 const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
+const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -86,6 +87,14 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Blog />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Track Record — standalone public page */}
+      <Route path="/track-record">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <TrackRecord />
           </Suspense>
         </ErrorBoundary>
       </Route>

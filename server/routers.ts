@@ -16,7 +16,8 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getAllUsersWithTier, getPlatformStats, getActivityFeed,
   getSignupTimeSeries, getWaitlistTimeSeries, getConversionStats,
   getBlogPosts, getBlogPostBySlug, getBlogPostById, createBlogPost, updateBlogPost, deleteBlogPost, getBlogCategories,
-  getXPostQueue, getXPostQueueStats } from "./db";
+  getXPostQueue, getXPostQueueStats,
+  getPressureHistory, getPressureHistoryStats } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
@@ -1089,6 +1090,51 @@ export const appRouter = router({
         if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
         return getXPostQueueStats();
       }),
+  }),
+
+  trackRecord: router({
+    // Public: get all pressure history records (paginated)
+    getHistory: publicProcedure
+      .input(z.object({
+        startMonth: z.string().optional(),
+        endMonth: z.string().optional(),
+        limit: z.number().int().min(1).max(500).default(317),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const records = await getPressureHistory(input);
+          return records.map(r => ({
+            month: r.month,
+            overallPressure: r.overallPressure,
+            regime: r.regime,
+            liquidityStress: r.liquidityStress,
+            creditContagion: r.creditContagion,
+            volatilityRegime: r.volatilityRegime,
+            macroSensitivity: r.macroSensitivity,
+            marketBreadth: r.marketBreadth,
+            aiBubble: r.aiBubble,
+            baaSpread: r.baaSpread !== null ? Number(r.baaSpread) : null,
+            hySpreadProxy: r.hySpreadProxy !== null ? Number(r.hySpreadProxy) : null,
+            tsy10y: r.tsy10y !== null ? Number(r.tsy10y) : null,
+            tsy2y: r.tsy2y !== null ? Number(r.tsy2y) : null,
+            fedfunds: r.fedfunds !== null ? Number(r.fedfunds) : null,
+            cpiYoy: r.cpiYoy !== null ? Number(r.cpiYoy) : null,
+            unemployment: r.unemployment !== null ? Number(r.unemployment) : null,
+            sp500: r.sp500 !== null ? Number(r.sp500) : null,
+          }));
+        } catch (err) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch pressure history', cause: err });
+        }
+      }),
+
+    // Public: get aggregate stats for the Track Record page
+    getStats: publicProcedure.query(async () => {
+      try {
+        return await getPressureHistoryStats();
+      } catch (err) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch stats', cause: err });
+      }
+    }),
   }),
 
   xPost: router({

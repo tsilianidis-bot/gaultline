@@ -1,0 +1,23 @@
+CREATE TABLE `pressureHistory` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`month` varchar(7) NOT NULL,
+	`overallPressure` int NOT NULL,
+	`regime` varchar(50) NOT NULL,
+	`liquidityStress` int,
+	`creditContagion` int,
+	`volatilityRegime` int,
+	`macroSensitivity` int,
+	`marketBreadth` int,
+	`aiBubble` int,
+	`baaSpread` decimal(6,2),
+	`hySpreadProxy` decimal(6,2),
+	`tsy10y` decimal(6,2),
+	`tsy2y` decimal(6,2),
+	`fedfunds` decimal(6,2),
+	`cpiYoy` decimal(6,2),
+	`unemployment` decimal(5,1),
+	`sp500` decimal(10,2),
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `pressureHistory_id` PRIMARY KEY(`id`),
+	CONSTRAINT `pressureHistory_month_unique` UNIQUE(`month`)
+);

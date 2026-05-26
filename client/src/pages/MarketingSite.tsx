@@ -94,6 +94,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
           <a href="/blog" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">BRIEFINGS</a>
+          <a href="/track-record" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">TRACK RECORD</a>
           {["Platform", "Intelligence", "Access", "How It Works"].map((item) => (
             <a
               key={item}

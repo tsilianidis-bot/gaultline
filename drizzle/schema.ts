@@ -138,3 +138,34 @@ export const xPostQueue = mysqlTable("xPostQueue", {
 });
 export type XPostQueue = typeof xPostQueue.$inferSelect;
 export type InsertXPostQueue = typeof xPostQueue.$inferInsert;
+
+// ── Pressure History ────────────────────────────────────────
+/**
+ * Backfilled monthly Pressure Index readings from 2000-01 to present.
+ * Computed from FRED macroeconomic data using the FAULTLINE scoring engine.
+ * Used for the public Track Record page.
+ */
+export const pressureHistory = mysqlTable("pressureHistory", {
+  id:               int("id").autoincrement().primaryKey(),
+  month:            varchar("month", { length: 7 }).notNull().unique(), // YYYY-MM
+  overallPressure:  int("overallPressure").notNull(),
+  regime:           varchar("regime", { length: 50 }).notNull(),
+  liquidityStress:  int("liquidityStress"),
+  creditContagion:  int("creditContagion"),
+  volatilityRegime: int("volatilityRegime"),
+  macroSensitivity: int("macroSensitivity"),
+  marketBreadth:    int("marketBreadth"),
+  aiBubble:         int("aiBubble"),
+  baaSpread:        decimal("baaSpread", { precision: 6, scale: 2 }),
+  hySpreadProxy:    decimal("hySpreadProxy", { precision: 6, scale: 2 }),
+  tsy10y:           decimal("tsy10y", { precision: 6, scale: 2 }),
+  tsy2y:            decimal("tsy2y", { precision: 6, scale: 2 }),
+  fedfunds:         decimal("fedfunds", { precision: 6, scale: 2 }),
+  cpiYoy:           decimal("cpiYoy", { precision: 6, scale: 2 }),
+  unemployment:     decimal("unemployment", { precision: 5, scale: 1 }),
+  sp500:            decimal("sp500", { precision: 10, scale: 2 }),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PressureHistory = typeof pressureHistory.$inferSelect;
+export type InsertPressureHistory = typeof pressureHistory.$inferInsert;

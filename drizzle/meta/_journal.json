@@ -50,6 +50,13 @@
       "when": 1779754510518,
       "tag": "0006_parallel_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1779775897424,
+      "tag": "0007_clean_talon",
+      "breakpoints": true
     }
   ]
 }

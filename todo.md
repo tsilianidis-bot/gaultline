@@ -601,3 +601,35 @@
 - [ ] Build X Post Queue admin UI at /app/x-posts (shows queue, status, posted content)
 - [ ] TypeScript check passes
 - [ ] Save checkpoint
+
+## Track Record Page (Historical Backfill)
+- [ ] Fetch FRED historical data 2000–2026 (BAMLH0A0HYM2, DGS10, DGS2, FEDFUNDS, CPIAUCSL, UNRATE, PPIACO)
+- [ ] Run Pressure Index engine on monthly snapshots to build 25-year backfill
+- [ ] Fetch S&P 500 historical data for outcome comparison
+- [ ] Identify regime escalation events and score accuracy
+- [ ] Add pressureHistory table to schema and migrate
+- [ ] Seed database with backfilled monthly readings (2000–2026)
+- [ ] Add tRPC procedures: trackRecord.getHistory, trackRecord.getRegimeEvents
+- [ ] Build public /track-record page with timeline chart, regime events table, accuracy stats
+- [ ] Add Track Record link to marketing site nav and AppLayout
+- [ ] TypeScript check passes
+- [ ] Save checkpoint
+- [ ] Assess findings and deliver credibility analysis
+
+## Track Record Page — Historical Pressure Index (2000–2026)
+- [x] Calibrate backfill scoring engine with crisis amplifier (max 82 in Oct 2008)
+- [x] Add pressureHistory table to Drizzle schema (drizzle/schema.ts)
+- [x] Generate and apply migration SQL for pressureHistory table
+- [x] Insert 317 months of historical Pressure Index data (Jan 2000–May 2026)
+- [x] Add getPressureHistory and getPressureHistoryStats helpers to server/db.ts
+- [x] Add trackRecord.getHistory and trackRecord.getStats tRPC procedures (public)
+- [x] Build /track-record standalone public page (TrackRecord.tsx)
+  - [x] Regime timeline bar chart (SVG, hover tooltips, crisis annotations)
+  - [x] Regime distribution bar (color-coded segments)
+  - [x] Aggregate stats row (total months, HIGH+CRITICAL count, avg/max score)
+  - [x] Crisis period analysis cards (2001-03, 2008-09, 2010-12, 2020)
+  - [x] Full monthly table (reverse-chronological, all 317 records)
+  - [x] CTA section linking to live Pressure Engine
+- [x] Register /track-record route in App.tsx
+- [x] Add TRACK RECORD link to marketing site desktop nav
+- [x] Add /track-record and /blog to sitemap.xml

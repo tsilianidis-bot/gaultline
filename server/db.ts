@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -542,5 +542,52 @@ export async function getXPostQueueStats() {
     failed: Number(stats?.failed ?? 0),
     skipped: Number(stats?.skipped ?? 0),
     lastPostedAt: stats?.lastPostedAt ?? null,
+  };
+}
+
+// ── Pressure History helpers ─────────────────────────────────
+
+export async function getPressureHistory(opts: {
+  startMonth?: string;
+  endMonth?: string;
+  limit?: number;
+} = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  const { startMonth, endMonth, limit } = opts;
+  const conditions = [];
+  if (startMonth) conditions.push(sql`${pressureHistory.month} >= ${startMonth}`);
+  if (endMonth) conditions.push(sql`${pressureHistory.month} <= ${endMonth}`);
+  let query = db.select().from(pressureHistory).$dynamic();
+  if (conditions.length > 0) query = query.where(and(...conditions)) as typeof query;
+  query = query.orderBy(pressureHistory.month) as typeof query;
+  if (limit) query = query.limit(limit) as typeof query;
+  return query;
+}
+
+export async function getPressureHistoryStats() {
+  const db = await getDb();
+  if (!db) return null;
+  const [stats] = await db.select({
+    totalMonths: sql<number>`count(*)`,
+    avgPressure: sql<number>`avg(${pressureHistory.overallPressure})`,
+    maxPressure: sql<number>`max(${pressureHistory.overallPressure})`,
+    minPressure: sql<number>`min(${pressureHistory.overallPressure})`,
+    criticalMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'CRITICAL' then 1 else 0 end)`,
+    highRiskMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'HIGH RISK' then 1 else 0 end)`,
+    elevatedMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'ELEVATED RISK' then 1 else 0 end)`,
+    moderateMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'MODERATE RISK' then 1 else 0 end)`,
+    lowMonths: sql<number>`sum(case when ${pressureHistory.regime} = 'LOW RISK' then 1 else 0 end)`,
+  }).from(pressureHistory);
+  return {
+    totalMonths: Number(stats?.totalMonths ?? 0),
+    avgPressure: Math.round(Number(stats?.avgPressure ?? 0)),
+    maxPressure: Number(stats?.maxPressure ?? 0),
+    minPressure: Number(stats?.minPressure ?? 0),
+    criticalMonths: Number(stats?.criticalMonths ?? 0),
+    highRiskMonths: Number(stats?.highRiskMonths ?? 0),
+    elevatedMonths: Number(stats?.elevatedMonths ?? 0),
+    moderateMonths: Number(stats?.moderateMonths ?? 0),
+    lowMonths: Number(stats?.lowMonths ?? 0),
   };
 }
