@@ -51,6 +51,14 @@ const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
 const AltRotation      = lazy(() => import("./pages/AltRotation"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
 
+// ── Mobile PWA pages ─────────────────────────────────────────
+const MobileLayout   = lazy(() => import("./components/MobileLayout"));
+const MobilePulse    = lazy(() => import("./pages/mobile/MobilePulse"));
+const MobileSignals  = lazy(() => import("./pages/mobile/MobileSignals"));
+const MobileWatchlist = lazy(() => import("./pages/mobile/MobileWatchlist"));
+const MobileRotation = lazy(() => import("./pages/mobile/MobileRotation"));
+const MobileBrief    = lazy(() => import("./pages/mobile/MobileBrief"));
+
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
   return (
@@ -89,6 +97,24 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Blog />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Mobile PWA routes — standalone, no AppLayout */}
+      <Route path="/mobile/:tab*">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <MobileLayout>
+              <Suspense fallback={<PageLoader />}>
+                <Switch>
+                  <Route path="/mobile/signals" component={MobileSignals} />
+                  <Route path="/mobile/watchlist" component={MobileWatchlist} />
+                  <Route path="/mobile/rotation" component={MobileRotation} />
+                  <Route path="/mobile/brief" component={MobileBrief} />
+                  <Route component={MobilePulse} />
+                </Switch>
+              </Suspense>
+            </MobileLayout>
           </Suspense>
         </ErrorBoundary>
       </Route>

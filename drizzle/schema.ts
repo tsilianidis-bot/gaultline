@@ -170,3 +170,20 @@ export const pressureHistory = mysqlTable("pressureHistory", {
 
 export type PressureHistory = typeof pressureHistory.$inferSelect;
 export type InsertPressureHistory = typeof pressureHistory.$inferInsert;
+
+// ── Mobile Watchlist ─────────────────────────────────────────
+/**
+ * Stores each user's saved tickers/crypto for the Core mobile watchlist.
+ * type: 'stock' | 'crypto'
+ * One row per (userId, symbol, type) — unique constraint prevents duplicates.
+ */
+export const mobileWatchlist = mysqlTable("mobileWatchlist", {
+  id:        int("id").autoincrement().primaryKey(),
+  userId:    int("userId").notNull(),
+  symbol:    varchar("symbol", { length: 30 }).notNull(),
+  name:      varchar("name", { length: 120 }).notNull(),
+  type:      mysqlEnum("type", ["stock", "crypto"]).notNull().default("stock"),
+  addedAt:   timestamp("addedAt").defaultNow().notNull(),
+});
+export type MobileWatchlistItem = typeof mobileWatchlist.$inferSelect;
+export type InsertMobileWatchlistItem = typeof mobileWatchlist.$inferInsert;

@@ -17,7 +17,8 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getSignupTimeSeries, getWaitlistTimeSeries, getConversionStats,
   getBlogPosts, getBlogPostBySlug, getBlogPostById, createBlogPost, updateBlogPost, deleteBlogPost, getBlogCategories,
   getXPostQueue, getXPostQueueStats,
-  getPressureHistory, getPressureHistoryStats } from "./db";
+  getPressureHistory, getPressureHistoryStats,
+  getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
@@ -1169,6 +1170,43 @@ export const appRouter = router({
       clearAltRotationCache();
       return { cleared: true };
     }),
+  }),
+  mobileWatchlist: router({
+    // Get all watchlist items for the current user
+    getItems: coreProcedure.query(async ({ ctx }) => {
+      try {
+        return await getMobileWatchlist(ctx.user.id);
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to load watchlist", cause: err });
+      }
+    }),
+    // Add a ticker or crypto to the watchlist
+    addItem: coreProcedure
+      .input(z.object({
+        symbol: z.string().min(1).max(30).trim().transform(s => s.toUpperCase()),
+        name: z.string().min(1).max(120).trim(),
+        type: z.enum(["stock", "crypto"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const result = await addMobileWatchlistItem(ctx.user.id, input.symbol, input.name, input.type);
+          if (result.duplicate) return { success: true, duplicate: true, id: null };
+          return { success: true, duplicate: false, id: result.id };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to add to watchlist", cause: err });
+        }
+      }),
+    // Remove an item from the watchlist
+    removeItem: coreProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          await removeMobileWatchlistItem(ctx.user.id, input.id);
+          return { success: true };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to remove from watchlist", cause: err });
+        }
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

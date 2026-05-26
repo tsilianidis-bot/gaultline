@@ -678,3 +678,18 @@
 - [x] Expand /pressure-index page: market regime summary, macro explanation, teaser premium cards, locked premium cards, CTAs
 - [x] Strengthen premium psychology: glass cards, glow effects, lock overlays, animated transitions in PremiumGate
 - [x] Update UserAccount.tsx tier configs to match new positioning
+
+## Core Mobile PWA (/mobile)
+- [ ] Add PWA manifest.json with FAULTLINE icons and standalone display mode
+- [ ] Add iOS meta tags for Add-to-Home-Screen support
+- [ ] Create MobileLayout.tsx with bottom nav (Pulse/Signals/Watchlist/Rotation/Brief)
+- [ ] Add /mobile/* routes to App.tsx with MobileLayout
+- [ ] Build MobilePulse.tsx (Pressure Index, regime, bull/crash probability, top risk, daily summary)
+- [ ] Build MobileSignals.tsx (limited stock + crypto signals, locked Pro cards)
+- [ ] Build MobileWatchlist.tsx (add tickers/crypto, basic signal status, persisted to DB)
+- [ ] Build MobileRotation.tsx (alt rotation snapshot, BTC dominance, AI token momentum, risk-on/off)
+- [ ] Build MobileBrief.tsx (daily brief, top signal, top macro, top rotation note)
+- [ ] Add watchlist DB table and tRPC procedures (add/remove/list per user)
+- [ ] Add Core tier gate to mobile routes (redirect to upgrade if free tier)
+- [ ] Add iPhone Add-to-Home-Screen guidance banner
+- [ ] Run tests and save checkpoint

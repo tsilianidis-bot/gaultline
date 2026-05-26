@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -593,4 +593,51 @@ export async function getPressureHistoryStats() {
     moderateMonths: Number(stats?.moderateMonths ?? 0),
     lowMonths: Number(stats?.lowMonths ?? 0),
   };
+}
+
+// ── Mobile Watchlist helpers ──────────────────────────────────
+
+export async function getMobileWatchlist(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(mobileWatchlist)
+    .where(eq(mobileWatchlist.userId, userId))
+    .orderBy(mobileWatchlist.addedAt);
+}
+
+export async function addMobileWatchlistItem(
+  userId: number,
+  symbol: string,
+  name: string,
+  type: 'stock' | 'crypto'
+): Promise<{ id: number; duplicate: false } | { duplicate: true }> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const existing = await db.select({ id: mobileWatchlist.id })
+    .from(mobileWatchlist)
+    .where(and(
+      eq(mobileWatchlist.userId, userId),
+      eq(mobileWatchlist.symbol, symbol.toUpperCase()),
+      eq(mobileWatchlist.type, type)
+    ))
+    .limit(1);
+  if (existing.length > 0) return { duplicate: true };
+  const result = await db.insert(mobileWatchlist).values({
+    userId,
+    symbol: symbol.toUpperCase(),
+    name,
+    type,
+  });
+  const okPacket = result[0] as unknown as { insertId: number };
+  return { id: okPacket?.insertId ?? 0, duplicate: false };
+}
+
+export async function removeMobileWatchlistItem(userId: number, id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.delete(mobileWatchlist)
+    .where(and(
+      eq(mobileWatchlist.id, id),
+      eq(mobileWatchlist.userId, userId)
+    ));
 }

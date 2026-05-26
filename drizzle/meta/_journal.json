@@ -64,6 +64,13 @@
       "when": 1779827553273,
       "tag": "0008_dark_plazm",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1779830046437,
+      "tag": "0009_giant_susan_delgado",
+      "breakpoints": true
     }
   ]
 }
