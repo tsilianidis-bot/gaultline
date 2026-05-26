@@ -222,6 +222,22 @@ function RegimeFitGauge({ score, label }: { score: number; label: string }) {
   );
 }
 
+// ── Price Levels Types ───────────────────────────────────────
+interface PriceLevels {
+  support: number;
+  resistance: number;
+  entryZone: number;
+  stopLoss: number;
+  targetPrice: number;
+  riskReward: number;
+  atr: number;
+}
+interface TradingSignalData {
+  action: string;
+  confidence: number;
+  priceLevels: PriceLevels;
+}
+
 // ── Stock Intelligence Card ───────────────────────────────────
 function StockIntelligenceCard({
   profile,
@@ -231,6 +247,8 @@ function StockIntelligenceCard({
   onSave,
   isSaved,
   regime,
+  tradingSignal,
+  signalLoading,
 }: {
   profile: TickerProfile;
   classification: ClassificationResult | null;
@@ -239,6 +257,8 @@ function StockIntelligenceCard({
   onSave: () => void;
   isSaved: boolean;
   regime: RegimeContext;
+  tradingSignal: TradingSignalData | null;
+  signalLoading: boolean;
 }) {
   const [showWhy, setShowWhy] = useState(false);
   const [showDesc, setShowDesc] = useState(false);
@@ -497,6 +517,52 @@ function StockIntelligenceCard({
           </div>
         ) : null}
 
+        {/* ── Key Price Levels ─────────────────────────────── */}
+        {signalLoading ? (
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '8px', textTransform: 'uppercase' }}>KEY PRICE LEVELS</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
+              {[0,1,2,3].map(i => (
+                <div key={i} style={{ height: '44px', background: 'rgba(255,255,255,0.03)', borderRadius: '3px', animation: 'fl-pulse 1.5s ease-in-out infinite' }} />
+              ))}
+            </div>
+          </div>
+        ) : tradingSignal ? (
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '8px', textTransform: 'uppercase' }}>KEY PRICE LEVELS</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
+              {[
+                { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone, color: '#00D4FF' },
+                { label: 'STOP LOSS', value: tradingSignal.priceLevels.stopLoss, color: '#FF2D55' },
+                { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice, color: '#34D399' },
+                { label: 'R:R', value: tradingSignal.priceLevels.riskReward, color: '#FFD700', isRR: true },
+              ].map(({ label, value, color, isRR }) => (
+                <div key={label} style={{
+                  background: `${color}08`,
+                  border: `1px solid ${color}20`,
+                  borderRadius: '3px',
+                  padding: '7px 8px',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '3px', textTransform: 'uppercase' }}>{label}</div>
+                  <div style={{ fontSize: '14px', fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color, letterSpacing: '0.02em' }}>
+                    {isRR ? `${value.toFixed(1)}x` : `$${value.toFixed(2)}`}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '3px', padding: '6px 8px' }}>
+                <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.65)', marginBottom: '2px' }}>SUPPORT</div>
+                <div style={{ fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace", color: 'rgba(0,212,255,0.7)' }}>${tradingSignal.priceLevels.support.toFixed(2)}</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '3px', padding: '6px 8px' }}>
+                <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.65)', marginBottom: '2px' }}>RESISTANCE</div>
+                <div style={{ fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace", color: 'rgba(255,45,85,0.7)' }}>${tradingSignal.priceLevels.resistance.toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+        ) : null}
         {/* ── Company Description ─────────────────────────── */}
         {profile.description && (
           <div>
@@ -647,6 +713,8 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
 
   // tRPC classifier mutation
   const classifyMutation = trpc.signals.classifyTicker.useMutation();
+  // tRPC trading signal mutation (price levels)
+  const tradingSignalMutation = trpc.signals.getTradingSignal.useMutation();
 
   // Keyboard shortcut: "/" to focus search
   useEffect(() => {
@@ -698,6 +766,21 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
       ].slice(0, 12);
       setHistory(newHistory);
       saveHistory(newHistory);
+
+      // Trigger trading signal computation (price levels)
+      tradingSignalMutation.mutate({
+        ticker: t,
+        price: data.price,
+        open: data.open,
+        high: data.high,
+        low: data.low,
+        changePercent: data.changePercent,
+        volumeMillions: data.volumeMillions,
+        avgVolume: data.avgVolume ?? data.volume / 1_000_000,
+        sparkline: data.sparkline,
+        relativeStrength: 50,
+        regime: { label: regime.label, score: regime.score },
+      });
 
       // Trigger LLM classification
       classifyMutation.mutate({
@@ -964,6 +1047,8 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
             onSave={handleSaveToWatchlist}
             isSaved={isSaved}
             regime={regime}
+            tradingSignal={tradingSignalMutation.data ?? null}
+            signalLoading={tradingSignalMutation.isPending}
           />
         </div>
       )}

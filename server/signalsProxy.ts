@@ -19,6 +19,7 @@
 // ============================================================
 import { log } from "./logger";
 import type { Express, Request, Response } from "express";
+import { getQuote as getYahooQuote } from "./yahooProxy";
 
 const POLYGON_BASE = "https://api.polygon.io";
 
@@ -390,31 +391,50 @@ function isValidTicker(symbol: string): boolean {
   return /^[A-Z]{1,5}$/.test(symbol);
 }
 
-/** Fetch a single ticker's profile from Polygon.io */
+/** Fetch a single ticker's profile — Yahoo Finance primary, Polygon fallback */
 async function fetchTickerProfile(apiKey: string, symbol: string): Promise<TickerProfile> {
   const tradeDate = getLastTradingDate();
   const sparklineFrom = getNTradingDaysBefore(tradeDate, 5);
 
-  // 1. Fetch prev-day agg for price/OHLC/volume (single ticker, fast)
-  // Use 2 attempts max (8s each = 16s max) to stay within the 20s client timeout
-  const prevUrl = `${POLYGON_BASE}/v2/aggs/ticker/${symbol}/prev?adjusted=true&apiKey=${apiKey}`;
-  const prevRes = await fetchWithRetry(prevUrl, 2);
-  const prevData = await prevRes.json() as unknown as PolygonRangeResponse;
-
-  const bar = prevData.results?.[0];
-  if (!bar) {
-    throw new Error(`No data found for ticker ${symbol}`);
+  // 1. Try Yahoo Finance first — real-time 15-min delayed price, same source as Portfolio
+  let price = 0, open = 0, high = 0, low = 0, volumeRaw = 0, volumeMillions = 0, changePercent = 0;
+  let yahooSucceeded = false;
+  try {
+    const yahooQuote = await getYahooQuote(symbol);
+    if (yahooQuote.price != null && yahooQuote.price > 0) {
+      price = parseFloat((yahooQuote.price).toFixed(2));
+      open = parseFloat((yahooQuote.open ?? yahooQuote.price).toFixed(2));
+      high = parseFloat((yahooQuote.high ?? yahooQuote.price).toFixed(2));
+      low = parseFloat((yahooQuote.low ?? yahooQuote.price).toFixed(2));
+      volumeRaw = yahooQuote.volume ?? 0;
+      volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
+      changePercent = yahooQuote.changePercent != null
+        ? parseFloat(yahooQuote.changePercent.toFixed(3))
+        : (open > 0 ? parseFloat(((price - open) / open * 100).toFixed(3)) : 0);
+      yahooSucceeded = true;
+      log.info(`[Signals Proxy] Yahoo Finance price for ${symbol}: $${price} (${changePercent > 0 ? '+' : ''}${changePercent}%)`);
+    }
+  } catch (yahooErr: any) {
+    log.warn(`[Signals Proxy] Yahoo Finance failed for ${symbol}: ${yahooErr?.message} — falling back to Polygon`);
   }
 
-  const price = parseFloat((bar.c ?? 0).toFixed(2));
-  const open = parseFloat((bar.o ?? 0).toFixed(2));
-  const high = parseFloat((bar.h ?? 0).toFixed(2));
-  const low = parseFloat((bar.l ?? 0).toFixed(2));
-  const volumeRaw = bar.v ?? 0;
-  const volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
-
-  // Calculate change% from open (best we can do without prior close on free plan)
-  const changePercent = open > 0 ? parseFloat(((price - open) / open * 100).toFixed(3)) : 0;
+  // 2. Polygon fallback for price/OHLC if Yahoo failed
+  if (!yahooSucceeded) {
+    const prevUrl = `${POLYGON_BASE}/v2/aggs/ticker/${symbol}/prev?adjusted=true&apiKey=${apiKey}`;
+    const prevRes = await fetchWithRetry(prevUrl, 2);
+    const prevData = await prevRes.json() as unknown as PolygonRangeResponse;
+    const bar = prevData.results?.[0];
+    if (!bar) {
+      throw new Error(`No data found for ticker ${symbol}`);
+    }
+    price = parseFloat((bar.c ?? 0).toFixed(2));
+    open = parseFloat((bar.o ?? 0).toFixed(2));
+    high = parseFloat((bar.h ?? 0).toFixed(2));
+    low = parseFloat((bar.l ?? 0).toFixed(2));
+    volumeRaw = bar.v ?? 0;
+    volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
+    changePercent = open > 0 ? parseFloat(((price - open) / open * 100).toFixed(3)) : 0;
+  }
 
   // 2. Fetch 5-day sparkline (separate call — rate limit aware)
   let sparkline: number[] = [];
