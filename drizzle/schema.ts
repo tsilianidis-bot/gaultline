@@ -20,10 +20,11 @@ export const users = mysqlTable("users", {
   /**
    * Access tier controls which features a user can access.
    * - free: basic dashboard, limited previews
+   * - core: $9.99/mo — Signals screener, Portfolio tracker, Alt Rotation
    * - premium: full intelligence platform, all signals, all engines
    * - founding: same as premium, early-access badge, lifetime benefits
    */
-  accessTier: mysqlEnum("accessTier", ["free", "premium", "founding"]).default("free").notNull(),
+  accessTier: mysqlEnum("accessTier", ["free", "core", "premium", "founding"]).default("free").notNull(),
   /** Stripe customer ID — set on first checkout, used for billing portal and subscription lookups. */
   stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
   /** Active Stripe subscription ID — set by webhook on successful payment, cleared on cancellation. */

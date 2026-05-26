@@ -641,3 +641,26 @@
 - [x] Cinematic reveal animation (560ms stagger)
 - [x] Vitest tests for demo data integrity (304 tests passing)
 - [x] Cross-navigation links: Portfolio → Signals (VIEW FULL SIGNAL ANALYSIS per ticker, OPEN SIGNALS ENGINE in header); Signals → Portfolio (ADD TO PORTFOLIO per stock card)
+
+## Tiered Pricing Restructure (Free / Core / Pro / Founding)
+- [ ] Add 'core' to accessTier enum in drizzle/schema.ts and run migration
+- [ ] Add core plan ($9.99/mo) to server/stripe/products.ts
+- [ ] Add coreProcedure middleware to server/_core/trpc.ts
+- [ ] Update routers.ts: Portfolio and Signals procedures use coreProcedure
+- [ ] Add 'core' variant to PremiumGate.tsx with $9.99 upgrade prompt
+- [ ] Update UserAccount.tsx: Core tier badge, upgrade button, tier benefits
+- [ ] Update MarketingSite.tsx: Add Core tier card to pricing section (4-tier layout)
+- [ ] Add public /pressure-index page (no login, shows live Pressure Index score + regime)
+- [ ] Update admin.setUserTier to accept 'core' tier
+- [ ] Update tier.test.ts for new 'core' tier
+- [ ] Run full test suite and save checkpoint
+- [x] Add 'core' to accessTier enum in schema.ts and apply DB migration
+- [x] Add coreProcedure middleware in server/_core/trpc.ts
+- [x] Gate portfolio, signals, and altRotation procedures behind coreProcedure
+- [x] Add Core plan ($9.99/mo) to server/stripe/products.ts
+- [x] Update createCheckout and webhook to handle 'core' plan/tier
+- [x] Add Core tier config to UserAccount.tsx (badge, features, upgrade button)
+- [x] Add Core upgrade button ($9.99/mo) to UserAccount upgrade section
+- [x] Add PremiumGateFull 'altRotation' variant with Core upgrade prompt
+- [x] Update MarketingSite.tsx pricing to 4-tier grid (Free/Core/Pro/Founding)
+- [x] Create public /pressure-index page (no login required, live gauge)

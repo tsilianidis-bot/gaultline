@@ -26,7 +26,7 @@ import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, cle
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
 import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
-import { protectedProcedure } from "./_core/trpc";
+import { protectedProcedure, coreProcedure } from "./_core/trpc";
 import { stripe } from './stripe/client';
 import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
@@ -49,7 +49,7 @@ export const appRouter = router({
 
     createCheckout: protectedProcedure
       .input(z.object({
-        planId: z.enum(['premium', 'founding', 'lifetime']),
+        planId: z.enum(['core', 'premium', 'founding', 'lifetime']),
         origin: z.string().url(),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -156,7 +156,7 @@ export const appRouter = router({
 
     // Compute trading signals (BUY/SELL/HOLD) for a batch of tickers
     // Uses mutation (POST) to avoid 414 URI Too Large with large sparkline payloads
-    getTradingSignals: protectedProcedure
+    getTradingSignals: coreProcedure
       .input(z.object({
         tickers: z.array(z.object({
           ticker: z.string().min(1).max(10),
@@ -192,7 +192,7 @@ export const appRouter = router({
       }),
 
     // Compute trading signal for a single ticker
-    getTradingSignal: protectedProcedure
+    getTradingSignal: coreProcedure
       .input(z.object({
         ticker: z.string().min(1).max(10),
         price: z.number(),
@@ -288,7 +288,7 @@ export const appRouter = router({
 
   portfolio: router({
     // Get all positions for the authenticated user
-    getPositions: protectedProcedure.query(async ({ ctx }) => {
+    getPositions: coreProcedure.query(async ({ ctx }) => {
       try {
         return await getPositionsByUser(ctx.user.id);
       } catch (err) {
@@ -297,7 +297,7 @@ export const appRouter = router({
     }),
 
     // Add a new position
-    addPosition: protectedProcedure
+    addPosition: coreProcedure
       .input(z.object({
         ticker:    z.string().min(1).max(20).trim().transform(s => s.toUpperCase()),
         name:      z.string().min(1).max(120).trim(),
@@ -326,7 +326,7 @@ export const appRouter = router({
       }),
 
     // Update an existing position
-    updatePosition: protectedProcedure
+    updatePosition: coreProcedure
       .input(z.object({
         id:        z.number().int().positive(),
         ticker:    z.string().min(1).max(20).trim().transform(s => s.toUpperCase()).optional(),
@@ -356,7 +356,7 @@ export const appRouter = router({
       }),
 
     // Delete a position
-    deletePosition: protectedProcedure
+    deletePosition: coreProcedure
       .input(z.object({ id: z.number().int().positive() }))
       .mutation(async ({ ctx, input }) => {
         try {
@@ -368,7 +368,7 @@ export const appRouter = router({
       }),
 
     // Get live portfolio: positions + Yahoo Finance quotes + P&L + AI guidance
-    getLivePortfolio: protectedProcedure.query(async ({ ctx }) => {
+    getLivePortfolio: coreProcedure.query(async ({ ctx }) => {
       try {
         const rows = await getPositionsByUser(ctx.user.id);
         if (rows.length === 0) return { positions: [], summary: null, pressure: null };
@@ -447,7 +447,7 @@ export const appRouter = router({
       }
     }),
 
-    // Get AI guidance for a single user position (supports any ticker)
+    // Get AI guidance for a single user position (supports any ticker) — requires premium
     getPositionGuidance: protectedProcedure
       .input(z.object({
         ticker:    z.string().min(1).max(20).transform(s => s.toUpperCase()),
@@ -860,7 +860,7 @@ export const appRouter = router({
     setUserTier: protectedProcedure
       .input(z.object({
         userId: z.number().int().positive(),
-        tier: z.enum(['free', 'premium', 'founding']),
+        tier: z.enum(['free', 'core', 'premium', 'founding']),
       }))
       .mutation(async ({ ctx, input }) => {
         try {
@@ -1161,7 +1161,7 @@ export const appRouter = router({
   }),
 
   altRotation: router({
-    getData: protectedProcedure.query(async () => {
+    getData: coreProcedure.query(async () => {
       const apiKey = process.env.COINGECKO_API_KEY;
       return computeAltRotation(apiKey);
     }),

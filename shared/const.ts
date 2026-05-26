@@ -4,3 +4,4 @@ export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = 'Please login (10001)';
 export const NOT_ADMIN_ERR_MSG = 'You do not have required permission (10002)';
 export const PREMIUM_REQUIRED_ERR_MSG = 'This feature requires a Premium or Founding membership (10003)';
+export const CORE_REQUIRED_ERR_MSG = 'This feature requires a Core, Premium, or Founding membership (10004)';

@@ -5,7 +5,7 @@
  * In production, replace with live price IDs.
  */
 
-export type PlanId = 'premium' | 'founding' | 'lifetime';
+export type PlanId = 'core' | 'premium' | 'founding' | 'lifetime';
 
 export interface Plan {
   id: PlanId;
@@ -14,14 +14,23 @@ export interface Plan {
   priceId: string | null; // null = not yet configured
   amount: number;         // in cents
   interval: 'month' | 'year' | 'one_time';
-  tier: 'premium' | 'founding';
+  tier: 'core' | 'premium' | 'founding';
 }
 
 export const PLANS: Record<PlanId, Plan> = {
+  core: {
+    id: 'core',
+    name: 'FAULTLINE Core',
+    description: 'Signals screener, Portfolio tracker, and Alt Rotation — the essential toolkit.',
+    priceId: process.env.STRIPE_CORE_PRICE_ID ?? null,
+    amount: 999, // $9.99/month
+    interval: 'month',
+    tier: 'core',
+  },
   premium: {
     id: 'premium',
-    name: 'FAULTLINE Premium',
-    description: 'Full access to all intelligence features, signals, and engines.',
+    name: 'FAULTLINE Pro',
+    description: 'Full intelligence platform — AI guidance, Diagnostic AI, Crypto signals, and all advanced engines.',
     priceId: process.env.STRIPE_PREMIUM_PRICE_ID ?? null,
     amount: 5900, // $59/month
     interval: 'month',
@@ -30,7 +39,7 @@ export const PLANS: Record<PlanId, Plan> = {
   founding: {
     id: 'founding',
     name: 'FAULTLINE Founding Member',
-    description: 'Founding member rate — all premium features locked at $49/mo for life.',
+    description: 'Founding member rate — all Pro features locked at $49/mo for life.',
     priceId: process.env.STRIPE_FOUNDING_PRICE_ID ?? null,
     amount: 4900, // $49/month (founding rate, locked for life)
     interval: 'month',
@@ -39,7 +48,7 @@ export const PLANS: Record<PlanId, Plan> = {
   lifetime: {
     id: 'lifetime',
     name: 'FAULTLINE Founding Lifetime',
-    description: 'One-time payment — full founding access forever, no recurring charges.',
+    description: 'One-time payment — full founding access forever. No monthly charges, no renewals.',
     priceId: process.env.STRIPE_LIFETIME_PRICE_ID ?? null,
     amount: 120000, // $1,200 one-time
     interval: 'one_time',

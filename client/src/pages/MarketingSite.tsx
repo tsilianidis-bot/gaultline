@@ -824,53 +824,70 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
     {
       name: "OBSERVER",
       price: "Free",
-      desc: "Start monitoring systemic pressure with limited access.",
+      desc: "Start monitoring systemic pressure. No credit card required.",
       features: [
         "Homepage & public previews",
-        "Limited live metrics",
+        "FAULTLINE Pressure Index™ (preview)",
         "Basic macro snapshots",
         "Teaser dashboards",
-        "FAULTLINE Pressure Index™ (preview)",
       ],
       cta: "Join Free",
       ctaLink: PLATFORM_URL,
       featured: false,
+      accentColor: "#64748B",
+    },
+    {
+      name: "CORE",
+      price: "$9.99/mo",
+      priceSub: "essential toolkit — cancel anytime",
+      desc: "The essential FAULTLINE toolkit — signals, portfolio, and rotation intelligence.",
+      features: [
+        "Signals screener (BUY/SELL/HOLD/WATCH)",
+        "Portfolio tracker with live P&L",
+        "Alt Rotation engine",
+        "Dashboard & macro snapshots",
+        "Regime-aware risk scoring",
+      ],
+      cta: "Get Core Access",
+      ctaLink: PLATFORM_URL,
+      featured: false,
+      accentColor: "#22D3EE",
+    },
+    {
+      name: "PRO",
+      price: "$59/mo",
+      priceSub: "full intelligence platform",
+      desc: "The complete institutional intelligence suite — AI guidance, crypto, and all advanced engines.",
+      features: [
+        "Everything in Core",
+        "AI Position Guidance™",
+        "Diagnostic AI™ analysis",
+        "Crypto intelligence engine",
+        "Aftershock Engine™",
+        "Real-time risk alerts",
+        "Full watchlists & search",
+      ],
+      cta: "Upgrade to Pro",
+      ctaAction: onRequestAccess,
+      featured: true,
+      accentColor: "#00D4FF",
     },
     {
       name: "FOUNDING MEMBER",
       price: "$49/mo",
       priceSub: "locked for life — reg. $59/mo",
-      desc: "Full intelligence platform at the founding rate, locked forever. Never increases.",
+      desc: "All Pro features at the founding rate, locked forever. Never increases.",
       features: [
-        "Full FAULTLINE intelligence platform",
-        "Aftershock Engine™",
-        "Stock & Crypto Intelligence",
-        "Advanced dashboards",
-        "Real-time risk alerts",
-        "Proprietary scoring systems",
-        "Full watchlists & search",
-        "Rate locked for life — never increases",
-        "Priority onboarding",
+        "Everything in Pro",
+        "Founding member badge",
+        "Rate locked for life",
+        "Early access to new features",
+        "Priority support",
       ],
       cta: "Lock In $49/mo",
       ctaAction: onRequestAccess,
-      featured: true,
-    },
-    {
-      name: "FOUNDING LIFETIME",
-      price: "$1,200",
-      priceSub: "one-time payment — access forever",
-      desc: "Pay once. Full founding access forever. No monthly charges, no renewals, no price increases.",
-      features: [
-        "Everything in Founding Member",
-        "One-time payment — no recurring charges",
-        "Access never expires",
-        "All future features included",
-        "Priority support",
-      ],
-      cta: "Get Lifetime Access",
-      ctaAction: onRequestAccess,
       featured: false,
+      accentColor: "#FFD700",
     },
   ];
 
@@ -879,35 +896,35 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,rgba(255,215,0,0.03)_0%,transparent_70%)]" />
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
-          <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#FFD700]/60 border border-[#FFD700]/20 px-4 py-1.5 rounded-full mb-4">
-            FOUNDING ACCESS
+          <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 border border-[#00D4FF]/20 px-4 py-1.5 rounded-full mb-4">
+            INTELLIGENCE ACCESS
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            Markets fracture slowly…<br /><span className="text-[#FFD700]">then all at once.</span>
+            Start free. Scale to<br /><span className="text-[#00D4FF]">institutional intelligence.</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-xl mx-auto text-base">
-            Monitor the pressure before the shift. Founding access is limited and open now.
+            From free monitoring to the full institutional suite — choose the tier that fits your edge.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
           {tiers.map((tier, i) => (
             <div
               key={i}
               className={`relative p-6 rounded-lg border transition-all duration-300 ${
                 tier.featured
-                  ? "border-[#FFD700]/40 bg-[#0C0F16] shadow-[0_0_40px_rgba(255,215,0,0.08)]"
+                  ? "border-[#00D4FF]/40 bg-[#0C0F16] shadow-[0_0_40px_rgba(0,212,255,0.08)]"
                   : "border-[rgba(255,255,255,0.07)] bg-[#0C0F16]"
               }`}
             >
               {tier.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#FFD700] text-[#050608] text-[9px] font-mono font-bold tracking-widest px-4 py-1 rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00D4FF] text-[#050608] text-[9px] font-mono font-bold tracking-widest px-4 py-1 rounded-full">
                   RECOMMENDED
                 </div>
               )}
               <div className="mb-5">
                 <div className="text-[10px] font-mono tracking-[0.3em] text-[#64748B] mb-1">{tier.name}</div>
-                <div className={`text-2xl font-bold mb-0.5 ${tier.featured ? "text-[#FFD700]" : "text-white"}`}>{tier.price}</div>
+                <div className="text-2xl font-bold mb-0.5" style={{ color: (tier as {accentColor?: string}).accentColor ?? '#ffffff' }}>{tier.price}</div>
                 {'priceSub' in tier && tier.priceSub && (
                   <div className="text-[10px] font-mono text-[#64748B] mb-1">{(tier as {priceSub: string}).priceSub}</div>
                 )}
@@ -916,7 +933,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
               <ul className="space-y-2 mb-6">
                 {tier.features.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-[#A8B8CC]">
-                    <span className={`mt-0.5 flex-shrink-0 ${tier.featured ? "text-[#FFD700]" : "text-[#00D4FF]"}`}>✓</span>
+                    <span className="mt-0.5 flex-shrink-0" style={{ color: (tier as {accentColor?: string}).accentColor ?? '#00D4FF' }}>✓</span>
                     {f}
                   </li>
                 ))}
@@ -926,7 +943,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   onClick={tier.ctaAction}
                   className={`w-full py-3 font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97] ${
                     tier.featured
-                      ? "bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#050608]"
+                      ? "bg-[#00D4FF] hover:bg-[#00D4FF]/90 text-[#050608]"
                       : "border border-[rgba(255,255,255,0.15)] hover:border-[#00D4FF]/40 text-white"
                   }`}
                 >
@@ -947,7 +964,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         </div>
 
         <p className="text-center text-[#64748B] text-sm font-mono mt-8">
-          Institutional-grade macro intelligence. Founding pricing locks at signup. Cancel anytime.
+          Institutional-grade macro intelligence. All plans cancel anytime. Founding pricing locks at signup.
         </p>
       </div>
     </section>

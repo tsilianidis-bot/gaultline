@@ -14,6 +14,25 @@ import { useSearch } from 'wouter';
 
 // ── Tier config ────────────────────────────────────────────────
 const TIER_CONFIG = {
+  core: {
+    label: 'CORE',
+    sublabel: 'Core Access',
+    color: '#22D3EE',
+    glow: 'rgba(34,211,238,0.2)',
+    border: 'rgba(34,211,238,0.3)',
+    icon: <Zap size={18} />,
+    description: 'Signals screener, Portfolio tracker, and Alt Rotation — the essential FAULTLINE toolkit.',
+    features: [
+      { label: 'Signals screener (BUY/SELL/HOLD)', available: true },
+      { label: 'Portfolio tracker with live P&L', available: true },
+      { label: 'Alt Rotation engine', available: true },
+      { label: 'Dashboard & macro snapshots', available: true },
+      { label: 'AI position guidance', available: false },
+      { label: 'Diagnostic AI™', available: false },
+      { label: 'Crypto intelligence engine', available: false },
+      { label: 'Aftershock Engine™', available: false },
+    ],
+  },
   free: {
     label: 'FREE',
     sublabel: 'Basic Access',
@@ -74,7 +93,7 @@ const TIER_CONFIG = {
 };
 
 // ── Tier Badge ─────────────────────────────────────────────────
-function TierBadge({ tier }: { tier: 'free' | 'premium' | 'founding' }) {
+function TierBadge({ tier }: { tier: 'free' | 'core' | 'premium' | 'founding' }) {
   const cfg = TIER_CONFIG[tier];
   return (
     <div style={{
@@ -252,9 +271,10 @@ export default function UserAccount() {
   });
 
   const profile = profileQuery.data;
-  const tier = (profile?.accessTier ?? 'free') as 'free' | 'premium' | 'founding';
+  const tier = (profile?.accessTier ?? 'free') as 'free' | 'core' | 'premium' | 'founding';
   const tierCfg = TIER_CONFIG[tier];
   const isPremium = tier === 'premium' || tier === 'founding';
+  const isCore = tier === 'core';
   const search = useSearch();
 
   // Handle Stripe redirect query params
@@ -462,8 +482,8 @@ export default function UserAccount() {
         </div>
       </div>
 
-      {/* ── Billing management for premium/founding users ── */}
-      {isPremium && (
+      {/* ── Billing management for core/premium/founding users ── */}
+      {(isPremium || isCore) && (
         <div style={{
           marginTop: '24px',
           background: 'rgba(6,182,212,0.03)',
@@ -507,8 +527,8 @@ export default function UserAccount() {
         </div>
       )}
 
-      {/* ── Founding Access Request section (only for free tier) ── */}
-      {!isPremium && (
+      {/* ── Upgrade section (only for free tier) ── */}
+      {!isPremium && !isCore && (
         <div style={{
           marginTop: '24px',
           background: 'rgba(255,215,0,0.03)',
@@ -552,6 +572,26 @@ export default function UserAccount() {
 
           {/* Quick upgrade via Stripe */}
           <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin })}
+              disabled={checkoutMutation.isPending}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '12px 20px',
+                background: 'rgba(34,211,238,0.12)',
+                border: '1px solid rgba(34,211,238,0.4)',
+                borderRadius: '8px',
+                color: '#22D3EE',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px', letterSpacing: '0.08em',
+                cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
+                opacity: checkoutMutation.isPending ? 0.6 : 1,
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Zap size={13} />
+              {checkoutMutation.isPending ? 'LOADING...' : 'CORE — $9.99/MONTH'}
+            </button>
             <button
               onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
               disabled={checkoutMutation.isPending}

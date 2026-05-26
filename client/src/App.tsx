@@ -49,6 +49,7 @@ const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
 const AltRotation      = lazy(() => import("./pages/AltRotation"));
+const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -88,6 +89,14 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Blog />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Public Pressure Index — no login required */}
+      <Route path="/pressure-index">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <PressureIndex />
           </Suspense>
         </ErrorBoundary>
       </Route>

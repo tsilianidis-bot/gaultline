@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ──────────────────────────────
 interface SectorCoin {
@@ -299,7 +300,7 @@ function AlertCard({ alert }: { alert: RotationAlert }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────
-export default function AltRotation() {
+function AltRotationInner() {
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = trpc.altRotation.getData.useQuery(undefined, {
     refetchInterval: 3 * 60 * 1000, // refresh every 3 min
@@ -883,5 +884,13 @@ export default function AltRotation() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AltRotation() {
+  return (
+    <PremiumGateFull variant="altRotation">
+      <AltRotationInner />
+    </PremiumGateFull>
   );
 }

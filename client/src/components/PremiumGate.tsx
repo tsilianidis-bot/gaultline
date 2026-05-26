@@ -1,4 +1,4 @@
-import { Lock, Zap, Shield, TrendingUp, Crown, LogIn } from "lucide-react";
+import { Lock, Zap, Shield, TrendingUp, Crown, LogIn, BarChart2 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -9,13 +9,17 @@ import { toast } from "sonner";
 
 export type PremiumGateVariant =
   | "founding"       // "Founding Access Required"
-  | "signals"        // "Advanced Signals Restricted"
-  | "risk"           // "Real-Time Risk Engine Locked"
-  | "intelligence"   // "Premium Intelligence Locked"
-  | "crypto"         // "Crypto Intelligence Locked"
-  | "aftershock"     // "Aftershock Engine™ Locked"
-  | "portfolio"      // "Portfolio Monitor Locked"
-  | "watchlist";     // "Watchlist Locked"
+  | "signals"        // "Advanced Signals Restricted" — Core tier
+  | "portfolio"      // "Portfolio Monitor" — Core tier
+  | "altRotation"    // "Alt Rotation" — Core tier
+  | "risk"           // "Real-Time Risk Engine Locked" — Premium tier
+  | "intelligence"   // "Premium Intelligence Locked" — Premium tier
+  | "crypto"         // "Crypto Intelligence Locked" — Premium tier
+  | "aftershock"     // "Aftershock Engine™ Locked" — Premium tier
+  | "watchlist";     // "Watchlist Locked" — Premium tier
+
+/** Which minimum tier is required to pass this gate */
+export type GateTier = 'core' | 'premium';
 
 interface PremiumGateConfig {
   title: string;
@@ -27,6 +31,7 @@ interface PremiumGateConfig {
   ctaPrimary: string;
   ctaSecondary: string;
   features: string[];
+  requiredTier: GateTier;    // minimum tier to unlock
 }
 
 const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
@@ -46,23 +51,61 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "Crypto intelligence engine",
       "Systemic risk analytics",
     ],
+    requiredTier: 'premium',
   },
   signals: {
-    title: "Advanced Signals Restricted",
-    subtitle: "PREMIUM SIGNAL ENGINE",
+    title: "Signals Engine Locked",
+    subtitle: "CORE SIGNAL ENGINE",
     description:
-      "FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification — is available to founding members.",
+      "FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Unlock with Core at $9.99/mo.",
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: "Unlock Full Intelligence",
-    ctaSecondary: "Request Founding Access",
+    ctaPrimary: "Unlock Core — $9.99/mo",
+    ctaSecondary: "Upgrade to Pro",
     features: [
       "True RSI / MACD / SMA signals",
       "AI signal classification",
       "Regime-weighted scoring",
       "BUY / SELL / HOLD / WATCH labels",
     ],
+    requiredTier: 'core',
+  },
+  portfolio: {
+    title: "Portfolio Monitor Locked",
+    subtitle: "LIVE PORTFOLIO INTELLIGENCE",
+    description:
+      "Track your positions with live P&L and regime-aware risk scoring. Available from Core at $9.99/mo. AI guidance requires Pro.",
+    icon: <TrendingUp className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: "Unlock Core — $9.99/mo",
+    ctaSecondary: "Upgrade to Pro",
+    features: [
+      "Live P&L tracking",
+      "Real-time price quotes",
+      "Regime-aware risk scoring",
+      "AI guidance (Pro tier)",
+    ],
+    requiredTier: 'core',
+  },
+  altRotation: {
+    title: "Alt Rotation Engine Locked",
+    subtitle: "ALTERNATIVE ASSET ROTATION",
+    description:
+      "Monitor rotation signals across crypto, commodities, and alternative assets. Available from Core at $9.99/mo.",
+    icon: <BarChart2 className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: "Unlock Core — $9.99/mo",
+    ctaSecondary: "Upgrade to Pro",
+    features: [
+      "Crypto rotation signals",
+      "Commodity momentum tracking",
+      "Regime-weighted allocation",
+      "Cross-asset comparison",
+    ],
+    requiredTier: 'core',
   },
   risk: {
     title: "Real-Time Risk Engine Locked",
@@ -72,31 +115,33 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-orange-400",
     glowColor: "rgba(251,146,60,0.15)",
-    ctaPrimary: "Unlock Full Intelligence",
-    ctaSecondary: "Join Early Access",
+    ctaPrimary: "Unlock Pro — $59/mo",
+    ctaSecondary: "Request Founding Access",
     features: [
       "FAULTLINE Pressure Index™",
       "Liquidity stress monitoring",
       "Treasury yield shock detection",
       "Volatility regime classification",
     ],
+    requiredTier: 'premium',
   },
   intelligence: {
     title: "Premium Intelligence Locked",
     subtitle: "INSTITUTIONAL INTELLIGENCE SUITE",
     description:
-      "Full access to FAULTLINE's institutional intelligence suite requires founding membership. Preview limited metrics below.",
+      "Full access to FAULTLINE's institutional intelligence suite requires Pro membership. Preview limited metrics below.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: "Request Founding Access",
-    ctaSecondary: "Join Early Access",
+    ctaPrimary: "Unlock Pro — $59/mo",
+    ctaSecondary: "Request Founding Access",
     features: [
       "Diagnostic AI™ analysis",
       "Position Guidance™",
       "Full macro regime engine",
       "Historical signal analytics",
     ],
+    requiredTier: 'premium',
   },
   crypto: {
     title: "Crypto Intelligence Locked",
@@ -106,7 +151,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-blue-400",
     glowColor: "rgba(96,165,250,0.15)",
-    ctaPrimary: "Unlock Full Intelligence",
+    ctaPrimary: "Unlock Pro — $59/mo",
     ctaSecondary: "Request Founding Access",
     features: [
       "Crypto systemic risk score",
@@ -114,6 +159,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "AI narrative exposure signals",
       "Stablecoin liquidity monitoring",
     ],
+    requiredTier: 'premium',
   },
   aftershock: {
     title: "Aftershock Engine™ Locked",
@@ -123,7 +169,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-orange-400",
     glowColor: "rgba(251,146,60,0.15)",
-    ctaPrimary: "Unlock Full Intelligence",
+    ctaPrimary: "Unlock Pro — $59/mo",
     ctaSecondary: "Request Founding Access",
     features: [
       "Primary rupture detection",
@@ -131,42 +177,34 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "Delayed reaction signals",
       "Macro shockwave analysis",
     ],
-  },
-  portfolio: {
-    title: "Portfolio Monitor Locked",
-    subtitle: "LIVE PORTFOLIO INTELLIGENCE",
-    description:
-      "Track your positions with live P&L, AI-driven action guidance, and regime-aware risk scoring. Requires founding membership.",
-    icon: <TrendingUp className="w-8 h-8" />,
-    accentColor: "text-cyan-400",
-    glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: "Request Founding Access",
-    ctaSecondary: "Join Early Access",
-    features: [
-      "Live P&L tracking",
-      "AI position guidance",
-      "Regime-aware risk scoring",
-      "Add / Hold / Trim / Exit labels",
-    ],
+    requiredTier: 'premium',
   },
   watchlist: {
     title: "Watchlist Locked",
     subtitle: "CRYPTO WATCHLIST & COMPARISON",
     description:
-      "Save tokens, monitor live signal labels, and compare assets side-by-side. Available to founding members.",
+      "Save tokens, monitor live signal labels, and compare assets side-by-side. Available to Pro and Founding members.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-blue-400",
     glowColor: "rgba(96,165,250,0.15)",
-    ctaPrimary: "Request Founding Access",
-    ctaSecondary: "Join Early Access",
+    ctaPrimary: "Unlock Pro — $59/mo",
+    ctaSecondary: "Request Founding Access",
     features: [
       "Save any crypto token",
       "Live signal label monitoring",
       "Side-by-side comparison (4 tokens)",
       "Signal score tracking",
     ],
+    requiredTier: 'premium',
   },
 };
+
+/** Returns true if the user's tier meets or exceeds the required tier */
+function hasRequiredAccess(userTier: string, requiredTier: GateTier): boolean {
+  if (userTier === 'founding' || userTier === 'premium') return true;
+  if (requiredTier === 'core' && userTier === 'core') return true;
+  return false;
+}
 
 // ─── Full-Page Gate ────────────────────────────────────────────────────────────
 
@@ -208,17 +246,17 @@ export function PremiumGateFull({
   }
 
   const tier = tierQuery.data?.tier ?? 'free';
-  const hasPremiumAccess = isAuthenticated && (tier === 'premium' || tier === 'founding');
+  const cfg = GATE_CONFIGS[variant];
+  const hasAccess = isAuthenticated && hasRequiredAccess(tier, cfg.requiredTier);
 
-  // Premium / founding users see full content
-  if (hasPremiumAccess) {
+  // User has sufficient access — show full content
+  if (hasAccess) {
     return <>{children}</>;
   }
 
-  // Free-tier logged-in users: show upgrade gate (not login gate)
-  const isFreeTier = isAuthenticated && tier === 'free';
-
-  const cfg = GATE_CONFIGS[variant];
+  // Determine upgrade context
+  const isLoggedIn = isAuthenticated;
+  const isCoreTier = isLoggedIn && tier === 'core';
   const loginUrl = getLoginUrl();
 
   return (
@@ -297,35 +335,40 @@ export function PremiumGateFull({
             ))}
           </div>
 
-          {/* CTA buttons — different for free-tier vs unauthenticated */}
+          {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {isFreeTier ? (
-              // Free-tier logged-in: show Stripe upgrade buttons
+            {isLoggedIn ? (
+              // Logged-in users: show Stripe upgrade buttons based on context
               <>
+                {cfg.requiredTier === 'core' && !isCoreTier && (
+                  <button
+                    onClick={() => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin })}
+                    disabled={checkoutMutation.isPending}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed bg-cyan-500 text-black"
+                    style={{ boxShadow: '0 0 20px rgba(34,211,238,0.4)' }}
+                  >
+                    <Zap className="w-4 h-4" />
+                    {checkoutMutation.isPending ? 'Loading...' : 'Unlock Core — $9.99/mo'}
+                  </button>
+                )}
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
                   disabled={checkoutMutation.isPending}
-                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${cfg.accentColor.replace('text-', 'bg-').replace('-400', '-500')} text-black`}
-                  style={{ boxShadow: `0 0 20px ${cfg.glowColor.replace('0.15', '0.4')}` }}
+                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${cfg.requiredTier === 'premium' ? 'bg-cyan-500 text-black' : 'text-white/70 hover:text-white'}`}
+                  style={cfg.requiredTier === 'premium'
+                    ? { boxShadow: `0 0 20px ${cfg.glowColor.replace('0.15', '0.4')}` }
+                    : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
                 >
                   <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : 'Upgrade to Premium — $59/mo'}
+                  {checkoutMutation.isPending ? 'Loading...' : 'Upgrade to Pro — $59/mo'}
                 </button>
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
                   disabled={checkoutMutation.isPending}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-                >
-                  Founding Member — $49/mo for life
-                </button>
-                <button
-                  onClick={() => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin })}
-                  disabled={checkoutMutation.isPending}
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-[#FFD700]/80 hover:text-[#FFD700] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
                 >
-                  Founding Lifetime — $1,200 one-time
+                  Founding Member — $49/mo for life
                 </button>
               </>
             ) : (

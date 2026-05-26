@@ -1,0 +1,1 @@
+ALTER TABLE `users` MODIFY COLUMN `accessTier` enum('free','core','premium','founding') NOT NULL DEFAULT 'free';

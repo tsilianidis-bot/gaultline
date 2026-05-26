@@ -37,7 +37,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         }
 
         // Determine tier from line items / price
-        let tier: 'premium' | 'founding' = 'premium';
+        let tier: 'core' | 'premium' | 'founding' = 'premium';
         if (session.line_items) {
           const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
           const priceId = lineItems.data[0]?.price?.id;

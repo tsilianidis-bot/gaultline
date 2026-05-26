@@ -207,7 +207,7 @@ export async function isCryptoWatchlisted(userId: number, symbol: string) {
 
 // ── Access Tier helpers ─────────────────────────────────────────────
 
-export async function getUserTier(userId: number): Promise<'free' | 'premium' | 'founding'> {
+export async function getUserTier(userId: number): Promise<'free' | 'core' | 'premium' | 'founding'> {
   const db = await getDb();
   if (!db) return 'free';
   const result = await db.select({ accessTier: users.accessTier })
@@ -217,7 +217,7 @@ export async function getUserTier(userId: number): Promise<'free' | 'premium' | 
 
 export async function setUserTier(
   userId: number,
-  tier: 'free' | 'premium' | 'founding'
+  tier: 'free' | 'core' | 'premium' | 'founding'
 ): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
@@ -275,8 +275,10 @@ export async function getPlatformStats() {
     db.select({
       total: count(),
       freeCount: sql<number>`SUM(CASE WHEN ${users.accessTier} = 'free' THEN 1 ELSE 0 END)`,
+      coreCount: sql<number>`SUM(CASE WHEN ${users.accessTier} = 'core' THEN 1 ELSE 0 END)`,
       premiumCount: sql<number>`SUM(CASE WHEN ${users.accessTier} = 'premium' THEN 1 ELSE 0 END)`,
       foundingCount: sql<number>`SUM(CASE WHEN ${users.accessTier} = 'founding' THEN 1 ELSE 0 END)`,
+
     }).from(users),
     db.select({
       total: count(),
@@ -289,6 +291,7 @@ export async function getPlatformStats() {
     users: {
       total: Number(userRows[0]?.total ?? 0),
       free: Number(userRows[0]?.freeCount ?? 0),
+      core: Number(userRows[0]?.coreCount ?? 0),
       premium: Number(userRows[0]?.premiumCount ?? 0),
       founding: Number(userRows[0]?.foundingCount ?? 0),
     },
@@ -406,7 +409,7 @@ export async function updateUserStripe(
   data: {
     stripeCustomerId?: string | null;
     stripeSubscriptionId?: string | null;
-    accessTier?: 'free' | 'premium' | 'founding';
+    accessTier?: 'free' | 'core' | 'premium' | 'founding';
   }
 ): Promise<void> {
   const db = await getDb();
