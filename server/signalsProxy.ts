@@ -96,16 +96,47 @@ let sparklineFetchInProgress = false;
 const SPARKLINE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // ── Date helpers ──────────────────────────────────────────────
+/**
+ * US stock market holidays (NYSE/NASDAQ) — fixed + observed dates.
+ * Covers 2024–2028. Add years as needed.
+ */
+const US_MARKET_HOLIDAYS = new Set([
+  // 2024
+  '2024-01-01', '2024-01-15', '2024-02-19', '2024-03-29', '2024-05-27',
+  '2024-06-19', '2024-07-04', '2024-09-02', '2024-11-28', '2024-12-25',
+  // 2025
+  '2025-01-01', '2025-01-09', '2025-01-20', '2025-02-17', '2025-04-18',
+  '2025-05-26', '2025-06-19', '2025-07-04', '2025-09-01', '2025-11-27',
+  '2025-12-25',
+  // 2026
+  '2026-01-01', '2026-01-19', '2026-02-16', '2026-04-03', '2026-05-25',
+  '2026-06-19', '2026-07-03', '2026-09-07', '2026-11-26', '2026-12-25',
+  // 2027
+  '2027-01-01', '2027-01-18', '2027-02-15', '2027-03-26', '2027-05-31',
+  '2027-06-18', '2027-07-05', '2027-09-06', '2027-11-25', '2027-12-24',
+  // 2028
+  '2028-01-17', '2028-02-21', '2028-04-14', '2028-05-29',
+  '2028-06-19', '2028-07-04', '2028-09-04', '2028-11-23', '2028-12-25',
+]);
+
+/** Returns true if the given YYYY-MM-DD date is a US market holiday or weekend */
+function isNonTradingDay(dateStr: string): boolean {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  const dow = d.getUTCDay();
+  return dow === 0 || dow === 6 || US_MARKET_HOLIDAYS.has(dateStr);
+}
+
 /** Get the most recent COMPLETED trading day.
  * Polygon free plan only provides grouped data for completed sessions.
+ * Skips weekends AND US market holidays.
  */
 function getLastTradingDate(): string {
   const now = new Date();
   const d = new Date(now.getTime());
   // Always go back at least 1 day to get a completed session
   d.setUTCDate(d.getUTCDate() - 1);
-  // Skip weekends (Saturday=6, Sunday=0)
-  while (d.getUTCDay() === 0 || d.getUTCDay() === 6) {
+  // Skip weekends and US holidays
+  while (isNonTradingDay(d.toISOString().slice(0, 10))) {
     d.setUTCDate(d.getUTCDate() - 1);
   }
   return d.toISOString().slice(0, 10); // YYYY-MM-DD
@@ -117,7 +148,8 @@ function getNTradingDaysBefore(dateStr: string, n: number): string {
   let count = 0;
   while (count < n) {
     d.setUTCDate(d.getUTCDate() - 1);
-    if (d.getUTCDay() !== 0 && d.getUTCDay() !== 6) count++;
+    const s = d.toISOString().slice(0, 10);
+    if (!isNonTradingDay(s)) count++;
   }
   return d.toISOString().slice(0, 10);
 }
@@ -235,17 +267,28 @@ function buildFallbackQuotes(): QuoteResult[] {
 
 // ── Core fetch logic (Phase 1 only — prices + volume) ────────
 async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[]; tradeDate: string }> {
-  const tradeDate = getLastTradingDate();
-  const prevDate = getNTradingDaysBefore(tradeDate, 1);
+  // Try up to 5 trading days back — Polygon free tier can lag 1-2 days
+  // and holidays may cause empty grouped results.
+  let tradeDate = getLastTradingDate();
+  let groupedData: PolygonGroupedResponse | null = null;
 
-  // 1. Fetch grouped daily for the latest trading session
-  const groupedUrl = `${POLYGON_BASE}/v2/aggs/grouped/locale/us/market/stocks/${tradeDate}?adjusted=true&apiKey=${apiKey}`;
-  const groupedRes = await fetchWithRetry(groupedUrl);
-  const groupedData = await groupedRes.json() as unknown as PolygonGroupedResponse;
-
-  if (!groupedData.results || !Array.isArray(groupedData.results)) {
-    throw new Error(`Grouped aggs failed: ${JSON.stringify(groupedData).slice(0, 200)}`);
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const url = `${POLYGON_BASE}/v2/aggs/grouped/locale/us/market/stocks/${tradeDate}?adjusted=true&apiKey=${apiKey}`;
+    const res = await fetchWithRetry(url);
+    const data = await res.json() as unknown as PolygonGroupedResponse;
+    if (data.results && Array.isArray(data.results) && data.results.length > 100) {
+      groupedData = data;
+      break;
+    }
+    // Empty or too sparse — go back one more trading day
+    tradeDate = getNTradingDaysBefore(tradeDate, 1);
   }
+
+  if (!groupedData || !groupedData.results) {
+    throw new Error('Grouped aggs returned no data after 5 attempts');
+  }
+
+  const prevDate = getNTradingDaysBefore(tradeDate, 1);
 
   // Build a map of ticker → bar (store globally so any ticker search can use it)
   const barMap = new Map<string, PolygonAggBar>();
