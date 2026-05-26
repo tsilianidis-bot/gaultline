@@ -666,15 +666,15 @@
 - [x] Create public /pressure-index page (no login required, live gauge)
 
 ## Pricing Architecture Refinement (v2)
-- [ ] Rename "Observer" → "Preview Access" in MarketingSite pricing
-- [ ] Update Free tier features: limited stock/crypto previews, daily macro snapshot, teaser dashboards, limited searches, public market briefings
-- [ ] Add "Unlock Full Intelligence" CTA to free tier card
-- [ ] Update Core tier positioning copy: "Mobile-first market intelligence"
-- [ ] Update Core features: limited signals, crypto signals, portfolio, alt rotation, daily briefings, volatility monitoring, push alerts, watchlist, limited Aftershock alerts, macro snapshot feed
-- [ ] Add "MOST POPULAR ENTRY" label to Core tier card
-- [ ] Update Pro tier positioning: "Institutional-grade intelligence" with full feature list
-- [ ] Update Founding tier: add scarcity counter, "Founding Access Closing Soon", "Limited Founding Cohort" badge
+- [x] Rename "Observer" → "Preview Access" in MarketingSite pricing
+- [x] Update Free tier features: limited stock/crypto previews, daily macro snapshot, teaser dashboards, limited searches, public market briefings
+- [x] Add "Unlock Full Intelligence" CTA to free tier card
+- [x] Update Core tier positioning copy: "Mobile-first market intelligence"
+- [x] Update Core features: limited signals, crypto signals, portfolio, alt rotation, daily briefings, volatility monitoring, push alerts, watchlist, limited Aftershock alerts, macro snapshot feed
+- [x] Add "MOST POPULAR ENTRY" label to Core tier card
+- [x] Update Pro tier positioning: "Institutional-grade intelligence" with full feature list
+- [x] Update Founding tier: add scarcity counter, "Founding Access Closing Soon", "Limited Founding Cohort" badge
 - [x] Add annual billing toggle to pricing section (Core Annual, Pro Annual, 20% savings)
 - [x] Expand /pressure-index page: market regime summary, macro explanation, teaser premium cards, locked premium cards, CTAs
 - [x] Strengthen premium psychology: glass cards, glow effects, lock overlays, animated transitions in PremiumGate
-- [ ] Update UserAccount.tsx tier configs to match new positioning
+- [x] Update UserAccount.tsx tier configs to match new positioning
