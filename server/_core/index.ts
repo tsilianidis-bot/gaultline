@@ -106,6 +106,7 @@ async function startServer() {
   registerSEORoutes(app);
 
   // Scheduled cron endpoints — must be before tRPC / Vite fallthrough
+  app.post("/api/scheduled/ping", (_req, res) => res.json({ ok: true }));
   app.post("/api/scheduled/publish-blog", handleScheduledPublishBlog);
   app.post("/api/scheduled/x-post-scheduled", handleScheduledXPost);
   app.post("/api/scheduled/x-news-monitor", handleXNewsMonitor);
