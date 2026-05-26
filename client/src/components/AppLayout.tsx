@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -38,54 +38,67 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "CORE",
     items: [
-      { id: "dashboard",  label: "Dashboard",    shortLabel: "Dash",    icon: LayoutDashboard, path: "/app" },
-      { id: "pressure",   label: "Pressure",     shortLabel: "Pressure",icon: Gauge,           path: "/app/pressure" },
-      { id: "scores",     label: "Scores",       shortLabel: "Scores",  icon: Activity,        path: "/app/scores" },
-      { id: "portfolio",  label: "Portfolio",    shortLabel: "Port",    icon: Briefcase,       path: "/app/portfolio" },
+      { id: "dashboard",    label: "Dashboard",      shortLabel: "Dash",    icon: LayoutDashboard, path: "/app" },
+      { id: "pressure",     label: "Pressure Engine", shortLabel: "Pressure",icon: Gauge,           path: "/app/pressure" },
+      { id: "scores",       label: "Scores",          shortLabel: "Scores",  icon: Activity,        path: "/app/scores" },
+      { id: "portfolio",    label: "Portfolio",        shortLabel: "Port",    icon: Briefcase,       path: "/app/portfolio" },
+      { id: "track-record", label: "Track Record",     shortLabel: "Track",   icon: Trophy,          path: "/app/track-record" },
     ],
   },
   {
     label: "INTELLIGENCE",
     items: [
-      { id: "diagnostic", label: "Diagnostic AI",shortLabel: "AI Diag", icon: Cpu,             path: "/app/diagnostic" },
-      { id: "ai-watch",   label: "AI Watch",     shortLabel: "AI Watch",icon: Brain,           path: "/app/ai-watch" },
-      { id: "signals",    label: "Signals",      shortLabel: "Signals", icon: Radio,           path: "/app/signals" },
-      { id: "crypto",          label: "Crypto Intel",    shortLabel: "Crypto",  icon: Bitcoin,    path: "/app/crypto-search" },
-      { id: "crypto-signals",   label: "Crypto Signals",  shortLabel: "CSig",    icon: BarChart3,   path: "/app/crypto-signals" },
-      { id: "crypto-watchlist", label: "Crypto Watch", shortLabel: "CWatch", icon: Bookmark,       path: "/app/crypto-watchlist" },
-      { id: "aftershock",       label: "Aftershock™",  shortLabel: "Shock",  icon: Waves,           path: "/app/aftershock" },
-      { id: "alt-rotation",     label: "Alt Rotation™", shortLabel: "AltRot", icon: RotateCcw,       path: "/app/alt-rotation" },
+      { id: "signals",          label: "Signals",         shortLabel: "Signals", icon: Radio,     path: "/app/signals" },
+      { id: "diagnostic",       label: "Diagnostic AI",   shortLabel: "AI Diag", icon: Cpu,       path: "/app/diagnostic" },
+      { id: "ai-watch",         label: "AI Watch",        shortLabel: "AI Watch",icon: Brain,     path: "/app/ai-watch" },
+      { id: "crypto",           label: "Crypto Intel",    shortLabel: "Crypto",  icon: Bitcoin,   path: "/app/crypto-search" },
+      { id: "crypto-signals",   label: "Crypto Signals",  shortLabel: "CSig",    icon: BarChart3, path: "/app/crypto-signals" },
+      { id: "crypto-watchlist", label: "Crypto Watchlist",shortLabel: "CWatch",  icon: Bookmark,  path: "/app/crypto-watchlist" },
     ],
   },
   {
     label: "ANALYSIS",
     items: [
-      { id: "charts",     label: "Charts",       shortLabel: "Charts",  icon: BarChart2,       path: "/app/charts" },
-      { id: "scenarios",  label: "Scenarios",    shortLabel: "Scen",    icon: TrendingUp,      path: "/app/scenarios" },
-      { id: "analogs",    label: "Analogs",      shortLabel: "Analogs", icon: Clock,           path: "/app/analogs" },
-      { id: "simulate",   label: "Simulate",     shortLabel: "Sim",     icon: Zap,             path: "/app/simulate" },
+      { id: "charts",      label: "Charts",        shortLabel: "Charts",  icon: BarChart2,  path: "/app/charts" },
+      { id: "scenarios",   label: "Scenarios",     shortLabel: "Scen",    icon: TrendingUp, path: "/app/scenarios" },
+      { id: "analogs",     label: "Analogs",       shortLabel: "Analogs", icon: Clock,      path: "/app/analogs" },
+      { id: "simulate",    label: "Simulate",      shortLabel: "Sim",     icon: Zap,        path: "/app/simulate" },
+      { id: "alt-rotation",label: "Alt Rotation™", shortLabel: "AltRot",  icon: RotateCcw,  path: "/app/alt-rotation" },
+      { id: "aftershock",  label: "Aftershock™",   shortLabel: "Shock",   icon: Waves,      path: "/app/aftershock" },
+    ],
+  },
+  {
+    label: "CONTENT",
+    items: [
+      { id: "blog",   label: "Blog",         shortLabel: "Blog",   icon: Newspaper, path: "/app/blog" },
+      { id: "report", label: "Daily Report", shortLabel: "Report", icon: FileText,  path: "/app/report" },
+      { id: "guide",  label: "Guide",        shortLabel: "Guide",  icon: BookOpen,  path: "/app/guide" },
     ],
   },
   {
     label: "MANAGE",
     items: [
-      { id: "watchlist",  label: "Watchlist",    shortLabel: "Watch",   icon: Bell,            path: "/app/watchlist" },
-      { id: "alerts",     label: "Alerts",       shortLabel: "Alerts",  icon: AlertTriangle,   path: "/app/alerts" },
-      { id: "report",     label: "Report",       shortLabel: "Report",  icon: FileText,        path: "/app/report" },
-      { id: "guide",      label: "Guide",        shortLabel: "Guide",   icon: BookOpen,        path: "/app/guide" },
-      { id: "blog",       label: "Briefings",    shortLabel: "Blog",    icon: FileText,        path: "/blog" },
-      { id: "x-posts",    label: "X Posts",       shortLabel: "X Posts", icon: Zap,             path: "/app/x-posts" },
-      { id: "x-post-queue", label: "Post Queue",   shortLabel: "Queue",   icon: Zap,             path: "/app/x-post-queue" },
-      { id: "account",    label: "Account",      shortLabel: "Acct",    icon: User,            path: "/app/account" },
+      { id: "watchlist", label: "Watchlist", shortLabel: "Watch",  icon: Bell,          path: "/app/watchlist" },
+      { id: "alerts",    label: "Alerts",    shortLabel: "Alerts", icon: AlertTriangle, path: "/app/alerts" },
+      { id: "account",   label: "Account",   shortLabel: "Acct",   icon: User,          path: "/app/account" },
     ],
   },
+];
+
+// Admin-only nav items (appended at runtime if user is admin)
+const ADMIN_NAV_ITEMS: NavItem[] = [
+  { id: "x-posts",      label: "X Posts",     shortLabel: "X Posts", icon: Zap,    path: "/app/x-posts" },
+  { id: "x-post-queue", label: "Post Queue",   shortLabel: "Queue",   icon: Settings, path: "/app/x-post-queue" },
+  { id: "admin-blog",   label: "Admin Blog",   shortLabel: "A.Blog",  icon: Newspaper, path: "/app/admin/blog" },
+  { id: "admin-users",  label: "Users",        shortLabel: "Users",   icon: Shield, path: "/app/admin/users" },
+  { id: "admin-portal", label: "Admin Portal", shortLabel: "Admin",   icon: Shield, path: "/app/admin" },
 ];
 
 // Flat list for convenience
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
 // Mobile primary tabs (bottom bar — 5 most important)
-const MOBILE_PRIMARY_IDS = ["dashboard", "portfolio", "diagnostic", "signals", "watchlist"];
+const MOBILE_PRIMARY_IDS = ["dashboard", "signals", "portfolio", "blog", "watchlist"];
 const MOBILE_PRIMARY = ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id));
 
 interface AppLayoutProps {
@@ -405,12 +418,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           overflowX: 'auto',
           scrollbarWidth: 'none',
         }}>
-          {NAV_GROUPS.map((group) =>
-            // Inject admin item into MANAGE group for admins
-            group.label === "MANAGE" && isAdmin
-              ? { ...group, items: [...group.items, { id: "admin-users", label: "Users", shortLabel: "Users", icon: Shield, path: "/app/admin/users" }] }
-              : group
-          ).map((group, gi) => (
+          {[...NAV_GROUPS, ...(isAdmin ? [{ label: "ADMIN", items: ADMIN_NAV_ITEMS }] : [])].map((group, gi) => (
             <div key={group.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
               {/* Group divider (not before first group) */}
               {gi > 0 && (
@@ -616,11 +624,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
 
             {/* Groups in drawer */}
-            {NAV_GROUPS.map(group =>
-              group.label === "MANAGE" && isAdmin
-                ? { ...group, items: [...group.items, { id: "admin-users", label: "Users", shortLabel: "Users", icon: Shield, path: "/app/admin/users" }] }
-                : group
-            ).map(group => (
+            {[...NAV_GROUPS, ...(isAdmin ? [{ label: "ADMIN", items: ADMIN_NAV_ITEMS }] : [])].map(group => (
               <div key={group.label} style={{ marginBottom: 16 }}>
                 <div style={{
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px',

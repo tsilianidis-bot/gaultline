@@ -183,6 +183,9 @@ function Router() {
               <Route path="/app/x-post-queue" component={XPostQueue} />
               <Route path="/app/alt-rotation" component={AltRotation} />
               <Route path="/app/account" component={UserAccount} />
+              <Route path="/app/blog/:slug" component={BlogPost} />
+              <Route path="/app/blog" component={Blog} />
+              <Route path="/app/track-record" component={TrackRecord} />
               <Route component={Dashboard} />
             </Switch>
           </Suspense>
