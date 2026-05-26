@@ -590,7 +590,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <>
           {/* Backdrop */}
           <div
-            className="lg:hidden"
             onClick={() => setMoreOpen(false)}
             style={{
               position: 'fixed', inset: 0, zIndex: 60,
@@ -600,7 +599,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
           />
           {/* Drawer */}
           <div
-            className="lg:hidden"
             style={{
               position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 70,
               background: 'rgba(10, 12, 16, 0.99)',
