@@ -14,6 +14,7 @@ import DataIntegrity from "@/components/DataIntegrity";
 import HomeCryptoSection from "@/components/HomeCryptoSection";
 import WaitlistSection from "@/components/WaitlistSection";
 import HomeStockIntelSection from "@/components/HomeStockIntelSection";
+import { CryptoPorchPanel, StockPorchPanel } from "@/components/DashboardSearchPanels";
 import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
@@ -971,6 +972,12 @@ export default function Dashboard() {
             </div>
           </div>
         </details>
+
+        {/* ── Cinematic Search Panels (Stock + Crypto, porch-gated) ─── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 560ms both' }}>
+          <StockPorchPanel />
+          <CryptoPorchPanel />
+        </div>
 
         {/* Real-Time Market & Stock Intelligence */}
         <HomeStockIntelSection />

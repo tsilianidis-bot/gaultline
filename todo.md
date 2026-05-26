@@ -633,3 +633,10 @@
 - [x] Register /track-record route in App.tsx
 - [x] Add TRACK RECORD link to marketing site desktop nav
 - [x] Add /track-record and /blog to sitemap.xml
+
+## Dashboard Cinematic Search Panels (Stock + Crypto Porch)
+- [x] CryptoPorchPanel — SVG arc gauge, quick-select chips (BTC/ETH/SOL/AVAX/RNDR/HYPE), blurred demo preview, porch upgrade overlay
+- [x] StockPorchPanel — SVG arc gauge, BUY/HOLD/SELL action badge, quick-select chips (NVDA/AAPL/TSLA/SPY/XLU/ARKK), blurred demo preview, porch upgrade overlay
+- [x] Side-by-side grid layout integrated into Dashboard.tsx above HomeStockIntelSection
+- [x] Cinematic reveal animation (560ms stagger)
+- [x] Vitest tests for demo data integrity (304 tests passing)
