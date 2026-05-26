@@ -431,7 +431,7 @@ function FeaturesSection() {
             >
               <div className="text-[#00D4FF]/50 text-xl mb-3 group-hover:text-[#00D4FF] transition-colors">{f.icon}</div>
               <h3 className="text-white font-semibold text-sm mb-2 leading-snug">{f.title}</h3>
-              <p className="text-[#64748B] text-xs leading-relaxed">{f.desc}</p>
+              <p className="text-[#64748B] text-sm leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -673,7 +673,7 @@ function AudienceSection() {
             <div key={i} className="p-6 border border-[rgba(255,255,255,0.07)] rounded-lg bg-[#050608] hover:border-[rgba(0,212,255,0.2)] transition-all duration-300">
               <div className="mb-4">
                 <div className="text-white font-bold text-lg">{p.role}</div>
-                <div className="text-[#00D4FF]/60 text-xs font-mono tracking-wider mt-0.5">{p.sub}</div>
+                <div className="text-[#00D4FF]/60 text-sm font-mono tracking-wider mt-0.5">{p.sub}</div>
               </div>
               <p className="text-[#A8B8CC] text-sm leading-relaxed mb-4">{p.desc}</p>
               <div className="flex flex-wrap gap-2">
@@ -897,11 +897,11 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                 {'priceSub' in tier && tier.priceSub && (
                   <div className="text-[10px] font-mono text-[#64748B] mb-1">{(tier as {priceSub: string}).priceSub}</div>
                 )}
-                <div className="text-[#A8B8CC] text-xs leading-relaxed">{tier.desc}</div>
+                <div className="text-[#A8B8CC] text-sm leading-relaxed">{tier.desc}</div>
               </div>
               <ul className="space-y-2 mb-6">
                 {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-xs text-[#A8B8CC]">
+                  <li key={f} className="flex items-start gap-2 text-sm text-[#A8B8CC]">
                     <span className={`mt-0.5 flex-shrink-0 ${tier.featured ? "text-[#FFD700]" : "text-[#00D4FF]"}`}>✓</span>
                     {f}
                   </li>
@@ -932,7 +932,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
           ))}
         </div>
 
-        <p className="text-center text-[#64748B] text-xs font-mono mt-8">
+        <p className="text-center text-[#64748B] text-sm font-mono mt-8">
           Institutional-grade macro intelligence. Founding pricing locks at signup. Cancel anytime.
         </p>
       </div>
@@ -1027,7 +1027,7 @@ function FoundingAccessForm({ formRef }: { formRef: React.RefObject<HTMLDivEleme
               />
             </div>
             {error && (
-              <div className="text-[#FF2D55] text-xs font-mono border border-[#FF2D55]/20 bg-[#FF2D55]/5 rounded px-4 py-3">
+              <div className="text-[#FF2D55] text-sm font-mono border border-[#FF2D55]/20 bg-[#FF2D55]/5 rounded px-4 py-3">
                 {error}
               </div>
             )}
@@ -1064,7 +1064,7 @@ function Footer() {
               <span className="font-mono text-sm font-bold tracking-[0.3em] text-white">FAULTLINE</span>
             </div>
             <div className="text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/40 mb-4">SYSTEMIC RISK INTELLIGENCE</div>
-            <p className="text-[#64748B] text-xs leading-relaxed">
+            <p className="text-[#64748B] text-sm leading-relaxed">
               Real-time macroeconomic and systemic-risk intelligence. FAULTLINE converts live Treasury, inflation, liquidity, credit, and AI concentration data into a unified pressure index — before markets react.
             </p>
           </div>
@@ -1075,7 +1075,7 @@ function Footer() {
             <ul className="space-y-2">
               {["Pressure Index™", "Regime Detection", "Crash Analog Engine", "Live Risk Alerts", "Aftershock Engine™"].map((item) => (
                 <li key={item}>
-                  <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">
+                  <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">
                     {item}
                   </a>
                 </li>
@@ -1089,7 +1089,7 @@ function Footer() {
             <ul className="space-y-2">
               {["Treasury & Bond Stress", "Liquidity & Credit", "AI Concentration", "Stock Intelligence", "Crypto Intelligence"].map((item) => (
                 <li key={item}>
-                  <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">
+                  <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">
                     {item}
                   </a>
                 </li>
@@ -1102,14 +1102,14 @@ function Footer() {
             <div className="text-[9px] font-mono tracking-[0.3em] text-[#64748B] mb-4">ACCESS</div>
             <ul className="space-y-2">
               <li>
-                <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" className="text-[#00D4FF] hover:text-[#00D4FF]/80 text-xs transition-colors font-mono">
+                <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" className="text-[#00D4FF] hover:text-[#00D4FF]/80 text-sm transition-colors font-mono">
                   Launch Platform →
                 </a>
               </li>
-              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">Request Founding Access</a></li>
-              <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">Pricing Tiers</a></li>
-              <li><a href="mailto:info@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">General Inquiries</a></li>
-              <li><a href="mailto:admin@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-xs transition-colors">Admin</a></li>
+              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Request Founding Access</a></li>
+              <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
+              <li><a href="mailto:info@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">General Inquiries</a></li>
+              <li><a href="mailto:admin@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Admin</a></li>
             </ul>
           </div>
         </div>

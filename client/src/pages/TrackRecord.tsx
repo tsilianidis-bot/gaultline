@@ -155,10 +155,10 @@ function RegimeDistribution({ stats }: { stats: { criticalMonths: number; highRi
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1">
         {segments.map(s => (
-          <div key={s.label} className="flex items-center gap-1.5 text-xs text-zinc-400">
+          <div key={s.label} className="flex items-center gap-1.5 text-sm text-zinc-400">
             <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: s.color }} />
             <span>{s.label}</span>
-            <span className="text-zinc-500">({s.count})</span>
+            <span className="text-zinc-400">({s.count})</span>
           </div>
         ))}
       </div>
@@ -236,7 +236,7 @@ export default function TrackRecord() {
           <Link href="/" className="text-white font-bold tracking-widest text-sm hover:text-zinc-300 transition-colors">
             FAULTLINE
           </Link>
-          <nav className="flex items-center gap-6 text-xs text-zinc-400">
+          <nav className="flex items-center gap-6 text-sm text-zinc-400">
             <Link href="/pressure" className="hover:text-white transition-colors">Pressure Engine</Link>
             <Link href="/blog" className="hover:text-white transition-colors">Intelligence Briefings</Link>
             <Link href="/app" className="hover:text-white transition-colors border border-zinc-700 px-3 py-1.5 rounded hover:border-zinc-500">
@@ -249,7 +249,7 @@ export default function TrackRecord() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         {/* Hero */}
         <div className="mb-10">
-          <div className="inline-flex items-center gap-2 text-xs text-red-400 border border-red-900/50 bg-red-950/20 px-3 py-1 rounded-full mb-4">
+          <div className="inline-flex items-center gap-2 text-sm text-red-400 border border-red-900/50 bg-red-950/20 px-3 py-1 rounded-full mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
             HISTORICAL RECORD
           </div>
@@ -262,7 +262,7 @@ export default function TrackRecord() {
           <p className="text-zinc-400 text-lg max-w-2xl leading-relaxed mb-4">
             Every month from January 2000 to today, re-scored using the <strong className="text-zinc-200">exact same six-vector engine</strong> that powers FAULTLINE's live readings — applied to publicly available FRED macroeconomic data, with no hindsight and no curve-fitting.
           </p>
-          <p className="text-zinc-500 text-base max-w-2xl leading-relaxed">
+          <p className="text-zinc-400 text-base max-w-2xl leading-relaxed">
             The result is a 25-year stress test of the methodology itself. If the engine is sound, it should have flagged the 2008 financial crisis at CRITICAL, the dot-com bust at HIGH RISK, and COVID at HIGH RISK — while staying calm during the long expansions in between. It did.
           </p>
         </div>
@@ -270,25 +270,25 @@ export default function TrackRecord() {
         {/* Why This Matters */}
         <div className="mb-10 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
-            <div className="text-xs font-mono text-cyan-400 tracking-widest uppercase mb-2">Validation, Not Prediction</div>
+            <div className="text-sm font-mono text-cyan-400 tracking-widest uppercase mb-2">Validation, Not Prediction</div>
             <p className="text-sm text-zinc-400 leading-relaxed">
               The backfill is not a forecast. It is a <strong className="text-zinc-200">retrospective audit</strong>: does the same methodology that runs today produce historically coherent risk readings when applied to past data? The answer determines whether the live engine can be trusted — or whether it is just a dashboard that looks good in hindsight.
             </p>
           </div>
           <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
-            <div className="text-xs font-mono text-orange-400 tracking-widest uppercase mb-2">Regime Context for Live Readings</div>
+            <div className="text-sm font-mono text-orange-400 tracking-widest uppercase mb-2">Regime Context for Live Readings</div>
             <p className="text-sm text-zinc-400 leading-relaxed">
               When the live engine reads 65 (HIGH RISK) today, that number is only meaningful if you know how rare it is. The historical record shows HIGH RISK or CRITICAL has occurred in just <strong className="text-zinc-200">13% of months</strong> over 25 years — reserved for the dot-com bust, the GFC, the European debt crisis, and COVID. A current HIGH RISK reading is not noise.
             </p>
           </div>
           <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
-            <div className="text-xs font-mono text-yellow-400 tracking-widest uppercase mb-2">No Survivorship Bias</div>
+            <div className="text-sm font-mono text-yellow-400 tracking-widest uppercase mb-2">No Survivorship Bias</div>
             <p className="text-sm text-zinc-400 leading-relaxed">
               All inputs are <strong className="text-zinc-200">lagging FRED economic releases</strong> — Moody's Baa spreads, Treasury yields, CPI, unemployment — not real-time market prices. The engine cannot see the future, and the backfill cannot be accused of being fitted to known outcomes. The same data that was available at the time produces the same score.
             </p>
           </div>
           <div className="p-5 rounded-lg border border-zinc-800 bg-zinc-900/30">
-            <div className="text-xs font-mono text-emerald-400 tracking-widest uppercase mb-2">Calibrated, Not Alarmist</div>
+            <div className="text-sm font-mono text-emerald-400 tracking-widest uppercase mb-2">Calibrated, Not Alarmist</div>
             <p className="text-sm text-zinc-400 leading-relaxed">
               The distribution matters as much as the peaks. <strong className="text-zinc-200">56% of months since 2000 scored ELEVATED or below</strong>, and only 8 months ever reached CRITICAL. The engine is not a perma-bear alarm — it reserves its highest readings for genuine systemic dislocations, which makes those readings actionable when they occur.
             </p>
@@ -305,7 +305,7 @@ export default function TrackRecord() {
           <strong className="text-zinc-300"> Market Breadth</strong> (unemployment, 10Y yield context), and
           <strong className="text-zinc-300"> Speculative Bubble Exposure</strong> (rate and credit context).
           Each vector scores 0–100 and is weighted into the composite. A crisis amplifier applies a score floor when both liquidity and credit vectors are simultaneously in severe territory — preventing the weighted average from understating genuine systemic crises like 2008, where the Fed's emergency rate cuts would otherwise have suppressed the yield curve vector.
-          <span className="block mt-2 text-zinc-500 text-xs">
+          <span className="block mt-2 text-zinc-400 text-sm">
             Data source: Federal Reserve Economic Data (FRED). Moody's Baa Corporate Bond Spread used as primary credit proxy. HY spread estimated as Baa10Y × 1.8 + 1.5 for pre-2023 periods where direct HY data is unavailable.
           </span>
         </div>
@@ -321,19 +321,19 @@ export default function TrackRecord() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
             <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/40">
               <div className="text-2xl font-bold text-white">{stats.totalMonths}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">Monthly Readings</div>
+              <div className="text-sm text-zinc-400 mt-0.5">Monthly Readings</div>
             </div>
             <div className="p-4 rounded-lg border border-red-900/50 bg-red-950/20">
               <div className="text-2xl font-bold text-red-400">{stats.criticalMonths + stats.highRiskMonths}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">HIGH RISK + CRITICAL Months</div>
+              <div className="text-sm text-zinc-400 mt-0.5">HIGH RISK + CRITICAL Months</div>
             </div>
             <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/40">
               <div className="text-2xl font-bold text-white">{stats.avgPressure}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">Average Pressure Score</div>
+              <div className="text-sm text-zinc-400 mt-0.5">Average Pressure Score</div>
             </div>
             <div className="p-4 rounded-lg border border-orange-900/50 bg-orange-950/20">
               <div className="text-2xl font-bold text-orange-400">{stats.maxPressure}</div>
-              <div className="text-xs text-zinc-500 mt-0.5">Peak Score (Oct–Nov 2008)</div>
+              <div className="text-sm text-zinc-400 mt-0.5">Peak Score (Oct–Nov 2008)</div>
             </div>
           </div>
         ) : null}
@@ -353,7 +353,7 @@ export default function TrackRecord() {
             <div className="flex items-center gap-1 flex-wrap">
               <button
                 onClick={() => setActiveYear(null)}
-                className={`text-xs px-2 py-1 rounded border transition-colors ${!activeYear ? 'border-zinc-500 text-white bg-zinc-800' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}`}
+                className={`text-sm px-2 py-1 rounded border transition-colors ${!activeYear ? 'border-zinc-500 text-white bg-zinc-800' : 'border-zinc-700 text-zinc-400 hover:text-zinc-300'}`}
               >
                 All
               </button>
@@ -361,7 +361,7 @@ export default function TrackRecord() {
                 <button
                   key={y}
                   onClick={() => setActiveYear(activeYear === y ? null : y)}
-                  className={`text-xs px-2 py-1 rounded border transition-colors ${activeYear === y ? 'border-zinc-500 text-white bg-zinc-800' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}`}
+                  className={`text-sm px-2 py-1 rounded border transition-colors ${activeYear === y ? 'border-zinc-500 text-white bg-zinc-800' : 'border-zinc-700 text-zinc-400 hover:text-zinc-300'}`}
                 >
                   {y}
                 </button>
@@ -373,13 +373,13 @@ export default function TrackRecord() {
           ) : (
             <PressureTimeline data={filteredData} />
           )}
-          <p className="text-xs text-zinc-600 mt-2">Hover bars for details. Red dashed lines mark major crisis events.</p>
+          <p className="text-sm text-zinc-400 mt-2">Hover bars for details. Red dashed lines mark major crisis events.</p>
         </div>
 
         {/* Crisis callouts */}
         <div className="mb-12">
           <h2 className="text-lg font-semibold text-white mb-2">Crisis Period Analysis</h2>
-          <p className="text-sm text-zinc-500 mb-6">
+          <p className="text-sm text-zinc-400 mb-6">
             How the FAULTLINE model scored each major market crisis against actual outcomes.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -389,16 +389,16 @@ export default function TrackRecord() {
                 <div key={c.period} className={`p-5 rounded-lg border ${rc.border} ${rc.bg}`}>
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <span className="text-xs text-zinc-500 font-mono">{c.period}</span>
+                      <span className="text-sm text-zinc-400 font-mono">{c.period}</span>
                       <h3 className="text-base font-semibold text-white mt-0.5">{c.label}</h3>
                     </div>
                     <div className="text-right flex-shrink-0 ml-4">
                       <div className={`text-2xl font-bold ${rc.text}`}>{c.peak}</div>
-                      <div className={`text-xs font-medium ${rc.text}`}>{c.regime}</div>
+                      <div className={`text-sm font-medium ${rc.text}`}>{c.regime}</div>
                     </div>
                   </div>
                   <p className="text-sm text-zinc-400 leading-relaxed mb-3">{c.description}</p>
-                  <div className="text-xs text-zinc-500 border-t border-zinc-800 pt-2 mt-2">
+                  <div className="text-sm text-zinc-400 border-t border-zinc-800 pt-2 mt-2">
                     <strong className="text-zinc-400">Actual outcome:</strong> {c.outcome}
                   </div>
                 </div>
@@ -410,11 +410,11 @@ export default function TrackRecord() {
         {/* Monthly table */}
         <div className="mb-12">
           <h2 className="text-lg font-semibold text-white mb-2">Monthly Pressure Index Table</h2>
-          <p className="text-sm text-zinc-500 mb-4">
+          <p className="text-sm text-zinc-400 mb-4">
             Complete monthly record from January 2000 to present. Showing most recent first.
           </p>
           <div className="overflow-x-auto rounded-lg border border-zinc-800">
-            <table className="w-full text-xs">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-900/80">
                   <th className="text-left px-3 py-2.5 text-zinc-400 font-medium">Month</th>
@@ -447,7 +447,7 @@ export default function TrackRecord() {
                           <span className={`font-bold ${rc.text}`}>{r.overallPressure}</span>
                         </td>
                         <td className="px-3 py-2">
-                          <span className={`text-xs font-medium ${rc.text}`}>{r.regime}</span>
+                          <span className={`text-sm font-medium ${rc.text}`}>{r.regime}</span>
                         </td>
                         <td className="px-3 py-2 text-right text-zinc-400 hidden sm:table-cell">
                           {r.baaSpread != null ? `${r.baaSpread.toFixed(2)}%` : "—"}
@@ -489,7 +489,7 @@ export default function TrackRecord() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-800/50 mt-16 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-zinc-400">
           <span>© 2025 FAULTLINE. All rights reserved.</span>
           <div className="flex items-center gap-4">
             <Link href="/legal" className="hover:text-zinc-400 transition-colors">Privacy Policy</Link>

@@ -707,7 +707,7 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
 
       {/* Header + tabs */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', letterSpacing: '0.15em' }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#4B5563', letterSpacing: '0.15em' }}>
           SNAPSHOT VIEW
         </div>
         <div style={{ display: 'flex', gap: '4px' }}>
@@ -718,7 +718,7 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
               style={{
                 padding: '4px 10px',
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '9px',
+                fontSize: '13px',
                 letterSpacing: '0.1em',
                 cursor: 'pointer',
                 borderRadius: '3px',
@@ -749,19 +749,19 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
 
         {/* Pressure score */}
         <div style={{ textAlign: 'center', minWidth: '72px' }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '4px' }}>PRESSURE</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '4px' }}>PRESSURE</div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: '36px', color: colors.primary, textShadow: `0 0 16px ${colors.glow}`, lineHeight: 1 }}>
             {data.overallPressure}
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>/100</div>
-          <div style={{ marginTop: '6px', padding: '2px 8px', background: colors.bg, border: `1px solid ${colors.primary}33`, borderRadius: '3px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: colors.primary, letterSpacing: '0.1em', display: 'inline-block' }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563' }}>/100</div>
+          <div style={{ marginTop: '6px', padding: '2px 8px', background: colors.bg, border: `1px solid ${colors.primary}33`, borderRadius: '3px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: colors.primary, letterSpacing: '0.1em', display: 'inline-block' }}>
             {data.level.toUpperCase()}
           </div>
         </div>
 
         {/* Top vectors */}
         <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '8px' }}>TOP RISK VECTORS</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '8px' }}>TOP RISK VECTORS</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {topVectors.map((v) => {
               const vc = getLevelColor(v.level);
@@ -771,7 +771,7 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
                   <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${v.score}%`, background: vc.primary, borderRadius: '2px' }} />
                   </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.06em', minWidth: '120px' }}>{v.label.toUpperCase()}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#6B7280', letterSpacing: '0.06em', minWidth: '120px' }}>{v.label.toUpperCase()}</div>
                 </div>
               );
             })}
@@ -781,7 +781,7 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
         {/* Top alert */}
         {topAlert && (
           <div style={{ maxWidth: '220px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '8px' }}>ACTIVE ALERT</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '8px' }}>ACTIVE ALERT</div>
             <div style={{
               padding: '8px 10px',
               background: `${SEVERITY_COLORS[topAlert.severity]}08`,
@@ -789,7 +789,7 @@ function SnapshotPeriodView({ data }: { data: { overallPressure: number; level: 
               borderLeft: `3px solid ${SEVERITY_COLORS[topAlert.severity]}`,
               borderRadius: '4px',
             }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: SEVERITY_COLORS[topAlert.severity], fontWeight: 700, letterSpacing: '0.06em', marginBottom: '3px' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: SEVERITY_COLORS[topAlert.severity], fontWeight: 700, letterSpacing: '0.06em', marginBottom: '3px' }}>
                 {topAlert.title}
               </div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', lineHeight: 1.4 }}>

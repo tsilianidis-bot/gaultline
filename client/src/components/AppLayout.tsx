@@ -222,7 +222,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#F0F4FF', letterSpacing: '0.08em', lineHeight: 1 }}>
                 FAULTLINE
               </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#6B7280', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                 Systemic Risk Intelligence
               </div>
             </div>
@@ -233,7 +233,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             {isSimulating && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 7px', background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.3)', borderRadius: '3px' }}>
                 <Zap size={9} style={{ color: '#FF9500' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#FF9500', letterSpacing: '0.1em' }}>SIM</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#FF9500', letterSpacing: '0.1em' }}>SIM</span>
               </div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -287,7 +287,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   }}>
                     <User size={10} style={{ color: '#00D4FF' }} />
                   </div>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#9CA3AF', letterSpacing: '0.08em', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#9CA3AF', letterSpacing: '0.08em', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {authUser.name?.split(' ')[0] ?? 'USER'}
                   </span>
                   <ChevronDown size={10} style={{ color: '#6B7280', flexShrink: 0 }} />
@@ -312,7 +312,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#E2E8F0', fontWeight: 600 }}>
                           {authUser.name ?? 'FAULTLINE USER'}
                         </div>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#6B7280', marginTop: '2px' }}>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
                           {authUser.email ?? ''}
                         </div>
                       </div>
@@ -383,7 +383,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   borderRadius: '20px',
                   color: '#00D4FF',
                   fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '9px', letterSpacing: '0.1em',
+                  fontSize: '13px', letterSpacing: '0.1em',
                   textDecoration: 'none',
                   transition: 'all 0.15s ease',
                 }}
@@ -424,7 +424,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               {/* Group label */}
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '8px',
+                fontSize: '12px',
                 color: '#374151',
                 letterSpacing: '0.18em',
                 textTransform: 'uppercase',
@@ -478,7 +478,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     {tab.id === 'watchlist' && breachCount > 0 && (
                       <span style={{
                         background: '#FF2D55', color: '#fff', borderRadius: '8px',
-                        fontSize: '7px', fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: '11px', fontFamily: "'IBM Plex Mono', monospace",
                         padding: '0 4px', lineHeight: '14px', minWidth: '14px',
                         textAlign: 'center', display: 'inline-block',
                       }}>{breachCount}</span>
@@ -543,13 +543,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   <span style={{
                     position: 'absolute', top: '-4px', right: '-5px',
                     background: '#FF2D55', color: '#fff', borderRadius: '50%',
-                    fontSize: '7px', fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: '11px', fontFamily: "'IBM Plex Mono', monospace",
                     width: '13px', height: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: '0 0 8px rgba(255,45,85,0.8)', animation: 'blink-alert 2s ease-in-out infinite',
                   }}>{breachCount}</span>
                 )}
               </div>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 {tab.shortLabel}
               </span>
             </button>
@@ -570,7 +570,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           }}
         >
           <MoreHorizontal size={18} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             More
           </span>
         </button>
@@ -622,7 +622,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             ).map(group => (
               <div key={group.label} style={{ marginBottom: 16 }}>
                 <div style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px',
                   color: '#374151', letterSpacing: '0.2em', textTransform: 'uppercase',
                   marginBottom: 8, paddingLeft: 4,
                 }}>
@@ -648,14 +648,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         }}
                       >
                         <Icon size={20} />
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>
                           {tab.shortLabel}
                         </span>
                         {tab.id === 'watchlist' && breachCount > 0 && (
                           <span style={{
                             position: 'absolute', top: 6, right: 6,
                             background: '#FF2D55', color: '#fff', borderRadius: '50%',
-                            fontSize: '7px', width: '13px', height: '13px',
+                            fontSize: '11px', width: '13px', height: '13px',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>{breachCount}</span>
                         )}

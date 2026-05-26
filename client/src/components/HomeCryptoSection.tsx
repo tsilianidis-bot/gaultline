@@ -77,7 +77,7 @@ function LabelBadge({ label }: { label: CryptoSignalLabel }) {
   const color = LABEL_COLORS[label] ?? "#64748B";
   return (
     <span style={{
-      fontFamily: MONO, fontSize: '7px', color, letterSpacing: '0.12em',
+      fontFamily: MONO, fontSize: '11px', color, letterSpacing: '0.12em',
       border: `1px solid ${color}40`, borderRadius: '2px', padding: '2px 5px',
       background: `${color}10`, textTransform: 'uppercase',
     }}>
@@ -112,7 +112,7 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
           <div style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '14px', color: '#E2E8F0', letterSpacing: '0.05em' }}>
             {asset.symbol}
           </div>
-          <div style={{ fontFamily: SANS, fontSize: '9px', color: '#64748B' }}>{asset.name}</div>
+          <div style={{ fontFamily: SANS, fontSize: '13px', color: '#64748B' }}>{asset.name}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontFamily: MONO, fontSize: '11px', color: '#E2E8F0' }}>
@@ -122,7 +122,7 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
                 ? asset.currentPrice.toFixed(2)
                 : asset.currentPrice.toFixed(4)}
           </div>
-          <div style={{ fontFamily: MONO, fontSize: '9px', color: priceUp ? '#00FF88' : '#FF2D55' }}>
+          <div style={{ fontFamily: MONO, fontSize: '13px', color: priceUp ? '#00FF88' : '#FF2D55' }}>
             {priceUp ? '+' : ''}{asset.priceChangePercent24h.toFixed(2)}%
           </div>
         </div>
@@ -131,14 +131,14 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
       {/* Signal bias */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
         <span style={{
-          fontFamily: MONO, fontSize: '7px', color: biasColor, letterSpacing: '0.12em',
+          fontFamily: MONO, fontSize: '11px', color: biasColor, letterSpacing: '0.12em',
           border: `1px solid ${biasColor}50`, borderRadius: '2px', padding: '2px 5px',
           background: `${biasColor}15`, textTransform: 'uppercase',
         }}>
           {asset.signalBias}
         </span>
         <span style={{
-          fontFamily: MONO, fontSize: '7px', color: riskColor, letterSpacing: '0.1em',
+          fontFamily: MONO, fontSize: '11px', color: riskColor, letterSpacing: '0.1em',
           textTransform: 'uppercase',
         }}>
           {asset.riskLevel} RISK
@@ -153,8 +153,8 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
       {/* Signal score bar */}
       <div style={{ marginBottom: '4px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-          <span style={{ fontFamily: MONO, fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Signal</span>
-          <span style={{ fontFamily: MONO, fontSize: '7px', color: biasColor }}>{asset.signalScore}</span>
+          <span style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Signal</span>
+          <span style={{ fontFamily: MONO, fontSize: '11px', color: biasColor }}>{asset.signalScore}</span>
         </div>
         <div style={{ height: '2px', background: 'rgba(255,255,255,0.06)', borderRadius: '1px', overflow: 'hidden' }}>
           <div style={{
@@ -167,7 +167,7 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
       </div>
 
       {/* Momentum */}
-      <div style={{ fontFamily: MONO, fontSize: '7px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+      <div style={{ fontFamily: MONO, fontSize: '11px', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
         Momentum: <span style={{ color: asset.momentum === 'Accelerating' ? '#00FF88' : asset.momentum === 'Reversing' ? '#FF2D55' : '#94A3B8' }}>{asset.momentum}</span>
       </div>
     </div>
@@ -181,7 +181,7 @@ function SystemicRiskMini({ risk }: { risk: CryptoSystemicRisk }) {
       background: 'rgba(0,0,0,0.6)', border: `1px solid ${color}30`,
       borderRadius: '4px', padding: '14px',
     }}>
-      <div style={{ fontFamily: MONO, fontSize: '7px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>
+      <div style={{ fontFamily: MONO, fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>
         Live Crypto Metrics
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '10px' }}>
@@ -189,7 +189,7 @@ function SystemicRiskMini({ risk }: { risk: CryptoSystemicRisk }) {
           {risk.score.toFixed(1)}
         </span>
         <span style={{ fontFamily: MONO, fontSize: '10px', color: '#4B5563' }}>/10</span>
-        <span style={{ fontFamily: MONO, fontSize: '9px', color, marginLeft: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+        <span style={{ fontFamily: MONO, fontSize: '13px', color, marginLeft: '4px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
           {risk.level}
         </span>
       </div>
@@ -202,12 +202,12 @@ function SystemicRiskMini({ risk }: { risk: CryptoSystemicRisk }) {
           { label: "Volatility Regime", value: risk.volatilityRegime },
         ].map(({ label, value }) => (
           <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: MONO, fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</span>
-            <span style={{ fontFamily: MONO, fontSize: '8px', color: '#94A3B8' }}>{value}</span>
+            <span style={{ fontFamily: MONO, fontSize: '12px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{label}</span>
+            <span style={{ fontFamily: MONO, fontSize: '12px', color: '#94A3B8' }}>{value}</span>
           </div>
         ))}
       </div>
-      <div style={{ marginTop: '10px', fontFamily: SANS, fontSize: '9px', color: 'rgba(100,116,139,0.7)', lineHeight: 1.5, borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
+      <div style={{ marginTop: '10px', fontFamily: SANS, fontSize: '13px', color: 'rgba(100,116,139,0.7)', lineHeight: 1.5, borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
         {risk.summary}
       </div>
     </div>
@@ -269,7 +269,7 @@ export default function HomeCryptoSection() {
       <div style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
           <div style={{
-            fontFamily: MONO, fontSize: '7px', color: '#00D4FF',
+            fontFamily: MONO, fontSize: '11px', color: '#00D4FF',
             textTransform: 'uppercase', letterSpacing: '0.2em',
             border: '1px solid rgba(0,212,255,0.25)', borderRadius: '2px',
             padding: '2px 6px', background: 'rgba(0,212,255,0.06)',
@@ -292,7 +292,7 @@ export default function HomeCryptoSection() {
 
       {/* Headline quote */}
       <div style={{
-        fontFamily: MONO, fontSize: '9px', color: 'rgba(0,212,255,0.7)',
+        fontFamily: MONO, fontSize: '13px', color: 'rgba(0,212,255,0.7)',
         letterSpacing: '0.08em', lineHeight: 1.6, marginBottom: '16px',
         borderLeft: '2px solid rgba(0,212,255,0.3)', paddingLeft: '10px',
         fontStyle: 'italic',
@@ -302,7 +302,7 @@ export default function HomeCryptoSection() {
 
       {/* Search module */}
       <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontFamily: MONO, fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
+        <div style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
           Crypto Intelligence Search
         </div>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
@@ -328,7 +328,7 @@ export default function HomeCryptoSection() {
             onClick={handleSearch}
             disabled={assetLoading}
             style={{
-              fontFamily: MONO, fontSize: '9px', color: '#000', letterSpacing: '0.12em',
+              fontFamily: MONO, fontSize: '13px', color: '#000', letterSpacing: '0.12em',
               background: assetLoading ? 'rgba(0,212,255,0.3)' : '#00D4FF',
               border: 'none', borderRadius: '3px', padding: '8px 14px',
               cursor: assetLoading ? 'wait' : 'pointer', textTransform: 'uppercase',
@@ -346,7 +346,7 @@ export default function HomeCryptoSection() {
               key={sym}
               onClick={() => { setSearchInput(sym); setSearchSymbol(sym); }}
               style={{
-                fontFamily: MONO, fontSize: '8px', color: '#64748B',
+                fontFamily: MONO, fontSize: '12px', color: '#64748B',
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '2px', padding: '3px 7px', cursor: 'pointer',
                 transition: 'all 0.15s ease', letterSpacing: '0.1em',
@@ -371,7 +371,7 @@ export default function HomeCryptoSection() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px', marginBottom: '16px' }}>
         {/* Top assets heatmap */}
         <div>
-          <div style={{ fontFamily: MONO, fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '6px' }}>
+          <div style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '6px' }}>
             Top Digital Assets
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '5px' }}>
@@ -396,7 +396,7 @@ export default function HomeCryptoSection() {
                   onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
                 >
                   <div style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '11px', color: '#D1D5DB' }}>{coin.symbol}</div>
-                  <div style={{ fontFamily: MONO, fontSize: '8px', color: up ? '#00FF88' : '#FF2D55' }}>
+                  <div style={{ fontFamily: MONO, fontSize: '12px', color: up ? '#00FF88' : '#FF2D55' }}>
                     {up ? '+' : ''}{pct.toFixed(1)}%
                   </div>
                 </div>
@@ -417,7 +417,7 @@ export default function HomeCryptoSection() {
               background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(0,212,255,0.1)',
               borderRadius: '4px', padding: '14px', minWidth: '180px',
             }}>
-              <div style={{ fontFamily: MONO, fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>
+              <div style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>
                 Live Crypto Metrics
               </div>
               {["Crypto Risk Score", "BTC Dominance", "Stablecoin Liquidity", "AI Token Speculation", "Volatility Regime"].map(label => (
@@ -430,7 +430,7 @@ export default function HomeCryptoSection() {
 
       {/* Feature blocks grid */}
       <div style={{ marginBottom: '16px' }}>
-        <div style={{ fontFamily: MONO, fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>
+        <div style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>
           Intelligence Capabilities
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '6px' }}>
@@ -448,7 +448,7 @@ export default function HomeCryptoSection() {
                 <span style={{ fontFamily: MONO, fontSize: '10px', color: '#00D4FF' }}>{icon}</span>
                 <span style={{ fontFamily: RAJDHANI, fontWeight: 600, fontSize: '11px', color: '#D1D5DB', letterSpacing: '0.03em' }}>{label}</span>
               </div>
-              <div style={{ fontFamily: SANS, fontSize: '9px', color: '#4B5563', lineHeight: 1.5 }}>{desc}</div>
+              <div style={{ fontFamily: SANS, fontSize: '13px', color: '#4B5563', lineHeight: 1.5 }}>{desc}</div>
             </div>
           ))}
         </div>
@@ -469,7 +469,7 @@ export default function HomeCryptoSection() {
         <button
           onClick={() => navigate('/crypto-search')}
           style={{
-            fontFamily: MONO, fontSize: '9px', color: '#000', letterSpacing: '0.12em',
+            fontFamily: MONO, fontSize: '13px', color: '#000', letterSpacing: '0.12em',
             background: 'linear-gradient(135deg, #00D4FF, #0099CC)',
             border: 'none', borderRadius: '3px', padding: '9px 16px',
             cursor: 'pointer', textTransform: 'uppercase', fontWeight: 700,
@@ -481,7 +481,7 @@ export default function HomeCryptoSection() {
         >
           Open Crypto Intelligence →
         </button>
-        <span style={{ fontFamily: SANS, fontSize: '9px', color: '#4B5563', lineHeight: 1.5 }}>
+        <span style={{ fontFamily: SANS, fontSize: '13px', color: '#4B5563', lineHeight: 1.5 }}>
           Join early access and track crypto, stocks, macro risk, and systemic pressure from one intelligence dashboard.
         </span>
       </div>

@@ -173,7 +173,7 @@ function Chip({ label, value, color }: { label: string; value: string; color?: s
       border: '1px solid rgba(255,255,255,0.06)',
       borderRadius: '3px',
     }}>
-      <span style={{ fontSize: '7px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.5)', textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', textTransform: 'uppercase' }}>{label}</span>
       <span style={{ fontSize: '10px', fontFamily: "'IBM Plex Mono', monospace", color: color ?? '#94A3B8', fontWeight: 600 }}>{value}</span>
     </div>
   );
@@ -201,7 +201,7 @@ function MomentumBar({ score }: { score: number }) {
       <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
         <div style={{ width: `${score}%`, height: '100%', background: color, borderRadius: '2px', transition: 'width 0.6s cubic-bezier(0.23,1,0.32,1)' }} />
       </div>
-      <span style={{ fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace", color, minWidth: '28px', textAlign: 'right' }}>{score}</span>
+      <span style={{ fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace", color, minWidth: '28px', textAlign: 'right' }}>{score}</span>
     </div>
   );
 }
@@ -212,8 +212,8 @@ function RegimeFitGauge({ score, label }: { score: number; label: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '7px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.5)', textTransform: 'uppercase' }}>Regime Fit</span>
-        <span style={{ fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace", color, fontWeight: 700 }}>{label}</span>
+        <span style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', textTransform: 'uppercase' }}>Regime Fit</span>
+        <span style={{ fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace", color, fontWeight: 700 }}>{label}</span>
       </div>
       <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
         <div style={{ width: `${score * 10}%`, height: '100%', background: color, borderRadius: '2px', transition: 'width 0.6s cubic-bezier(0.23,1,0.32,1)' }} />
@@ -282,7 +282,7 @@ function StockIntelligenceCard({
               }}>{profile.ticker}</span>
               {profile.isLive && (
                 <span style={{
-                  fontSize: '7px', letterSpacing: '0.1em',
+                  fontSize: '11px', letterSpacing: '0.1em',
                   color: '#00D4FF', background: 'rgba(0,212,255,0.08)',
                   padding: '2px 5px', borderRadius: '2px',
                   border: '1px solid rgba(0,212,255,0.15)',
@@ -291,7 +291,7 @@ function StockIntelligenceCard({
               )}
               {profile.source === 'stale' && (
                 <span style={{
-                  fontSize: '7px', letterSpacing: '0.1em',
+                  fontSize: '11px', letterSpacing: '0.1em',
                   color: '#FF9500', background: 'rgba(255,149,0,0.08)',
                   padding: '2px 5px', borderRadius: '2px',
                   border: '1px solid rgba(255,149,0,0.15)',
@@ -299,8 +299,8 @@ function StockIntelligenceCard({
                 }}>STALE</span>
               )}
               <span style={{
-                fontSize: '7px', letterSpacing: '0.08em',
-                color: 'rgba(100,116,139,0.5)',
+                fontSize: '11px', letterSpacing: '0.08em',
+                color: 'rgba(100,116,139,0.75)',
                 fontFamily: "'IBM Plex Mono', monospace",
               }}>{profile.tradeDate}</span>
             </div>
@@ -311,7 +311,7 @@ function StockIntelligenceCard({
             }}>{profile.name}</div>
             {profile.sector && (
               <div style={{
-                fontSize: '9px', color: 'rgba(100,116,139,0.5)',
+                fontSize: '13px', color: 'rgba(100,116,139,0.75)',
                 fontFamily: "'IBM Plex Mono', monospace",
                 letterSpacing: '0.06em', marginTop: '2px',
               }}>{profile.sector}</div>
@@ -336,12 +336,12 @@ function StockIntelligenceCard({
               style={{
                 marginTop: '6px',
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '8px', letterSpacing: '0.08em',
+                fontSize: '12px', letterSpacing: '0.08em',
                 padding: '3px 8px',
                 border: isSaved ? '1px solid rgba(0,212,255,0.3)' : '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '2px',
                 background: isSaved ? 'rgba(0,212,255,0.08)' : 'transparent',
-                color: isSaved ? '#00D4FF' : 'rgba(100,116,139,0.5)',
+                color: isSaved ? '#00D4FF' : 'rgba(100,116,139,0.75)',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
@@ -394,7 +394,7 @@ function StockIntelligenceCard({
 
             {/* Momentum */}
             <div style={{ marginBottom: '10px' }}>
-              <div style={{ fontSize: '7px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.5)', marginBottom: '4px', textTransform: 'uppercase' }}>Momentum Score</div>
+              <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '4px', textTransform: 'uppercase' }}>Momentum Score</div>
               <MomentumBar score={classification.momentumScore} />
             </div>
 
@@ -409,18 +409,18 @@ function StockIntelligenceCard({
             {/* Bullish / Bearish Factors */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
               <div style={{ background: 'rgba(0,212,255,0.03)', border: '1px solid rgba(0,212,255,0.08)', borderRadius: '3px', padding: '8px' }}>
-                <div style={{ fontSize: '7px', letterSpacing: '0.1em', color: '#00D4FF', marginBottom: '6px', textTransform: 'uppercase' }}>▲ Bullish Factors</div>
+                <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: '#00D4FF', marginBottom: '6px', textTransform: 'uppercase' }}>▲ Bullish Factors</div>
                 {classification.bullishFactors.map((f, i) => (
-                  <div key={i} style={{ fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.5, marginBottom: '3px', display: 'flex', gap: '5px' }}>
+                  <div key={i} style={{ fontSize: '13px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.5, marginBottom: '3px', display: 'flex', gap: '5px' }}>
                     <span style={{ color: '#00D4FF', flexShrink: 0 }}>·</span>
                     <span>{f}</span>
                   </div>
                 ))}
               </div>
               <div style={{ background: 'rgba(255,45,85,0.03)', border: '1px solid rgba(255,45,85,0.08)', borderRadius: '3px', padding: '8px' }}>
-                <div style={{ fontSize: '7px', letterSpacing: '0.1em', color: '#FF2D55', marginBottom: '6px', textTransform: 'uppercase' }}>▼ Bearish Factors</div>
+                <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: '#FF2D55', marginBottom: '6px', textTransform: 'uppercase' }}>▼ Bearish Factors</div>
                 {classification.bearishFactors.map((f, i) => (
-                  <div key={i} style={{ fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.5, marginBottom: '3px', display: 'flex', gap: '5px' }}>
+                  <div key={i} style={{ fontSize: '13px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.5, marginBottom: '3px', display: 'flex', gap: '5px' }}>
                     <span style={{ color: '#FF2D55', flexShrink: 0 }}>·</span>
                     <span>{f}</span>
                   </div>
@@ -435,7 +435,7 @@ function StockIntelligenceCard({
                 background: 'rgba(255,255,255,0.02)',
                 border: '1px solid rgba(255,255,255,0.05)',
                 borderRadius: '3px',
-                fontSize: '9px', color: 'rgba(148,163,184,0.7)',
+                fontSize: '13px', color: 'rgba(148,163,184,0.7)',
                 lineHeight: 1.5, fontStyle: 'italic',
               }}>
                 {classification.macroSensitivity}
@@ -448,7 +448,7 @@ function StockIntelligenceCard({
               style={{
                 width: '100%',
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '9px', letterSpacing: '0.1em',
+                fontSize: '13px', letterSpacing: '0.1em',
                 padding: '7px 10px',
                 border: `1px solid ${showWhy ? signalColor.text + '30' : 'rgba(255,255,255,0.06)'}`,
                 borderRadius: '3px',
@@ -477,7 +477,7 @@ function StockIntelligenceCard({
                 fontFamily: "'IBM Plex Mono', monospace",
                 animation: 'fl-fade-in 0.2s ease',
               }}>
-                <div style={{ fontSize: '7px', letterSpacing: '0.1em', color: signalColor.text, marginBottom: '6px', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: signalColor.text, marginBottom: '6px', textTransform: 'uppercase' }}>
                   FAULTLINE ANALYSIS — {regime.label}
                 </div>
                 {classification.whyThisSignal}
@@ -490,7 +490,7 @@ function StockIntelligenceCard({
             background: 'rgba(255,45,85,0.05)',
             border: '1px solid rgba(255,45,85,0.12)',
             borderRadius: '3px',
-            fontSize: '9px', color: 'rgba(255,45,85,0.7)',
+            fontSize: '13px', color: 'rgba(255,45,85,0.7)',
             letterSpacing: '0.06em',
           }}>
             ⚠ CLASSIFICATION UNAVAILABLE — {classError}
@@ -504,15 +504,15 @@ function StockIntelligenceCard({
               onClick={() => setShowDesc(d => !d)}
               style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '8px', letterSpacing: '0.1em',
+                fontSize: '12px', letterSpacing: '0.1em',
                 padding: '0', border: 'none', background: 'transparent',
-                color: 'rgba(100,116,139,0.4)', cursor: 'pointer',
+                color: 'rgba(100,116,139,0.65)', cursor: 'pointer',
                 marginBottom: '4px',
               }}
             >{showDesc ? '▲ HIDE DESCRIPTION' : '▼ COMPANY OVERVIEW'}</button>
             {showDesc && (
               <div style={{
-                fontSize: '9px', color: 'rgba(100,116,139,0.6)',
+                fontSize: '13px', color: 'rgba(100,116,139,0.6)',
                 lineHeight: 1.6, padding: '8px 0',
                 borderTop: '1px solid rgba(255,255,255,0.04)',
                 animation: 'fl-fade-in 0.2s ease',
@@ -547,7 +547,7 @@ function QuickChips({
     <div style={{ marginTop: '10px' }}>
       {watchlist.length > 0 && (
         <div style={{ marginBottom: '8px' }}>
-          <div style={{ fontSize: '7px', letterSpacing: '0.12em', color: 'rgba(100,116,139,0.4)', marginBottom: '5px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(100,116,139,0.65)', marginBottom: '5px', textTransform: 'uppercase' }}>
             ★ WATCHLIST
           </div>
           <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
@@ -557,7 +557,7 @@ function QuickChips({
                   onClick={() => onSelect(item.ticker)}
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: '9px', letterSpacing: '0.06em',
+                    fontSize: '13px', letterSpacing: '0.06em',
                     padding: '4px 8px 4px 8px',
                     border: '1px solid rgba(0,212,255,0.2)',
                     borderRight: 'none',
@@ -572,7 +572,7 @@ function QuickChips({
                   onClick={() => onRemoveWatchlist(item.ticker)}
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: '8px',
+                    fontSize: '12px',
                     padding: '4px 5px',
                     border: '1px solid rgba(0,212,255,0.2)',
                     borderRadius: '0 2px 2px 0',
@@ -589,7 +589,7 @@ function QuickChips({
       )}
       {history.length > 0 && (
         <div>
-          <div style={{ fontSize: '7px', letterSpacing: '0.12em', color: 'rgba(100,116,139,0.4)', marginBottom: '5px', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: '11px', letterSpacing: '0.12em', color: 'rgba(100,116,139,0.65)', marginBottom: '5px', textTransform: 'uppercase' }}>
             ↺ RECENT
           </div>
           <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
@@ -599,7 +599,7 @@ function QuickChips({
                   onClick={() => onSelect(item.ticker)}
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: '9px', letterSpacing: '0.06em',
+                    fontSize: '13px', letterSpacing: '0.06em',
                     padding: '4px 8px 4px 8px',
                     border: '1px solid rgba(255,255,255,0.06)',
                     borderRight: 'none',
@@ -614,12 +614,12 @@ function QuickChips({
                   onClick={() => onRemoveHistory(item.ticker)}
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: '8px',
+                    fontSize: '12px',
                     padding: '4px 5px',
                     border: '1px solid rgba(255,255,255,0.06)',
                     borderRadius: '0 2px 2px 0',
                     background: 'rgba(255,255,255,0.01)',
-                    color: 'rgba(100,116,139,0.4)',
+                    color: 'rgba(100,116,139,0.65)',
                     cursor: 'pointer',
                     transition: 'all 0.12s ease',
                   }}
@@ -789,13 +789,13 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
       }}>
         <div style={{
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '9px', letterSpacing: '0.2em',
-          color: 'rgba(100,116,139,0.5)',
+          fontSize: '13px', letterSpacing: '0.2em',
+          color: 'rgba(100,116,139,0.75)',
           textTransform: 'uppercase',
         }}>STOCK INTELLIGENCE SEARCH</div>
         <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.04)' }} />
         <div style={{
-          fontSize: '7px', letterSpacing: '0.1em',
+          fontSize: '11px', letterSpacing: '0.1em',
           color: 'rgba(100,116,139,0.3)',
           fontFamily: "'IBM Plex Mono', monospace",
         }}>PRESS / TO FOCUS</div>
@@ -815,7 +815,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
           {/* Search icon */}
           <div style={{
             position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)',
-            color: 'rgba(100,116,139,0.4)', fontSize: '13px', pointerEvents: 'none',
+            color: 'rgba(100,116,139,0.65)', fontSize: '13px', pointerEvents: 'none',
           }}>⌕</div>
           <input
             ref={inputRef}
@@ -908,7 +908,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
                 border: '1px solid rgba(255,45,85,0.3)',
                 borderRadius: '3px',
                 color: 'rgba(255,45,85,0.9)',
-                fontSize: '9px',
+                fontSize: '13px',
                 fontFamily: "'IBM Plex Mono', monospace",
                 letterSpacing: '0.08em',
                 padding: '3px 8px',
@@ -947,7 +947,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
           <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
             {[0,1].map(i => <div key={i} style={{ height: '22px', width: '130px', background: 'rgba(255,255,255,0.04)', borderRadius: '2px' }} />)}
           </div>
-          <div style={{ fontSize: '8px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.4)', textAlign: 'center', paddingTop: '4px' }}>
+          <div style={{ fontSize: '12px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.65)', textAlign: 'center', paddingTop: '4px' }}>
             FETCHING {searchedTicker} FROM POLYGON.IO…
           </div>
         </div>

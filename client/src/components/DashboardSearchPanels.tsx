@@ -124,7 +124,7 @@ function ArcGauge({
           {label}
         </span>
         {sublabel && (
-          <span style={{ fontFamily: MONO, fontSize: '7px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', marginTop: '2px' }}>
+          <span style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', marginTop: '2px' }}>
             {sublabel}
           </span>
         )}
@@ -137,7 +137,7 @@ function ArcGauge({
 function SignalBadge({ label, color }: { label: string; color: string }) {
   return (
     <span style={{
-      fontFamily: MONO, fontSize: '7px', color, letterSpacing: '0.1em',
+      fontFamily: MONO, fontSize: '11px', color, letterSpacing: '0.1em',
       border: `1px solid ${color}40`, borderRadius: '2px', padding: '2px 5px',
       background: `${color}10`, textTransform: 'uppercase', whiteSpace: 'nowrap',
     }}>{label}</span>
@@ -208,7 +208,7 @@ function PorchOverlay({ color, onUpgrade, onLogin, isLoggedIn }: {
               width: '100%', padding: '9px 0',
               background: `linear-gradient(135deg, ${color}30, ${color}18)`,
               border: `1px solid ${color}60`, borderRadius: '5px',
-              fontFamily: MONO, fontSize: '9px', color, letterSpacing: '0.15em',
+              fontFamily: MONO, fontSize: '13px', color, letterSpacing: '0.15em',
               cursor: 'pointer', textTransform: 'uppercase',
               boxShadow: `0 0 16px ${color}20`,
               transition: 'all 0.2s ease',
@@ -224,7 +224,7 @@ function PorchOverlay({ color, onUpgrade, onLogin, isLoggedIn }: {
               style={{
                 width: '100%', padding: '7px 0',
                 background: 'transparent', border: '1px solid rgba(255,255,255,0.10)',
-                borderRadius: '5px', fontFamily: MONO, fontSize: '9px',
+                borderRadius: '5px', fontFamily: MONO, fontSize: '13px',
                 color: '#64748B', letterSpacing: '0.12em', cursor: 'pointer',
                 textTransform: 'uppercase', transition: 'all 0.2s ease',
               }}
@@ -302,13 +302,13 @@ export function CryptoPorchPanel() {
       <div style={{ padding: '16px 16px 0', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <div style={{
-            fontFamily: MONO, fontSize: '7px', color: '#00D4FF',
+            fontFamily: MONO, fontSize: '11px', color: '#00D4FF',
             border: '1px solid rgba(0,212,255,0.25)', borderRadius: '2px',
             padding: '2px 6px', background: 'rgba(0,212,255,0.06)',
             letterSpacing: '0.18em', textTransform: 'uppercase',
           }}>◈ CRYPTO INTELLIGENCE</div>
           <div style={{
-            marginLeft: 'auto', fontFamily: MONO, fontSize: '7px', color: '#FF9500',
+            marginLeft: 'auto', fontFamily: MONO, fontSize: '11px', color: '#FF9500',
             border: '1px solid rgba(255,149,0,0.3)', borderRadius: '2px',
             padding: '2px 6px', background: 'rgba(255,149,0,0.08)',
             letterSpacing: '0.12em',
@@ -346,7 +346,7 @@ export function CryptoPorchPanel() {
             style={{
               padding: '8px 14px', background: 'rgba(0,212,255,0.12)',
               border: '1px solid rgba(0,212,255,0.35)', borderRadius: '4px',
-              fontFamily: MONO, fontSize: '9px', color: '#00D4FF',
+              fontFamily: MONO, fontSize: '13px', color: '#00D4FF',
               letterSpacing: '0.12em', cursor: 'pointer', textTransform: 'uppercase',
               transition: 'all 0.2s ease', flexShrink: 0,
             }}
@@ -366,7 +366,7 @@ export function CryptoPorchPanel() {
               style={{
                 padding: '3px 8px', background: active === sym ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.03)',
                 border: `1px solid ${active === sym ? 'rgba(0,212,255,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: '3px', fontFamily: MONO, fontSize: '8px',
+                borderRadius: '3px', fontFamily: MONO, fontSize: '12px',
                 color: active === sym ? '#00D4FF' : '#475569',
                 cursor: 'pointer', letterSpacing: '0.08em',
                 transition: 'all 0.15s ease',
@@ -400,15 +400,15 @@ export function CryptoPorchPanel() {
             </div>
             <div style={{ marginBottom: '8px', filter: 'blur(5px)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                <span style={{ fontFamily: MONO, fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Signal Score</span>
-                <span style={{ fontFamily: MONO, fontSize: '7px', color: riskColor }}>{demo.score}/100</span>
+                <span style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Signal Score</span>
+                <span style={{ fontFamily: MONO, fontSize: '11px', color: riskColor }}>{demo.score}/100</span>
               </div>
               <AnimBar value={demo.score} color={riskColor} />
             </div>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', filter: 'blur(5px)' }}>
               {demo.signals.map(s => <SignalBadge key={s} label={s} color="#64748B" />)}
             </div>
-            <div style={{ marginTop: '8px', fontFamily: MONO, fontSize: '8px', color: '#4B5563', filter: 'blur(5px)' }}>
+            <div style={{ marginTop: '8px', fontFamily: MONO, fontSize: '12px', color: '#4B5563', filter: 'blur(5px)' }}>
               Momentum: <span style={{ color: demo.momentum === 'Accelerating' ? '#00FF88' : demo.momentum === 'Reversing' ? '#FF2D55' : '#94A3B8' }}>{demo.momentum}</span>
             </div>
           </div>
@@ -492,13 +492,13 @@ export function StockPorchPanel() {
       <div style={{ padding: '16px 16px 0', position: 'relative', zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <div style={{
-            fontFamily: MONO, fontSize: '7px', color: '#FF9500',
+            fontFamily: MONO, fontSize: '11px', color: '#FF9500',
             border: '1px solid rgba(255,149,0,0.25)', borderRadius: '2px',
             padding: '2px 6px', background: 'rgba(255,149,0,0.06)',
             letterSpacing: '0.18em', textTransform: 'uppercase',
           }}>◆ STOCK INTELLIGENCE</div>
           <div style={{
-            marginLeft: 'auto', fontFamily: MONO, fontSize: '7px', color: '#FF9500',
+            marginLeft: 'auto', fontFamily: MONO, fontSize: '11px', color: '#FF9500',
             border: '1px solid rgba(255,149,0,0.3)', borderRadius: '2px',
             padding: '2px 6px', background: 'rgba(255,149,0,0.08)',
             letterSpacing: '0.12em',
@@ -536,7 +536,7 @@ export function StockPorchPanel() {
             style={{
               padding: '8px 14px', background: 'rgba(255,149,0,0.12)',
               border: '1px solid rgba(255,149,0,0.35)', borderRadius: '4px',
-              fontFamily: MONO, fontSize: '9px', color: '#FF9500',
+              fontFamily: MONO, fontSize: '13px', color: '#FF9500',
               letterSpacing: '0.12em', cursor: 'pointer', textTransform: 'uppercase',
               transition: 'all 0.2s ease', flexShrink: 0,
             }}
@@ -556,7 +556,7 @@ export function StockPorchPanel() {
               style={{
                 padding: '3px 8px', background: active === sym ? 'rgba(255,149,0,0.15)' : 'rgba(255,255,255,0.03)',
                 border: `1px solid ${active === sym ? 'rgba(255,149,0,0.4)' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: '3px', fontFamily: MONO, fontSize: '8px',
+                borderRadius: '3px', fontFamily: MONO, fontSize: '12px',
                 color: active === sym ? '#FF9500' : '#475569',
                 cursor: 'pointer', letterSpacing: '0.08em',
                 transition: 'all 0.15s ease',
@@ -586,14 +586,14 @@ export function StockPorchPanel() {
             </div>
             <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', filter: 'blur(5px)' }}>
               <span style={{
-                fontFamily: MONO, fontSize: '8px', letterSpacing: '0.12em',
+                fontFamily: MONO, fontSize: '12px', letterSpacing: '0.12em',
                 color: actionStyle.text, border: `1px solid ${actionStyle.border}`,
                 borderRadius: '3px', padding: '3px 8px', background: actionStyle.bg,
                 textTransform: 'uppercase', fontWeight: 700,
                 boxShadow: `0 0 10px ${actionStyle.text}30`,
               }}>{demo.action}</span>
               <span style={{
-                fontFamily: MONO, fontSize: '7px', color: regimeColor,
+                fontFamily: MONO, fontSize: '11px', color: regimeColor,
                 border: `1px solid ${regimeColor}40`, borderRadius: '2px',
                 padding: '2px 6px', background: `${regimeColor}10`,
                 textTransform: 'uppercase', letterSpacing: '0.1em',
@@ -601,15 +601,15 @@ export function StockPorchPanel() {
             </div>
             <div style={{ marginBottom: '8px', filter: 'blur(5px)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                <span style={{ fontFamily: MONO, fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Confidence</span>
-                <span style={{ fontFamily: MONO, fontSize: '7px', color: actionStyle.text }}>{demo.confidence}%</span>
+                <span style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Confidence</span>
+                <span style={{ fontFamily: MONO, fontSize: '11px', color: actionStyle.text }}>{demo.confidence}%</span>
               </div>
               <AnimBar value={demo.confidence} color={actionStyle.text} />
             </div>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', filter: 'blur(5px)' }}>
               {demo.signals.map(s => <SignalBadge key={s} label={s} color="#64748B" />)}
             </div>
-            <div style={{ marginTop: '8px', fontFamily: MONO, fontSize: '8px', color: '#4B5563', filter: 'blur(5px)' }}>
+            <div style={{ marginTop: '8px', fontFamily: MONO, fontSize: '12px', color: '#4B5563', filter: 'blur(5px)' }}>
               Price: <span style={{ color: '#94A3B8' }}>{demo.price}</span>
               <span style={{ marginLeft: '8px', color: demo.change >= 0 ? '#00FF88' : '#FF2D55' }}>
                 {demo.change >= 0 ? '+' : ''}{demo.change.toFixed(2)}%

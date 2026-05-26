@@ -231,7 +231,7 @@ function PressureRing({ score, color, size = 96 }: { score: number; color: strin
         <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 80 ? '26px' : '18px', color, textShadow: `0 0 20px ${color}80`, lineHeight: 1 }}>
           {anim.toFixed(1)}
         </span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>/10</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em' }}>/10</span>
       </div>
     </div>
   );
@@ -243,7 +243,7 @@ function ProbBar({ label, value, color }: { label: string; value: number; color:
   useEffect(() => { const t = setTimeout(() => setAnim(value), 600); return () => clearTimeout(t); }, [value]);
   return (
     <div style={{ flex: 1, minWidth: '72px' }}>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
       <div style={{ position: 'relative', height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${anim}%`, background: `linear-gradient(90deg, ${color}70, ${color})`, boxShadow: `0 0 6px ${color}60`, borderRadius: '2px', transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
       </div>
@@ -272,10 +272,10 @@ function NarrativePanel({ narrative, regime }: {
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
           <div style={{ width: '3px', height: '16px', background: regime.color, borderRadius: '2px', boxShadow: `0 0 8px ${regime.color}` }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>
             Intelligence Narrative
           </span>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: regime.color, marginLeft: 'auto' }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: regime.color, marginLeft: 'auto' }}>
             {regime.label}
           </span>
         </div>
@@ -286,7 +286,7 @@ function NarrativePanel({ narrative, regime }: {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {narrative.keyRisks.slice(0, 3).map((risk, i) => (
             <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', animation: `fade-slide-up 0.4s cubic-bezier(0.23,1,0.32,1) ${i * 80 + 600}ms both` }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: regime.color, flexShrink: 0, marginTop: '3px' }}>{String(i + 1).padStart(2, '0')}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: regime.color, flexShrink: 0, marginTop: '3px' }}>{String(i + 1).padStart(2, '0')}</span>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#94A3B8', lineHeight: 1.55 }}>{risk}</span>
             </div>
           ))}
@@ -319,10 +319,10 @@ function HeatCell({ label, score, delay }: { label: string; score: number; delay
       <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color, textShadow: `0 0 10px ${color}80`, animation: score >= 7 ? 'heatmap-pulse 2s ease-in-out infinite' : 'none', lineHeight: 1 }}>
         {score.toFixed(1)}
       </span>
-      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.3 }}>
+      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'center', lineHeight: 1.3 }}>
         {label}
       </span>
-      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: `${color}90`, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center', lineHeight: 1 }}>
+      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: `${color}90`, textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center', lineHeight: 1 }}>
         {severityText}
       </span>
     </div>
@@ -346,7 +346,7 @@ function MiniWidget({ label, value, unit, color, seed, trend }: {
     onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'}
     >
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '5px' }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '5px' }}>
           {label}
         </div>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '7px' }}>
@@ -403,23 +403,23 @@ function MetricCardItem({ metric, index }: { metric: MetricCard; index: number }
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{metric.category}</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color, background: `${color}12`, border: `1px solid ${color}25`, borderRadius: '2px', padding: '1px 5px', textTransform: 'uppercase' }}>{metric.riskLevel}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{metric.category}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color, background: `${color}12`, border: `1px solid ${color}25`, borderRadius: '2px', padding: '1px 5px', textTransform: 'uppercase' }}>{metric.riskLevel}</span>
           </div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '14px', color: '#E2E8F0', marginBottom: '3px' }}>{metric.label}</div>
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{metric.interpretation}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0 }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '18px', fontWeight: 700, color, textShadow: `0 0 12px ${color}60`, lineHeight: 1 }}>{metric.value}</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B' }}>{metric.unit}</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B' }}>{metric.unit}</div>
           {expanded ? <ChevronUp size={12} style={{ color: '#64748B' }} /> : <ChevronDown size={12} style={{ color: '#64748B' }} />}
         </div>
       </div>
       {expanded && (
         <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', animation: 'fade-slide-up 0.25s ease both' }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Signal Drivers</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Signal Drivers</div>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ color, fontSize: '9px', flexShrink: 0, marginTop: '2px' }}>›</span>
+              <span style={{ color, fontSize: '13px', flexShrink: 0, marginTop: '2px' }}>›</span>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{metric.historicalComparison}</span>
             </div>
         </div>
@@ -437,8 +437,8 @@ function IntelTicker({ items }: { items: { label: string; value: string; color: 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0', animation: 'ticker-scroll 28s linear infinite', whiteSpace: 'nowrap', willChange: 'transform' }}>
         {doubled.map((item, i) => (
           <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{item.label}</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: item.color, fontWeight: 600, letterSpacing: '0.05em' }}>{item.value}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{item.label}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: item.color, fontWeight: 600, letterSpacing: '0.05em' }}>{item.value}</span>
           </div>
         ))}
       </div>
@@ -550,7 +550,7 @@ export default function Dashboard() {
         {isSimulating && (
           <div style={{ position: 'absolute', top: '14px', left: '14px', zIndex: 10, display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', background: 'rgba(255,149,0,0.15)', border: '1px solid rgba(255,149,0,0.4)', borderRadius: '3px', backdropFilter: 'blur(8px)' }}>
             <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#FF9500', animation: 'blink-alert 1.5s ease-in-out infinite' }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF9500', letterSpacing: '0.12em' }}>SIMULATION MODE</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#FF9500', letterSpacing: '0.12em' }}>SIMULATION MODE</span>
           </div>
         )}
 
@@ -561,7 +561,7 @@ export default function Dashboard() {
             <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, transparent, ${color}50)` }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '5px 16px', background: `${color}14`, border: `1px solid ${color}50`, borderRadius: '20px', boxShadow: `0 0 20px ${color}15` }}>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 10px ${color}`, animation: 'blink-alert 2s ease-in-out infinite' }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>{regime.label}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>{regime.label}</span>
             </div>
             <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, ${color}50, transparent)` }} />
           </div>
@@ -577,18 +577,18 @@ export default function Dashboard() {
                   <RadarScan color={color} size={32} />
                 </div>
               </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center' }}>SYSTEMIC RISK</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center' }}>SYSTEMIC RISK</div>
               {/* Mini domain bars */}
               <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
                 {domains.slice(0, 3).map(d => {
                   const dc = getRiskColor(d.riskLevel);
                   return (
                     <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', width: '44px', textAlign: 'right', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.label.split(' ')[0]}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', width: '44px', textAlign: 'right', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.label.split(' ')[0]}</div>
                       <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${d.score * 10}%`, background: `linear-gradient(90deg, ${dc}80, ${dc})`, boxShadow: `0 0 4px ${dc}60`, transition: 'width 1.2s cubic-bezier(0.23,1,0.32,1)' }} />
                       </div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: dc, width: '20px', flexShrink: 0 }}>{d.score.toFixed(1)}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: dc, width: '20px', flexShrink: 0 }}>{d.score.toFixed(1)}</div>
                     </div>
                   );
                 })}
@@ -604,7 +604,7 @@ export default function Dashboard() {
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(240,244,255,0.4)', letterSpacing: '0.12em', marginTop: '-2px' }}>{regime.sublabel}</div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '8px' }}>
                 <div style={{ height: '1px', width: '24px', background: `${color}40` }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: `${color}80`, letterSpacing: '0.15em' }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: `${color}80`, letterSpacing: '0.15em' }}>
                   {overall.delta >= 0 ? '+' : ''}{overall.delta.toFixed(1)} vs baseline
                 </span>
                 <div style={{ height: '1px', width: '24px', background: `${color}40` }} />
@@ -616,22 +616,22 @@ export default function Dashboard() {
               {/* Top Threat */}
               <div style={{ background: 'rgba(255,45,85,0.06)', border: '1px solid rgba(255,45,85,0.18)', borderRadius: '6px', padding: '10px 12px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(255,45,85,0.3)', borderRight: '1px solid rgba(255,45,85,0.3)' }} />
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>TOP THREAT</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>TOP THREAT</div>
                 <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topThreat.label}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
                   <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.7)', lineHeight: 1 }}>{topThreat.score.toFixed(1)}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,45,85,0.5)' }}>/10</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(255,45,85,0.5)' }}>/10</span>
                 </div>
               </div>
 
               {/* Closest Analog */}
               <div style={{ background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.14)', borderRadius: '6px', padding: '10px 12px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(0,212,255,0.25)', borderRight: '1px solid rgba(0,212,255,0.25)' }} />
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(0,212,255,0.55)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>CLOSEST ANALOG</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(0,212,255,0.55)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>CLOSEST ANALOG</div>
                 <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '3px' }}>{analogs[0]?.era ?? '—'}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
                   <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#00D4FF', textShadow: '0 0 16px rgba(0,212,255,0.6)', lineHeight: 1 }}>{analogs[0]?.similarity ?? 0}%</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.5)' }}>{analogs[0]?.year ?? ''}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(0,212,255,0.5)' }}>{analogs[0]?.year ?? ''}</span>
                 </div>
               </div>
             </div>
@@ -643,7 +643,7 @@ export default function Dashboard() {
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: 'rgba(240,244,255,0.55)', lineHeight: 1.6, maxWidth: '420px', margin: '0 auto 4px' }}>
               FAULTLINE detects hidden systemic pressure building beneath financial markets before major regime shifts become obvious.
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.55)', lineHeight: 1.5, maxWidth: '380px', margin: '0 auto' }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(100,116,139,0.55)', lineHeight: 1.5, maxWidth: '380px', margin: '0 auto' }}>
               Monitor liquidity stress, credit pressure, speculative excess, and macro instability in real time.
             </div>
           </div>
@@ -663,9 +663,9 @@ export default function Dashboard() {
             { label: 'UPDATED', value: isLoading ? '...' : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), c: isLive ? '#00FF88' : '#FF9500', sub: isLive ? 'live feed' : 'simulated' },
           ].map(({ label, value, c, sub }, i) => (
             <div key={label} style={{ padding: '12px 10px', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.15em', marginBottom: '3px' }}>{label}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.15em', marginBottom: '3px' }}>{label}</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color: c, textShadow: `0 0 14px ${c}70`, lineHeight: 1 }}>{value}</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>{sub}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>{sub}</div>
             </div>
           ))}
         </div>
@@ -683,14 +683,14 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, animation: 'blink-alert 2s ease-in-out infinite' }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: color, textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Current Regime</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: color, textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Current Regime</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               {updatedAgo && (
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.55)', letterSpacing: '0.1em' }}>Updated {updatedAgo}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.55)', letterSpacing: '0.1em' }}>Updated {updatedAgo}</span>
               )}
               <div style={{ padding: '2px 7px', background: `${color}15`, border: `1px solid ${color}35`, borderRadius: '3px' }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{severityLabel(overall.riskLevel)}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color, letterSpacing: '0.12em', textTransform: 'uppercase' }}>{severityLabel(overall.riskLevel)}</span>
               </div>
             </div>
           </div>
@@ -700,13 +700,13 @@ export default function Dashboard() {
           <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#94A3B8', lineHeight: 1.65, marginBottom: '12px' }}>{regime.description}</div>
           {/* Key Shifts */}
           <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '7px' }}>Key Shifts</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '7px' }}>Key Shifts</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {keyShifts.map(shift => (
                 <div key={shift.label} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '3px 8px', background: `${shift.color}10`, border: `1px solid ${shift.color}25`, borderRadius: '3px' }}>
                   <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: shift.color, flexShrink: 0 }} />
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: shift.color, letterSpacing: '0.08em' }}>{shift.label}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.6)' }}>{shift.direction}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: shift.color, letterSpacing: '0.08em' }}>{shift.label}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.6)' }}>{shift.direction}</span>
                 </div>
               ))}
             </div>
@@ -716,7 +716,7 @@ export default function Dashboard() {
         {/* Bull vs Crash */}
         <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 150ms both' }}>
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Market Outcome Probability</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Market Outcome Probability</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Derived from the weighted composite of all domain scores. Historically, rising systemic pressure has preceded periods of increased volatility and liquidity stress.</div>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -741,7 +741,7 @@ export default function Dashboard() {
         {/* Risk heatmap with signal prioritization tiers */}
         <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 220ms both' }}>
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Risk Domain Heatmap</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Risk Domain Heatmap</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Each domain measures a distinct source of structural stress — liquidity conditions, credit pressure, speculative excess, and macro instability. Darker cells indicate elevated pressure.</div>
           </div>
           {/* Tier 1: Primary Signals */}
@@ -755,7 +755,7 @@ export default function Dashboard() {
                   <div style={{ marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#FF2D55', animation: 'blink-alert 1.5s ease-in-out infinite' }} />
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Primary Signals</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Primary Signals</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                       {primary.map((d, i) => <HeatCell key={d.id} label={d.label.split(' ')[0]} score={d.score} delay={i * 45} />)}
@@ -766,7 +766,7 @@ export default function Dashboard() {
                   <div style={{ marginBottom: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#FFD700' }} />
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FFD700', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Developing Pressures</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FFD700', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Developing Pressures</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                       {developing.map((d, i) => <HeatCell key={d.id} label={d.label.split(' ')[0]} score={d.score} delay={i * 45} />)}
@@ -777,7 +777,7 @@ export default function Dashboard() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00FF88' }} />
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Stable Conditions</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Stable Conditions</span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
                       {stable.map((d, i) => <HeatCell key={d.id} label={d.label.split(' ')[0]} score={d.score} delay={i * 45} />)}
@@ -798,7 +798,7 @@ export default function Dashboard() {
         {changedDomains.length > 0 && (
           <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 340ms both' }}>
             <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Regime Shift Signals</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Regime Shift Signals</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Domains where pressure has moved meaningfully since the prior reading. Sustained directional moves signal emerging regime conditions.</div>
           </div>
             {/* What Changed micro-summary */}
@@ -824,13 +824,13 @@ export default function Dashboard() {
         {/* Top Threat / Stabilizer */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 400ms both' }}>
           <div className="intel-module" style={{ padding: '14px', borderLeft: '3px solid #FF2D55' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Top Threat</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Top Threat</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '4px' }}>{topThreat.label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.6)', marginBottom: '5px', lineHeight: 1 }}>{topThreat.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#64748B' }}>/10</span></div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{topThreat.drivers[0] ?? topThreat.description}</div>
           </div>
           <div className="intel-module" style={{ padding: '14px', borderLeft: '3px solid #00FF88' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Stabilizer</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Stabilizer</div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '4px' }}>{topStabilizer.label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#00FF88', textShadow: '0 0 16px rgba(0,255,136,0.6)', marginBottom: '5px', lineHeight: 1 }}>{topStabilizer.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#64748B' }}>/10</span></div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{topStabilizer.drivers[0] ?? topStabilizer.description}</div>
@@ -840,11 +840,11 @@ export default function Dashboard() {
         {/* Live market instruments */}
         <div style={{ marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 460ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Market Stress Indicators</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Market Stress Indicators</span>
             {isLive && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: '2px' }}>
                 <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00FF88', animation: 'pulse-gold 2s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#00FF88', letterSpacing: '0.1em' }}>FRED LIVE</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', letterSpacing: '0.1em' }}>FRED LIVE</span>
               </div>
             )}
           </div>
@@ -882,7 +882,7 @@ export default function Dashboard() {
         {/* Historical analog */}
         <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 520ms both' }}>
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Historical Regime Analogs</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Historical Regime Analogs</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Current macro conditions most closely resemble these historical periods based on domain score patterns. Similarity reflects structural alignment, not price prediction.</div>
           </div>
           {/* What Changed — Analog context */}
@@ -919,7 +919,7 @@ export default function Dashboard() {
           <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', borderLeft: '3px solid #C084FC', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 580ms both' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#C084FC', boxShadow: '0 0 8px #C084FC', animation: 'blink-alert 2s ease-in-out infinite' }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#C084FC', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Speculative Concentration Risk</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#C084FC', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Speculative Concentration Risk</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '7px' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '30px', color: '#C084FC', textShadow: '0 0 20px rgba(192,132,252,0.6)', lineHeight: 1 }}>{aiDomain.score.toFixed(1)}</span>
@@ -934,7 +934,7 @@ export default function Dashboard() {
         {/* Core metrics */}
         <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 640ms both' }}>
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Core High-Signal Metrics</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '4px' }}>Core High-Signal Metrics</div>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: 'rgba(100,116,139,0.6)', lineHeight: 1.5 }}>Key indicators that carry the highest predictive weight in the pressure model. Deviations from historical norms are flagged as regime stress signals.</div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
@@ -945,8 +945,8 @@ export default function Dashboard() {
         {/* How FAULTLINE Works */}
         <details className="intel-module" style={{ padding: '14px 16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 700ms both' }}>
           <summary style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', listStyle: 'none', userSelect: 'none' }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em' }}>How FAULTLINE Works</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', marginLeft: 'auto' }}>tap to expand</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em' }}>How FAULTLINE Works</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#374151', marginLeft: 'auto' }}>tap to expand</span>
           </summary>
           <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.7, marginBottom: '10px' }}>
@@ -962,10 +962,10 @@ export default function Dashboard() {
                 ['Macro Regime Pressure', 'Inflation trajectory, Fed policy stance, and recession risk'],
               ].map(([label, desc]) => (
                 <div key={label} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#00D4FF', marginTop: '2px', flexShrink: 0 }}>›</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00D4FF', marginTop: '2px', flexShrink: 0 }}>›</span>
                   <div>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#D1D5DB' }}>{label}</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563' }}> — {desc}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#D1D5DB' }}>{label}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563' }}> — {desc}</span>
                   </div>
                 </div>
               ))}
@@ -1060,7 +1060,7 @@ export default function Dashboard() {
         </section>
         {/* Disclaimer */}
         <div style={{ textAlign: 'center', padding: '12px 0 4px' }}>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.1em' }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', letterSpacing: '0.1em' }}>
             PROBABILISTIC RISK INTELLIGENCE · NOT FINANCIAL ADVICE
           </span>
         </div>

@@ -135,7 +135,7 @@ function SearchBarTeaser() {
       </span>
       <span style={{
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.12em',
+        fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.12em',
       }}>SEARCH ANY TICKER</span>
     </div>
   );
@@ -175,13 +175,13 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
             <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '17px', color: '#F0F4FF', letterSpacing: '0.05em' }}>{stock.ticker}</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.6)', background: 'rgba(255,255,255,0.04)', padding: '1px 5px', borderRadius: '2px', letterSpacing: '0.1em' }}>{stock.cap}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.6)', background: 'rgba(255,255,255,0.04)', padding: '1px 5px', borderRadius: '2px', letterSpacing: '0.1em' }}>{stock.cap}</span>
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.04em' }}>{stock.name}</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.04em' }}>{stock.name}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>${stock.price.toFixed(2)}</div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: stock.change >= 0 ? '#00FF88' : '#FF2D55', letterSpacing: '0.06em' }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: stock.change >= 0 ? '#00FF88' : '#FF2D55', letterSpacing: '0.06em' }}>
             {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)}%
           </div>
         </div>
@@ -204,7 +204,7 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
           {stock.action}
         </span>
         <span style={{
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px',
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px',
           color: rc, padding: '2px 6px',
           background: `${rc}10`, border: `1px solid ${rc}25`, borderRadius: '2px',
           letterSpacing: '0.08em',
@@ -213,8 +213,8 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
         </span>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em' }}>CONFIDENCE</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: ac.text, fontWeight: 700 }}>{stock.confidence}%</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em' }}>CONFIDENCE</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: ac.text, fontWeight: 700 }}>{stock.confidence}%</span>
           </div>
           <ConfBar value={stock.confidence} color={ac.text} />
         </div>
@@ -226,7 +226,7 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
           const sc = SIGNAL_COLORS[sig] ?? SIGNAL_COLORS['Neutral / Watch'];
           return (
             <span key={sig} style={{
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', fontWeight: 700,
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 700,
               letterSpacing: '0.08em', textTransform: 'uppercase',
               padding: '2px 8px', borderRadius: '2px',
               background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`,
@@ -238,20 +238,20 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
       {/* Bull / Bear factors */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
         <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#00FF88', letterSpacing: '0.1em', marginBottom: '4px' }}>▲ BULLISH</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', letterSpacing: '0.1em', marginBottom: '4px' }}>▲ BULLISH</div>
           {stock.bullFactors.map(f => (
             <div key={f} style={{ display: 'flex', gap: '5px', marginBottom: '3px' }}>
-              <span style={{ color: '#00FF88', fontSize: '8px', flexShrink: 0, marginTop: '1px' }}>›</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.4 }}>{f}</span>
+              <span style={{ color: '#00FF88', fontSize: '12px', flexShrink: 0, marginTop: '1px' }}>›</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.4 }}>{f}</span>
             </div>
           ))}
         </div>
         <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FF2D55', letterSpacing: '0.1em', marginBottom: '4px' }}>▼ BEARISH</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FF2D55', letterSpacing: '0.1em', marginBottom: '4px' }}>▼ BEARISH</div>
           {stock.bearFactors.map(f => (
             <div key={f} style={{ display: 'flex', gap: '5px', marginBottom: '3px' }}>
-              <span style={{ color: '#FF2D55', fontSize: '8px', flexShrink: 0, marginTop: '1px' }}>›</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.4 }}>{f}</span>
+              <span style={{ color: '#FF2D55', fontSize: '12px', flexShrink: 0, marginTop: '1px' }}>›</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.4 }}>{f}</span>
             </div>
           ))}
         </div>
@@ -272,13 +272,13 @@ function MacroEnvPanel() {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
         <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00D4FF', boxShadow: '0 0 8px rgba(0,212,255,0.8)', animation: 'blink-alert 2s ease-in-out infinite' }} />
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Macro Regime Context</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Macro Regime Context</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
         {MACRO_METRICS.map(m => (
           <div key={m.label}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '2px' }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>{m.label.toUpperCase()}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>{m.label.toUpperCase()}</span>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '12px', color: m.color }}>
                 {typeof m.value === 'number' ? `${m.value}${m.unit}` : m.value}
               </span>
@@ -329,7 +329,7 @@ export default function HomeStockIntelSection() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
           <div style={{ height: '1px', flex: 1, background: 'linear-gradient(90deg, transparent, rgba(0,212,255,0.3))' }} />
           <span style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px',
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px',
             color: '#00D4FF', letterSpacing: '0.2em', textTransform: 'uppercase',
             padding: '3px 10px', background: 'rgba(0,212,255,0.08)',
             border: '1px solid rgba(0,212,255,0.2)', borderRadius: '2px',
@@ -376,7 +376,7 @@ export default function HomeStockIntelSection() {
               borderRadius: '3px',
             }}>
               <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: c as string, flexShrink: 0 }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(148,163,184,0.8)', letterSpacing: '0.06em' }}>{label}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(148,163,184,0.8)', letterSpacing: '0.06em' }}>{label}</span>
             </div>
           ))}
         </div>
@@ -399,24 +399,24 @@ export default function HomeStockIntelSection() {
           padding: '12px 14px',
           marginBottom: '14px',
         }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>Signal Classification System</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '10px' }}>Signal Classification System</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {MOMENTUM_CLASSES.map(mc => (
               <div key={mc.label} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                 <span style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', fontWeight: 700,
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 700,
                   letterSpacing: '0.06em', textTransform: 'uppercase',
                   padding: '2px 7px', borderRadius: '2px', flexShrink: 0,
                   background: `${mc.color}10`, color: mc.color, border: `1px solid ${mc.color}25`,
                 }}>{mc.label}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.55)', lineHeight: 1.5, paddingTop: '2px' }}>{mc.desc}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.55)', lineHeight: 1.5, paddingTop: '2px' }}>{mc.desc}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Stock intelligence cards */}
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '8px' }}>
           Live Signal Preview — 3 of 500+ Monitored Assets
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
@@ -441,7 +441,7 @@ export default function HomeStockIntelSection() {
             {['MSFT', 'TSLA', 'GLD', 'TLT', 'SPY'].map(t => (
               <div key={t} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                 <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#F0F4FF' }}>{t}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00D4FF' }}>████ ██%</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#00D4FF' }}>████ ██%</span>
               </div>
             ))}
           </div>
@@ -450,8 +450,8 @@ export default function HomeStockIntelSection() {
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '8px', opacity: 0.8 }}>
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00D4FF', letterSpacing: '0.15em', marginBottom: '4px' }}>495+ MORE ASSETS LOCKED</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>Full screener available to founding members</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#00D4FF', letterSpacing: '0.15em', marginBottom: '4px' }}>495+ MORE ASSETS LOCKED</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>Full screener available to founding members</div>
           </div>
         </div>
 
@@ -464,7 +464,7 @@ export default function HomeStockIntelSection() {
           textAlign: 'center',
           marginBottom: '4px',
         }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '8px' }}>
             Full Intelligence · 500+ Signals · Live Data
           </div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#F0F4FF', marginBottom: '12px', letterSpacing: '0.03em' }}>

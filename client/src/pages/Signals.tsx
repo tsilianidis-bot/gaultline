@@ -153,7 +153,7 @@ function TradingSignalBadge({ action, confidence, strength }: {
       </span>
       <span style={{
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '8px', color: 'rgba(100,116,139,0.6)',
+        fontSize: '12px', color: 'rgba(100,116,139,0.6)',
         letterSpacing: '0.06em',
       }}>{strength.toUpperCase()}</span>
     </div>
@@ -171,11 +171,11 @@ function ConfidenceBar({ confidence, action }: { confidence: number; action: Tra
       }}>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em',
+          fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em',
         }}>CONFIDENCE</span>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '8px', fontWeight: 700, color: c.text,
+          fontSize: '12px', fontWeight: 700, color: c.text,
         }}>{confidence}%</span>
       </div>
       <div style={{
@@ -208,7 +208,7 @@ function RegimeAlignmentBadge({ alignment, score }: {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '3px',
       fontFamily: "'IBM Plex Mono', monospace",
-      fontSize: '7px', letterSpacing: '0.08em',
+      fontSize: '11px', letterSpacing: '0.08em',
       color, padding: '1px 5px',
       background: `${color}10`,
       border: `1px solid ${color}25`,
@@ -227,7 +227,7 @@ function SignalTag({ signal }: { signal: FaultlineSignal }) {
       display: 'inline-block',
       padding: '2px 8px',
       borderRadius: '2px',
-      fontSize: '9px',
+      fontSize: '13px',
       fontFamily: "'IBM Plex Mono', monospace",
       letterSpacing: '0.08em',
       fontWeight: 700,
@@ -361,7 +361,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             }}>{stock.ticker}</span>
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '8px', letterSpacing: '0.1em',
+              fontSize: '12px', letterSpacing: '0.1em',
               color: 'rgba(100,116,139,0.8)',
               background: 'rgba(255,255,255,0.04)',
               padding: '1px 5px', borderRadius: '2px',
@@ -369,7 +369,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             {isLiveData && (
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '7px', letterSpacing: '0.08em',
+                fontSize: '11px', letterSpacing: '0.08em',
                 color: '#00D4FF', background: 'rgba(0,212,255,0.08)',
                 padding: '1px 4px', borderRadius: '2px',
                 border: '1px solid rgba(0,212,255,0.15)',
@@ -378,7 +378,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             {stock.earningsDaysAway !== undefined && stock.earningsDaysAway <= 14 && (
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '8px', letterSpacing: '0.08em',
+                fontSize: '12px', letterSpacing: '0.08em',
                 color: '#FFD700', background: 'rgba(255,215,0,0.1)',
                 padding: '1px 5px', borderRadius: '2px',
                 border: '1px solid rgba(255,215,0,0.2)',
@@ -387,7 +387,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           </div>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '9px', color: 'rgba(100,116,139,0.7)',
+            fontSize: '13px', color: 'rgba(100,116,139,0.7)',
             marginTop: '2px', maxWidth: '140px',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>{stock.name}</div>
@@ -432,7 +432,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           <div style={{
             marginTop: '5px',
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '8px', color: 'rgba(100,116,139,0.6)',
+            fontSize: '12px', color: 'rgba(100,116,139,0.6)',
             lineHeight: 1.4,
           }}>{tradingSignal.rationale}</div>
         </div>
@@ -457,7 +457,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             background: 'rgba(255,255,255,0.03)',
             borderRadius: '2px', padding: '4px 6px',
           }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.1em' }}>{label}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.1em' }}>{label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
           </div>
         ))}
@@ -480,7 +480,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               borderRadius: '2px', padding: '4px 6px',
               borderTop: `2px solid ${color}30`,
             }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>{label}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>{label}</div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
             </div>
           ))}
@@ -495,7 +495,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
         {stock.signals.length > 2 && (
           <span style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '9px', color: 'rgba(100,116,139,0.6)',
+            fontSize: '13px', color: 'rgba(100,116,139,0.6)',
             padding: '2px 6px',
           }}>+{stock.signals.length - 2}</span>
         )}
@@ -519,16 +519,16 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span style={{ fontSize: '10px', color: '#FF9500' }}>⚠</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', letterSpacing: '0.15em', color: 'rgba(255,153,0,0.7)' }}>PRO INTELLIGENCE LOCKED</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.15em', color: 'rgba(255,153,0,0.7)' }}>PRO INTELLIGENCE LOCKED</span>
               </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.5 }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.5 }}>
                 Stop loss, resistance, support, entry zone, and target price require a <span style={{ color: '#FF9500' }}>Premium or Founding</span> membership.
               </div>
               {/* Blurred placeholder grid */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', opacity: 0.25, pointerEvents: 'none', filter: 'blur(2px)' }}>
                 {['ENTRY', 'STOP LOSS', 'TARGET', 'R:R'].map(lbl => (
                   <div key={lbl} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '5px 4px', borderTop: '2px solid rgba(255,153,0,0.2)' }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>{lbl}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em', marginBottom: '2px' }}>{lbl}</div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color: '#FF9500' }}>———</div>
                   </div>
                 ))}
@@ -543,7 +543,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                   border: '1px solid rgba(255,153,0,0.35)',
                   borderRadius: '3px',
                   fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '8px', letterSpacing: '0.12em',
+                  fontSize: '12px', letterSpacing: '0.12em',
                   color: '#FF9500', textDecoration: 'none',
                   transition: 'background 0.15s',
                 }}
@@ -565,8 +565,8 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             }}>
               <div style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '7px', letterSpacing: '0.15em',
-                color: 'rgba(100,116,139,0.5)',
+                fontSize: '11px', letterSpacing: '0.15em',
+                color: 'rgba(100,116,139,0.75)',
                 marginBottom: '6px',
               }}>KEY PRICE LEVELS</div>
               {/* Top row: entry/stop/target/R:R */}
@@ -578,9 +578,9 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                   { label: 'RISK/REWARD', value: `${tradingSignal.priceLevels.riskReward}:1`, color: tradingSignal.priceLevels.riskReward >= 2 ? '#22C55E' : tradingSignal.priceLevels.riskReward >= 1.5 ? '#FFD700' : '#FF9500', sub: `ATR $${tradingSignal.priceLevels.atr.toFixed(2)}` },
                 ].map(({ label, value, color, sub }) => (
                   <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '5px 4px', borderTop: `2px solid ${color}30` }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.4)', marginTop: '1px' }}>{sub}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.65)', marginTop: '1px' }}>{sub}</div>
                   </div>
                 ))}
               </div>
@@ -591,8 +591,8 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                   { label: 'RESISTANCE', value: tradingSignal.priceLevels.resistance, color: '#FF9500' },
                 ].map(({ label, value, color }) => (
                   <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '4px' }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color }}>${value.toFixed(2)}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color }}>${value.toFixed(2)}</div>
                   </div>
                 ))}
               </div>
@@ -611,19 +611,19 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                 { label: 'VOLUME', value: tradingSignal.technicals.volumeSignal.toUpperCase(), color: tradingSignal.technicals.volumeSignal === 'Surge' ? '#FFD700' : tradingSignal.technicals.volumeSignal === 'Low' ? '#FF2D55' : '#94A3B8', badge: undefined },
               ].map(({ label, value, color, badge }) => (
                 <div key={label} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2px', padding: '4px 6px' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '3px' }}>
                     {label}
-                    {badge && <span style={{ fontSize: '5px', color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '0 3px', borderRadius: '2px' }}>{badge}</span>}
+                    {badge && <span style={{ fontSize: '13px', color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '0 3px', borderRadius: '2px' }}>{badge}</span>}
                   </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color }}>{value}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color }}>{value}</div>
                 </div>
               ))}
               {/* MACD row — only shown when real daily bars are available */}
               {tradingSignal.technicals.macd && (
                 <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '2px', padding: '4px 6px', gridColumn: '1 / -1' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em', display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '2px' }}>
                     MACD (12/26/9)
-                    <span style={{ fontSize: '5px', color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '0 3px', borderRadius: '2px' }}>TRUE</span>
+                    <span style={{ fontSize: '13px', color: '#22C55E', background: 'rgba(34,197,94,0.15)', padding: '0 3px', borderRadius: '2px' }}>TRUE</span>
                   </div>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     {[
@@ -633,8 +633,8 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                       { label: 'TREND', value: tradingSignal.technicals.macd.signal.toUpperCase(), color: tradingSignal.technicals.macd.signal === 'Bullish' ? '#00D4FF' : tradingSignal.technicals.macd.signal === 'Bearish' ? '#FF2D55' : '#94A3B8' },
                     ].map(({ label, value, color: c }) => (
                       <div key={label}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '6px', color: 'rgba(100,116,139,0.4)' }}>{label}</div>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color: c ?? '#94A3B8' }}>{value}</div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.65)' }}>{label}</div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', fontWeight: 700, color: c ?? '#94A3B8' }}>{value}</div>
                       </div>
                     ))}
                   </div>
@@ -658,7 +658,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               ] : []),
             ].map(({ label, value }) => (
               <div key={label}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>{label}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>{label}</div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#94A3B8' }}>{value}</div>
               </div>
             ))}
@@ -673,7 +673,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           <div style={{
             marginTop: '8px',
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '7px', color: 'rgba(55,65,81,0.6)',
+            fontSize: '11px', color: 'rgba(55,65,81,0.6)',
             letterSpacing: '0.08em',
           }}>
             {isLiveData ? 'SOURCE: POLYGON.IO · /api/signals/quotes' : `API: ${stock.apiSources.quote}`}
@@ -700,7 +700,7 @@ function TopSignalCard({ label, stock, color, icon, liveQuote }: { label: string
     }}>
       <div style={{
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '8px', letterSpacing: '0.12em',
+        fontSize: '12px', letterSpacing: '0.12em',
         color: 'rgba(100,116,139,0.6)',
         marginBottom: '6px', textTransform: 'uppercase',
       }}>{icon} {label}</div>
@@ -712,7 +712,7 @@ function TopSignalCard({ label, stock, color, icon, liveQuote }: { label: string
       }}>{stock.ticker}</div>
       <div style={{
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '9px', color: 'rgba(100,116,139,0.7)',
+        fontSize: '13px', color: 'rgba(100,116,139,0.7)',
         marginBottom: '4px',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
       }}>{stock.name}</div>
@@ -740,8 +740,8 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
       <div style={{
         display: 'flex', alignItems: 'center', gap: '6px',
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '8px', letterSpacing: '0.1em',
-        color: 'rgba(100,116,139,0.5)',
+        fontSize: '12px', letterSpacing: '0.1em',
+        color: 'rgba(100,116,139,0.75)',
       }}>
         <div style={{
           width: '6px', height: '6px', borderRadius: '50%',
@@ -765,7 +765,7 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
     <div style={{
       display: 'flex', alignItems: 'center', gap: '8px',
       fontFamily: "'IBM Plex Mono', monospace",
-      fontSize: '8px', letterSpacing: '0.1em',
+      fontSize: '12px', letterSpacing: '0.1em',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
         <div style={{
@@ -777,12 +777,12 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
         <span style={{ color }}>{label}</span>
       </div>
       {tradeDate && (
-        <span style={{ color: 'rgba(100,116,139,0.5)' }}>
+        <span style={{ color: 'rgba(100,116,139,0.75)' }}>
           SESSION: {tradeDate}
         </span>
       )}
       {lastUpdated && (
-        <span style={{ color: 'rgba(100,116,139,0.4)' }}>
+        <span style={{ color: 'rgba(100,116,139,0.65)' }}>
           UPDATED: {fmtTimestamp(lastUpdated)}
         </span>
       )}
@@ -835,18 +835,18 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '9px', letterSpacing: '0.2em',
-            color: 'rgba(100,116,139,0.5)',
+            fontSize: '13px', letterSpacing: '0.2em',
+            color: 'rgba(100,116,139,0.75)',
           }}>TRADING SIGNALS</span>
           <span style={{
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '9px', fontWeight: 700,
+            fontSize: '13px', fontWeight: 700,
             color: sentiment.color, letterSpacing: '0.1em',
           }}>{sentiment.label}</span>
         </div>
         <span style={{
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '8px', color: 'rgba(100,116,139,0.4)',
+          fontSize: '12px', color: 'rgba(100,116,139,0.65)',
         }}>AVG CONFIDENCE: <span style={{ color: '#94A3B8' }}>{avgConf}%</span></span>
       </div>
 
@@ -866,7 +866,7 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
             }}>
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '9px', fontWeight: 700,
+                fontSize: '13px', fontWeight: 700,
                 color: count > 0 ? c.text : 'rgba(100,116,139,0.3)',
                 letterSpacing: '0.1em',
               }}>{action}</span>
@@ -879,7 +879,7 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
               {strong > 0 && (
                 <span style={{
                   fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '7px', color: c.text,
+                  fontSize: '11px', color: c.text,
                   background: `${c.text}15`,
                   padding: '1px 4px', borderRadius: '2px',
                 }}>{strong} STRONG</span>
@@ -1145,23 +1145,23 @@ function SignalsInner() {
             }}>{regimeCtx.description}</p>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: '8px', color: 'rgba(100,116,139,0.5)', marginBottom: '2px' }}>REGIME SCORE</div>
+            <div style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', marginBottom: '2px' }}>REGIME SCORE</div>
             <div style={{
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700, fontSize: '22px',
               color: regimeColor,
-            }}>{engine?.output?.overall?.score?.toFixed(1) ?? '—'}<span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.5)' }}>/10</span></div>
+            }}>{engine?.output?.overall?.score?.toFixed(1) ?? '—'}<span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)' }}>/10</span></div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>FAVORS:</span>
-            <span style={{ fontSize: '9px', color: '#00D4FF' }}>{regimeCtx.bullish}</span>
+            <span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>FAVORS:</span>
+            <span style={{ fontSize: '13px', color: '#00D4FF' }}>{regimeCtx.bullish}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>AVOIDS:</span>
-            <span style={{ fontSize: '9px', color: '#FF2D55' }}>{regimeCtx.bearish}</span>
+            <span style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>AVOIDS:</span>
+            <span style={{ fontSize: '13px', color: '#FF2D55' }}>{regimeCtx.bearish}</span>
           </div>
         </div>
 
@@ -1192,8 +1192,8 @@ function SignalsInner() {
       <div style={{ padding: '16px 16px 0' }}>
         <div style={{
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '9px', letterSpacing: '0.2em',
-          color: 'rgba(100,116,139,0.5)',
+          fontSize: '13px', letterSpacing: '0.2em',
+          color: 'rgba(100,116,139,0.75)',
           textTransform: 'uppercase', marginBottom: '10px',
         }}>TODAY'S TOP SIGNALS</div>
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
@@ -1225,7 +1225,7 @@ function SignalsInner() {
                 onClick={() => setActiveCategory(cat)}
                 style={{
                   fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: '9px', letterSpacing: '0.08em',
+                  fontSize: '13px', letterSpacing: '0.08em',
                   padding: '6px 12px',
                   borderRadius: '2px',
                   border: isActive
@@ -1246,7 +1246,7 @@ function SignalsInner() {
                 }}
               >
                 {cat === 'All' ? 'ALL' : (CATEGORY_META[cat as ScreeningCategory]?.icon ?? '') + ' ' + cat.replace(/-/g, ' ')}
-                {isPriority && <span style={{ marginLeft: '4px', color: '#FFD700', fontSize: '7px' }}>★</span>}
+                {isPriority && <span style={{ marginLeft: '4px', color: '#FFD700', fontSize: '11px' }}>★</span>}
               </button>
             );
           })}
@@ -1255,7 +1255,7 @@ function SignalsInner() {
 
       {/* ── Filter Panel Toggle ───────────────────────────── */}
       <div style={{ padding: '12px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: '9px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em' }}>
+        <div style={{ fontSize: '13px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>
           {quotesLoading ? 'LOADING...' : `${displayedStocks.length} SIGNALS FOUND`}
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -1264,7 +1264,7 @@ function SignalsInner() {
             disabled={quotesLoading}
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '8px', letterSpacing: '0.1em',
+              fontSize: '12px', letterSpacing: '0.1em',
               padding: '4px 8px',
               border: '1px solid rgba(0,212,255,0.15)',
               borderRadius: '2px',
@@ -1279,7 +1279,7 @@ function SignalsInner() {
             disabled={computeSignalsMutation.isPending}
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '8px', letterSpacing: '0.1em',
+              fontSize: '12px', letterSpacing: '0.1em',
               padding: '4px 8px',
               border: '1px solid rgba(0,212,255,0.15)',
               borderRadius: '2px',
@@ -1293,7 +1293,7 @@ function SignalsInner() {
             onClick={() => setShowFilters(f => !f)}
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '9px', letterSpacing: '0.1em',
+              fontSize: '13px', letterSpacing: '0.1em',
               padding: '5px 12px',
               border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '2px',
@@ -1335,12 +1335,12 @@ function SignalsInner() {
             style={{
               marginTop: '10px',
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '8px', letterSpacing: '0.1em',
+              fontSize: '12px', letterSpacing: '0.1em',
               padding: '4px 10px',
               border: '1px solid rgba(255,255,255,0.06)',
               borderRadius: '2px',
               background: 'transparent',
-              color: 'rgba(100,116,139,0.5)',
+              color: 'rgba(100,116,139,0.75)',
               cursor: 'pointer',
             }}
           >RESET FILTERS</button>
@@ -1355,7 +1355,7 @@ function SignalsInner() {
           background: 'rgba(255,45,85,0.06)',
           border: '1px solid rgba(255,45,85,0.15)',
           borderRadius: '4px',
-          fontSize: '9px', color: 'rgba(255,45,85,0.8)',
+          fontSize: '13px', color: 'rgba(255,45,85,0.8)',
           letterSpacing: '0.08em',
         }}>
           ⚠ MARKET DATA ERROR: {quotesError} — Showing catalog data
@@ -1375,7 +1375,7 @@ function SignalsInner() {
         ) : displayedStocks.length === 0 ? (
           <div style={{
             textAlign: 'center', padding: '48px 24px',
-            color: 'rgba(100,116,139,0.4)',
+            color: 'rgba(100,116,139,0.65)',
             fontSize: '11px', letterSpacing: '0.1em',
           }}>NO SIGNALS MATCH CURRENT FILTERS</div>
         ) : (
@@ -1407,8 +1407,8 @@ function SignalsInner() {
         borderRadius: '4px',
       }}>
         <div style={{
-          fontSize: '8px', letterSpacing: '0.12em',
-          color: 'rgba(100,116,139,0.5)',
+          fontSize: '12px', letterSpacing: '0.12em',
+          color: 'rgba(100,116,139,0.75)',
           lineHeight: 1.6,
         }}>
           {quotesData?.source === 'live' ? (
@@ -1433,7 +1433,7 @@ function SignalsInner() {
       {/* ── Disclaimer ────────────────────────────────────── */}
       <div style={{
         margin: '16px 16px 0',
-        fontSize: '8px', letterSpacing: '0.08em',
+        fontSize: '12px', letterSpacing: '0.08em',
         color: 'rgba(55,65,81,0.5)',
         textAlign: 'center', lineHeight: 1.5,
       }}>
@@ -1447,14 +1447,14 @@ function SignalsInner() {
 function FilterSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
   return (
     <div>
-      <div style={{ fontSize: '7px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.5)', marginBottom: '4px' }}>{label}</div>
+      <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '4px' }}>{label}</div>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
         style={{
           width: '100%',
           fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: '9px',
+          fontSize: '13px',
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '2px',
@@ -1472,7 +1472,7 @@ function FilterSelect({ label, value, onChange, options }: { label: string; valu
 function FilterRange({ label, value, min, max, step, onChange, suffix = '' }: { label: string; value: number; min: number; max: number; step: number; onChange: (v: number) => void; suffix?: string }) {
   return (
     <div>
-      <div style={{ fontSize: '7px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.5)', marginBottom: '4px' }}>
+      <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '4px' }}>
         {label}: <span style={{ color: '#00D4FF' }}>{value}{suffix}</span>
       </div>
       <input
@@ -1490,12 +1490,12 @@ function FilterToggle({ label, value, onChange }: { label: string; value: boolea
       onClick={() => onChange(!value)}
       style={{
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: '8px', letterSpacing: '0.08em',
+        fontSize: '12px', letterSpacing: '0.08em',
         padding: '4px 10px',
         border: `1px solid ${value ? 'rgba(0,212,255,0.3)' : 'rgba(255,255,255,0.06)'}`,
         borderRadius: '2px',
         background: value ? 'rgba(0,212,255,0.1)' : 'transparent',
-        color: value ? '#00D4FF' : 'rgba(100,116,139,0.5)',
+        color: value ? '#00D4FF' : 'rgba(100,116,139,0.75)',
         cursor: 'pointer',
         transition: 'all 0.15s ease',
       }}
