@@ -49,7 +49,7 @@ export const appRouter = router({
 
     createCheckout: protectedProcedure
       .input(z.object({
-        planId: z.enum(['core', 'premium', 'founding', 'lifetime']),
+        planId: z.enum(['core', 'core_annual', 'premium', 'premium_annual', 'founding', 'lifetime']),
         origin: z.string().url(),
       }))
       .mutation(async ({ ctx, input }) => {

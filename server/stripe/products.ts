@@ -5,7 +5,7 @@
  * In production, replace with live price IDs.
  */
 
-export type PlanId = 'core' | 'premium' | 'founding' | 'lifetime';
+export type PlanId = 'core' | 'core_annual' | 'premium' | 'premium_annual' | 'founding' | 'lifetime';
 
 export interface Plan {
   id: PlanId;
@@ -27,6 +27,15 @@ export const PLANS: Record<PlanId, Plan> = {
     interval: 'month',
     tier: 'core',
   },
+  core_annual: {
+    id: 'core_annual',
+    name: 'FAULTLINE Core (Annual)',
+    description: 'Core toolkit billed annually — save 20% vs monthly.',
+    priceId: process.env.STRIPE_CORE_ANNUAL_PRICE_ID ?? null,
+    amount: 9588, // $95.88/year ($7.99/mo)
+    interval: 'year',
+    tier: 'core',
+  },
   premium: {
     id: 'premium',
     name: 'FAULTLINE Pro',
@@ -34,6 +43,15 @@ export const PLANS: Record<PlanId, Plan> = {
     priceId: process.env.STRIPE_PREMIUM_PRICE_ID ?? null,
     amount: 5900, // $59/month
     interval: 'month',
+    tier: 'premium',
+  },
+  premium_annual: {
+    id: 'premium_annual',
+    name: 'FAULTLINE Pro (Annual)',
+    description: 'Full intelligence platform billed annually — save 20% vs monthly.',
+    priceId: process.env.STRIPE_PREMIUM_ANNUAL_PRICE_ID ?? null,
+    amount: 56400, // $564/year ($47/mo)
+    interval: 'year',
     tier: 'premium',
   },
   founding: {

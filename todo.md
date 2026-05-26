@@ -567,12 +567,12 @@
 - [x] Save checkpoint
 
 ## Daily Blog Auto-Publisher (AGENT Cron)
-- [ ] Build POST /api/scheduled/publish-blog endpoint — accepts { title, subtitle, content, slug, category, tags } from agent, inserts as published post
-- [ ] Mount handler in server/_core/index.ts before Vite fallthrough
-- [ ] TypeScript check passes
-- [ ] Checkpoint + ask user to deploy
-- [ ] Create AGENT cron (daily 9am UTC) with ordered topic list prompt
-- [ ] Verify cron registered via manus-heartbeat list
+- [x] Build POST /api/scheduled/publish-blog endpoint — accepts { title, subtitle, content, slug, category, tags } from agent, inserts as published post
+- [x] Mount handler in server/_core/index.ts before Vite fallthrough
+- [x] TypeScript check passes
+- [x] Checkpoint + ask user to deploy
+- [x] Create AGENT cron (daily 9am UTC) with ordered topic list prompt
+- [x] Verify cron registered via manus-heartbeat list
 
 ## X Post Generator (Admin Feature)
 - [x] Build server/xPostGenerator.ts — LLM-powered post generator using live pressure data
@@ -589,32 +589,32 @@
 - [x] Save checkpoint
 
 ## X Auto-Posting Automation
-- [ ] Store X API credentials as secrets (X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET)
-- [ ] Install twitter-api-v2 npm package
-- [ ] Build server/xPoster.ts — Twitter API v2 client, postTweet(), postThread() helpers
-- [ ] Build server/newsMonitor.ts — Polygon.io news polling, significance scoring via LLM, cooldown logic
-- [ ] Add xPostQueue table to drizzle schema (id, postType, variant, content, status, postedAt, xPostId, headline, createdAt)
-- [ ] Apply migration SQL for xPostQueue table
-- [ ] Build /api/scheduled/x-post-scheduled endpoint (premarket/midday/closing trigger)
-- [ ] Build /api/scheduled/x-news-monitor endpoint (polls news, triggers breaking alerts)
-- [ ] Register 3 daily cron jobs (8:10am, 12pm, 3:45pm ET) + news monitor every 15 min
-- [ ] Build X Post Queue admin UI at /app/x-posts (shows queue, status, posted content)
-- [ ] TypeScript check passes
-- [ ] Save checkpoint
+- [x] Store X API credentials as secrets (X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET)
+- [x] Install twitter-api-v2 npm package
+- [x] Build server/xPoster.ts — Twitter API v2 client, postTweet(), postThread() helpers
+- [x] Build server/newsMonitor.ts — Polygon.io news polling, significance scoring via LLM, cooldown logic
+- [x] Add xPostQueue table to drizzle schema (id, postType, variant, content, status, postedAt, xPostId, headline, createdAt)
+- [x] Apply migration SQL for xPostQueue table
+- [x] Build /api/scheduled/x-post-scheduled endpoint (premarket/midday/closing trigger)
+- [x] Build /api/scheduled/x-news-monitor endpoint (polls news, triggers breaking alerts)
+- [x] Register 3 daily cron jobs (8:10am, 12pm, 3:45pm ET) + news monitor every 15 min
+- [x] Build X Post Queue admin UI at /app/x-posts (shows queue, status, posted content)
+- [x] TypeScript check passes
+- [x] Save checkpoint
 
 ## Track Record Page (Historical Backfill)
-- [ ] Fetch FRED historical data 2000–2026 (BAMLH0A0HYM2, DGS10, DGS2, FEDFUNDS, CPIAUCSL, UNRATE, PPIACO)
-- [ ] Run Pressure Index engine on monthly snapshots to build 25-year backfill
-- [ ] Fetch S&P 500 historical data for outcome comparison
-- [ ] Identify regime escalation events and score accuracy
-- [ ] Add pressureHistory table to schema and migrate
-- [ ] Seed database with backfilled monthly readings (2000–2026)
-- [ ] Add tRPC procedures: trackRecord.getHistory, trackRecord.getRegimeEvents
-- [ ] Build public /track-record page with timeline chart, regime events table, accuracy stats
-- [ ] Add Track Record link to marketing site nav and AppLayout
-- [ ] TypeScript check passes
-- [ ] Save checkpoint
-- [ ] Assess findings and deliver credibility analysis
+- [x] Fetch FRED historical data 2000–2026 (BAMLH0A0HYM2, DGS10, DGS2, FEDFUNDS, CPIAUCSL, UNRATE, PPIACO)
+- [x] Run Pressure Index engine on monthly snapshots to build 25-year backfill
+- [x] Fetch S&P 500 historical data for outcome comparison
+- [x] Identify regime escalation events and score accuracy
+- [x] Add pressureHistory table to schema and migrate
+- [x] Seed database with backfilled monthly readings (2000–2026)
+- [x] Add tRPC procedures: trackRecord.getHistory, trackRecord.getRegimeEvents
+- [x] Build public /track-record page with timeline chart, regime events table, accuracy stats
+- [x] Add Track Record link to marketing site nav and AppLayout
+- [x] TypeScript check passes
+- [x] Save checkpoint
+- [x] Assess findings and deliver credibility analysis
 
 ## Track Record Page — Historical Pressure Index (2000–2026)
 - [x] Calibrate backfill scoring engine with crisis amplifier (max 82 in Oct 2008)
@@ -643,17 +643,17 @@
 - [x] Cross-navigation links: Portfolio → Signals (VIEW FULL SIGNAL ANALYSIS per ticker, OPEN SIGNALS ENGINE in header); Signals → Portfolio (ADD TO PORTFOLIO per stock card)
 
 ## Tiered Pricing Restructure (Free / Core / Pro / Founding)
-- [ ] Add 'core' to accessTier enum in drizzle/schema.ts and run migration
-- [ ] Add core plan ($9.99/mo) to server/stripe/products.ts
-- [ ] Add coreProcedure middleware to server/_core/trpc.ts
-- [ ] Update routers.ts: Portfolio and Signals procedures use coreProcedure
-- [ ] Add 'core' variant to PremiumGate.tsx with $9.99 upgrade prompt
-- [ ] Update UserAccount.tsx: Core tier badge, upgrade button, tier benefits
-- [ ] Update MarketingSite.tsx: Add Core tier card to pricing section (4-tier layout)
-- [ ] Add public /pressure-index page (no login, shows live Pressure Index score + regime)
-- [ ] Update admin.setUserTier to accept 'core' tier
-- [ ] Update tier.test.ts for new 'core' tier
-- [ ] Run full test suite and save checkpoint
+- [x] Add 'core' to accessTier enum in drizzle/schema.ts and run migration
+- [x] Add core plan ($9.99/mo) to server/stripe/products.ts
+- [x] Add coreProcedure middleware to server/_core/trpc.ts
+- [x] Update routers.ts: Portfolio and Signals procedures use coreProcedure
+- [x] Add 'core' variant to PremiumGate.tsx with $9.99 upgrade prompt
+- [x] Update UserAccount.tsx: Core tier badge, upgrade button, tier benefits
+- [x] Update MarketingSite.tsx: Add Core tier card to pricing section (4-tier layout)
+- [x] Add public /pressure-index page (no login, shows live Pressure Index score + regime)
+- [x] Update admin.setUserTier to accept 'core' tier
+- [x] Update tier.test.ts for new 'core' tier
+- [x] Run full test suite and save checkpoint
 - [x] Add 'core' to accessTier enum in schema.ts and apply DB migration
 - [x] Add coreProcedure middleware in server/_core/trpc.ts
 - [x] Gate portfolio, signals, and altRotation procedures behind coreProcedure
@@ -664,3 +664,17 @@
 - [x] Add PremiumGateFull 'altRotation' variant with Core upgrade prompt
 - [x] Update MarketingSite.tsx pricing to 4-tier grid (Free/Core/Pro/Founding)
 - [x] Create public /pressure-index page (no login required, live gauge)
+
+## Pricing Architecture Refinement (v2)
+- [ ] Rename "Observer" → "Preview Access" in MarketingSite pricing
+- [ ] Update Free tier features: limited stock/crypto previews, daily macro snapshot, teaser dashboards, limited searches, public market briefings
+- [ ] Add "Unlock Full Intelligence" CTA to free tier card
+- [ ] Update Core tier positioning copy: "Mobile-first market intelligence"
+- [ ] Update Core features: limited signals, crypto signals, portfolio, alt rotation, daily briefings, volatility monitoring, push alerts, watchlist, limited Aftershock alerts, macro snapshot feed
+- [ ] Add "MOST POPULAR ENTRY" label to Core tier card
+- [ ] Update Pro tier positioning: "Institutional-grade intelligence" with full feature list
+- [ ] Update Founding tier: add scarcity counter, "Founding Access Closing Soon", "Limited Founding Cohort" badge
+- [x] Add annual billing toggle to pricing section (Core Annual, Pro Annual, 20% savings)
+- [x] Expand /pressure-index page: market regime summary, macro explanation, teaser premium cards, locked premium cards, CTAs
+- [x] Strengthen premium psychology: glass cards, glow effects, lock overlays, animated transitions in PremiumGate
+- [ ] Update UserAccount.tsx tier configs to match new positioning

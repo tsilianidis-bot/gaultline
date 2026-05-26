@@ -820,151 +820,310 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
 
 // ── Pricing ───────────────────────────────────────────────────
 function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
-  const tiers = [
+  const [annual, setAnnual] = useState(false);
+  // Scarcity: founding slots remaining (static for now, can be made dynamic)
+  const foundingSlots = 47;
+
+  type Tier = {
+    name: string;
+    tagline: string;
+    price: string;
+    annualPrice?: string;
+    annualSub?: string;
+    priceSub: string;
+    desc: string;
+    features: string[];
+    cta: string;
+    ctaLink?: string;
+    ctaAction?: () => void;
+    featured: boolean;
+    popularLabel?: string;
+    scarcity?: boolean;
+    accentColor: string;
+    glowColor: string;
+  };
+
+  const tiers: Tier[] = [
     {
-      name: "OBSERVER",
+      name: "PREVIEW ACCESS",
+      tagline: "Free Intelligence",
       price: "Free",
-      desc: "Start monitoring systemic pressure. No credit card required.",
+      priceSub: "no credit card required",
+      desc: "Start monitoring systemic pressure. Discover what institutional intelligence feels like.",
       features: [
-        "Homepage & public previews",
-        "FAULTLINE Pressure Index™ (preview)",
-        "Basic macro snapshots",
+        "FAULTLINE Pressure Index™ (live preview)",
+        "Limited stock intelligence previews",
+        "Limited crypto signal previews",
+        "Daily macro snapshot",
         "Teaser dashboards",
+        "Limited market searches",
+        "Public market briefings",
       ],
-      cta: "Join Free",
+      cta: "Unlock Full Intelligence",
       ctaLink: PLATFORM_URL,
       featured: false,
       accentColor: "#64748B",
+      glowColor: "rgba(100,116,139,0.12)",
     },
     {
-      name: "CORE",
-      price: "$9.99/mo",
-      priceSub: "essential toolkit — cancel anytime",
-      desc: "The essential FAULTLINE toolkit — signals, portfolio, and rotation intelligence.",
+      name: "FAULTLINE CORE",
+      tagline: "Mobile-first market intelligence.",
+      price: "$9.99",
+      annualPrice: "$7.99",
+      annualSub: "billed $95.88/year — save 20%",
+      priceSub: "/month — cancel anytime",
+      desc: "Fast, intelligent, connected. Built for traders who want institutional signals without the institutional price.",
       features: [
-        "Signals screener (BUY/SELL/HOLD/WATCH)",
+        "Limited stock signals (BUY/SELL/HOLD)",
+        "Limited crypto signals",
         "Portfolio tracker with live P&L",
-        "Alt Rotation engine",
-        "Dashboard & macro snapshots",
-        "Regime-aware risk scoring",
+        "Alt Rotation tracking",
+        "Daily market briefings",
+        "Volatility monitoring",
+        "Push alerts",
+        "Watchlist",
+        "Limited Aftershock alerts",
+        "Macro snapshot feed",
       ],
       cta: "Get Core Access",
       ctaLink: PLATFORM_URL,
       featured: false,
+      popularLabel: "MOST POPULAR ENTRY",
       accentColor: "#22D3EE",
+      glowColor: "rgba(34,211,238,0.1)",
     },
     {
-      name: "PRO",
-      price: "$59/mo",
-      priceSub: "full intelligence platform",
-      desc: "The complete institutional intelligence suite — AI guidance, crypto, and all advanced engines.",
+      name: "FAULTLINE PRO",
+      tagline: "Institutional-grade intelligence.",
+      price: "$59",
+      annualPrice: "$47",
+      annualSub: "billed $564/year — save 20%",
+      priceSub: "/month — cancel anytime",
+      desc: "The complete intelligence suite. Every engine, every signal, every edge — fully unlocked.",
       features: [
         "Everything in Core",
-        "AI Position Guidance™",
-        "Diagnostic AI™ analysis",
-        "Crypto intelligence engine",
-        "Aftershock Engine™",
-        "Real-time risk alerts",
-        "Full watchlists & search",
+        "AI Diagnostic Intelligence™",
+        "Full crypto intelligence engine",
+        "Advanced market analysis",
+        "Advanced systemic-risk engine",
+        "Full dashboard suite",
+        "Premium alerts",
+        "Advanced watchlists",
+        "Macro regime analysis",
+        "Advanced Aftershock Engine™",
+        "Historical analog engine",
+        "Full risk scoring system",
       ],
       cta: "Upgrade to Pro",
       ctaAction: onRequestAccess,
       featured: true,
       accentColor: "#00D4FF",
+      glowColor: "rgba(0,212,255,0.15)",
     },
     {
-      name: "FOUNDING MEMBER",
-      price: "$49/mo",
-      priceSub: "locked for life — reg. $59/mo",
-      desc: "All Pro features at the founding rate, locked forever. Never increases.",
+      name: "FOUNDING ACCESS",
+      tagline: "Early institutional access.",
+      price: "$49",
+      priceSub: "/month — locked for life",
+      desc: "Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.",
       features: [
         "Everything in Pro",
-        "Founding member badge",
-        "Rate locked for life",
-        "Early access to new features",
-        "Priority support",
+        "Permanent discounted rate",
+        "Founder badge",
+        "Future feature grandfathering",
+        "Roadmap previews",
+        "Priority feature access",
+        "Early beta systems",
+        "Exclusive founder-only tools",
       ],
       cta: "Lock In $49/mo",
       ctaAction: onRequestAccess,
       featured: false,
+      scarcity: true,
       accentColor: "#FFD700",
+      glowColor: "rgba(255,215,0,0.12)",
     },
   ];
 
   return (
-    <section id="access" className="py-24 bg-[#050608] relative">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,rgba(255,215,0,0.03)_0%,transparent_70%)]" />
+    <section id="access" className="py-24 bg-[#050608] relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,rgba(0,212,255,0.03)_0%,transparent_70%)]" />
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="text-center mb-16">
+
+        {/* Header */}
+        <div className="text-center mb-12">
           <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 border border-[#00D4FF]/20 px-4 py-1.5 rounded-full mb-4">
             INTELLIGENCE ACCESS
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
             Start free. Scale to<br /><span className="text-[#00D4FF]">institutional intelligence.</span>
           </h2>
-          <p className="text-[#A8B8CC] max-w-xl mx-auto text-base">
+          <p className="text-[#A8B8CC] max-w-xl mx-auto text-base mb-8">
             From free monitoring to the full institutional suite — choose the tier that fits your edge.
           </p>
+
+          {/* Annual toggle */}
+          <div className="inline-flex items-center gap-3 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] rounded-full px-5 py-2.5">
+            <span className={`text-xs font-mono tracking-widest transition-colors ${
+              !annual ? 'text-white' : 'text-[#64748B]'
+            }`}>MONTHLY</span>
+            <button
+              onClick={() => setAnnual(!annual)}
+              className="relative w-10 h-5 rounded-full transition-all duration-300"
+              style={{ background: annual ? 'rgba(0,212,255,0.4)' : 'rgba(255,255,255,0.1)' }}
+            >
+              <span
+                className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all duration-300"
+                style={{ left: annual ? '22px' : '2px', boxShadow: annual ? '0 0 8px rgba(0,212,255,0.6)' : 'none' }}
+              />
+            </button>
+            <span className={`text-xs font-mono tracking-widest transition-colors ${
+              annual ? 'text-[#00D4FF]' : 'text-[#64748B]'
+            }`}>ANNUAL</span>
+            {annual && (
+              <span className="text-[9px] font-mono font-bold tracking-widest text-[#00FF88] bg-[rgba(0,255,136,0.1)] border border-[rgba(0,255,136,0.25)] px-2 py-0.5 rounded-full">
+                SAVE 20%
+              </span>
+            )}
+          </div>
         </div>
 
+        {/* Tier cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
           {tiers.map((tier, i) => (
             <div
               key={i}
-              className={`relative p-6 rounded-lg border transition-all duration-300 ${
-                tier.featured
-                  ? "border-[#00D4FF]/40 bg-[#0C0F16] shadow-[0_0_40px_rgba(0,212,255,0.08)]"
-                  : "border-[rgba(255,255,255,0.07)] bg-[#0C0F16]"
-              }`}
+              className="relative rounded-xl border transition-all duration-300 overflow-hidden"
+              style={{
+                background: `linear-gradient(135deg, rgba(12,15,22,0.95) 0%, rgba(8,10,16,0.98) 100%)`,
+                borderColor: tier.featured ? tier.accentColor + '50' : 'rgba(255,255,255,0.07)',
+                boxShadow: tier.featured ? `0 0 40px ${tier.glowColor}, inset 0 1px 0 rgba(255,255,255,0.05)` : `inset 0 1px 0 rgba(255,255,255,0.03)`,
+              }}
             >
+              {/* Glass shimmer top border */}
+              <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${tier.accentColor}40, transparent)` }} />
+
+              {/* Popular label */}
+              {tier.popularLabel && (
+                <div
+                  className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold tracking-widest px-4 py-1 rounded-full"
+                  style={{ background: tier.accentColor + '20', border: `1px solid ${tier.accentColor}50`, color: tier.accentColor }}
+                >
+                  {tier.popularLabel}
+                </div>
+              )}
+
+              {/* Recommended badge */}
               {tier.featured && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00D4FF] text-[#050608] text-[9px] font-mono font-bold tracking-widest px-4 py-1 rounded-full">
                   RECOMMENDED
                 </div>
               )}
-              <div className="mb-5">
-                <div className="text-[10px] font-mono tracking-[0.3em] text-[#64748B] mb-1">{tier.name}</div>
-                <div className="text-2xl font-bold mb-0.5" style={{ color: (tier as {accentColor?: string}).accentColor ?? '#ffffff' }}>{tier.price}</div>
-                {'priceSub' in tier && tier.priceSub && (
-                  <div className="text-[10px] font-mono text-[#64748B] mb-1">{(tier as {priceSub: string}).priceSub}</div>
+
+              <div className="p-6">
+                {/* Tier name + tagline */}
+                <div className="mb-4">
+                  <div className="text-[9px] font-mono tracking-[0.3em] mb-1" style={{ color: tier.accentColor + '80' }}>{tier.name}</div>
+                  <div className="text-[11px] font-mono tracking-widest mb-3" style={{ color: tier.accentColor }}>{tier.tagline}</div>
+
+                  {/* Price */}
+                  <div className="flex items-baseline gap-1 mb-0.5">
+                    <span className="text-3xl font-bold" style={{ color: tier.accentColor }}>
+                      {annual && tier.annualPrice ? tier.annualPrice : tier.price}
+                    </span>
+                    {tier.price !== 'Free' && (
+                      <span className="text-[11px] font-mono text-[#64748B]">{tier.priceSub}</span>
+                    )}
+                  </div>
+                  {annual && tier.annualSub && (
+                    <div className="text-[9px] font-mono text-[#00FF88]/70 mb-2">{tier.annualSub}</div>
+                  )}
+                  {!annual && tier.price === 'Free' && (
+                    <div className="text-[10px] font-mono text-[#64748B] mb-2">{tier.priceSub}</div>
+                  )}
+
+                  <div className="text-[#A8B8CC] text-xs leading-relaxed mt-2">{tier.desc}</div>
+                </div>
+
+                {/* Features */}
+                <ul className="space-y-2 mb-5">
+                  {tier.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-xs text-[#A8B8CC]">
+                      <span className="mt-0.5 flex-shrink-0 text-[10px]" style={{ color: tier.accentColor }}>✓</span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Scarcity block for Founding */}
+                {tier.scarcity && (
+                  <div
+                    className="mb-4 rounded-lg p-3"
+                    style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)' }}
+                  >
+                    <div className="text-[9px] font-mono tracking-widest text-[#FFD700]/70 mb-1">LIMITED FOUNDING COHORT</div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-mono font-bold text-[#FFD700]">{foundingSlots} slots remaining</span>
+                      <span className="text-[9px] font-mono text-[#FF9500] animate-pulse">CLOSING SOON</span>
+                    </div>
+                    <div className="mt-2 h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${(foundingSlots / 200) * 100}%`,
+                          background: 'linear-gradient(90deg, #FFD700, #FF9500)',
+                          boxShadow: '0 0 8px rgba(255,215,0,0.4)',
+                        }}
+                      />
+                    </div>
+                  </div>
                 )}
-                <div className="text-[#A8B8CC] text-sm leading-relaxed">{tier.desc}</div>
+
+                {/* CTA */}
+                {tier.ctaAction ? (
+                  <button
+                    onClick={tier.ctaAction}
+                    className="w-full py-3 font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200 active:scale-[0.97]"
+                    style={{
+                      background: tier.featured
+                        ? tier.accentColor
+                        : `${tier.accentColor}15`,
+                      border: `1px solid ${tier.accentColor}${tier.featured ? 'ff' : '40'}`,
+                      color: tier.featured ? '#050608' : tier.accentColor,
+                      boxShadow: tier.featured ? `0 0 20px ${tier.accentColor}40` : 'none',
+                    }}
+                    onMouseEnter={e => {
+                      if (!tier.featured) (e.currentTarget.style.background = `${tier.accentColor}25`);
+                    }}
+                    onMouseLeave={e => {
+                      if (!tier.featured) (e.currentTarget.style.background = `${tier.accentColor}15`);
+                    }}
+                  >
+                    {tier.cta.toUpperCase()}
+                  </button>
+                ) : (
+                  <a
+                    href={tier.ctaLink}
+                    className="block w-full py-3 text-center font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200"
+                    style={{
+                      background: `${tier.accentColor}10`,
+                      border: `1px solid ${tier.accentColor}30`,
+                      color: tier.accentColor,
+                    }}
+                    onMouseEnter={e => { (e.currentTarget.style.background = `${tier.accentColor}20`); }}
+                    onMouseLeave={e => { (e.currentTarget.style.background = `${tier.accentColor}10`); }}
+                  >
+                    {tier.cta.toUpperCase()}
+                  </a>
+                )}
               </div>
-              <ul className="space-y-2 mb-6">
-                {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-[#A8B8CC]">
-                    <span className="mt-0.5 flex-shrink-0" style={{ color: (tier as {accentColor?: string}).accentColor ?? '#00D4FF' }}>✓</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              {tier.ctaAction ? (
-                <button
-                  onClick={tier.ctaAction}
-                  className={`w-full py-3 font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97] ${
-                    tier.featured
-                      ? "bg-[#00D4FF] hover:bg-[#00D4FF]/90 text-[#050608]"
-                      : "border border-[rgba(255,255,255,0.15)] hover:border-[#00D4FF]/40 text-white"
-                  }`}
-                >
-                  {tier.cta.toUpperCase()}
-                </button>
-              ) : (
-                <a
-                  href={tier.ctaLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block w-full py-3 text-center font-mono font-bold text-sm tracking-widest rounded border border-[rgba(255,255,255,0.15)] hover:border-[#00D4FF]/40 text-white transition-all duration-150"
-                >
-                  {tier.cta.toUpperCase()}
-                </a>
-              )}
             </div>
           ))}
         </div>
 
-        <p className="text-center text-[#64748B] text-sm font-mono mt-8">
-          Institutional-grade macro intelligence. All plans cancel anytime. Founding pricing locks at signup.
+        <p className="text-center text-[#64748B] text-xs font-mono mt-8 tracking-widest">
+          INSTITUTIONAL-GRADE MACRO INTELLIGENCE · ALL PLANS CANCEL ANYTIME · FOUNDING PRICING LOCKS AT SIGNUP
         </p>
       </div>
     </section>

@@ -27,6 +27,7 @@ interface PremiumGateConfig {
   description: string;
   icon: React.ReactNode;
   accentColor: string;       // Tailwind text color class
+  accentHex: string;         // Raw hex for CSS usage
   glowColor: string;         // CSS color for box-shadow glow
   ctaPrimary: string;
   ctaSecondary: string;
@@ -42,6 +43,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "This module is reserved for FAULTLINE founding members. Gain access to the full institutional intelligence suite — macro, signals, crypto, and systemic risk.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
     ctaPrimary: "Request Founding Access",
     ctaSecondary: "Join Early Access",
@@ -60,6 +62,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Unlock with Core at $9.99/mo.",
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
     ctaPrimary: "Unlock Core — $9.99/mo",
     ctaSecondary: "Upgrade to Pro",
@@ -78,6 +81,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "Track your positions with live P&L and regime-aware risk scoring. Available from Core at $9.99/mo. AI guidance requires Pro.",
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
     ctaPrimary: "Unlock Core — $9.99/mo",
     ctaSecondary: "Upgrade to Pro",
@@ -96,6 +100,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "Monitor rotation signals across crypto, commodities, and alternative assets. Available from Core at $9.99/mo.",
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
     ctaPrimary: "Unlock Core — $9.99/mo",
     ctaSecondary: "Upgrade to Pro",
@@ -114,6 +119,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "The FAULTLINE Pressure Index™ and systemic risk engine analyze macro conditions, liquidity, Treasury stress, and volatility regimes in real time.",
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-orange-400",
+    accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
     ctaSecondary: "Request Founding Access",
@@ -132,7 +138,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "Full access to FAULTLINE's institutional intelligence suite requires Pro membership. Preview limited metrics below.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
-    glowColor: "rgba(34,211,238,0.15)",
+    accentHex: "#00D4FF",
+    glowColor: "rgba(0,212,255,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
     ctaSecondary: "Request Founding Access",
     features: [
@@ -150,6 +157,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "FAULTLINE's crypto intelligence engine tracks digital asset risk, liquidity, momentum, and macro correlation across BTC, ETH, SOL, and hundreds of tokens.",
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-blue-400",
+    accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
     ctaSecondary: "Request Founding Access",
@@ -168,6 +176,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "The Aftershock Engine™ detects primary market ruptures and identifies assets likely to experience delayed secondary reactions — sympathy momentum, sector echoes, and macro shockwaves.",
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-orange-400",
+    accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
     ctaSecondary: "Request Founding Access",
@@ -186,6 +195,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "Save tokens, monitor live signal labels, and compare assets side-by-side. Available to Pro and Founding members.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-blue-400",
+    accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
     ctaPrimary: "Unlock Pro — $59/mo",
     ctaSecondary: "Request Founding Access",
@@ -266,37 +276,50 @@ export function PremiumGateFull({
         <div
           className="absolute inset-0 overflow-hidden pointer-events-none select-none"
           aria-hidden="true"
-          style={{ filter: "blur(6px)", opacity: 0.25 }}
+          style={{ filter: "blur(8px)", opacity: 0.18 }}
         >
           {children}
         </div>
       )}
 
+      {/* Ambient glow behind gate card */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(ellipse 50% 40% at 50% 50%, ${cfg.accentHex}08 0%, transparent 70%)`,
+        }}
+      />
+
       {/* Gate overlay */}
       <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-16">
         <div
-          className="w-full max-w-2xl rounded-2xl border border-white/10 p-10 text-center"
+          className="w-full max-w-2xl rounded-2xl p-10 text-center relative overflow-hidden"
           style={{
-            background:
-              "linear-gradient(135deg, rgba(10,14,26,0.97) 0%, rgba(15,20,35,0.97) 100%)",
-            boxShadow: `0 0 80px ${cfg.glowColor}, 0 0 0 1px rgba(255,255,255,0.05)`,
+            background: "linear-gradient(135deg, rgba(10,14,26,0.97) 0%, rgba(15,20,35,0.97) 100%)",
+            border: `1px solid ${cfg.accentHex}25`,
+            boxShadow: `0 0 80px ${cfg.glowColor}, 0 0 160px ${cfg.glowColor.replace('0.15', '0.06')}, inset 0 1px 0 rgba(255,255,255,0.05)`,
           }}
         >
+          {/* Top shimmer line */}
+          <div
+            className="absolute top-0 left-0 right-0 h-px"
+            style={{ background: `linear-gradient(90deg, transparent, ${cfg.accentHex}50, transparent)` }}
+          />
+
           {/* Icon */}
           <div
             className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-6 ${cfg.accentColor}`}
             style={{
-              background: cfg.glowColor,
-              border: `1px solid ${cfg.glowColor.replace("0.15", "0.4")}`,
+              background: `${cfg.accentHex}12`,
+              border: `1px solid ${cfg.accentHex}35`,
+              boxShadow: `0 0 24px ${cfg.accentHex}20`,
             }}
           >
             {cfg.icon}
           </div>
 
           {/* Subtitle */}
-          <p
-            className={`text-xs font-mono tracking-[0.2em] uppercase mb-3 ${cfg.accentColor}`}
-          >
+          <p className={`text-[10px] font-mono tracking-[0.3em] uppercase mb-3 ${cfg.accentColor}`}>
             {cfg.subtitle}
           </p>
 
@@ -307,32 +330,44 @@ export function PremiumGateFull({
 
           {/* Lock icon row */}
           <div className="flex items-center justify-center gap-2 mb-6">
-            <Lock className="w-4 h-4 text-white/30" />
-            <span className="text-white/40 text-sm font-mono tracking-widest uppercase">
+            <Lock className="w-3.5 h-3.5 text-white/20" />
+            <span className="text-white/30 text-xs font-mono tracking-[0.25em] uppercase">
               Restricted Access
             </span>
-            <Lock className="w-4 h-4 text-white/30" />
+            <Lock className="w-3.5 h-3.5 text-white/20" />
           </div>
 
           {/* Description */}
-          <p className="text-white/60 text-sm leading-relaxed mb-8 max-w-md mx-auto">
+          <p className="text-white/50 text-sm leading-relaxed mb-8 max-w-md mx-auto">
             {cfg.description}
           </p>
 
-          {/* Feature list */}
-          <div className="grid grid-cols-2 gap-3 mb-10 text-left">
+          {/* Feature list — glass cards */}
+          <div className="grid grid-cols-2 gap-2.5 mb-10 text-left">
             {cfg.features.map((f) => (
               <div
                 key={f}
-                className="flex items-center gap-2 rounded-lg px-3 py-2"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+                className="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5"
+                style={{
+                  background: `${cfg.accentHex}06`,
+                  border: `1px solid ${cfg.accentHex}18`,
+                  backdropFilter: "blur(8px)",
+                }}
               >
                 <div
-                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.accentColor.replace("text-", "bg-")}`}
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                  style={{ background: cfg.accentHex, boxShadow: `0 0 6px ${cfg.accentHex}` }}
                 />
                 <span className="text-white/50 text-xs font-mono">{f}</span>
               </div>
             ))}
+          </div>
+
+          {/* Tier separator */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, transparent, ${cfg.accentHex}20)` }} />
+            <span className="text-[9px] font-mono tracking-[0.3em] text-white/20">UPGRADE TO UNLOCK</span>
+            <div className="flex-1 h-px" style={{ background: `linear-gradient(90deg, ${cfg.accentHex}20, transparent)` }} />
           </div>
 
           {/* CTA buttons */}
@@ -344,8 +379,12 @@ export function PremiumGateFull({
                   <button
                     onClick={() => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin })}
                     disabled={checkoutMutation.isPending}
-                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed bg-cyan-500 text-black"
-                    style={{ boxShadow: '0 0 20px rgba(34,211,238,0.4)' }}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
+                    style={{
+                      background: "#22D3EE",
+                      color: "#050608",
+                      boxShadow: "0 0 24px rgba(34,211,238,0.45)",
+                    }}
                   >
                     <Zap className="w-4 h-4" />
                     {checkoutMutation.isPending ? 'Loading...' : 'Unlock Core — $9.99/mo'}
@@ -354,10 +393,10 @@ export function PremiumGateFull({
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
                   disabled={checkoutMutation.isPending}
-                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${cfg.requiredTier === 'premium' ? 'bg-cyan-500 text-black' : 'text-white/70 hover:text-white'}`}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
                   style={cfg.requiredTier === 'premium'
-                    ? { boxShadow: `0 0 20px ${cfg.glowColor.replace('0.15', '0.4')}` }
-                    : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                    ? { background: "#00D4FF", color: "#050608", boxShadow: "0 0 24px rgba(0,212,255,0.45)" }
+                    : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
                 >
                   <Crown className="w-4 h-4" />
                   {checkoutMutation.isPending ? 'Loading...' : 'Upgrade to Pro — $59/mo'}
@@ -365,10 +404,15 @@ export function PremiumGateFull({
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
                   disabled={checkoutMutation.isPending}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-[#FFD700]/80 hover:text-[#FFD700] transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{
+                    background: "rgba(255,215,0,0.08)",
+                    border: "1px solid rgba(255,215,0,0.25)",
+                    color: "#FFD700",
+                  }}
                 >
-                  Founding Member — $49/mo for life
+                  <Shield className="w-4 h-4" />
+                  {checkoutMutation.isPending ? 'Loading...' : 'Founding Access — $49/mo locked'}
                 </button>
               </>
             ) : (
@@ -376,16 +420,20 @@ export function PremiumGateFull({
               <>
                 <a
                   href={loginUrl}
-                  className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] ${cfg.accentColor.replace("text-", "bg-").replace("-400", "-500")} text-black`}
-                  style={{ boxShadow: `0 0 20px ${cfg.glowColor.replace("0.15", "0.4")}` }}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]"
+                  style={{
+                    background: cfg.accentHex,
+                    color: "#050608",
+                    boxShadow: `0 0 24px ${cfg.accentHex}45`,
+                  }}
                 >
                   <LogIn className="w-4 h-4" />
                   {cfg.ctaPrimary}
                 </a>
                 <a
                   href={loginUrl}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm text-white/70 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest text-white/50 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                 >
                   {cfg.ctaSecondary}
                 </a>
@@ -394,8 +442,8 @@ export function PremiumGateFull({
           </div>
 
           {/* Footer note */}
-          <p className="text-white/25 text-xs mt-8 font-mono">
-            FAULTLINE — Institutional Market Intelligence Platform
+          <p className="text-white/20 text-[10px] mt-8 font-mono tracking-widest">
+            FAULTLINE — INSTITUTIONAL MARKET INTELLIGENCE PLATFORM
           </p>
         </div>
       </div>
@@ -422,25 +470,26 @@ export function PremiumGateCard({
   if (compact) {
     return (
       <div
-        className="flex items-center justify-between rounded-lg px-4 py-3 gap-4"
+        className="flex items-center justify-between rounded-xl px-4 py-3 gap-4"
         style={{
-          background: "rgba(10,14,26,0.8)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: `${cfg.accentHex}06`,
+          border: `1px solid ${cfg.accentHex}20`,
           backdropFilter: "blur(8px)",
         }}
       >
         <div className="flex items-center gap-3">
           <Lock className={`w-4 h-4 flex-shrink-0 ${cfg.accentColor}`} />
-          <span className="text-white/60 text-sm font-mono">
+          <span className="text-white/50 text-sm font-mono">
             {label ?? cfg.title}
           </span>
         </div>
         <a
           href={loginUrl}
-          className={`text-xs font-semibold px-3 py-1.5 rounded-md transition-all hover:scale-[1.02] whitespace-nowrap ${cfg.accentColor} hover:opacity-90`}
+          className="text-xs font-bold px-3 py-1.5 rounded-lg transition-all hover:scale-[1.02] whitespace-nowrap"
           style={{
-            background: cfg.glowColor.replace("0.15", "0.2"),
-            border: `1px solid ${cfg.glowColor.replace("0.15", "0.4")}`,
+            background: `${cfg.accentHex}15`,
+            border: `1px solid ${cfg.accentHex}35`,
+            color: cfg.accentHex,
           }}
         >
           {cfg.ctaPrimary}
@@ -451,39 +500,50 @@ export function PremiumGateCard({
 
   return (
     <div
-      className="relative rounded-xl overflow-hidden"
+      className="relative rounded-2xl overflow-hidden"
       style={{
-        background: "rgba(10,14,26,0.9)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: "linear-gradient(135deg, rgba(10,14,26,0.95) 0%, rgba(15,20,35,0.95) 100%)",
+        border: `1px solid ${cfg.accentHex}20`,
         backdropFilter: "blur(12px)",
-        boxShadow: `0 0 40px ${cfg.glowColor}`,
+        boxShadow: `0 0 40px ${cfg.glowColor}, inset 0 1px 0 rgba(255,255,255,0.04)`,
       }}
     >
+      {/* Top shimmer */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: `linear-gradient(90deg, transparent, ${cfg.accentHex}40, transparent)` }}
+      />
+
       <div className="flex flex-col items-center text-center px-8 py-10">
         <div
           className={`inline-flex items-center justify-center w-12 h-12 rounded-xl mb-4 ${cfg.accentColor}`}
           style={{
-            background: cfg.glowColor,
-            border: `1px solid ${cfg.glowColor.replace("0.15", "0.4")}`,
+            background: `${cfg.accentHex}10`,
+            border: `1px solid ${cfg.accentHex}30`,
+            boxShadow: `0 0 20px ${cfg.accentHex}15`,
           }}
         >
           <Lock className="w-5 h-5" />
         </div>
 
-        <p className={`text-xs font-mono tracking-[0.15em] uppercase mb-2 ${cfg.accentColor}`}>
+        <p className={`text-[10px] font-mono tracking-[0.25em] uppercase mb-2 ${cfg.accentColor}`}>
           {cfg.subtitle}
         </p>
         <h3 className="text-lg font-bold text-white mb-2">
           {label ?? cfg.title}
         </h3>
-        <p className="text-white/50 text-sm leading-relaxed mb-6 max-w-xs">
+        <p className="text-white/40 text-sm leading-relaxed mb-6 max-w-xs">
           {cfg.description}
         </p>
 
         <a
           href={loginUrl}
-          className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all hover:scale-[1.02] active:scale-[0.98] ${cfg.accentColor.replace("text-", "bg-").replace("-400", "-500")} text-black`}
-          style={{ boxShadow: `0 0 16px ${cfg.glowColor.replace("0.15", "0.35")}` }}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm tracking-widest transition-all hover:scale-[1.02] active:scale-[0.97]"
+          style={{
+            background: cfg.accentHex,
+            color: "#050608",
+            boxShadow: `0 0 20px ${cfg.accentHex}40`,
+          }}
         >
           <Zap className="w-4 h-4" />
           {cfg.ctaPrimary}
@@ -518,28 +578,41 @@ export function PremiumBlurOverlay({
       {/* Blurred content */}
       <div
         className="pointer-events-none select-none"
-        style={{ filter: "blur(4px)", opacity: 0.3 }}
+        style={{ filter: "blur(5px)", opacity: 0.25 }}
         aria-hidden="true"
       >
         {children}
       </div>
 
-      {/* Overlay */}
+      {/* Glass overlay */}
       <div
         className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl"
         style={{
-          background: "rgba(8,12,22,0.75)",
-          backdropFilter: "blur(2px)",
-          border: "1px solid rgba(255,255,255,0.07)",
+          background: `linear-gradient(135deg, rgba(8,12,22,0.85) 0%, rgba(12,16,28,0.9) 100%)`,
+          backdropFilter: "blur(4px)",
+          border: `1px solid ${cfg.accentHex}15`,
         }}
       >
-        <Lock className={`w-6 h-6 ${cfg.accentColor}`} />
-        <p className="text-white/70 text-sm font-semibold">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center"
+          style={{
+            background: `${cfg.accentHex}12`,
+            border: `1px solid ${cfg.accentHex}30`,
+          }}
+        >
+          <Lock className={`w-5 h-5 ${cfg.accentColor}`} />
+        </div>
+        <p className="text-white/60 text-sm font-semibold">
           {label ?? cfg.title}
         </p>
         <a
           href={loginUrl}
-          className={`text-xs font-semibold px-4 py-2 rounded-lg transition-all hover:scale-[1.02] ${cfg.accentColor.replace("text-", "bg-").replace("-400", "-500")} text-black`}
+          className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-[1.02]"
+          style={{
+            background: cfg.accentHex,
+            color: "#050608",
+            boxShadow: `0 0 16px ${cfg.accentHex}35`,
+          }}
         >
           {cfg.ctaPrimary}
         </a>
