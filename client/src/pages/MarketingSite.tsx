@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
+import { getLoginUrl } from "@/const";
 const PLATFORM_URL = "/app";
 
 // ── Asset URLs ────────────────────────────────────────────────
@@ -115,6 +116,12 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
             REQUEST ACCESS
           </button>
           <a
+            href={getLoginUrl()}
+            className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded"
+          >
+            MEMBER LOGIN
+          </a>
+          <a
             href={PLATFORM_URL}
             target="_blank"
             rel="noopener noreferrer"
@@ -156,6 +163,13 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
           >
             REQUEST ACCESS
           </button>
+          <a
+            href={getLoginUrl()}
+            onClick={() => setMobileOpen(false)}
+            className="block w-full text-center text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-[rgba(168,184,204,0.25)] rounded py-2"
+          >
+            MEMBER LOGIN
+          </a>
           <a
             href={PLATFORM_URL}
             target="_blank"
