@@ -640,3 +640,4 @@
 - [x] Side-by-side grid layout integrated into Dashboard.tsx above HomeStockIntelSection
 - [x] Cinematic reveal animation (560ms stagger)
 - [x] Vitest tests for demo data integrity (304 tests passing)
+- [x] Cross-navigation links: Portfolio → Signals (VIEW FULL SIGNAL ANALYSIS per ticker, OPEN SIGNALS ENGINE in header); Signals → Portfolio (ADD TO PORTFOLIO per stock card)

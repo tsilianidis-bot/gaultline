@@ -14,6 +14,7 @@ import {
   type SignalStock, type FaultlineSignal, type ScreeningCategory, type SignalFilters,
 } from '@/lib/signalsData';
 import { LineChart, Line, ResponsiveContainer, Tooltip as RTooltip } from 'recharts';
+import { Link } from 'wouter';
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
@@ -669,6 +670,36 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             {stock.signals.map(sig => <SignalTag key={sig} signal={sig} />)}
           </div>
 
+          {/* Cross-link to Portfolio */}
+          <Link
+            href={`/app/portfolio`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px',
+              marginTop: '8px',
+              borderRadius: '4px',
+              background: 'rgba(0,255,136,0.04)',
+              border: '1px solid rgba(0,255,136,0.12)',
+              textDecoration: 'none',
+              cursor: 'pointer',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,255,136,0.08)';
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,255,136,0.25)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,255,136,0.04)';
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,255,136,0.12)';
+            }}
+          >
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#00FF88', letterSpacing: '0.1em' }}>
+              ADD TO PORTFOLIO — {stock.ticker}
+            </span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00FF88' }}>→</span>
+          </Link>
           {/* Data source */}
           <div style={{
             marginTop: '8px',

@@ -10,6 +10,7 @@ import {
   TrendingUp, TrendingDown, Minus, Lock, AlertTriangle,
   BarChart2, Brain, Zap, X, Check, Info,
 } from "lucide-react";
+import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -616,6 +617,35 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
                 </div>
               )}
 
+              {/* Cross-link to Signals page for this ticker */}
+              <Link
+                href={`/app/signals?ticker=${encodeURIComponent(p.ticker)}`}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "8px 12px",
+                  borderRadius: "4px",
+                  background: "rgba(0,212,255,0.05)",
+                  border: "1px solid rgba(0,212,255,0.15)",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease, border-color 0.15s ease",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,212,255,0.10)";
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(0,212,255,0.30)";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,212,255,0.05)";
+                  (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(0,212,255,0.15)";
+                }}
+              >
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", letterSpacing: "0.1em" }}>
+                  VIEW FULL SIGNAL ANALYSIS — {p.ticker}
+                </span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#00D4FF" }}>→</span>
+              </Link>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.08em" }}>
                 NOT FINANCIAL ADVICE — FAULTLINE AI GUIDANCE IS FOR INFORMATIONAL PURPOSES ONLY
               </div>
@@ -658,11 +688,29 @@ function SummaryHeader({ summary }: { summary: NonNullable<any> }) {
           </div>
         ))}
       </div>
-      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: "6px" }}>
-        <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00D4FF", boxShadow: "0 0 6px #00D4FF" }} />
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.1em" }}>
-          REGIME: {summary.pressureRegime} · {summary.positionCount} POSITION{summary.positionCount !== 1 ? "S" : ""} · QUOTES 15-MIN DELAYED
-        </span>
+      <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00D4FF", boxShadow: "0 0 6px #00D4FF" }} />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.1em" }}>
+            REGIME: {summary.pressureRegime} · {summary.positionCount} POSITION{summary.positionCount !== 1 ? "S" : ""} · QUOTES 15-MIN DELAYED
+          </span>
+        </div>
+        <Link
+          href="/app/signals"
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: "9px",
+            color: "#00D4FF",
+            letterSpacing: "0.1em",
+            textDecoration: "none",
+            opacity: 0.75,
+            transition: "opacity 0.15s ease",
+          }}
+          onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.opacity = "1")}
+          onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.opacity = "0.75")}
+        >
+          OPEN SIGNALS ENGINE →
+        </Link>
       </div>
     </div>
   );
