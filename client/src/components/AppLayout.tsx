@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -54,6 +54,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "crypto-signals",   label: "Crypto Signals",  shortLabel: "CSig",    icon: BarChart3,   path: "/app/crypto-signals" },
       { id: "crypto-watchlist", label: "Crypto Watch", shortLabel: "CWatch", icon: Bookmark,       path: "/app/crypto-watchlist" },
       { id: "aftershock",       label: "Aftershock™",  shortLabel: "Shock",  icon: Waves,           path: "/app/aftershock" },
+      { id: "alt-rotation",     label: "Alt Rotation™", shortLabel: "AltRot", icon: RotateCcw,       path: "/app/alt-rotation" },
     ],
   },
   {

@@ -24,6 +24,7 @@ import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinO
 import { getQuotes } from "./yahooProxy";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
+import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
 import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
 import { protectedProcedure } from "./_core/trpc";
 import { stripe } from './stripe/client';
@@ -1157,6 +1158,17 @@ export const appRouter = router({
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to generate X posts', cause: err });
         }
       }),
+  }),
+
+  altRotation: router({
+    getData: protectedProcedure.query(async () => {
+      const apiKey = process.env.COINGECKO_API_KEY;
+      return computeAltRotation(apiKey);
+    }),
+    clearCache: protectedProcedure.mutation(() => {
+      clearAltRotationCache();
+      return { cleared: true };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

@@ -48,6 +48,7 @@ const AdminBlog        = lazy(() => import("./pages/AdminBlog"));
 const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
+const AltRotation      = lazy(() => import("./pages/AltRotation"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -145,6 +146,7 @@ function Router() {
               <Route path="/app/admin/blog" component={AdminBlog} />
               <Route path="/app/x-posts" component={XPostGenerator} />
               <Route path="/app/x-post-queue" component={XPostQueue} />
+              <Route path="/app/alt-rotation" component={AltRotation} />
               <Route path="/app/account" component={UserAccount} />
               <Route component={Dashboard} />
             </Switch>
