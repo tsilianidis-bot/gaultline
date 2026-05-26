@@ -63,7 +63,8 @@ interface CryptoSystemicRisk {
 }
 
 // ── Constants ─────────────────────────────────────────────────
-const EXAMPLE_SYMBOLS = ["BTC", "ETH", "SOL", "RNDR", "SEI", "HYPE"];
+const EXAMPLE_SYMBOLS = ["bitcoin", "ethereum", "solana", "render-token", "sei-network", "hyperliquid"];
+const EXAMPLE_LABELS  = ["BTC",     "ETH",      "SOL",    "RNDR",         "SEI",          "HYPE"];
 
 const SIGNAL_COLORS: Record<CryptoSignalLabel, string> = {
   "Speculative Acceleration": "#FF9500",
@@ -673,7 +674,7 @@ function CryptoSearchInner() {
                 {suggestions.map((coin, i) => (
                   <button
                     key={coin.id}
-                    onClick={() => handleSearch(coin.symbol)}
+                    onClick={() => handleSearch(coin.id)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -704,7 +705,7 @@ function CryptoSearchInner() {
           {/* Example searches */}
           <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "10px" }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.1em", alignSelf: "center" }}>EXAMPLES:</span>
-            {EXAMPLE_SYMBOLS.map(s => (
+            {EXAMPLE_SYMBOLS.map((s, idx) => (
               <button
                 key={s}
                 onClick={() => handleSearch(s)}
@@ -723,7 +724,7 @@ function CryptoSearchInner() {
                 onMouseEnter={e => { e.currentTarget.style.color = riskColor; e.currentTarget.style.borderColor = riskColor + "50"; }}
                 onMouseLeave={e => { e.currentTarget.style.color = "#64748B"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)"; }}
               >
-                {s}
+                {EXAMPLE_LABELS[idx] ?? s.toUpperCase()}
               </button>
             ))}
           </div>
@@ -795,7 +796,7 @@ function CryptoSearchInner() {
           ) : topMarkets && topMarkets.length > 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: "4px" }}>
               {topMarkets.map(coin => (
-                <div key={coin.id} onClick={() => handleSearch(coin.symbol)} style={{ cursor: "pointer" }}>
+                <div key={coin.id} onClick={() => handleSearch(coin.id)} style={{ cursor: "pointer" }}>
                   <HeatCell
                     symbol={coin.symbol}
                     change={coin.priceChangePercent24h}
