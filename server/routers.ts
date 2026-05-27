@@ -21,7 +21,7 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
-import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
+import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
 import { getQuotes } from "./yahooProxy";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
@@ -144,6 +144,33 @@ export const appRouter = router({
           return await classifyTicker(input.profile, input.regime);
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Signal classification failed", cause: err });
+        }
+      }),
+
+    // Get stock info (sector, industry, description) for a ticker
+    getStockInfo: publicProcedure
+      .input(z.object({
+        ticker: z.string().min(1).max(10).trim().transform(s => s.toUpperCase()),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const apiKey = process.env.POLYGON_API_KEY ?? "";
+          const res = await fetch(`${process.env.VITE_FRONTEND_FORGE_API_URL ? '' : ''}/api/signals/ticker/${input.ticker}`, {
+            headers: { 'x-internal': '1' },
+          }).catch(() => null);
+          // Use direct Polygon reference endpoint for description/sector/industry
+          const refUrl = `https://api.polygon.io/v3/reference/tickers/${input.ticker}?apiKey=${apiKey}`;
+          const refRes = await fetch(refUrl, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+          if (!refRes || !refRes.ok) return { sector: null, industry: null, description: null };
+          const refData = await refRes.json() as { results?: { sic_description?: string; description?: string; sector?: string; industry?: string } };
+          const r = refData.results ?? {};
+          return {
+            sector: r.sector ?? null,
+            industry: r.sic_description ?? r.industry ?? null,
+            description: r.description ?? null,
+          };
+        } catch (err) {
+          return { sector: null, industry: null, description: null };
         }
       }),
 
@@ -596,6 +623,25 @@ export const appRouter = router({
           };
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto screener failed", cause: err });
+        }
+      }),
+
+    // Get coin info (description + categories) for a crypto asset
+    getCoinInfo: publicProcedure
+      .input(z.object({
+        symbol: z.string().min(1).max(20).trim().transform(s => s.toUpperCase()),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const detail = await getCoinDetail(input.symbol);
+          if (!detail) return { description: null, categories: [], sector: null };
+          return {
+            description: detail.description,
+            categories: detail.categories,
+            sector: detail.sector,
+          };
+        } catch (err) {
+          return { description: null, categories: [], sector: null };
         }
       }),
 

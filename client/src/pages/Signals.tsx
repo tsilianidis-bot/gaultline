@@ -301,6 +301,13 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
   signalBlocked?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+
+  // Lazy-load stock info only when the INFO panel is opened
+  const { data: stockInfo, isFetching: infoLoading } = trpc.signals.getStockInfo.useQuery(
+    { ticker: stock.ticker },
+    { enabled: infoOpen, staleTime: 30 * 60 * 1000 }
+  );
 
   const price = liveQuote?.price && liveQuote.price > 0 ? liveQuote.price : stock.price;
   const changePercent = liveQuote?.price && liveQuote.price > 0 ? liveQuote.changePercent : stock.changePercent;
@@ -663,6 +670,76 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#94A3B8' }}>{value}</div>
               </div>
             ))}
+          </div>
+
+          {/* ── ASSET INFO PANEL ─────────────────────────────── */}
+          <div
+            onClick={e => { e.stopPropagation(); setInfoOpen(o => !o); }}
+            style={{
+              marginBottom: '8px',
+              padding: '6px 8px',
+              background: infoOpen ? 'rgba(0,212,255,0.04)' : 'rgba(255,255,255,0.02)',
+              border: `1px solid ${infoOpen ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+              borderRadius: '3px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.15em', color: infoOpen ? '#00D4FF' : 'rgba(100,116,139,0.65)' }}>
+                ℹ ASSET INFO
+              </span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.4)' }}>
+                {infoOpen ? '▲' : '▼'}
+              </span>
+            </div>
+            {infoOpen && (
+              <div style={{ marginTop: '8px' }}>
+                {infoLoading ? (
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.4)', letterSpacing: '0.08em' }}>LOADING...</div>
+                ) : (
+                  <>
+                    {/* Sector + Industry badges */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                      {(stockInfo?.sector || stock.sector) && (
+                        <span style={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: '9px', letterSpacing: '0.1em',
+                          color: '#00D4FF', background: 'rgba(0,212,255,0.08)',
+                          padding: '2px 6px', borderRadius: '2px',
+                          border: '1px solid rgba(0,212,255,0.2)',
+                        }}>{stockInfo?.sector || stock.sector}</span>
+                      )}
+                      {stockInfo?.industry && (
+                        <span style={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: '9px', letterSpacing: '0.1em',
+                          color: '#94A3B8', background: 'rgba(148,163,184,0.06)',
+                          padding: '2px 6px', borderRadius: '2px',
+                          border: '1px solid rgba(148,163,184,0.12)',
+                        }}>{stockInfo.industry}</span>
+                      )}
+                    </div>
+                    {/* Description */}
+                    {stockInfo?.description ? (
+                      <div style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: '11px', color: 'rgba(100,116,139,0.75)',
+                        lineHeight: 1.6,
+                        borderTop: '1px solid rgba(255,255,255,0.04)',
+                        paddingTop: '6px',
+                      }}>
+                        {stockInfo.description.slice(0, 420)}{stockInfo.description.length > 420 ? '…' : ''}
+                      </div>
+                    ) : (
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.35)', letterSpacing: '0.08em' }}>
+                        {stock.name} · {stock.sector}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* All signals */}

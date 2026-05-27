@@ -712,3 +712,19 @@
 - [x] Add "POST TO X" button to XPostGenerator page
 - [x] Add "POST THREAD" button for thread variant
 - [x] Create heartbeat crons for 3x daily scheduled X posts (premarket/midday/closing) — manual setup via Schedules UI; endpoint /api/scheduled/x-post-scheduled is live
+
+## Asset Info Panel on Signal Cards
+- [x] Add asset info panels to StockCard (sector/industry/description via Polygon)
+- [x] Add asset info panels to CryptoSignalCard (description/categories via CoinGecko)
+- [x] Add getCoinDetail to coingeckoProxy.ts
+- [x] Add signals.getStockInfo tRPC procedure
+- [x] Add crypto.getCoinInfo tRPC procedure
+- [x] Style Track Record tab green with VERIFIED badge (desktop nav + mobile drawer + marketing site) to stock signal cards (company description + sector/industry from Polygon or Yahoo Finance)
+- [x] Add asset info panels to StockCard (sector/industry/description via Polygon)
+- [x] Add asset info panels to CryptoSignalCard (description/categories via CoinGecko)
+- [x] Add getCoinDetail to coingeckoProxy.ts
+- [x] Add signals.getStockInfo tRPC procedure
+- [x] Add crypto.getCoinInfo tRPC procedure
+- [x] Style Track Record tab green with VERIFIED badge (desktop nav + mobile drawer + marketing site) to crypto signal cards (coin description + category/sector from CoinGecko)
+- [ ] Wire info data into tRPC procedures (stock: signals.getStockInfo, crypto: reuse CoinGecko coin detail)
+- [ ] UI: collapsible INFO panel on each signal card with description text and sector badge

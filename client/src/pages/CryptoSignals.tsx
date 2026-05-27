@@ -205,6 +205,13 @@ function RSIBar({ value, label }: { value: number; label: string }) {
 
 function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regimeScore: number }) {
   const [expanded, setExpanded] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+
+  // Lazy-load coin info only when the INFO panel is opened
+  const { data: coinInfo, isFetching: infoLoading } = trpc.crypto.getCoinInfo.useQuery(
+    { symbol: sig.symbol },
+    { enabled: infoOpen, staleTime: 30 * 60 * 1000 }
+  );
   const c = ACTION_COLORS[sig.action];
   const positive = (sig.technicals.priceChange7d ?? 0) >= 0;
   const sparklineData = sig.technicals.priceChange7d !== null
@@ -404,6 +411,76 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8" }}>{value}</div>
               </div>
             ))}
+          </div>
+
+          {/* ── ASSET INFO PANEL ─────────────────────────────── */}
+          <div
+            onClick={e => { e.stopPropagation(); setInfoOpen(o => !o); }}
+            style={{
+              marginBottom: '8px',
+              padding: '5px 7px',
+              background: infoOpen ? 'rgba(0,212,255,0.04)' : 'rgba(255,255,255,0.02)',
+              border: `1px solid ${infoOpen ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.06)'}`,
+              borderRadius: '3px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', letterSpacing: '0.15em', color: infoOpen ? '#00D4FF' : 'rgba(100,116,139,0.65)' }}>
+                ℹ ASSET INFO
+              </span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: 'rgba(100,116,139,0.4)' }}>
+                {infoOpen ? '▲' : '▼'}
+              </span>
+            </div>
+            {infoOpen && (
+              <div style={{ marginTop: '7px' }}>
+                {infoLoading ? (
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.4)', letterSpacing: '0.08em' }}>LOADING...</div>
+                ) : (
+                  <>
+                    {/* Sector + Category badges */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+                      {(coinInfo?.sector || classifyCategory(sig)) && (
+                        <span style={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: '7px', letterSpacing: '0.1em',
+                          color: '#00D4FF', background: 'rgba(0,212,255,0.08)',
+                          padding: '2px 5px', borderRadius: '2px',
+                          border: '1px solid rgba(0,212,255,0.2)',
+                        }}>{coinInfo?.sector || classifyCategory(sig)}</span>
+                      )}
+                      {(coinInfo?.categories ?? []).slice(0, 3).map((cat: string) => (
+                        <span key={cat} style={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: '7px', letterSpacing: '0.08em',
+                          color: '#94A3B8', background: 'rgba(148,163,184,0.06)',
+                          padding: '2px 5px', borderRadius: '2px',
+                          border: '1px solid rgba(148,163,184,0.12)',
+                        }}>{cat}</span>
+                      ))}
+                    </div>
+                    {/* Description */}
+                    {coinInfo?.description ? (
+                      <div style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: '8px', color: 'rgba(100,116,139,0.75)',
+                        lineHeight: 1.6,
+                        borderTop: '1px solid rgba(255,255,255,0.04)',
+                        paddingTop: '5px',
+                      }}>
+                        {coinInfo.description.slice(0, 380)}{coinInfo.description.length > 380 ? '…' : ''}
+                      </div>
+                    ) : (
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.35)', letterSpacing: '0.08em' }}>
+                        {sig.name} · {classifyCategory(sig)}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Data source */}

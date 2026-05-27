@@ -447,6 +447,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
               {group.items.map(tab => {
                 const Icon = tab.icon;
                 const active = isActive(tab.path);
+                const isTrackRecord = tab.id === 'track-record';
+                const trackGreen = '#22C55E';
                 return (
                   <button
                     key={tab.id}
@@ -455,10 +457,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       display: 'flex', alignItems: 'center', gap: '5px',
                       padding: '7px 10px',
                       borderRadius: '4px',
-                      background: active ? 'rgba(0, 212, 255, 0.1)' : 'transparent',
+                      background: active
+                        ? (isTrackRecord ? 'rgba(34,197,94,0.12)' : 'rgba(0, 212, 255, 0.1)')
+                        : (isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent'),
                       border: 'none',
-                      borderBottom: active ? '2px solid #00D4FF' : '2px solid transparent',
-                      color: active ? '#00D4FF' : '#6B7280',
+                      borderBottom: active
+                        ? `2px solid ${isTrackRecord ? trackGreen : '#00D4FF'}`
+                        : (isTrackRecord ? `2px solid rgba(34,197,94,0.3)` : '2px solid transparent'),
+                      color: active
+                        ? (isTrackRecord ? trackGreen : '#00D4FF')
+                        : (isTrackRecord ? '#22C55E' : '#6B7280'),
                       fontFamily: "'IBM Plex Mono', monospace",
                       fontSize: '10px',
                       letterSpacing: '0.06em',
@@ -468,22 +476,32 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                       position: 'relative',
+                      ...(isTrackRecord && !active ? { boxShadow: '0 0 8px rgba(34,197,94,0.15)' } : {}),
                     }}
                     onMouseEnter={e => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = '#94A3B8';
-                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+                        (e.currentTarget as HTMLElement).style.color = isTrackRecord ? '#4ADE80' : '#94A3B8';
+                        (e.currentTarget as HTMLElement).style.background = isTrackRecord ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)';
                       }
                     }}
                     onMouseLeave={e => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = '#6B7280';
-                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        (e.currentTarget as HTMLElement).style.color = isTrackRecord ? '#22C55E' : '#6B7280';
+                        (e.currentTarget as HTMLElement).style.background = isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent';
                       }
                     }}
                   >
                     <Icon size={11} />
                     {tab.label}
+                    {isTrackRecord && (
+                      <span style={{
+                        fontSize: '7px', letterSpacing: '0.1em',
+                        color: '#22C55E', background: 'rgba(34,197,94,0.15)',
+                        padding: '1px 3px', borderRadius: '2px',
+                        border: '1px solid rgba(34,197,94,0.3)',
+                        marginLeft: '2px',
+                      }}>VERIFIED</span>
+                    )}
                     {tab.id === 'watchlist' && breachCount > 0 && (
                       <span style={{
                         background: '#FF2D55', color: '#fff', borderRadius: '8px',
@@ -635,6 +653,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   {group.items.map(tab => {
                     const Icon = tab.icon;
                     const active = isActive(tab.path);
+                    const isTR = tab.id === 'track-record';
                     return (
                       <button
                         key={tab.id}
@@ -643,17 +662,31 @@ export default function AppLayout({ children }: AppLayoutProps) {
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                           gap: 6, padding: '12px 8px',
                           borderRadius: 8,
-                          background: active ? 'rgba(0, 212, 255, 0.1)' : 'rgba(255,255,255,0.04)',
-                          border: active ? '1px solid rgba(0, 212, 255, 0.3)' : '1px solid rgba(255,255,255,0.06)',
-                          color: active ? '#00D4FF' : '#94A3B8',
+                          background: active
+                            ? (isTR ? 'rgba(34,197,94,0.12)' : 'rgba(0, 212, 255, 0.1)')
+                            : (isTR ? 'rgba(34,197,94,0.07)' : 'rgba(255,255,255,0.04)'),
+                          border: active
+                            ? `1px solid ${isTR ? 'rgba(34,197,94,0.4)' : 'rgba(0, 212, 255, 0.3)'}`
+                            : (isTR ? '1px solid rgba(34,197,94,0.25)' : '1px solid rgba(255,255,255,0.06)'),
+                          color: active ? (isTR ? '#22C55E' : '#00D4FF') : (isTR ? '#22C55E' : '#94A3B8'),
                           cursor: 'pointer',
                           position: 'relative',
+                          boxShadow: isTR ? '0 0 12px rgba(34,197,94,0.12)' : 'none',
                         }}
                       >
                         <Icon size={20} />
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>
                           {tab.shortLabel}
                         </span>
+                        {isTR && (
+                          <span style={{
+                            position: 'absolute', top: 5, right: 5,
+                            fontSize: '6px', letterSpacing: '0.08em',
+                            color: '#22C55E', background: 'rgba(34,197,94,0.15)',
+                            padding: '1px 3px', borderRadius: '2px',
+                            border: '1px solid rgba(34,197,94,0.3)',
+                          }}>✓</span>
+                        )}
                         {tab.id === 'watchlist' && breachCount > 0 && (
                           <span style={{
                             position: 'absolute', top: 6, right: 6,

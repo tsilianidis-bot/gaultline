@@ -388,12 +388,104 @@ export async function getCoinOHLC(idOrSymbol: string, days = 30): Promise<CoinOH
   });
 }
 
+// ── Coin detail (description + categories) ───────────────
+export interface CoinDetail {
+  id: string;
+  symbol: string;
+  name: string;
+  description: string | null;   // plain-text, HTML stripped
+  categories: string[];          // e.g. ["Layer 1 (L1)", "Smart Contract Platform"]
+  sector: string | null;         // derived from first meaningful category
+}
+
+const detailCache = new LRUCache<string, CoinDetail>(200, 30 * 60 * 1000); // 30 min TTL
+
+/**
+ * Fetch coin description and categories from /coins/{id}.
+ * Strips HTML from the description and returns the first 500 chars.
+ */
+export async function getCoinDetail(idOrSymbol: string): Promise<CoinDetail | null> {
+  const upper = idOrSymbol.toUpperCase();
+  const cgId = SYMBOL_MAP[upper] ?? idOrSymbol.toLowerCase();
+  const cached = detailCache.peek(cgId);
+  if (cached) return cached.value;
+
+  return dedupe<CoinDetail | null>(`detail:${cgId}`, async () => {
+    try {
+      interface RawCoinDetail {
+        id: string;
+        symbol: string;
+        name: string;
+        description?: { en?: string };
+        categories?: string[];
+      }
+      const data = await cgFetch<RawCoinDetail>(
+        `/coins/${cgId}?localization=false&tickers=false&market_data=false&community_data=false&developer_data=false&sparkline=false`
+      );
+      // Strip HTML tags and truncate
+      const rawDesc = data.description?.en ?? "";
+      const plainDesc = rawDesc
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 600);
+
+      const cats = (data.categories ?? []).filter((c: string) => c && c.trim());
+      // Derive a short sector label from the first meaningful category
+      const sectorMap: Record<string, string> = {
+        "Layer 1": "Layer-1",
+        "Layer-1": "Layer-1",
+        "Layer 2": "Layer-2",
+        "Layer-2": "Layer-2",
+        "DeFi": "DeFi",
+        "Decentralized Finance": "DeFi",
+        "Artificial Intelligence": "AI/Data",
+        "AI": "AI/Data",
+        "Gaming": "Gaming/NFT",
+        "NFT": "Gaming/NFT",
+        "Meme": "Meme",
+        "Stablecoin": "Stablecoin",
+        "Exchange": "Exchange",
+        "Infrastructure": "Infrastructure",
+        "Oracle": "Oracle",
+        "Privacy": "Privacy",
+        "Real World Assets": "RWA",
+        "Liquid Staking": "Liquid Staking",
+      };
+      let sector: string | null = null;
+      for (const cat of cats) {
+        for (const [key, label] of Object.entries(sectorMap)) {
+          if (cat.includes(key)) { sector = label; break; }
+        }
+        if (sector) break;
+      }
+      if (!sector && cats.length > 0) sector = cats[0];
+
+      const detail: CoinDetail = {
+        id: data.id,
+        symbol: (data.symbol ?? "").toUpperCase(),
+        name: data.name,
+        description: plainDesc || null,
+        categories: cats.slice(0, 6),
+        sector,
+      };
+      detailCache.set(cgId, detail);
+      return detail;
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      log.warn("[CoinGecko] Coin detail fetch failed", { id: cgId, errMsg });
+      return null;
+    }
+  });
+}
+
 export function clearCoinGeckoCache() {
   searchCache.clear();
   marketCache.clear();
   globalCache.clear();
   assetCache.clear();
   ohlcCache.clear();
+  detailCache.clear();
 }
 
 // ── Express route registration ────────────────────────────────

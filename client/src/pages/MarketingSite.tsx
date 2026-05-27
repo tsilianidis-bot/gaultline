@@ -95,7 +95,9 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
           <a href="/blog" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">BRIEFINGS</a>
-          <a href="/track-record" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">TRACK RECORD</a>
+          <a href="/track-record" className="text-[11px] font-mono tracking-widest transition-colors" style={{ color: '#22C55E', textShadow: '0 0 8px rgba(34,197,94,0.3)' }} onMouseEnter={e => (e.currentTarget.style.color = '#4ADE80')} onMouseLeave={e => (e.currentTarget.style.color = '#22C55E')}>
+            TRACK RECORD <span style={{ fontSize: '7px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 4px', borderRadius: '2px', letterSpacing: '0.1em', verticalAlign: 'middle' }}>VERIFIED</span>
+          </a>
           {["Platform", "Intelligence", "Access", "How It Works"].map((item) => (
             <a
               key={item}
@@ -147,6 +149,14 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden bg-[#0C0F16] border-t border-[rgba(0,212,255,0.12)] px-6 py-4 space-y-4">
+          <a
+            href="/track-record"
+            onClick={() => setMobileOpen(false)}
+            className="block text-[11px] font-mono tracking-widest transition-colors"
+            style={{ color: '#22C55E' }}
+          >
+            TRACK RECORD <span style={{ fontSize: '7px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 4px', borderRadius: '2px', letterSpacing: '0.1em' }}>VERIFIED</span>
+          </a>
           {["Platform", "Intelligence", "Access", "How It Works"].map((item) => (
             <a
               key={item}
