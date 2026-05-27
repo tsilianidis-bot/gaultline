@@ -36,6 +36,22 @@ export function registerOAuthRoutes(app: Express) {
         lastSignedIn: new Date(),
       });
 
+      // Auto-grant founding tier if this email has an approved founding access request
+      if (userInfo.email) {
+        try {
+          const existingUser = await db.getUserByEmail(userInfo.email);
+          if (existingUser && existingUser.accessTier === 'free') {
+            const hasApproval = await db.hasApprovedFoundingRequest(userInfo.email);
+            if (hasApproval) {
+              await db.updateUserTier(existingUser.id, 'founding');
+              console.log(`[OAuth] Auto-granted founding tier to ${userInfo.email}`);
+            }
+          }
+        } catch (e) {
+          console.warn('[OAuth] Could not check founding access request', e);
+        }
+      }
+
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",
         expiresInMs: ONE_YEAR_MS,

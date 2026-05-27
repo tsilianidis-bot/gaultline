@@ -726,5 +726,5 @@
 - [x] Add signals.getStockInfo tRPC procedure
 - [x] Add crypto.getCoinInfo tRPC procedure
 - [x] Style Track Record tab green with VERIFIED badge (desktop nav + mobile drawer + marketing site) to crypto signal cards (coin description + category/sector from CoinGecko)
-- [ ] Wire info data into tRPC procedures (stock: signals.getStockInfo, crypto: reuse CoinGecko coin detail)
-- [ ] UI: collapsible INFO panel on each signal card with description text and sector badge
+- [x] Wire info data into tRPC procedures (stock: signals.getStockInfo, crypto: reuse CoinGecko coin detail)
+- [x] UI: collapsible INFO panel on each signal card with description text and sector badge

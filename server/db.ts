@@ -205,6 +205,17 @@ export async function isCryptoWatchlisted(userId: number, symbol: string) {
   return result.length > 0;
 }
 
+// ── User lookup helpers ───────────────────────────────────────────────
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users)
+    .where(eq(users.email, email.toLowerCase().trim()))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
 // ── Access Tier helpers ─────────────────────────────────────────────
 
 export async function getUserTier(userId: number): Promise<'free' | 'core' | 'premium' | 'founding'> {
@@ -224,6 +235,24 @@ export async function setUserTier(
   await db.update(users)
     .set({ accessTier: tier, updatedAt: new Date() })
     .where(eq(users.id, userId));
+}
+
+// Alias used by OAuth auto-grant flow
+export const updateUserTier = setUserTier;
+
+export async function hasApprovedFoundingRequest(email: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.select({ id: foundingAccessRequests.id })
+    .from(foundingAccessRequests)
+    .where(
+      and(
+        eq(foundingAccessRequests.email, email.toLowerCase().trim()),
+        eq(foundingAccessRequests.status, 'approved')
+      )
+    )
+    .limit(1);
+  return result.length > 0;
 }
 
 // ── Founding Access Request helpers ───────────────────────────────
