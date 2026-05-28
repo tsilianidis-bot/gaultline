@@ -16,6 +16,7 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getAllUsersWithTier, getPlatformStats, getActivityFeed,
   getSignupTimeSeries, getWaitlistTimeSeries, getConversionStats,
   getBlogPosts, getBlogPostBySlug, getBlogPostById, createBlogPost, updateBlogPost, deleteBlogPost, getBlogCategories, incrementBlogPostViewCount,
+  updateDashboardMode,
   getXPostQueue, getXPostQueueStats,
   getPressureHistory, getPressureHistoryStats,
   getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem } from "./db";
@@ -104,6 +105,12 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+    setDashboardMode: protectedProcedure
+      .input(z.object({ mode: z.enum(['pulse', 'signals', 'intelligence']) }))
+      .mutation(async ({ ctx, input }) => {
+        await updateDashboardMode(ctx.user.id, input.mode);
+        return { success: true };
+      }),
   }),
 
   signals: router({

@@ -18,6 +18,12 @@ import { CryptoPorchPanel, StockPorchPanel } from "@/components/DashboardSearchP
 import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { trpc } from "@/lib/trpc";
+import { ViewModeSelector } from "@/components/ViewModeSelector";
+import PulseMode from "@/components/dashboard/PulseMode";
+import SignalsMode from "@/components/dashboard/SignalsMode";
+import IntelligenceMode from "@/components/dashboard/IntelligenceMode";
+type DashboardMode = "pulse" | "signals" | "intelligence";
 
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663562889431/oAHJBBc62GHpVJwTBFZPAm/faultline-hero-bg-5aiJwmUWM5RkwbakA3ZsnX.webp";
 
@@ -452,6 +458,20 @@ export default function Dashboard() {
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  // 3-mode intelligence system
+  const { data: meData } = trpc.auth.me.useQuery();
+  const [dashMode, setDashMode] = useState<DashboardMode>("pulse");
+  const setModeMutation = trpc.auth.setDashboardMode.useMutation();
+  // Sync mode from user profile once loaded
+  useEffect(() => {
+    if (meData?.dashboardMode) {
+      setDashMode(meData.dashboardMode as DashboardMode);
+    }
+  }, [meData?.dashboardMode]);
+  const handleModeChange = (mode: DashboardMode) => {
+    setDashMode(mode);
+    setModeMutation.mutate({ mode });
+  };
 
   // Severity label from riskLevel
   const severityLabel = (riskLevel: string): string => {
@@ -671,9 +691,17 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Main content ────────────────────────────────────────── */}
+            {/* ── Main content ────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
+        {/* ── 3-Mode Intelligence Selector ─────────────────────── */}
+        <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
 
+        {/* ── Mode-conditional rendering ───────────────────────── */}
+        {dashMode === "pulse" && <PulseMode />}
+        {dashMode === "signals" && <SignalsMode />}
+        {dashMode === "intelligence" && <IntelligenceMode />}
+
+        {/* Legacy content — always visible below modes ─────────── */}
         {/* Data Integrity panel */}
         <DataIntegrity />
 

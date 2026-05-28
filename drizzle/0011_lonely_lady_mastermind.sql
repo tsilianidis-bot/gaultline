@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `dashboardMode` enum('pulse','signals','intelligence') DEFAULT 'pulse' NOT NULL;

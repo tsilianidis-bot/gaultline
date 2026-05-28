@@ -448,6 +448,17 @@ export async function updateUserStripe(
     .where(eq(users.id, userId));
 }
 
+export async function updateDashboardMode(
+  userId: number,
+  mode: 'pulse' | 'signals' | 'intelligence'
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(users)
+    .set({ dashboardMode: mode, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+}
+
 export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number } | null> {
   const db = await getDb();
   if (!db) return null;
