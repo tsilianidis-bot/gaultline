@@ -15,7 +15,7 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getUserTier, setUserTier, createFoundingRequest, getFoundingRequests, updateFoundingRequestStatus,
   getAllUsersWithTier, getPlatformStats, getActivityFeed,
   getSignupTimeSeries, getWaitlistTimeSeries, getConversionStats,
-  getBlogPosts, getBlogPostBySlug, getBlogPostById, createBlogPost, updateBlogPost, deleteBlogPost, getBlogCategories,
+  getBlogPosts, getBlogPostBySlug, getBlogPostById, createBlogPost, updateBlogPost, deleteBlogPost, getBlogCategories, incrementBlogPostViewCount,
   getXPostQueue, getXPostQueueStats,
   getPressureHistory, getPressureHistoryStats,
   getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem } from "./db";
@@ -1121,6 +1121,19 @@ export const appRouter = router({
           return { success: true };
         } catch (err) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete post', cause: err });
+        }
+      }),
+
+    // Public: increment view count when a post is opened
+    incrementViewCount: publicProcedure
+      .input(z.object({ slug: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        try {
+          await incrementBlogPostViewCount(input.slug);
+          return { success: true };
+        } catch (err) {
+          // Non-critical — don't throw, just swallow
+          return { success: false };
         }
       }),
   }),

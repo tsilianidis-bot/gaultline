@@ -111,6 +111,7 @@ export const blogPosts = mysqlTable("blogPosts", {
   tags:        text("tags"),                        // comma-separated
   published:   int("published").default(0).notNull(), // 0=draft, 1=published
   publishedAt: timestamp("publishedAt"),
+  viewCount:   int("viewCount").default(0).notNull(),  // incremented each time the post is opened
   createdAt:   timestamp("createdAt").defaultNow().notNull(),
   updatedAt:   timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

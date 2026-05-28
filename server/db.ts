@@ -532,6 +532,14 @@ export async function getBlogCategories(): Promise<string[]> {
   return rows.map(r => r.category).filter(Boolean) as string[];
 }
 
+export async function incrementBlogPostViewCount(slug: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(blogPosts)
+    .set({ viewCount: sql`viewCount + 1` })
+    .where(eq(blogPosts.slug, slug));
+}
+
 // ── X Post Queue helpers ─────────────────────────────────────
 
 export async function getXPostQueue(filters: {

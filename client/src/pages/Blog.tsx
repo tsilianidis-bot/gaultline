@@ -470,6 +470,12 @@ export default function Blog() {
                   {formatDate(featured.publishedAt)}
                 </span>
                 <span>{featured.author}</span>
+                {(featured.viewCount ?? 0) > 0 && (
+                  <span className="flex items-center gap-1 text-slate-500">
+                    <Eye className="w-3 h-3" />
+                    {(featured.viewCount ?? 0).toLocaleString()}
+                  </span>
+                )}
                 <span className="ml-auto flex items-center gap-1 text-cyan-400 group-hover:gap-2 transition-all">
                   READ BRIEFING <ChevronRight className="w-3 h-3" />
                 </span>
@@ -521,6 +527,12 @@ export default function Blog() {
                         {formatDate(post.publishedAt)}
                       </span>
                       <span>{post.author}</span>
+                      {(post.viewCount ?? 0) > 0 && (
+                        <span className="flex items-center gap-1 ml-auto">
+                          <Eye className="w-3 h-3" />
+                          {(post.viewCount ?? 0).toLocaleString()}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}

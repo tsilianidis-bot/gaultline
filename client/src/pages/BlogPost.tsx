@@ -2,7 +2,7 @@ import { Link, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEffect } from "react";
 import { Streamdown } from "streamdown";
-import { CalendarDays, Clock, ArrowLeft, Tag, ChevronRight } from "lucide-react";
+import { CalendarDays, Clock, ArrowLeft, Tag, ChevronRight, Eye } from "lucide-react";
 
 function formatDate(d: Date | string | null | undefined) {
   if (!d) return "";
@@ -32,6 +32,16 @@ export default function BlogPost() {
     { slug: slug ?? "" },
     { enabled: !!slug }
   );
+
+  const incrementView = trpc.blog.incrementViewCount.useMutation();
+
+  // Fire view count increment once when post loads
+  useEffect(() => {
+    if (post?.slug) {
+      incrementView.mutate({ slug: post.slug });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.slug]);
 
   // Dynamic SEO
   useEffect(() => {
@@ -118,6 +128,12 @@ export default function BlogPost() {
                 <Clock className="w-3 h-3" />
                 {readingTime(post.content)} MIN READ
               </span>
+              {(post.viewCount ?? 0) > 0 && (
+                <span className="flex items-center gap-1 ml-auto">
+                  <Eye className="w-3 h-3" />
+                  {(post.viewCount ?? 0).toLocaleString()} VIEWS
+                </span>
+              )}
             </div>
 
             {/* Content */}

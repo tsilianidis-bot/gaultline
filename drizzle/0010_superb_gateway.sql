@@ -1,0 +1,1 @@
+ALTER TABLE `blogPosts` ADD `viewCount` int DEFAULT 0 NOT NULL;
