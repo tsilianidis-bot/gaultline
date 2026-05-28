@@ -45,17 +45,30 @@ const TICKER_ITEMS = [
   "AI CONCENTRATION: 74%",
   "VOLATILITY REGIME: SUPPRESSED",
   "LIQUIDITY CONDITIONS: TIGHTENING",
+  "CREDIT SPREADS: WIDENING",
+  "YIELD CURVE: INVERTED",
+  "AFTERSHOCK ENGINE: SCANNING",
 ];
 
 function StatusTicker() {
   return (
-    <div className="w-full overflow-hidden bg-[#050608] border-b border-[rgba(0,212,255,0.15)] py-2">
+    <div className="w-full overflow-hidden bg-[#050608] border-b border-[rgba(0,212,255,0.15)] py-2 relative">
+      {/* Scan-line shimmer overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none z-10"
+        style={{
+          background: "linear-gradient(90deg, rgba(5,6,8,0.9) 0%, transparent 8%, transparent 92%, rgba(5,6,8,0.9) 100%)",
+        }}
+      />
       <div
         className="flex gap-12 whitespace-nowrap"
-        style={{ animation: "ticker 30s linear infinite" }}
+        style={{ animation: "ticker 35s linear infinite" }}
       >
         {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
-          <span key={i} className="text-[10px] font-mono tracking-widest text-[#00D4FF]/70 px-4">
+          <span key={i} className="text-[10px] font-mono tracking-widest px-4" style={{
+            color: item.startsWith('●') ? '#00FF88' : 'rgba(0,212,255,0.65)',
+            textShadow: item.startsWith('●') ? '0 0 8px rgba(0,255,136,0.5)' : 'none',
+          }}>
             {item}
           </span>
         ))}
@@ -252,21 +265,30 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-32 pb-20">
         {/* Live badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-[#00D4FF]/20 rounded-full mb-8 bg-[#00D4FF]/5">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-[#00D4FF]/20 rounded-full mb-8 bg-[#00D4FF]/5" style={{ boxShadow: '0 0 20px rgba(0,212,255,0.08)' }}>
+          <div className="relative flex items-center justify-center">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" />
+            <div className="absolute w-3 h-3 rounded-full bg-[#00FF88]/20 animate-ping" />
+          </div>
           <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">PLATFORM LIVE — FOUNDING ACCESS OPEN</span>
         </div>
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.05]">
-          See the pressure<br />
-          <span className="text-[#00D4FF]">before it moves</span><br />
-          the market.
+          Know when the market<br />
+          <span className="text-[#00D4FF]">is about to break.</span>
         </h1>
+
+        {/* Clarity bar — what FAULTLINE tracks */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+          {["Macro Pressure", "Liquidity Stress", "Crypto Rotation", "Systemic Risk", "Volatility Regimes"].map((item, i) => (
+            <span key={i} className="text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/60 border border-[#00D4FF]/15 px-2.5 py-1 rounded-full bg-[#00D4FF]/5">{item}</span>
+          ))}
+        </div>
 
         {/* Sub */}
         <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-10 leading-relaxed">
-          FAULTLINE is a real-time macroeconomic risk intelligence platform that shows institutional traders and analysts when systemic pressure is building — so you can position early instead of reacting late.
+          FAULTLINE reads systemic pressure before it becomes a headline. Real-time macro intelligence for traders and analysts who need to position early — not react late.
         </p>
 
         {/* CTAs */}
@@ -739,45 +761,72 @@ function ProofSection() {
           ))}
         </div>
 
-        {/* Crisis callout cards */}
+        {/* Crisis callout cards — BEFORE/AFTER format */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
           {CRISIS_PROOF.map((c, i) => (
             <div
               key={i}
-              className="p-6 rounded-lg border relative overflow-hidden"
-              style={{ borderColor: c.regimeBorder, background: c.regimeBg }}
+              className="rounded-lg border relative overflow-hidden"
+              style={{ borderColor: c.regimeBorder, background: 'rgba(5,6,8,0.9)' }}
             >
-              {/* Score badge */}
-              <div className="absolute top-4 right-4 flex flex-col items-center">
-                <div className="text-3xl font-bold" style={{ color: c.regimeColor }}>{c.score}</div>
-                <div className="text-[9px] font-mono tracking-widest" style={{ color: c.regimeColor }}>/100</div>
+              {/* Header */}
+              <div className="px-5 pt-5 pb-3 border-b" style={{ borderColor: c.regimeBorder + '60' }}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="text-[9px] font-mono tracking-[0.3em] text-[#64748B] mb-1">{c.period}</div>
+                    <div className="text-white font-bold text-base leading-tight">{c.label}</div>
+                  </div>
+                  <div
+                    className="flex-shrink-0 ml-3 text-center px-2.5 py-1.5 rounded"
+                    style={{ background: c.regimeBg, border: `1px solid ${c.regimeBorder}` }}
+                  >
+                    <div className="text-2xl font-bold leading-none" style={{ color: c.regimeColor }}>{c.score}</div>
+                    <div className="text-[8px] font-mono tracking-widest mt-0.5" style={{ color: c.regimeColor }}>{c.regime}</div>
+                  </div>
+                </div>
               </div>
 
-              <div className="mb-3">
-                <div className="text-[10px] font-mono tracking-[0.25em] text-[#64748B] mb-1">{c.period}</div>
-                <div className="text-white font-bold text-lg leading-tight">{c.label}</div>
-              </div>
+              {/* BEFORE / AFTER */}
+              <div className="px-5 py-4">
+                {/* BEFORE */}
+                <div className="mb-3">
+                  <div className="text-[8px] font-mono tracking-[0.3em] text-[#64748B] mb-1.5">BEFORE — FAULTLINE SIGNAL</div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c.regimeColor, boxShadow: `0 0 6px ${c.regimeColor}` }} />
+                    <span className="text-sm font-mono font-bold" style={{ color: c.regimeColor }}>{c.regime}</span>
+                    <span className="text-[#64748B] text-xs">flagged</span>
+                  </div>
+                </div>
 
-              <div
-                className="inline-block text-[10px] font-mono tracking-widest px-2.5 py-1 rounded mb-4 border"
-                style={{ color: c.regimeColor, borderColor: c.regimeBorder, background: 'rgba(0,0,0,0.3)' }}
-              >
-                {c.regime}
-              </div>
+                {/* Arrow */}
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5">
+                    <path d="M12 5v14M5 12l7 7 7-7" />
+                  </svg>
+                  <div className="flex-1 h-px bg-[rgba(255,255,255,0.06)]" />
+                </div>
 
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">
-                <span className="text-[#64748B] text-xs font-mono block mb-1">ACTUAL OUTCOME</span>
-                {c.outcome}
-              </p>
+                {/* AFTER */}
+                <div>
+                  <div className="text-[8px] font-mono tracking-[0.3em] text-[#64748B] mb-1.5">AFTER — ACTUAL OUTCOME</div>
+                  <p className="text-[#A8B8CC] text-sm leading-relaxed">{c.outcome}</p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
 
         {/* Methodology note + CTA */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-5 rounded-lg border border-[rgba(255,255,255,0.07)] bg-[#0C0F16]">
-          <p className="text-[#64748B] text-xs font-mono leading-relaxed max-w-xl">
-            All inputs are lagging FRED economic releases — Moody's Baa spreads, Treasury yields, CPI, unemployment. The engine cannot see the future. The backfill uses only data available at the time of each reading.
-          </p>
+          <div>
+            <p className="text-[#64748B] text-xs font-mono leading-relaxed max-w-xl mb-2">
+              All inputs are lagging FRED economic releases — Moody's Baa spreads, Treasury yields, CPI, unemployment. The engine cannot see the future. The backfill uses only data available at the time of each reading.
+            </p>
+            <p className="text-[#22C55E] text-[10px] font-mono tracking-[0.2em]">
+              ✓ NO HINDSIGHT    ✓ NO CURVE-FITTING    ✓ SAME ENGINE RUNNING LIVE TODAY
+            </p>
+          </div>
           <a
             href="/track-record"
             className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 border font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97] whitespace-nowrap"

@@ -276,10 +276,19 @@ export function PremiumGateFull({
         <div
           className="absolute inset-0 overflow-hidden pointer-events-none select-none"
           aria-hidden="true"
-          style={{ filter: "blur(8px)", opacity: 0.18 }}
+          style={{ filter: "blur(6px)", opacity: 0.25 }}
         >
           {children}
         </div>
+      )}
+      {/* Gradient overlay to fade the blurred content into the gate card */}
+      {children && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse 60% 50% at 50% 50%, transparent 0%, rgba(5,6,8,0.7) 60%, rgba(5,6,8,0.95) 100%)",
+          }}
+        />
       )}
 
       {/* Ambient glow behind gate card */}
@@ -362,6 +371,22 @@ export function PremiumGateFull({
               </div>
             ))}
           </div>
+
+          {/* Founding urgency banner (only for premium/founding gates) */}
+          {(cfg.requiredTier === 'premium') && (
+            <div
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg mb-6 text-center"
+              style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
+            >
+              <div className="relative flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#FFD700]" />
+                <div className="absolute w-3 h-3 rounded-full bg-[#FFD700]/20 animate-ping" />
+              </div>
+              <span className="text-[10px] font-mono tracking-[0.25em] text-[#FFD700]/80">
+                FOUNDING ACCESS OPEN — LIMITED AVAILABILITY
+              </span>
+            </div>
+          )}
 
           {/* Tier separator */}
           <div className="flex items-center gap-3 mb-6">

@@ -376,30 +376,53 @@ export default function TrackRecord() {
           <p className="text-sm text-zinc-400 mt-2">Hover bars for details. Red dashed lines mark major crisis events.</p>
         </div>
 
-        {/* Crisis callouts */}
+        {/* Crisis callouts — BEFORE/AFTER format */}
         <div className="mb-12">
           <h2 className="text-lg font-semibold text-white mb-2">Crisis Period Analysis</h2>
           <p className="text-sm text-zinc-400 mb-6">
-            How the FAULTLINE model scored each major market crisis against actual outcomes.
+            How the FAULTLINE model scored each major market crisis against actual outcomes. The BEFORE column shows what the engine flagged; the AFTER column shows what happened.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {CRISIS_CALLOUTS.map(c => {
               const rc = regimeColor(c.regime);
               return (
-                <div key={c.period} className={`p-5 rounded-lg border ${rc.border} ${rc.bg}`}>
-                  <div className="flex items-start justify-between mb-2">
+                <div key={c.period} className={`rounded-lg border overflow-hidden ${rc.border}`} style={{ background: 'rgba(9,9,11,0.8)' }}>
+                  {/* Card header */}
+                  <div className={`px-5 pt-5 pb-3 border-b ${rc.border} flex items-start justify-between`}>
                     <div>
-                      <span className="text-sm text-zinc-400 font-mono">{c.period}</span>
+                      <span className="text-xs text-zinc-500 font-mono">{c.period}</span>
                       <h3 className="text-base font-semibold text-white mt-0.5">{c.label}</h3>
                     </div>
-                    <div className="text-right flex-shrink-0 ml-4">
-                      <div className={`text-2xl font-bold ${rc.text}`}>{c.peak}</div>
-                      <div className={`text-sm font-medium ${rc.text}`}>{c.regime}</div>
+                    <div className={`flex-shrink-0 ml-4 text-center px-3 py-1.5 rounded ${rc.bg} ${rc.border} border`}>
+                      <div className={`text-2xl font-bold leading-none ${rc.text}`}>{c.peak}</div>
+                      <div className={`text-[9px] font-mono tracking-widest mt-0.5 ${rc.text}`}>{c.regime}</div>
                     </div>
                   </div>
-                  <p className="text-sm text-zinc-400 leading-relaxed mb-3">{c.description}</p>
-                  <div className="text-sm text-zinc-400 border-t border-zinc-800 pt-2 mt-2">
-                    <strong className="text-zinc-400">Actual outcome:</strong> {c.outcome}
+
+                  {/* BEFORE */}
+                  <div className="px-5 pt-4 pb-3">
+                    <div className="text-[9px] font-mono tracking-[0.3em] text-zinc-500 mb-2">BEFORE — FAULTLINE SIGNAL</div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${rc.text.replace('text-', 'bg-')}`} style={{ boxShadow: `0 0 6px currentColor` }} />
+                      <span className={`text-sm font-mono font-bold ${rc.text}`}>{c.regime}</span>
+                      <span className="text-zinc-500 text-xs">flagged</span>
+                    </div>
+                    <p className="text-sm text-zinc-400 leading-relaxed">{c.description}</p>
+                  </div>
+
+                  {/* Divider with arrow */}
+                  <div className="flex items-center gap-3 px-5 py-2">
+                    <div className="flex-1 h-px bg-zinc-800" />
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5">
+                      <path d="M12 5v14M5 12l7 7 7-7" />
+                    </svg>
+                    <div className="flex-1 h-px bg-zinc-800" />
+                  </div>
+
+                  {/* AFTER */}
+                  <div className="px-5 pb-5">
+                    <div className="text-[9px] font-mono tracking-[0.3em] text-zinc-500 mb-2">AFTER — ACTUAL OUTCOME</div>
+                    <p className="text-sm text-zinc-300 leading-relaxed font-medium">{c.outcome}</p>
                   </div>
                 </div>
               );
