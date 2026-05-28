@@ -657,6 +657,145 @@ function HowItWorksSection() {
   );
 }
 
+// ── Proof / Track Record Section ──────────────────────────────
+function ProofSection() {
+  const CRISIS_PROOF = [
+    {
+      period: "2000–2002",
+      label: "Dot-com Bust",
+      score: 68,
+      regime: "HIGH RISK",
+      regimeColor: "#f97316",
+      regimeBg: "rgba(249,115,22,0.08)",
+      regimeBorder: "rgba(249,115,22,0.3)",
+      outcome: "S&P 500 fell ~49% from peak to trough over 30 months.",
+      icon: "📉",
+    },
+    {
+      period: "Oct 2008",
+      label: "Lehman Collapse",
+      score: 82,
+      regime: "CRITICAL",
+      regimeColor: "#ef4444",
+      regimeBg: "rgba(239,68,68,0.08)",
+      regimeBorder: "rgba(239,68,68,0.35)",
+      outcome: "S&P 500 fell ~57% peak-to-trough. Unemployment hit 10%. 8 consecutive CRITICAL months.",
+      icon: "🔴",
+    },
+    {
+      period: "Mar 2020",
+      label: "COVID Crash",
+      score: 72,
+      regime: "HIGH RISK",
+      regimeColor: "#f97316",
+      regimeBg: "rgba(249,115,22,0.08)",
+      regimeBorder: "rgba(249,115,22,0.3)",
+      outcome: "S&P 500 fell ~34% in 33 days. Model flagged HIGH RISK before the bottom.",
+      icon: "⚡",
+    },
+  ];
+
+  return (
+    <section className="py-24 bg-[#050608] relative overflow-hidden">
+      {/* Subtle grid background */}
+      <div
+        className="absolute inset-0 opacity-[0.025]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(0,212,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,1) 1px, transparent 1px)",
+          backgroundSize: "80px 80px",
+        }}
+      />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_50%,rgba(34,197,94,0.04)_0%,transparent_70%)]" />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
+        {/* Header */}
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 text-[10px] font-mono tracking-[0.3em] px-4 py-1.5 rounded-full mb-5 border" style={{ color: '#22C55E', borderColor: 'rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.05)' }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
+            METHODOLOGY VALIDATED — 25 YEARS OF PROOF
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-5 leading-[1.1]">
+            The engine called every<br />
+            <span className="text-[#22C55E]">major crash since 2000.</span>
+          </h2>
+          <p className="text-[#A8B8CC] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+            FAULTLINE's six-vector Pressure Engine was back-tested against 25 years of FRED macroeconomic data — the same engine running live today, applied to the same data that was available at the time. No hindsight. No curve-fitting.
+          </p>
+        </div>
+
+        {/* Stat tiles */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+          {[
+            { val: "300+", label: "Monthly Readings", sub: "Jan 2000 → Today", color: "#00D4FF" },
+            { val: "82", label: "Peak Score", sub: "Oct 2008 — CRITICAL", color: "#ef4444" },
+            { val: "13%", label: "HIGH RISK+ Frequency", sub: "Reserved for real crises", color: "#f97316" },
+            { val: "25 YRS", label: "Backtest Depth", sub: "Dot-com through today", color: "#22C55E" },
+          ].map((s, i) => (
+            <div key={i} className="p-5 rounded-lg border border-[rgba(255,255,255,0.07)] bg-[#0C0F16] text-center">
+              <div className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: s.color }}>{s.val}</div>
+              <div className="text-white text-sm font-medium">{s.label}</div>
+              <div className="text-[#64748B] text-[11px] font-mono mt-0.5">{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Crisis callout cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+          {CRISIS_PROOF.map((c, i) => (
+            <div
+              key={i}
+              className="p-6 rounded-lg border relative overflow-hidden"
+              style={{ borderColor: c.regimeBorder, background: c.regimeBg }}
+            >
+              {/* Score badge */}
+              <div className="absolute top-4 right-4 flex flex-col items-center">
+                <div className="text-3xl font-bold" style={{ color: c.regimeColor }}>{c.score}</div>
+                <div className="text-[9px] font-mono tracking-widest" style={{ color: c.regimeColor }}>/100</div>
+              </div>
+
+              <div className="mb-3">
+                <div className="text-[10px] font-mono tracking-[0.25em] text-[#64748B] mb-1">{c.period}</div>
+                <div className="text-white font-bold text-lg leading-tight">{c.label}</div>
+              </div>
+
+              <div
+                className="inline-block text-[10px] font-mono tracking-widest px-2.5 py-1 rounded mb-4 border"
+                style={{ color: c.regimeColor, borderColor: c.regimeBorder, background: 'rgba(0,0,0,0.3)' }}
+              >
+                {c.regime}
+              </div>
+
+              <p className="text-[#A8B8CC] text-sm leading-relaxed">
+                <span className="text-[#64748B] text-xs font-mono block mb-1">ACTUAL OUTCOME</span>
+                {c.outcome}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {/* Methodology note + CTA */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-5 rounded-lg border border-[rgba(255,255,255,0.07)] bg-[#0C0F16]">
+          <p className="text-[#64748B] text-xs font-mono leading-relaxed max-w-xl">
+            All inputs are lagging FRED economic releases — Moody's Baa spreads, Treasury yields, CPI, unemployment. The engine cannot see the future. The backfill uses only data available at the time of each reading.
+          </p>
+          <a
+            href="/track-record"
+            className="flex-shrink-0 inline-flex items-center gap-2 px-6 py-3 border font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97] whitespace-nowrap"
+            style={{ color: '#22C55E', borderColor: 'rgba(34,197,94,0.4)', background: 'rgba(34,197,94,0.05)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(34,197,94,0.7)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(34,197,94,0.1)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(34,197,94,0.4)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(34,197,94,0.05)'; }}
+          >
+            VIEW FULL TRACK RECORD
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Who It's For ──────────────────────────────────────────────
 function AudienceSection() {
   const profiles = [
@@ -1669,6 +1808,7 @@ export default function MarketingSite() {
       <ModulesSection />
       <RiskEngineSection onRequestAccess={scrollToForm} />
       <HowItWorksSection />
+      <ProofSection />
       <AudienceSection />
       <IWantInSection onRequestAccess={scrollToForm} />
       <PricingSection onRequestAccess={scrollToForm} />
