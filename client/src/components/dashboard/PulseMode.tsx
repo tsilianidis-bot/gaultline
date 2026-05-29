@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
+import { FaultlineInterpretation } from "./FaultlineInterpretation";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 
@@ -355,6 +356,7 @@ export default function PulseMode() {
       <WhatChangedToday />
       <TopRiskCard />
       <DailyBriefSummary />
+      <FaultlineInterpretation />
       <CompactSignalFooter />
     </div>
   );

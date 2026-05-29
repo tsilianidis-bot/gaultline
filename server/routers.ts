@@ -32,6 +32,7 @@ import { protectedProcedure, coreProcedure } from "./_core/trpc";
 import { stripe } from './stripe/client';
 import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
+import { sendEmail, buildApprovalEmail } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
 import { xPostQueue } from '../drizzle/schema';
 import { getDb } from './db';
@@ -998,6 +999,32 @@ export const appRouter = router({
       ]);
       return { signups, waitlist, conversion };
     }),
+
+    // Send founding access approval email — admin only
+    sendApprovalEmail: protectedProcedure
+      .input(z.object({
+        email: z.string().email(),
+        name: z.string().optional(),
+        origin: z.string().url(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        const emailPayload = buildApprovalEmail({
+          name: input.name ?? '',
+          email: input.email,
+          siteUrl: input.origin,
+        });
+        const result = await sendEmail(emailPayload);
+        if (!result.success) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: result.error ?? 'Failed to send email',
+          });
+        }
+        return { success: true, sentTo: input.email };
+      }),
   }),
   blog: router({
     // Public: list published posts

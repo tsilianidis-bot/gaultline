@@ -202,6 +202,19 @@ function WaitlistTab() {
   const setTierMutation = trpc.admin.setUserTier.useMutation({
     onSuccess: () => utils.admin.getFoundingRequests.invalidate(),
   });
+  const sendEmail = trpc.admin.sendApprovalEmail.useMutation();
+  const [emailSent, setEmailSent] = useState<Record<number, boolean>>({});
+  const [emailError, setEmailError] = useState<Record<number, string>>({});
+
+  const handleSendEmail = (req: { id: number; email: string; name?: string | null }) => {
+    sendEmail.mutate(
+      { email: req.email, name: req.name ?? undefined, origin: window.location.origin },
+      {
+        onSuccess: () => setEmailSent(prev => ({ ...prev, [req.id]: true })),
+        onError: (err) => setEmailError(prev => ({ ...prev, [req.id]: err.message })),
+      }
+    );
+  };
 
   const [filter, setFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
 
@@ -298,6 +311,30 @@ function WaitlistTab() {
                     >
                       ↑ Grant Founding
                     </button>
+                  )}
+                  {req.status === "approved" && (
+                    <>
+                      <button
+                        onClick={() => handleSendEmail(req)}
+                        disabled={sendEmail.isPending || emailSent[req.id]}
+                        style={{
+                          ...MONO, fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase",
+                          padding: "7px 16px", borderRadius: "6px", cursor: emailSent[req.id] ? "default" : "pointer",
+                          background: emailSent[req.id] ? "rgba(34,197,94,0.1)" : "rgba(168,85,247,0.1)",
+                          border: emailSent[req.id] ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(168,85,247,0.3)",
+                          color: emailSent[req.id] ? "rgba(34,197,94,0.9)" : "rgba(168,85,247,0.9)",
+                          transition: "all 0.15s",
+                          opacity: sendEmail.isPending ? 0.6 : 1,
+                        }}
+                      >
+                        {emailSent[req.id] ? "✓ Email Sent" : sendEmail.isPending ? "Sending…" : "✉ Send Email"}
+                      </button>
+                      {emailError[req.id] && (
+                        <p style={{ ...MONO, fontSize: "9px", color: "rgba(255,45,85,0.7)", maxWidth: "140px", lineHeight: 1.4 }}>
+                          {emailError[req.id]}
+                        </p>
+                      )}
+                    </>
                   )}
                   {req.status !== "pending" && (
                     <button

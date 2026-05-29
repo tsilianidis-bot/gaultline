@@ -728,3 +728,20 @@
 - [x] Style Track Record tab green with VERIFIED badge (desktop nav + mobile drawer + marketing site) to crypto signal cards (coin description + category/sector from CoinGecko)
 - [x] Wire info data into tRPC procedures (stock: signals.getStockInfo, crypto: reuse CoinGecko coin detail)
 - [x] UI: collapsible INFO panel on each signal card with description text and sector badge
+
+## Email Integration (SendGrid) — Admin Approval Emails
+
+- [x] Add SENDGRID_API_KEY secret via webdev_request_secrets
+- [x] Create server/email.ts helper with sendEmail() function using SendGrid
+- [x] Add admin.sendApprovalEmail tRPC mutation in routers.ts
+- [x] Add "Send Approval Email" button to WaitlistTab in AdminPortal.tsx (visible on approved requests)
+- [ ] Add "Send Approval Email" button to UsersTab for founding tier users (deferred)
+- [x] Write vitest test for email helper (7 tests passing)
+- [ ] Checkpoint after email integration complete
+
+## FAULTLINE Interpretation Section
+
+- [x] Create client/src/components/dashboard/FaultlineInterpretation.tsx — dynamic interpretation section
+- [x] Add to IntelligenceMode.tsx below structural risk summary
+- [x] Add to PulseMode.tsx below Daily Brief summary
+- [ ] Checkpoint after complete

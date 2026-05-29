@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { ArrowRight, Shield, Zap, TrendingDown } from "lucide-react";
+import { FaultlineInterpretation } from "./FaultlineInterpretation";
 
 // ── Macro Regime Panel ─────────────────────────────────────────────────────────
 function MacroRegimePanel() {
@@ -385,6 +386,7 @@ export default function IntelligenceMode() {
       <MacroRegimePanel />
       <AftershockSnapshot />
       <StructuralRiskSummary />
+      <FaultlineInterpretation />
       <TrackRecordSnippet />
     </div>
   );
