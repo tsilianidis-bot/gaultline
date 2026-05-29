@@ -768,3 +768,13 @@
 - [x] Subscribe webhook to 4 events
 - [x] STRIPE_WEBHOOK_SECRET is a built-in managed secret — new signing secret is whsec_pEqvz2m76f67YpuLVpd9udJPGJtIOf8l (must be updated manually in Settings → Payment)
 - [x] Webhook test verification fix deployed — evt_test_ detected before signature check
+
+## Multi-Tier Risk Framework (Stop-Loss Redesign)
+- [x] Read current stop-loss logic in TickerSearch and server-side signal generation
+- [x] Build computeRiskLevels() server helper: Trade Stop (ATR-based, 5–15%), Swing Stop (SMA20-based, 10–25%), Thesis Failure (50-session structural low, 20–65%)
+- [x] Add Conservative/Balanced/Aggressive profile multipliers to RiskFramework UI component
+- [x] Build RiskFramework UI component with 3-tier display, profile toggle, % risk labels, AI explanations
+- [x] Wire RiskFramework into TickerSearch replacing old stop-loss display
+- [x] Update R:R calculation to use Trade Stop (not Thesis Failure) as primary
+- [x] Also applied multi-tier risk levels to crypto (cryptoSignals.ts) with crypto-appropriate wider bands
+- [ ] Checkpoint after risk framework redesign

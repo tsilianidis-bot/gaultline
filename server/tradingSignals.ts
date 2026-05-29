@@ -31,14 +31,31 @@ export interface DailyBar {
   timestamp: number; // Unix ms
 }
 
+export interface RiskTier {
+  price: number;         // stop price
+  pctFromEntry: number;  // % distance from entry (negative = below)
+  label: string;         // short description for AI explanation
+}
+
+export interface RiskLevels {
+  tradeStop: RiskTier;       // ATR-based short-term stop (5–15% below entry)
+  swingStop: RiskTier;       // MA/support-based medium-term stop (10–25% below entry)
+  thesisFailure: RiskTier;   // Structural invalidation level (replaces old oversized stop)
+  riskReward: number;        // R:R using tradeStop as primary risk measure
+  tradeStopExplanation: string;
+  swingStopExplanation: string;
+  thesisFailureExplanation: string;
+}
+
 export interface PriceLevels {
   support: number;       // estimated support (recent low area)
   resistance: number;    // estimated resistance (recent high area)
   entryZone: number;     // suggested entry price
-  stopLoss: number;      // ATR-based stop-loss
+  stopLoss: number;      // ATR-based stop-loss (legacy — kept for backward compat)
   targetPrice: number;   // 2:1 R:R target based on direction
   riskReward: number;    // (target - entry) / (entry - stop), rounded to 1dp
   atr: number;           // estimated ATR (high - low range proxy)
+  riskLevels: RiskLevels; // multi-tier risk framework
 }
 
 export interface MACDResult {
@@ -335,6 +352,98 @@ function volumeSignal(volumeMillions: number, avgVolume: number): "Surge" | "Nor
 }
 
 /**
+ * Compute multi-tier risk levels: Trade Stop, Swing Stop, Thesis Failure.
+ *
+ * Trade Stop  (5–15%):  ATR-based tactical stop for active traders.
+ * Swing Stop  (10–25%): MA-based trend protection for swing traders.
+ * Thesis Failure (25–60%): Structural invalidation — replaces the old oversized single stop.
+ */
+function computeRiskLevels(
+  entry: number,
+  low: number,
+  atr: number,
+  action: TradingAction,
+  targetPrice: number,
+  dailyBars?: DailyBar[]
+): RiskLevels {
+  const isBull = action === "BUY" || action === "HOLD" || action === "WATCH";
+  const dir = isBull ? -1 : 1; // negative = below entry for longs
+
+  // ── Trade Stop: 0.75–1.0× ATR below recent low ──────────────
+  // Tight tactical stop — protects against normal intraday noise.
+  const rawTradeStop = low - atr * 0.75;
+  // Clamp to 5–15% below entry
+  const tradeStopMin = entry * (1 - 0.15);
+  const tradeStopMax = entry * (1 - 0.04);
+  const tradeStopPrice = parseFloat(
+    Math.min(tradeStopMax, Math.max(tradeStopMin, rawTradeStop)).toFixed(2)
+  );
+  const tradeStopPct = parseFloat(((tradeStopPrice - entry) / entry * 100).toFixed(1));
+
+  // ── Swing Stop: 20-period SMA proxy or 1.5× ATR below support ─
+  // Uses 20-bar SMA if bars available, else 1.5× ATR from recent low.
+  let swingStopRaw: number;
+  if (dailyBars && dailyBars.length >= 20) {
+    const sma20 = dailyBars.slice(-20).reduce((s, b) => s + b.close, 0) / 20;
+    // Stop below SMA20 by 0.5× ATR
+    swingStopRaw = sma20 - atr * 0.5;
+  } else {
+    swingStopRaw = low - atr * 1.5;
+  }
+  // Clamp to 10–25% below entry
+  const swingStopMin = entry * (1 - 0.26);
+  const swingStopMax = entry * (1 - 0.08);
+  const swingStopPrice = parseFloat(
+    Math.min(swingStopMax, Math.max(swingStopMin, swingStopRaw)).toFixed(2)
+  );
+  const swingStopPct = parseFloat(((swingStopPrice - entry) / entry * 100).toFixed(1));
+
+  // ── Thesis Failure: 52-week low proxy or 2.5× ATR from swing stop ─
+  // Structural invalidation — the point where the original thesis is wrong.
+  let thesisRaw: number;
+  if (dailyBars && dailyBars.length >= 50) {
+    const periodLow = Math.min(...dailyBars.slice(-50).map(b => b.low));
+    thesisRaw = periodLow - atr * 0.25;
+  } else {
+    thesisRaw = swingStopPrice - atr * 2.5;
+  }
+  // Clamp to 20–65% below entry
+  const thesisMin = entry * (1 - 0.65);
+  const thesisMax = entry * (1 - 0.18);
+  // Must be below swing stop
+  const thesisPrice = parseFloat(
+    Math.min(swingStopPrice - atr * 0.5, Math.min(thesisMax, Math.max(thesisMin, thesisRaw))).toFixed(2)
+  );
+  const thesisPct = parseFloat(((thesisPrice - entry) / entry * 100).toFixed(1));
+
+  // ── R:R using Trade Stop as primary risk measure ──────────
+  const tradeRisk = Math.abs(entry - tradeStopPrice);
+  const reward = Math.abs(targetPrice - entry);
+  const riskReward = tradeRisk > 0 ? parseFloat((reward / tradeRisk).toFixed(1)) : 0;
+
+  // ── AI Explanations ───────────────────────────────────────
+  const tradeStopExplanation = `Trade Stop sits ${Math.abs(tradeStopPct).toFixed(1)}% below entry, just under recent intraday support. Designed to protect against normal volatility while keeping risk tight for active traders.`;
+
+  const swingStopExplanation = dailyBars && dailyBars.length >= 20
+    ? `Swing Stop is anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below entry). A close below this level signals the short-term trend is broken.`
+    : `Swing Stop at ${Math.abs(swingStopPct).toFixed(1)}% below entry allows for normal trend fluctuations while protecting capital from a sustained breakdown.`;
+
+  const thesisFailureExplanation = dailyBars && dailyBars.length >= 50
+    ? `Thesis Failure Level marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below entry). A breach here means the original bullish thesis has fundamentally broken down.`
+    : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below entry represents the structural invalidation point — where the original trade thesis is no longer valid.`;
+
+  return {
+    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade Stop" },
+    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing Stop" },
+    thesisFailure: { price: thesisPrice, pctFromEntry: thesisPct, label: "Thesis Failure" },
+    riskReward,
+    tradeStopExplanation,
+    swingStopExplanation,
+    thesisFailureExplanation,
+  };
+}
+
+/**
  * Estimate key price levels from OHLC using ATR-based stops and 2:1 R:R targets.
  * ATR proxy = intraday high - low range (single-bar ATR).
  */
@@ -383,7 +492,10 @@ function computePriceLevels(
   const reward = Math.abs(targetPrice - entryZone);
   const riskReward = risk > 0 ? parseFloat((reward / risk).toFixed(1)) : 0;
 
-  return { support, resistance, entryZone, stopLoss, targetPrice, riskReward, atr: parseFloat(atr.toFixed(2)) };
+  // Compute multi-tier risk levels
+  const riskLevels = computeRiskLevels(entryZone, low, atr, action, targetPrice, dailyBars);
+
+  return { support, resistance, entryZone, stopLoss, targetPrice, riskReward, atr: parseFloat(atr.toFixed(2)), riskLevels };
 }
 
 /**

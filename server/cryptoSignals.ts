@@ -176,7 +176,7 @@ function volatilityRegime(volatility24h: number): "High" | "Normal" | "Low" {
 }
 
 /**
- * Compute ATR-based price levels for crypto.
+ * Compute ATR-based price levels for crypto, including multi-tier risk framework.
  */
 function computeCryptoPriceLevels(
   price: number,
@@ -222,7 +222,38 @@ function computeCryptoPriceLevels(
   const reward = Math.abs(targetPrice - entryZone);
   const riskReward = risk > 0 ? parseFloat((reward / risk).toFixed(1)) : 0;
 
-  return { support, resistance, entryZone, stopLoss, targetPrice, riskReward, atr: parseFloat(atr.toFixed(8)) };
+  // Build multi-tier risk levels for crypto
+  // Crypto uses wider bands due to higher volatility
+  const tradeStopPrice = parseFloat(Math.max(low - atr * 0.75, entryZone * 0.85).toFixed(8));
+  const tradeStopPct = parseFloat(((tradeStopPrice - entryZone) / entryZone * 100).toFixed(1));
+  const swingStopRaw = ohlcBars && ohlcBars.length >= 20
+    ? ohlcBars.slice(-20).reduce((s, b) => s + b.close, 0) / 20 - atr * 0.5
+    : low - atr * 2;
+  const swingStopPrice = parseFloat(Math.max(swingStopRaw, entryZone * 0.72).toFixed(8));
+  const swingStopPct = parseFloat(((swingStopPrice - entryZone) / entryZone * 100).toFixed(1));
+  const thesisRaw = ohlcBars && ohlcBars.length >= 50
+    ? Math.min(...ohlcBars.slice(-50).map(b => b.low)) - atr * 0.25
+    : swingStopPrice - atr * 3;
+  const thesisPrice = parseFloat(Math.max(thesisRaw, entryZone * 0.45).toFixed(8));
+  const thesisPct = parseFloat(((thesisPrice - entryZone) / entryZone * 100).toFixed(1));
+  const tradeRisk = Math.abs(entryZone - tradeStopPrice);
+  const rrFromTradeStop = tradeRisk > 0 ? parseFloat((Math.abs(targetPrice - entryZone) / tradeRisk).toFixed(1)) : 0;
+
+  const riskLevels: import('./tradingSignals').RiskLevels = {
+    tradeStop: { price: tradeStopPrice, pctFromEntry: tradeStopPct, label: "Trade Stop" },
+    swingStop: { price: swingStopPrice, pctFromEntry: swingStopPct, label: "Swing Stop" },
+    thesisFailure: { price: thesisPrice, pctFromEntry: thesisPct, label: "Thesis Failure" },
+    riskReward: rrFromTradeStop,
+    tradeStopExplanation: `Trade Stop at ${Math.abs(tradeStopPct).toFixed(1)}% below entry, just under recent intraday support. Protects against normal crypto volatility for active traders.`,
+    swingStopExplanation: ohlcBars && ohlcBars.length >= 20
+      ? `Swing Stop anchored to the 20-day moving average (${Math.abs(swingStopPct).toFixed(1)}% below entry). A close below signals the short-term trend is broken.`
+      : `Swing Stop at ${Math.abs(swingStopPct).toFixed(1)}% below entry allows for trend fluctuations while protecting against a sustained breakdown.`,
+    thesisFailureExplanation: ohlcBars && ohlcBars.length >= 50
+      ? `Thesis Failure marks the 50-session structural low (${Math.abs(thesisPct).toFixed(1)}% below entry). A breach here means the bullish thesis has fundamentally broken down.`
+      : `Thesis Failure at ${Math.abs(thesisPct).toFixed(1)}% below entry is the structural invalidation point — where the original trade thesis is no longer valid.`,
+  };
+
+  return { support, resistance, entryZone, stopLoss, targetPrice, riskReward, atr: parseFloat(atr.toFixed(8)), riskLevels };
 }
 
 /**

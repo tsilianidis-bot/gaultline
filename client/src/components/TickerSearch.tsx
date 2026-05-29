@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { trpc } from '@/lib/trpc';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { RiskFramework, type RiskLevels } from '@/components/RiskFramework';
 
 // ── Types ─────────────────────────────────────────────────────
 interface TickerProfile {
@@ -231,6 +232,7 @@ interface PriceLevels {
   targetPrice: number;
   riskReward: number;
   atr: number;
+  riskLevels?: RiskLevels;
 }
 interface TradingSignalData {
   action: string;
@@ -518,48 +520,40 @@ function StockIntelligenceCard({
         ) : null}
 
         {/* ── Key Price Levels ─────────────────────────────── */}
+        {/* ── Risk Framework ────────────────────────────────── */}
         {signalLoading ? (
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '8px', textTransform: 'uppercase' }}>KEY PRICE LEVELS</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
-              {[0,1,2,3].map(i => (
-                <div key={i} style={{ height: '44px', background: 'rgba(255,255,255,0.03)', borderRadius: '3px', animation: 'fl-pulse 1.5s ease-in-out infinite' }} />
+            <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '8px', textTransform: 'uppercase' }}>RISK FRAMEWORK</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {[0,1,2,3,4].map(i => (
+                <div key={i} style={{ height: '40px', background: 'rgba(255,255,255,0.03)', borderRadius: '3px', animation: 'fl-pulse 1.5s ease-in-out infinite' }} />
               ))}
             </div>
           </div>
+        ) : tradingSignal?.priceLevels.riskLevels ? (
+          <RiskFramework
+            entry={tradingSignal.priceLevels.entryZone}
+            target={tradingSignal.priceLevels.targetPrice}
+            riskLevels={tradingSignal.priceLevels.riskLevels}
+            isCrypto={false}
+          />
         ) : tradingSignal ? (
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontSize: '11px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '8px', textTransform: 'uppercase' }}>KEY PRICE LEVELS</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
               {[
                 { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone, color: '#00D4FF' },
-                { label: 'STOP LOSS', value: tradingSignal.priceLevels.stopLoss, color: '#FF2D55' },
+                { label: 'STOP', value: tradingSignal.priceLevels.stopLoss, color: '#FF2D55' },
                 { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice, color: '#34D399' },
                 { label: 'R:R', value: tradingSignal.priceLevels.riskReward, color: '#FFD700', isRR: true },
               ].map(({ label, value, color, isRR }) => (
-                <div key={label} style={{
-                  background: `${color}08`,
-                  border: `1px solid ${color}20`,
-                  borderRadius: '3px',
-                  padding: '7px 8px',
-                  textAlign: 'center',
-                }}>
+                <div key={label} style={{ background: `${color}08`, border: `1px solid ${color}20`, borderRadius: '3px', padding: '7px 8px', textAlign: 'center' }}>
                   <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.75)', marginBottom: '3px', textTransform: 'uppercase' }}>{label}</div>
-                  <div style={{ fontSize: '14px', fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color, letterSpacing: '0.02em' }}>
+                  <div style={{ fontSize: '14px', fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color }}>
                     {isRR ? `${value.toFixed(1)}x` : `$${value.toFixed(2)}`}
                   </div>
                 </div>
               ))}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '3px', padding: '6px 8px' }}>
-                <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.65)', marginBottom: '2px' }}>SUPPORT</div>
-                <div style={{ fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace", color: 'rgba(0,212,255,0.7)' }}>${tradingSignal.priceLevels.support.toFixed(2)}</div>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '3px', padding: '6px 8px' }}>
-                <div style={{ fontSize: '10px', letterSpacing: '0.1em', color: 'rgba(100,116,139,0.65)', marginBottom: '2px' }}>RESISTANCE</div>
-                <div style={{ fontSize: '13px', fontFamily: "'IBM Plex Mono', monospace", color: 'rgba(255,45,85,0.7)' }}>${tradingSignal.priceLevels.resistance.toFixed(2)}</div>
-              </div>
             </div>
           </div>
         ) : null}
