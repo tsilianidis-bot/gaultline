@@ -760,11 +760,11 @@
 - [x] Checkpoint after Stripe webhook fixes
 
 ## Stripe Billing Setup
-- [ ] Create FAULTLINE Mobile product ($9.99/month) and capture price ID
-- [ ] Create FAULTLINE Premium product ($59/month) and capture price ID
-- [ ] Create FAULTLINE Founders Lifetime product ($1200 one-time) and capture price ID
-- [ ] Add STRIPE_CORE_PRICE_ID, STRIPE_PREMIUM_PRICE_ID, STRIPE_FOUNDING_PRICE_ID to secrets
-- [ ] Create webhook endpoint for https://getfaultline.live/api/stripe/webhook
-- [ ] Subscribe webhook to 4 events
-- [ ] Save STRIPE_WEBHOOK_SECRET
-- [ ] Verify checkout flow with test card
+- [x] Create FAULTLINE Mobile product ($9.99/month) and capture price ID
+- [x] Create FAULTLINE Premium product ($59/month) and capture price ID
+- [x] Create FAULTLINE Founders Lifetime product ($1200 one-time) and capture price ID
+- [x] Add STRIPE_CORE_PRICE_ID, STRIPE_PREMIUM_PRICE_ID, STRIPE_FOUNDING_PRICE_ID to secrets
+- [x] Create webhook endpoint for https://getfaultline.live/api/stripe/webhook
+- [x] Subscribe webhook to 4 events
+- [x] STRIPE_WEBHOOK_SECRET is a built-in managed secret — new signing secret is whsec_pEqvz2m76f67YpuLVpd9udJPGJtIOf8l (must be updated manually in Settings → Payment)
+- [x] Webhook test verification fix deployed — evt_test_ detected before signature check

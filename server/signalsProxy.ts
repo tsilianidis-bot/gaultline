@@ -811,7 +811,21 @@ export function registerSignalsProxy(app: Express) {
 
     // Check the full grouped daily barMap — populated when any quotes fetch completes.
     // This covers ALL US-listed tickers (not just the 19 priority ones) with zero extra API calls.
+    // IMPORTANT: Always try Yahoo Finance first for the live/current price — grouped bar data
+    // is yesterday's close and will be stale during active trading sessions.
     if (fullBarMap && fullBarMap.has(raw) && fullBarMapTradeDate) {
+      // Try Yahoo Finance first for live price (same source as portfolio/priority tickers)
+      try {
+        const profile = await fetchTickerProfile(apiKey, raw);
+        tickerCache.set(raw, { profile, fetchedAt: Date.now() });
+        res.setHeader("X-Cache", "YAHOO-LIVE");
+        res.json({ ...profile, cached: false });
+        return;
+      } catch {
+        // Yahoo failed — fall through to grouped bar data as fallback
+        log.warn(`[Signals Proxy] Yahoo failed for ${raw}, falling back to grouped bar data`);
+      }
+      // Fallback: serve from Polygon grouped bar (yesterday's close)
       const bar = fullBarMap.get(raw)!;
       const prevBar = fullPrevBarMap?.get(raw);
       const price = parseFloat((bar.c ?? 0).toFixed(2));
@@ -823,7 +837,7 @@ export function registerSignalsProxy(app: Express) {
       const marketStatus = deriveMarketStatus(fullBarMapTradeDate);
       const profile: TickerProfile = {
         ticker: raw,
-        name: raw,  // name not available from grouped data — reference fetch is non-fatal
+        name: raw,
         price,
         open: parseFloat((bar.o ?? 0).toFixed(2)),
         high: parseFloat((bar.h ?? 0).toFixed(2)),
@@ -843,16 +857,8 @@ export function registerSignalsProxy(app: Express) {
         source: "live" as const,
       };
       tickerCache.set(raw, { profile, fetchedAt: Date.now() });
-      res.setHeader("X-Cache", "GROUPED-HIT");
+      res.setHeader("X-Cache", "GROUPED-FALLBACK");
       res.json({ ...profile, cached: false });
-      // Fire a background enrichment fetch to get name/sector/description
-      // and update the ticker cache for the next request
-      const apiKeyForEnrich = process.env.POLYGON_API_KEY;
-      if (apiKeyForEnrich) {
-        fetchTickerProfile(apiKeyForEnrich, raw)
-          .then(enriched => tickerCache.set(raw, { profile: enriched, fetchedAt: Date.now() }))
-          .catch(() => {}); // non-fatal
-      }
       return;
     }
 
