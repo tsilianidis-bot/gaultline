@@ -752,4 +752,9 @@
 - [x] Add admin.setUserTier tRPC mutation (set tier to 'free', 'founding', 'premium', etc.) — already existed, now also includes 'free' tier button
 - [x] Add Remove User button with confirmation dialog to UsersTab in AdminPortal.tsx
 - [x] Add Set Tier buttons (free/premium/founding) to UsersTab in AdminPortal.tsx
-- [ ] Checkpoint after user management complete
+- [x] Checkpoint after user management complete
+
+## Stripe Webhook Fixes
+- [x] Fix tier assignment — always fetch line items from Stripe API (not from webhook payload)
+- [x] Add invoice.paid handler for subscription renewals
+- [ ] Checkpoint after Stripe webhook fixes

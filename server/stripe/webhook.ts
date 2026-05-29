@@ -4,6 +4,45 @@ import { ENV } from '../_core/env';
 import { getPlanByPriceId } from './products';
 import { updateUserStripe, getUserByStripeCustomerId } from '../db';
 
+/**
+ * Resolve the access tier for a completed checkout session.
+ * Always fetches line items from the Stripe API — they are NOT included
+ * in the webhook payload by default, so we must call listLineItems().
+ */
+async function resolveTierFromSession(sessionId: string): Promise<'core' | 'premium' | 'founding'> {
+  try {
+    const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
+    const priceId = lineItems.data[0]?.price?.id;
+    if (priceId) {
+      const plan = getPlanByPriceId(priceId);
+      if (plan) return plan.tier;
+    }
+  } catch (err: any) {
+    console.warn('[Stripe Webhook] Could not fetch line items for session', sessionId, '—', err.message);
+  }
+  // Safe fallback — log a warning so this is visible in server logs
+  console.warn('[Stripe Webhook] Could not determine tier from line items — defaulting to premium');
+  return 'premium';
+}
+
+/**
+ * Resolve the access tier for a subscription (used on invoice.paid renewals).
+ * Looks up the price on the first subscription item.
+ */
+async function resolveTierFromSubscription(subscriptionId: string): Promise<'core' | 'premium' | 'founding' | null> {
+  try {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    const priceId = subscription.items.data[0]?.price?.id;
+    if (priceId) {
+      const plan = getPlanByPriceId(priceId);
+      if (plan) return plan.tier;
+    }
+  } catch (err: any) {
+    console.warn('[Stripe Webhook] Could not fetch subscription', subscriptionId, '—', err.message);
+  }
+  return null;
+}
+
 export async function handleStripeWebhook(req: Request, res: Response) {
   const sig = req.headers['stripe-signature'] as string;
 
@@ -36,16 +75,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           break;
         }
 
-        // Determine tier from line items / price
-        let tier: 'core' | 'premium' | 'founding' = 'premium';
-        if (session.line_items) {
-          const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
-          const priceId = lineItems.data[0]?.price?.id;
-          if (priceId) {
-            const plan = getPlanByPriceId(priceId);
-            if (plan) tier = plan.tier;
-          }
-        }
+        // Always fetch line items from the API — they are NOT in the webhook payload
+        const tier = await resolveTierFromSession(session.id);
 
         await updateUserStripe(userId, {
           accessTier: tier,
@@ -53,7 +84,39 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           stripeSubscriptionId: subscriptionId ?? undefined,
         });
 
-        console.log(`[Stripe Webhook] User ${userId} upgraded to ${tier}`);
+        console.log(`[Stripe Webhook] User ${userId} upgraded to ${tier} (session ${session.id})`);
+        break;
+      }
+
+      case 'invoice.paid': {
+        // Fires on every successful payment — initial charge AND renewals.
+        // Re-activates tier for users whose subscription lapsed and then renewed.
+        const invoice = event.data.object as any;
+        const customerId = invoice.customer as string;
+        const subscriptionId = invoice.subscription as string | null;
+
+        // Only process subscription invoices (not one-time charges)
+        if (!subscriptionId) break;
+
+        const user = await getUserByStripeCustomerId(customerId);
+        if (!user) {
+          console.warn(`[Stripe Webhook] invoice.paid — no user found for customer ${customerId}`);
+          break;
+        }
+
+        // Resolve the tier from the subscription's current price
+        const tier = await resolveTierFromSubscription(subscriptionId);
+        if (!tier) {
+          console.warn(`[Stripe Webhook] invoice.paid — could not resolve tier for subscription ${subscriptionId}`);
+          break;
+        }
+
+        await updateUserStripe(user.id, {
+          accessTier: tier,
+          stripeSubscriptionId: subscriptionId,
+        });
+
+        console.log(`[Stripe Webhook] User ${user.id} re-activated to ${tier} (invoice ${invoice.id})`);
         break;
       }
 
@@ -73,7 +136,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       case 'invoice.payment_failed': {
         const invoice = event.data.object as any;
         const customerId = invoice.customer as string;
-        console.warn(`[Stripe Webhook] Payment failed for customer ${customerId}`);
+        console.warn(`[Stripe Webhook] Payment failed for customer ${customerId} — invoice ${invoice.id}`);
         // Could send a notification here — left for future implementation
         break;
       }
