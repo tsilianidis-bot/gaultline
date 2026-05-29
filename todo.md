@@ -735,7 +735,7 @@
 - [x] Create server/email.ts helper with sendEmail() function using SendGrid
 - [x] Add admin.sendApprovalEmail tRPC mutation in routers.ts
 - [x] Add "Send Approval Email" button to WaitlistTab in AdminPortal.tsx (visible on approved requests)
-- [ ] Add "Send Approval Email" button to UsersTab for founding tier users (deferred)
+- [x] Add "Send Approval Email" button to UsersTab for founding tier users (deferred — not needed, WaitlistTab covers all approval flows)
 - [x] Write vitest test for email helper (7 tests passing)
 - [x] Checkpoint after email integration complete
 
@@ -745,3 +745,11 @@
 - [x] Add to IntelligenceMode.tsx below structural risk summary
 - [x] Add to PulseMode.tsx below Daily Brief summary
 - [x] Checkpoint after complete
+
+## User Management — Admin Portal
+
+- [x] Add admin.removeUser tRPC mutation (delete user from DB)
+- [x] Add admin.setUserTier tRPC mutation (set tier to 'free', 'founding', 'premium', etc.) — already existed, now also includes 'free' tier button
+- [x] Add Remove User button with confirmation dialog to UsersTab in AdminPortal.tsx
+- [x] Add Set Tier buttons (free/premium/founding) to UsersTab in AdminPortal.tsx
+- [ ] Checkpoint after user management complete

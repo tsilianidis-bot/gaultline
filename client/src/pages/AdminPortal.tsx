@@ -363,20 +363,71 @@ function WaitlistTab() {
 // ── Tab: Users ────────────────────────────────────────────────────────────────
 
 function UsersTab() {
+
   const utils = trpc.useUtils();
   const { data: users, isLoading } = trpc.admin.getUsersWithTier.useQuery(undefined, { staleTime: 30_000 });
   const setTier = trpc.admin.setUserTier.useMutation({
     onSuccess: () => utils.admin.getUsersWithTier.invalidate(),
   });
+  const removeUser = trpc.admin.removeUser.useMutation({
+    onSuccess: () => utils.admin.getUsersWithTier.invalidate(),
+  });
 
   const [search, setSearch] = useState("");
+  const [confirmRemove, setConfirmRemove] = useState<{ id: number; name: string; email: string } | null>(null);
   const filtered = (users ?? []).filter(u =>
     !search || (u.name ?? "").toLowerCase().includes(search.toLowerCase()) || (u.email ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div>
-      <SectionHeader title="User Management" sub="All registered users — promote or demote access tiers directly" />
+      <SectionHeader title="User Management" sub="All registered users — set access tier or remove account" />
+
+      {/* Confirm Remove Dialog */}
+      {confirmRemove && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{
+            background: "#0A0D14", border: "1px solid rgba(255,45,85,0.3)",
+            borderRadius: "12px", padding: "28px 32px", maxWidth: "420px", width: "90%",
+          }}>
+            <h3 style={{ ...HEADING, fontSize: "18px", fontWeight: 700, color: "rgba(255,45,85,0.9)", marginBottom: "8px", letterSpacing: "0.06em" }}>REMOVE USER</h3>
+            <p style={{ ...SANS, fontSize: "13px", color: "#94A3B8", marginBottom: "6px" }}>
+              This will permanently delete <strong style={{ color: "#E2E8F0" }}>{confirmRemove.name || confirmRemove.email}</strong> and all their data.
+            </p>
+            <p style={{ ...MONO, fontSize: "10px", color: "rgba(255,45,85,0.7)", marginBottom: "24px" }}>
+              Positions, watchlists, and account will be erased. This cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setConfirmRemove(null)}
+                style={{
+                  ...MONO, fontSize: "11px", letterSpacing: "0.08em", padding: "8px 18px",
+                  borderRadius: "6px", cursor: "pointer",
+                  background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
+                  color: "rgba(148,163,184,0.7)",
+                }}
+              >Cancel</button>
+              <button
+                onClick={() => {
+                  removeUser.mutate({ userId: confirmRemove.id });
+                  setConfirmRemove(null);
+                }}
+                disabled={removeUser.isPending}
+                style={{
+                  ...MONO, fontSize: "11px", letterSpacing: "0.08em", padding: "8px 18px",
+                  borderRadius: "6px", cursor: "pointer",
+                  background: "rgba(255,45,85,0.12)", border: "1px solid rgba(255,45,85,0.35)",
+                  color: "rgba(255,45,85,0.9)",
+                }}
+              >Confirm Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <input
@@ -436,7 +487,7 @@ function UsersTab() {
               </p>
 
               {/* Tier controls */}
-              <div style={{ display: "flex", gap: "6px", flexShrink: 0, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "6px", flexShrink: 0, flexWrap: "wrap", alignItems: "center" }}>
                 {(["free", "premium", "founding"] as const).map(tier => (
                   <button
                     key={tier}
@@ -455,6 +506,27 @@ function UsersTab() {
                     {tier}
                   </button>
                 ))}
+
+                {/* Remove user — hidden for admin accounts */}
+                {u.role !== "admin" && (
+                  <button
+                    onClick={() => setConfirmRemove({ id: u.id, name: u.name ?? "", email: u.email ?? "" })}
+                    disabled={removeUser.isPending}
+                    title="Remove user"
+                    style={{
+                      ...MONO, fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase",
+                      padding: "5px 10px", borderRadius: "5px", cursor: "pointer",
+                      background: "transparent",
+                      border: "1px solid rgba(255,45,85,0.2)",
+                      color: "rgba(255,45,85,0.5)",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,45,85,0.08)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,45,85,0.9)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,45,85,0.5)"; }}
+                  >
+                    ✕ remove
+                  </button>
+                )}
               </div>
             </div>
           ))}

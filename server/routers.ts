@@ -19,7 +19,8 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   updateDashboardMode,
   getXPostQueue, getXPostQueueStats,
   getPressureHistory, getPressureHistoryStats,
-  getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem } from "./db";
+  getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem,
+  deleteUser } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
@@ -1024,6 +1025,28 @@ export const appRouter = router({
           });
         }
         return { success: true, sentTo: input.email };
+      }),
+
+    // Remove a user account and all their data — admin only
+    removeUser: protectedProcedure
+      .input(z.object({
+        userId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        // Prevent admin from deleting themselves
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'You cannot remove your own account.' });
+        }
+        try {
+          await deleteUser(input.userId);
+          return { success: true };
+        } catch (err) {
+          if (err instanceof TRPCError) throw err;
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to remove user', cause: err });
+        }
       }),
   }),
   blog: router({

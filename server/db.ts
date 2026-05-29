@@ -240,6 +240,22 @@ export async function setUserTier(
 // Alias used by OAuth auto-grant flow
 export const updateUserTier = setUserTier;
 
+/**
+ * Delete a user and all their associated data.
+ * Removes positions, watchlists, and the user row itself.
+ * Does NOT delete blog posts (they remain attributed to the user ID).
+ */
+export async function deleteUser(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  // Delete user-owned data first (no FK cascade in schema)
+  await db.delete(positions).where(eq(positions.userId, userId));
+  await db.delete(cryptoWatchlist).where(eq(cryptoWatchlist.userId, userId));
+  await db.delete(mobileWatchlist).where(eq(mobileWatchlist.userId, userId));
+  // Delete the user row
+  await db.delete(users).where(eq(users.id, userId));
+}
+
 export async function hasApprovedFoundingRequest(email: string): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
