@@ -39,6 +39,20 @@ const quoteCache = new LRUCache<string, YahooQuote>(500, CACHE_TTL_MS);
 
 // ── Yahoo fetcher ─────────────────────────────────────────────
 
+/** Derive market state from Yahoo's currentTradingPeriod timestamps when marketState is missing */
+function deriveMarketStateFromPeriod(meta: any): YahooQuote["marketState"] {
+  const period = meta?.currentTradingPeriod;
+  if (!period) return "UNKNOWN";
+  const nowSec = Math.floor(Date.now() / 1000);
+  const pre = period.pre;
+  const regular = period.regular;
+  const post = period.post;
+  if (regular && nowSec >= regular.start && nowSec < regular.end) return "REGULAR";
+  if (pre && nowSec >= pre.start && nowSec < pre.end) return "PRE";
+  if (post && nowSec >= post.start && nowSec < post.end) return "POST";
+  return "CLOSED";
+}
+
 async function fetchYahooQuote(ticker: string): Promise<YahooQuote> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1m&range=1d&includePrePost=true`;
 
@@ -60,23 +74,30 @@ async function fetchYahooQuote(ticker: string): Promise<YahooQuote> {
 
   const meta = result.meta;
 
+  // Derive market state: prefer Yahoo's field, fall back to period timestamps
+  const rawMarketState = meta.marketState as YahooQuote["marketState"] | null | undefined;
+  const marketState: YahooQuote["marketState"] = rawMarketState ?? deriveMarketStateFromPeriod(meta);
+
+  // Compute changePercent: prefer Yahoo's field, fall back to (price - prevClose) / prevClose
+  const price = meta.regularMarketPrice ?? null;
+  const prevClose = meta.previousClose ?? meta.chartPreviousClose ?? null;
+  const changePercent = meta.regularMarketChangePercent ?? (
+    price != null && prevClose != null && prevClose !== 0
+      ? ((price - prevClose) / prevClose) * 100
+      : null
+  );
+
   return {
     ticker: ticker.toUpperCase(),
-    price:         meta.regularMarketPrice         ?? null,
-    prevClose:     meta.previousClose              ?? meta.chartPreviousClose ?? null,
+    price,
+    prevClose,
     open:          meta.regularMarketOpen          ?? null,
     high:          meta.regularMarketDayHigh       ?? null,
     low:           meta.regularMarketDayLow        ?? null,
     volume:        meta.regularMarketVolume        ?? null,
-    change:        meta.regularMarketPrice != null && meta.previousClose != null
-                     ? meta.regularMarketPrice - meta.previousClose
-                     : null,
-    changePercent: meta.regularMarketChangePercent ?? (
-      meta.regularMarketPrice != null && meta.previousClose != null && meta.previousClose !== 0
-        ? ((meta.regularMarketPrice - meta.previousClose) / meta.previousClose) * 100
-        : null
-    ),
-    marketState:   (meta.marketState as YahooQuote["marketState"]) ?? "UNKNOWN",
+    change:        price != null && prevClose != null ? price - prevClose : null,
+    changePercent,
+    marketState,
     isDelayed:     true,
     source:        "yahoo",
     fetchedAt:     Date.now(),

@@ -399,6 +399,8 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
   // 1. Try Yahoo Finance first — real-time 15-min delayed price, same source as Portfolio
   let price = 0, open = 0, high = 0, low = 0, volumeRaw = 0, volumeMillions = 0, changePercent = 0;
   let yahooSucceeded = false;
+  let yahooMarketState: string | null = null;
+  let yahooTradeDate: string | null = null;
   try {
     const yahooQuote = await getYahooQuote(symbol);
     if (yahooQuote.price != null && yahooQuote.price > 0) {
@@ -411,8 +413,11 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
       changePercent = yahooQuote.changePercent != null
         ? parseFloat(yahooQuote.changePercent.toFixed(3))
         : (open > 0 ? parseFloat(((price - open) / open * 100).toFixed(3)) : 0);
+      yahooMarketState = yahooQuote.marketState ?? null;
+      // When Yahoo succeeds, the price is from today's session
+      yahooTradeDate = new Date().toISOString().slice(0, 10);
       yahooSucceeded = true;
-      log.info(`[Signals Proxy] Yahoo Finance price for ${symbol}: $${price} (${changePercent > 0 ? '+' : ''}${changePercent}%)`);
+      log.info(`[Signals Proxy] Yahoo Finance price for ${symbol}: $${price} (${changePercent > 0 ? '+' : ''}${changePercent}%) state=${yahooMarketState}`);
     }
   } catch (yahooErr: any) {
     log.warn(`[Signals Proxy] Yahoo Finance failed for ${symbol}: ${yahooErr?.message} — falling back to Polygon`);
@@ -481,7 +486,27 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     // Non-fatal — reference data failure just means less metadata
   }
 
-  const marketStatus = deriveMarketStatus(tradeDate);
+  // Determine market status: prefer Yahoo's derived state over Polygon's time-based estimate
+  let marketStatus: TickerProfile["marketStatus"];
+  let effectiveTradeDate: string;
+
+  if (yahooSucceeded && yahooMarketState) {
+    // Map Yahoo's marketState to our marketStatus type
+    const stateMap: Record<string, TickerProfile["marketStatus"]> = {
+      REGULAR: "open",
+      PRE: "extended",
+      PREPRE: "extended",
+      POST: "extended",
+      POSTPOST: "extended",
+      CLOSED: "closed",
+      UNKNOWN: "unknown",
+    };
+    marketStatus = stateMap[yahooMarketState] ?? "unknown";
+    effectiveTradeDate = yahooTradeDate ?? tradeDate;
+  } else {
+    marketStatus = deriveMarketStatus(tradeDate);
+    effectiveTradeDate = tradeDate;
+  }
 
   return {
     ticker: symbol,
@@ -499,7 +524,7 @@ async function fetchTickerProfile(apiKey: string, symbol: string): Promise<Ticke
     industry,
     description,
     sparkline,
-    tradeDate,
+    tradeDate: effectiveTradeDate,
     marketStatus,
     isLive: marketStatus === "open" || marketStatus === "extended",
     source: "live",

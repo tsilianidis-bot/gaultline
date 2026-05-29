@@ -737,11 +737,11 @@
 - [x] Add "Send Approval Email" button to WaitlistTab in AdminPortal.tsx (visible on approved requests)
 - [ ] Add "Send Approval Email" button to UsersTab for founding tier users (deferred)
 - [x] Write vitest test for email helper (7 tests passing)
-- [ ] Checkpoint after email integration complete
+- [x] Checkpoint after email integration complete
 
 ## FAULTLINE Interpretation Section
 
 - [x] Create client/src/components/dashboard/FaultlineInterpretation.tsx — dynamic interpretation section
 - [x] Add to IntelligenceMode.tsx below structural risk summary
 - [x] Add to PulseMode.tsx below Daily Brief summary
-- [ ] Checkpoint after complete
+- [x] Checkpoint after complete
