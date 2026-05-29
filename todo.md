@@ -757,4 +757,14 @@
 ## Stripe Webhook Fixes
 - [x] Fix tier assignment — always fetch line items from Stripe API (not from webhook payload)
 - [x] Add invoice.paid handler for subscription renewals
-- [ ] Checkpoint after Stripe webhook fixes
+- [x] Checkpoint after Stripe webhook fixes
+
+## Stripe Billing Setup
+- [ ] Create FAULTLINE Mobile product ($9.99/month) and capture price ID
+- [ ] Create FAULTLINE Premium product ($59/month) and capture price ID
+- [ ] Create FAULTLINE Founders Lifetime product ($1200 one-time) and capture price ID
+- [ ] Add STRIPE_CORE_PRICE_ID, STRIPE_PREMIUM_PRICE_ID, STRIPE_FOUNDING_PRICE_ID to secrets
+- [ ] Create webhook endpoint for https://getfaultline.live/api/stripe/webhook
+- [ ] Subscribe webhook to 4 events
+- [ ] Save STRIPE_WEBHOOK_SECRET
+- [ ] Verify checkout flow with test card

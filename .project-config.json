@@ -15,10 +15,10 @@
   ],
   "git_remote": {
     "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663562889431/ku53W5dbP75KrrkLcmMoUG",
-    "access_key_id": "ASIAZV3A2ECZIYWRFX2L",
-    "secret_access_key": "gQcqg7w2V9NcY9wOPOtvrmhh6R7FN9LlZJspKRNf",
-    "session_token": "IQoJb3JpZ2luX2VjEK7//////////wEaCXVzLWVhc3QtMSJIMEYCIQDDxWoFbDEHT6oGk6kBRB1bIdfZIjFMYpbHxRbSnePyqwIhAPKE4+ayJfROLKcws42cu50LwhOIlefNZLBJT+qglRxZKvYDCHcQBBoMNjY1Mzg2MDk4ODY2Igx95Bp4jVEpM9qqZfMq0wOzhsGmpQWgs8/zMCvrMLSrzS5RVN+ySE5mzoMae1hGSl6+Od1nhPkhgYbQgcNi4Wtn+TGIaEouuPWtMX40be/inzWAeJ/ZeX4ZESyme8f5F5SpWjjsZnjd849fuV9yoBAPk1GpSrVV+A+7kah7vNQIuX35j+Dpdwq2eL40MlimgVMGgNjGuwURjpbIsp55iErKI5Q5PZAWjnDus6T01C5qqM/7hELqtJ7r41wLVInRwVBngRJR73DfmM9uNx2N1Osc7nA8H5IN135cHg9pm6dXzOFXU8gIzNlFygSVxW/KKdE6R8XNIFPhSQAIb2rzwdx1JpRgnWn7B5XrfdzKo2zHWkFYCSYGRc4qiQFsk96Rah7mCiV3ZQ7RdPGbGfRVYa2Ug3+t1MdKzvMrRoCH3Q3USwgbjW+CPxXQIIz5avE8OKkdaL1MOCdIxca/ONuSDTOtrYg1duleF3bz2d5nvZZ4nDV7LTKc/jEfLn1s20NuF8AjA7AnAHj0eMeZ56UnNwfWLhp1QNGOrJiqXYfun/D0iRC0wtps/0q7BHWKALrV9zKz3yULX1DO6VObzBVfqZXkzPfhqQNHgTMWlrXOwQYYpu5cuyjm1cyMCiZsGcHaWh0wDjDc5tTQBjqcAShJ/JYFUkMx9AAPKGC0C624ANT9Yi+bIvfdXdSWcN2ktQ3uQ69zJFvzM+lUcTciLERjTtJ2edErXDHxX9f9XXF0U7yoO9veb2gYkJAwujpeRuIIj4aO0scIYSpgErHbm5IwKOAZ6ms74ddRZ1TFq/td+Q4SjwgTLBTkgcznVT2TS7DJsc/ceba77dAnoViHezSuyVetiNnm/ePwZg==",
-    "expiration": "2026-05-26T17:45:00.000Z"
+    "access_key_id": "ASIAZV3A2ECZN7TJZIWR",
+    "secret_access_key": "L++yNOVu00u/QN8G26pc1G2JcY6fgOzJB3gNMRiQ",
+    "session_token": "IQoJb3JpZ2luX2VjEAMaCXVzLWVhc3QtMSJHMEUCIQDyc0PYuO3uVs34LQFuQV+boagnJFeTlYjKFQLtoorcLQIgA+RwNOTAFHQ552hDfhnqYIZbowHMPUULdLyHMxyAAssq/wMIzP//////////ARAEGgw2NjUzODYwOTg4NjYiDBTiOOTdJXQ45udVoirTA6MroRd9ise3RB+8kiKIwq1bpleTqjkirUs2gVw6A5kngD8CPwTFYbVYVymgSV02D7AP5NKxax74DTHWrs0jacj2bihiYg3ti6K4SW/sN/9d5221URLh2CMH0EAIksuosP+ZbyFJMfkRMX1x8be3ZiuyYriNoOMWNnU/6hB1nHRueeS+6hLhSIMAarC/iqAGU5lRPbx2cH45eMovaJVy0PcIHwH4Yh30ZpFOgDgRfi0/OkjXIjC70RaJ4mg0fxhONKUfWyCkPkFIoH3srJwiBaaBBFK8XQcbg6IEwufizQFJaiaVT9xRKh6EEiN8iDAyc7wWNP7xVgyzlAhTabEUidmOm+mDtXxQ+T1TZn2iGzChRv1d0xEEaLljQ+tyINN2KyrHdNDs/SM4hc0XvSXc7fNk+V9ki4BdrQjUzNHeMulr4A+7fkYLd/zdgf+XhkL1Lot0Vrjywbw+n8Fi7tl18sZxlaImdwNDQFR+wVqjs86Z9WJYbwHTytYq56yzFbcxEqgl3AC7MmpeLlTvqA3KvSH86regXOEQLX9l7iE7Zc9iDeVoCx6RS2FJwLtK1ZUcLiH9WhQF85fcHbRgq+AsMahP/zUrqE7twVFqiZmryRkNPXm5MPrF59AGOp0BZ+T5jITnsjNx2UsRprIei1Mwooo0WW5wiyPzNWGy81UMGDoRe8lT/nOvBG9rZOM8MB9s8S1Qu3XBEGwzvz6ehrHXVJpZDtZ3YC8bU0+EKeYuzxqbF4lOONS07luHVDAXpoNXjjvL7nQbu2Kly5kuqI1da83Pc+uOPsEtNWsFq2FEdQxPZm4c4tCJVbSjL9qpSy27nJ3ktioUVJMeqQ==",
+    "expiration": "2026-05-30T07:03:22.000Z"
   },
   "name": "copy-of-faultline",
   "path": "/home/ubuntu/copy-of-faultline",
@@ -32,6 +32,9 @@
     "OWNER_NAME": "james tsilianidis",
     "OWNER_OPEN_ID": "4yxv9bMLTHpYyTypQ9v98H",
     "POLYGON_API_KEY": "pnYS8GwH72gIJ_oMREH4pp2vtvmh4M5g",
+    "STRIPE_CORE_PRICE_ID": "price_1TcVg07f3zM5dNdGGm7d4Zrm",
+    "STRIPE_FOUNDING_PRICE_ID": "price_1TcVgB7f3zM5dNdGb4acS3Mr",
+    "STRIPE_PREMIUM_PRICE_ID": "price_1TcVg67f3zM5dNdGadKFTkJk",
     "STRIPE_SECRET_KEY": "sk_test_51TahPR7f3zM5dNdG98wXfi7XJVzoVrJVb2AIIu0Mt2DvHPVTrwe6MFzZa7NgMGVQJmJkaikkCQAanbIQjkLLQ08h00KdaOZeya",
     "STRIPE_WEBHOOK_SECRET": "whsec_ssRl0N1a3ycdBrlWbJ23xcijLvF3Gf9x",
     "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
