@@ -3,19 +3,22 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
         http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-
   <!-- Homepage -->
   <url>
     <loc>https://getfaultline.live/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-
-  <!-- Core Intelligence Pages -->
+  <!-- Core Public Pages -->
   <url>
-    <loc>https://getfaultline.live/pressure</loc>
-    <changefreq>hourly</changefreq>
+    <loc>https://getfaultline.live/track-record</loc>
+    <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://getfaultline.live/pricing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://getfaultline.live/signals</loc>
@@ -23,75 +26,24 @@
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://getfaultline.live/aftershock</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://getfaultline.live/scenarios</loc>
+    <loc>https://getfaultline.live/dashboard</loc>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://getfaultline.live/analogs</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Market Intelligence -->
-  <url>
-    <loc>https://getfaultline.live/ai-watch</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://getfaultline.live/crypto</loc>
-    <changefreq>hourly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://getfaultline.live/crypto-signals</loc>
-    <changefreq>hourly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://getfaultline.live/scores</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://getfaultline.live/charts</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://getfaultline.live/report</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.7</priority>
-  </url>
-
-  <!-- Track Record & Blog -->
-  <url>
-    <loc>https://getfaultline.live/track-record</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
   </url>
   <url>
     <loc>https://getfaultline.live/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
-
-  <!-- Support / Info Pages -->
+  <!-- Legal Pages -->
   <url>
-    <loc>https://getfaultline.live/guide</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://getfaultline.live/legal</loc>
+    <loc>https://getfaultline.live/terms</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
-
+  <url>
+    <loc>https://getfaultline.live/privacy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
 </urlset>
