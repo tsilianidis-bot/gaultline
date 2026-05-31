@@ -6,27 +6,24 @@ import type { Express } from "express";
 
 const BASE_URL = "https://getfaultline.live";
 
-// Only the marketing homepage is publicly indexable.
-// All feature pages live under /app/* and are auth-gated.
+// All publicly indexable pages on getfaultline.live
 const PUBLIC_ROUTES = [
-  { path: "/", changefreq: "weekly", priority: "1.0" },
-];
-
-// Gated/admin paths — disallowed in robots.txt
-const GATED_PATHS = [
-  "/app",
-  "/admin",
-  "/api",
+  { path: "/",             changefreq: "daily",   priority: "1.0" },
+  { path: "/track-record", changefreq: "monthly", priority: "0.9" },
+  { path: "/pricing",      changefreq: "monthly", priority: "0.8" },
+  { path: "/signals",      changefreq: "hourly",  priority: "0.9" },
+  { path: "/dashboard",    changefreq: "daily",   priority: "0.8" },
+  { path: "/blog",         changefreq: "weekly",  priority: "0.8" },
+  { path: "/terms",        changefreq: "monthly", priority: "0.3" },
+  { path: "/privacy",      changefreq: "monthly", priority: "0.3" },
 ];
 
 export function registerSEORoutes(app: Express): void {
   // ── robots.txt ──────────────────────────────────────────────
   app.get("/robots.txt", (_req, res) => {
-    const disallowLines = GATED_PATHS.map((p) => `Disallow: ${p}`).join("\n");
     const content = [
       "User-agent: *",
       "Allow: /",
-      disallowLines,
       "",
       `Sitemap: ${BASE_URL}/sitemap.xml`,
     ].join("\n");
@@ -41,14 +38,13 @@ export function registerSEORoutes(app: Express): void {
     const now = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
     const urlEntries = PUBLIC_ROUTES.map(
-      ({ path, changefreq, priority }) => `
-  <url>
+      ({ path, changefreq, priority }) => `  <url>
     <loc>${BASE_URL}${path}</loc>
     <lastmod>${now}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
   </url>`
-    ).join("");
+    ).join("\n");
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
