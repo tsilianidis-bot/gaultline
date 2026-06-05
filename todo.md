@@ -784,3 +784,6 @@
 - [x] Refactor fetchLiveQuotes to batch-fetch Yahoo Finance live prices during market hours for all priority tickers
 - [x] Use Polygon grouped bars as fallback only when market is closed or Yahoo fails
 - [x] Checkpoint after fix
+- [x] Expand PRIORITY_TICKERS from 20 to 42 tickers to cover all SIGNAL_STOCKS (was only 8 of 31 overlapping — root cause of stale prices)
+- [x] Run Yahoo + Polygon in parallel so Yahoo prices work independently of Polygon timeouts
+- [x] Checkpoint after full live price fix

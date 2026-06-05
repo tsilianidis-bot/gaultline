@@ -24,11 +24,25 @@ import { getQuote as getYahooQuote, getQuotes as getYahooQuotes } from "./yahooP
 const POLYGON_BASE = "https://api.polygon.io";
 
 // Priority tickers for FAULTLINE Signals tab
+// Must include ALL tickers shown in SIGNAL_STOCKS (signalsData.ts) so every card gets live prices.
 const PRIORITY_TICKERS = [
+  // ── Core AI/Tech ──────────────────────────────────────────────
   "NVDA", "MSFT", "META", "AMZN", "GOOGL",
-  "TSLA", "PLTR", "QUBT", "IONQ", "RGTI",
-  "FRMI", "AMD", "SMCI", "SOFI", "JPM",
-  "XLF", "XLK", "SPY", "QQQ", "SPCE",
+  "TSLA", "PLTR", "AMD", "SMCI", "ARM",
+  "CRWD", "ARKK",
+  // ── Financials ───────────────────────────────────────────────
+  "JPM", "BAC", "KRE", "XLF", "SOFI", "COIN",
+  // ── Broad market / sector ETFs ───────────────────────────────
+  "SPY", "QQQ", "IWM", "XLK", "XLP",
+  // ── Real estate / defensives ─────────────────────────────────
+  "VNQ", "JNJ", "PG", "KO",
+  // ── Energy / commodities ─────────────────────────────────────
+  "XOM", "CVX", "GLD",
+  // ── Short squeeze / speculative ──────────────────────────────
+  "GME", "UPST", "RIVN", "BYND",
+  "MPW", "NYCB", "DISH",
+  // ── Quantum / space speculative ───────────────────────────────
+  "QUBT", "IONQ", "RGTI", "FRMI", "SPCE",
 ];
 
 // ── Types ─────────────────────────────────────────────────────
