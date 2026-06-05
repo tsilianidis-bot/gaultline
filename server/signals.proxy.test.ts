@@ -4,7 +4,7 @@
  * Tests the /api/signals/quotes endpoint via the running dev server.
  * These tests validate:
  *   1. The endpoint returns a valid response structure
- *   2. All 19 priority tickers are present
+ *   2. All 20 priority tickers are present
  *   3. Live prices are non-zero real numbers
  *   4. Change percentages are in a reasonable range
  *   5. Volume data is present
@@ -20,7 +20,7 @@ const EXPECTED_TICKERS = [
   "NVDA", "MSFT", "META", "AMZN", "GOOGL",
   "TSLA", "PLTR", "QUBT", "IONQ", "RGTI",
   "FRMI", "AMD", "SMCI", "SOFI", "JPM",
-  "XLF", "XLK", "SPY", "QQQ",
+  "XLF", "XLK", "SPY", "QQQ", "SPCE",
 ];
 
 interface QuoteResult {
@@ -68,8 +68,8 @@ describe("GET /api/signals/quotes — response structure", () => {
     expect(["live", "stale", "fallback"]).toContain(response.source);
   });
 
-  it("returns exactly 19 priority tickers", () => {
-    expect(response.quotes).toHaveLength(19);
+  it("returns exactly 20 priority tickers", () => {
+    expect(response.quotes).toHaveLength(20);
   });
 
   it("includes all expected tickers", () => {
@@ -90,7 +90,7 @@ describe("GET /api/signals/quotes — quote data quality", () => {
   it("returns non-zero prices for live data", () => {
     if (response.source === "live") {
       const liveQuotes = response.quotes.filter(q => q.price > 0);
-      // At least 15 of 19 tickers should have live prices
+      // At least 15 of 20 tickers should have live prices
       expect(liveQuotes.length).toBeGreaterThanOrEqual(15);
     }
   });
@@ -181,7 +181,7 @@ describe("GET /api/signals/health — health endpoint", () => {
       sparklinesCached: number;
     };
     expect(health.configured).toBe(true);
-    expect(health.tickers).toBe(19);
+    expect(health.tickers).toBe(20);
     expect(typeof health.sparklinesCached).toBe("number");
   });
 });

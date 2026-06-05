@@ -777,4 +777,10 @@
 - [x] Wire RiskFramework into TickerSearch replacing old stop-loss display
 - [x] Update R:R calculation to use Trade Stop (not Thesis Failure) as primary
 - [x] Also applied multi-tier risk levels to crypto (cryptoSignals.ts) with crypto-appropriate wider bands
-- [ ] Checkpoint after risk framework redesign
+- [x] Checkpoint after risk framework redesign
+
+## Signals Dashboard Live Price Fix
+- [x] Add SPCE to PRIORITY_TICKERS in signalsProxy.ts
+- [x] Refactor fetchLiveQuotes to batch-fetch Yahoo Finance live prices during market hours for all priority tickers
+- [x] Use Polygon grouped bars as fallback only when market is closed or Yahoo fails
+- [x] Checkpoint after fix

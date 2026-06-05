@@ -19,7 +19,7 @@
 // ============================================================
 import { log } from "./logger";
 import type { Express, Request, Response } from "express";
-import { getQuote as getYahooQuote } from "./yahooProxy";
+import { getQuote as getYahooQuote, getQuotes as getYahooQuotes } from "./yahooProxy";
 
 const POLYGON_BASE = "https://api.polygon.io";
 
@@ -28,7 +28,7 @@ const PRIORITY_TICKERS = [
   "NVDA", "MSFT", "META", "AMZN", "GOOGL",
   "TSLA", "PLTR", "QUBT", "IONQ", "RGTI",
   "FRMI", "AMD", "SMCI", "SOFI", "JPM",
-  "XLF", "XLK", "SPY", "QQQ",
+  "XLF", "XLK", "SPY", "QQQ", "SPCE",
 ];
 
 // ── Types ─────────────────────────────────────────────────────
@@ -268,6 +268,7 @@ function buildFallbackQuotes(): QuoteResult[] {
 
 // ── Core fetch logic (Phase 1 only — prices + volume) ────────
 async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[]; tradeDate: string }> {
+  // ── Step 1: Always fetch Polygon grouped bars for sparklines + fallback prices ──
   // Try up to 5 trading days back — Polygon free tier can lag 1-2 days
   // and holidays may cause empty grouped results.
   let tradeDate = getLastTradingDate();
@@ -299,7 +300,7 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
   fullBarMap = barMap;
   fullBarMapTradeDate = tradeDate;
 
-  // 2. Fetch previous day grouped for change% calculation
+  // Fetch previous day grouped for change% calculation (fallback path)
   const prevGroupedUrl = `${POLYGON_BASE}/v2/aggs/grouped/locale/us/market/stocks/${prevDate}?adjusted=true&apiKey=${apiKey}`;
   const prevGroupedRes = await fetchWithRetry(prevGroupedUrl);
   const prevGroupedData = await prevGroupedRes.json() as unknown as PolygonGroupedResponse;
@@ -312,13 +313,75 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
   }
   fullPrevBarMap = prevBarMap;
 
-  const marketStatus = deriveMarketStatus(tradeDate);
+  // ── Step 2: Try Yahoo Finance for live prices during market hours ──
+  // Yahoo provides real-time intraday prices (60s cache TTL) for REGULAR/PRE/POST sessions.
+  // We batch-fetch all priority tickers and overlay Yahoo data on top of Polygon bars.
+  const today = new Date().toISOString().slice(0, 10);
+  let yahooMap = new Map<string, import("./yahooProxy").YahooQuote>();
+  let yahooSucceeded = false;
+  try {
+    const yahooQuotes = await getYahooQuotes(PRIORITY_TICKERS);
+    for (const q of yahooQuotes) {
+      if (q && q.price !== null && q.source !== "error") {
+        yahooMap.set(q.ticker, q);
+      }
+    }
+    yahooSucceeded = yahooMap.size > 0;
+  } catch (err) {
+    log.warn("[Signals Proxy] Yahoo Finance bulk fetch failed, falling back to Polygon", { err });
+  }
 
-  // 3. Assemble quotes (use cached sparklines if available)
+  // ── Step 3: Assemble quotes — Yahoo prices when live, Polygon as fallback ──
   const quotes: QuoteResult[] = PRIORITY_TICKERS.map(ticker => {
     const bar = barMap.get(ticker);
     const prevBar = prevBarMap.get(ticker);
+    const yahooQ = yahooMap.get(ticker);
 
+    // Determine if Yahoo has a live/extended price for this ticker
+    const yahooIsLive = yahooQ != null &&
+      yahooQ.price !== null &&
+      (yahooQ.marketState === "REGULAR" || yahooQ.marketState === "PRE" ||
+       yahooQ.marketState === "POST" || yahooQ.marketState === "PREPRE" ||
+       yahooQ.marketState === "POSTPOST");
+
+    if (yahooIsLive && yahooQ && yahooQ.price !== null) {
+      // ── Yahoo live path ──
+      const price = yahooQ.price;
+      const prevClose = yahooQ.prevClose ?? bar?.c ?? 0;
+      const change = yahooQ.change ?? (prevClose > 0 ? price - prevClose : 0);
+      const changePercent = yahooQ.changePercent ??
+        (prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3)) : 0);
+      const volumeRaw = yahooQ.volume ?? bar?.v ?? 0;
+      const volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
+
+      // Map Yahoo marketState → QuoteResult marketStatus
+      let marketStatus: QuoteResult["marketStatus"];
+      if (yahooQ.marketState === "REGULAR") {
+        marketStatus = "open";
+      } else if (yahooQ.marketState === "PRE" || yahooQ.marketState === "PREPRE" ||
+                 yahooQ.marketState === "POST" || yahooQ.marketState === "POSTPOST") {
+        marketStatus = "extended";
+      } else {
+        marketStatus = "closed";
+      }
+
+      return {
+        ticker,
+        price: parseFloat(price.toFixed(2)),
+        open: parseFloat((yahooQ.open ?? bar?.o ?? 0).toFixed(2)),
+        high: parseFloat((yahooQ.high ?? bar?.h ?? 0).toFixed(2)),
+        low: parseFloat((yahooQ.low ?? bar?.l ?? 0).toFixed(2)),
+        changePercent: parseFloat(changePercent.toFixed(3)),
+        volume: volumeRaw,
+        volumeMillions,
+        timestamp: Date.now(),
+        marketStatus,
+        isLive: true,
+        sparkline: sparklineCache.get(ticker) ?? [],
+      };
+    }
+
+    // ── Polygon fallback path ──
     if (!bar) {
       return {
         ticker,
@@ -341,6 +404,14 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     const volumeRaw = bar.v ?? 0;
     const volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
 
+    // Use Yahoo's marketState for status if available (even for closed market)
+    let marketStatus: QuoteResult["marketStatus"];
+    if (yahooQ && yahooQ.marketState === "CLOSED") {
+      marketStatus = "closed";
+    } else {
+      marketStatus = deriveMarketStatus(tradeDate);
+    }
+
     return {
       ticker,
       price: parseFloat(price.toFixed(2)),
@@ -352,12 +423,14 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       volumeMillions,
       timestamp: bar.t ?? Date.now(),
       marketStatus,
-      isLive: marketStatus === "open" || marketStatus === "extended",
+      isLive: false,
       sparkline: sparklineCache.get(ticker) ?? [],
     };
   });
 
-  return { quotes, tradeDate };
+  // Use today's date when Yahoo succeeded (live data), otherwise use Polygon's trade date
+  const effectiveTradeDate = yahooSucceeded ? today : tradeDate;
+  return { quotes, tradeDate: effectiveTradeDate };
 }
 
 // ── Per-ticker cache ─────────────────────────────────────────
