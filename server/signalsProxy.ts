@@ -268,70 +268,81 @@ function buildFallbackQuotes(): QuoteResult[] {
 
 // ── Core fetch logic (Phase 1 only — prices + volume) ────────
 async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[]; tradeDate: string }> {
-  // ── Step 1: Always fetch Polygon grouped bars for sparklines + fallback prices ──
-  // Try up to 5 trading days back — Polygon free tier can lag 1-2 days
-  // and holidays may cause empty grouped results.
-  let tradeDate = getLastTradingDate();
-  let groupedData: PolygonGroupedResponse | null = null;
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const url = `${POLYGON_BASE}/v2/aggs/grouped/locale/us/market/stocks/${tradeDate}?adjusted=true&apiKey=${apiKey}`;
-    const res = await fetchWithRetry(url);
-    const data = await res.json() as unknown as PolygonGroupedResponse;
-    if (data.results && Array.isArray(data.results) && data.results.length > 100) {
-      groupedData = data;
-      break;
-    }
-    // Empty or too sparse — go back one more trading day
-    tradeDate = getNTradingDaysBefore(tradeDate, 1);
-  }
-
-  if (!groupedData || !groupedData.results) {
-    throw new Error('Grouped aggs returned no data after 5 attempts');
-  }
-
-  const prevDate = getNTradingDaysBefore(tradeDate, 1);
-
-  // Build a map of ticker → bar (store globally so any ticker search can use it)
-  const barMap = new Map<string, PolygonAggBar>();
-  for (const bar of groupedData.results) {
-    if (bar.T) barMap.set(bar.T, bar);
-  }
-  fullBarMap = barMap;
-  fullBarMapTradeDate = tradeDate;
-
-  // Fetch previous day grouped for change% calculation (fallback path)
-  const prevGroupedUrl = `${POLYGON_BASE}/v2/aggs/grouped/locale/us/market/stocks/${prevDate}?adjusted=true&apiKey=${apiKey}`;
-  const prevGroupedRes = await fetchWithRetry(prevGroupedUrl);
-  const prevGroupedData = await prevGroupedRes.json() as unknown as PolygonGroupedResponse;
-
-  const prevBarMap = new Map<string, PolygonAggBar>();
-  if (prevGroupedData.results && Array.isArray(prevGroupedData.results)) {
-    for (const bar of prevGroupedData.results) {
-      if (bar.T) prevBarMap.set(bar.T, bar);
-    }
-  }
-  fullPrevBarMap = prevBarMap;
-
-  // ── Step 2: Try Yahoo Finance for live prices during market hours ──
-  // Yahoo provides real-time intraday prices (60s cache TTL) for REGULAR/PRE/POST sessions.
-  // We batch-fetch all priority tickers and overlay Yahoo data on top of Polygon bars.
   const today = new Date().toISOString().slice(0, 10);
+
+  // ── Run Yahoo Finance and Polygon grouped bars in parallel ──
+  // Yahoo: live intraday prices (primary source during market hours)
+  // Polygon: end-of-day bars for sparklines + price fallback when market is closed
+  // Both fetches run concurrently — if Polygon times out, Yahoo prices still work.
+
+  // ── Yahoo Finance fetch (never throws — returns empty map on failure) ──
   let yahooMap = new Map<string, import("./yahooProxy").YahooQuote>();
-  let yahooSucceeded = false;
-  try {
-    const yahooQuotes = await getYahooQuotes(PRIORITY_TICKERS);
-    for (const q of yahooQuotes) {
-      if (q && q.price !== null && q.source !== "error") {
-        yahooMap.set(q.ticker, q);
+  const yahooFetch = getYahooQuotes(PRIORITY_TICKERS)
+    .then(quotes => {
+      for (const q of quotes) {
+        if (q && q.price !== null && q.source !== "error") {
+          yahooMap.set(q.ticker, q);
+        }
+      }
+    })
+    .catch(err => {
+      log.warn("[Signals Proxy] Yahoo Finance bulk fetch failed", { err });
+    });
+
+  // ── Polygon grouped bars fetch (with longer timeout for large payload) ──
+  let tradeDate = getLastTradingDate();
+  let barMap = new Map<string, PolygonAggBar>();
+  let prevBarMap = new Map<string, PolygonAggBar>();
+  let polygonSucceeded = false;
+
+  const polygonFetch = (async () => {
+    let groupedData: PolygonGroupedResponse | null = null;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const url = `${POLYGON_BASE}/v2/aggs/grouped/locale/us/market/stocks/${tradeDate}?adjusted=true&apiKey=${apiKey}`;
+      // Use 20s timeout — Polygon grouped bars can take 5-8s on free tier
+      const res = await fetchWithRetry(url, 3, 20000);
+      const data = await res.json() as unknown as PolygonGroupedResponse;
+      if (data.results && Array.isArray(data.results) && data.results.length > 100) {
+        groupedData = data;
+        break;
+      }
+      tradeDate = getNTradingDaysBefore(tradeDate, 1);
+    }
+    if (!groupedData?.results) return;
+
+    for (const bar of groupedData.results) {
+      if (bar.T) barMap.set(bar.T, bar);
+    }
+    fullBarMap = barMap;
+    fullBarMapTradeDate = tradeDate;
+
+    // Fetch previous day for change% calculation
+    const prevDate = getNTradingDaysBefore(tradeDate, 1);
+    const prevGroupedUrl = `${POLYGON_BASE}/v2/aggs/grouped/locale/us/market/stocks/${prevDate}?adjusted=true&apiKey=${apiKey}`;
+    const prevGroupedRes = await fetchWithRetry(prevGroupedUrl, 3, 20000);
+    const prevGroupedData = await prevGroupedRes.json() as unknown as PolygonGroupedResponse;
+    if (prevGroupedData.results && Array.isArray(prevGroupedData.results)) {
+      for (const bar of prevGroupedData.results) {
+        if (bar.T) prevBarMap.set(bar.T, bar);
       }
     }
-    yahooSucceeded = yahooMap.size > 0;
-  } catch (err) {
-    log.warn("[Signals Proxy] Yahoo Finance bulk fetch failed, falling back to Polygon", { err });
+    fullPrevBarMap = prevBarMap;
+    polygonSucceeded = true;
+  })().catch(err => {
+    log.warn("[Signals Proxy] Polygon grouped bars fetch failed", { err });
+  });
+
+  // Wait for both to complete
+  await Promise.all([yahooFetch, polygonFetch]);
+
+  const yahooSucceeded = yahooMap.size > 0;
+
+  // ── If neither source has data, throw so the endpoint returns stale cache ──
+  if (!yahooSucceeded && !polygonSucceeded) {
+    throw new Error('Both Yahoo Finance and Polygon failed to return data');
   }
 
-  // ── Step 3: Assemble quotes — Yahoo prices when live, Polygon as fallback ──
+  // ── Assemble quotes — Yahoo prices when live, Polygon as fallback ──
   const quotes: QuoteResult[] = PRIORITY_TICKERS.map(ticker => {
     const bar = barMap.get(ticker);
     const prevBar = prevBarMap.get(ticker);
@@ -348,7 +359,6 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       // ── Yahoo live path ──
       const price = yahooQ.price;
       const prevClose = yahooQ.prevClose ?? bar?.c ?? 0;
-      const change = yahooQ.change ?? (prevClose > 0 ? price - prevClose : 0);
       const changePercent = yahooQ.changePercent ??
         (prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3)) : 0);
       const volumeRaw = yahooQ.volume ?? bar?.v ?? 0;
@@ -381,8 +391,55 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       };
     }
 
+    // ── Yahoo closed-market path (price available but market is closed) ──
+    if (yahooQ && yahooQ.price !== null && yahooQ.marketState === "CLOSED") {
+      const price = yahooQ.price;
+      const prevClose = yahooQ.prevClose ?? bar?.c ?? 0;
+      const changePercent = yahooQ.changePercent ??
+        (prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3)) : 0);
+      const volumeRaw = yahooQ.volume ?? bar?.v ?? 0;
+      const volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
+
+      return {
+        ticker,
+        price: parseFloat(price.toFixed(2)),
+        open: parseFloat((yahooQ.open ?? bar?.o ?? 0).toFixed(2)),
+        high: parseFloat((yahooQ.high ?? bar?.h ?? 0).toFixed(2)),
+        low: parseFloat((yahooQ.low ?? bar?.l ?? 0).toFixed(2)),
+        changePercent: parseFloat(changePercent.toFixed(3)),
+        volume: volumeRaw,
+        volumeMillions,
+        timestamp: Date.now(),
+        marketStatus: "closed",
+        isLive: false,
+        sparkline: sparklineCache.get(ticker) ?? [],
+      };
+    }
+
     // ── Polygon fallback path ──
     if (!bar) {
+      // If Yahoo has any price at all (even UNKNOWN state), use it
+      if (yahooQ && yahooQ.price !== null) {
+        const price = yahooQ.price;
+        const prevClose = yahooQ.prevClose ?? 0;
+        const changePercent = yahooQ.changePercent ??
+          (prevClose > 0 ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(3)) : 0);
+        const volumeRaw = yahooQ.volume ?? 0;
+        return {
+          ticker,
+          price: parseFloat(price.toFixed(2)),
+          open: parseFloat((yahooQ.open ?? 0).toFixed(2)),
+          high: parseFloat((yahooQ.high ?? 0).toFixed(2)),
+          low: parseFloat((yahooQ.low ?? 0).toFixed(2)),
+          changePercent: parseFloat(changePercent.toFixed(3)),
+          volume: volumeRaw,
+          volumeMillions: parseFloat((volumeRaw / 1_000_000).toFixed(2)),
+          timestamp: Date.now(),
+          marketStatus: deriveMarketStatus(today) as QuoteResult["marketStatus"],
+          isLive: false,
+          sparkline: sparklineCache.get(ticker) ?? [],
+        };
+      }
       return {
         ticker,
         price: 0, open: 0, high: 0, low: 0,
@@ -404,14 +461,6 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     const volumeRaw = bar.v ?? 0;
     const volumeMillions = parseFloat((volumeRaw / 1_000_000).toFixed(2));
 
-    // Use Yahoo's marketState for status if available (even for closed market)
-    let marketStatus: QuoteResult["marketStatus"];
-    if (yahooQ && yahooQ.marketState === "CLOSED") {
-      marketStatus = "closed";
-    } else {
-      marketStatus = deriveMarketStatus(tradeDate);
-    }
-
     return {
       ticker,
       price: parseFloat(price.toFixed(2)),
@@ -422,7 +471,7 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
       volume: volumeRaw,
       volumeMillions,
       timestamp: bar.t ?? Date.now(),
-      marketStatus,
+      marketStatus: deriveMarketStatus(tradeDate),
       isLive: false,
       sparkline: sparklineCache.get(ticker) ?? [],
     };
