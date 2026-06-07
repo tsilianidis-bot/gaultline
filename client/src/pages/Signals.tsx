@@ -18,6 +18,7 @@ import { Link } from 'wouter';
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -1223,6 +1224,7 @@ function SignalsInner() {
         subtitle="Macro-regime-aware market scanner — live prices, trading signals, and regime-fit scores for 30+ tickers."
         badge="LIVE PRICES"
         badgeColor="green"
+        rightSlot={<PreflightTrigger currentPage="signals" regimeLabel={regimeForSignals.label} actionKey="viewed_signals" />}
       />
 
       {/* ── Regime Context Banner ─────────────────────────── */}

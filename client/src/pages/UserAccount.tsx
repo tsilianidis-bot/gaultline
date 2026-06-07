@@ -261,6 +261,105 @@ function FoundingAccessForm({ userEmail }: { userEmail?: string | null }) {
   );
 }
 
+// ── Market Preflight Preference Card ─────────────────────────
+type PreflightMode = 'full_guidance' | 'minimal_reminders' | 'off';
+
+const PREFLIGHT_MODES: { value: PreflightMode; label: string; description: string }[] = [
+  {
+    value: 'full_guidance',
+    label: 'Full Guidance',
+    description: 'Show dashboard card, checklist CTA, missing checks, and helper prompts on relevant pages.',
+  },
+  {
+    value: 'minimal_reminders',
+    label: 'Minimal Reminders',
+    description: 'Show only a compact score and "Run Market Preflight" button. No helper prompts.',
+  },
+  {
+    value: 'off',
+    label: 'Off',
+    description: 'Hide page-level prompts and checklist reminders. Feature remains accessible from Profile and How to Use FAULTLINE.',
+  },
+];
+
+function PreflightPreferenceCard() {
+  const { user } = useAuth();
+  const { data: modeData, isLoading } = trpc.awareness.getPreflightMode.useQuery(undefined, {
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const setMode = trpc.awareness.setPreflightMode.useMutation({
+    onSuccess: () => {
+      utils.awareness.getPreflightMode.invalidate();
+      toast.success('Preference saved');
+    },
+    onError: (err) => toast.error('Could not save preference', { description: err.message }),
+  });
+  const utils = trpc.useUtils();
+  if (!user) return null;
+  const currentMode = (modeData?.mode ?? 'full_guidance') as PreflightMode;
+  return (
+    <div style={{
+      marginTop: '24px',
+      background: 'rgba(0,212,255,0.02)',
+      border: '1px solid rgba(0,212,255,0.12)',
+      borderRadius: '12px',
+      padding: '24px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00D4FF', boxShadow: '0 0 6px #00D4FF' }} />
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00D4FF', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          Market Preflight Prompts
+        </span>
+      </div>
+      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, marginBottom: '18px', marginTop: '6px' }}>
+        Control how and where the Complete Market Awareness™ checklist appears. Your tracking history is preserved regardless of this setting.
+      </p>
+      {isLoading ? (
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563', letterSpacing: '0.1em' }}>LOADING…</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {PREFLIGHT_MODES.map((m) => (
+            <button
+              key={m.value}
+              onClick={() => setMode.mutate({ mode: m.value })}
+              disabled={setMode.isPending}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: '12px',
+                padding: '14px 16px',
+                background: currentMode === m.value ? 'rgba(0,212,255,0.08)' : 'rgba(255,255,255,0.02)',
+                border: currentMode === m.value ? '1px solid rgba(0,212,255,0.35)' : '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '8px',
+                cursor: setMode.isPending ? 'not-allowed' : 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s ease-out',
+                opacity: setMode.isPending ? 0.7 : 1,
+              }}
+            >
+              <div style={{
+                width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
+                border: currentMode === m.value ? '2px solid #00D4FF' : '2px solid rgba(255,255,255,0.2)',
+                background: currentMode === m.value ? 'rgba(0,212,255,0.25)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {currentMode === m.value && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00D4FF' }} />}
+              </div>
+              <div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: currentMode === m.value ? '#F0F4FF' : '#9CA3AF', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                  {m.label}
+                </div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280', lineHeight: 1.5 }}>
+                  {m.description}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────
 export default function UserAccount() {
   useSEO(PAGE_SEO.account);
@@ -526,6 +625,9 @@ export default function UserAccount() {
           </button>
         </div>
       )}
+
+      {/* ── Market Preflight Prompts Preference ── */}
+      <PreflightPreferenceCard />
 
       {/* ── Upgrade section (only for free tier) ── */}
       {!isPremium && !isCore && (

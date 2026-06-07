@@ -31,6 +31,7 @@ import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Info } from "l
 import { useEngine } from "@/contexts/EngineContext";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ── Shared tooltip style ──────────────────────────────────────
 const TT: React.CSSProperties = {
@@ -782,6 +783,7 @@ export default function Charts() {
         subtitle="Systemic pressure timeline and macro chart suite — FRED live data where available, simulated baseline otherwise."
         badge={isLive ? 'FRED LIVE' : 'SIMULATED'}
         badgeColor={isLive ? 'green' : 'amber'}
+        rightSlot={<PreflightTrigger currentPage="charts" actionKey="viewed_charts" />}
       />
       <div style={{ padding: '20px 16px 32px' }}>
 

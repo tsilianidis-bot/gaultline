@@ -23,6 +23,7 @@ import { ViewModeSelector } from "@/components/ViewModeSelector";
 import PulseMode from "@/components/dashboard/PulseMode";
 import SignalsMode from "@/components/dashboard/SignalsMode";
 import IntelligenceMode from "@/components/dashboard/IntelligenceMode";
+import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/MarketPreflight";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663562889431/oAHJBBc62GHpVJwTBFZPAm/faultline-hero-bg-5aiJwmUWM5RkwbakA3ZsnX.webp";
@@ -452,6 +453,24 @@ function IntelTicker({ items }: { items: { label: string; value: string; color: 
   );
 }
 
+// ── Awareness Section (wrapper with modal state) ─────────────────────
+function DashboardAwarenessSection() {
+  const [open, setOpen] = useState(false);
+  const { output } = useEngine();
+  const regimeLabel = output?.regime?.label ?? "Unknown";
+  return (
+    <>
+      <AwarenessDashboardCard onOpen={() => setOpen(true)} />
+      <MarketPreflightModal
+        open={open}
+        onClose={() => setOpen(false)}
+        currentPage="dashboard"
+        regimeLabel={regimeLabel}
+      />
+    </>
+  );
+}
+
 export default function Dashboard() {
   useSEO(PAGE_SEO.home);
   const { output, rawFred, indicators, isLoading, isLive, lastUpdated, isSimulating } = useEngine();
@@ -704,6 +723,9 @@ export default function Dashboard() {
         {/* Legacy content — always visible below modes ─────────── */}
         {/* Data Integrity panel */}
         <DataIntegrity />
+
+        {/* ── Complete Market Awareness™ Dashboard Card ──────────────── */}
+        <DashboardAwarenessSection />
 
         {/* ── CURRENT REGIME ANCHOR ─────────────────────────────── */}
         <div style={{ background: `linear-gradient(135deg, ${color}08 0%, rgba(12,15,22,0.98) 60%)`, border: `1px solid ${color}30`, borderLeft: `3px solid ${color}`, borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 80ms both' }}>

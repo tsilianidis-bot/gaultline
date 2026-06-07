@@ -802,3 +802,25 @@
 - [x] pnpm test: 351/351 tests passing
 - [x] pnpm build: ✓ built in 24.30s
 - [x] Checkpoint after clarity improvements
+
+## Complete Market Awareness™ — Full Implementation
+- [x] Add preflight_prompt_mode column to user preferences (full_guidance | minimal_reminders | off), default full_guidance
+- [x] Add tRPC procedures: awareness.getPreflightMode, awareness.setPreflightMode
+- [x] Build MarketPreflight.tsx: 13-item checklist, institutional tone, no gamification, correct copy, disclaimers
+- [x] Build Current Reading Interpretation panel (score meaning, pressure level, regime, drivers, trend, watch next)
+- [x] Build Possible Future Outcomes panel (4 scenarios: bullish/neutral/bearish/systemic with support/confirmation/invalidating/watch signals)
+- [x] Build AwarenessDashboardCard (Full Guidance: full card; Minimal: compact score + button; Off: hidden)
+- [x] Build PreflightTrigger button component (mode-aware: Full shows missing checks, Minimal shows compact button, Off hides)
+- [x] Add Market Preflight Prompts setting to Profile/Account Preferences page (Full Guidance / Minimal Reminders / Off)
+- [x] Wire AwarenessDashboardCard into Dashboard.tsx
+- [x] Wire PreflightTrigger into: Pressure, Signals, Scores, DiagnosticAI, AIWatch, Charts, DailyReport
+- [x] Add required disclaimers to modal (preflight disclaimer + scenario disclaimer)
+- [x] pnpm check (0 errors), pnpm test (351/351 passing)
+- [x] Checkpoint
+
+## Market Preflight Preference Controls (Jun 7, 2026)
+- [x] Add Market Preflight Prompts preference card to UserAccount.tsx (Full Guidance / Minimal Reminders / Off, default Full Guidance)
+- [x] Wire PreflightTrigger into 7 additional pages: Pressure, Signals, Scores, DiagnosticAI, AIWatch, Charts, DailyReport
+- [x] Behavior: Full Guidance = dashboard card + checklist CTA + missing checks + helper prompts; Minimal = compact score + button; Off = hide page-level prompts but keep feature accessible
+- [x] Underlying system, tracking history, and DB column preserved when Off
+- [x] 0 TypeScript errors, 351/351 tests passing

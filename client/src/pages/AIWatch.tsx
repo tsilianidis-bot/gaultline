@@ -8,6 +8,7 @@ import { aiWatchItems, AIWatchItem } from "@/lib/data";
 import { Brain, TrendingUp, TrendingDown, AlertTriangle, Minus } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 const sentimentConfig = {
   bullish: { color: '#00FF88', label: 'BULLISH', icon: TrendingUp },
@@ -150,6 +151,7 @@ export default function AIWatch() {
         subtitle="AI-generated intelligence feed tracking sector trends, company headlines, and market impact signals."
         badge="AI-GENERATED"
         badgeColor="blue"
+        rightSlot={<PreflightTrigger currentPage="ai-watch" actionKey="viewed_ai_watch" />}
       />
       <div style={{ padding: '20px 16px 24px' }}>
 

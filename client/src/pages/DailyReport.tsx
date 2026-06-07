@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ── Typewriter hook ──────────────────────────────────────────
 function useTypewriter(text: string, speed = 18): { displayed: string; done: boolean } {
@@ -173,7 +174,8 @@ export default function DailyReport() {
         badge="AI-GENERATED"
         badgeColor="blue"
         rightSlot={
-          <div className="no-print" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="no-print" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <PreflightTrigger currentPage="daily-report" regimeLabel={regime.label} actionKey="viewed_daily_report" />
             <button
               onClick={handleShare}
               style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '7px 12px', cursor: 'pointer', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'all 0.15s ease' }}

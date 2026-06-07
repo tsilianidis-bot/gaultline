@@ -29,13 +29,15 @@ import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, cle
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
 import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
+import { logMarketAwarenessAction, computeAwarenessScore, getRecentActions, ACTION_KEYS, type ActionKey } from "./marketAwareness";
 import { protectedProcedure, coreProcedure } from "./_core/trpc";
 import { stripe } from './stripe/client';
 import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
-import { xPostQueue } from '../drizzle/schema';
+import { xPostQueue, users } from '../drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { getDb } from './db';
 
 export const appRouter = router({
@@ -1414,6 +1416,78 @@ export const appRouter = router({
           return { success: true };
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to remove from watchlist", cause: err });
+        }
+      }),
+  }),
+
+  awareness: router({
+    // Log a single market awareness action for the authenticated user
+    logAction: coreProcedure
+      .input(z.object({
+        actionKey: z.string().refine((v): v is ActionKey => (ACTION_KEYS as readonly string[]).includes(v), { message: "Invalid action key" }),
+        sourcePage: z.string().max(80).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          await logMarketAwarenessAction(
+            ctx.user.id,
+            input.actionKey as ActionKey,
+            input.sourcePage,
+            input.metadata
+          );
+          return { success: true };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to log action", cause: err });
+        }
+      }),
+
+    // Get the Complete Market Awareness Score for today
+    getScore: coreProcedure.query(async ({ ctx }) => {
+      try {
+        return await computeAwarenessScore(ctx.user.id);
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to compute awareness score", cause: err });
+      }
+    }),
+
+    // Get recent action history (last 7 days)
+    getHistory: coreProcedure.query(async ({ ctx }) => {
+      try {
+        return await getRecentActions(ctx.user.id, 7);
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to load action history", cause: err });
+      }
+    }),
+
+    // Get the user's Market Preflight Prompts preference
+    getPreflightMode: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+        const rows = await db.select({ preflightPromptMode: users.preflightPromptMode })
+          .from(users)
+          .where(eq(users.id, ctx.user.id))
+          .limit(1);
+        return { mode: (rows[0]?.preflightPromptMode ?? "full_guidance") as "full_guidance" | "minimal_reminders" | "off" };
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to get preflight mode", cause: err });
+      }
+    }),
+
+    // Set the user's Market Preflight Prompts preference
+    setPreflightMode: protectedProcedure
+      .input(z.object({
+        mode: z.enum(["full_guidance", "minimal_reminders", "off"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const db = await getDb();
+          if (!db) throw new Error("DB unavailable");
+          await db.update(users).set({ preflightPromptMode: input.mode }).where(eq(users.id, ctx.user.id));
+          return { success: true, mode: input.mode };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to set preflight mode", cause: err });
         }
       }),
   }),

@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `preflightPromptMode` enum('full_guidance','minimal_reminders','off') DEFAULT 'full_guidance' NOT NULL;

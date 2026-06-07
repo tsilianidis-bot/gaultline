@@ -6,6 +6,7 @@
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ── Types (mirrored from server) ─────────────────────────────
 
@@ -207,9 +208,10 @@ export default function DiagnosticAI() {
     }}>
       <PageHeader
         title="AI Market Explanation"
-        subtitle="AI-generated daily, weekly, monthly, and yearly market-risk interpretation — powered by FAULTLINE’s live pressure engine."
+        subtitle="AI-generated daily, weekly, monthly, and yearly market-risk interpretation — powered by FAULTLINE's live pressure engine."
         badge="AI-GENERATED"
         badgeColor="blue"
+        rightSlot={<PreflightTrigger currentPage="diagnostic" actionKey="viewed_diagnostic_ai" />}
       />
       <div style={{ padding: "24px 20px 60px" }}>
 

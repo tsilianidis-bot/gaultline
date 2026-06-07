@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ── Types (mirror server output) ─────────────────────────────
 type PressureLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
@@ -889,6 +890,7 @@ export default function Pressure() {
           subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
           badge={data.dataSource === 'live' ? 'LIVE DATA' : 'SIMULATED'}
           badgeColor={data.dataSource === 'live' ? 'green' : 'amber'}
+          rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
         <div style={{ padding: "24px" }}>
 

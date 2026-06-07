@@ -32,6 +32,13 @@ export const users = mysqlTable("users", {
    * - intelligence: deep structural interpretation
    */
   dashboardMode: mysqlEnum("dashboardMode", ["pulse", "signals", "intelligence"]).default("pulse").notNull(),
+  /**
+   * Market Preflight Prompts preference.
+   * - full_guidance: show dashboard card, checklist CTA, missing checks, and helper prompts (default)
+   * - minimal_reminders: show only compact score and Run Market Preflight button
+   * - off: hide page-level prompts (feature stays accessible from Profile and How to Use FAULTLINE)
+   */
+  preflightPromptMode: mysqlEnum("preflightPromptMode", ["full_guidance", "minimal_reminders", "off"]).default("full_guidance").notNull(),
   /** Stripe customer ID — set on first checkout, used for billing portal and subscription lookups. */
   stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
   /** Active Stripe subscription ID — set by webhook on successful payment, cleared on cancellation. */
@@ -195,3 +202,21 @@ export const mobileWatchlist = mysqlTable("mobileWatchlist", {
 });
 export type MobileWatchlistItem = typeof mobileWatchlist.$inferSelect;
 export type InsertMobileWatchlistItem = typeof mobileWatchlist.$inferInsert;
+
+// ── Market Awareness Actions ────────────────────────────────
+/**
+ * Lightweight action log for the Complete Market Awareness™ system.
+ * Records which preflight checkpoints a user has completed each day.
+ * One row per user action event — no unique constraint, allows repeated logs.
+ */
+export const userMarketAwarenessActions = mysqlTable("userMarketAwarenessActions", {
+  id:          int("id").autoincrement().primaryKey(),
+  userId:      int("userId").notNull(),
+  actionKey:   varchar("actionKey", { length: 80 }).notNull(),
+  sourcePage:  varchar("sourcePage", { length: 80 }),
+  metadata:    text("metadata"),           // JSON string for optional context
+  completedAt: timestamp("completedAt").defaultNow().notNull(),
+  createdAt:   timestamp("createdAt").defaultNow().notNull(),
+});
+export type UserMarketAwarenessAction = typeof userMarketAwarenessActions.$inferSelect;
+export type InsertUserMarketAwarenessAction = typeof userMarketAwarenessActions.$inferInsert;
