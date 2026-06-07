@@ -7,6 +7,7 @@ import { useState } from "react";
 import { aiWatchItems, AIWatchItem } from "@/lib/data";
 import { Brain, TrendingUp, TrendingDown, AlertTriangle, Minus } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 const sentimentConfig = {
   bullish: { color: '#00FF88', label: 'BULLISH', icon: TrendingUp },
@@ -143,22 +144,14 @@ export default function AIWatch() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050608', padding: '20px 16px 24px', maxWidth: '800px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '16px', animation: 'fade-slide-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) 0ms both' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <Brain size={16} style={{ color: '#00D4FF' }} />
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-            Intelligence Feed
-          </div>
-        </div>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '28px', color: '#F0F4FF', lineHeight: 1, marginBottom: '4px' }}>
-          AI Watch
-        </h1>
-        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280' }}>
-          Real-time AI sector risk intelligence and market impact analysis
-        </p>
-      </div>
+    <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
+      <PageHeader
+        title="AI Sector Watch"
+        subtitle="AI-generated intelligence feed tracking sector trends, company headlines, and market impact signals."
+        badge="AI-GENERATED"
+        badgeColor="blue"
+      />
+      <div style={{ padding: '20px 16px 24px' }}>
 
       {/* AI Bubble metrics */}
       <div style={{
@@ -266,6 +259,7 @@ export default function AIWatch() {
           ))}
         </div>
       </div>
+      </div>{/* /padding div */}
     </div>
   );
 }

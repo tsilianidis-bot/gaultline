@@ -13,6 +13,7 @@ import { useEngine } from '@/contexts/EngineContext';
 import { getRiskColor } from '@/components/RiskBadge';
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Era data ──────────────────────────────────────────────────
 interface HistoricalEra {
@@ -283,20 +284,14 @@ export default function HistoricalAnalogs() {
   };
 
   return (
-    <div style={{ padding: '16px', maxWidth: '900px', margin: '0 auto', paddingBottom: '100px' }}>
-
-      {/* Header */}
-      <div style={{ marginBottom: '20px' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', letterSpacing: '0.15em', marginBottom: '4px' }}>
-          HISTORICAL ANALOG ENGINE · LIVE
-        </div>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#F0F4FF', margin: 0, lineHeight: 1.1 }}>
-          Historical Analogs
-        </h1>
-        <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', marginTop: '4px' }}>
-          Current macro conditions compared against 6 major historical regimes. Similarity scores update live.
-        </p>
-      </div>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      <PageHeader
+        title="Historical Comparisons"
+        subtitle="Compare today’s market conditions to past stress periods. Similarity scores show how closely current data matches historical crises."
+        badge="LIVE"
+        badgeColor="green"
+      />
+      <div style={{ padding: '16px', paddingBottom: '100px' }}>
 
       {/* Top Match Banner */}
       {topMatch && (
@@ -594,6 +589,7 @@ export default function HistoricalAnalogs() {
       }}>
         PROBABILISTIC RISK INTELLIGENCE · NOT FINANCIAL ADVICE · HISTORICAL ANALOGS ARE ILLUSTRATIVE, NOT PREDICTIVE
       </div>
+      </div>{/* /padding div */}
     </div>
   );
 }

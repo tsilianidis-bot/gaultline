@@ -19,7 +19,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
 // ── Navigation structure ──────────────────────────────────────
-// Groups define the cognitive flow: situational → interpretation → analysis → manage
+// Groups define the cognitive flow: overview → stress → signals → intelligence → tools → crypto → account
 
 type NavItem = {
   id: string;
@@ -36,69 +36,80 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    label: "CORE",
+    label: "OVERVIEW",
     items: [
-      { id: "dashboard",    label: "Dashboard",      shortLabel: "Dash",    icon: LayoutDashboard, path: "/app" },
-      { id: "pressure",     label: "Pressure Engine", shortLabel: "Pressure",icon: Gauge,           path: "/app/pressure" },
-      { id: "scores",       label: "Scores",          shortLabel: "Scores",  icon: Activity,        path: "/app/scores" },
-      { id: "portfolio",    label: "Portfolio",        shortLabel: "Port",    icon: Briefcase,       path: "/app/portfolio" },
-      { id: "track-record", label: "Track Record",     shortLabel: "Track",   icon: Trophy,          path: "/app/track-record" },
+      { id: "dashboard", label: "Dashboard",           shortLabel: "Dash",    icon: LayoutDashboard, path: "/app" },
+      { id: "report",    label: "Daily Market Briefing",shortLabel: "Briefing",icon: FileText,        path: "/app/report" },
+      { id: "guide",     label: "How to Use FAULTLINE", shortLabel: "Guide",   icon: BookOpen,        path: "/app/guide" },
+    ],
+  },
+  {
+    label: "MARKET STRESS",
+    items: [
+      { id: "pressure",  label: "Market Stress",        shortLabel: "Stress",  icon: Gauge,     path: "/app/pressure" },
+      { id: "scores",    label: "Risk Score Breakdown",  shortLabel: "Scores",  icon: Activity,  path: "/app/scores" },
+      { id: "analogs",   label: "Historical Comparisons",shortLabel: "History", icon: Clock,     path: "/app/analogs" },
+    ],
+  },
+  {
+    label: "SIGNALS",
+    items: [
+      { id: "signals",   label: "Stock & Market Signals",shortLabel: "Signals", icon: Radio,     path: "/app/signals" },
+      { id: "watchlist", label: "Watchlist",             shortLabel: "Watch",   icon: Bell,      path: "/app/watchlist" },
+      { id: "portfolio", label: "Portfolio",             shortLabel: "Port",    icon: Briefcase, path: "/app/portfolio" },
     ],
   },
   {
     label: "INTELLIGENCE",
     items: [
-      { id: "signals",          label: "Signals",         shortLabel: "Signals", icon: Radio,     path: "/app/signals" },
-      { id: "diagnostic",       label: "Diagnostic AI",   shortLabel: "AI Diag", icon: Cpu,       path: "/app/diagnostic" },
-      { id: "ai-watch",         label: "AI Watch",        shortLabel: "AI Watch",icon: Brain,     path: "/app/ai-watch" },
-      { id: "crypto",           label: "Crypto Intel",    shortLabel: "Crypto",  icon: Bitcoin,   path: "/app/crypto-search" },
-      { id: "crypto-signals",   label: "Crypto Signals",  shortLabel: "CSig",    icon: BarChart3, path: "/app/crypto-signals" },
-      { id: "crypto-watchlist", label: "Crypto Watchlist",shortLabel: "CWatch",  icon: Bookmark,  path: "/app/crypto-watchlist" },
+      { id: "alerts",     label: "Alerts",               shortLabel: "Alerts",  icon: AlertTriangle, path: "/app/alerts" },
+      { id: "diagnostic", label: "AI Market Explanation", shortLabel: "AI Expl", icon: Cpu,           path: "/app/diagnostic" },
+      { id: "ai-watch",   label: "AI Sector Watch",       shortLabel: "AI Watch",icon: Brain,         path: "/app/ai-watch" },
+      { id: "charts",     label: "Charts",               shortLabel: "Charts",  icon: BarChart2,     path: "/app/charts" },
     ],
   },
   {
-    label: "ANALYSIS",
+    label: "TOOLS",
     items: [
-      { id: "charts",      label: "Charts",        shortLabel: "Charts",  icon: BarChart2,  path: "/app/charts" },
-      { id: "scenarios",   label: "Scenarios",     shortLabel: "Scen",    icon: TrendingUp, path: "/app/scenarios" },
-      { id: "analogs",     label: "Analogs",       shortLabel: "Analogs", icon: Clock,      path: "/app/analogs" },
-      { id: "simulate",    label: "Simulate",      shortLabel: "Sim",     icon: Zap,        path: "/app/simulate" },
-      { id: "alt-rotation",label: "Alt Rotation™", shortLabel: "AltRot",  icon: RotateCcw,  path: "/app/alt-rotation" },
-      { id: "aftershock",  label: "Aftershock™",   shortLabel: "Shock",   icon: Waves,      path: "/app/aftershock" },
+      { id: "scenarios",   label: "Scenarios",         shortLabel: "Scen",      icon: TrendingUp, path: "/app/scenarios" },
+      { id: "simulate",    label: "Pressure Simulator",shortLabel: "Simulator", icon: Zap,        path: "/app/simulate" },
+      { id: "alt-rotation",label: "Sector Rotation",   shortLabel: "Rotation",  icon: RotateCcw,  path: "/app/alt-rotation" },
+      { id: "aftershock",  label: "Aftershock Engine", shortLabel: "Aftershock",icon: Waves,      path: "/app/aftershock" },
     ],
   },
   {
-    label: "CONTENT",
+    label: "CRYPTO",
     items: [
-      { id: "blog",   label: "Blog",         shortLabel: "Blog",   icon: Newspaper, path: "/app/blog" },
-      { id: "report", label: "Daily Report", shortLabel: "Report", icon: FileText,  path: "/app/report" },
-      { id: "guide",  label: "Guide",        shortLabel: "Guide",  icon: BookOpen,  path: "/app/guide" },
+      { id: "crypto",           label: "Crypto Intelligence",shortLabel: "Crypto",     icon: Bitcoin,   path: "/app/crypto-search" },
+      { id: "crypto-signals",   label: "Crypto Signals",     shortLabel: "Crypto Sig", icon: BarChart3, path: "/app/crypto-signals" },
+      { id: "crypto-watchlist", label: "Crypto Watchlist",   shortLabel: "Crypto Watch",icon: Bookmark, path: "/app/crypto-watchlist" },
     ],
   },
   {
-    label: "MANAGE",
+    label: "ACCOUNT",
     items: [
-      { id: "watchlist", label: "Watchlist", shortLabel: "Watch",  icon: Bell,          path: "/app/watchlist" },
-      { id: "alerts",    label: "Alerts",    shortLabel: "Alerts", icon: AlertTriangle, path: "/app/alerts" },
-      { id: "account",   label: "Account",   shortLabel: "Acct",   icon: User,          path: "/app/account" },
+      { id: "account",     label: "Account",     shortLabel: "Account",  icon: User,     path: "/app/account" },
+      { id: "track-record",label: "Track Record",shortLabel: "Track Rec",icon: Trophy,   path: "/app/track-record" },
+      { id: "blog",        label: "Blog",        shortLabel: "Blog",     icon: Newspaper,path: "/app/blog" },
     ],
   },
 ];
 
 // Admin-only nav items (appended at runtime if user is admin)
 const ADMIN_NAV_ITEMS: NavItem[] = [
-  { id: "x-posts",      label: "X Posts",     shortLabel: "X Posts", icon: Zap,    path: "/app/x-posts" },
-  { id: "x-post-queue", label: "Post Queue",   shortLabel: "Queue",   icon: Settings, path: "/app/x-post-queue" },
-  { id: "admin-blog",   label: "Admin Blog",   shortLabel: "A.Blog",  icon: Newspaper, path: "/app/admin/blog" },
-  { id: "admin-users",  label: "Users",        shortLabel: "Users",   icon: Shield, path: "/app/admin/users" },
-  { id: "admin-portal", label: "Admin Portal", shortLabel: "Admin",   icon: Shield, path: "/app/admin" },
+  { id: "x-posts",      label: "X Posts",     shortLabel: "X Posts",   icon: Zap,       path: "/app/x-posts" },
+  { id: "x-post-queue", label: "Post Queue",   shortLabel: "Queue",     icon: Settings,  path: "/app/x-post-queue" },
+  { id: "admin-blog",   label: "Admin Blog",   shortLabel: "Admin Blog",icon: Newspaper, path: "/app/admin/blog" },
+  { id: "admin-users",  label: "Users",        shortLabel: "Users",     icon: Shield,    path: "/app/admin/users" },
+  { id: "admin-portal", label: "Admin Portal", shortLabel: "Admin",     icon: Shield,    path: "/app/admin" },
 ];
 
 // Flat list for convenience
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
 // Mobile primary tabs (bottom bar — 5 most important)
-const MOBILE_PRIMARY_IDS = ["dashboard", "signals", "portfolio", "blog", "watchlist"];
+// Market Stress replaces Blog as a primary tab
+const MOBILE_PRIMARY_IDS = ["dashboard", "pressure", "signals", "portfolio", "watchlist"];
 const MOBILE_PRIMARY = ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id));
 
 interface AppLayoutProps {

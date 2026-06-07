@@ -30,6 +30,7 @@ import { getRiskColor } from "@/components/RiskBadge";
 import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Info } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Shared tooltip style ──────────────────────────────────────
 const TT: React.CSSProperties = {
@@ -775,32 +776,14 @@ export default function Charts() {
   useSEO(PAGE_SEO.charts);
   const { isLive, lastUpdated } = useEngine();
   return (
-    <div style={{ minHeight: '100vh', background: '#050608', padding: '20px 16px 32px', maxWidth: '800px', margin: '0 auto' }}>
-      {/* Page header */}
-      <div style={{ marginBottom: '20px', animation: 'fade-slide-up 0.5s cubic-bezier(0.23,1,0.32,1) 0ms both' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '4px' }}>
-          Market Intelligence · {isLive ? 'FRED Live Data' : 'Simulated Baseline'}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '30px', color: '#F0F4FF', lineHeight: 1 }}>
-            Charts
-          </h1>
-          {isLive && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 8px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '3px' }}>
-              <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#00FF88', boxShadow: '0 0 6px #00FF88', animation: 'pulse-gold 2s ease-in-out infinite' }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#00FF88', letterSpacing: '0.1em' }}>FRED LIVE</span>
-              {lastUpdated && (
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', marginLeft: '2px' }}>
-                  {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280' }}>
-          Systemic pressure, macro stress indicators, historical overlays, and cross-asset correlations
-        </p>
-      </div>
+    <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
+      <PageHeader
+        title="Charts"
+        subtitle="Systemic pressure timeline and macro chart suite — FRED live data where available, simulated baseline otherwise."
+        badge={isLive ? 'FRED LIVE' : 'SIMULATED'}
+        badgeColor={isLive ? 'green' : 'amber'}
+      />
+      <div style={{ padding: '20px 16px 32px' }}>
 
       {/* ── Section 1: Systemic Pressure Timeline ── */}
       <div style={{ marginBottom: '12px' }}>
@@ -864,6 +847,7 @@ export default function Charts() {
           Chart lines are calibrated baseline models, not live market feeds. The Systemic Pressure score and regime labels update from live FRED data when available. Full live integration (FRED, Polygon.io, Alpha Vantage) is in development. Risk scores are composite models, not guarantees of future outcomes. Consult a qualified financial professional before making investment decisions.
         </p>
       </div>
+      </div>{/* /padding div */}
     </div>
   );
 }

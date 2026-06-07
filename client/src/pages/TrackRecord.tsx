@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Regime color helpers ─────────────────────────────────────────────────────
 const REGIME_COLORS: Record<string, { bg: string; border: string; text: string; bar: string }> = {
@@ -237,7 +238,7 @@ export default function TrackRecord() {
             FAULTLINE
           </Link>
           <nav className="flex items-center gap-6 text-sm text-zinc-400">
-            <Link href="/pressure" className="hover:text-white transition-colors">Pressure Engine</Link>
+            <Link href="/pressure" className="hover:text-white transition-colors">Market Stress</Link>
             <Link href="/blog" className="hover:text-white transition-colors">Intelligence Briefings</Link>
             <Link href="/app" className="hover:text-white transition-colors border border-zinc-700 px-3 py-1.5 rounded hover:border-zinc-500">
               Open Platform
@@ -246,6 +247,12 @@ export default function TrackRecord() {
         </div>
       </header>
 
+      <PageHeader
+        title="Track Record"
+        subtitle="25 years of FAULTLINE stress scores applied to historical FRED data — a retrospective audit of the methodology."
+        badge="HISTORICAL DATA"
+        badgeColor="amber"
+      />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         {/* Hero */}
         <div className="mb-10">

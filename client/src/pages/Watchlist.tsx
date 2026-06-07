@@ -21,6 +21,7 @@ import {
   AlertCondition, AlertSeverity,
 } from '@/lib/watchlist';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Helpers ───────────────────────────────────────────────────
 function seededRand(seed: number) {
@@ -657,45 +658,31 @@ export default function Watchlist() {
         />
       )}
 
-      {/* Header */}
-      <div style={{
-        padding: '18px 16px 14px',
-        background: 'linear-gradient(180deg, rgba(10,12,16,0.95) 0%, rgba(5,6,8,0.95) 100%)',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        position: 'sticky', top: 0, zIndex: 50,
-        backdropFilter: 'blur(12px)',
-      }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                <Bell size={14} style={{ color: '#00D4FF' }} />
-                <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color: '#F0F4FF', margin: 0 }}>Watchlist</h1>
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                {items.length} indicators · custom thresholds · live alerts
-              </div>
-            </div>
-            <button
-              onClick={() => setEditingItem(null)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '10px 16px',
-                background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.08))',
-                border: '1px solid rgba(0,212,255,0.35)',
-                borderRadius: '5px', color: '#00D4FF',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
-                letterSpacing: '0.1em', textTransform: 'uppercase',
-                cursor: 'pointer', boxShadow: '0 0 16px rgba(0,212,255,0.1)',
-                minHeight: '44px', flexShrink: 0,
-              }}
-            >
-              <Plus size={13} />
-              Add
-            </button>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Watchlist"
+        subtitle="Pin any macro indicator, set a custom threshold, and get a live visual alert when it’s breached."
+        badge="LIVE"
+        badgeColor="green"
+        rightSlot={
+          <button
+            onClick={() => setEditingItem(null)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '10px 16px',
+              background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.08))',
+              border: '1px solid rgba(0,212,255,0.35)',
+              borderRadius: '5px', color: '#00D4FF',
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              cursor: 'pointer', boxShadow: '0 0 16px rgba(0,212,255,0.1)',
+              minHeight: '44px', flexShrink: 0,
+            }}
+          >
+            <Plus size={13} />
+            Add
+          </button>
+        }
+      />
 
       {/* Content */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>

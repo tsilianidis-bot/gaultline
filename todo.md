@@ -787,3 +787,18 @@
 - [x] Expand PRIORITY_TICKERS from 20 to 42 tickers to cover all SIGNAL_STOCKS (was only 8 of 31 overlapping — root cause of stale prices)
 - [x] Run Yahoo + Polygon in parallel so Yahoo prices work independently of Polygon timeouts
 - [x] Checkpoint after full live price fix
+
+## Clarity & Navigation Audit Implementation
+- [x] Restructure AppLayout NAV_GROUPS: OVERVIEW / MARKET STRESS / SIGNALS / INTELLIGENCE / TOOLS / CRYPTO / ACCOUNT
+- [x] Rename nav labels: Pressure Engine→Market Stress, Scores→Risk Score Breakdown, Diagnostic AI→AI Market Explanation, AI Watch→AI Sector Watch, Daily Report→Daily Market Briefing, Historical Analogs→Historical Comparisons, Simulate→Pressure Simulator, Alt Rotation→Sector Rotation, Guide→How to Use FAULTLINE
+- [x] Move Blog and Track Record out of primary nav (keep accessible via Account/footer area)
+- [x] Fix mobile primary tabs: replace Blog with Market Stress (Pressure page)
+- [x] Update mobile shortLabels to plain English (CSig→Crypto Sig, CWatch→Crypto Watch, AltRot→Rotation, Shock→Aftershock, Sim→Simulator, A.Blog→Admin Blog)
+- [x] Add PageHeader with h1 title + one-sentence subtitle to all 14 pages
+- [x] Add back-to-dashboard breadcrumb to all pages via PageHeader component
+- [x] Update data-status labels: Polygon.io → Yahoo Finance in Signals.tsx and Guide.tsx
+- [x] Update ticker count from 19/31 to 42 in Signals.tsx and Guide.tsx
+- [x] pnpm check: 0 TypeScript errors
+- [x] pnpm test: 351/351 tests passing
+- [x] pnpm build: ✓ built in 24.30s
+- [x] Checkpoint after clarity improvements

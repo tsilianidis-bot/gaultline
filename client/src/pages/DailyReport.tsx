@@ -19,6 +19,7 @@ import {
   TrendingUp, TrendingDown, Shield, Zap, Clock, Info,
 } from 'lucide-react';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Typewriter hook ──────────────────────────────────────────
 function useTypewriter(text: string, speed = 18): { displayed: string; done: boolean } {
@@ -165,33 +166,30 @@ export default function DailyReport() {
   }, [now, overall, regime, probability, topAnalog]);
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050608', padding: '20px 16px 60px', maxWidth: '800px', margin: '0 auto' }}>
-
-      {/* ── Action Bar (no-print) ── */}
-      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) both' }}>
-        <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '3px' }}>
-            Intelligence Briefing
+        <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
+      <PageHeader
+        title="Daily Market Briefing"
+        subtitle="AI-generated institutional-grade macro briefing, updated with live systemic pressure scores. Export to PDF for offline reading."
+        badge="AI-GENERATED"
+        badgeColor="blue"
+        rightSlot={
+          <div className="no-print" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleShare}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '7px 12px', cursor: 'pointer', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'all 0.15s ease' }}
+            >
+              <Share2 size={11} /> Share
+            </button>
+            <button
+              onClick={handlePrint}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00D4FF', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: '4px', padding: '7px 14px', cursor: 'pointer', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'all 0.15s ease' }}
+            >
+              <Printer size={11} /> Export PDF
+            </button>
           </div>
-          <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#F0F4FF', lineHeight: 1 }}>
-            Daily Report
-          </h1>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button
-            onClick={handleShare}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px', padding: '7px 12px', cursor: 'pointer', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'all 0.15s ease' }}
-          >
-            <Share2 size={11} /> Share
-          </button>
-          <button
-            onClick={handlePrint}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00D4FF', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: '4px', padding: '7px 14px', cursor: 'pointer', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'all 0.15s ease' }}
-          >
-            <Printer size={11} /> Export PDF
-          </button>
-        </div>
-      </div>
+        }
+      />
+      <div style={{ padding: '20px 16px 60px' }}>
 
       {/* ── Report Body ── */}
       <div ref={reportRef} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -549,11 +547,11 @@ export default function DailyReport() {
           <Info size={11} style={{ color: '#374151', flexShrink: 0, marginTop: '1px' }} />
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', lineHeight: 1.6 }}>
             <strong style={{ color: '#4B5563' }}>Probabilistic risk intelligence. Not financial advice.</strong>{' '}
-            FAULTLINE generates composite risk signals from macroeconomic indicators. All scores are model-derived estimates. Past crisis analogs do not guarantee future outcomes. This report is for informational and educational purposes only.
+                        FAULTLINE generates composite risk signals from macroeconomic indicators. All scores are model-derived estimates. Past crisis analogs do not guarantee future outcomes. This report is for informational and educational purposes only.
           </p>
         </div>
-
       </div>
+      </div>{/* /padding div */}
     </div>
   );
 }

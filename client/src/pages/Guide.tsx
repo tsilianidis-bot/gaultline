@@ -14,6 +14,7 @@ import {
   Target, Eye, Layers, Info, ArrowRight,
 } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -101,7 +102,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            FAULTLINE is a <span className="text-cyan-400">macroeconomic risk intelligence terminal</span> designed to give investors, traders, and analysts a real-time view of systemic stress across the global financial system. It synthesises live economic data from the Federal Reserve (FRED), live market prices from Polygon.io, and AI-powered analysis to surface the signals that matter before they become headlines.
+            FAULTLINE is a <span className="text-cyan-400">macroeconomic risk intelligence terminal</span> designed to give investors, traders, and analysts a real-time view of systemic stress across the global financial system. It synthesises live economic data from the Federal Reserve (FRED), live market prices from Yahoo Finance and Polygon.io, and AI-powered analysis to surface the signals that matter before they become headlines.
           </p>
         </Panel>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -332,7 +333,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-cyan-400">Signals Tab</span> is the market intelligence layer of FAULTLINE. It combines a curated live screener of 31 priority tickers with an on-demand AI classifier that can analyse any stock symbol in the context of the current macro regime.
+            The <span className="text-cyan-400">Signals Tab</span> is the market intelligence layer of FAULTLINE. It combines a curated live screener of 42 priority tickers with an on-demand AI classifier that can analyse any stock symbol in the context of the current macro regime.
           </p>
         </Panel>
 
@@ -345,7 +346,7 @@ const SECTIONS: Section[] = [
             <div className="space-y-2">
               {[
                 { step: 1, title: "Enter any ticker symbol", desc: "Type any valid US stock ticker (e.g. NVDA, TSLA, BRK.B, SPY) into the search bar at the top of the Signals tab. Press Enter or click ANALYZE." },
-                { step: 2, title: "Live data fetch", desc: "FAULTLINE fetches real-time price, OHLC, volume, market cap, sector, and a 5-day sparkline from Polygon.io. This takes 1–3 seconds." },
+                { step: 2, title: "Live data fetch", desc: "FAULTLINE fetches real-time intraday prices from Yahoo Finance (during market hours) and 5-day sparklines from Polygon.io. This takes 1–3 seconds." },
                 { step: 3, title: "AI classification", desc: "The LLM classifier receives the ticker profile and current macro regime context, then assigns FAULTLINE signal labels, a regime fit score, and a full intelligence briefing. This takes 5–15 seconds." },
                 { step: 4, title: "Stock Intelligence Card", desc: "The full card renders with all data sections. You can save the ticker to your watchlist or expand the 'Why This Signal?' panel for the AI's full reasoning." },
               ].map(({ step, title, desc }) => (
@@ -385,7 +386,7 @@ const SECTIONS: Section[] = [
           <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Curated Screener</p>
           <Panel className="!p-3">
             <p className="text-[10px] text-white/50 leading-relaxed">
-              The screener shows 31 priority tickers spanning AI infrastructure, semiconductors, financials, energy, defensives, and macro-sensitive sectors. Each card shows live price, daily change, volume, a 5-day sparkline, and FAULTLINE signal labels. Use the <span className="text-cyan-400">filter tabs</span> (ALL / MOMENTUM / AI / DEFENSIVE / STRESS / SPECULATIVE) to narrow by signal type. The screener refreshes every 5 minutes with live Polygon.io data.
+              The screener shows 42 priority tickers spanning AI infrastructure, semiconductors, financials, energy, defensives, and macro-sensitive sectors. Each card shows live price, daily change, volume, a 5-day sparkline, and FAULTLINE signal labels. Use the <span className="text-cyan-400">filter tabs</span> (ALL / MOMENTUM / AI / DEFENSIVE / STRESS / SPECULATIVE) to narrow by signal type. The screener refreshes every 5 minutes with live Yahoo Finance data.
             </p>
           </Panel>
         </div>
@@ -610,7 +611,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            FAULTLINE pulls from two primary data sources: the <span className="text-cyan-400">Federal Reserve Economic Data (FRED)</span> API for macroeconomic indicators, and the <span className="text-cyan-400">Polygon.io</span> API for live stock market data. All API calls are made server-side — your browser never sees an API key.
+            FAULTLINE pulls from three primary data sources: the <span className="text-cyan-400">Federal Reserve Economic Data (FRED)</span> API for macroeconomic indicators, <span className="text-cyan-400">Yahoo Finance</span> for live intraday stock prices during market hours, and <span className="text-cyan-400">Polygon.io</span> for sparklines and historical bar data. All API calls are made server-side — your browser never sees an API key.
           </p>
         </Panel>
         <div className="space-y-2">
@@ -631,10 +632,10 @@ const SECTIONS: Section[] = [
           </div>
         </div>
         <div className="space-y-2">
-          <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Polygon.io — Live Market Data</p>
+          <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Yahoo Finance + Polygon.io — Live Market Data</p>
           <Panel className="!p-3">
             <p className="text-[10px] text-white/50 leading-relaxed">
-              Polygon.io provides real-time and historical stock market data including: daily OHLCV (open, high, low, close, volume), 5-day sparklines, ticker details (company name, sector, industry, market cap, description), and market status (open/closed/extended hours). Data is cached server-side with a 5-minute TTL to respect rate limits. When the live feed is unavailable, FAULTLINE falls back to the most recent cached data and displays a STALE or FALLBACK badge on affected cards.
+              During market hours, FAULTLINE fetches live intraday prices for all 42 priority tickers from Yahoo Finance (batch API, ~2s). Polygon.io provides 5-day sparklines, ticker details (company name, sector, industry, market cap, description), and historical bar data. Both sources are cached server-side with a 5-minute TTL. When the live feed is unavailable, FAULTLINE falls back to the most recent cached data and displays a STALE or FALLBACK badge on affected cards.
             </p>
           </Panel>
         </div>
@@ -708,18 +709,12 @@ export default function Guide() {
     <div className="min-h-screen bg-[#020408] text-white font-mono"
       style={{ backgroundImage: "radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.03) 0%, transparent 60%)" }}>
 
-      {/* Header */}
-      <div className="relative border-b border-white/10 px-4 py-4"
-        style={{ background: "linear-gradient(180deg, rgba(0,212,255,0.05) 0%, transparent 100%)" }}>
-        <CornerBracket color="rgba(0,212,255,0.4)" />
-        <div className="flex items-center gap-3">
-          <BookOpen className="w-5 h-5 text-cyan-400" />
-          <div>
-            <h1 className="text-sm font-bold tracking-widest text-white uppercase">User Guidance</h1>
-            <p className="text-[10px] text-white/40 tracking-wider mt-0.5">FAULTLINE — Complete Feature Documentation</p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="How to Use FAULTLINE"
+        subtitle="Complete feature documentation — learn what each score means, how the engine works, and how to read the signals."
+        badge="GUIDE"
+        badgeColor="gray"
+      />
 
       <div className="flex h-[calc(100vh-120px)]">
         {/* Sidebar nav */}

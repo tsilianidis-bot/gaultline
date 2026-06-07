@@ -16,6 +16,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Types (inferred from tRPC) ────────────────────────────────
 type LivePosition = {
@@ -774,18 +775,17 @@ function PortfolioInner() {
   const { positions = [], summary } = portfolioQuery.data ?? {};
 
   return (
-    <div style={{ minHeight: "100vh", background: "#050608", padding: "20px 16px" }}>
-      {/* Header */}
+    <div style={{ minHeight: "100vh", background: "#050608" }}>
+      <PageHeader
+        title="Portfolio Monitor"
+        subtitle="Track real-time P&L across your positions with AI-powered guidance and FAULTLINE pressure context."
+        badge="LIVE"
+        badgeColor="green"
+      />
+      <div style={{ padding: "20px 16px" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
           <div>
-            <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "28px", color: "#F0F4FF", letterSpacing: "0.08em", margin: 0, lineHeight: 1 }}>
-              PORTFOLIO MONITOR
-            </h1>
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", letterSpacing: "0.12em", margin: "4px 0 0" }}>
-              REAL-TIME P&L · AI GUIDANCE · FAULTLINE PRESSURE
-            </p>
-          </div>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <button
               onClick={handleRefresh}
@@ -925,15 +925,16 @@ function PortfolioInner() {
         />
       )}
 
-      {/* Spin animation */}
+            {/* Spin animation */}
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
       `}</style>
+      </div>{/* /maxWidth */}
+      </div>{/* /padding */}
     </div>
   );
 }
-
 // ── Premium Gate Wrapper ──────────────────────────────────────
 export default function Portfolio() {
   return (

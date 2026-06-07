@@ -5,6 +5,7 @@
 
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
+import PageHeader from "@/components/PageHeader";
 
 // ── Types (mirrored from server) ─────────────────────────────
 
@@ -201,44 +202,16 @@ export default function DiagnosticAI() {
       background: "linear-gradient(160deg, #050A14 0%, #080F1E 50%, #050A14 100%)",
       color: "#E2E8F0",
       fontFamily: "'Space Grotesk', sans-serif",
-      padding: "24px 20px 60px",
       maxWidth: 1200,
       margin: "0 auto",
     }}>
-
-      {/* ── Page Header ── */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: "50%",
-            background: "#00FF88",
-            boxShadow: "0 0 12px #00FF88",
-            animation: "blink-alert 2s ease-in-out infinite",
-          }} />
-          <span style={{
-            fontSize: 10,
-            fontFamily: "'IBM Plex Mono', monospace",
-            color: "#00FF88",
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-          }}>
-            FAULTLINE DIAGNOSTIC AI™
-          </span>
-        </div>
-        <h1 style={{
-          fontSize: "clamp(22px, 4vw, 32px)",
-          fontFamily: "'Orbitron', monospace",
-          fontWeight: 900,
-          color: "#F1F5F9",
-          margin: 0,
-          letterSpacing: "0.05em",
-        }}>
-          DIAGNOSTIC AI™
-        </h1>
-        <p style={{ fontSize: 13, color: "#64748B", margin: "6px 0 0", letterSpacing: "0.03em" }}>
-          Daily, weekly, monthly, and yearly market-risk interpretation.
-        </p>
-      </div>
+      <PageHeader
+        title="AI Market Explanation"
+        subtitle="AI-generated daily, weekly, monthly, and yearly market-risk interpretation — powered by FAULTLINE’s live pressure engine."
+        badge="AI-GENERATED"
+        badgeColor="blue"
+      />
+      <div style={{ padding: "24px 20px 60px" }}>
 
       {/* ── Timeframe Tabs ── */}
       <div style={{
@@ -501,12 +474,12 @@ export default function DiagnosticAI() {
         </>
       )}
 
-      {/* ── Position Guidance Section ── */}
+            {/* ── Position Guidance Section ── */}
       <PositionGuidanceSection guidance={guidance} isLoading={guidanceLoading} />
+      </div>{/* /padding div */}
     </div>
   );
 }
-
 // ── Position Guidance Section ─────────────────────────────────
 
 function PositionGuidanceSection({ guidance, isLoading }: { guidance: any[] | undefined; isLoading: boolean }) {

@@ -1,6 +1,6 @@
 /* ============================================================
    FAULTLINE — Signals Tab
-   Macro-regime-aware market scanner with live Polygon.io data
+   Macro-regime-aware market scanner with live Yahoo Finance + Polygon.io data
    + actionable BUY / SELL / HOLD trading signals.
    ============================================================ */
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
@@ -17,6 +17,7 @@ import { LineChart, Line, ResponsiveContainer, Tooltip as RTooltip } from 'recha
 import { Link } from 'wouter';
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -784,7 +785,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             fontSize: '11px', color: 'rgba(55,65,81,0.6)',
             letterSpacing: '0.08em',
           }}>
-            {isLiveData ? 'SOURCE: POLYGON.IO · /api/signals/quotes' : `API: ${stock.apiSources.quote}`}
+            {isLiveData ? 'SOURCE: YAHOO FINANCE · /api/signals/quotes' : `API: ${stock.apiSources.quote}`}
             {tradingSignal && ' · SIGNALS: FAULTLINE ENGINE'}
           </div>
         </div>
@@ -866,7 +867,7 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
   const isFallback = source === 'fallback' || source === null;
 
   const color = isLive ? '#00D4FF' : isStale ? '#FFD700' : '#FF2D55';
-  const label = isLive ? 'POLYGON.IO LIVE' : isStale ? 'STALE CACHE' : 'FALLBACK MODE';
+  const label = isLive ? 'YAHOO FINANCE LIVE' : isStale ? 'STALE CACHE' : 'FALLBACK MODE';
   const dot = isLive ? 'fl-pulse 2s ease-in-out infinite' : 'none';
 
   return (
@@ -1021,7 +1022,7 @@ function SignalsInner() {
   useSEO(PAGE_SEO.signals);
   const engine = useEngine();
 
-  // ── Live Polygon.io data state ─────────────────────────────
+  // ── Live Yahoo Finance data state ─────────────────────────────
   const [quotesData, setQuotesData] = useState<QuotesResponse | null>(null);
   const [quotesLoading, setQuotesLoading] = useState(true);
   const [quotesError, setQuotesError] = useState<string | null>(null);
@@ -1216,6 +1217,13 @@ function SignalsInner() {
       padding: '0 0 120px 0',
       fontFamily: "'IBM Plex Mono', monospace",
     }}>
+
+      <PageHeader
+        title="Signals"
+        subtitle="Macro-regime-aware market scanner — live prices, trading signals, and regime-fit scores for 30+ tickers."
+        badge="LIVE PRICES"
+        badgeColor="green"
+      />
 
       {/* ── Regime Context Banner ─────────────────────────── */}
       <div style={{
@@ -1521,15 +1529,15 @@ function SignalsInner() {
         }}>
           {quotesData?.source === 'live' ? (
             <>
-              <span style={{ color: '#00D4FF' }}>LIVE DATA</span> — Polygon.io market data via secure backend proxy.
+              <span style={{ color: '#00D4FF' }}>LIVE DATA</span> — Yahoo Finance intraday prices (market hours) · Polygon.io sparklines via secure backend proxy.
               Session: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData.tradeDate ?? '—'}</span> ·
-              Quotes: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData.count ?? 0}/19 tickers</span> ·
+              Quotes: <span style={{ color: 'rgba(100,116,139,0.7)' }}>{quotesData.count ?? 0}/42 tickers</span> ·
               Refreshes every 5 minutes.
             </>
           ) : (
             <>
               <span style={{ color: '#FF2D55' }}>CATALOG DATA</span> — Live market data unavailable.
-              Showing static catalog prices. Connect Polygon.io for live quotes.
+              Showing static catalog prices. Live prices load automatically during market hours.
             </>
           )}
           {tradingSignalsData && (

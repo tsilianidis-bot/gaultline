@@ -9,6 +9,7 @@ import { DomainScore } from "@/lib/engine";
 import RiskBadge, { getRiskColor } from "@/components/RiskBadge";
 import ScoreRing from "@/components/ScoreRing";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Seeded deterministic sparkline ───────────────────────────
 function seededRand(seed: number) {
@@ -194,15 +195,16 @@ export default function Scores() {
   const highCount = domains.filter(d => d.riskLevel === 'high').length;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050608', padding: '20px 16px 32px', maxWidth: '800px', margin: '0 auto' }}>
-
-      {/* Header */}
+    <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
+      <PageHeader
+        title="Risk Score Breakdown"
+        subtitle="Composite scoring across all major stress dimensions — pressure-reactive and computed live from FRED, market, and macro data."
+        badge="LIVE"
+        badgeColor="green"
+      />
+      <div style={{ padding: '20px 16px 32px' }}>
+      {/* Alert badges */}
       <div style={{ marginBottom: '20px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 0ms both' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '4px' }}>Risk Intelligence</div>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '28px', color: '#F0F4FF', lineHeight: 1, marginBottom: '4px' }}>Systemic Risk Scores</h1>
-        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280' }}>
-          Composite scoring across all major stress dimensions — pressure-reactive, computed live
-        </p>
         {(criticalCount > 0 || highCount > 0) && (
           <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {criticalCount > 0 && (
@@ -292,6 +294,7 @@ export default function Scores() {
           PROBABILISTIC RISK INTELLIGENCE · NOT FINANCIAL ADVICE
         </span>
       </div>
+      </div>{/* /padding div */}
     </div>
   );
 }

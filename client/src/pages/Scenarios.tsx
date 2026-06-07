@@ -14,6 +14,7 @@ import {
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 const TT: React.CSSProperties = {
   background: '#0A0C10', border: '1px solid rgba(0,212,255,0.18)',
@@ -298,17 +299,14 @@ export default function Scenarios() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#050608', padding: '20px 16px 32px', maxWidth: '800px', margin: '0 auto' }}>
-
-      {/* Header */}
-      <div style={{ marginBottom: '20px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 0ms both' }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '4px' }}>Probabilistic Engine · Live</div>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '28px', color: '#F0F4FF', lineHeight: 1, marginBottom: '4px' }}>Scenario Engine</h1>
-        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280' }}>
-          Probabilities computed live from indicator composite — overall risk:{' '}
-          <span style={{ color: getRiskColor(overall.riskLevel) }}>{overallScore.toFixed(1)}/10</span>
-        </p>
-      </div>
+        <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
+      <PageHeader
+        title="Scenarios"
+        subtitle="Probabilistic outcome modeling across bull, base, and bear cases — driven by current systemic pressure scores."
+        badge="LIVE"
+        badgeColor="green"
+      />
+      <div style={{ padding: '20px 16px 32px' }}>
 
       {/* Compact probability wheel overview */}
       <div style={{ background: 'rgba(10,12,16,0.9)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '6px', padding: '14px', marginBottom: '12px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 60ms both' }}>
@@ -400,6 +398,7 @@ export default function Scenarios() {
           PROBABILISTIC RISK INTELLIGENCE · NOT FINANCIAL ADVICE
         </span>
       </div>
+      </div>{/* /padding div */}
     </div>
   );
 }

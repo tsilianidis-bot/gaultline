@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import { useAuth } from "@/_core/hooks/useAuth";
+import PageHeader from "@/components/PageHeader";
 import { toast } from "sonner";
 import {
   CalendarDays, Clock, Rss, Plus, X, Eye, EyeOff,
@@ -356,30 +357,28 @@ export default function Blog() {
 
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Page title */}
-        <div className="mb-10 flex items-start justify-between">
-          <div>
-            <h1 className="font-['Orbitron'] text-3xl font-bold tracking-wider text-white mb-2">
-              INTELLIGENCE <span className="text-cyan-400">BRIEFINGS</span>
-            </h1>
-            <p className="text-slate-400 text-sm font-['IBM_Plex_Mono']">
-              Macro commentary, market risk analysis, and fault line reports
-            </p>
-          </div>
-          {isAdmin && (
-            <button
-              onClick={() => setShowModal(true)}
-              style={{
-                display: "flex", alignItems: "center", gap: 7,
-                padding: "10px 20px", borderRadius: 8, cursor: "pointer",
-                background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.25)",
-                color: "#00D4FF", fontSize: 12, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "0.12em",
-              }}
-            >
-              <Plus size={15} />
-              NEW BRIEFING
-            </button>
-          )}
-        </div>
+        <PageHeader
+          title="Intelligence Briefings"
+          subtitle="Macro commentary, market risk analysis, and fault line reports from the FAULTLINE team."
+          badge="EDITORIAL"
+          badgeColor="blue"
+          rightSlot={
+            isAdmin ? (
+              <button
+                onClick={() => setShowModal(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 7,
+                  padding: "10px 20px", borderRadius: 8, cursor: "pointer",
+                  background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.25)",
+                  color: "#00D4FF", fontSize: 12, fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "0.12em",
+                }}
+              >
+                <Plus size={15} />
+                NEW BRIEFING
+              </button>
+            ) : undefined
+          }
+        />
 
         {/* Category filter */}
         {categories.length > 0 && (

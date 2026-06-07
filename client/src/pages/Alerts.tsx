@@ -14,6 +14,7 @@ import {
 } from '@/lib/regimeAlerts';
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Pressure gauge ─────────────────────────────────────────────
 function PressureGauge({ label, value, color }: { label: string; value: number; color: string }) {
@@ -325,15 +326,14 @@ function AlertsInner() {
   const indicatorMap = indicators as unknown as Record<string, number>;
 
   return (
-    <div style={{ padding: '16px', maxWidth: '900px', margin: '0 auto', paddingBottom: '100px' }}>
-
-      {/* Header */}
-      <div style={{ marginBottom: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', letterSpacing: '0.15em' }}>
-            REGIME SHIFT ALERT SYSTEM · {isLive ? 'LIVE' : 'SIM'}
-          </div>
-          {unreadCount > 0 && (
+    <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '100px' }}>
+      <PageHeader
+        title="Alert Monitor"
+        subtitle="Regime shift alerts fire automatically when macro stress thresholds are crossed. Unread alerts are highlighted in real time."
+        badge={isLive ? 'LIVE' : 'SIMULATED'}
+        badgeColor={isLive ? 'green' : 'amber'}
+        rightSlot={
+          unreadCount > 0 ? (
             <div style={{
               fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',
               color: criticalCount > 0 ? '#FF2D55' : '#FF9500',
@@ -344,12 +344,10 @@ function AlertsInner() {
             }}>
               {unreadCount} UNREAD {criticalCount > 0 ? `· ${criticalCount} CRITICAL` : ''}
             </div>
-          )}
-        </div>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#F0F4FF', margin: 0 }}>
-          Alert Monitor
-        </h1>
-      </div>
+          ) : undefined
+        }
+      />
+      <div style={{ padding: '16px' }}>
 
       {/* Regime status banner */}
       <div style={{
@@ -507,12 +505,12 @@ function AlertsInner() {
         fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151',
         borderTop: '1px solid rgba(255,255,255,0.04)', marginTop: '24px',
       }}>
-        PROBABILISTIC RISK INTELLIGENCE · NOT FINANCIAL ADVICE · ALERTS ARE INFORMATIONAL ONLY
+                PROBABILISTIC RISK INTELLIGENCE · NOT FINANCIAL ADVICE · ALERTS ARE INFORMATIONAL ONLY
       </div>
+      </div>{/* /padding div */}
     </div>
   );
 }
-
 // ── Premium Gate Wrapper ──────────────────────────────────────
 export default function Alerts() {
   return (

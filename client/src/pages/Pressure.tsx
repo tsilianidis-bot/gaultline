@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import PageHeader from "@/components/PageHeader";
 
 // ── Types (mirror server output) ─────────────────────────────
 type PressureLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
@@ -819,12 +820,11 @@ function PressureSkeleton() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} style={{ height: "140px", background: "rgba(255,255,255,0.03)", borderRadius: "6px", animation: `fl-pulse 1.5s ease-in-out ${i * 0.1}s infinite` }} />
           ))}
-        </div>
+                </div>
       </div>
     </div>
   );
 }
-
 // ── Main Pressure Page ────────────────────────────────────────
 export default function Pressure() {
   useSEO(PAGE_SEO.pressure);
@@ -883,7 +883,14 @@ export default function Pressure() {
         zIndex: 0,
       }} />
 
-      <div style={{ position: "relative", zIndex: 2, padding: "24px", maxWidth: "1400px", margin: "0 auto" }}>
+      <div style={{ position: "relative", zIndex: 2, maxWidth: "1400px", margin: "0 auto" }}>
+        <PageHeader
+          title="Market Stress"
+          subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
+          badge={data.dataSource === 'live' ? 'LIVE DATA' : 'SIMULATED'}
+          badgeColor={data.dataSource === 'live' ? 'green' : 'amber'}
+        />
+        <div style={{ padding: "24px" }}>
 
         {/* ── Page header ──────────────────────────────────── */}
         <motion.div
@@ -1164,10 +1171,10 @@ export default function Pressure() {
                   NO ACTIVE ALERTS
                 </div>
               )}
-            </div>
+                        </div>
           </motion.div>
         </div>
-
+        </div>{/* /padding div */}
       </div>
     </div>
   );
