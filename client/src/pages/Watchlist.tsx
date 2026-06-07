@@ -22,6 +22,7 @@ import {
 } from '@/lib/watchlist';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ── Helpers ───────────────────────────────────────────────────
 function seededRand(seed: number) {
@@ -664,23 +665,30 @@ export default function Watchlist() {
         badge="LIVE"
         badgeColor="green"
         rightSlot={
-          <button
-            onClick={() => setEditingItem(null)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '6px',
-              padding: '10px 16px',
-              background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.08))',
-              border: '1px solid rgba(0,212,255,0.35)',
-              borderRadius: '5px', color: '#00D4FF',
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              cursor: 'pointer', boxShadow: '0 0 16px rgba(0,212,255,0.1)',
-              minHeight: '44px', flexShrink: 0,
-            }}
-          >
-            <Plus size={13} />
-            Add
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <PreflightTrigger
+              currentPage="watchlist"
+              actionKey="viewed_watchlist"
+              regimeLabel={output?.regime?.label}
+            />
+            <button
+              onClick={() => setEditingItem(null)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '10px 16px',
+                background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.08))',
+                border: '1px solid rgba(0,212,255,0.35)',
+                borderRadius: '5px', color: '#00D4FF',
+                fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                cursor: 'pointer', boxShadow: '0 0 16px rgba(0,212,255,0.1)',
+                minHeight: '44px', flexShrink: 0,
+              }}
+            >
+              <Plus size={13} />
+              Add
+            </button>
+          </div>
         }
       />
 

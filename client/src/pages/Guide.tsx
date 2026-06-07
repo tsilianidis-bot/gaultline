@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -659,6 +660,167 @@ const SECTIONS: Section[] = [
     ),
   },
   {
+    id: "market-preflight",
+    icon: Shield,
+    title: "Complete Market Awareness™",
+    subtitle: "Market Preflight, awareness scoring, and the pre-decision review process",
+    color: "#00FF88",
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(0,255,136,0.2)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-emerald-400 font-bold">Market Preflight</span> is FAULTLINE's pre-decision review process. It helps users check the current FAULTLINE reading, market stress level, regime, pressure drivers, alerts, signal context, data quality, and possible future outcomes before making financial decisions.
+          </p>
+        </Panel>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Complete Market Awareness™</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
+              Complete Market Awareness™ is a daily situational awareness framework built into FAULTLINE. Before making any financial decision, the system guides users through reviewing the full risk picture: the Pressure Index, market regime, active alerts, signal context, data quality, and possible future outcomes.
+            </p>
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+              The system tracks which platform sections you have reviewed today and computes a <span className="text-emerald-400">Complete Market Awareness Score</span> from 0–100. This score reflects how thoroughly you have reviewed the available context — it is not a market prediction or a signal to act.
+            </p>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Complete Market Awareness Score</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
+              The score is calculated from completed review steps across the platform. Each step corresponds to a section of the FAULTLINE risk picture.
+            </p>
+            <div className="space-y-1.5">
+              {[
+                { range: "90–100", label: "Complete Market Awareness", color: "#00FF88" },
+                { range: "75–89", label: "Strong Market Awareness", color: "#00D4FF" },
+                { range: "60–74", label: "Developing Awareness", color: "#FFD700" },
+                { range: "40–59", label: "Partial Awareness", color: "#FF9500" },
+                { range: "0–39",  label: "Limited Awareness", color: "#FF2D55" },
+              ].map(({ range, label, color }) => (
+                <div key={range} className="flex items-center gap-3 py-1.5 border-b border-white/5 last:border-0">
+                  <span className="text-[10px] font-mono w-16 shrink-0" style={{ color }}>{ range }</span>
+                  <span className="text-[10px] font-mono text-white/70">{ label }</span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Market Preflight Checklist</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
+              The checklist covers 10 review steps across the platform. Completing each step contributes points to your awareness score for the day.
+            </p>
+            <div className="space-y-1.5">
+              {[
+                "Current FAULTLINE reading reviewed",
+                "Market stress level understood",
+                "Current regime reviewed",
+                "Pressure drivers reviewed",
+                "Crash/bull probability context reviewed",
+                "Active alerts checked",
+                "Signal context reviewed",
+                "Data status confirmed",
+                "Possible future outcomes reviewed",
+                "Watchlist/portfolio impact considered",
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-2 py-1 border-b border-white/5 last:border-0">
+                  <span className="text-[10px] font-mono text-emerald-400/60 w-4 shrink-0 mt-0.5">{i + 1}.</span>
+                  <span className="text-[10px] font-mono text-white/70">{ item }</span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Daily Market Preflight</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-2">
+              The Market Preflight resets daily. Each day you start with a fresh score. Your review history is stored and never deleted — turning off the prompts does not clear your history.
+            </p>
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+              The "Run Market Preflight" button is available on the Dashboard, Market Signals, Watchlist, Portfolio Monitor, Pressure Simulator, Daily Market Briefing, and this page. You can also access it at any time from <span className="text-emerald-400">Profile → Account Preferences → Market Preflight Prompts</span>.
+            </p>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">What the Score Measures</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+              The score measures <span className="text-white/90">platform usage and risk-review behaviour</span> — specifically, how many of the available context sections you have reviewed today. A higher score means you have reviewed more of the available FAULTLINE risk picture before acting.
+            </p>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">What the Score Does Not Measure</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <div className="space-y-1.5">
+              {[
+                "It does not measure the quality of your investment decisions.",
+                "It does not predict market outcomes or investment results.",
+                "It does not reduce risk or guarantee better performance.",
+                "It does not reflect your knowledge, experience, or skill.",
+                "It is not a trading signal or recommendation to act.",
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-2 py-1 border-b border-white/5 last:border-0">
+                  <span className="text-[10px] font-mono text-white/30 shrink-0 mt-0.5">—</span>
+                  <span className="text-[10px] font-mono text-white/60">{ item }</span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Preference Controls</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
+              You can control how prominently Market Preflight surfaces itself from <span className="text-emerald-400">Profile → Account Preferences → Market Preflight Prompts</span>.
+            </p>
+            <div className="space-y-2">
+              {[
+                { mode: "Full Guidance", desc: "Shows the full dashboard card, missing checks list, checklist CTA, and page-level triggers on all relevant pages." },
+                { mode: "Minimal Reminders", desc: "Shows only a compact score ring and \"Run Market Preflight\" button. No missing-checks list or detailed prompts." },
+                { mode: "Off", desc: "Hides all page-level prompts and the dashboard card. The feature remains accessible from this page and from Profile. Tracking history is preserved." },
+              ].map(({ mode, desc }) => (
+                <div key={mode} className="p-2.5 border border-white/8 bg-white/3 rounded-sm">
+                  <p className="text-[10px] font-mono text-emerald-400 font-bold mb-1">{ mode }</p>
+                  <p className="text-[10px] font-mono text-white/50 leading-relaxed">{ desc }</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Run Market Preflight</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-4">
+              Click the button below to open the Market Preflight panel and review the current FAULTLINE risk picture.
+            </p>
+            <PreflightTrigger
+              currentPage="guide"
+              actionKey="viewed_guide"
+            />
+          </Panel>
+        </div>
+
+        <Panel accentColor="rgba(255,149,0,0.2)">
+          <p className="text-[10px] font-mono text-white/40 leading-relaxed">
+            <span className="text-amber-400/70 font-bold">Disclaimer: </span>
+            Market Preflight reflects platform usage and risk-review behavior only. It does not predict investment results, reduce risk, or provide personalized financial advice.
+          </p>
+        </Panel>
+      </div>
+    ),
+  },
+  {
     id: "glossary",
     icon: Layers,
     title: "Glossary",
@@ -714,6 +876,12 @@ export default function Guide() {
         subtitle="Complete feature documentation — learn what each score means, how the engine works, and how to read the signals."
         badge="GUIDE"
         badgeColor="gray"
+        rightSlot={
+          <PreflightTrigger
+            currentPage="guide"
+            actionKey="viewed_guide"
+          />
+        }
       />
 
       <div className="flex h-[calc(100vh-120px)]">

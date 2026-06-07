@@ -17,6 +17,7 @@ import { getLoginUrl } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { PreflightTrigger } from "@/components/MarketPreflight";
 
 // ── Types (inferred from tRPC) ────────────────────────────────
 type LivePosition = {
@@ -781,6 +782,12 @@ function PortfolioInner() {
         subtitle="Track real-time P&L across your positions with AI-powered guidance and FAULTLINE pressure context."
         badge="LIVE"
         badgeColor="green"
+        rightSlot={
+          <PreflightTrigger
+            currentPage="portfolio"
+            actionKey="viewed_portfolio"
+          />
+        }
       />
       <div style={{ padding: "20px 16px" }}>
       <div style={{ maxWidth: "900px", margin: "0 auto" }}>

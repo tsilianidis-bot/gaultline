@@ -14,10 +14,10 @@ import {
 import { useEngine } from '@/contexts/EngineContext';
 import { RawIndicators, DEFAULT_INDICATORS } from '@/lib/engine';
 import { getRiskColor } from '@/components/RiskBadge';
-import {
-  Zap, RotateCcw, AlertTriangle, TrendingUp, TrendingDown,
+import { Zap, RotateCcw, AlertTriangle, TrendingUp, TrendingDown,
   ChevronDown, ChevronUp, Info,
 } from 'lucide-react';
+import { PreflightTrigger } from '@/components/MarketPreflight';
 
 // ── Slider config ─────────────────────────────────────────────
 interface SliderConfig {
@@ -335,22 +335,29 @@ export default function SimulatePressure() {
               Move any macro variable and watch the systemic risk engine react in real time.
             </p>
           </div>
-          {isSimulating && (
-            <button
-              onClick={resetSimulation}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF9500',
-                background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.3)',
-                borderRadius: '4px', padding: '6px 12px', cursor: 'pointer',
-                letterSpacing: '0.08em', textTransform: 'uppercase',
-                animation: 'glow-pulse 2s ease-in-out infinite',
-              }}
-            >
-              <RotateCcw size={11} />
-              Reset ({overrideCount} active)
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <PreflightTrigger
+              currentPage="simulate"
+              actionKey="viewed_pressure_simulator"
+              regimeLabel={regime.label}
+            />
+            {isSimulating && (
+              <button
+                onClick={resetSimulation}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF9500',
+                  background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.3)',
+                  borderRadius: '4px', padding: '6px 12px', cursor: 'pointer',
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
+                  animation: 'glow-pulse 2s ease-in-out infinite',
+                }}
+              >
+                <RotateCcw size={11} />
+                Reset ({overrideCount} active)
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

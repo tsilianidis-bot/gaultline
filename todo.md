@@ -824,3 +824,13 @@
 - [x] Behavior: Full Guidance = dashboard card + checklist CTA + missing checks + helper prompts; Minimal = compact score + button; Off = hide page-level prompts but keep feature accessible
 - [x] Underlying system, tracking history, and DB column preserved when Off
 - [x] 0 TypeScript errors, 351/351 tests passing
+
+## PreflightTrigger — Remaining 4 Pages (Jun 7, 2026)
+- [x] Wire PreflightTrigger into Watchlist.tsx (rightSlot alongside existing Add button, with regime label from useEngine)
+- [x] Wire PreflightTrigger into Portfolio.tsx (PageHeader rightSlot)
+- [x] Wire PreflightTrigger into SimulatePressure.tsx (near simulation controls header, with live regime.label)
+- [x] Wire PreflightTrigger into Guide.tsx (PageHeader rightSlot + dedicated Complete Market Awareness™ section with all required copy, checklist, score table, preference controls, live trigger, and disclaimer)
+- [x] pnpm check: 0 TypeScript errors
+- [x] pnpm test: 351/351 tests passing
+- [x] pnpm build: ✓ built in 29.20s
+- [x] Checkpoint
