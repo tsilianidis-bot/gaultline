@@ -365,6 +365,19 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
   const completed = scoreData?.completedKeys.length ?? 0;
   const total = 13; // number of checklist items with points > 0
 
+  // Format last preflight timestamp — subtle, no gamification
+  const lastPreflightLabel = (() => {
+    if (!scoreData) return null;
+    const ts = scoreData.lastPreflightAt;
+    if (!ts) return "Last preflight: Not completed today";
+    const d = new Date(ts);
+    const hours = d.getHours();
+    const mins = d.getMinutes().toString().padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const h12 = hours % 12 === 0 ? 12 : hours % 12;
+    return `Last preflight: Today at ${h12}:${mins} ${ampm}`;
+  })();
+
   // Minimal Reminders: compact score + button only
   if (mode === "minimal_reminders") {
     return (
@@ -440,7 +453,12 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
               transition: "width 1.4s cubic-bezier(0.23,1,0.32,1)",
             }} />
           </div>
-          <div style={{ marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em" }}>
+          {lastPreflightLabel && (
+            <div style={{ marginTop: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>
+              {lastPreflightLabel}
+            </div>
+          )}
+          <div style={{ marginTop: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em" }}>
             TAP TO RUN MARKET PREFLIGHT →
           </div>
         </div>

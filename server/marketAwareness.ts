@@ -123,9 +123,13 @@ export async function computeAwarenessScore(userId: number): Promise<{
   missingKeys: ActionKey[];
   rating: ReturnType<typeof getAwarenessRating>;
   categoryBreakdown: Record<string, { earned: number; max: number }>;
+  lastPreflightAt: Date | null;
 }> {
   const actions = await getTodayActions(userId);
   const completedKeys = Array.from(new Set(actions.map((a: { actionKey: string }) => a.actionKey as ActionKey)));
+  // Most recent completed_daily_market_preflight action today (actions are ordered desc by completedAt)
+  const lastPreflightAction = actions.find((a: { actionKey: string }) => a.actionKey === "completed_daily_market_preflight");
+  const lastPreflightAt: Date | null = (lastPreflightAction as { completedAt?: Date } | undefined)?.completedAt ?? null;
 
   // Compute score — each key contributes its points once per day
   let score = 0;
@@ -161,6 +165,7 @@ export async function computeAwarenessScore(userId: number): Promise<{
     missingKeys,
     rating: getAwarenessRating(score),
     categoryBreakdown,
+    lastPreflightAt,
   };
 }
 

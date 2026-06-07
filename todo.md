@@ -834,3 +834,13 @@
 - [x] pnpm test: 351/351 tests passing
 - [x] pnpm build: ✓ built in 29.20s
 - [x] Checkpoint
+
+## Dashboard Timestamp + Guide Keywords (Jun 7, 2026)
+- [x] Add lastPreflightAt to computeAwarenessScore return (marketAwareness.ts) — most recent completed_daily_market_preflight action today, or null
+- [x] Display "Last preflight: Today at H:MM AM/PM" or "Last preflight: Not completed today" below progress bar in AwarenessDashboardCard — subtle 10px mono text, no gamification, no streaks, no badges
+- [x] Add keywords field to Section interface in Guide.tsx
+- [x] Add 9 keyword aliases to market-preflight section: preflight, market preflight, awareness score, complete market awareness, daily review, decision checklist, risk review, before acting, market checklist
+- [x] Update Guide search filter to match keywords field
+- [x] pnpm check: 0 TypeScript errors
+- [x] pnpm test: 351/351 tests passing
+- [x] pnpm build: ✓ built in 27.44s

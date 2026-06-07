@@ -26,6 +26,7 @@ interface Section {
   subtitle: string;
   color: string;
   content: React.ReactNode;
+  keywords?: string[]; // search aliases — not displayed to user
 }
 
 // ─── Reusable sub-components ──────────────────────────────────────────────────
@@ -665,6 +666,17 @@ const SECTIONS: Section[] = [
     title: "Complete Market Awareness™",
     subtitle: "Market Preflight, awareness scoring, and the pre-decision review process",
     color: "#00FF88",
+    keywords: [
+      "preflight",
+      "market preflight",
+      "awareness score",
+      "complete market awareness",
+      "daily review",
+      "decision checklist",
+      "risk review",
+      "before acting",
+      "market checklist",
+    ],
     content: (
       <div className="space-y-4">
         <Panel accentColor="rgba(0,255,136,0.2)">
@@ -859,10 +871,14 @@ export default function Guide() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = searchQuery.trim()
-    ? SECTIONS.filter(s =>
-        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.subtitle.toLowerCase().includes(searchQuery.toLowerCase())
-      )
+    ? SECTIONS.filter(s => {
+        const q = searchQuery.toLowerCase();
+        return (
+          s.title.toLowerCase().includes(q) ||
+          s.subtitle.toLowerCase().includes(q) ||
+          (s.keywords ?? []).some(kw => kw.toLowerCase().includes(q))
+        );
+      })
     : SECTIONS;
 
   const activeSection = SECTIONS.find(s => s.id === activeId) ?? SECTIONS[0];
