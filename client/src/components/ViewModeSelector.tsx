@@ -14,24 +14,32 @@ const MODES: {
   label: string;
   sublabel: string;
   icon: string;
+  activeColor: string;
+  activeGlow: string;
 }[] = [
   {
     id: "pulse",
     label: "PULSE",
     sublabel: "What matters now",
     icon: "◉",
+    activeColor: "#00D4FF",
+    activeGlow: "rgba(0,212,255,0.12)",
   },
   {
     id: "signals",
     label: "SIGNALS",
     sublabel: "Where is movement",
     icon: "◈",
+    activeColor: "#00D4FF",
+    activeGlow: "rgba(0,212,255,0.12)",
   },
   {
     id: "intelligence",
     label: "INTELLIGENCE",
     sublabel: "Why pressure builds",
     icon: "◎",
+    activeColor: "#00D4FF",
+    activeGlow: "rgba(0,212,255,0.12)",
   },
 ];
 
@@ -58,7 +66,7 @@ export function ViewModeSelector({ mode, onChange, compact = false }: ViewModeSe
   if (compact) {
     return (
       <div
-        className="flex items-center gap-1 p-1 rounded-lg"
+        className="flex items-center gap-1 p-1 rounded-lg flex-wrap"
         style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
       >
         {MODES.map((m) => {
@@ -69,10 +77,10 @@ export function ViewModeSelector({ mode, onChange, compact = false }: ViewModeSe
               onClick={() => handleChange(m.id)}
               className="relative px-3 py-1.5 rounded-md transition-all duration-200 active:scale-[0.97]"
               style={{
-                background: active ? "rgba(0,212,255,0.12)" : "transparent",
-                border: active ? "1px solid rgba(0,212,255,0.3)" : "1px solid transparent",
-                color: active ? "#00D4FF" : "rgba(100,116,139,0.8)",
-                boxShadow: active ? "0 0 12px rgba(0,212,255,0.12)" : "none",
+                background: active ? `${m.activeGlow}` : "transparent",
+                border: active ? `1px solid ${m.activeColor}4D` : "1px solid transparent",
+                color: active ? m.activeColor : "rgba(100,116,139,0.8)",
+                boxShadow: active ? `0 0 12px ${m.activeGlow}` : "none",
               }}
             >
               <span
@@ -110,9 +118,9 @@ export function ViewModeSelector({ mode, onChange, compact = false }: ViewModeSe
         <div className="h-px flex-1" style={{ background: "rgba(255,255,255,0.05)" }} />
       </div>
 
-      {/* Mode tabs */}
+      {/* Mode tabs — single row, 3 equal columns */}
       <div
-        className="flex items-stretch gap-1 p-1 rounded-xl"
+        className="grid grid-cols-3 gap-1 p-1 rounded-xl"
         style={{ background: "rgba(5,6,8,0.8)", border: "1px solid rgba(255,255,255,0.07)" }}
       >
         {MODES.map((m) => {
@@ -121,19 +129,21 @@ export function ViewModeSelector({ mode, onChange, compact = false }: ViewModeSe
             <button
               key={m.id}
               onClick={() => handleChange(m.id)}
-              className="flex-1 flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg transition-all duration-200 active:scale-[0.97]"
+              className="flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg transition-all duration-200 active:scale-[0.97]"
               style={{
                 background: active
-                  ? "linear-gradient(135deg, rgba(0,212,255,0.12), rgba(0,212,255,0.06))"
+                  ? `linear-gradient(135deg, ${m.activeGlow}, ${m.activeGlow.replace("0.12", "0.06")})`
                   : "transparent",
-                border: active ? "1px solid rgba(0,212,255,0.25)" : "1px solid transparent",
-                boxShadow: active ? "0 0 16px rgba(0,212,255,0.1), inset 0 1px 0 rgba(0,212,255,0.1)" : "none",
+                border: active ? `1px solid ${m.activeColor}40` : "1px solid transparent",
+                boxShadow: active
+                  ? `0 0 16px ${m.activeGlow}, inset 0 1px 0 ${m.activeColor}1A`
+                  : "none",
               }}
             >
               <span
                 style={{
                   fontSize: "11px",
-                  color: active ? "#00D4FF" : "rgba(100,116,139,0.6)",
+                  color: active ? m.activeColor : "rgba(100,116,139,0.6)",
                   transition: "color 0.2s",
                 }}
               >
@@ -145,9 +155,9 @@ export function ViewModeSelector({ mode, onChange, compact = false }: ViewModeSe
                   fontSize: "9px",
                   letterSpacing: "0.2em",
                   fontWeight: 700,
-                  color: active ? "#00D4FF" : "rgba(100,116,139,0.7)",
+                  color: active ? m.activeColor : "rgba(100,116,139,0.7)",
                   transition: "color 0.2s",
-                  textShadow: active ? "0 0 8px rgba(0,212,255,0.4)" : "none",
+                  textShadow: active ? `0 0 8px ${m.activeColor}66` : "none",
                 }}
               >
                 {m.label}
@@ -156,7 +166,7 @@ export function ViewModeSelector({ mode, onChange, compact = false }: ViewModeSe
                 style={{
                   fontFamily: "'IBM Plex Sans', sans-serif",
                   fontSize: "8px",
-                  color: active ? "rgba(0,212,255,0.6)" : "rgba(100,116,139,0.4)",
+                  color: active ? `${m.activeColor}99` : "rgba(100,116,139,0.4)",
                   transition: "color 0.2s",
                   whiteSpace: "nowrap",
                 }}

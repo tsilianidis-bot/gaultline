@@ -874,3 +874,21 @@
 - [x] pnpm check: 0 TypeScript errors
 - [x] pnpm test: 351/351 passing
 - [x] pnpm build: built in 28.20s
+
+## HOLOGRAPHIC Dashboard Mode — CANCELLED (Jun 8, 2026)
+- [x] HOLOGRAPHIC mode was partially added but user cancelled — reverted
+
+## HOLOGRAPHIC Mode Revert (Jun 8, 2026)
+- [x] Remove "holographic" from dashboardMode enum in drizzle/schema.ts
+- [x] Generate migration 0016 and apply via webdev_execute_sql (ALTER TABLE MODIFY COLUMN)
+- [x] Remove holographic from updateDashboardMode in server/db.ts
+- [x] Remove holographic from setDashboardMode z.enum in server/routers.ts
+- [x] Remove HOLOGRAPHIC from ViewModeSelector.tsx (back to 3 modes, grid-cols-3)
+- [x] Remove holographic from DashboardMode type in Dashboard.tsx
+- [x] Remove HolographicMode import and render in Dashboard.tsx
+- [x] Delete HolographicMode.tsx if it was created (was not created)
+- [x] Audit AwarenessDashboardCard styling for HUD compatibility — card sits below DataIntegrity, HUD shell fully preserved
+- [x] pnpm check: 0 TypeScript errors
+- [x] pnpm test: 351/351 passing
+- [x] pnpm build: ✓ built in 27.97s
+- [x] Checkpoint
