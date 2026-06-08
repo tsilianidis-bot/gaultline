@@ -18,6 +18,7 @@ import { Zap, RotateCcw, AlertTriangle, TrendingUp, TrendingDown,
   ChevronDown, ChevronUp, Info,
 } from 'lucide-react';
 import { PreflightTrigger } from '@/components/MarketPreflight';
+import { useSEO } from '@/hooks/useSEO';
 
 // ── Slider config ─────────────────────────────────────────────
 interface SliderConfig {
@@ -274,6 +275,11 @@ function PressureSlider({
 
 // ── Main page ─────────────────────────────────────────────────
 export default function SimulatePressure() {
+  useSEO({
+    title: "Simulate Pressure — Interactive Macro Stress-Test Engine",
+    description: "Drag live macro indicators to stress-test the global financial system. Watch FAULTLINE's pressure engine react in real time to your custom macro scenarios.",
+    canonical: "/simulate",
+  });
   const {
     indicators, output, simulateOverrides,
     setSimulateOverride, resetSimulation, isSimulating,

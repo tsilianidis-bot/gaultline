@@ -8,7 +8,7 @@ interface SEOOptions {
 
 const BASE_TITLE = "FAULTLINE";
 const BASE_DESCRIPTION =
-  "FAULTLINE is an institutional-grade macroeconomic risk intelligence platform. Monitor systemic market pressure in real time with the FAULTLINE Pressure Index™, Aftershock Engine™, stock signals, crypto intelligence, and AI-powered macro analytics. Built for serious investors who need to see the fault lines before markets break.";
+  "Real-time macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.";
 const BASE_CANONICAL = "https://getfaultline.live";
 
 /**
@@ -53,7 +53,7 @@ export function useSEO({ title, description, canonical }: SEOOptions) {
 
     return () => {
       // Reset to defaults on unmount
-      document.title = `${BASE_TITLE} — Macroeconomic & Market Risk Intelligence Platform`;
+      document.title = `${BASE_TITLE} — Market Risk Intelligence Platform`;
     };
   }, [title, description, canonical]);
 }

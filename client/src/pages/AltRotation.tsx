@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import { useSEO } from "@/hooks/useSEO";
 
 // ── Types (mirrored from server) ──────────────────────────────
 interface SectorCoin {
@@ -301,6 +302,11 @@ function AlertCard({ alert }: { alert: RotationAlert }) {
 
 // ── Main Page ─────────────────────────────────────────────────
 function AltRotationInner() {
+  useSEO({
+    title: "Alt Rotation — Crypto Sector Rotation & Altcoin Intelligence",
+    description: "Track crypto sector rotation, altcoin momentum, and digital asset macro alignment with FAULTLINE's Alt Rotation intelligence module.",
+    canonical: "/alt-rotation",
+  });
   const { user } = useAuth();
   const { data, isLoading, error, refetch } = trpc.altRotation.getData.useQuery(undefined, {
     refetchInterval: 3 * 60 * 1000, // refresh every 3 min

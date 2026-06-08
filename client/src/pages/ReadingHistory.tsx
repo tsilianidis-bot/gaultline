@@ -15,6 +15,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import { useSEO } from "@/hooks/useSEO";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -554,6 +555,11 @@ function SummaryPanel() {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function ReadingHistory() {
+  useSEO({
+    title: "Reading History — Daily Macro Pressure Snapshots",
+    description: "Review your FAULTLINE daily, weekly, monthly, and yearly pressure readings. Track how macro conditions have evolved and compare historical snapshots.",
+    canonical: "/reading-history",
+  });
   const { user } = useAuth();
   const { output } = useEngine();
   const regimeLabel = output?.regime?.label;

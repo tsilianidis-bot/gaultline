@@ -7,6 +7,7 @@ import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import { useSEO } from "@/hooks/useSEO";
 
 // ── Types (mirrored from server) ─────────────────────────────
 
@@ -181,6 +182,11 @@ const TABS: { id: Timeframe; label: string }[] = [
 ];
 
 export default function DiagnosticAI() {
+  useSEO({
+    title: "Diagnostic AI™ — Macro Timeframe Analysis & Position Guidance",
+    description: "FAULTLINE Diagnostic AI™: four-timeframe macro analysis (Today/Week/Month/Year) with pressure scores, regime context, and AI-powered position guidance.",
+    canonical: "/diagnostic",
+  });
   const [activeTab, setActiveTab] = useState<Timeframe>("today");
 
   const { data: report, isLoading, error, refetch } = trpc.diagnostic.getReport.useQuery(
