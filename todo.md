@@ -844,3 +844,33 @@
 - [x] pnpm check: 0 TypeScript errors
 - [x] pnpm test: 351/351 tests passing
 - [x] pnpm build: ✓ built in 27.44s
+
+## Reading History + Outcome Support Engine + Timeframe Awareness (Jun 7, 2026)
+
+### Audit findings
+- [x] pressureHistory table exists (monthly, not daily — cannot reuse for daily snapshots)
+- [x] No daily_reading_snapshots table existed
+- [x] No readingHistory router existed
+- [x] No Reading History page existed
+
+### Database
+- [x] Add daily_reading_snapshots table to drizzle/schema.ts
+- [x] Run pnpm drizzle-kit generate (migration 0014) and apply SQL via webdev_execute_sql
+
+### Backend
+- [x] Create server/readingHistory.ts — snapshot helpers, Outcome Support Engine, getTimeframeAnalysis, getHistory, getOutcomeSupport
+- [x] Add readingHistory router to routers.ts (8 procedures: getHistory, getTimeframeAnalysis, getOutcomeSupport, getLatestSnapshot, getSnapshotsByRange, saveSnapshot, getWeeklyTrend, getYearlyHighLow)
+
+### Frontend
+- [x] Create client/src/pages/ReadingHistory.tsx — Today/Week/Month/Year/Outcome Support tabs
+- [x] Add Timeframes tab to Market Preflight modal with Today/Week/Month/Year sub-selector
+- [x] Add Timeframe Awareness section to Guide page
+- [x] Add Reading History section to Guide page
+- [x] Add Reading History to MARKET STRESS nav group in AppLayout.tsx
+- [x] Add /app/reading-history route to App.tsx
+- [x] All disclaimers added (timeframe readings not predictions, data note when history unavailable)
+
+### QA
+- [x] pnpm check: 0 TypeScript errors
+- [x] pnpm test: 351/351 passing
+- [x] pnpm build: built in 28.20s

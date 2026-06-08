@@ -30,6 +30,10 @@ import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } fro
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
 import { getRecoveryAnalysis, clearRecoveryCache } from "./recoveryEngine";
 import { logMarketAwarenessAction, computeAwarenessScore, getRecentActions, ACTION_KEYS, type ActionKey } from "./marketAwareness";
+import {
+  getTodaySnapshot, hasTodaySnapshot, getSnapshotRange, getLatestSnapshot,
+  upsertTodaySnapshot, getTimeframeReading, computeOutcomeSupport, getReadingHistorySummary,
+} from "./readingHistory";
 import { protectedProcedure, coreProcedure } from "./_core/trpc";
 import { stripe } from './stripe/client';
 import { PLANS } from './stripe/products';
@@ -1490,6 +1494,72 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to set preflight mode", cause: err });
         }
       }),
+  }),
+
+  readingHistory: router({
+    // Get today's snapshot if it exists
+    getToday: protectedProcedure.query(async () => {
+      return await getTodaySnapshot();
+    }),
+
+    // Get snapshots for a date range
+    getRange: protectedProcedure
+      .input(z.object({
+        fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        toDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      }))
+      .query(async ({ input }) => {
+        return await getSnapshotRange(input.fromDate, input.toDate);
+      }),
+
+    // Get summary stats across all available history
+    getSummary: protectedProcedure.query(async () => {
+      return await getReadingHistorySummary();
+    }),
+
+    // Get outcome support scores from live engine
+    getOutcomeSupport: protectedProcedure.query(async () => {
+      return await computeOutcomeSupport();
+    }),
+
+    // Get the most recent snapshot (may not be today)
+    getLatestSnapshot: protectedProcedure.query(async () => {
+      return await getLatestSnapshot();
+    }),
+
+    // Check whether today's snapshot has been generated
+    hasTodaySnapshot: protectedProcedure.query(async () => {
+      return { exists: await hasTodaySnapshot() };
+    }),
+
+    // Get timeframe analysis: today | week | month | year
+    getTimeframeAnalysis: protectedProcedure
+      .input(z.object({
+        timeframe: z.enum(["today", "week", "month", "year"]),
+      }))
+      .query(async ({ input }) => {
+        const today = await getTodaySnapshot();
+        return await getTimeframeReading(input.timeframe, today);
+      }),
+
+    // Generate (or regenerate) today's snapshot — admin only
+    generateTodaySnapshot: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      try {
+        const pressure = await calculateFaultlinePressure();
+        let crashScore: number | null = null;
+        let bullScore: number | null = null;
+        try {
+          const diag = await getDiagnosticReport("today");
+          crashScore = diag.crashRisk.score;
+          bullScore = diag.bullContinuation.score;
+        } catch { /* diagnostic unavailable */ }
+        const snapshot = await upsertTodaySnapshot(pressure, crashScore, bullScore, null);
+        return { success: true, snapshot };
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Snapshot generation failed", cause: err });
+      }
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

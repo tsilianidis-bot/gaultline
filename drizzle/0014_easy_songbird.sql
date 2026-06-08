@@ -1,0 +1,20 @@
+CREATE TABLE `dailyReadingSnapshots` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`readingDate` varchar(10) NOT NULL,
+	`faultlineScore` int NOT NULL,
+	`stressLevel` varchar(20) NOT NULL,
+	`regime` varchar(80) NOT NULL,
+	`crashProbability` int,
+	`bullProbability` int,
+	`pressureDriversJson` text NOT NULL,
+	`activeAlertsJson` text NOT NULL,
+	`topSignalsJson` text NOT NULL,
+	`dataStatusJson` text NOT NULL,
+	`readingSummary` text,
+	`possibleOutcomesJson` text,
+	`scenarioSupportJson` text,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `dailyReadingSnapshots_id` PRIMARY KEY(`id`),
+	CONSTRAINT `dailyReadingSnapshots_readingDate_unique` UNIQUE(`readingDate`)
+);

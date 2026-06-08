@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -49,6 +49,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "pressure",  label: "Market Stress",        shortLabel: "Stress",  icon: Gauge,     path: "/app/pressure" },
       { id: "scores",    label: "Risk Score Breakdown",  shortLabel: "Scores",  icon: Activity,  path: "/app/scores" },
       { id: "analogs",   label: "Historical Comparisons",shortLabel: "History", icon: Clock,     path: "/app/analogs" },
+      { id: "reading-history", label: "Reading History",       shortLabel: "Readings", icon: History,  path: "/app/reading-history" },
     ],
   },
   {

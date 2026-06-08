@@ -220,3 +220,43 @@ export const userMarketAwarenessActions = mysqlTable("userMarketAwarenessActions
 });
 export type UserMarketAwarenessAction = typeof userMarketAwarenessActions.$inferSelect;
 export type InsertUserMarketAwarenessAction = typeof userMarketAwarenessActions.$inferInsert;
+
+// ── Daily Reading Snapshots ────────────────────────────────
+/**
+ * One official system-wide FAULTLINE reading snapshot per calendar day.
+ * Stores the full engine output so users can review historical readings.
+ * No personal user data. No trade recommendations. No buy/sell/hold.
+ */
+export const dailyReadingSnapshots = mysqlTable("dailyReadingSnapshots", {
+  id:                   int("id").autoincrement().primaryKey(),
+  /** Calendar date of this snapshot (YYYY-MM-DD) — unique per day */
+  readingDate:          varchar("readingDate", { length: 10 }).notNull().unique(),
+  /** FAULTLINE composite pressure index 0–100 */
+  faultlineScore:       int("faultlineScore").notNull(),
+  /** Qualitative stress level: Low | Moderate | Elevated | High | Critical */
+  stressLevel:          varchar("stressLevel", { length: 20 }).notNull(),
+  /** Regime label e.g. ELEVATED RISK, HIGH STRESS */
+  regime:               varchar("regime", { length: 80 }).notNull(),
+  /** Crash risk score 0–100 from diagnosticAI (null if unavailable) */
+  crashProbability:     int("crashProbability"),
+  /** Bull continuation score 0–100 from diagnosticAI (null if unavailable) */
+  bullProbability:      int("bullProbability"),
+  /** JSON array of top pressure drivers */
+  pressureDriversJson:  text("pressureDriversJson").notNull(),
+  /** JSON array of active alerts */
+  activeAlertsJson:     text("activeAlertsJson").notNull(),
+  /** JSON array of top signals (empty array if unavailable) */
+  topSignalsJson:       text("topSignalsJson").notNull(),
+  /** JSON object with data source status (live | fallback | stale | demo) */
+  dataStatusJson:       text("dataStatusJson").notNull(),
+  /** Plain-English reading summary (AI-generated interpretation) */
+  readingSummary:       text("readingSummary"),
+  /** JSON array of possible outcome objects */
+  possibleOutcomesJson: text("possibleOutcomesJson"),
+  /** JSON object with scenario support scores */
+  scenarioSupportJson:  text("scenarioSupportJson"),
+  createdAt:            timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:            timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DailyReadingSnapshot = typeof dailyReadingSnapshots.$inferSelect;
+export type InsertDailyReadingSnapshot = typeof dailyReadingSnapshots.$inferInsert;

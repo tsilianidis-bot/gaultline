@@ -811,6 +811,44 @@ const SECTIONS: Section[] = [
         </div>
 
         <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Timeframe Awareness</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
+              A single reading shows current conditions. <span className="text-white/90">Timeframe Awareness</span> helps users understand whether market pressure is temporary, building, or becoming structural.
+            </p>
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
+              The Market Preflight modal includes a <span className="text-emerald-400">Timeframes</span> tab that shows the current FAULTLINE reading across Today, This Week, This Month, and This Year. For each timeframe it shows: what changed, whether pressure is improving, stable, or deteriorating, the main driver, the most supported scenario, and what to watch next.
+            </p>
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+              Timeframe readings are not predictions. They reflect historical FAULTLINE platform data only. Past readings do not indicate future market conditions.
+            </p>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Reading History</h3>
+          <Panel accentColor="rgba(0,255,136,0.15)">
+            <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-3">
+              <span className="text-white/90">Reading History</span> is a dedicated page (<span className="text-emerald-400">Market Stress → Reading History</span>) that shows daily FAULTLINE snapshots across all four timeframes. It also includes the <span className="text-white/90">Outcome Support Engine</span> — a view of how current readings align with four possible market scenarios.
+            </p>
+            <div className="space-y-1.5">
+              {[
+                { tab: "Today", desc: "Current score, stress level, main driver, and scenario support." },
+                { tab: "Week", desc: "7-day view. Whether pressure has moved up, down, or held steady." },
+                { tab: "Month", desc: "30-day view. Useful for identifying temporary vs. structural pressure." },
+                { tab: "Year", desc: "365-day view. Regime changes, peak stress periods, and yearly trajectory." },
+                { tab: "Outcomes", desc: "Live Outcome Support Engine: how current readings align with four possible scenarios." },
+              ].map(({ tab, desc }) => (
+                <div key={tab} className="flex items-start gap-2 py-1 border-b border-white/5 last:border-0">
+                  <span className="text-[10px] font-mono text-emerald-400 w-16 shrink-0 mt-0.5">{tab}</span>
+                  <span className="text-[10px] font-mono text-white/60">{desc}</span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+
+        <div className="space-y-3">
           <h3 className="text-[10px] font-mono text-emerald-400 tracking-widest uppercase">Run Market Preflight</h3>
           <Panel accentColor="rgba(0,255,136,0.15)">
             <p className="text-[11px] text-white/70 leading-relaxed font-mono mb-4">

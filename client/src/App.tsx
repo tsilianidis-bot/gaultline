@@ -49,6 +49,7 @@ const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
 const AltRotation      = lazy(() => import("./pages/AltRotation"));
+const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
@@ -186,6 +187,7 @@ function Router() {
               <Route path="/app/blog/:slug" component={BlogPost} />
               <Route path="/app/blog" component={Blog} />
               <Route path="/app/track-record" component={TrackRecord} />
+              <Route path="/app/reading-history" component={ReadingHistory} />
               <Route component={Dashboard} />
             </Switch>
           </Suspense>

@@ -481,7 +481,12 @@ export function MarketPreflightModal({
 }) {
     const { user } = useAuth();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState<"checklist" | "interpretation" | "outcomes">("checklist");
+  const [activeTab, setActiveTab] = useState<"checklist" | "interpretation" | "outcomes" | "timeframe">("checklist");
+  const [activeTimeframe, setActiveTimeframe] = useState<"today" | "week" | "month" | "year">("today");
+  const { data: timeframeData, isLoading: timeframeLoading } = trpc.readingHistory.getTimeframeAnalysis.useQuery(
+    { timeframe: activeTimeframe },
+    { enabled: !!user && open && activeTab === "timeframe", staleTime: 60_000 }
+  );
   const [completingPreflight, setCompletingPreflight] = useState(false);
   const { output } = useEngine();
   const { data: scoreData, isLoading, refetch } = trpc.awareness.getScore.useQuery(undefined, {
@@ -561,7 +566,7 @@ export function MarketPreflightModal({
 
           {/* Tabs */}
           <div style={{ display: "flex", gap: "4px" }}>
-            {(["checklist", "interpretation", "outcomes"] as const).map((tab) => (
+            {(["checklist", "interpretation", "outcomes", "timeframe"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -580,7 +585,7 @@ export function MarketPreflightModal({
                   transition: "all 0.15s ease-out",
                 }}
               >
-                {tab === "checklist" ? "Checklist" : tab === "interpretation" ? "Reading" : "Outcomes"}
+                {tab === "checklist" ? "Checklist" : tab === "interpretation" ? "Reading" : tab === "outcomes" ? "Outcomes" : "Timeframes"}
               </button>
             ))}
           </div>
@@ -738,6 +743,100 @@ export function MarketPreflightModal({
           )}
 
           {/* ── POSSIBLE FUTURE OUTCOMES TAB ──────────────── */}
+          {activeTab === "timeframe" && (
+            <div>
+              <div style={{ marginBottom: "12px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "6px" }}>Current Reading Across Timeframes</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.65, marginBottom: "12px" }}>
+                  A single reading shows current conditions. Timeframe Awareness helps users understand whether market pressure is temporary, building, or becoming structural.
+                </div>
+                {/* Timeframe selector */}
+                <div style={{ display: "flex", gap: "4px", marginBottom: "14px" }}>
+                  {(["today", "week", "month", "year"] as const).map((tf) => (
+                    <button
+                      key={tf}
+                      onClick={() => setActiveTimeframe(tf)}
+                      style={{
+                        flex: 1,
+                        padding: "5px 4px",
+                        background: activeTimeframe === tf ? `${color}15` : "transparent",
+                        border: `1px solid ${activeTimeframe === tf ? color + "40" : "rgba(255,255,255,0.08)"}`,
+                        borderRadius: "4px",
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: "9px",
+                        color: activeTimeframe === tf ? color : "rgba(100,116,139,0.7)",
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease-out",
+                      }}
+                    >
+                      {tf === "today" ? "Today" : tf === "week" ? "Week" : tf === "month" ? "Month" : "Year"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {timeframeLoading ? (
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)", textAlign: "center", padding: "24px 0" }}>Loading timeframe data…</div>
+              ) : timeframeData ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {/* Direction row */}
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <div style={{ flex: 1, padding: "10px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "4px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Pressure Trend</div>
+                      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: (timeframeData as { direction: string }).direction === "improving" ? "#00FF88" : (timeframeData as { direction: string }).direction === "deteriorating" ? "#FF4444" : "#F59E0B" }}>
+                        {(timeframeData as { directionLabel: string }).directionLabel}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, padding: "10px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "4px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Score Change</div>
+                      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#F0F4FF" }}>
+                        {(timeframeData as { scoreDelta: number | null }).scoreDelta !== null ? `${(timeframeData as { scoreDelta: number }).scoreDelta > 0 ? "+" : ""}${(timeframeData as { scoreDelta: number }).scoreDelta}` : "—"}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Main driver */}
+                  {(timeframeData as { mainDriver: string | null }).mainDriver && (
+                    <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "4px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Main Driver</div>
+                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#F0F4FF" }}>{(timeframeData as { mainDriver: string }).mainDriver}</div>
+                    </div>
+                  )}
+                  {/* Most supported scenario */}
+                  {(timeframeData as { mostSupportedScenario: string | null }).mostSupportedScenario && (
+                    <div style={{ padding: "10px 12px", background: `${color}08`, border: `1px solid ${color}25`, borderRadius: "4px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>Most Supported Scenario</div>
+                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#F0F4FF" }}>{(timeframeData as { mostSupportedScenario: string }).mostSupportedScenario}</div>
+                    </div>
+                  )}
+                  {/* Watch next */}
+                  {(timeframeData as { watchNext: string[] }).watchNext?.length > 0 && (
+                    <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "4px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "6px" }}>What to Watch Next</div>
+                      {(timeframeData as { watchNext: string[] }).watchNext.map((item: string, i: number) => (
+                        <div key={i} style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(148,163,184,0.8)", paddingLeft: "8px", borderLeft: `1px solid ${color}30`, marginBottom: "3px" }}>{item}</div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Data note */}
+                  {(timeframeData as { dataNote: string | null }).dataNote && (
+                    <div style={{ padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(245,158,11,0.8)" }}>
+                      {(timeframeData as { dataNote: string }).dataNote}
+                    </div>
+                  )}
+                  {/* Timeframe disclaimer */}
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.4)", lineHeight: 1.6 }}>
+                    Timeframe readings are not predictions. They reflect historical FAULTLINE platform data only. Past readings do not indicate future market conditions.
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "rgba(100,116,139,0.6)", textAlign: "center", padding: "24px 0" }}>
+                  No reading history available yet. History builds as daily snapshots are generated.
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === "outcomes" && (
             <div>
               <div style={{ marginBottom: "14px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.65 }}>
