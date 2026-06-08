@@ -1426,7 +1426,7 @@ export const appRouter = router({
 
   awareness: router({
     // Log a single market awareness action for the authenticated user
-    logAction: coreProcedure
+    logAction: protectedProcedure
       .input(z.object({
         actionKey: z.string().refine((v): v is ActionKey => (ACTION_KEYS as readonly string[]).includes(v), { message: "Invalid action key" }),
         sourcePage: z.string().max(80).optional(),
@@ -1447,7 +1447,7 @@ export const appRouter = router({
       }),
 
     // Get the Complete Market Awareness Score for today
-    getScore: coreProcedure.query(async ({ ctx }) => {
+    getScore: protectedProcedure.query(async ({ ctx }) => {
       try {
         return await computeAwarenessScore(ctx.user.id);
       } catch (err) {
@@ -1456,7 +1456,7 @@ export const appRouter = router({
     }),
 
     // Get recent action history (last 7 days)
-    getHistory: coreProcedure.query(async ({ ctx }) => {
+    getHistory: protectedProcedure.query(async ({ ctx }) => {
       try {
         return await getRecentActions(ctx.user.id, 7);
       } catch (err) {

@@ -914,3 +914,12 @@
 - [x] pnpm test: 351/351 passing
 - [x] pnpm build: ✓ built in 36.44s
 - [x] Final checkpoint saved
+
+## Market Preflight coreProcedure Fix (Jun 8, 2026)
+- [x] Pre-change verification: confirmed file paths, render chain, root cause (coreProcedure blocked free-tier users)
+- [x] Apply fix: logAction, getScore, getHistory → protectedProcedure (server/routers.ts lines 1429, 1450, 1459)
+- [x] Write targeted tests: server/awareness.access.test.ts — 17 tests covering anonymous/free/core/founding + regression
+- [x] pnpm check: 0 TypeScript errors
+- [x] pnpm test: 368/368 passing (26 test files, +17 new awareness access tests)
+- [x] pnpm build: ✓ built in 31.96s
+- [x] Checkpoint
