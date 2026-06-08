@@ -1844,6 +1844,10 @@ function AboutSection() {
 export default function MarketingSite() {
   const formRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    document.title = "FAULTLINE — Market Risk Intelligence Platform";
+  }, []);
+
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
