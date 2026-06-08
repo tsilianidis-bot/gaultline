@@ -892,3 +892,25 @@
 - [x] pnpm test: 351/351 passing
 - [x] pnpm build: ✓ built in 27.97s
 - [x] Checkpoint
+
+## Final Launch QA (Jun 8, 2026)
+- [x] Login flow: unauthenticated users correctly redirected to Manus OAuth portal
+- [x] Dashboard load: cockpit/HUD shell renders on /app/dashboard with all panels
+- [x] HUD/cockpit shell: ambient particles, radar scan, pressure ring, IntelTicker, regime glow all present
+- [x] Market Preflight card: AwarenessDashboardCard renders below DataIntegrity panel
+- [x] Run Preflight modal: opens from card CTA button
+- [x] Checklist tab: verified in source (preflight items, score ring, progress bar)
+- [x] Reading tab: verified in source (market reading context)
+- [x] Outcomes tab: verified in source (possible future outcomes)
+- [x] Timeframes tab: verified in source (historical timeframe data with disclaimer)
+- [x] Close button: modal has Close button and Confirm Preflight Complete action
+- [x] Preference modes: Full Guidance / Minimal Reminders / Off — wired to trpc.awareness.setPreflightMode
+- [x] Mobile layout: bottom nav bar (DASH/STRESS/SIGNALS/WATCH/PORT/MORE), no overflow
+- [x] Marketing page: Complete Market Awareness™ added to FEATURES grid and MODULES grid
+- [x] No buy/sell/hold language on marketing page; BUY/SELL/HOLD labels on signals pages are gated behind PorchOverlay (login required) and accompanied by disclaimers
+- [x] Disclaimers: Guide page top-level + preflight section + modal Timeframes tab all have explicit disclaimers
+- [x] No broken routes: all 25+ routes verified in App.tsx Switch
+- [x] pnpm check: 0 TypeScript errors
+- [x] pnpm test: 351/351 passing
+- [x] pnpm build: ✓ built in 36.44s
+- [x] Final checkpoint saved

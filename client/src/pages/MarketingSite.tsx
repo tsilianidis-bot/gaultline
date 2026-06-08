@@ -450,6 +450,7 @@ const FEATURES = [
   { icon: "◎", title: "Signals Intelligence Screener", desc: "Filter equities and assets by macro exposure, regime sensitivity, and systemic pressure correlation." },
   { icon: "◈", title: "Live Risk Alerts", desc: "Instant notifications when pressure thresholds break, regimes shift, or systemic anomalies surface." },
   { icon: "◉", title: "Liquidity & Credit Monitoring", desc: "Track repo rates, reserve balances, credit spreads, and funding stress across global markets." },
+  { icon: "◈", title: "Complete Market Awareness™", desc: "Daily Market Preflight checklist — review the full risk picture before acting. Tracks which platform sections you have reviewed today and computes an awareness score from 0–100." },
 ];
 
 function FeaturesSection() {
@@ -515,6 +516,13 @@ const MODULES = [
     title: "Crypto Intelligence",
     desc: "Real-time digital asset risk analysis across macro correlation, liquidity conditions, and systemic exposure. Full intelligence layer for the digital asset market.",
     tags: ["Digital Assets", "Macro Correlation", "Liquidity Risk"],
+  },
+  {
+    badge: "LIVE",
+    badgeColor: "#00D4FF",
+    title: "Complete Market Awareness™",
+    desc: "Market Preflight — a daily pre-decision review checklist. Before acting, review the full FAULTLINE risk picture: Pressure Index, regime, alerts, signal context, and possible future outcomes. Tracks your daily awareness score from 0–100.",
+    tags: ["Daily Preflight", "Awareness Score", "Pre-Decision Review"],
   },
 ];
 
