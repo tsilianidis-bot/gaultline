@@ -495,6 +495,7 @@ const MODULES = [
     title: "FAULTLINE Pressure Index™",
     desc: "A unified systemic-risk score synthesizing macro, credit, liquidity, and AI concentration signals in real time. The single number that tells you where the market stands.",
     tags: ["Macro Synthesis", "Real-Time", "Regime Detection"],
+    link: "/app/pressure",
   },
   {
     badge: "PREMIUM",
@@ -502,6 +503,7 @@ const MODULES = [
     title: "Aftershock Engine™",
     desc: "Contagion and cascade risk detection. Identifies systemic fault lines before they fracture into market-wide dislocations. Proprietary scoring across 500+ assets.",
     tags: ["Contagion Risk", "Cascade Detection", "Systemic Scoring"],
+    link: "/app/aftershock",
   },
   {
     badge: "PREMIUM",
@@ -509,6 +511,7 @@ const MODULES = [
     title: "Stock Intelligence Engine",
     desc: "Classifies individual equities by momentum, macro regime alignment, volatility, and systemic pressure exposure. Signal labels from Momentum Breakout to Recession Defensive.",
     tags: ["Momentum Analysis", "Regime Alignment", "Signal Labels"],
+    link: "/app/signals",
   },
   {
     badge: "PREMIUM",
@@ -516,6 +519,7 @@ const MODULES = [
     title: "Crypto Intelligence",
     desc: "Real-time digital asset risk analysis across macro correlation, liquidity conditions, and systemic exposure. Full intelligence layer for the digital asset market.",
     tags: ["Digital Assets", "Macro Correlation", "Liquidity Risk"],
+    link: "/app/crypto",
   },
   {
     badge: "LIVE",
@@ -523,6 +527,23 @@ const MODULES = [
     title: "Complete Market Awareness™",
     desc: "Market Preflight — a daily pre-decision review checklist. Before acting, review the full FAULTLINE risk picture: Pressure Index, regime, alerts, signal context, and possible future outcomes. Tracks your daily awareness score from 0–100.",
     tags: ["Daily Preflight", "Awareness Score", "Pre-Decision Review"],
+    link: "/app",
+  },
+  {
+    badge: "NEW",
+    badgeColor: "#A855F7",
+    title: "Historical Analog Engine",
+    desc: "Pattern-match today’s macro conditions against historical crash episodes — Dot-Com Bubble, GFC, COVID Liquidity Crisis, 2022 Inflation Shock. Similarity scoring, timeline overlays, and outcome analysis.",
+    tags: ["Crash Patterns", "Similarity Score", "Outcome Analysis"],
+    link: "/app/analogs",
+  },
+  {
+    badge: "NEW",
+    badgeColor: "#A855F7",
+    title: "Portfolio Intelligence",
+    desc: "Eight-dimensional risk analysis for your holdings: Portfolio Pressure Score, AI Bubble Exposure, Rate Sensitivity, Concentration Risk, Liquidity Risk, Recession Exposure, Crash Vulnerability, and Regime Alignment.",
+    tags: ["Portfolio Risk", "Regime Alignment", "8 Risk Dimensions"],
+    link: "/app/portfolio",
   },
 ];
 
@@ -538,7 +559,7 @@ function ModulesSection() {
             The full <span className="text-[#FFD700]">intelligence stack.</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-xl mx-auto text-base">
-            Four interconnected intelligence engines. One unified platform.
+            Seven interconnected intelligence engines. One unified platform.
           </p>
         </div>
 
@@ -559,9 +580,7 @@ function ModulesSection() {
                     {m.badge}
                   </span>
                   <a
-                    href={PLATFORM_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={m.link}
                     className="text-[10px] font-mono text-[#00D4FF]/50 hover:text-[#00D4FF] transition-colors"
                   >
                     ACCESS →

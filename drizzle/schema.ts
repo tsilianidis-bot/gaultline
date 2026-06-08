@@ -43,6 +43,12 @@ export const users = mysqlTable("users", {
   stripeCustomerId: varchar("stripeCustomerId", { length: 64 }),
   /** Active Stripe subscription ID — set by webhook on successful payment, cleared on cancellation. */
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
+  /**
+   * Timestamp of the last completed Market Preflight session.
+   * NULL means the user has never completed a preflight review.
+   * Used by the PreflightGate to determine if a prompt is needed on dashboard load.
+   */
+  lastPreflightCompletedAt: timestamp("lastPreflightCompletedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

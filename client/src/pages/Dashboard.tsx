@@ -24,6 +24,7 @@ import PulseMode from "@/components/dashboard/PulseMode";
 import SignalsMode from "@/components/dashboard/SignalsMode";
 import IntelligenceMode from "@/components/dashboard/IntelligenceMode";
 import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/MarketPreflight";
+import PreflightGate from "@/components/PreflightGate";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663562889431/oAHJBBc62GHpVJwTBFZPAm/faultline-hero-bg-5aiJwmUWM5RkwbakA3ZsnX.webp";
@@ -531,6 +532,8 @@ export default function Dashboard() {
 
   return (
     <div data-regime={regimeAttr} style={{ background: '#050608', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
+      {/* Market Preflight Gate — first-login daily preflight prompt (zIndex 1000, above HUD shell) */}
+      <PreflightGate />
       {/* SEO: Visually hidden H1 for search engine crawlers */}
       <h1 style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap', border: 0 }}>
         FAULTLINE — Macroeconomic &amp; Market Risk Intelligence Platform

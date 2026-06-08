@@ -471,13 +471,19 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
 export function MarketPreflightModal({
   open,
   onClose,
+  onComplete,
   currentPage,
   regimeLabel = "Unknown",
+  isGateMode = false,
 }: {
   open: boolean;
   onClose: () => void;
+  /** Optional callback invoked after the user confirms preflight completion (used by PreflightGate) */
+  onComplete?: () => void | Promise<void>;
   currentPage?: string;
   regimeLabel?: string;
+  /** When true, the modal is shown as a first-login gate — adds a "Skip for now" affordance in the header */
+  isGateMode?: boolean;
 }) {
     const { user } = useAuth();
   const [, navigate] = useLocation();
@@ -497,6 +503,7 @@ export function MarketPreflightModal({
   const logAction = trpc.awareness.logAction.useMutation({
     onSuccess: () => refetch(),
   });
+  const completeSession = trpc.awareness.completePreflightSession.useMutation();
 
   const handleComplete = useCallback(async () => {
     setCompletingPreflight(true);
@@ -504,8 +511,12 @@ export function MarketPreflightModal({
       actionKey: "completed_daily_market_preflight",
       sourcePage: currentPage ?? "preflight",
     });
+    // Always record the session completion timestamp
+    try { await completeSession.mutateAsync(); } catch { /* non-blocking */ }
     setCompletingPreflight(false);
-  }, [logAction, currentPage]);
+    // Notify parent (e.g. PreflightGate) if callback provided
+    if (onComplete) await onComplete();
+  }, [logAction, completeSession, onComplete, currentPage]);
 
   const handleNavigate = useCallback((page: string, actionKey: string) => {
     logAction.mutate({ actionKey, sourcePage: currentPage ?? "preflight" });
@@ -522,9 +533,21 @@ export function MarketPreflightModal({
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "flex-end", justifyContent: "center", background: "rgba(5,6,8,0.85)", backdropFilter: "blur(8px)" }}
+      style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", background: "rgba(5,6,8,0.85)", backdropFilter: "blur(8px)" }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
+      {/* Gate mode: "Daily Preflight Required" banner above the modal */}
+      {isGateMode && (
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "8px", background: "rgba(12,15,22,0.95)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "8px", padding: "8px 16px" }}>
+          <span style={{ color: "#A8B8CC", fontSize: "11px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.05em" }}>DAILY MARKET PREFLIGHT</span>
+          <button
+            onClick={onClose}
+            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", borderRadius: "4px", color: "#64748B", fontSize: "10px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em", padding: "3px 10px", cursor: "pointer" }}
+          >
+            SKIP FOR NOW
+          </button>
+        </div>
+      )}
       <div
         style={{
           width: "100%",

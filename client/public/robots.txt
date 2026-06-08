@@ -1,4 +1,34 @@
 User-agent: *
 Allow: /
+Allow: /blog
+Allow: /track-record
+Allow: /pressure-index
+Allow: /legal
+Allow: /app/pressure
+Allow: /app/signals
+Allow: /app/scores
+Allow: /app/charts
+Allow: /app/ai-watch
+Allow: /app/scenarios
+Allow: /app/alerts
+Allow: /app/analogs
+Allow: /app/aftershock
+Allow: /app/crypto
+Allow: /app/crypto-signals
+Allow: /app/report
+Allow: /app/guide
+Allow: /app/blog
+Allow: /app/track-record
+Allow: /app/diagnostic
+Allow: /app/simulate
+Allow: /app/alt-rotation
+
+Disallow: /app/admin
+Disallow: /app/account
+Disallow: /app/portfolio
+Disallow: /app/watchlist
+Disallow: /app/crypto-watchlist
+Disallow: /app/reading-history
+Disallow: /api/
 
 Sitemap: https://getfaultline.live/sitemap.xml

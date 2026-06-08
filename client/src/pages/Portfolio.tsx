@@ -18,6 +18,7 @@ import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import PortfolioIntelligence from "@/components/PortfolioIntelligence";
 
 // ── Types (inferred from tRPC) ────────────────────────────────
 type LivePosition = {
@@ -827,6 +828,9 @@ function PortfolioInner() {
             </button>
           </div>
         </div>
+
+        {/* ── Portfolio Intelligence™ ─────────────────────────────── */}
+        <PortfolioIntelligence />
 
         {/* Summary */}
         {summary && <SummaryHeader summary={summary} />}

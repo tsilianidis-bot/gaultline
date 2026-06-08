@@ -15,6 +15,7 @@ import {
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import SystemicAlertsPanel from "@/components/SystemicAlerts";
 
 // ── Pressure gauge ─────────────────────────────────────────────
 function PressureGauge({ label, value, color }: { label: string; value: number; color: string }) {
@@ -392,6 +393,9 @@ function AlertsInner() {
           ))}
         </div>
       </div>
+
+      {/* ── Systemic Alert Engine ─────────────────────────── */}
+      <SystemicAlertsPanel />
 
       {/* Threshold watchlist toggle */}
       <div style={{ marginBottom: '12px' }}>

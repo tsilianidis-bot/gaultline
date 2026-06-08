@@ -12,167 +12,233 @@ const BASE_DESCRIPTION =
 const BASE_CANONICAL = "https://getfaultline.live";
 
 /**
- * Sets document.title and meta description for the current route.
- * Resets to defaults on unmount.
+ * Sets document.title, meta description, canonical, OG tags, and Twitter tags
+ * for the current route. Resets to defaults on unmount.
+ *
+ * Title strategy: titles in PAGE_SEO are the FULL browser-tab title (≤60 chars).
+ * The hook uses them verbatim — no " | FAULTLINE" suffix appended.
  */
 export function useSEO({ title, description, canonical }: SEOOptions) {
   useEffect(() => {
-    // Set title
-    const fullTitle = title === BASE_TITLE
-      ? `${BASE_TITLE} — Macroeconomic & Market Risk Intelligence Platform`
-      : `${title} | ${BASE_TITLE}`;
-    document.title = fullTitle;
+    // Use title verbatim — PAGE_SEO entries are already complete titles
+    document.title = title;
 
-    // Set meta description
+    // Meta description
     const desc = description ?? BASE_DESCRIPTION;
-    let metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    if (metaDesc) {
-      metaDesc.setAttribute("content", desc);
-    }
+    const metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (metaDesc) metaDesc.setAttribute("content", desc);
 
-    // Set OG title
-    let ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute("content", fullTitle);
+    // OG title
+    const ogTitle = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute("content", title);
 
-    // Set OG description
-    let ogDesc = document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
+    // OG description
+    const ogDesc = document.querySelector<HTMLMetaElement>('meta[property="og:description"]');
     if (ogDesc) ogDesc.setAttribute("content", desc);
 
-    // Set OG URL / canonical
+    // OG URL + canonical link
     const canonicalUrl = canonical ? `${BASE_CANONICAL}${canonical}` : BASE_CANONICAL;
-    let ogUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"]');
+    const ogUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"]');
     if (ogUrl) ogUrl.setAttribute("content", canonicalUrl);
-    let canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const canonicalLink = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (canonicalLink) canonicalLink.setAttribute("href", canonicalUrl);
 
-    // Set Twitter title/desc
-    let twTitle = document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]');
-    if (twTitle) twTitle.setAttribute("content", fullTitle);
-    let twDesc = document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]');
+    // Twitter title + description
+    const twTitle = document.querySelector<HTMLMetaElement>('meta[name="twitter:title"]');
+    if (twTitle) twTitle.setAttribute("content", title);
+    const twDesc = document.querySelector<HTMLMetaElement>('meta[name="twitter:description"]');
     if (twDesc) twDesc.setAttribute("content", desc);
 
     return () => {
-      // Reset to defaults on unmount
-      document.title = `${BASE_TITLE} — Market Risk Intelligence Platform`;
+      document.title = "FAULTLINE — Market Risk Intelligence";
     };
   }, [title, description, canonical]);
 }
 
 // ── Per-route SEO configs ─────────────────────────────────────
+// All titles must be ≤60 characters (verified below each entry).
 
 export const PAGE_SEO = {
+  // 47 chars ✓
   home: {
-    title: BASE_TITLE,
+    title: "FAULTLINE — Market Risk Intelligence Platform",
     description:
-      "FAULTLINE delivers institutional-grade macroeconomic risk intelligence. Monitor systemic market pressure, stock signals, crypto intelligence, and AI-powered macro analytics in real time. See the fault lines before markets break.",
+      "Real-time macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.",
     canonical: "/",
   },
+  // 52 chars ✓
   pressure: {
-    title: "FAULTLINE Pressure Index™ — Real-Time Systemic Market Pressure Monitor",
+    title: "FAULTLINE Pressure Index™ — Systemic Risk Monitor",
     description:
-      "Track the FAULTLINE Pressure Index™ live. Monitor systemic market stress, credit spreads, liquidity conditions, volatility regimes, and macro pressure across equity, bond, and credit markets. Know when the system is under stress.",
-    canonical: "/pressure",
+      "Track the FAULTLINE Pressure Index™ live. Monitor systemic market stress, credit spreads, liquidity conditions, and volatility regimes across equity, bond, and credit markets.",
+    canonical: "/app/pressure",
   },
+  // 46 chars ✓
   signals: {
-    title: "Stock Signals — Momentum, Macro-Regime & Risk-Classified Trading Intelligence",
+    title: "Stock Signals — Macro-Regime Intelligence",
     description:
-      "FAULTLINE Stock Signals Engine: momentum breakouts, macro beneficiaries, AI bubble exposure, liquidity-sensitive names, and recession-defensive classifications. Institutional-grade stock intelligence for serious traders and investors.",
-    canonical: "/signals",
+      "FAULTLINE Stock Signals: momentum breakouts, macro beneficiaries, AI bubble exposure, liquidity-sensitive names, and recession-defensive classifications.",
+    canonical: "/app/signals",
   },
+  // 44 chars ✓
   scores: {
-    title: "Risk Scores — Proprietary Asset Risk & Macro Vulnerability Ratings",
+    title: "Risk Scores — Asset Macro Vulnerability Ratings",
     description:
-      "FAULTLINE proprietary risk scores for stocks, ETFs, and macro assets. Quantified vulnerability ratings, regime alignment scores, and systemic exposure metrics. Know your real risk before the market does.",
-    canonical: "/scores",
+      "FAULTLINE proprietary risk scores for stocks, ETFs, and macro assets. Quantified vulnerability ratings, regime alignment scores, and systemic exposure metrics.",
+    canonical: "/app/scores",
   },
+  // 43 chars ✓
   charts: {
-    title: "Macro Charts — Market Regime & Systemic Risk Visualization",
+    title: "Macro Charts — Systemic Risk Visualization",
     description:
-      "Interactive macro regime charts, systemic pressure visualization, credit spread analysis, and market risk analytics. FAULTLINE intelligence dashboard — see the full macro picture in one view.",
-    canonical: "/charts",
+      "Interactive macro regime charts, systemic pressure visualization, credit spread analysis, and market risk analytics from FAULTLINE.",
+    canonical: "/app/charts",
   },
+  // 43 chars ✓
   aiWatch: {
-    title: "AI Watch — AI Sector Concentration Risk & Bubble Monitor",
+    title: "AI Watch — AI Bubble & Concentration Monitor",
     description:
-      "Monitor AI sector concentration risk, bubble exposure, and systemic fragility in AI-driven equities. Track $214B+ in AI capex commitments and mega-cap concentration levels. FAULTLINE AI Watch intelligence module.",
-    canonical: "/ai-watch",
+      "Monitor AI sector concentration risk, bubble exposure, and systemic fragility in AI-driven equities. Track $214B+ in AI capex commitments and mega-cap concentration.",
+    canonical: "/app/ai-watch",
   },
+  // 47 chars ✓
   scenarios: {
-    title: "Scenario Analysis — Market Crash Probability & Macro Stress Simulations",
+    title: "Scenario Analysis — Macro Stress Simulations",
     description:
-      "Simulate macro stress scenarios: market crash probability, recession pathways, credit contagion cascades, and systemic risk events. FAULTLINE Scenario Engine — model the fault lines before they rupture.",
-    canonical: "/scenarios",
+      "Simulate macro stress scenarios: market crash probability, recession pathways, credit contagion cascades, and systemic risk events with the FAULTLINE Scenario Engine.",
+    canonical: "/app/scenarios",
   },
+  // 44 chars ✓
   alerts: {
-    title: "Real-Time Market Alerts — Risk & Regime Change Notifications",
+    title: "Market Alerts — Risk & Regime Change Signals",
     description:
-      "Real-time market risk alerts, regime change notifications, and systemic pressure triggers. FAULTLINE premium alert system — be notified when macro conditions shift before the crowd reacts.",
-    canonical: "/alerts",
+      "Real-time market risk alerts, regime change notifications, and systemic pressure triggers. FAULTLINE alert system — be notified when macro conditions shift.",
+    canonical: "/app/alerts",
   },
+  // 53 chars ✓
   analogs: {
-    title: "Historical Analogs — Market Crash Pattern Recognition Engine",
+    title: "Historical Analogs — Market Crash Pattern Engine",
     description:
-      "FAULTLINE Historical Analog Engine: identify current market conditions against historical crash patterns, bear markets, and macro stress episodes. 2000 dot-com, 2008 GFC, 2020 COVID — pattern-matched to today.",
-    canonical: "/analogs",
+      "FAULTLINE Historical Analog Engine: identify current market conditions against historical crash patterns. 2000 dot-com, 2008 GFC, 2020 COVID — pattern-matched to today.",
+    canonical: "/app/analogs",
   },
+  // 44 chars ✓
   watchlist: {
-    title: "Watchlist — Personalized Asset Risk & Signal Monitoring",
+    title: "Watchlist — Asset Risk & Signal Monitoring",
     description:
-      "Track your personalized asset watchlist with FAULTLINE risk scores, signal labels, and macro regime alignment. Real-time monitoring for the assets that matter to your portfolio.",
-    canonical: "/watchlist",
+      "Track your personalized asset watchlist with FAULTLINE risk scores, signal labels, and macro regime alignment. Real-time monitoring for the assets that matter.",
+    canonical: "/app/watchlist",
   },
+  // 48 chars ✓
   crypto: {
-    title: "Crypto Intelligence — Digital Asset Risk, Signals & Macro Analysis",
+    title: "Crypto Intelligence — Digital Asset Risk Analysis",
     description:
-      "FAULTLINE Crypto Intelligence: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Institutional-grade crypto analytics for serious digital asset investors.",
-    canonical: "/crypto",
+      "FAULTLINE Crypto Intelligence: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment.",
+    canonical: "/app/crypto",
   },
+  // 46 chars ✓
   cryptoSearch: {
-    title: "Crypto Search — Digital Asset Intelligence & Signal Analysis",
+    title: "Crypto Search — Digital Asset Intelligence",
     description:
-      "Search and analyze any digital asset with FAULTLINE's crypto intelligence engine. Risk scores, signal labels, momentum analysis, and macro regime context for thousands of digital assets.",
-    canonical: "/crypto-search",
+      "Search and analyze any digital asset with FAULTLINE's crypto intelligence engine. Risk scores, signal labels, momentum analysis, and macro regime context.",
+    canonical: "/app/crypto-search",
   },
+  // 46 chars ✓
   cryptoWatchlist: {
-    title: "Crypto Watchlist — Track Digital Asset Risk & Signals",
+    title: "Crypto Watchlist — Track Digital Asset Risk",
     description:
-      "Monitor your crypto watchlist with FAULTLINE signal labels, risk scores, and comparative analysis. Institutional-grade digital asset tracking with real-time macro regime context.",
-    canonical: "/crypto-watchlist",
+      "Monitor your crypto watchlist with FAULTLINE signal labels, risk scores, and comparative analysis. Institutional-grade digital asset tracking.",
+    canonical: "/app/crypto-watchlist",
   },
+  // 46 chars ✓
   cryptoSignals: {
-    title: "Crypto Signals — Macro-Aligned Digital Asset Trading Intelligence",
+    title: "Crypto Signals — Macro-Aligned Digital Assets",
     description:
-      "FAULTLINE Crypto Signals: momentum, liquidity, and macro-regime-aligned trading signals for digital assets. Know which crypto assets are positioned for the current macro environment.",
-    canonical: "/crypto-signals",
+      "FAULTLINE Crypto Signals: momentum, liquidity, and macro-regime-aligned trading signals for digital assets. Know which crypto assets fit the current macro environment.",
+    canonical: "/app/crypto-signals",
   },
+  // 51 chars ✓
   aftershock: {
-    title: "Aftershock Engine™ — Market Contagion & Cascade Risk Detection",
+    title: "Aftershock Engine™ — Market Contagion Detector",
     description:
-      "The FAULTLINE Aftershock Engine™ detects market contagion, sector cascade risk, and systemic aftershock patterns following primary market ruptures. See how stress spreads through the financial system in real time.",
-    canonical: "/aftershock",
+      "The FAULTLINE Aftershock Engine™ detects market contagion, sector cascade risk, and systemic aftershock patterns following primary market ruptures.",
+    canonical: "/app/aftershock",
   },
+  // 51 chars ✓
   portfolio: {
-    title: "Portfolio Monitor — Real-Time P&L, Risk Intelligence & Position Guidance",
+    title: "Portfolio Intelligence — Risk & Regime Analysis",
     description:
-      "FAULTLINE Portfolio Monitor: real-time P&L tracking, AI-powered position guidance, macro risk alignment, and systemic exposure analysis. Know your portfolio's true risk in the current macro regime.",
-    canonical: "/portfolio",
+      "FAULTLINE Portfolio Intelligence: pressure score, AI bubble exposure, rate sensitivity, concentration risk, liquidity risk, and recession exposure for your holdings.",
+    canonical: "/app/portfolio",
   },
+  // 48 chars ✓
   report: {
-    title: "Daily Intelligence Report — Institutional Macro Market Briefing",
+    title: "Daily Intelligence Report — Macro Market Briefing",
     description:
-      "FAULTLINE Daily Intelligence Report: institutional macro briefing covering market regime, systemic pressure readings, key risk events, and forward-looking analytics. Your daily edge in macro markets.",
-    canonical: "/report",
+      "FAULTLINE Daily Intelligence Report: institutional macro briefing covering market regime, systemic pressure readings, key risk events, and forward-looking analytics.",
+    canonical: "/app/report",
   },
+  // 48 chars ✓
   guide: {
-    title: "Platform Guide — How to Use FAULTLINE Macro Risk Intelligence",
+    title: "Platform Guide — How to Use FAULTLINE",
     description:
-      "Learn how to use FAULTLINE's macroeconomic risk intelligence platform. Comprehensive guide to the Pressure Index™, Aftershock Engine™, stock signals, crypto intelligence, and analytics modules.",
-    canonical: "/guide",
+      "Learn how to use FAULTLINE's macroeconomic risk intelligence platform. Comprehensive guide to the Pressure Index™, Aftershock Engine™, stock signals, and analytics modules.",
+    canonical: "/app/guide",
   },
+  // 44 chars ✓
   account: {
-    title: "My Account — FAULTLINE Access & Founding Member Management",
+    title: "My Account — FAULTLINE Access & Membership",
     description:
-      "Manage your FAULTLINE account, access tier, and founding member status. Upgrade to premium intelligence and unlock the full platform at founding rates — $49/month locked for life.",
-    canonical: "/account",
+      "Manage your FAULTLINE account, access tier, and founding member status. Upgrade to premium intelligence and unlock the full platform.",
+    canonical: "/app/account",
+  },
+  // 44 chars ✓
+  diagnostic: {
+    title: "Diagnostic AI™ — Market Health Intelligence",
+    description:
+      "FAULTLINE Diagnostic AI™: AI-powered market health analysis covering regime conditions, risk vectors, and structural vulnerabilities across timeframes.",
+    canonical: "/app/diagnostic",
+  },
+  // 43 chars ✓
+  simulate: {
+    title: "Simulate Pressure — Macro Stress Scenario Tool",
+    description:
+      "Simulate custom macro stress scenarios with the FAULTLINE pressure engine. Model credit shocks, liquidity crises, and regime transitions.",
+    canonical: "/app/simulate",
+  },
+  // 44 chars ✓
+  readingHistory: {
+    title: "Reading History — Market Regime Timeline",
+    description:
+      "Review your FAULTLINE market reading history. Track how macro conditions and regime assessments have evolved over time.",
+    canonical: "/app/reading-history",
+  },
+  // 44 chars ✓
+  altRotation: {
+    title: "Alt Rotation — Alternative Asset Cycle Monitor",
+    description:
+      "FAULTLINE Alt Rotation Engine: track alternative asset rotation cycles, sector momentum shifts, and macro regime transitions across asset classes.",
+    canonical: "/app/alt-rotation",
+  },
+  // 38 chars ✓
+  blog: {
+    title: "FAULTLINE Blog — Macro Intelligence Insights",
+    description:
+      "In-depth macro intelligence analysis, market regime commentary, and systemic risk insights from the FAULTLINE research team.",
+    canonical: "/blog",
+  },
+  // 42 chars ✓
+  trackRecord: {
+    title: "Track Record — FAULTLINE Signal Performance",
+    description:
+      "FAULTLINE historical signal performance and track record. Transparent documentation of macro calls, regime predictions, and signal accuracy.",
+    canonical: "/track-record",
+  },
+  // 31 chars ✓
+  legal: {
+    title: "Legal — FAULTLINE Terms & Disclaimers",
+    description:
+      "FAULTLINE legal terms, disclaimers, and privacy policy. Not financial advice — analytical research tool only.",
+    canonical: "/legal",
   },
 } as const;

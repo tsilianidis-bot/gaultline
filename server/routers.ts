@@ -493,6 +493,160 @@ export const appRouter = router({
       }
     }),
 
+    // Portfolio Intelligence — 8 macro-risk metrics derived from positions + pressure engine
+    getIntelligence: coreProcedure.query(async ({ ctx }) => {
+      try {
+        const rows = await getPositionsByUser(ctx.user.id);
+        const pressure = await calculateFaultlinePressure();
+        const vectors = pressure.vectors;
+
+        // Helper: find vector score by id
+        const vs = (id: string) => vectors.find(v => v.id === id)?.score ?? 50;
+        const vd = (id: string) => vectors.find(v => v.id === id)?.driver ?? "";
+        const vt = (id: string) => vectors.find(v => v.id === id)?.trend ?? "stable";
+
+        // Analyse position composition
+        const totalPositions = rows.length;
+        const assetTypeCounts: Record<string, number> = {};
+        for (const r of rows) {
+          assetTypeCounts[r.assetType] = (assetTypeCounts[r.assetType] ?? 0) + 1;
+        }
+        const stockCount = (assetTypeCounts["Stock"] ?? 0) + (assetTypeCounts["ETF"] ?? 0);
+        const cryptoCount = assetTypeCounts["Crypto"] ?? 0;
+        const cryptoRatio = totalPositions > 0 ? cryptoCount / totalPositions : 0;
+        const stockRatio  = totalPositions > 0 ? stockCount  / totalPositions : 0;
+
+        // Concentration: Herfindahl-style — if < 5 positions, concentration is high
+        const concentrationScore = totalPositions === 0 ? 50
+          : totalPositions === 1 ? 90
+          : totalPositions <= 3 ? 75
+          : totalPositions <= 6 ? 55
+          : totalPositions <= 10 ? 35
+          : 20;
+
+        // 1. Portfolio Pressure Score — weighted composite of all vectors
+        const portfolioPressureScore = pressure.overallPressure;
+
+        // 2. AI Bubble Exposure — ai-bubble vector, amplified by AI/tech stock ratio
+        const aiBubbleBase = vs("ai-bubble");
+        const aiBubbleScore = Math.min(100, Math.round(aiBubbleBase * (1 + stockRatio * 0.2)));
+
+        // 3. Interest Rate Sensitivity — volatility-regime + macro-sensitivity
+        const rateSensScore = Math.min(100, Math.round((vs("volatility-regime") * 0.5 + vs("macro-sensitivity") * 0.5)));
+
+        // 4. Concentration Risk — position count heuristic
+        const concentrationRiskScore = concentrationScore;
+
+        // 5. Liquidity Risk — liquidity-stress vector, amplified by crypto ratio
+        const liquidityBase = vs("liquidity-stress");
+        const liquidityScore = Math.min(100, Math.round(liquidityBase * (1 + cryptoRatio * 0.3)));
+
+        // 6. Recession Exposure — credit-contagion + macro-sensitivity
+        const recessionScore = Math.min(100, Math.round((vs("credit-contagion") * 0.6 + vs("macro-sensitivity") * 0.4)));
+
+        // 7. Historical Crash Vulnerability — top analog similarity as proxy
+        const crashVulnScore = Math.min(100, Math.round(pressure.topAnalog.similarity * 0.85 + portfolioPressureScore * 0.15));
+
+        // 8. Regime Alignment — how well-positioned the portfolio is for the current regime
+        // Low pressure = good alignment; high pressure = poor alignment
+        const regimeAlignmentScore = Math.max(0, 100 - portfolioPressureScore);
+
+        const scoreToLevel = (s: number) =>
+          s >= 75 ? "Critical" : s >= 60 ? "High" : s >= 40 ? "Elevated" : s >= 20 ? "Moderate" : "Low";
+
+        return {
+          regime: pressure.regime,
+          regimeLevel: pressure.level,
+          dataSource: pressure.dataSource,
+          timestamp: pressure.timestamp,
+          metrics: [
+            {
+              id: "portfolio-pressure",
+              label: "Portfolio Pressure Score",
+              description: "Composite macro-risk pressure index applied to your current portfolio",
+              score: portfolioPressureScore,
+              level: scoreToLevel(portfolioPressureScore),
+              driver: `FAULTLINE Pressure Index at ${portfolioPressureScore}/100 — ${pressure.regime}`,
+              trend: pressure.overallPressure > 60 ? "rising" : pressure.overallPressure < 30 ? "falling" : "stable" as const,
+              color: portfolioPressureScore >= 75 ? "#FF2D55" : portfolioPressureScore >= 55 ? "#FF6B35" : portfolioPressureScore >= 35 ? "#FFD60A" : "#00FF88",
+            },
+            {
+              id: "ai-bubble-exposure",
+              label: "AI Bubble Exposure",
+              description: "Concentration risk from AI mega-cap and speculative growth assets",
+              score: aiBubbleScore,
+              level: scoreToLevel(aiBubbleScore),
+              driver: vd("ai-bubble"),
+              trend: vt("ai-bubble"),
+              color: aiBubbleScore >= 75 ? "#FF2D55" : aiBubbleScore >= 55 ? "#FF6B35" : aiBubbleScore >= 35 ? "#FFD60A" : "#00FF88",
+            },
+            {
+              id: "rate-sensitivity",
+              label: "Interest Rate Sensitivity",
+              description: "Exposure to rate-driven repricing from Fed policy and yield curve dynamics",
+              score: rateSensScore,
+              level: scoreToLevel(rateSensScore),
+              driver: vd("macro-sensitivity"),
+              trend: vt("macro-sensitivity"),
+              color: rateSensScore >= 75 ? "#FF2D55" : rateSensScore >= 55 ? "#FF6B35" : rateSensScore >= 35 ? "#FFD60A" : "#00FF88",
+            },
+            {
+              id: "concentration-risk",
+              label: "Concentration Risk",
+              description: `Portfolio spread across ${totalPositions} position${totalPositions !== 1 ? "s" : ""}`,
+              score: concentrationRiskScore,
+              level: scoreToLevel(concentrationRiskScore),
+              driver: totalPositions === 0 ? "No positions tracked" : totalPositions <= 3 ? `Only ${totalPositions} position${totalPositions !== 1 ? "s" : ""} — high single-name risk` : `${totalPositions} positions — diversification improving`,
+              trend: "stable" as const,
+              color: concentrationRiskScore >= 75 ? "#FF2D55" : concentrationRiskScore >= 55 ? "#FF6B35" : concentrationRiskScore >= 35 ? "#FFD60A" : "#00FF88",
+            },
+            {
+              id: "liquidity-risk",
+              label: "Liquidity Risk",
+              description: "Credit market liquidity conditions affecting exit and re-entry costs",
+              score: liquidityScore,
+              level: scoreToLevel(liquidityScore),
+              driver: vd("liquidity-stress"),
+              trend: vt("liquidity-stress"),
+              color: liquidityScore >= 75 ? "#FF2D55" : liquidityScore >= 55 ? "#FF6B35" : liquidityScore >= 35 ? "#FFD60A" : "#00FF88",
+            },
+            {
+              id: "recession-exposure",
+              label: "Recession Exposure",
+              description: "Probability of macro contraction impacting portfolio valuations",
+              score: recessionScore,
+              level: scoreToLevel(recessionScore),
+              driver: vd("credit-contagion"),
+              trend: vt("credit-contagion"),
+              color: recessionScore >= 75 ? "#FF2D55" : recessionScore >= 55 ? "#FF6B35" : recessionScore >= 35 ? "#FFD60A" : "#00FF88",
+            },
+            {
+              id: "crash-vulnerability",
+              label: "Historical Crash Vulnerability",
+              description: `Current conditions match ${pressure.topAnalog.label} (${pressure.topAnalog.similarity}% similarity)`,
+              score: crashVulnScore,
+              level: scoreToLevel(crashVulnScore),
+              driver: `Closest analog: ${pressure.topAnalog.label} — ${pressure.topAnalog.description}`,
+              trend: "stable" as const,
+              color: crashVulnScore >= 75 ? "#FF2D55" : crashVulnScore >= 55 ? "#FF6B35" : crashVulnScore >= 35 ? "#FFD60A" : "#00FF88",
+            },
+            {
+              id: "regime-alignment",
+              label: "Regime Alignment",
+              description: "How well your portfolio is positioned for the current macro regime",
+              score: regimeAlignmentScore,
+              level: scoreToLevel(regimeAlignmentScore),
+              driver: regimeAlignmentScore >= 60 ? `Portfolio well-aligned with ${pressure.regime} regime` : `Portfolio exposed to ${pressure.regime} headwinds`,
+              trend: pressure.overallPressure > 60 ? "falling" : "rising" as const,
+              color: regimeAlignmentScore >= 60 ? "#00FF88" : regimeAlignmentScore >= 40 ? "#FFD60A" : regimeAlignmentScore >= 20 ? "#FF6B35" : "#FF2D55",
+            },
+          ],
+        };
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Portfolio intelligence failed", cause: err });
+      }
+    }),
+
     // Get AI guidance for a single user position (supports any ticker) — requires premium
     getPositionGuidance: protectedProcedure
       .input(z.object({
@@ -1494,6 +1648,40 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to set preflight mode", cause: err });
         }
       }),
+
+    // Mark a preflight session as completed — stores current UTC timestamp
+    completePreflightSession: protectedProcedure.mutation(async ({ ctx }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+        const now = new Date();
+        await db.update(users).set({ lastPreflightCompletedAt: now }).where(eq(users.id, ctx.user.id));
+        return { success: true, completedAt: now.getTime() };
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to record preflight completion", cause: err });
+      }
+    }),
+
+    // Get the user's last preflight completion timestamp
+    getPreflightStatus: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+        const rows = await db
+          .select({ lastPreflightCompletedAt: users.lastPreflightCompletedAt })
+          .from(users)
+          .where(eq(users.id, ctx.user.id))
+          .limit(1);
+        const ts = rows[0]?.lastPreflightCompletedAt;
+        return {
+          lastCompletedAt: ts ? ts.getTime() : null,
+          // True if never completed OR last completion was more than 24h ago
+          needsPreflight: !ts || (Date.now() - ts.getTime() > 24 * 60 * 60 * 1000),
+        };
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to get preflight status", cause: err });
+      }
+    }),
   }),
 
   readingHistory: router({

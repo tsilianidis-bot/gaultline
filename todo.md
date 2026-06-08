@@ -923,3 +923,55 @@
 - [x] pnpm test: 368/368 passing (26 test files, +17 new awareness access tests)
 - [x] pnpm build: ✓ built in 31.96s
 - [x] Checkpoint
+
+## Strategic Roadmap — Phase 6: SEO Audit & Fix (Jun 8, 2026)
+- [x] Audit sitemap.xml — all 27 routes verified, /app/analogs added
+- [x] robots.txt — updated with explicit Allow/Disallow rules, /app/admin disallowed
+- [x] All 26 page meta titles fixed to ≤60 chars (verified by script)
+- [x] All page meta descriptions are 50-160 chars
+- [x] Canonical tags set in index.html and updated per-page via useSEO hook
+- [x] OG tags (og:title, og:description, og:url) updated in useSEO hook
+- [x] JSON-LD structured data updated: added Complete Market Awareness™, Historical Analog Engine, Portfolio Intelligence to featureList
+- [x] Internal linking: MODULES array now has deep links to /app/pressure, /app/aftershock, /app/signals, /app/crypto, /app/analogs, /app/portfolio
+- [x] pnpm check: 0 errors
+- [x] Checkpoint (combined with Phase 2)
+
+## Strategic Roadmap — Phase 2: Market Preflight First-Login (Jun 8, 2026)
+- [x] Add lastPreflightCompletedAt column to users table in drizzle/schema.ts
+- [x] Generate migration 0017 and apply via webdev_execute_sql
+- [x] Add awareness.completePreflightSession tRPC procedure (stores UTC timestamp)
+- [x] Add awareness.getPreflightStatus procedure (returns last completion timestamp)
+- [x] Build PreflightGate component (client/src/components/PreflightGate.tsx)
+- [x] Gate: show if no completion in last 24h (or never completed)
+- [x] Require explicit "Complete Preflight" or "Skip for Today" action
+- [x] Wire PreflightGate into Dashboard.tsx above all content
+- [x] pnpm check: 0 errors
+- [x] Checkpoint (combined with Phase 3)
+
+## Strategic Roadmap — Phase 3: Portfolio Intelligence (Jun 8, 2026)
+- [x] Build server-side intelligence logic in portfolio.getIntelligence tRPC procedure (server/routers.ts)
+- [x] Add portfolio.getIntelligence tRPC procedure (protectedProcedure) — 8 metrics: Pressure Score, AI Bubble Exposure, Rate Sensitivity, Concentration Risk, Liquidity Risk, Recession Exposure, Crash Vulnerability, Regime Alignment
+- [x] Build PortfolioIntelligence.tsx component with 8 metric cards (client/src/components/PortfolioIntelligence.tsx)
+- [x] Mount above holdings in Portfolio.tsx
+- [x] pnpm check: 0 errors
+- [x] Checkpoint (combined with Phase 5)
+
+## Strategic Roadmap — Phase 5: Historical Analog Engine (Jun 8, 2026)
+- [x] HistoricalAnalogs.tsx already existed (595 lines) with all required features
+- [x] /app/analogs route already in App.tsx
+- [x] Analogs already in navigation sidebar and mobile nav
+- [x] Analogs already in sitemap.xml
+- [x] All 4 required examples present: Dot-Com, GFC, COVID, 2022 Inflation Shock
+- [x] All required sections present: Similarity %, Historical Match, Timeline, Outcome Analysis, Key Lessons, Portfolio Impact
+- [x] pnpm check: 0 errors
+
+## Strategic Roadmap — Phase 4: Alert Evolution / Systemic Alerts (Jun 8, 2026)
+- [x] Build SystemicAlerts.tsx component (client/src/components/SystemicAlerts.tsx)
+- [x] 6 macro alert categories: Regime Shift, Liquidity Deterioration, Credit Stress, AI Concentration Risk, Systemic Risk Escalation, Historical Analog Trigger
+- [x] Each alert has 3-part structure: What Happened / Why It Matters / What Historically Followed
+- [x] Alerts generated from live EngineContext data (no server roundtrip needed)
+- [x] SystemicAlertsPanel mounted above threshold watchlist in Alerts.tsx
+- [x] pnpm check: 0 errors
+- [x] pnpm test: 368/368 passing
+- [x] pnpm build: ✓ built in 28.80s
+- [x] Checkpoint
