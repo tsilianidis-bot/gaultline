@@ -730,22 +730,44 @@ export default function Dashboard() {
         {/* ── Complete Market Awareness™ Dashboard Card ──────────────── */}
         <DashboardAwarenessSection />
 
-        {/* ── SITUATION ROOM ENTRY CARD ──────────────────────────────────── */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(0,212,255,0.22)', borderLeft: '3px solid #00D4FF', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 40ms both' }}>
+        {/* ── PRE-FLIGHT ENTRY CARD ──────────────────────────────────────── */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(0,212,255,0.22)', borderLeft: '3px solid #00D4FF', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 38ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00D4FF', boxShadow: '0 0 8px #00D4FF', animation: 'blink-alert 2s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00D4FF', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>FAULTLINE Situation Room</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.55)', border: '1px solid rgba(0,212,255,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>COMMAND CENTER</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00D4FF', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Pre-Flight</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.55)', border: '1px solid rgba(0,212,255,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 1 — MARKET AWARENESS</span>
               </div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#94A3B8', lineHeight: 1.55, maxWidth: '500px' }}>
-                Stress-test your next move against current regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and sector signals.
+                Understand current market conditions before risking capital. Awareness Score, Pressure Index, Bull/Bear probability, Regime Analysis, and Daily Intelligence Brief.
               </div>
             </div>
-            <a href="/app/situation-room" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(0,212,255,0.10)', border: '1px solid rgba(0,212,255,0.45)', borderRadius: '4px', color: '#00D4FF', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(0,212,255,0.08)' }}
+            <a href="/app/pre-flight" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(0,212,255,0.10)', border: '1px solid rgba(0,212,255,0.45)', borderRadius: '4px', color: '#00D4FF', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(0,212,255,0.08)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.18)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,212,255,0.7)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.10)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,212,255,0.45)'; }}
+            >
+              <span style={{ fontSize: '14px' }}>⊕</span>
+              OPEN PRE-FLIGHT
+            </a>
+          </div>
+        </div>
+        {/* ── SITUATION ROOM ENTRY CARD ──────────────────────────────────── */}
+        <div style={{ background: 'linear-gradient(135deg, rgba(255,170,0,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(255,170,0,0.22)', borderLeft: '3px solid #FFAA00', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 42ms both' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFAA00', boxShadow: '0 0 8px #FFAA00', animation: 'blink-alert 2s ease-in-out infinite' }} />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#FFAA00', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Situation Room</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,170,0,0.55)', border: '1px solid rgba(255,170,0,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 2 — DECISION ENGINE</span>
+              </div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#94A3B8', lineHeight: 1.55, maxWidth: '500px' }}>
+                Simulate your next move. Move Favorability Score, Final Verdict, Green Lights, Threat Board, Historical Analogs, Position Sizing, and Thesis Stress Test.
+              </div>
+            </div>
+            <a href="/app/situation-room" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(255,170,0,0.10)', border: '1px solid rgba(255,170,0,0.45)', borderRadius: '4px', color: '#FFAA00', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(255,170,0,0.08)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,170,0,0.18)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,170,0,0.7)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,170,0,0.10)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,170,0,0.45)'; }}
             >
               <span style={{ fontSize: '14px' }}>⊕</span>
               ENTER SITUATION ROOM

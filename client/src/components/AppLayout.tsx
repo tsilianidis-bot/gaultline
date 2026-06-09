@@ -36,6 +36,13 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
+    label: "FLAGSHIP",
+    items: [
+      { id: "pre-flight",     label: "Pre-Flight",     shortLabel: "Pre-Flight",  icon: Shield,     path: "/app/pre-flight" },
+      { id: "situation-room", label: "Situation Room",  shortLabel: "Sit. Room",   icon: Crosshair,  path: "/app/situation-room" },
+    ],
+  },
+  {
     label: "OVERVIEW",
     items: [
       { id: "dashboard", label: "Dashboard",           shortLabel: "Dash",    icon: LayoutDashboard, path: "/app" },
@@ -76,7 +83,6 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "simulate",    label: "Pressure Simulator",shortLabel: "Simulator", icon: Zap,        path: "/app/simulate" },
       { id: "alt-rotation",label: "Sector Rotation",   shortLabel: "Rotation",  icon: RotateCcw,  path: "/app/alt-rotation" },
       { id: "aftershock",  label: "Aftershock Engine", shortLabel: "Aftershock",icon: Waves,      path: "/app/aftershock" },
-      { id: "situation-room", label: "Situation Room",   shortLabel: "Sit. Room",  icon: Crosshair,  path: "/app/situation-room" },
       { id: "insider-intelligence", label: "Insider Intelligence", shortLabel: "Insider", icon: Eye, path: "/app/insider-intelligence" },
     ],
   },
@@ -112,7 +118,7 @@ const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
 // Mobile primary tabs (bottom bar — 5 most important)
 // Market Stress replaces Blog as a primary tab
-const MOBILE_PRIMARY_IDS = ["dashboard", "pressure", "signals", "portfolio", "watchlist"];
+const MOBILE_PRIMARY_IDS = ["pre-flight", "situation-room", "dashboard", "signals", "watchlist"];
 const MOBILE_PRIMARY = ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id));
 
 interface AppLayoutProps {
@@ -463,49 +469,60 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 const active = isActive(tab.path);
                 const isTrackRecord = tab.id === 'track-record';
                 const trackGreen = '#22C55E';
+                const isPreFlight = tab.id === 'pre-flight';
+                const isSitRoom = tab.id === 'situation-room';
+                const isFlagship = isPreFlight || isSitRoom;
+                // Flagship colors: Pre-Flight = cyan, Situation Room = amber
+                const flagshipColor = isPreFlight ? '#00D4FF' : '#FFAA00';
+                const flagshipBg = isPreFlight ? 'rgba(0,212,255,0.08)' : 'rgba(255,170,0,0.08)';
+                const flagshipBgActive = isPreFlight ? 'rgba(0,212,255,0.15)' : 'rgba(255,170,0,0.15)';
+                const flagshipBorder = isPreFlight ? 'rgba(0,212,255,0.3)' : 'rgba(255,170,0,0.3)';
                 return (
                   <button
                     key={tab.id}
                     onClick={() => handleNavigate(tab.path)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '5px',
-                      padding: '7px 10px',
-                      borderRadius: '4px',
+                      padding: isFlagship ? '6px 12px' : '7px 10px',
+                      borderRadius: isFlagship ? '3px' : '4px',
                       background: active
-                        ? (isTrackRecord ? 'rgba(34,197,94,0.12)' : 'rgba(0, 212, 255, 0.1)')
-                        : (isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent'),
-                      border: 'none',
-                      borderBottom: active
+                        ? (isFlagship ? flagshipBgActive : isTrackRecord ? 'rgba(34,197,94,0.12)' : 'rgba(0, 212, 255, 0.1)')
+                        : (isFlagship ? flagshipBg : isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent'),
+                      border: isFlagship ? `1px solid ${active ? flagshipColor + '66' : flagshipBorder}` : 'none',
+                      borderBottom: !isFlagship ? (active
                         ? `2px solid ${isTrackRecord ? trackGreen : '#00D4FF'}`
-                        : (isTrackRecord ? `2px solid rgba(34,197,94,0.3)` : '2px solid transparent'),
+                        : (isTrackRecord ? `2px solid rgba(34,197,94,0.3)` : '2px solid transparent')) : undefined,
                       color: active
-                        ? (isTrackRecord ? trackGreen : '#00D4FF')
-                        : (isTrackRecord ? '#22C55E' : '#6B7280'),
+                        ? (isFlagship ? flagshipColor : isTrackRecord ? trackGreen : '#00D4FF')
+                        : (isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : '#6B7280'),
                       fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: '10px',
-                      letterSpacing: '0.06em',
+                      fontSize: isFlagship ? '11px' : '10px',
+                      fontWeight: isFlagship ? '600' : 'normal',
+                      letterSpacing: isFlagship ? '0.1em' : '0.06em',
                       textTransform: 'uppercase',
                       cursor: 'pointer',
                       transition: 'all 0.15s cubic-bezier(0.23, 1, 0.32, 1)',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                       position: 'relative',
+                      ...(isFlagship && !active ? { boxShadow: `0 0 10px ${flagshipColor}22` } : {}),
+                      ...(isFlagship && active ? { boxShadow: `0 0 14px ${flagshipColor}44` } : {}),
                       ...(isTrackRecord && !active ? { boxShadow: '0 0 8px rgba(34,197,94,0.15)' } : {}),
                     }}
                     onMouseEnter={e => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = isTrackRecord ? '#4ADE80' : '#94A3B8';
-                        (e.currentTarget as HTMLElement).style.background = isTrackRecord ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)';
+                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#4ADE80' : '#94A3B8';
+                        (e.currentTarget as HTMLElement).style.background = isFlagship ? flagshipBgActive : isTrackRecord ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)';
                       }
                     }}
                     onMouseLeave={e => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = isTrackRecord ? '#22C55E' : '#6B7280';
-                        (e.currentTarget as HTMLElement).style.background = isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent';
+                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : '#6B7280';
+                        (e.currentTarget as HTMLElement).style.background = isFlagship ? flagshipBg : isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent';
                       }
                     }}
                   >
-                    <Icon size={11} />
+                    <Icon size={isFlagship ? 12 : 11} />
                     {tab.label}
                     {isTrackRecord && (
                       <span style={{

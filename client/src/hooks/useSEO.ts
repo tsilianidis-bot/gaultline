@@ -234,6 +234,12 @@ export const PAGE_SEO = {
       "FAULTLINE historical signal performance and track record. Transparent documentation of macro calls, regime predictions, and signal accuracy.",
     canonical: "/track-record",
   },
+  preFlight: {
+    title: "FAULTLINE Pre-Flight — Market Awareness Command Center",
+    description:
+      "Understand current market conditions before risking capital. Awareness Score, Pressure Index, Bull/Bear Probability, Threat Board, Credit, Liquidity, AI Risk, and Daily Intelligence Brief.",
+    canonical: "/app/pre-flight",
+  },
   // 52 chars ✓
   situationRoom: {
     title: "FAULTLINE Situation Room — Trade Preflight Simulator",

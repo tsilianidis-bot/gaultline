@@ -41,6 +41,7 @@ import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
 import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ThesisType } from './tradePreflight';
+import { getPreFlightData } from './preFlight';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { xPostQueue, users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -1822,6 +1823,18 @@ export const appRouter = router({
           });
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trade Preflight simulation failed", cause: err });
+        }
+      }),
+  }),
+
+  // ── Pre-Flight Market Awareness ──────────────────────────────
+  preFlight: router({
+    getAwarenessData: publicProcedure
+      .query(async () => {
+        try {
+          return await getPreFlightData();
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Pre-Flight data fetch failed", cause: err });
         }
       }),
   }),
