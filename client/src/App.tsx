@@ -203,10 +203,19 @@ function Router() {
 }
 
 function App() {
-  // Show intro if not seen this session
+  // Show intro if not seen this session.
+  // Auto-skip when the user lands directly on a deep /app/* link
+  // (e.g. /app/situation-room) so the feature is immediately visible.
   const [introComplete, setIntroComplete] = useState<boolean>(() => {
     try {
-      return sessionStorage.getItem(INTRO_SEEN_KEY) === '1';
+      if (sessionStorage.getItem(INTRO_SEEN_KEY) === '1') return true;
+      const path = window.location.pathname;
+      // Skip intro for any deep app link that isn't the root dashboard
+      if (path.startsWith('/app/') && path !== '/app/dashboard' && path !== '/app/') {
+        sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+        return true;
+      }
+      return false;
     } catch {
       return false;
     }
