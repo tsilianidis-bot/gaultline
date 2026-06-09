@@ -1,7 +1,7 @@
 /* ============================================================
-   FAULTLINE — Situation Room
+   FAULTLINE — Situation Room v2
    Market command center. Stress-test your next move before
-   risking capital.
+   risking capital. Now with 8 new intelligence panels.
    ============================================================ */
 import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
@@ -12,6 +12,7 @@ import {
   CheckCircle, XCircle, AlertTriangle, Target, Zap,
   TrendingUp, TrendingDown, Activity, Shield, BarChart2,
   RefreshCw, ChevronDown, ChevronUp, Minus, Eye, Crosshair,
+  DollarSign, History, FlaskConical, ArrowRight,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -21,6 +22,12 @@ type MoveType =
   | "increase_crypto" | "reduce_crypto";
 
 type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twelve_months";
+
+type ThesisType =
+  | "momentum" | "breakout" | "mean_reversion" | "long_term"
+  | "value" | "ai_theme" | "crypto_cycle" | "sector_rotation" | "other";
+
+type VerdictType = "APPROVED" | "CAUTION" | "WAIT" | "DEFENSIVE" | "HIGH_CONVICTION";
 
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string }[] = [
@@ -42,6 +49,32 @@ const TIMEFRAME_OPTIONS: { value: SimulatorTimeframe; label: string; sub: string
   { value: "one_three_months", label: "1–3 Months",  sub: "Tactical" },
   { value: "six_twelve_months",label: "6–12 Months", sub: "Strategic" },
 ];
+
+const THESIS_OPTIONS: { value: ThesisType; label: string }[] = [
+  { value: "momentum",        label: "Momentum" },
+  { value: "breakout",        label: "Breakout" },
+  { value: "mean_reversion",  label: "Mean Reversion" },
+  { value: "long_term",       label: "Long-Term" },
+  { value: "value",           label: "Value" },
+  { value: "ai_theme",        label: "AI Theme" },
+  { value: "crypto_cycle",    label: "Crypto Cycle" },
+  { value: "sector_rotation", label: "Sector Rotation" },
+  { value: "other",           label: "Other" },
+];
+
+const VERDICT_CONFIG: Record<VerdictType, { label: string; color: string; glow: string; borderColor: string }> = {
+  HIGH_CONVICTION: { label: "HIGH CONVICTION", color: "#00FF88", glow: "rgba(0,255,136,0.25)", borderColor: "rgba(0,255,136,0.5)" },
+  APPROVED:        { label: "APPROVED",         color: "#00D4FF", glow: "rgba(0,212,255,0.20)", borderColor: "rgba(0,212,255,0.45)" },
+  CAUTION:         { label: "CAUTION",          color: "#FF9500", glow: "rgba(255,149,0,0.20)",  borderColor: "rgba(255,149,0,0.45)" },
+  WAIT:            { label: "WAIT",             color: "#A78BFA", glow: "rgba(167,139,250,0.18)", borderColor: "rgba(167,139,250,0.40)" },
+  DEFENSIVE:       { label: "DEFENSIVE",        color: "#FF2D55", glow: "rgba(255,45,85,0.22)",  borderColor: "rgba(255,45,85,0.45)" },
+};
+
+const GRADE_COLOR: Record<string, string> = {
+  "A+": "#00FF88", "A": "#00D4FF", "A-": "#00D4FF",
+  "B+": "#FF9500", "B": "#FF9500", "B-": "#FF6B35",
+  "C":  "#FF2D55",
+};
 
 // ── Color helpers ─────────────────────────────────────────────
 function favColor(score: number) {
@@ -72,6 +105,8 @@ function pressureColor(score: number) {
   if (score >= 25) return "#00D4FF";
   return "#00FF88";
 }
+function returnColor(v: number) { return v > 0 ? "#00FF88" : v < 0 ? "#FF2D55" : "#94A3B8"; }
+function returnSign(v: number) { return v > 0 ? `+${v}%` : `${v}%`; }
 
 // ── Animated ring ─────────────────────────────────────────────
 function ScoreRing({ score, color, size = 130, label }: { score: number; color: string; size?: number; label?: string }) {
@@ -177,10 +212,13 @@ export default function SituationRoom() {
 
   const [selectedMove, setSelectedMove] = useState<MoveType | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<SimulatorTimeframe>("today");
+  const [selectedThesis, setSelectedThesis] = useState<ThesisType>("momentum");
   const [ticker, setTicker] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({
     greenLights: true, threatBoard: true, actionBias: true, invalidation: false, watchNext: false,
+    verdict: true, outcomeSimulator: true, entryQuality: true, positionSizing: true,
+    historicalAnalogs: true, thesisStressTest: true,
   });
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -197,6 +235,7 @@ export default function SituationRoom() {
       moveType: selectedMove,
       timeframe: selectedTimeframe,
       ticker: selectedMove === "buy_specific_ticker" && ticker.trim() ? ticker.trim().toUpperCase() : undefined,
+      thesisType: selectedThesis,
     });
   };
 
@@ -333,7 +372,7 @@ export default function SituationRoom() {
           )}
 
           {/* Timeframe */}
-          <div style={{ marginBottom: "16px" }}>
+          <div style={{ marginBottom: "14px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Timeframe</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
               {TIMEFRAME_OPTIONS.map(tf => {
@@ -343,6 +382,30 @@ export default function SituationRoom() {
                     style={{ padding: "10px 8px", background: sel ? "rgba(0,212,255,0.10)" : "rgba(255,255,255,0.02)", border: sel ? "1px solid rgba(0,212,255,0.45)" : "1px solid rgba(255,255,255,0.07)", borderRadius: "4px", cursor: "pointer", textAlign: "center", transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)" }}>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: sel ? "#00D4FF" : "#94A3B8" }}>{tf.label}</div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{tf.sub}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Thesis Type */}
+          <div style={{ marginBottom: "16px" }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Thesis Type</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {THESIS_OPTIONS.map(th => {
+                const sel = selectedThesis === th.value;
+                return (
+                  <button key={th.value} onClick={() => setSelectedThesis(th.value)}
+                    style={{
+                      padding: "6px 12px",
+                      background: sel ? "rgba(167,139,250,0.14)" : "rgba(255,255,255,0.025)",
+                      border: sel ? "1px solid rgba(167,139,250,0.50)" : "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: "4px", cursor: "pointer",
+                      fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px",
+                      color: sel ? "#A78BFA" : "#64748B",
+                      transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
+                    }}>
+                    {th.label}
                   </button>
                 );
               })}
@@ -382,7 +445,7 @@ export default function SituationRoom() {
         </div>
 
         {/* ══════════════════════════════════════════════════════
-            SIMULATION RESULT (sections C–H)
+            SIMULATION RESULT (sections C–H + new panels)
         ══════════════════════════════════════════════════════ */}
         {showResult && result && (
           <div ref={resultRef} style={{ animation: "cinematic-reveal 0.65s cubic-bezier(0.23,1,0.32,1) both" }}>
@@ -409,6 +472,38 @@ export default function SituationRoom() {
               </button>
             </div>
 
+            {/* ═══ NEW: DECISION VERDICT BANNER ═══ */}
+            {result.verdict && (() => {
+              const vt = result.verdict.verdict as VerdictType;
+              const vc = VERDICT_CONFIG[vt] ?? VERDICT_CONFIG.CAUTION;
+              return (
+                <div style={{
+                  background: `linear-gradient(135deg, ${vc.color}08 0%, rgba(12,15,22,0.98) 60%)`,
+                  border: `1px solid ${vc.borderColor}`,
+                  borderLeft: `4px solid ${vc.color}`,
+                  borderRadius: "6px", padding: "18px", marginBottom: "10px",
+                  boxShadow: `0 0 32px ${vc.glow}`,
+                  animation: "cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) both",
+                }}>
+                  <SectionLabel icon={<Zap size={14} />} title="Decision Verdict" color={vc.color} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
+                    <div>
+                      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "28px", color: vc.color, letterSpacing: "0.12em", textShadow: `0 0 24px ${vc.color}60`, lineHeight: 1 }}>{vc.label}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.55)", marginTop: "4px" }}>Confidence: <span style={{ color: vc.color, fontWeight: 700 }}>{result.verdict.confidence}%</span></div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: "180px" }}>
+                      <div style={{ height: "4px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${result.verdict.confidence}%`, background: vc.color, borderRadius: "2px", boxShadow: `0 0 8px ${vc.color}60`, transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)" }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: "12px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.65, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px" }}>
+                    {result.verdict.reason}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* SECTION C — Move Favorability Score */}
             <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "6px", padding: "20px", marginBottom: "10px" }}>
               <SectionLabel icon={<Target size={14} />} title="Move Favorability Score" color={favColor(result.moveFavorabilityScore)} />
@@ -432,6 +527,77 @@ export default function SituationRoom() {
               </div>
             </div>
 
+            {/* ═══ NEW: POSITION OUTCOME SIMULATOR ═══ */}
+            {result.outcomeSimulator && (
+              <CollapsiblePanel open={open.outcomeSimulator} onToggle={() => toggle("outcomeSimulator")} icon={<BarChart2 size={14} />} title="Position Outcome Simulator" color="#00D4FF">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "12px" }}>
+                  {result.outcomeSimulator.scenarios.map((s: any) => {
+                    const scenColor = s.label === "Bull Case" ? "#00FF88" : s.label === "Bear Case" ? "#FF2D55" : "#94A3B8";
+                    return (
+                      <div key={s.label} style={{ background: `${scenColor}06`, border: `1px solid ${scenColor}22`, borderRadius: "6px", padding: "14px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                          {s.label === "Bull Case" ? <TrendingUp size={12} color={scenColor} /> : s.label === "Bear Case" ? <TrendingDown size={12} color={scenColor} /> : <Minus size={12} color={scenColor} />}
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{s.label}</span>
+                        </div>
+                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "24px", color: returnColor(s.expectedReturn), textShadow: `0 0 12px ${returnColor(s.expectedReturn)}50` }}>
+                          {returnSign(s.expectedReturn)}
+                        </div>
+                        <div style={{ marginTop: "8px", height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${s.probability}%`, background: scenColor, borderRadius: "2px" }} />
+                        </div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", marginTop: "5px" }}>{s.probability}% probability</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "4px" }}>
+                  <ArrowRight size={13} color="#64748B" />
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Probability-Weighted Outcome</span>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: returnColor(result.outcomeSimulator.weightedOutcome), marginLeft: "auto" }}>
+                    {returnSign(result.outcomeSimulator.weightedOutcome)}
+                  </span>
+                </div>
+              </CollapsiblePanel>
+            )}
+            <div style={{ marginBottom: "10px" }} />
+
+            {/* ═══ NEW: ENTRY QUALITY GRADE ═══ */}
+            {result.entryQuality && (
+              <CollapsiblePanel open={open.entryQuality} onToggle={() => toggle("entryQuality")} icon={<Target size={14} />} title="Entry Quality Grade" color={GRADE_COLOR[result.entryQuality.overallGrade] ?? "#94A3B8"}>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "14px" }}>
+                  <div style={{
+                    width: "60px", height: "60px", borderRadius: "8px", flexShrink: 0,
+                    background: `${GRADE_COLOR[result.entryQuality.overallGrade] ?? "#94A3B8"}12`,
+                    border: `2px solid ${GRADE_COLOR[result.entryQuality.overallGrade] ?? "#94A3B8"}50`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "26px", color: GRADE_COLOR[result.entryQuality.overallGrade] ?? "#94A3B8" }}>
+                      {result.entryQuality.overallGrade}
+                    </span>
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Overall Entry Grade</div>
+                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", marginTop: "3px" }}>Based on {result.entryQuality.categories.length} regime factors</div>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "8px" }}>
+                  {result.entryQuality.categories.map((cat: any) => {
+                    const gc = GRADE_COLOR[cat.grade] ?? "#94A3B8";
+                    return (
+                      <div key={cat.category} style={{ background: `${gc}06`, border: `1px solid ${gc}20`, borderRadius: "4px", padding: "10px 12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "5px" }}>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{cat.category}</span>
+                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: gc }}>{cat.grade}</span>
+                        </div>
+                        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(100,116,139,0.65)", lineHeight: 1.5 }}>{cat.note}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CollapsiblePanel>
+            )}
+            <div style={{ marginBottom: "10px" }} />
+
             {/* SECTION D — Action Bias */}
             <CollapsiblePanel open={open.actionBias} onToggle={() => toggle("actionBias")} icon={<BarChart2 size={14} />} title="Action Bias" color="#00D4FF">
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#CBD5E1", lineHeight: 1.65, marginBottom: "14px" }}>{result.actionBias}</div>
@@ -442,10 +608,35 @@ export default function SituationRoom() {
             </CollapsiblePanel>
             <div style={{ marginBottom: "10px" }} />
 
+            {/* ═══ NEW: POSITION SIZING ═══ */}
+            {result.positionSizing && (
+              <CollapsiblePanel open={open.positionSizing} onToggle={() => toggle("positionSizing")} icon={<DollarSign size={14} />} title="Position Sizing Guidance" color="#00FF88">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "12px" }}>
+                  {result.positionSizing.tiers.map((tier: any) => {
+                    const tierColor = tier.label === "Conservative" ? "#94A3B8" : tier.label === "Standard" ? "#00D4FF" : "#A78BFA";
+                    return (
+                      <div key={tier.label} style={{ background: `${tierColor}06`, border: `1px solid ${tierColor}22`, borderRadius: "6px", padding: "14px" }}>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "6px" }}>{tier.label}</div>
+                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "28px", color: tierColor, lineHeight: 1 }}>{tier.allocation}%</div>
+                        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(100,116,139,0.55)", marginTop: "6px", lineHeight: 1.5 }}>{tier.rationale}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ padding: "10px 12px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "4px" }}>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6 }}>{result.positionSizing.guidance}</div>
+                </div>
+              </CollapsiblePanel>
+            )}
+            <div style={{ marginBottom: "10px" }} />
+
             {/* FAULTLINE Analysis */}
             <div style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.04) 0%, rgba(12,15,22,0.98) 100%)", border: "1px solid rgba(0,212,255,0.14)", borderRadius: "6px", padding: "16px", marginBottom: "10px" }}>
               <SectionLabel icon={<Zap size={14} />} title="FAULTLINE Analysis" color="#00D4FF" />
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.7, fontStyle: "italic" }}>{result.explanation}</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.7 }}>{result.explanation}</div>
+              <div style={{ marginTop: "10px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.35)", textAlign: "right" }}>
+                Generated {new Date(result.generatedAt).toLocaleString()} · FAULTLINE Intelligence Engine
+              </div>
             </div>
 
             {/* SECTION E + F — Green Lights + Threat Board (side-by-side on wider screens) */}
@@ -454,7 +645,7 @@ export default function SituationRoom() {
               <CollapsiblePanel open={open.greenLights} onToggle={() => toggle("greenLights")} icon={<CheckCircle size={13} />} title="Green Lights" color="#00FF88" count={result.greenLights.length}>
                 {result.greenLights.length === 0
                   ? <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)", padding: "4px 0" }}>No green lights in current regime</div>
-                  : result.greenLights.map((item, i) => <ListRow key={i} text={item} color="#00FF88" icon={<CheckCircle size={12} />} />)
+                  : result.greenLights.map((item: string, i: number) => <ListRow key={i} text={item} color="#00FF88" icon={<CheckCircle size={12} />} />)
                 }
               </CollapsiblePanel>
 
@@ -462,19 +653,19 @@ export default function SituationRoom() {
               <CollapsiblePanel open={open.threatBoard} onToggle={() => toggle("threatBoard")} icon={<Shield size={13} />} title="Threat Board" color="#FF2D55" count={result.redFlags.length}>
                 {result.redFlags.length === 0
                   ? <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)", padding: "4px 0" }}>No active threats detected</div>
-                  : result.redFlags.map((item, i) => <ListRow key={i} text={item} color="#FF2D55" icon={<XCircle size={12} />} />)
+                  : result.redFlags.map((item: string, i: number) => <ListRow key={i} text={item} color="#FF2D55" icon={<XCircle size={12} />} />)
                 }
               </CollapsiblePanel>
             </div>
 
             {/* Threat Board — hidden pressure points from backend */}
-            {result.marketCondition?.threatBoard && result.marketCondition.threatBoard.filter(t => t.severity !== "low").length > 0 && (
+            {result.marketCondition?.threatBoard && result.marketCondition.threatBoard.filter((t: any) => t.severity !== "low").length > 0 && (
               <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,107,53,0.15)", borderRadius: "6px", padding: "14px", marginBottom: "10px" }}>
                 <SectionLabel icon={<Eye size={14} />} title="Hidden Pressure Points" color="#FF6B35" />
                 {result.marketCondition.threatBoard
-                  .filter(t => t.severity !== "low")
+                  .filter((t: any) => t.severity !== "low")
                   .slice(0, 5)
-                  .map((item, i) => (
+                  .map((item: any, i: number) => (
                     <ListRow key={i} text={item.threat} color={sevColor(item.severity)} icon={<AlertTriangle size={12} />} sub={item.hiddenPressure} />
                   ))}
               </div>
@@ -483,18 +674,63 @@ export default function SituationRoom() {
             {/* Areas to Avoid */}
             <div style={{ background: "rgba(12,15,22,0.98)", border: "1px solid rgba(255,149,0,0.14)", borderRadius: "6px", padding: "14px", marginBottom: "10px" }}>
               <SectionLabel icon={<AlertTriangle size={14} />} title="Areas to Avoid" color="#FF9500" />
-              {result.avoidAreas.map((item, i) => <ListRow key={i} text={item} color="#FF9500" icon={<AlertTriangle size={12} />} />)}
+              {result.avoidAreas.map((item: string, i: number) => <ListRow key={i} text={item} color="#FF9500" icon={<AlertTriangle size={12} />} />)}
             </div>
+
+            {/* ═══ NEW: HISTORICAL ANALOGS ═══ */}
+            {result.historicalAnalogs && result.historicalAnalogs.length > 0 && (
+              <CollapsiblePanel open={open.historicalAnalogs} onToggle={() => toggle("historicalAnalogs")} icon={<History size={14} />} title="Historical Analog Engine" color="#A78BFA">
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "8px" }}>
+                  {result.historicalAnalogs.map((a: any, i: number) => (
+                    <div key={i} style={{ background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: "6px", padding: "14px" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "8px" }}>
+                        <div>
+                          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0", lineHeight: 1.2 }}>{a.label}</div>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", marginTop: "2px" }}>{a.period}</div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", textTransform: "uppercase" }}>Similarity</div>
+                          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#A78BFA" }}>{a.similarity}%</div>
+                        </div>
+                      </div>
+                      <div style={{ height: "2px", background: "rgba(255,255,255,0.05)", borderRadius: "1px", overflow: "hidden", marginBottom: "8px" }}>
+                        <div style={{ height: "100%", width: `${a.similarity}%`, background: "#A78BFA", borderRadius: "1px" }} />
+                      </div>
+                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8", lineHeight: 1.55 }}>{a.outcome}</div>
+                    </div>
+                  ))}
+                </div>
+              </CollapsiblePanel>
+            )}
+            <div style={{ marginBottom: "10px" }} />
+
+            {/* ═══ NEW: THESIS STRESS TEST ═══ */}
+            {result.thesisStressTest && (
+              <CollapsiblePanel open={open.thesisStressTest} onToggle={() => toggle("thesisStressTest")} icon={<FlaskConical size={14} />} title="Thesis Stress Test" color="#F59E0B">
+                <div style={{ marginBottom: "12px" }}>
+                  <div style={{ display: "inline-block", padding: "3px 10px", background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.30)", borderRadius: "3px", marginBottom: "8px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#F59E0B", letterSpacing: "0.1em" }}>{result.thesisStressTest.thesisLabel}</span>
+                  </div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "5px" }}>Core Dependency</div>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#CBD5E1", lineHeight: 1.6 }}>{result.thesisStressTest.coreDependency}</div>
+                </div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Failure Points</div>
+                {result.thesisStressTest.failurePoints.map((fp: string, i: number) => (
+                  <ListRow key={i} text={fp} color="#F59E0B" icon={<AlertTriangle size={12} />} />
+                ))}
+              </CollapsiblePanel>
+            )}
+            <div style={{ marginBottom: "10px" }} />
 
             {/* SECTION G — What Could Break the Setup / Invalidation Triggers */}
             <CollapsiblePanel open={open.invalidation} onToggle={() => toggle("invalidation")} icon={<Shield size={14} />} title="What Could Break the Setup" color="#FF6B35" count={result.invalidationTriggers.length}>
-              {result.invalidationTriggers.map((item, i) => <ListRow key={i} text={item} color="#FF6B35" icon={<AlertTriangle size={12} />} />)}
+              {result.invalidationTriggers.map((item: string, i: number) => <ListRow key={i} text={item} color="#FF6B35" icon={<AlertTriangle size={12} />} />)}
             </CollapsiblePanel>
             <div style={{ marginBottom: "10px" }} />
 
             {/* SECTION H — Key Indicators to Watch Next */}
             <CollapsiblePanel open={open.watchNext} onToggle={() => toggle("watchNext")} icon={<Activity size={14} />} title="Key Indicators to Watch Next" color="#00D4FF" count={result.watchNext.length}>
-              {result.watchNext.map((item, i) => <ListRow key={i} text={item} color="#00D4FF" icon={<Minus size={12} />} />)}
+              {result.watchNext.map((item: string, i: number) => <ListRow key={i} text={item} color="#00D4FF" icon={<Minus size={12} />} />)}
             </CollapsiblePanel>
             <div style={{ marginBottom: "10px" }} />
 
@@ -503,6 +739,7 @@ export default function SituationRoom() {
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", lineHeight: 1.6, textAlign: "center", letterSpacing: "0.04em" }}>
                 FAULTLINE simulations are market-regime guidance, not personalized financial advice or guaranteed predictions.
                 All readings are probability-weighted estimates derived from macroeconomic data and should not be the sole basis for any investment decision.
+                Position sizing, scenario projections, and verdict outputs are model-generated estimates only.
               </div>
             </div>
           </div>
