@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -84,6 +84,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "alt-rotation",label: "Sector Rotation",   shortLabel: "Rotation",  icon: RotateCcw,  path: "/app/alt-rotation" },
       { id: "aftershock",  label: "Aftershock Engine", shortLabel: "Aftershock",icon: Waves,      path: "/app/aftershock" },
       { id: "insider-intelligence", label: "Insider Intelligence", shortLabel: "Insider", icon: Eye, path: "/app/insider-intelligence" },
+      { id: "seo-optimizer", label: "SEO Optimizer", shortLabel: "SEO", icon: Search, path: "/app/seo-optimizer" },
     ],
   },
   {

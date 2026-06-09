@@ -53,7 +53,8 @@ const AltRotation = lazy(() => import('./pages/AltRotation'));
 const TradePreflight = lazy(() => import('./pages/TradePreflight'));
 const SituationRoom = lazy(() => import('./pages/SituationRoom'));
 const PreFlight = lazy(() => import('./pages/PreFlight'));
-const InsiderIntelligence = lazy(() => import('./pages/InsiderIntelligence'));
+const InsiderIntelligence = lazy(() => import("./pages/InsiderIntelligence"));
+const SeoOptimizer = lazy(() => import("./pages/SeoOptimizer"));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
 
@@ -197,6 +198,7 @@ function Router() {
               <Route path="/app/blog" component={Blog} />
               <Route path="/app/track-record" component={TrackRecord} />
               <Route path="/app/reading-history" component={ReadingHistory} />
+              <Route path="/app/seo-optimizer" component={SeoOptimizer} />
               <Route component={Dashboard} />
             </Switch>
           </Suspense>

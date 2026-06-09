@@ -43,6 +43,7 @@ import { postTweet, postThread, parseThread } from './xPoster';
 import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ThesisType } from './tradePreflight';
 import { getPreFlightData } from './preFlight';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
+import { analyzeSeoUrl, generateMetaTags } from './seoOptimizer';
 import { xPostQueue, users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
@@ -1835,6 +1836,34 @@ export const appRouter = router({
           return await getPreFlightData();
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Pre-Flight data fetch failed", cause: err });
+        }
+      }),
+  }),
+
+  // ── SEO Optimizer ────────────────────────────────────────────
+  seo: router({
+    analyzeUrl: protectedProcedure
+      .input(z.object({
+        url: z.string().url(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          return await analyzeSeoUrl(input.url);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err instanceof Error ? err.message : "SEO analysis failed", cause: err });
+        }
+      }),
+    generateMeta: protectedProcedure
+      .input(z.object({
+        topic: z.string().min(3).max(200),
+        targetKeyword: z.string().min(2).max(100),
+        pageType: z.enum(["blog", "landing", "product", "category", "homepage", "about", "service"]),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          return await generateMetaTags(input.topic, input.targetKeyword, input.pageType);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Meta generation failed", cause: err });
         }
       }),
   }),
