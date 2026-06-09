@@ -22,6 +22,7 @@ import {
   Copy, RefreshCw, Sparkles, BarChart2, Link2, FileText,
   Tag, Eye, Smartphone, Monitor, ChevronDown, ChevronUp,
   TrendingUp, Shield, Zap, BookOpen, ExternalLink, Hash,
+  Wrench, CheckCheck, Code2, ArrowRight, Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,32 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+// ── Auto Fix Types ───────────────────────────────────────────
+type AutoFix = {
+  checkId: string;
+  label: string;
+  category: "meta" | "content" | "technical" | "links" | "performance";
+  severity: "critical" | "important" | "minor";
+  problem: string;
+  solution: string;
+  codeSnippet?: string;
+  copyable: boolean;
+};
+
+type HtmlSnippet = {
+  label: string;
+  description: string;
+  code: string;
+  placement: "head" | "body" | "both";
+};
+
+type AutoFixResult = {
+  summary: string;
+  fixes: AutoFix[];
+  htmlSnippets: HtmlSnippet[];
+  estimatedImpact: "High" | "Medium" | "Low";
+};
 
 // ── Types (mirrored from server) ──────────────────────────────
 type SeoCheck = {
@@ -364,6 +391,23 @@ export default function SeoOptimizer() {
   const [result, setResult] = useState<SeoAnalysisResult | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [serpView, setSerpView] = useState<"desktop" | "mobile">("desktop");
+  const [autoFixResult, setAutoFixResult] = useState<AutoFixResult | null>(null);
+  const [expandedSnippet, setExpandedSnippet] = useState<number | null>(null);
+  const [expandedFix, setExpandedFix] = useState<number | null>(null);
+
+  const autoFix = trpc.seo.autoFix.useMutation({
+    onSuccess: (data) => {
+      setAutoFixResult(data as AutoFixResult);
+      toast.success("Auto Fix plan generated");
+    },
+    onError: (err) => toast.error(err.message || "Auto fix failed"),
+  });
+
+  const handleAutoFix = useCallback(() => {
+    if (!result) return;
+    setAutoFixResult(null);
+    autoFix.mutate({ analysisJson: JSON.stringify(result) });
+  }, [result, autoFix]);
 
   const analyzeUrl = trpc.seo.analyzeUrl.useMutation({
     onSuccess: (data) => {
@@ -591,6 +635,14 @@ export default function SeoOptimizer() {
                 </TabsTrigger>
                 <TabsTrigger value="meta-gen" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
                   <TrendingUp className="w-3.5 h-3.5 mr-1.5" />Meta Generator
+                </TabsTrigger>
+                <TabsTrigger value="auto-fix" className="text-xs data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 relative">
+                  <Wrench className="w-3.5 h-3.5 mr-1.5" />Auto Fix
+                  {checkCounts && checkCounts.fail > 0 && (
+                    <span className="ml-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
+                      {checkCounts.fail}
+                    </span>
+                  )}
                 </TabsTrigger>
               </TabsList>
 
@@ -913,6 +965,199 @@ export default function SeoOptimizer() {
                   </div>
                   <MetaGenerator />
                 </div>
+              </TabsContent>
+
+              {/* Auto Fix Tab */}
+              <TabsContent value="auto-fix" className="space-y-4">
+                {/* Trigger button */}
+                {!autoFixResult && !autoFix.isPending && (
+                  <div className="border border-orange-500/20 bg-orange-500/5 rounded-xl p-6 flex flex-col items-center gap-4">
+                    <div className="w-14 h-14 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                      <Wrench className="w-6 h-6 text-orange-400" />
+                    </div>
+                    <div className="text-center">
+                      <div className="text-base font-bold text-white/90 mb-1">AI Auto Fix Engine</div>
+                      <div className="text-sm text-white/50 max-w-md">
+                        Analyzes all {checkCounts ? checkCounts.fail + checkCounts.warning : 0} issues found and generates
+                        ready-to-paste code fixes, optimized meta tags, and a prioritized action plan.
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleAutoFix}
+                      className="bg-orange-500 hover:bg-orange-400 text-black font-bold h-10 px-8"
+                    >
+                      <Wrench className="w-4 h-4 mr-2" />
+                      Generate Auto Fixes
+                    </Button>
+                  </div>
+                )}
+
+                {/* Loading */}
+                {autoFix.isPending && (
+                  <div className="flex flex-col items-center justify-center py-16 gap-4">
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full border-2 border-orange-500/20 border-t-orange-500 animate-spin" />
+                      <Wrench className="absolute inset-0 m-auto w-5 h-5 text-orange-400/60" />
+                    </div>
+                    <div className="text-center">
+                      <div className="text-sm font-medium text-white/70">Generating auto-fix plan…</div>
+                      <div className="text-xs text-white/40 mt-1">AI is analyzing all issues and writing code fixes</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Results */}
+                {autoFixResult && !autoFix.isPending && (
+                  <div className="space-y-5">
+                    {/* Summary bar */}
+                    <div className="flex items-center gap-3 border border-white/10 rounded-xl p-4 bg-white/[0.02]">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                        autoFixResult.estimatedImpact === "High" ? "bg-red-500/10 border border-red-500/20" :
+                        autoFixResult.estimatedImpact === "Medium" ? "bg-yellow-500/10 border border-yellow-500/20" :
+                        "bg-emerald-500/10 border border-emerald-500/20"
+                      }`}>
+                        <Flame className={`w-5 h-5 ${
+                          autoFixResult.estimatedImpact === "High" ? "text-red-400" :
+                          autoFixResult.estimatedImpact === "Medium" ? "text-yellow-400" : "text-emerald-400"
+                        }`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm text-white/80">{autoFixResult.summary}</div>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-xs text-white/40">{autoFixResult.fixes.length} fixes generated</span>
+                          <span className="text-xs text-white/40">·</span>
+                          <span className="text-xs text-white/40">{autoFixResult.htmlSnippets.length} HTML snippets</span>
+                          <Badge className={`text-[10px] border ml-1 ${
+                            autoFixResult.estimatedImpact === "High" ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                            autoFixResult.estimatedImpact === "Medium" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
+                            "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          }`}>{autoFixResult.estimatedImpact} Impact</Badge>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={handleAutoFix}
+                        variant="outline"
+                        className="border-white/10 text-white/50 hover:text-white h-8 text-xs shrink-0"
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1.5" />Re-run
+                      </Button>
+                    </div>
+
+                    {/* Individual Fixes */}
+                    <div>
+                      <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Prioritized Fixes</div>
+                      <div className="space-y-2">
+                        {autoFixResult.fixes.map((fix, i) => (
+                          <div
+                            key={fix.checkId}
+                            className={`border rounded-xl overflow-hidden transition-all ${
+                              fix.severity === "critical" ? "border-red-500/25 bg-red-500/5" :
+                              fix.severity === "important" ? "border-yellow-500/25 bg-yellow-500/5" :
+                              "border-white/10 bg-white/[0.02]"
+                            }`}
+                          >
+                            <button
+                              onClick={() => setExpandedFix(expandedFix === i ? null : i)}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+                            >
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black ${
+                                fix.severity === "critical" ? "bg-red-500/20 text-red-400" :
+                                fix.severity === "important" ? "bg-yellow-500/20 text-yellow-400" :
+                                "bg-white/10 text-white/50"
+                              }`}>{i + 1}</div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-white/90 truncate">{fix.label}</div>
+                                <div className="text-xs text-white/40 truncate">{fix.problem}</div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <Badge className={`text-[10px] border ${
+                                  fix.severity === "critical" ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                                  fix.severity === "important" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
+                                  "bg-white/5 text-white/40 border-white/10"
+                                }`}>{fix.severity}</Badge>
+                                {expandedFix === i ? <ChevronUp className="w-3.5 h-3.5 text-white/30" /> : <ChevronDown className="w-3.5 h-3.5 text-white/30" />}
+                              </div>
+                            </button>
+
+                            {expandedFix === i && (
+                              <div className="px-4 pb-4 space-y-3">
+                                <div className="flex items-start gap-2">
+                                  <ArrowRight className="w-3.5 h-3.5 text-cyan-400 mt-0.5 shrink-0" />
+                                  <p className="text-sm text-white/70">{fix.solution}</p>
+                                </div>
+                                {fix.codeSnippet && (
+                                  <div className="relative">
+                                    <div className="flex items-center justify-between mb-1.5">
+                                      <div className="flex items-center gap-1.5">
+                                        <Code2 className="w-3.5 h-3.5 text-cyan-400/70" />
+                                        <span className="text-xs text-white/40 uppercase tracking-wider">Code Fix</span>
+                                      </div>
+                                      <button
+                                        onClick={() => copyToClipboard(fix.codeSnippet!, "Code fix")}
+                                        className="flex items-center gap-1.5 text-xs text-white/30 hover:text-cyan-400 transition-colors"
+                                      >
+                                        <Copy className="w-3 h-3" />Copy
+                                      </button>
+                                    </div>
+                                    <pre className="bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-emerald-300/90 overflow-x-auto font-mono leading-relaxed whitespace-pre-wrap">{fix.codeSnippet}</pre>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* HTML Snippets */}
+                    {autoFixResult.htmlSnippets.length > 0 && (
+                      <div>
+                        <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Ready-to-Paste HTML Snippets</div>
+                        <div className="space-y-3">
+                          {autoFixResult.htmlSnippets.map((snippet, i) => (
+                            <div key={i} className="border border-cyan-500/20 bg-cyan-500/5 rounded-xl overflow-hidden">
+                              <button
+                                onClick={() => setExpandedSnippet(expandedSnippet === i ? null : i)}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
+                              >
+                                <Code2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-white/90">{snippet.label}</div>
+                                  <div className="text-xs text-white/40">{snippet.description}</div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Badge className="bg-cyan-500/10 text-cyan-400/70 border-cyan-500/20 text-[10px]">&lt;{snippet.placement}&gt;</Badge>
+                                  {expandedSnippet === i ? <ChevronUp className="w-3.5 h-3.5 text-white/30" /> : <ChevronDown className="w-3.5 h-3.5 text-white/30" />}
+                                </div>
+                              </button>
+                              {expandedSnippet === i && (
+                                <div className="px-4 pb-4">
+                                  <div className="flex justify-end mb-1.5">
+                                    <button
+                                      onClick={() => copyToClipboard(snippet.code, snippet.label)}
+                                      className="flex items-center gap-1.5 text-xs text-white/30 hover:text-cyan-400 transition-colors"
+                                    >
+                                      <Copy className="w-3 h-3" />Copy all
+                                    </button>
+                                  </div>
+                                  <pre className="bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-cyan-300/90 overflow-x-auto font-mono leading-relaxed whitespace-pre-wrap">{snippet.code}</pre>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* All fixed confirmation */}
+                    {autoFixResult.fixes.filter(f => f.severity === "critical").length === 0 && (
+                      <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4 flex items-center gap-3">
+                        <CheckCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <div className="text-sm text-emerald-300/80">No critical issues found. Apply the remaining fixes above to maximize your SEO score.</div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </div>

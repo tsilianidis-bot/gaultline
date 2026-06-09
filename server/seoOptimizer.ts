@@ -686,3 +686,343 @@ Return ONLY valid JSON.`,
     keywords: [targetKeyword, topic, `${targetKeyword} guide`, `best ${targetKeyword}`, `how to ${targetKeyword}`],
   };
 }
+
+// ── Auto Fix Generator ────────────────────────────────────────
+
+export interface AutoFixResult {
+  summary: string;
+  fixes: AutoFix[];
+  htmlSnippets: HtmlSnippet[];
+  estimatedImpact: "High" | "Medium" | "Low";
+}
+
+export interface AutoFix {
+  checkId: string;
+  label: string;
+  category: "meta" | "content" | "technical" | "links" | "performance";
+  severity: "critical" | "important" | "minor";
+  problem: string;
+  solution: string;
+  codeSnippet?: string;
+  copyable: boolean;
+}
+
+export interface HtmlSnippet {
+  label: string;
+  description: string;
+  code: string;
+  placement: "head" | "body" | "both";
+}
+
+export async function generateAutoFix(analysisResult: SeoAnalysisResult): Promise<AutoFixResult> {
+  const failedChecks = analysisResult.checks.filter(c => c.status === "fail" || c.status === "warning");
+  const criticalCount = analysisResult.checks.filter(c => c.status === "fail").length;
+
+  // Build static fixes for known check IDs
+  const staticFixes: AutoFix[] = failedChecks.map(check => {
+    const fix = buildStaticFix(check, analysisResult);
+    return fix;
+  });
+
+  // Build ready-to-paste HTML snippets
+  const htmlSnippets = buildHtmlSnippets(analysisResult);
+
+  // Use AI to generate a summary and any dynamic fixes
+  let aiSummary = `Found ${failedChecks.length} issues (${criticalCount} critical). Apply the fixes below to improve your SEO score.`;
+  let aiDynamicFixes: AutoFix[] = [];
+
+  try {
+    const response = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert SEO engineer. Generate concise, actionable auto-fix instructions in JSON.",
+        },
+        {
+          role: "user",
+          content: `Generate auto-fix instructions for this page's SEO issues.
+
+URL: ${analysisResult.url}
+Current title: ${analysisResult.meta.title || "MISSING"}
+Current description: ${analysisResult.meta.description || "MISSING"}
+H1: ${analysisResult.headings.h1[0] || "MISSING"}
+Word count: ${analysisResult.wordCount}
+Failed checks: ${failedChecks.map(c => c.label).join(", ")}
+Top keywords: ${analysisResult.keywords.slice(0, 5).map(k => k.word).join(", ")}
+
+Return JSON with:
+- summary: one sentence describing the overall fix priority
+- fixes: array of up to 3 objects, each with:
+  - label: short fix name
+  - problem: what's wrong (1 sentence)
+  - solution: exact fix to implement (1-2 sentences)
+  - codeSnippet: ready-to-paste HTML/code if applicable (or empty string)
+  - severity: "critical" | "important" | "minor"
+
+Return ONLY valid JSON.`,
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "auto_fix",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              summary: { type: "string" },
+              fixes: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    label: { type: "string" },
+                    problem: { type: "string" },
+                    solution: { type: "string" },
+                    codeSnippet: { type: "string" },
+                    severity: { type: "string", enum: ["critical", "important", "minor"] },
+                  },
+                  required: ["label", "problem", "solution", "codeSnippet", "severity"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["summary", "fixes"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const content = response?.choices?.[0]?.message?.content as string | undefined;
+    if (content) {
+      const parsed = JSON.parse(content);
+      aiSummary = parsed.summary || aiSummary;
+      aiDynamicFixes = (parsed.fixes || []).map((f: any, i: number) => ({
+        checkId: `ai-fix-${i}`,
+        label: f.label,
+        category: "meta" as const,
+        severity: f.severity,
+        problem: f.problem,
+        solution: f.solution,
+        codeSnippet: f.codeSnippet || undefined,
+        copyable: !!f.codeSnippet,
+      }));
+    }
+  } catch { /* use static fixes only */ }
+
+  // Merge: static fixes first, then AI dynamic fixes (deduplicated by label)
+  const existingLabels = new Set(staticFixes.map(f => f.label.toLowerCase()));
+  const uniqueAiFixes = aiDynamicFixes.filter(f => !existingLabels.has(f.label.toLowerCase()));
+  const allFixes = [...staticFixes, ...uniqueAiFixes];
+
+  const estimatedImpact: "High" | "Medium" | "Low" =
+    criticalCount >= 3 ? "High" : criticalCount >= 1 ? "Medium" : "Low";
+
+  return {
+    summary: aiSummary,
+    fixes: allFixes,
+    htmlSnippets,
+    estimatedImpact,
+  };
+}
+
+function buildStaticFix(check: SeoCheck, result: SeoAnalysisResult): AutoFix {
+  const topKeyword = result.keywords[0]?.word || "your-keyword";
+  const domain = (() => { try { return new URL(result.url).hostname; } catch { return "yoursite.com"; } })();
+
+  const fixMap: Record<string, Partial<AutoFix>> = {
+    "title-missing": {
+      severity: "critical",
+      problem: "No <title> tag found — Google cannot display your page in search results.",
+      solution: "Add a descriptive title tag inside <head> containing your primary keyword (50–60 chars).",
+      codeSnippet: `<title>${topKeyword.charAt(0).toUpperCase() + topKeyword.slice(1)} — ${domain}</title>`,
+    },
+    "title-short": {
+      severity: "important",
+      problem: `Title is only ${result.meta.titleLength} characters — too short to rank effectively.`,
+      solution: "Expand your title to 50–60 characters, including your primary keyword near the front.",
+      codeSnippet: result.meta.title ? `<title>${result.meta.title} | ${topKeyword} Guide</title>` : undefined,
+    },
+    "title-long": {
+      severity: "minor",
+      problem: `Title is ${result.meta.titleLength} characters — Google truncates at ~60 in SERPs.`,
+      solution: "Shorten to under 60 characters. Keep the primary keyword and brand name.",
+      codeSnippet: result.meta.title ? `<title>${result.meta.title.substring(0, 55)}…</title>` : undefined,
+    },
+    "desc-missing": {
+      severity: "critical",
+      problem: "No meta description — Google will auto-generate one, often poorly.",
+      solution: "Add a compelling meta description (120–160 chars) that includes your keyword and a call to action.",
+      codeSnippet: `<meta name="description" content="Discover ${topKeyword} with FAULTLINE — real-time macro risk intelligence for traders and analysts. Start free today.">`,
+    },
+    "desc-short": {
+      severity: "important",
+      problem: `Meta description is only ${result.meta.descriptionLength} characters — too short to be compelling.`,
+      solution: "Expand to 120–160 characters with a clear value proposition and keyword.",
+      codeSnippet: result.meta.description ? `<meta name="description" content="${result.meta.description} Learn more about ${topKeyword} and start your free analysis today.">` : undefined,
+    },
+    "desc-long": {
+      severity: "minor",
+      problem: `Meta description is ${result.meta.descriptionLength} characters — Google truncates at ~160.`,
+      solution: "Trim to under 160 characters, keeping the most important value proposition.",
+    },
+    "h1-missing": {
+      severity: "critical",
+      problem: "No H1 heading found — search engines use H1 to understand the page topic.",
+      solution: "Add exactly one H1 heading at the top of your main content containing your primary keyword.",
+      codeSnippet: `<h1>${topKeyword.charAt(0).toUpperCase() + topKeyword.slice(1)}: Complete Guide</h1>`,
+    },
+    "h1-multiple": {
+      severity: "important",
+      problem: `${result.headings.h1.length} H1 headings found — only one is allowed per page.`,
+      solution: "Keep only the most important H1. Change all other H1 tags to H2 or H3.",
+      codeSnippet: `<!-- Change secondary H1s to H2 -->\n<h2>${result.headings.h1[1] || "Secondary heading"}</h2>`,
+    },
+    "h2-missing": {
+      severity: "minor",
+      problem: "No H2 subheadings found — content structure is flat and hard to scan.",
+      solution: "Add H2 headings to break up content into logical sections with secondary keywords.",
+      codeSnippet: `<h2>What is ${topKeyword}?</h2>\n<h2>How ${topKeyword} Works</h2>\n<h2>Getting Started with ${topKeyword}</h2>`,
+    },
+    "content-thin": {
+      severity: "critical",
+      problem: `Only ${result.wordCount} words — thin content is penalized by Google.`,
+      solution: "Expand content to at least 600–800 words. Add FAQs, examples, and detailed explanations.",
+    },
+    "content-short": {
+      severity: "important",
+      problem: `${result.wordCount} words is below the recommended minimum for competitive ranking.`,
+      solution: "Add more depth: case studies, step-by-step guides, or an FAQ section to reach 800+ words.",
+    },
+    "canonical-missing": {
+      severity: "important",
+      problem: "No canonical tag — duplicate content issues may dilute your page authority.",
+      solution: "Add a canonical tag pointing to the preferred URL of this page.",
+      codeSnippet: `<link rel="canonical" href="${result.url}">`,
+    },
+    "og-missing": {
+      severity: "important",
+      problem: "No Open Graph tags — social shares will show generic previews.",
+      solution: "Add og:title, og:description, og:image, and og:url tags.",
+      codeSnippet: `<meta property="og:title" content="${result.meta.title || topKeyword}">\n<meta property="og:description" content="${result.meta.description || `Discover ${topKeyword}`}">\n<meta property="og:image" content="https://${domain}/og-image.jpg">\n<meta property="og:url" content="${result.url}">\n<meta property="og:type" content="website">`,
+    },
+    "twitter-missing": {
+      severity: "minor",
+      problem: "No Twitter Card tags — Twitter shares will show plain links.",
+      solution: "Add twitter:card, twitter:title, and twitter:description tags.",
+      codeSnippet: `<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:title" content="${result.meta.title || topKeyword}">\n<meta name="twitter:description" content="${result.meta.description || `Discover ${topKeyword}`}">\n<meta name="twitter:image" content="https://${domain}/og-image.jpg">`,
+    },
+    "schema-missing": {
+      severity: "important",
+      problem: "No JSON-LD structured data — missing out on rich snippet eligibility.",
+      solution: "Add JSON-LD schema markup appropriate for your page type.",
+      codeSnippet: `<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "WebPage",\n  "name": "${result.meta.title || topKeyword}",\n  "description": "${result.meta.description || `Discover ${topKeyword}`}",\n  "url": "${result.url}"\n}\n</script>`,
+    },
+    "https-missing": {
+      severity: "critical",
+      problem: "Page is served over HTTP — HTTPS is a confirmed Google ranking factor.",
+      solution: "Install an SSL certificate and redirect all HTTP traffic to HTTPS.",
+      codeSnippet: `# .htaccess redirect\nRewriteEngine On\nRewriteCond %{HTTPS} off\nRewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]`,
+    },
+    "img-alt": {
+      severity: "important",
+      problem: `${result.technical.imagesWithoutAlt} images are missing alt text — hurts accessibility and image SEO.`,
+      solution: "Add descriptive alt text to every image, incorporating relevant keywords naturally.",
+      codeSnippet: `<!-- Before -->\n<img src="chart.png">\n\n<!-- After -->\n<img src="chart.png" alt="${topKeyword} analysis chart showing market pressure indicators">`,
+    },
+    "internal-links": {
+      severity: "minor",
+      problem: `Only ${result.links.internal} internal link(s) — poor internal linking limits crawlability.`,
+      solution: "Add links to 3–5 related pages on your site using keyword-rich anchor text.",
+      codeSnippet: `<a href="/related-page">Learn more about ${topKeyword}</a>`,
+    },
+    "viewport-missing": {
+      severity: "critical",
+      problem: "No viewport meta tag — page is not mobile-friendly, hurting mobile rankings.",
+      solution: "Add the viewport meta tag to the <head> section.",
+      codeSnippet: `<meta name="viewport" content="width=device-width, initial-scale=1.0">`,
+    },
+  };
+
+  const overrides = fixMap[check.id] || {};
+  return {
+    checkId: check.id,
+    label: check.label,
+    category: check.category,
+    severity: overrides.severity || (check.status === "fail" ? "critical" : "minor"),
+    problem: overrides.problem || check.detail,
+    solution: overrides.solution || check.recommendation || "Review and fix this issue.",
+    codeSnippet: overrides.codeSnippet,
+    copyable: !!overrides.codeSnippet,
+  };
+}
+
+function buildHtmlSnippets(result: SeoAnalysisResult): HtmlSnippet[] {
+  const snippets: HtmlSnippet[] = [];
+  const topKeyword = result.keywords[0]?.word || "your-keyword";
+  const domain = (() => { try { return new URL(result.url).hostname; } catch { return "yoursite.com"; } })();
+
+  // Complete head meta block
+  const title = result.aiSuggestions?.metaTitle || result.meta.title || `${topKeyword} — ${domain}`;
+  const desc = result.aiSuggestions?.metaDescription || result.meta.description || `Discover ${topKeyword}`;
+
+  snippets.push({
+    label: "Complete Meta Tags Block",
+    description: "Drop this into your <head> to fix title, description, canonical, OG, and Twitter tags in one go.",
+    placement: "head",
+    code: `<!-- SEO Meta Tags — generated by FAULTLINE SEO Optimizer -->
+<title>${title}</title>
+<meta name="description" content="${desc}">
+${result.meta.canonical ? "" : `<link rel="canonical" href="${result.url}">\n`}<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+
+<!-- Open Graph -->
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${desc}">
+<meta property="og:url" content="${result.url}">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://${domain}/og-image.jpg">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="${title}">
+<meta name="twitter:description" content="${desc}">
+<meta name="twitter:image" content="https://${domain}/og-image.jpg">`,
+  });
+
+  // Schema markup
+  if (!result.technical.hasSchema) {
+    snippets.push({
+      label: "JSON-LD Structured Data",
+      description: "Add schema.org markup to improve rich snippet eligibility in Google.",
+      placement: "head",
+      code: `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "${title}",
+  "description": "${desc}",
+  "url": "${result.url}",
+  "publisher": {
+    "@type": "Organization",
+    "name": "${domain}",
+    "url": "https://${domain}"
+  }
+}
+</script>`,
+    });
+  }
+
+  // H1 fix if missing
+  if (result.headings.h1.length === 0) {
+    snippets.push({
+      label: "H1 Heading Fix",
+      description: "Add this as the first heading in your main content area.",
+      placement: "body",
+      code: `<h1>${topKeyword.charAt(0).toUpperCase() + topKeyword.slice(1)}: Complete Guide</h1>`,
+    });
+  }
+
+  return snippets;
+}

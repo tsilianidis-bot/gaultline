@@ -43,7 +43,7 @@ import { postTweet, postThread, parseThread } from './xPoster';
 import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ThesisType } from './tradePreflight';
 import { getPreFlightData } from './preFlight';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
-import { analyzeSeoUrl, generateMetaTags } from './seoOptimizer';
+import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { xPostQueue, users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
@@ -1864,6 +1864,16 @@ export const appRouter = router({
           return await generateMetaTags(input.topic, input.targetKeyword, input.pageType);
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Meta generation failed", cause: err });
+        }
+      }),
+    autoFix: protectedProcedure
+      .input(z.object({ analysisJson: z.string() }))
+      .mutation(async ({ input }) => {
+        try {
+          const analysis = JSON.parse(input.analysisJson);
+          return await generateAutoFix(analysis);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err instanceof Error ? err.message : "Auto fix generation failed", cause: err });
         }
       }),
   }),
