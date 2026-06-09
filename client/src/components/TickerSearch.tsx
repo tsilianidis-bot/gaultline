@@ -11,6 +11,7 @@ import {
 import { trpc } from '@/lib/trpc';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { RiskFramework, type RiskLevels } from '@/components/RiskFramework';
+import { trackSignalSearch, trackWatchlistAction } from '@/hooks/useAnalytics';
 
 // ── Types ─────────────────────────────────────────────────────
 interface TickerProfile {
@@ -753,6 +754,9 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
 
       setProfile(data);
 
+      // Track signal search in GA4
+      trackSignalSearch(t);
+
       // Add to history
       const newHistory: SearchHistoryItem[] = [
         { ticker: t, name: data.name, timestamp: Date.now() },
@@ -839,6 +843,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
       const updated = watchlist.filter(w => w.ticker !== profile.ticker);
       setWatchlist(updated);
       saveWatchlist(updated);
+      trackWatchlistAction('remove', profile.ticker);
     } else {
       const updated: WatchlistItem[] = [
         { ticker: profile.ticker, name: profile.name, addedAt: Date.now() },
@@ -846,6 +851,7 @@ export function TickerSearch({ regime }: { regime: RegimeContext }) {
       ];
       setWatchlist(updated);
       saveWatchlist(updated);
+      trackWatchlistAction('add', profile.ticker);
     }
   }, [profile, watchlist]);
 

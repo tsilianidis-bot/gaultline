@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import PageHeader from "@/components/PageHeader";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { trackSituationRoomUse } from "@/hooks/useAnalytics";
 import {
   CheckCircle, XCircle, AlertTriangle, Target, Zap,
   TrendingUp, TrendingDown, Activity, Shield, BarChart2,
@@ -231,6 +232,7 @@ export default function SituationRoom() {
 
   const handleSimulate = () => {
     if (!selectedMove) return;
+    trackSituationRoomUse(selectedMove, selectedTimeframe);
     simulate.mutate({
       moveType: selectedMove,
       timeframe: selectedTimeframe,

@@ -9,6 +9,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
 import { useEngine } from "@/contexts/EngineContext";
 import type { EngineOutput } from "@/lib/engine";
+import { trackPreflightLaunch } from "@/hooks/useAnalytics";
 
 // ── Types ────────────────────────────────────────────────────
 interface ScoreData {
@@ -1022,6 +1023,7 @@ export function PreflightTrigger({
         onSuccess: () => utils.awareness.getScore.invalidate(),
       });
     }
+    trackPreflightLaunch();
     setOpen(true);
   }, [actionKey, user, logAction, currentPage, utils]);
   if (!user) return null;

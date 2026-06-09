@@ -12,7 +12,8 @@ import { EngineProvider } from "./contexts/EngineContext";
 import AppLayout from "./components/AppLayout";
 import IntroScreen from "./components/IntroScreen";
 import FREDDebugConsole from "./components/FREDDebugConsole";
-import CookieConsent from "./components/CookieConsent";
+import CookieConsent from './components/CookieConsent';
+import RouteTracker from './components/RouteTracker';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -262,6 +263,7 @@ function App() {
                 pointerEvents: introComplete ? 'auto' : 'none',
               }}
             >
+              <RouteTracker />
               <Router />
               <FREDDebugConsole />
             </div>

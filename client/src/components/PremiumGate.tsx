@@ -3,6 +3,7 @@ import { getLoginUrl } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { trackUpgradeClick } from "@/hooks/useAnalytics";
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -235,6 +236,9 @@ export function PremiumGateFull({
         toast.info('Redirecting to checkout...', { description: 'Opening Stripe secure payment page.' });
         window.open(data.url, '_blank');
       }
+    },
+    onMutate: (vars) => {
+      trackUpgradeClick(vars.planId, 'premium_gate');
     },
     onError: (err) => {
       toast.error('Checkout unavailable', { description: err.message });

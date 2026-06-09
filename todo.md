@@ -1019,3 +1019,23 @@
 - [x] Write vitest tests for updated tradePreflight.ts (30 tests, all passing)
 - [x] TypeScript: 0 errors, tests: all passing, build: success
 - [x] Save checkpoint
+
+## SEO Optimizer Module
+- [ ] server/seoOptimizer.ts: full backend engine (URL fetcher, content parser, scoring engine, keyword extractor, LLM-powered suggestions)
+- [ ] tRPC procedures: seo.analyzeUrl, seo.analyzeContent, seo.generateMeta, seo.keywordResearch
+- [ ] client/src/pages/SeoOptimizer.tsx: full command-center page with all panels
+- [ ] Panel: Overall SEO Score (0-100 with grade A-F and animated ring)
+- [ ] Panel: SERP Preview (Google search result preview for desktop + mobile)
+- [ ] Panel: Meta Tag Analyzer (title, description, keywords — length, quality, issues)
+- [ ] Panel: Meta Tag Generator (AI-powered meta title/description/keywords output)
+- [ ] Panel: Keyword Intelligence (primary keyword, density, LSI keywords, missing terms)
+- [ ] Panel: Content Quality Score (readability, word count, heading structure, image alt)
+- [ ] Panel: Technical SEO Checklist (canonical, robots, schema, page speed signals)
+- [ ] Panel: Internal Linking Opportunities (FAULTLINE blog posts to link to)
+- [ ] Panel: Competitor Gap Analysis (compare against competitor URLs)
+- [ ] Panel: AI Content Brief (LLM-generated full content brief with outline)
+- [ ] Panel: Social Sharing Preview (OG/Twitter card preview)
+- [ ] Route: /app/seo-optimizer in App.tsx
+- [ ] Nav: SEO Optimizer in TOOLS group in AppLayout.tsx
+- [ ] useSEO entry for the page
+- [ ] Vitest tests for seoOptimizer.ts

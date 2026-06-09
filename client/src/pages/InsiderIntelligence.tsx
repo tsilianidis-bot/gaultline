@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { trackInsiderSearch } from "@/hooks/useAnalytics";
 import {
   TrendingUp, TrendingDown, AlertTriangle, CheckCircle,
   Eye, Activity, BarChart2, Shield, Users, DollarSign,
@@ -326,7 +327,10 @@ export default function InsiderIntelligence() {
 
   const handleSearch = () => {
     const t = searchTicker.trim().toUpperCase().replace(/[^A-Z0-9.]/g, "");
-    if (t) setSelectedTicker(t);
+    if (t) {
+      trackInsiderSearch(t);
+      setSelectedTicker(t);
+    }
   };
 
   return (
