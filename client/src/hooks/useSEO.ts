@@ -241,6 +241,12 @@ export const PAGE_SEO = {
       "Stress-test your next market move against regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and sector signals. Enter the FAULTLINE Situation Room.",
     canonical: "/app/situation-room",
   },
+  insiderIntelligence: {
+    title: "FAULTLINE Insider Intelligence™ — Smart Money Tracker",
+    description:
+      "Track where corporate insiders show conviction before the market notices. Conviction Score, Smart Money Radar, Cluster Buy Alerts, and AI-powered insider analysis.",
+    canonical: "/app/insider-intelligence",
+  },
   // 31 chars ✓
   legal: {
     title: "Legal — FAULTLINE Terms & Disclaimers",

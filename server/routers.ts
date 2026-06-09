@@ -41,6 +41,7 @@ import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
 import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ThesisType } from './tradePreflight';
+import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { xPostQueue, users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
@@ -1749,6 +1750,36 @@ export const appRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Snapshot generation failed", cause: err });
       }
     }),
+  }),
+
+  // ── Insider Intelligence ──────────────────────────────────
+  insider: router({
+    radar: protectedProcedure
+      .query(async () => {
+        try {
+          return await getInsiderRadar();
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider radar failed", cause: err });
+        }
+      }),
+    company: protectedProcedure
+      .input(z.object({ ticker: z.string().min(1).max(10) }))
+      .query(async ({ input }) => {
+        try {
+          return await getInsiderCompany(input.ticker);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider company profile failed", cause: err });
+        }
+      }),
+    tickerAlert: protectedProcedure
+      .input(z.object({ ticker: z.string().min(1).max(10) }))
+      .query(async ({ input }) => {
+        try {
+          return await getInsiderAlertsForTicker(input.ticker);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Insider ticker alert failed", cause: err });
+        }
+      }),
   }),
 
   // ── Trade Preflight Simulator ───────────────────────────────

@@ -734,6 +734,19 @@ export default function SituationRoom() {
             </CollapsiblePanel>
             <div style={{ marginBottom: "10px" }} />
 
+            {/* Insider Intelligence Cross-Link */}
+            <div style={{ padding: "16px", background: "rgba(12,15,22,0.98)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "6px", marginBottom: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#00D4FF", textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 600, marginBottom: "4px" }}>Insider Intelligence™</div>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "rgba(100,116,139,0.65)" }}>Track where corporate insiders show conviction before the market notices.</div>
+                </div>
+                <a href="/app/insider-intelligence" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", background: "rgba(0,212,255,0.10)", border: "1px solid rgba(0,212,255,0.35)", borderRadius: "4px", color: "#00D4FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", letterSpacing: "0.1em", textDecoration: "none", transition: "all 0.18s" }}>
+                  OPEN MODULE →
+                </a>
+              </div>
+            </div>
+
             {/* Compliance disclaimer */}
             <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "4px" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", lineHeight: 1.6, textAlign: "center", letterSpacing: "0.04em" }}>
