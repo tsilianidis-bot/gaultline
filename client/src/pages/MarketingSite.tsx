@@ -81,129 +81,223 @@ function StatusTicker() {
 function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", fn);
     return () => window.removeEventListener("scroll", fn);
   }, []);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
+  const closeMenu = () => setMobileOpen(false);
+
+  const NAV_ITEMS = [
+    { label: "Platform", href: "#platform", desc: "Signals & pressure engine" },
+    { label: "Intelligence", href: "#intelligence", desc: "Macro & crypto analytics" },
+    { label: "Access", href: "#access", desc: "Pricing & founding tiers" },
+    { label: "How It Works", href: "#how-it-works", desc: "The FAULTLINE method" },
+  ];
+
   return (
-    <nav
-      className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
-      style={{
-        background: scrolled ? "rgba(5,6,8,0.97)" : "transparent",
-        borderBottom: scrolled ? "1px solid rgba(0,212,255,0.12)" : "none",
-        backdropFilter: scrolled ? "blur(20px)" : "none",
-      }}
-    >
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-[#00D4FF] animate-pulse" />
-          <span className="font-mono text-sm font-bold tracking-[0.3em] text-white">FAULTLINE</span>
-          <span className="hidden sm:block text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/50 border-l border-[#00D4FF]/20 pl-3">
-            SYSTEMIC RISK INTELLIGENCE
-          </span>
-        </div>
-
-        {/* Desktop nav */}
-        <div className="hidden md:flex items-center gap-8">
-          <a href="/blog" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">BRIEFINGS</a>
-          <a href="/track-record" className="text-[11px] font-mono tracking-widest transition-colors" style={{ color: '#22C55E', textShadow: '0 0 8px rgba(34,197,94,0.3)' }} onMouseEnter={e => (e.currentTarget.style.color = '#4ADE80')} onMouseLeave={e => (e.currentTarget.style.color = '#22C55E')}>
-            TRACK RECORD <span style={{ fontSize: '7px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 4px', borderRadius: '2px', letterSpacing: '0.1em', verticalAlign: 'middle' }}>VERIFIED</span>
-          </a>
-          {["Platform", "Intelligence", "Access", "How It Works"].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase().replace(/ /g, "-")}`}
-              className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors"
-            >
-              {item.toUpperCase()}
-            </a>
-          ))}
-        </div>
-
-        {/* CTAs */}
-        <div className="hidden md:flex items-center gap-3">
-          <button
-            onClick={onRequestAccess}
-            className="text-[11px] font-mono tracking-widest text-[#FFD700] hover:text-white transition-colors px-4 py-2 border border-[#FFD700]/30 hover:border-[#FFD700]/60 rounded"
-          >
-            REQUEST ACCESS
-          </button>
-          <a
-            href={getLoginUrl()}
-            className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded"
-          >
-            MEMBER LOGIN
-          </a>
-          <a
-            href={PLATFORM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold"
-          >
-            EXPLORE FREE →
-          </a>
-        </div>
-
-        {/* Mobile menu button */}
-        <button
-          className="md:hidden text-[#A8B8CC] hover:text-white"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          <div className="space-y-1">
-            <div className={`w-5 h-0.5 bg-current transition-all ${mobileOpen ? "rotate-45 translate-y-1.5" : ""}`} />
-            <div className={`w-5 h-0.5 bg-current transition-all ${mobileOpen ? "opacity-0" : ""}`} />
-            <div className={`w-5 h-0.5 bg-current transition-all ${mobileOpen ? "-rotate-45 -translate-y-1.5" : ""}`} />
+    <>
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        style={{
+          background: scrolled || mobileOpen ? "rgba(5,6,8,0.98)" : "transparent",
+          borderBottom: scrolled || mobileOpen ? "1px solid rgba(0,212,255,0.12)" : "none",
+          backdropFilter: scrolled || mobileOpen ? "blur(20px)" : "none",
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-[#00D4FF] animate-pulse" />
+            <span className="font-mono text-sm font-bold tracking-[0.3em] text-white">FAULTLINE</span>
+            <span className="hidden sm:block text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/50 border-l border-[#00D4FF]/20 pl-3">
+              SYSTEMIC RISK INTELLIGENCE
+            </span>
           </div>
-        </button>
-      </div>
 
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden bg-[#0C0F16] border-t border-[rgba(0,212,255,0.12)] px-6 py-4 space-y-4">
-          <a
-            href="/track-record"
-            onClick={() => setMobileOpen(false)}
-            className="block text-[11px] font-mono tracking-widest transition-colors"
-            style={{ color: '#22C55E' }}
-          >
-            TRACK RECORD <span style={{ fontSize: '7px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 4px', borderRadius: '2px', letterSpacing: '0.1em' }}>VERIFIED</span>
-          </a>
-          {["Platform", "Intelligence", "Access", "How It Works"].map((item) => (
-            <a
-              key={item}
-              href={`#${item.toLowerCase().replace(/ /g, "-")}`}
-              onClick={() => setMobileOpen(false)}
-              className="block text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors"
-            >
-              {item.toUpperCase()}
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-8">
+            <a href="/blog" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">BRIEFINGS</a>
+            <a href="/track-record" className="text-[11px] font-mono tracking-widest transition-colors" style={{ color: '#22C55E', textShadow: '0 0 8px rgba(34,197,94,0.3)' }} onMouseEnter={e => (e.currentTarget.style.color = '#4ADE80')} onMouseLeave={e => (e.currentTarget.style.color = '#22C55E')}>
+              TRACK RECORD <span style={{ fontSize: '7px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 4px', borderRadius: '2px', letterSpacing: '0.1em', verticalAlign: 'middle' }}>VERIFIED</span>
             </a>
-          ))}
+            {NAV_ITEMS.map((item) => (
+              <a key={item.label} href={item.href} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">
+                {item.label.toUpperCase()}
+              </a>
+            ))}
+          </div>
+
+          {/* Desktop CTAs */}
+          <div className="hidden md:flex items-center gap-3">
+            <button onClick={onRequestAccess} className="text-[11px] font-mono tracking-widest text-[#FFD700] hover:text-white transition-colors px-4 py-2 border border-[#FFD700]/30 hover:border-[#FFD700]/60 rounded">
+              REQUEST ACCESS
+            </button>
+            <a href={getLoginUrl()} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded">
+              MEMBER LOGIN
+            </a>
+            <a href={PLATFORM_URL} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold">
+              EXPLORE FREE →
+            </a>
+          </div>
+
+          {/* Mobile: hamburger / X button */}
           <button
-            onClick={() => { onRequestAccess(); setMobileOpen(false); }}
-            className="block w-full text-center text-[11px] font-mono tracking-widest text-[#FFD700] border border-[#FFD700]/30 rounded py-2"
+            className="md:hidden flex items-center justify-center w-11 h-11 rounded-lg border border-white/10 bg-white/5 active:bg-white/10 transition-colors"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
-            REQUEST ACCESS
+            {mobileOpen ? (
+              // Explicit X icon — large, obvious
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#00D4FF" strokeWidth="2.2" strokeLinecap="round">
+                <line x1="2" y1="2" x2="16" y2="16" />
+                <line x1="16" y1="2" x2="2" y2="16" />
+              </svg>
+            ) : (
+              <svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="#A8B8CC" strokeWidth="2" strokeLinecap="round">
+                <line x1="0" y1="1" x2="18" y2="1" />
+                <line x1="0" y1="7" x2="18" y2="7" />
+                <line x1="0" y1="13" x2="18" y2="13" />
+              </svg>
+            )}
           </button>
-          <a
-            href={getLoginUrl()}
-            onClick={() => setMobileOpen(false)}
-            className="block w-full text-center text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-[rgba(168,184,204,0.25)] rounded py-2"
-          >
-            MEMBER LOGIN
-          </a>
-          <a
-            href={PLATFORM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full text-center text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] rounded py-2 font-bold"
-          >
-            EXPLORE FREE →
-          </a>
+        </div>
+      </nav>
+
+      {/* Mobile full-screen overlay menu */}
+      {mobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 flex flex-col"
+          style={{ background: "rgba(5,6,8,0.98)", paddingTop: "64px", paddingBottom: "env(safe-area-inset-bottom, 24px)" }}
+        >
+          {/* Subtle grid texture */}
+          <div className="absolute inset-0 opacity-[0.025] pointer-events-none" style={{ backgroundImage: "linear-gradient(rgba(0,212,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,1) 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+
+          <div className="relative flex flex-col h-full overflow-y-auto px-6 pt-6 pb-4">
+            {/* Live status pill */}
+            <div className="flex items-center gap-2 mb-8">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
+              <span className="text-[10px] font-mono tracking-[0.25em] text-[#00FF88]/70">PLATFORM LIVE</span>
+            </div>
+
+            {/* Primary CTAs — top of menu, most important */}
+            <div className="space-y-3 mb-8">
+              <a
+                href={PLATFORM_URL}
+                onClick={closeMenu}
+                className="flex items-center justify-between w-full px-5 py-4 bg-[#00D4FF] rounded-xl active:opacity-90 transition-opacity"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              >
+                <div>
+                  <div className="text-[13px] font-mono font-black tracking-widest text-[#050608]">ENTER FREE PREVIEW</div>
+                  <div className="text-[10px] font-mono text-[#050608]/60 mt-0.5">No card required · Instant access</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#050608" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 8h10M9 4l4 4-4 4" />
+                </svg>
+              </a>
+              <button
+                onClick={() => { onRequestAccess(); closeMenu(); }}
+                className="flex items-center justify-between w-full px-5 py-4 border border-[#FFD700]/40 rounded-xl active:bg-[#FFD700]/10 transition-colors"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              >
+                <div>
+                  <div className="text-[13px] font-mono font-bold tracking-widest text-[#FFD700]">REQUEST FOUNDING ACCESS</div>
+                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Lifetime rate · Limited spots</div>
+                </div>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 8h10M9 4l4 4-4 4" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-white/8 mb-6" />
+
+            {/* Nav links — large tap targets */}
+            <div className="space-y-1 mb-6">
+              <a
+                href="/track-record"
+                onClick={closeMenu}
+                className="flex items-center justify-between w-full px-4 py-4 rounded-xl active:bg-white/5 transition-colors"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+                  <span className="text-[13px] font-mono tracking-widest" style={{ color: '#22C55E' }}>TRACK RECORD</span>
+                  <span className="text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22C55E' }}>VERIFIED</span>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#22C55E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
+                  <path d="M2 7h10M8 3l4 4-4 4" />
+                </svg>
+              </a>
+              {NAV_ITEMS.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  onClick={closeMenu}
+                  className="flex items-center justify-between w-full px-4 py-4 rounded-xl active:bg-white/5 transition-colors"
+                  style={{ WebkitTapHighlightColor: "transparent" }}
+                >
+                  <div>
+                    <div className="text-[13px] font-mono tracking-widest text-white/85">{item.label.toUpperCase()}</div>
+                    <div className="text-[10px] font-mono text-white/30 mt-0.5">{item.desc}</div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A8B8CC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.4">
+                    <path d="M2 7h10M8 3l4 4-4 4" />
+                  </svg>
+                </a>
+              ))}
+              <a
+                href="/blog"
+                onClick={closeMenu}
+                className="flex items-center justify-between w-full px-4 py-4 rounded-xl active:bg-white/5 transition-colors"
+                style={{ WebkitTapHighlightColor: "transparent" }}
+              >
+                <div>
+                  <div className="text-[13px] font-mono tracking-widest text-white/85">BRIEFINGS</div>
+                  <div className="text-[10px] font-mono text-white/30 mt-0.5">Market intelligence reports</div>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A8B8CC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.4">
+                  <path d="M2 7h10M8 3l4 4-4 4" />
+                </svg>
+              </a>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-white/8 mb-5" />
+
+            {/* Member login — bottom of menu */}
+            <a
+              href={getLoginUrl()}
+              onClick={closeMenu}
+              className="flex items-center justify-center gap-2 w-full px-5 py-3.5 border border-white/15 rounded-xl active:bg-white/5 transition-colors"
+              style={{ WebkitTapHighlightColor: "transparent" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A8B8CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
+              </svg>
+              <span className="text-[12px] font-mono tracking-widest text-[#A8B8CC]">MEMBER LOGIN</span>
+            </a>
+
+            {/* Bottom spacer for safe area */}
+            <div style={{ height: "max(env(safe-area-inset-bottom, 0px), 16px)" }} />
+          </div>
         </div>
       )}
-    </nav>
+    </>
   );
 }
 
@@ -263,9 +357,16 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
       {/* Bottom fade */}
       <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#050608] to-transparent" />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-32 pb-20">
+      {/* Mobile: safe-area-aware container */}
+      <div
+        className="relative z-10 max-w-5xl mx-auto px-5 text-center"
+        style={{
+          paddingTop: "calc(64px + max(env(safe-area-inset-top, 0px), 24px) + 24px)",
+          paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 24px) + 40px)",
+        }}
+      >
         {/* Live badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-[#00D4FF]/20 rounded-full mb-8 bg-[#00D4FF]/5" style={{ boxShadow: '0 0 20px rgba(0,212,255,0.08)' }}>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-[#00D4FF]/20 rounded-full mb-6 bg-[#00D4FF]/5" style={{ boxShadow: '0 0 20px rgba(0,212,255,0.08)' }}>
           <div className="relative flex items-center justify-center">
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" />
             <div className="absolute w-3 h-3 rounded-full bg-[#00FF88]/20 animate-ping" />
@@ -274,39 +375,47 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
         </div>
 
         {/* Headline */}
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.05]">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-5 leading-[1.05]">
           Know when the market<br />
           <span className="text-[#00D4FF]">is about to break.</span>
         </h1>
 
-        {/* Clarity bar — what FAULTLINE tracks */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-          {["Macro Pressure", "Liquidity Stress", "Crypto Rotation", "Systemic Risk", "Volatility Regimes"].map((item, i) => (
-            <span key={i} className="text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/60 border border-[#00D4FF]/15 px-2.5 py-1 rounded-full bg-[#00D4FF]/5">{item}</span>
-          ))}
-        </div>
-
         {/* Sub */}
-        <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-10 leading-relaxed">
+        <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-8 leading-relaxed">
           FAULTLINE reads systemic pressure before it becomes a headline. Real-time macro intelligence for traders and analysts who need to position early — not react late.
         </p>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-          <button
-            onClick={onRequestAccess}
-            className="w-full sm:w-auto px-8 py-4 bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#050608] font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97]"
-          >
-            REQUEST FOUNDING ACCESS
-          </button>
+        {/* CTAs — mobile-first, safe-area aware */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4">
           <a
             href={PLATFORM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full sm:w-auto px-8 py-4 border border-[#00D4FF]/40 hover:border-[#00D4FF] text-[#00D4FF] font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97]"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#00D4FF] hover:bg-[#00D4FF]/90 text-[#050608] font-mono font-black text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
+            style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px" }}
           >
-            EXPLORE FREE — NO CARD REQUIRED →
+            ENTER FREE PREVIEW
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#050608" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 7h10M8 3l4 4-4 4" />
+            </svg>
           </a>
+          <button
+            onClick={onRequestAccess}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 border border-[#FFD700]/50 hover:border-[#FFD700] text-[#FFD700] font-mono font-bold text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
+            style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px" }}
+          >
+            REQUEST ACCESS
+          </button>
+        </div>
+
+        {/* No-login reassurance */}
+        <p className="text-[11px] font-mono text-white/30 tracking-wider mb-8">
+          No account required to preview · No credit card
+        </p>
+
+        {/* Clarity tags — below CTAs on mobile so they don’t push buttons down */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
+          {["Macro Pressure", "Liquidity Stress", "Crypto Rotation", "Systemic Risk", "Volatility Regimes"].map((item, i) => (
+            <span key={i} className="text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/60 border border-[#00D4FF]/15 px-2.5 py-1 rounded-full bg-[#00D4FF]/5">{item}</span>
+          ))}
         </div>
 
         {/* Social share row */}
