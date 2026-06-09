@@ -40,6 +40,7 @@ import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
+import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe } from './tradePreflight';
 import { xPostQueue, users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
@@ -1748,6 +1749,38 @@ export const appRouter = router({
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Snapshot generation failed", cause: err });
       }
     }),
+  }),
+
+  // ── Trade Preflight Simulator ───────────────────────────────
+  trade: router({
+    simulate: protectedProcedure
+      .input(z.object({
+        moveType: z.enum([
+          "buy_add_risk",
+          "hold",
+          "trim",
+          "sell",
+          "hedge",
+          "raise_cash",
+          "rotate_sectors",
+          "buy_specific_ticker",
+          "increase_crypto",
+          "reduce_crypto",
+        ] as const),
+        timeframe: z.enum(["today", "this_week", "one_three_months", "six_twelve_months"] as const),
+        ticker: z.string().min(1).max(10).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          return await runTradePreflightSimulation({
+            moveType: input.moveType as MoveType,
+            timeframe: input.timeframe as SimulatorTimeframe,
+            ticker: input.ticker,
+          });
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trade Preflight simulation failed", cause: err });
+        }
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

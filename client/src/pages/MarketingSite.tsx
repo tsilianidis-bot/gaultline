@@ -487,6 +487,134 @@ function FeaturesSection() {
   );
 }
 
+// ── Situation Room Section ──────────────────────────────────
+const TRADER_STYLES = [
+  {
+    icon: "⚡",
+    role: "Day Traders",
+    desc: "Check whether today's market pressure supports risk-on entries or warns against chasing.",
+    color: "#00D4FF",
+  },
+  {
+    icon: "◈",
+    role: "Swing Traders",
+    desc: "See whether the current regime supports follow-through over the next several days or weeks.",
+    color: "#00FF88",
+  },
+  {
+    icon: "◎",
+    role: "Long-Term Investors",
+    desc: "Understand whether macro pressure is building beneath the market before adding or trimming exposure.",
+    color: "#FFD700",
+  },
+  {
+    icon: "◉",
+    role: "Options Traders",
+    desc: "Use volatility, drawdown pressure, and regime signals to frame risk before entering directional trades.",
+    color: "#A855F7",
+  },
+  {
+    icon: "₿",
+    role: "Crypto Traders",
+    desc: "Track liquidity, speculation pressure, and risk appetite before adding or reducing crypto exposure.",
+    color: "#FF9500",
+  },
+];
+
+function SituationRoomSection({ onRequestAccess }: { onRequestAccess: () => void }) {
+  return (
+    <section id="situation-room" className="py-24 bg-[#050608] relative overflow-hidden">
+      {/* Ambient grid */}
+      <div
+        className="absolute inset-0 opacity-[0.025]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(0,212,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,1) 1px, transparent 1px)",
+          backgroundSize: "60px 60px",
+        }}
+      />
+      {/* Corner brackets */}
+      <div className="absolute top-8 left-8 w-5 h-5 border-t-2 border-l-2 border-[#00D4FF]/25" />
+      <div className="absolute top-8 right-8 w-5 h-5 border-t-2 border-r-2 border-[#00D4FF]/25" />
+      <div className="absolute bottom-8 left-8 w-5 h-5 border-b-2 border-l-2 border-[#00D4FF]/25" />
+      <div className="absolute bottom-8 right-8 w-5 h-5 border-b-2 border-r-2 border-[#00D4FF]/25" />
+
+      <div className="max-w-5xl mx-auto px-6 relative z-10">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 border border-[#00D4FF]/20 px-4 py-1.5 rounded-full mb-4">
+            COMMAND CENTER
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
+            Enter the FAULTLINE<br /><span className="text-[#00D4FF]">Situation Room.</span>
+          </h2>
+          <p className="text-[#A8B8CC] max-w-2xl mx-auto text-base leading-relaxed mb-3">
+            Before you risk capital, stress-test your next move against market regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and ticker/sector signals.
+          </p>
+          <p className="text-[#64748B] max-w-xl mx-auto text-sm leading-relaxed">
+            Built for traders who want more than charts.
+          </p>
+        </div>
+
+        {/* Feature highlights */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-14">
+          {[
+            { label: "Move Favorability Score", desc: "0–100 probability-weighted reading on your selected move", icon: "◎" },
+            { label: "Threat Board",             desc: "Red flags, hidden pressure points, and invalidation triggers", icon: "⛨" },
+            { label: "Green Lights",             desc: "Conditions actively supporting your move in current regime", icon: "✓" },
+            { label: "Action Bias",              desc: "Aggressive, selective, defensive, or patient — regime-guided", icon: "◈" },
+            { label: "Market Status",            desc: "Cleared / Caution / Defensive — live from the pressure engine", icon: "◉" },
+            { label: "FAULTLINE Analysis",       desc: "AI-generated regime explanation for your specific move", icon: "⚡" },
+          ].map((item, i) => (
+            <div key={i} className="p-4 border border-[rgba(255,255,255,0.06)] rounded bg-[#0C0F16] hover:border-[rgba(0,212,255,0.2)] transition-all duration-300">
+              <div className="text-[#00D4FF]/50 text-lg mb-2">{item.icon}</div>
+              <div className="text-white font-semibold text-sm mb-1">{item.label}</div>
+              <div className="text-[#64748B] text-xs leading-relaxed">{item.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="text-center mb-20">
+          <a
+            href="/app/situation-room"
+            className="inline-flex items-center gap-3 px-10 py-4 bg-[#00D4FF]/10 border border-[#00D4FF]/50 hover:bg-[#00D4FF]/18 hover:border-[#00D4FF] text-[#00D4FF] font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97]"
+            style={{ boxShadow: '0 0 30px rgba(0,212,255,0.10)' }}
+          >
+            <span style={{ fontSize: '16px' }}>⊕</span>
+            ENTER THE SITUATION ROOM
+          </a>
+          <div className="mt-3 text-[10px] font-mono text-[#64748B] tracking-[0.15em]">
+            REQUIRES PREMIUM ACCESS
+          </div>
+        </div>
+
+        {/* Trader use-case divider */}
+        <div className="border-t border-[rgba(255,255,255,0.06)] pt-14">
+          <div className="text-center mb-10">
+            <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 border border-[#00D4FF]/20 px-4 py-1.5 rounded-full mb-4">
+              BUILT FOR EVERY TRADING STYLE
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-bold text-white">
+              Whether you trade intraday, swing positions, invest long-term, or track crypto cycles,
+              <span className="text-[#00D4FF]"> FAULTLINE gives you a probability-weighted read</span> on whether current market conditions support or threaten your next move.
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {TRADER_STYLES.map((t, i) => (
+              <div key={i} className="p-5 border border-[rgba(255,255,255,0.06)] rounded-lg bg-[#0C0F16] hover:border-[rgba(0,212,255,0.18)] transition-all duration-300">
+                <div className="text-2xl mb-3" style={{ color: t.color }}>{t.icon}</div>
+                <div className="text-white font-bold text-sm mb-2">{t.role}</div>
+                <p className="text-[#64748B] text-xs leading-relaxed">{t.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Platform Modules ──────────────────────────────────────────
 const MODULES = [
   {
@@ -539,6 +667,14 @@ const MODULES = [
   },
   {
     badge: "NEW",
+    badgeColor: "#00D4FF",
+    title: "FAULTLINE Situation Room",
+    desc: "Stress-test your next move before risking capital. Select a move type, timeframe, and optional ticker — receive a Move Favorability Score, Threat Board, Green Lights, Action Bias, and invalidation triggers.",
+    tags: ["Move Favorability Score", "Threat Board", "Green Lights"],
+    link: "/app/situation-room",
+  },
+  {
+    badge: "NEW",
     badgeColor: "#A855F7",
     title: "Portfolio Intelligence",
     desc: "Eight-dimensional risk analysis for your holdings: Portfolio Pressure Score, AI Bubble Exposure, Rate Sensitivity, Concentration Risk, Liquidity Risk, Recession Exposure, Crash Vulnerability, and Regime Alignment.",
@@ -559,7 +695,7 @@ function ModulesSection() {
             The full <span className="text-[#FFD700]">intelligence stack.</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-xl mx-auto text-base">
-            Seven interconnected intelligence engines. One unified platform.
+            Eight interconnected intelligence engines. One unified platform.
           </p>
         </div>
 
@@ -1885,6 +2021,7 @@ export default function MarketingSite() {
       <AboutSection />
       <VisualShowcaseSection onRequestAccess={scrollToForm} />
       <FeaturesSection />
+      <SituationRoomSection onRequestAccess={scrollToForm} />
       <ModulesSection />
       <RiskEngineSection onRequestAccess={scrollToForm} />
       <HowItWorksSection />

@@ -234,6 +234,13 @@ export const PAGE_SEO = {
       "FAULTLINE historical signal performance and track record. Transparent documentation of macro calls, regime predictions, and signal accuracy.",
     canonical: "/track-record",
   },
+  // 52 chars ✓
+  situationRoom: {
+    title: "FAULTLINE Situation Room — Trade Preflight Simulator",
+    description:
+      "Stress-test your next market move against regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and sector signals. Enter the FAULTLINE Situation Room.",
+    canonical: "/app/situation-room",
+  },
   // 31 chars ✓
   legal: {
     title: "Legal — FAULTLINE Terms & Disclaimers",

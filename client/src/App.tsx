@@ -48,7 +48,9 @@ const AdminBlog        = lazy(() => import("./pages/AdminBlog"));
 const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
-const AltRotation      = lazy(() => import("./pages/AltRotation"));
+const AltRotation = lazy(() => import('./pages/AltRotation'));
+const TradePreflight = lazy(() => import('./pages/TradePreflight'));
+const SituationRoom = lazy(() => import('./pages/SituationRoom'));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
 
@@ -183,6 +185,8 @@ function Router() {
               <Route path="/app/x-posts" component={XPostGenerator} />
               <Route path="/app/x-post-queue" component={XPostQueue} />
               <Route path="/app/alt-rotation" component={AltRotation} />
+              <Route path="/app/trade-preflight" component={TradePreflight} />
+              <Route path="/app/situation-room" component={SituationRoom} />
               <Route path="/app/account" component={UserAccount} />
               <Route path="/app/blog/:slug" component={BlogPost} />
               <Route path="/app/blog" component={Blog} />

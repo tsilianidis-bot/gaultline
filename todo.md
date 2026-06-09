@@ -975,3 +975,47 @@
 - [x] pnpm test: 368/368 passing
 - [x] pnpm build: ✓ built in 28.80s
 - [x] Checkpoint
+
+## Trade Preflight Simulator (Jun 9, 2026)
+- [x] Add trade.simulate tRPC procedure (protectedProcedure) in server/routers.ts
+- [x] Procedure accepts { moveType, timeframe, ticker? } and returns full structured output
+- [x] Deterministic scoring: move-type logic + timeframe smoothing + engine vectors
+- [x] LLM explanation field via invokeLLM()
+- [x] Build client/src/pages/TradePreflight.tsx (dedicated page at /app/trade-preflight)
+- [x] Current Market Condition panel (11 fields)
+- [x] Simulate Your Move section: 10 move types selector
+- [x] Ticker input field (shown only when "Buy a specific ticker" selected)
+- [x] Timeframe selector: Today / This week / 1-3 months / 6-12 months
+- [x] Simulation output panel: all 14 output fields with visual meters/rings
+- [x] Green Lights panel and Red Flags panel
+- [x] Invalidation triggers section
+- [x] Compliance disclaimer text
+- [x] Add /app/trade-preflight route to App.tsx
+- [x] Add Trade Preflight Simulator nav item to AppLayout.tsx (TOOLS group)
+- [x] Add SEO entry to useSEO.ts PAGE_SEO
+- [x] Add prominent Trade Preflight Simulator card to Dashboard.tsx
+- [x] Write vitest tests for trade.simulate procedure
+- [x] pnpm check: 0 errors, pnpm test: all passing, pnpm build: success
+- [x] Save checkpoint
+
+## FAULTLINE Situation Room Rebrand (Jun 9, 2026)
+- [x] Update server/tradePreflight.ts: add marketStatus (Cleared/Caution/Defensive) and threatBoard fields to output
+- [x] Rename TradePreflight.tsx → SituationRoom.tsx with full command-center design
+- [x] Section A: Market Status panel (marketStatus badge, pressure index, bull%, crash%, regime, liquidity, credit, volatility, fed, recession, AI speculation, breadth)
+- [x] Section B: Trade Preflight Simulator (move selector, timeframe, ticker input)
+- [x] Section C: Move Favorability Score (ring, prob bars, risk/confidence badges)
+- [x] Section D: Action Bias panel (supported/threatened, aggressive/selective/defensive/patient, staged entry guidance)
+- [x] Section E: Green Lights panel (conditions supporting the move)
+- [x] Section F: Threat Board panel (red flags, hidden pressure, invalidation triggers, key indicators)
+- [x] Section G: What Could Break the Setup (invalidation triggers)
+- [x] Section H: Key Indicators to Watch Next
+- [x] Compliance disclaimer
+- [x] Update App.tsx: add /app/situation-room route (keep /app/trade-preflight as redirect or alias)
+- [x] Update AppLayout.tsx: rename nav item to "Situation Room" in TOOLS group
+- [x] Add SEO entry PAGE_SEO.situationRoom to useSEO.ts
+- [x] Add prominent "Enter the Situation Room" card to Dashboard.tsx
+- [x] Update marketing landing page: Situation Room hero copy + CTA
+- [x] Add "Built for Every Trading Style" section with 5 trader-type cards
+- [x] Write vitest tests for updated tradePreflight.ts (30 tests, all passing)
+- [x] TypeScript: 0 errors, tests: all passing, build: success
+- [x] Save checkpoint
