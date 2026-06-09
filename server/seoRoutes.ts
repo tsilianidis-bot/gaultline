@@ -8,14 +8,11 @@ const BASE_URL = "https://getfaultline.live";
 
 // All publicly indexable pages on getfaultline.live
 const PUBLIC_ROUTES = [
-  { path: "/",             changefreq: "daily",   priority: "1.0" },
-  { path: "/track-record", changefreq: "monthly", priority: "0.9" },
-  { path: "/pricing",      changefreq: "monthly", priority: "0.8" },
-  { path: "/signals",      changefreq: "hourly",  priority: "0.9" },
-  { path: "/dashboard",    changefreq: "daily",   priority: "0.8" },
-  { path: "/blog",         changefreq: "weekly",  priority: "0.8" },
-  { path: "/terms",        changefreq: "monthly", priority: "0.3" },
-  { path: "/privacy",      changefreq: "monthly", priority: "0.3" },
+  { path: "/",                changefreq: "weekly",  priority: "1.0" },
+  { path: "/blog",            changefreq: "daily",   priority: "0.9" },
+  { path: "/track-record",    changefreq: "weekly",  priority: "0.9" },
+  { path: "/pressure-index",  changefreq: "daily",   priority: "0.8" },
+  { path: "/legal",           changefreq: "yearly",  priority: "0.2" },
 ];
 
 export function registerSEORoutes(app: Express): void {
@@ -24,6 +21,14 @@ export function registerSEORoutes(app: Express): void {
     const content = [
       "User-agent: *",
       "Allow: /",
+      "Allow: /blog",
+      "Allow: /track-record",
+      "Allow: /pressure-index",
+      "Allow: /legal",
+      "",
+      "# Block app-internal routes from indexing",
+      "Disallow: /app/",
+      "Disallow: /api/",
       "",
       `Sitemap: ${BASE_URL}/sitemap.xml`,
     ].join("\n");

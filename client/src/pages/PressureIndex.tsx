@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 const PLATFORM_URL = "/app";
 
@@ -174,6 +175,12 @@ function VectorBar({ label, value, color }: { label: string; value: number; colo
 
 // ── Main page ─────────────────────────────────────────────────
 export default function PressureIndex() {
+  useSEO({
+    title: "FAULTLINE Pressure Index™ — Live Systemic Market Risk Score",
+    description: "The FAULTLINE Pressure Index™ tracks systemic market risk in real-time. See the current macro pressure score, regime classification, and key risk vectors driving market conditions.",
+    canonical: "/pressure-index",
+  });
+
   const { data, isLoading, error } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
     refetchInterval: 60_000,
     staleTime: 30_000,

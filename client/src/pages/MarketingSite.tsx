@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
+import { useSEO } from "@/hooks/useSEO";
 const PLATFORM_URL = "/app";
 
 // ── Asset URLs ────────────────────────────────────────────────
@@ -2108,9 +2109,11 @@ function AboutSection() {
 export default function MarketingSite() {
   const formRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    document.title = "FAULTLINE — Market Risk Intelligence Platform";
-  }, []);
+  useSEO({
+    title: "FAULTLINE — Market Risk Intelligence Platform",
+    description: "Real-time macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.",
+    canonical: "/",
+  });
 
   const scrollToForm = () => {
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });

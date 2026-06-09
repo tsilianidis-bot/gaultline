@@ -43,17 +43,32 @@ export default function BlogPost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.slug]);
 
-  // Dynamic SEO
+  // Dynamic SEO — title, description, canonical, OG, Twitter
   useEffect(() => {
     if (post) {
-      document.title = `${post.title} | FAULTLINE`;
-      const metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute("content", post.subtitle ?? post.title);
+      const fullTitle = `${post.title} | FAULTLINE`;
+      const desc = post.subtitle ?? post.title;
+      const canonicalUrl = `https://getfaultline.live/blog/${post.slug}`;
+
+      document.title = fullTitle;
+
+      const setMeta = (sel: string, val: string) => {
+        const el = document.querySelector<HTMLMetaElement>(sel);
+        if (el) el.setAttribute("content", val);
+      };
+
+      setMeta('meta[name="description"]', desc);
+      setMeta('meta[property="og:title"]', fullTitle);
+      setMeta('meta[property="og:description"]', desc);
+      setMeta('meta[property="og:url"]', canonicalUrl);
+      setMeta('meta[name="twitter:title"]', fullTitle);
+      setMeta('meta[name="twitter:description"]', desc);
+
       const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-      if (canonical) canonical.setAttribute("href", `https://getfaultline.live/blog/${post.slug}`);
+      if (canonical) canonical.setAttribute("href", canonicalUrl);
     }
     return () => {
-      document.title = "FAULTLINE — Macroeconomic & Market Risk Intelligence Platform";
+      document.title = "FAULTLINE — Market Risk Intelligence Platform";
     };
   }, [post]);
 
