@@ -19,7 +19,7 @@ import {
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
   | "buy_add_risk" | "hold" | "trim" | "sell" | "hedge"
-  | "raise_cash" | "rotate_sectors" | "buy_specific_ticker"
+  | "raise_cash" | "rotate_sectors" | "buy_specific_ticker" | "sell_specific_ticker"
   | "increase_crypto" | "reduce_crypto";
 
 type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twelve_months";
@@ -58,8 +58,9 @@ const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string }[] = [
   { value: "hedge",               label: "Hedge",                    glyph: "⛨" },
   { value: "raise_cash",          label: "Raise Cash",               glyph: "◎" },
   { value: "rotate_sectors",      label: "Rotate Sectors",           glyph: "⟳" },
-  { value: "buy_specific_ticker", label: "Buy a Specific Ticker",    glyph: "◈" },
-  { value: "increase_crypto",     label: "Increase Crypto Exposure", glyph: "₿" },
+  { value: "buy_specific_ticker",  label: "Buy a Specific Ticker",    glyph: "◈" },
+  { value: "sell_specific_ticker", label: "Sell a Specific Ticker",   glyph: "⊖" },
+  { value: "increase_crypto",      label: "Increase Crypto Exposure", glyph: "₿" },
   { value: "reduce_crypto",       label: "Reduce Crypto Exposure",   glyph: "↙" },
 ];
 
@@ -251,12 +252,13 @@ export default function SituationRoom() {
   });
 
   const isCryptoMove = selectedMove === "increase_crypto" || selectedMove === "reduce_crypto";
+  const isTickerMove = selectedMove === "buy_specific_ticker" || selectedMove === "sell_specific_ticker";
 
   const handleSimulate = () => {
     if (!selectedMove) return;
     trackSituationRoomUse(selectedMove, selectedTimeframe);
     let resolvedTicker: string | undefined;
-    if (selectedMove === "buy_specific_ticker" && ticker.trim()) {
+    if (isTickerMove && ticker.trim()) {
       resolvedTicker = ticker.trim().toUpperCase();
     } else if (isCryptoMove) {
       resolvedTicker = cryptoSymbol;
@@ -393,7 +395,7 @@ export default function SituationRoom() {
           </div>
 
           {/* Ticker input */}
-          {selectedMove === "buy_specific_ticker" && (
+          {isTickerMove && (
             <div style={{ marginBottom: "14px" }}>
               <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Ticker Symbol</label>
               <input type="text" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))} placeholder="e.g. NVDA, TSLA, AAPL" maxLength={10}

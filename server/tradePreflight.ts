@@ -27,6 +27,7 @@ export type MoveType =
   | "raise_cash"
   | "rotate_sectors"
   | "buy_specific_ticker"
+  | "sell_specific_ticker"
   | "increase_crypto"
   | "reduce_crypto";
 
@@ -180,6 +181,7 @@ export const MOVE_LABELS: Record<MoveType, string> = {
   raise_cash: "Raise Cash",
   rotate_sectors: "Rotate Sectors",
   buy_specific_ticker: "Buy a Specific Ticker",
+  sell_specific_ticker: "Sell a Specific Ticker",
   increase_crypto: "Increase Crypto Exposure",
   reduce_crypto: "Reduce Crypto Exposure",
 };
@@ -409,6 +411,15 @@ function computeFavorabilityScore(
       );
       break;
 
+    case "sell_specific_ticker":
+      rawFavorability = Math.round(
+        p * 0.40 +
+        creditScore * 0.30 +
+        liquidityScore * 0.15 +
+        breadthScore * 0.15
+      );
+      break;
+
     case "hold": {
       const extremeness = Math.abs(p - 50) / 50;
       rawFavorability = Math.round(70 - extremeness * 30);
@@ -529,9 +540,11 @@ function computeGreenLights(
       break;
     case "trim":
     case "sell":
+    case "sell_specific_ticker":
       if (p > 55) lights.push(`Elevated pressure (${p}/100) supports reducing exposure${tickerRef}`);
       if (creditScore > 50) lights.push("Credit stress rising — defensive posture historically rewarded");
       if (breadthScore > 55) lights.push("Breadth deteriorating — fewer names sustaining the advance");
+      if (ticker) lights.push(`Ticker-specific exit${tickerRef} allows precision risk reduction without full de-risking`);
       break;
     case "hedge":
       if (volatilityScore > 45) lights.push("Volatility regime elevated — hedging cost justified by risk");
@@ -597,8 +610,10 @@ function computeRedFlags(
       break;
     case "trim":
     case "sell":
-      if (p < 35) flags.push("Low pressure environment — selling into strength may be premature");
+    case "sell_specific_ticker":
+      if (p < 35) flags.push(`Low pressure environment — exiting${tickerRef} into strength may be premature`);
       if (breadthScore < 35) flags.push("Broad market healthy — selling may mean missing continuation");
+      if (ticker && p < 45) flags.push(`Macro regime does not support forced exits — confirm ${ticker.toUpperCase()} fundamental thesis has changed`);
       break;
     case "hedge":
       if (p < 35) flags.push("Low pressure environment — hedging cost may not be justified");
@@ -654,6 +669,10 @@ function computeInvalidationTriggers(
       triggers.push(`Earnings guidance cuts in key sectors — fundamental deterioration${tickerRef}`);
       triggers.push("Fed hawkish surprise — rate path repricing");
       break;
+    case "sell_specific_ticker":
+      triggers.push(`${ticker ? ticker.toUpperCase() + " reports strong earnings" : "Ticker reports strong earnings"} — fundamental reversal invalidates exit thesis`);
+      triggers.push("Unexpected positive macro data — pressure reversal reduces exit urgency");
+      break;
     case "sell":
     case "trim":
       triggers.push("Unexpected positive macro data — pressure reversal");
@@ -696,6 +715,10 @@ function computeWatchNext(
     case "buy_specific_ticker":
       watches.push(`S&P 500 advance/decline line — breadth confirmation${tickerRef}`);
       watches.push("Fed Funds futures — rate path expectations");
+      break;
+    case "sell_specific_ticker":
+      watches.push(`${ticker ? ticker.toUpperCase() + " earnings calendar" : "Ticker earnings calendar"} — catalyst risk before exit`);
+      watches.push("Relative strength vs sector peers — confirm underperformance thesis");
       break;
     case "sell":
     case "trim":
@@ -741,6 +764,7 @@ function computeActionBias(
     switch (moveType) {
       case "buy_add_risk": return `Conditions support selective risk-on positioning${tfRef}. Prioritize quality names with strong balance sheets and regime alignment.`;
       case "buy_specific_ticker": return `Macro regime is constructive for${tickerRef}${tfRef}. Confirm ticker-level technicals align with regime before entry.`;
+      case "sell_specific_ticker": return `Conditions support exiting${tickerRef}${tfRef}. Elevated pressure and credit stress historically reward disciplined exits in specific names.`;
       case "hold": return `Current regime supports holding${tickerRef}${tfRef}. No systemic trigger requiring defensive action.`;
       case "trim": return `Regime supports reducing${tickerRef} at current levels${tfRef}. Consider staged trimming to preserve optionality.`;
       case "sell": return `Defensive posture is well-supported by current pressure readings. Systematic exit of${tickerRef}${tfRef} over 2–3 sessions reduces slippage risk.`;
@@ -756,6 +780,7 @@ function computeActionBias(
     switch (moveType) {
       case "buy_add_risk": return `Mixed regime — selective exposure only${tfRef}. Avoid overextended names and concentrate in quality with defensive characteristics.`;
       case "buy_specific_ticker": return `${ticker ? ticker.toUpperCase() + "-specific" : "Ticker-specific"} opportunity may exist, but macro regime is mixed${tfRef}. Staged entry with defined stop-loss recommended.`;
+      case "sell_specific_ticker": return `Mixed signals${tickerRef}${tfRef}. Consider partial exit rather than full position close. Monitor for regime confirmation before completing the exit.`;
       case "hold": return `Hold with active monitoring${tfRef}. Regime is transitional — review stop levels and position sizing.`;
       case "trim": return `Partial trim is reasonable given current conditions${tfRef}. Maintain core position but reduce tail risk exposure.`;
       case "sell": return `Selling into mixed conditions carries opportunity cost risk${tfRef}. Consider staged reduction rather than full exit.`;
@@ -770,6 +795,7 @@ function computeActionBias(
   switch (moveType) {
     case "buy_add_risk": return `Current regime is not supportive of adding risk${tfRef}. Wait for pressure to normalize before increasing exposure.`;
     case "buy_specific_ticker": return `Macro headwinds are significant${tfRef}. ${ticker ? ticker.toUpperCase() + " thesis" : "Ticker-specific thesis"} must be very strong to overcome regime pressure.`;
+    case "sell_specific_ticker": return `Low-pressure regime reduces urgency to exit${tickerRef}${tfRef}. Confirm fundamental deterioration before completing the exit — opportunity cost of early exit is elevated.`;
     case "hold": return `Holding${tickerRef} in this regime requires active risk management${tfRef}. Review stop-loss levels and consider partial reduction.`;
     case "trim": return `Trimming${tickerRef} in a low-pressure environment may be premature${tfRef}. Ensure thesis has changed before reducing.`;
     case "sell": return `Selling${tickerRef} into low-pressure conditions carries high opportunity cost${tfRef}. Confirm fundamental deterioration before exiting.`;
@@ -799,6 +825,9 @@ function computeBestVersion(
     case "buy_specific_ticker":
       if (favorability >= 60) return "Full position entry is supportable. Confirm technical setup (above key moving averages, volume confirmation). Set stop-loss at 7–10% below entry.";
       return "Starter position only (25–33% of target size). Wait for price confirmation before adding. Define invalidation level before entry.";
+    case "sell_specific_ticker":
+      if (favorability >= 60) return "Full position exit is supportable. Sell systematically over 2–3 sessions to minimize market impact. Confirm no upcoming earnings or catalysts before exiting.";
+      return "Partial exit only (25–50% of position). Retain core exposure until regime confirms the exit thesis. Set a price or pressure trigger for completing the exit.";
     case "hold":
       if (p < 50) return "Hold with standard position sizing. Review stop-loss levels quarterly. No action required unless thesis changes.";
       return "Hold with tighter stops. Reduce position size if risk tolerance is exceeded. Set clear exit criteria before conditions deteriorate further.";
@@ -853,6 +882,12 @@ function computeAvoidAreas(
       avoids.push("Panic selling of quality positions with intact fundamentals");
       avoids.push("Selling into extreme volatility spikes — wait for stabilization");
       avoids.push("Exiting positions with upcoming catalysts that could reverse the move");
+      break;
+    case "sell_specific_ticker":
+      avoids.push("Exiting without confirming the fundamental thesis has changed — not just price action");
+      avoids.push("Selling into extreme volatility spikes — wait for stabilization before executing");
+      avoids.push("Full position exit before checking upcoming earnings, dividends, or catalyst dates");
+      if (p < 40) avoids.push("Forced exit in low-pressure regime — opportunity cost of early exit is high");
       break;
     case "hedge":
       avoids.push("Over-hedging — more than 100% portfolio coverage creates net short exposure");
@@ -1154,7 +1189,7 @@ function computeHistoricalAnalogs(
   const volatilityScore = getVectorScore(pressure.vectors, "volatility-regime");
   const breadthScore = getVectorScore(pressure.vectors, "market-breadth");
   const isCrypto = moveType === "increase_crypto" || moveType === "reduce_crypto" || (ticker && ["BTC", "ETH", "SOL", "DOGE", "XRP"].includes(ticker.toUpperCase()));
-  const isDefensive = moveType === "sell" || moveType === "raise_cash" || moveType === "hedge" || moveType === "reduce_crypto";
+  const isDefensive = moveType === "sell" || moveType === "sell_specific_ticker" || moveType === "raise_cash" || moveType === "hedge" || moveType === "reduce_crypto";
 
   const analogs: HistoricalAnalog[] = [];
 

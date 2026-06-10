@@ -1797,6 +1797,7 @@ export const appRouter = router({
           "raise_cash",
           "rotate_sectors",
           "buy_specific_ticker",
+          "sell_specific_ticker",
           "increase_crypto",
           "reduce_crypto",
         ] as const),
