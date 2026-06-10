@@ -30,6 +30,25 @@ type ThesisType =
 
 type VerdictType = "APPROVED" | "CAUTION" | "WAIT" | "DEFENSIVE" | "HIGH_CONVICTION";
 
+// ── Crypto asset options ─────────────────────────────────────
+const CRYPTO_OPTIONS: { value: string; label: string; icon: string }[] = [
+  { value: "BTC",   label: "Bitcoin",       icon: "₿" },
+  { value: "ETH",   label: "Ethereum",      icon: "Ξ" },
+  { value: "SOL",   label: "Solana",        icon: "◎" },
+  { value: "BNB",   label: "BNB",           icon: "B" },
+  { value: "XRP",   label: "XRP",           icon: "✕" },
+  { value: "ADA",   label: "Cardano",       icon: "A" },
+  { value: "AVAX",  label: "Avalanche",     icon: "△" },
+  { value: "DOGE",  label: "Dogecoin",      icon: "D" },
+  { value: "LINK",  label: "Chainlink",     icon: "L" },
+  { value: "DOT",   label: "Polkadot",      icon: "●" },
+  { value: "MATIC", label: "Polygon",       icon: "M" },
+  { value: "UNI",   label: "Uniswap",       icon: "U" },
+  { value: "ATOM",  label: "Cosmos",        icon: "A" },
+  { value: "LTC",   label: "Litecoin",      icon: "L" },
+  { value: "NEAR",  label: "NEAR Protocol", icon: "N" },
+];
+
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string }[] = [
   { value: "buy_add_risk",        label: "Buy / Add Risk",           glyph: "↑" },
@@ -215,6 +234,7 @@ export default function SituationRoom() {
   const [selectedTimeframe, setSelectedTimeframe] = useState<SimulatorTimeframe>("today");
   const [selectedThesis, setSelectedThesis] = useState<ThesisType>("momentum");
   const [ticker, setTicker] = useState("");
+  const [cryptoSymbol, setCryptoSymbol] = useState<string>("BTC");
   const [showResult, setShowResult] = useState(false);
   const [open, setOpen] = useState<Record<string, boolean>>({
     greenLights: true, threatBoard: true, actionBias: true, invalidation: false, watchNext: false,
@@ -230,13 +250,21 @@ export default function SituationRoom() {
     },
   });
 
+  const isCryptoMove = selectedMove === "increase_crypto" || selectedMove === "reduce_crypto";
+
   const handleSimulate = () => {
     if (!selectedMove) return;
     trackSituationRoomUse(selectedMove, selectedTimeframe);
+    let resolvedTicker: string | undefined;
+    if (selectedMove === "buy_specific_ticker" && ticker.trim()) {
+      resolvedTicker = ticker.trim().toUpperCase();
+    } else if (isCryptoMove) {
+      resolvedTicker = cryptoSymbol;
+    }
     simulate.mutate({
       moveType: selectedMove,
       timeframe: selectedTimeframe,
-      ticker: selectedMove === "buy_specific_ticker" && ticker.trim() ? ticker.trim().toUpperCase() : undefined,
+      ticker: resolvedTicker,
       thesisType: selectedThesis,
     });
   };
@@ -370,6 +398,39 @@ export default function SituationRoom() {
               <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Ticker Symbol</label>
               <input type="text" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))} placeholder="e.g. NVDA, TSLA, AAPL" maxLength={10}
                 style={{ width: "100%", padding: "10px 14px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "4px", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", letterSpacing: "0.12em", outline: "none", boxSizing: "border-box" }} />
+            </div>
+          )}
+
+          {/* Crypto asset selector */}
+          {isCryptoMove && (
+            <div style={{ marginBottom: "14px" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>
+                Select Asset
+                <span style={{ marginLeft: "8px", color: "rgba(0,212,255,0.6)", fontSize: "10px" }}>— {cryptoSymbol} selected</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
+                {CRYPTO_OPTIONS.map(opt => {
+                  const sel = cryptoSymbol === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => { setCryptoSymbol(opt.value); setShowResult(false); simulate.reset(); }}
+                      style={{
+                        padding: "8px 4px",
+                        background: sel ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)",
+                        border: sel ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.07)",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        textAlign: "center",
+                        transition: "all 0.15s cubic-bezier(0.23,1,0.32,1)",
+                      }}
+                    >
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: sel ? "#00D4FF" : "#94A3B8", fontWeight: sel ? 700 : 400, marginBottom: "2px" }}>{opt.value}</div>
+                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "9px", color: sel ? "rgba(0,212,255,0.7)" : "rgba(100,116,139,0.5)", lineHeight: 1.2 }}>{opt.label}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
