@@ -266,3 +266,94 @@ export const dailyReadingSnapshots = mysqlTable("dailyReadingSnapshots", {
 });
 export type DailyReadingSnapshot = typeof dailyReadingSnapshots.$inferSelect;
 export type InsertDailyReadingSnapshot = typeof dailyReadingSnapshots.$inferInsert;
+
+// ─── Analytics Tables ────────────────────────────────────────────────────────
+
+/**
+ * Records every page view on the site (marketing + app).
+ * Collected server-side via the /api/analytics/pageview endpoint.
+ */
+export const pageViews = mysqlTable("pageViews", {
+  id:          int("id").autoincrement().primaryKey(),
+  /** Anonymous session ID (UUID stored in a cookie, not tied to user account) */
+  sessionId:   varchar("sessionId", { length: 64 }).notNull(),
+  /** Authenticated user ID — null for anonymous visitors */
+  userId:      int("userId"),
+  /** Full path e.g. /app/signals, /, /blog/post-slug */
+  path:        varchar("path", { length: 512 }).notNull(),
+  /** Page title at time of visit */
+  title:       varchar("title", { length: 256 }),
+  /** HTTP Referer header — where the user came from */
+  referrer:    varchar("referrer", { length: 1024 }),
+  /** UTM source parameter */
+  utmSource:   varchar("utmSource", { length: 128 }),
+  /** UTM medium parameter */
+  utmMedium:   varchar("utmMedium", { length: 128 }),
+  /** UTM campaign parameter */
+  utmCampaign: varchar("utmCampaign", { length: 128 }),
+  /** Parsed country code from IP (e.g. US, GB, CA) */
+  country:     varchar("country", { length: 4 }),
+  /** Parsed device type: desktop | mobile | tablet */
+  deviceType:  varchar("deviceType", { length: 16 }),
+  /** Browser name: Chrome | Safari | Firefox | Edge | Other */
+  browser:     varchar("browser", { length: 32 }),
+  /** OS name: Windows | macOS | iOS | Android | Linux | Other */
+  os:          varchar("os", { length: 32 }),
+  /** Screen width in pixels */
+  screenWidth: int("screenWidth"),
+  createdAt:   timestamp("createdAt").defaultNow().notNull(),
+});
+export type PageView = typeof pageViews.$inferSelect;
+export type InsertPageView = typeof pageViews.$inferInsert;
+
+/**
+ * One row per visitor session. A session expires after 30 minutes of inactivity.
+ * Aggregates page count, duration, and entry/exit pages.
+ */
+export const analyticsSessions = mysqlTable("analyticsSessions", {
+  id:           int("id").autoincrement().primaryKey(),
+  sessionId:    varchar("sessionId", { length: 64 }).notNull().unique(),
+  userId:       int("userId"),
+  /** First page the user landed on */
+  entryPage:    varchar("entryPage", { length: 512 }),
+  /** Last page viewed before session ended */
+  exitPage:     varchar("exitPage", { length: 512 }),
+  /** Total number of pages viewed in this session */
+  pageCount:    int("pageCount").default(1).notNull(),
+  /** Session duration in seconds (updated on each pageview) */
+  durationSecs: int("durationSecs").default(0).notNull(),
+  /** Whether the session was a bounce (only 1 page viewed) */
+  isBounce:     int("isBounce").default(1).notNull(),
+  country:      varchar("country", { length: 4 }),
+  deviceType:   varchar("deviceType", { length: 16 }),
+  browser:      varchar("browser", { length: 32 }),
+  os:           varchar("os", { length: 32 }),
+  referrer:     varchar("referrer", { length: 1024 }),
+  utmSource:    varchar("utmSource", { length: 128 }),
+  utmMedium:    varchar("utmMedium", { length: 128 }),
+  utmCampaign:  varchar("utmCampaign", { length: 128 }),
+  startedAt:    timestamp("startedAt").defaultNow().notNull(),
+  lastSeenAt:   timestamp("lastSeenAt").defaultNow().notNull(),
+});
+export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
+export type InsertAnalyticsSession = typeof analyticsSessions.$inferInsert;
+
+/**
+ * Custom event log — tracks named user actions beyond page views.
+ * e.g. signal_search, watchlist_add, upgrade_click, preflight_launch
+ */
+export const siteEvents = mysqlTable("siteEvents", {
+  id:        int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull(),
+  userId:    int("userId"),
+  /** Event name e.g. signal_search, upgrade_click, preflight_launch */
+  eventName: varchar("eventName", { length: 128 }).notNull(),
+  /** Optional JSON payload with event-specific properties */
+  props:     text("props"),
+  path:      varchar("path", { length: 512 }),
+  country:   varchar("country", { length: 4 }),
+  deviceType: varchar("deviceType", { length: 16 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SiteEvent = typeof siteEvents.$inferSelect;
+export type InsertSiteEvent = typeof siteEvents.$inferInsert;

@@ -85,6 +85,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "aftershock",  label: "Aftershock Engine", shortLabel: "Aftershock",icon: Waves,      path: "/app/aftershock" },
       { id: "insider-intelligence", label: "Insider Intelligence", shortLabel: "Insider", icon: Eye, path: "/app/insider-intelligence" },
       { id: "seo-optimizer", label: "SEO Optimizer", shortLabel: "SEO", icon: Search, path: "/app/seo-optimizer" },
+      { id: "analytics", label: "Site Analytics", shortLabel: "Analytics", icon: BarChart2, path: "/app/analytics" },
     ],
   },
   {

@@ -55,6 +55,7 @@ const SituationRoom = lazy(() => import('./pages/SituationRoom'));
 const PreFlight = lazy(() => import('./pages/PreFlight'));
 const InsiderIntelligence = lazy(() => import("./pages/InsiderIntelligence"));
 const SeoOptimizer = lazy(() => import("./pages/SeoOptimizer"));
+const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
 
@@ -199,6 +200,7 @@ function Router() {
               <Route path="/app/track-record" component={TrackRecord} />
               <Route path="/app/reading-history" component={ReadingHistory} />
               <Route path="/app/seo-optimizer" component={SeoOptimizer} />
+              <Route path="/app/analytics" component={AnalyticsDashboard} />
               <Route component={Dashboard} />
             </Switch>
           </Suspense>

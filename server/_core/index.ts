@@ -10,6 +10,7 @@ import { registerFredProxy } from "../fredProxy";
 import { registerSignalsProxy } from "../signalsProxy";
 import { registerCoinGeckoProxy } from "../coingeckoProxy";
 import { registerSEORoutes } from "../seoRoutes";
+import analyticsRoutes from "../analyticsRoutes";
 import { handleStripeWebhook } from "../stripe/webhook";
 import { handleScheduledPublishBlog } from "../scheduledBlog";
 import { handleScheduledXPost, handleXNewsMonitor } from "../scheduledXPost";
@@ -107,6 +108,7 @@ async function startServer() {
   registerSignalsProxy(app);
   registerCoinGeckoProxy(app);
   registerSEORoutes(app);
+  app.use("/api/analytics", analyticsRoutes);
 
   // Scheduled cron endpoints — must be before tRPC / Vite fallthrough
   app.post("/api/scheduled/ping", (_req, res) => res.json({ ok: true }));
