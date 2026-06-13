@@ -260,4 +260,22 @@ export const PAGE_SEO = {
       "FAULTLINE legal terms, disclaimers, and privacy policy. Not financial advice — analytical research tool only.",
     canonical: "/legal",
   },
+  contact: {
+    title: "Contact FAULTLINE — Get in Touch",
+    description:
+      "Contact the FAULTLINE team. Send inquiries about platform access, partnerships, press, technical support, or general questions.",
+    canonical: "/contact",
+  },
+  seoOptimizer: {
+    title: "SEO Optimizer — FAULTLINE Tools",
+    description:
+      "Analyze any URL for SEO score, keyword density, meta tags, SERP preview, and AI-powered optimization recommendations.",
+    canonical: "/app/seo-optimizer",
+  },
+  pressureIndex: {
+    title: "FAULTLINE Pressure Index™ — Live Market Stress",
+    description:
+      "Track the FAULTLINE Pressure Index™ live. Real-time systemic market stress score aggregating volatility, credit spreads, liquidity, and breadth deterioration.",
+    canonical: "/pressure-index",
+  },
 } as const;

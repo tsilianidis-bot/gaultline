@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,7 @@ const CATEGORIES = [
 ] as const;
 
 export default function ContactUs() {
+  useSEO(PAGE_SEO.contact);
   const [submitted, setSubmitted] = useState(false);
   const [form, setForm] = useState({
     name: "",

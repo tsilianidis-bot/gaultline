@@ -13,6 +13,7 @@ const PUBLIC_ROUTES = [
   { path: "/track-record",    changefreq: "weekly",  priority: "0.9" },
   { path: "/pressure-index",  changefreq: "daily",   priority: "0.8" },
   { path: "/legal",           changefreq: "yearly",  priority: "0.2" },
+  { path: "/contact",          changefreq: "yearly",  priority: "0.3" },
 ];
 
 export function registerSEORoutes(app: Express): void {
@@ -25,6 +26,7 @@ export function registerSEORoutes(app: Express): void {
       "Allow: /track-record",
       "Allow: /pressure-index",
       "Allow: /legal",
+      "Allow: /contact",
       "",
       "# Block app-internal routes from indexing",
       "Disallow: /app/",

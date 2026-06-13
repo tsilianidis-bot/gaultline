@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
 // ── Auto Fix Types ───────────────────────────────────────────
 type AutoFix = {
@@ -387,6 +388,7 @@ function MetaGenerator() {
 // ── Main Page ─────────────────────────────────────────────────
 
 export default function SeoOptimizer() {
+  useSEO(PAGE_SEO.seoOptimizer);
   const [url, setUrl] = useState("");
   const [result, setResult] = useState<SeoAnalysisResult | null>(null);
   const [activeCategory, setActiveCategory] = useState<string>("all");

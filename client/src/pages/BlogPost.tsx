@@ -66,9 +66,48 @@ export default function BlogPost() {
 
       const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
       if (canonical) canonical.setAttribute("href", canonicalUrl);
+
+      // Inject BlogPosting JSON-LD structured data
+      const existingLd = document.getElementById('blog-post-ld');
+      if (existingLd) existingLd.remove();
+      const ld = document.createElement('script');
+      ld.id = 'blog-post-ld';
+      ld.type = 'application/ld+json';
+      ld.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "description": post.subtitle ?? post.title,
+        "url": canonicalUrl,
+        "datePublished": post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
+        "dateModified": post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+        "author": {
+          "@type": "Organization",
+          "name": "FAULTLINE",
+          "url": "https://getfaultline.live"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "FAULTLINE",
+          "url": "https://getfaultline.live",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://getfaultline.live/favicon-32x32.png"
+          }
+        },
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": canonicalUrl
+        },
+        ...(post.category ? { "articleSection": post.category } : {}),
+        ...(post.tags ? { "keywords": post.tags } : {})
+      });
+      document.head.appendChild(ld);
     }
     return () => {
       document.title = "FAULTLINE — Market Risk Intelligence Platform";
+      const ld = document.getElementById('blog-post-ld');
+      if (ld) ld.remove();
     };
   }, [post]);
 
