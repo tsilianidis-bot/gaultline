@@ -7,7 +7,7 @@
 import sgMail from "@sendgrid/mail";
 
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY ?? "";
-const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL ?? "noreply@getfaultline.live";
+const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL ?? "jt@getfaultline.live";
 const FROM_NAME = process.env.SENDGRID_FROM_NAME ?? "FAULTLINE";
 
 let sgInitialized = false;

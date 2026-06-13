@@ -1955,7 +1955,7 @@ function FoundingAccessForm
 
   const mutation = trpc.user.requestFoundingAccess.useMutation({
     onSuccess: () => setSubmitted(true),
-    onError: (err) => setError(err.message || "Something went wrong. Please email info@getfaultline.live"),
+    onError: (err) => setError(err.message || "Something went wrong. Please email jt@getfaultline.live"),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -2045,8 +2045,8 @@ function FoundingAccessForm
             </button>
             <p className="text-center text-[#4B5563] text-[10px] font-mono">
               Or email us directly at{" "}
-              <a href="mailto:info@getfaultline.live" className="text-[#00D4FF]/60 hover:text-[#00D4FF]">
-                info@getfaultline.live
+              <a href="mailto:jt@getfaultline.live" className="text-[#00D4FF]/60 hover:text-[#00D4FF]">
+                jt@getfaultline.live
               </a>
             </p>
           </form>
@@ -2113,8 +2113,8 @@ function Footer() {
               </li>
               <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founding Access — $49/mo</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
-              <li><a href="mailto:info@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">General Inquiries</a></li>
-              <li><a href="mailto:admin@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Admin</a></li>
+              <li><a href="mailto:jt@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">General Inquiries</a></li>
+              <li><a href="mailto:jt@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Admin</a></li>
             </ul>
           </div>
         </div>
@@ -2132,9 +2132,9 @@ function Footer() {
               <span className="opacity-30">·</span>
               <a href="/legal" className="hover:text-[#00D4FF] transition-colors">Terms of Use</a>
               <span className="opacity-30">·</span>
-              <a href="mailto:info@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">info@getfaultline.live</a>
+              <a href="mailto:jt@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">jt@getfaultline.live</a>
               <span className="opacity-30">·</span>
-              <a href="mailto:admin@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">admin@getfaultline.live</a>
+              <a href="mailto:jt@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">jt@getfaultline.live</a>
             </span>
           </div>
         </div>

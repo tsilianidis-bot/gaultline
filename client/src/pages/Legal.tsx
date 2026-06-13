@@ -156,10 +156,10 @@ export default function Legal() {
         >
           Questions? Contact us at{" "}
           <a
-            href="mailto:info@getfaultline.live"
+            href="mailto:jt@getfaultline.live"
             style={{ color: "#00D4FF", textDecoration: "none" }}
           >
-            info@getfaultline.live
+            jt@getfaultline.live
           </a>
         </div>
       </div>
@@ -296,8 +296,8 @@ function PrivacyPolicy() {
       <SectionHeading>6. Your Rights</SectionHeading>
       <Para>
         You may request deletion of your account and associated data at any time by emailing{" "}
-        <a href="mailto:admin@getfaultline.live" style={{ color: "#00D4FF" }}>
-          admin@getfaultline.live
+        <a href="mailto:jt@getfaultline.live" style={{ color: "#00D4FF" }}>
+          jt@getfaultline.live
         </a>
         . We will process deletion requests within 30 days.
       </Para>
@@ -312,8 +312,8 @@ function PrivacyPolicy() {
       <SectionHeading>8. Contact</SectionHeading>
       <Para>
         For privacy-related inquiries, contact us at{" "}
-        <a href="mailto:info@getfaultline.live" style={{ color: "#00D4FF" }}>
-          info@getfaultline.live
+        <a href="mailto:jt@getfaultline.live" style={{ color: "#00D4FF" }}>
+          jt@getfaultline.live
         </a>
         .
       </Para>
@@ -367,8 +367,8 @@ function TermsOfUse() {
         You are responsible for maintaining the confidentiality of your account credentials and
         for all activity that occurs under your account. You agree to notify us immediately of any
         unauthorized use of your account at{" "}
-        <a href="mailto:admin@getfaultline.live" style={{ color: "#00D4FF" }}>
-          admin@getfaultline.live
+        <a href="mailto:jt@getfaultline.live" style={{ color: "#00D4FF" }}>
+          jt@getfaultline.live
         </a>
         .
       </Para>
@@ -450,8 +450,8 @@ function TermsOfUse() {
       <SectionHeading>14. Contact</SectionHeading>
       <Para>
         For questions about these Terms, contact us at{" "}
-        <a href="mailto:info@getfaultline.live" style={{ color: "#00D4FF" }}>
-          info@getfaultline.live
+        <a href="mailto:jt@getfaultline.live" style={{ color: "#00D4FF" }}>
+          jt@getfaultline.live
         </a>
         .
       </Para>
