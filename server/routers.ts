@@ -2066,5 +2066,25 @@ export const appRouter = router({
         }
       }),
   }),
+
+  // ── Contact Us ────────────────────────────────────────────────────────────────
+  contact: router({
+    submit: publicProcedure
+      .input(z.object({
+        name: z.string().min(1).max(100),
+        email: z.string().email(),
+        subject: z.string().min(1).max(200),
+        message: z.string().min(10).max(5000),
+        category: z.enum(["General Inquiry", "Technical Support", "Access Request", "Partnership", "Press", "Feedback", "Bug Report", "Other"]),
+      }))
+      .mutation(async ({ input }) => {
+        const { buildContactEmail, buildContactAutoReply } = await import('./email');
+        const ownerEmail = buildContactEmail(input);
+        await sendEmail(ownerEmail);
+        const autoReply = buildContactAutoReply({ name: input.name, email: input.email, subject: input.subject });
+        await sendEmail(autoReply);
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

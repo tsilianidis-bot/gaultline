@@ -55,6 +55,7 @@ const SituationRoom = lazy(() => import('./pages/SituationRoom'));
 const PreFlight = lazy(() => import('./pages/PreFlight'));
 const InsiderIntelligence = lazy(() => import("./pages/InsiderIntelligence"));
 const SeoOptimizer = lazy(() => import("./pages/SeoOptimizer"));
+const ContactUs = lazy(() => import("./pages/ContactUs"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
@@ -147,6 +148,14 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Legal />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Contact Us — standalone public page */}
+      <Route path="/contact">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <ContactUs />
           </Suspense>
         </ErrorBoundary>
       </Route>
