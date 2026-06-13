@@ -1176,23 +1176,22 @@
 
 ## Stock Heatmap Enhancements (Round 2)
 
-- [ ] Add cross-tab comparison strip — banner above tabs showing top gainer, top loser, and highest volume stock simultaneously
-- [ ] Add auto-refresh countdown timer — "Refreshes in X:XX" countdown next to Refresh button (3-min server cache cycle)
-- [ ] Add Sector Heatmap sub-view — toggle to collapse 100 individual cells into grouped sector view (avg gain/loss/volume per GICS sector)
+- [x] Add cross-tab comparison strip — banner above tabs showing top gainer, top loser, and highest volume stock simultaneously
+- [x] Add auto-refresh countdown timer — "Refreshes in X:XX" countdown next to Refresh button (3-min server cache cycle)
+- [x] Add Sector Heatmap sub-view — toggle to collapse 100 individual cells into grouped sector view (avg gain/loss/volume per GICS sector)
 
 ## Stock Heatmap — Additional Classification Tabs + Volume Fix
 
-- [ ] Fix volume tab: color cells red/green based on price direction (not blue intensity)
-- [ ] Add "52-WEEK HIGHS" tab — stocks near/at 52-week high, colored by proximity %
-- [ ] Add "52-WEEK LOWS" tab — stocks near/at 52-week low, colored by proximity %
-- [ ] Add "MOST VOLATILE" tab — highest intraday range (high-low/open %), colored by volatility intensity
-- [ ] Add "OVERSOLD" tab — RSI-based screener (low RSI = deeply oversold), colored by RSI depth
-- [ ] Add "OVERBOUGHT" tab — RSI-based screener (high RSI = overbought), colored by RSI level
-- [ ] Add backend screener functions for new tabs in yahooProxy.ts
-- [ ] Wire new tRPC procedures in routers.ts
-- [ ] Add cross-tab comparison strip (top gainer, top loser, highest volume shown simultaneously)
-- [ ] Add auto-refresh countdown timer next to Refresh button
-- [ ] Add Sector Heatmap sub-view toggle (collapse 100 cells into grouped sector averages)
+- [x] Fix volume tab: color cells red/green based on price direction (intensity = volume)
+- [x] Add "52-WEEK HIGHS" tab — stocks near/at 52-week high, colored by % change
+- [x] Add "52-WEEK LOWS" tab — stocks near/at 52-week low, colored by % change
+- [x] Add "MOST VOLATILE" tab — highest intraday range (high-low/open %), colored by volatility
+- [x] Add "SMALL-CAP RUNNERS" tab — small-cap gainers with strong momentum (replaces oversold/overbought which require RSI data not in screener)
+- [x] Add backend screener functions for new tabs in yahooProxy.ts
+- [x] Wire new tRPC procedures in routers.ts
+- [x] Add cross-tab comparison strip (top gainer, top loser, highest volume shown simultaneously)
+- [x] Add auto-refresh countdown timer next to Refresh button
+- [x] Add Sector Heatmap sub-view toggle (collapse 100 cells into grouped sector averages)
 
 ## Asymmetric Opportunities Tab (Signals Page)
 

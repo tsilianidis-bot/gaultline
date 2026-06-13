@@ -27,7 +27,7 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
-import { getQuotes, getTopStockPerformers, getTopStockLosers, getTopStockByVolume } from "./yahooProxy";
+import { getQuotes, getTopStockPerformers, getTopStockLosers, getTopStockByVolume, getTopNear52WeekHigh, getTopNear52WeekLow, getMostVolatileStocks, getSmallCapRunners } from "./yahooProxy";
 import { getAsymmetricOpportunities } from "./asymmetricOpportunities";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
@@ -1580,6 +1580,46 @@ export const appRouter = router({
           return await getTopStockByVolume(input?.limit ?? 100);
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stock volume fetch failed", cause: err });
+        }
+      }),
+    // Stocks near 52-week highs
+    getNear52WeekHigh: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(100) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getTopNear52WeekHigh(input?.limit ?? 100);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "52-week high screener failed", cause: err });
+        }
+      }),
+    // Stocks near 52-week lows
+    getNear52WeekLow: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(100) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getTopNear52WeekLow(input?.limit ?? 100);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "52-week low screener failed", cause: err });
+        }
+      }),
+    // Most volatile stocks (highest intraday range %)
+    getMostVolatile: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(100) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getMostVolatileStocks(input?.limit ?? 100);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Volatile screener failed", cause: err });
+        }
+      }),
+    // Small-cap runners (small-cap gainers with strong momentum)
+    getSmallCapRunners: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(100) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getSmallCapRunners(input?.limit ?? 100);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Small-cap runners screener failed", cause: err });
         }
       }),
     // Asymmetric Opportunities — high reward/risk setups with AI scoring

@@ -2,16 +2,31 @@
 // FAULTLINE — Stock Heatmap (Multi-Tab)
 // client/src/pages/StockHeatmap.tsx
 //
-// Three views: Top Gainers / Top Losers / Highest Volume
-// Each shows top 100 stocks from Yahoo Finance screener with
-// sector filtering and click-to-detail. Refreshes every 3 min.
+// 7 classification tabs:
+//   1. TOP GAINERS      — top 100 daily % gainers (green)
+//   2. TOP LOSERS       — top 100 daily % losers (red)
+//   3. HIGHEST VOLUME   — top 100 by volume, colored red/green by direction
+//   4. 52-WEEK HIGHS    — stocks near/at 52-week high
+//   5. 52-WEEK LOWS     — stocks near/at 52-week low
+//   6. MOST VOLATILE    — highest intraday range %
+//   7. SMALL-CAP RUNNERS— small-cap gainers with strong momentum
+//
+// Features:
+//   - Cross-tab comparison strip (top gainer / top loser / top volume)
+//   - Auto-refresh countdown (3-min server cache cycle)
+//   - Sector Heatmap sub-view (grouped sector averages)
+//   - Sector filter + sort controls
+//   - Click-to-detail panel
 // ============================================================
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
-import { BarChart2, RefreshCw, TrendingUp, TrendingDown, Activity, Filter, Volume2 } from "lucide-react";
+import {
+  BarChart2, RefreshCw, TrendingUp, TrendingDown, Activity,
+  Filter, Volume2, Zap, ArrowUpCircle, ArrowDownCircle, Layers,
+} from "lucide-react";
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -36,6 +51,12 @@ function fmtVol(n: number | null): string {
   return String(n);
 }
 
+function fmtSeconds(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
 // ── Types ─────────────────────────────────────────────────────
 
 interface StockPerformer {
@@ -50,7 +71,7 @@ interface StockPerformer {
   avgVolume: number | null;
 }
 
-type TabId = "gainers" | "losers" | "volume";
+type TabId = "gainers" | "losers" | "volume" | "highs52" | "lows52" | "volatile" | "smallcap";
 
 // ── Sector colors ─────────────────────────────────────────────
 
@@ -73,46 +94,86 @@ function getSectorColor(sector: string | null): string {
   return SECTOR_COLORS[sector] ?? "#64748B";
 }
 
+// ── Tab definitions ───────────────────────────────────────────
+
+const TABS: {
+  id: TabId;
+  label: string;
+  shortLabel: string;
+  accentColor: string;
+  description: string;
+  Icon: React.FC<{ size?: number; style?: React.CSSProperties }>;
+}[] = [
+  { id: "gainers",  label: "TOP GAINERS",       shortLabel: "GAINERS",  accentColor: "#00FF88", description: "Top 100 daily % gainers",                    Icon: TrendingUp    },
+  { id: "losers",   label: "TOP LOSERS",         shortLabel: "LOSERS",   accentColor: "#FF2D55", description: "Top 100 daily % losers",                     Icon: TrendingDown  },
+  { id: "volume",   label: "HIGHEST VOLUME",     shortLabel: "VOLUME",   accentColor: "#00D4FF", description: "Top 100 by volume — colored by direction",   Icon: Volume2       },
+  { id: "highs52",  label: "52-WEEK HIGHS",      shortLabel: "52W HIGH", accentColor: "#FFD700", description: "Stocks at or near 52-week highs",            Icon: ArrowUpCircle },
+  { id: "lows52",   label: "52-WEEK LOWS",       shortLabel: "52W LOW",  accentColor: "#F472B6", description: "Stocks at or near 52-week lows",             Icon: ArrowDownCircle },
+  { id: "volatile", label: "MOST VOLATILE",      shortLabel: "VOLATILE", accentColor: "#FF9500", description: "Highest intraday range (H-L/Open %)",        Icon: Zap           },
+  { id: "smallcap", label: "SMALL-CAP RUNNERS",  shortLabel: "SM-CAP",   accentColor: "#A78BFA", description: "Small-cap gainers with strong momentum",     Icon: Activity      },
+];
+
 // ── HeatCell ─────────────────────────────────────────────────
 
 function HeatCell({
   stock,
   rank,
   size,
-  colorMode,
+  tabId,
   onClick,
 }: {
   stock: StockPerformer;
   rank: number;
   size: "sm" | "md" | "lg";
-  colorMode: "gainers" | "losers" | "volume";
+  tabId: TabId;
   onClick: () => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const pct = stock.changePercent;
+  const positive = pct >= 0;
 
+  // Color logic per tab
   let color: string;
   let intensity: number;
+  let displayValue: string;
 
-  if (colorMode === "volume") {
-    // Blue/cyan intensity by volume — relative to the max in the set (caller normalises)
-    color = "#00D4FF";
-    intensity = Math.min(stock.volume / 1e8, 1); // 100M vol = full intensity
-  } else if (colorMode === "losers") {
+  if (tabId === "volume") {
+    // Volume tab: red/green by price direction, intensity by volume
+    color = positive ? "#00FF88" : "#FF2D55";
+    intensity = Math.min(stock.volume / 1e8, 1);
+    displayValue = fmtVol(stock.volume);
+  } else if (tabId === "losers") {
     color = "#FF2D55";
     intensity = Math.min(Math.abs(pct) / 20, 1);
-  } else {
+    displayValue = fmtPct(pct);
+  } else if (tabId === "gainers") {
     color = "#00FF88";
     intensity = Math.min(Math.abs(pct) / 20, 1);
+    displayValue = fmtPct(pct);
+  } else if (tabId === "highs52") {
+    color = "#FFD700";
+    intensity = Math.min(Math.abs(pct) / 15, 1);
+    displayValue = fmtPct(pct);
+  } else if (tabId === "lows52") {
+    color = "#F472B6";
+    intensity = Math.min(Math.abs(pct) / 15, 1);
+    displayValue = fmtPct(pct);
+  } else if (tabId === "volatile") {
+    color = "#FF9500";
+    intensity = Math.min(Math.abs(pct) / 20, 1);
+    displayValue = fmtPct(pct);
+  } else {
+    // smallcap
+    color = "#A78BFA";
+    intensity = Math.min(Math.abs(pct) / 20, 1);
+    displayValue = fmtPct(pct);
   }
 
-  const alpha = Math.round(intensity * 220).toString(16).padStart(2, "0");
+  const alpha = Math.max(0x22, Math.round(intensity * 0xDD)).toString(16).padStart(2, "0");
   const padding = size === "lg" ? "10px 8px" : size === "md" ? "8px 6px" : "6px 4px";
   const symSize = size === "lg" ? "13px" : size === "md" ? "11px" : "9px";
   const valSize = size === "lg" ? "11px" : size === "md" ? "10px" : "9px";
   const priceSize = size === "lg" ? "9px" : "8px";
-
-  const displayValue = colorMode === "volume" ? fmtVol(stock.volume) : fmtPct(pct);
 
   return (
     <div
@@ -142,6 +203,91 @@ function HeatCell({
   );
 }
 
+// ── Sector Heatmap Sub-View ───────────────────────────────────
+
+function SectorHeatmap({ data, tabId }: { data: StockPerformer[]; tabId: TabId }) {
+  const accentColor = TABS.find(t => t.id === tabId)!.accentColor;
+
+  const sectorGroups = useMemo(() => {
+    const map = new Map<string, StockPerformer[]>();
+    for (const s of data) {
+      const key = s.sector ?? "Unknown";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    }
+    const result: {
+      sector: string;
+      count: number;
+      avgPct: number;
+      totalVol: number;
+      avgVol: number;
+      topTicker: string;
+      color: string;
+    }[] = [];
+    map.forEach((stocks, sector) => {
+      const avgPct = stocks.reduce((s, p) => s + p.changePercent, 0) / stocks.length;
+      const totalVol = stocks.reduce((s, p) => s + p.volume, 0);
+      const top = [...stocks].sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))[0];
+      result.push({
+        sector,
+        count: stocks.length,
+        avgPct,
+        totalVol,
+        avgVol: totalVol / stocks.length,
+        topTicker: top.ticker,
+        color: getSectorColor(sector),
+      });
+    });
+    if (tabId === "losers") return result.sort((a, b) => a.avgPct - b.avgPct);
+    if (tabId === "volume") return result.sort((a, b) => b.totalVol - a.totalVol);
+    return result.sort((a, b) => b.avgPct - a.avgPct);
+  }, [data, tabId]);
+
+  return (
+    <div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.12em", marginBottom: "10px" }}>
+        SECTOR HEATMAP — {sectorGroups.length} SECTORS · CLICK CELL FOR DETAIL
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "6px" }}>
+        {sectorGroups.map(g => {
+          const isPos = g.avgPct >= 0;
+          const baseColor = tabId === "volume" ? accentColor : isPos ? "#00FF88" : "#FF2D55";
+          const intensity = tabId === "volume"
+            ? Math.min(g.totalVol / 5e8, 1)
+            : Math.min(Math.abs(g.avgPct) / 10, 1);
+          const alpha = Math.max(0x18, Math.round(intensity * 0xCC)).toString(16).padStart(2, "0");
+
+          return (
+            <div
+              key={g.sector}
+              title={`${g.sector}\n${g.count} stocks\nAvg: ${fmtPct(g.avgPct)}\nTotal Vol: ${fmtVol(g.totalVol)}\nTop: ${g.topTicker}`}
+              style={{
+                background: `${baseColor}${alpha}`,
+                border: `1px solid ${baseColor}40`,
+                borderLeft: `3px solid ${g.color}`,
+                borderRadius: "4px",
+                padding: "10px 10px 8px",
+                cursor: "default",
+              }}
+            >
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: g.color, letterSpacing: "0.08em", marginBottom: "4px" }}>
+                {g.sector.split(" ").map(w => w[0]).join("")} — {g.sector}
+              </div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: baseColor }}>
+                {tabId === "volume" ? fmtVol(g.totalVol) : fmtPct(g.avgPct)}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B" }}>{g.count} stocks</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B" }}>Top: {g.topTicker}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Detail Panel ─────────────────────────────────────────────
 
 function DetailPanel({
@@ -156,8 +302,8 @@ function DetailPanel({
   onClose: () => void;
 }) {
   const pct = stock.changePercent;
-  const color = tabId === "volume" ? "#00D4FF" : pct >= 0 ? "#00FF88" : "#FF2D55";
-  const rankLabel = tabId === "gainers" ? "TOP GAINER" : tabId === "losers" ? "TOP LOSER" : "HIGHEST VOLUME";
+  const tab = TABS.find(t => t.id === tabId)!;
+  const color = tabId === "volume" ? (pct >= 0 ? "#00FF88" : "#FF2D55") : tab.accentColor;
 
   return (
     <div style={{
@@ -171,7 +317,7 @@ function DetailPanel({
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "12px" }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.15em", marginBottom: "4px" }}>
-            RANK #{rank} — {rankLabel}
+            RANK #{rank} — {tab.label}
           </div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "22px", color: "#F0F4FF", letterSpacing: "0.04em" }}>
             {stock.ticker}
@@ -198,13 +344,13 @@ function DetailPanel({
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px" }}>
         {[
-          { label: "Change %", value: fmtPct(pct), color: pct >= 0 ? "#00FF88" : "#FF2D55" },
-          { label: "Change $", value: `${stock.change >= 0 ? "+" : ""}$${stock.change.toFixed(2)}`, color: pct >= 0 ? "#00FF88" : "#FF2D55" },
-          { label: "Volume", value: fmtVol(stock.volume), color: "#00D4FF" },
-          { label: "Avg Volume", value: fmtVol(stock.avgVolume), color: "#64748B" },
-          { label: "Market Cap", value: fmt(stock.marketCap), color: "#94A3B8" },
-          { label: "Sector", value: stock.sector ?? "—", color: getSectorColor(stock.sector) },
-          { label: "Vol / Avg", value: stock.avgVolume && stock.volume ? `${(stock.volume / stock.avgVolume).toFixed(1)}x` : "—", color: stock.avgVolume && stock.volume && stock.volume > stock.avgVolume * 2 ? "#FF9500" : "#64748B" },
+          { label: "Change %",   value: fmtPct(pct),                                                                                  color: pct >= 0 ? "#00FF88" : "#FF2D55" },
+          { label: "Change $",   value: `${stock.change >= 0 ? "+" : ""}$${stock.change.toFixed(2)}`,                                 color: pct >= 0 ? "#00FF88" : "#FF2D55" },
+          { label: "Volume",     value: fmtVol(stock.volume),                                                                          color: "#00D4FF" },
+          { label: "Avg Volume", value: fmtVol(stock.avgVolume),                                                                       color: "#64748B" },
+          { label: "Market Cap", value: fmt(stock.marketCap),                                                                          color: "#94A3B8" },
+          { label: "Sector",     value: stock.sector ?? "—",                                                                           color: getSectorColor(stock.sector) },
+          { label: "Vol / Avg",  value: stock.avgVolume && stock.volume ? `${(stock.volume / stock.avgVolume).toFixed(1)}x` : "—",     color: stock.avgVolume && stock.volume && stock.volume > stock.avgVolume * 2 ? "#FF9500" : "#64748B" },
         ].map(({ label, value, color: c }) => (
           <div key={label} style={{ background: "rgba(255,255,255,0.02)", borderRadius: "4px", padding: "8px 10px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.12em", marginBottom: "3px" }}>{label.toUpperCase()}</div>
@@ -220,14 +366,6 @@ function DetailPanel({
   );
 }
 
-// ── Tab definitions ───────────────────────────────────────────
-
-const TABS: { id: TabId; label: string; shortLabel: string; accentColor: string }[] = [
-  { id: "gainers", label: "TOP GAINERS",    shortLabel: "GAINERS", accentColor: "#00FF88" },
-  { id: "losers",  label: "TOP LOSERS",     shortLabel: "LOSERS",  accentColor: "#FF2D55" },
-  { id: "volume",  label: "HIGHEST VOLUME", shortLabel: "VOLUME",  accentColor: "#00D4FF" },
-];
-
 // ── Heatmap Grid ─────────────────────────────────────────────
 
 function HeatmapGrid({
@@ -237,6 +375,7 @@ function HeatmapGrid({
   tabId,
   sectorFilter,
   sortBy,
+  viewMode,
 }: {
   data: StockPerformer[] | undefined;
   isLoading: boolean;
@@ -244,6 +383,7 @@ function HeatmapGrid({
   tabId: TabId;
   sectorFilter: string;
   sortBy: "default" | "volume" | "marketCap";
+  viewMode: "cells" | "sector";
 }) {
   const accentColor = TABS.find(t => t.id === tabId)!.accentColor;
 
@@ -287,6 +427,10 @@ function HeatmapGrid({
     );
   }
 
+  if (viewMode === "sector") {
+    return <SectorHeatmap data={filtered} tabId={tabId} />;
+  }
+
   return (
     <>
       {selectedStock && (
@@ -304,9 +448,203 @@ function HeatmapGrid({
             stock={stock}
             rank={i + 1}
             size={cellSize}
-            colorMode={tabId}
+            tabId={tabId}
             onClick={() => setSelectedStock(selectedStock?.stock.ticker === stock.ticker ? null : { stock, rank: i + 1 })}
           />
+        ))}
+      </div>
+    </>
+  );
+}
+
+// ── Cross-Tab Comparison Strip ────────────────────────────────
+
+function CrossTabStrip({
+  gainers,
+  losers,
+  volume,
+}: {
+  gainers: StockPerformer[] | undefined;
+  losers: StockPerformer[] | undefined;
+  volume: StockPerformer[] | undefined;
+}) {
+  const topGainer = gainers?.[0];
+  const topLoser  = losers?.[0];
+  const topVol    = volume?.[0];
+
+  if (!topGainer && !topLoser && !topVol) return null;
+
+  const items = [
+    topGainer && { label: "TOP GAINER", ticker: topGainer.ticker, value: fmtPct(topGainer.changePercent), sub: `$${topGainer.price.toFixed(2)}`, color: "#00FF88" },
+    topLoser  && { label: "TOP LOSER",  ticker: topLoser.ticker,  value: fmtPct(topLoser.changePercent),  sub: `$${topLoser.price.toFixed(2)}`,  color: "#FF2D55" },
+    topVol    && { label: "TOP VOLUME", ticker: topVol.ticker,    value: fmtVol(topVol.volume),           sub: `${topVol.changePercent >= 0 ? "+" : ""}${topVol.changePercent.toFixed(2)}%`, color: topVol.changePercent >= 0 ? "#00FF88" : "#FF2D55" },
+  ].filter(Boolean) as { label: string; ticker: string; value: string; sub: string; color: string }[];
+
+  return (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: `repeat(${items.length}, 1fr)`,
+      gap: "6px",
+      marginBottom: "12px",
+    }}>
+      {items.map(item => (
+        <div
+          key={item.label}
+          title={`${item.label}: ${item.ticker} — ${item.value}`}
+          style={{
+            background: `${item.color}08`,
+            border: `1px solid ${item.color}25`,
+            borderRadius: "5px",
+            padding: "8px 12px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "8px",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.12em", marginBottom: "2px" }}>{item.label}</div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#F0F4FF" }}>{item.ticker}</div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: item.color }}>{item.value}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64748B" }}>{item.sub}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Auto-Refresh Countdown ────────────────────────────────────
+
+function RefreshCountdown({
+  onRefresh,
+  isFetching,
+  accentColor,
+  cacheSecs,
+}: {
+  onRefresh: () => void;
+  isFetching: boolean;
+  accentColor: string;
+  cacheSecs: number;
+}) {
+  const [secsLeft, setSecsLeft] = useState(cacheSecs);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    setSecsLeft(cacheSecs);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setSecsLeft(s => {
+        if (s <= 1) {
+          onRefresh();
+          return cacheSecs;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cacheSecs]);
+
+  // Reset countdown when a manual refresh fires
+  useEffect(() => {
+    if (isFetching) setSecsLeft(cacheSecs);
+  }, [isFetching, cacheSecs]);
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <span
+        title="Data is cached server-side for 3 minutes. Countdown shows time until next auto-refresh."
+        style={{
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "9px",
+          color: secsLeft <= 30 ? "#FF9500" : "#374151",
+          letterSpacing: "0.08em",
+          cursor: "help",
+        }}
+      >
+        {isFetching ? "REFRESHING…" : `REFRESHES IN ${fmtSeconds(secsLeft)}`}
+      </span>
+      <button
+        onClick={() => { onRefresh(); setSecsLeft(cacheSecs); }}
+        disabled={isFetching}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          background: `${accentColor}08`,
+          border: `1px solid ${accentColor}30`,
+          borderRadius: "6px",
+          padding: "7px 13px",
+          cursor: isFetching ? "default" : "pointer",
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "9px",
+          color: isFetching ? "#374151" : accentColor,
+          letterSpacing: "0.1em",
+          transition: "all 0.15s ease",
+        }}
+      >
+        <RefreshCw size={11} style={{ animation: isFetching ? "spin 0.8s linear infinite" : "none" }} />
+        REFRESH
+      </button>
+    </div>
+  );
+}
+
+// ── Color Scale Legend ────────────────────────────────────────
+
+function ColorScaleLegend({ tabId }: { tabId: TabId }) {
+  if (tabId === "volume") {
+    return (
+      <>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.12em", marginBottom: "8px" }}>
+          COLOR SCALE — VOLUME (cell color = price direction · intensity = volume)
+        </div>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+            {[{ label: "100M+", alpha: "DD" }, { label: "50M", alpha: "AA" }, { label: "10M", alpha: "66" }, { label: "1M", alpha: "22" }].map(({ label, alpha }) => (
+              <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
+                <div style={{ width: "28px", height: "16px", borderRadius: "2px", background: `#00FF88${alpha}`, border: "1px solid #00FF8830" }} />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151" }}>{label}</span>
+              </div>
+            ))}
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", margin: "0 4px" }}>↑ UP</span>
+          </div>
+          <div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+            {[{ label: "100M+", alpha: "DD" }, { label: "50M", alpha: "AA" }, { label: "10M", alpha: "66" }, { label: "1M", alpha: "22" }].map(({ label, alpha }) => (
+              <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
+                <div style={{ width: "28px", height: "16px", borderRadius: "2px", background: `#FF2D55${alpha}`, border: "1px solid #FF2D5530" }} />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151" }}>{label}</span>
+              </div>
+            ))}
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", margin: "0 4px" }}>↓ DOWN</span>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const tab = TABS.find(t => t.id === tabId)!;
+  const color = tab.accentColor;
+  const isDown = tabId === "losers" || tabId === "lows52";
+
+  const scale = isDown
+    ? [{ pct: "0%", alpha: "22" }, { pct: "-2%", alpha: "44" }, { pct: "-5%", alpha: "77" }, { pct: "-10%", alpha: "BB" }, { pct: "-20%+", alpha: "DD" }]
+    : [{ pct: "0%", alpha: "22" }, { pct: "+2%", alpha: "44" }, { pct: "+5%", alpha: "77" }, { pct: "+10%", alpha: "BB" }, { pct: "+20%+", alpha: "DD" }];
+
+  return (
+    <>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.12em", marginBottom: "8px" }}>
+        COLOR SCALE — DAILY CHANGE %
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        {scale.map(({ pct, alpha }) => (
+          <div key={pct} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
+            <div style={{ width: "28px", height: "16px", borderRadius: "2px", background: `${color}${alpha}`, border: `1px solid ${color}30` }} />
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151" }}>{pct}</span>
+          </div>
         ))}
       </div>
     </>
@@ -319,23 +657,31 @@ function StockHeatmapInner() {
   const [activeTab, setActiveTab] = useState<TabId>("gainers");
   const [sectorFilter, setSectorFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<"default" | "volume" | "marketCap">("default");
+  const [viewMode, setViewMode] = useState<"cells" | "sector">("cells");
 
-  // Fetch all three datasets — they are cached server-side for 3 min so parallel calls are cheap
-  const gainersQuery = trpc.stocks.getTopPerformers.useQuery(
-    { limit: 100 },
-    { staleTime: 3 * 60_000, refetchOnWindowFocus: false }
-  );
-  const losersQuery = trpc.stocks.getTopLosers.useQuery(
-    { limit: 100 },
-    { staleTime: 3 * 60_000, refetchOnWindowFocus: false }
-  );
-  const volumeQuery = trpc.stocks.getTopByVolume.useQuery(
-    { limit: 100 },
-    { staleTime: 3 * 60_000, refetchOnWindowFocus: false }
-  );
+  const CACHE_SECS = 180; // 3-minute server cache
 
-  const activeQuery = activeTab === "gainers" ? gainersQuery : activeTab === "losers" ? losersQuery : volumeQuery;
-  const activeData = activeQuery.data;
+  // Fetch all datasets — server-side cached so parallel calls are cheap
+  const gainersQuery  = trpc.stocks.getTopPerformers.useQuery({ limit: 100 }, { staleTime: CACHE_SECS * 1000, refetchOnWindowFocus: false });
+  const losersQuery   = trpc.stocks.getTopLosers.useQuery(    { limit: 100 }, { staleTime: CACHE_SECS * 1000, refetchOnWindowFocus: false });
+  const volumeQuery   = trpc.stocks.getTopByVolume.useQuery(  { limit: 100 }, { staleTime: CACHE_SECS * 1000, refetchOnWindowFocus: false });
+  const highs52Query  = trpc.stocks.getNear52WeekHigh.useQuery({ limit: 100 }, { staleTime: CACHE_SECS * 1000, refetchOnWindowFocus: false, enabled: activeTab === "highs52" });
+  const lows52Query   = trpc.stocks.getNear52WeekLow.useQuery( { limit: 100 }, { staleTime: CACHE_SECS * 1000, refetchOnWindowFocus: false, enabled: activeTab === "lows52"  });
+  const volatileQuery = trpc.stocks.getMostVolatile.useQuery(  { limit: 100 }, { staleTime: CACHE_SECS * 1000, refetchOnWindowFocus: false, enabled: activeTab === "volatile" });
+  const smallcapQuery = trpc.stocks.getSmallCapRunners.useQuery({ limit: 100 }, { staleTime: CACHE_SECS * 1000, refetchOnWindowFocus: false, enabled: activeTab === "smallcap" });
+
+  const queryMap: Record<TabId, typeof gainersQuery> = {
+    gainers:  gainersQuery,
+    losers:   losersQuery,
+    volume:   volumeQuery,
+    highs52:  highs52Query,
+    lows52:   lows52Query,
+    volatile: volatileQuery,
+    smallcap: smallcapQuery,
+  };
+
+  const activeQuery = queryMap[activeTab];
+  const activeData  = activeQuery.data;
   const accentColor = TABS.find(t => t.id === activeTab)!.accentColor;
 
   // Derive unique sectors from active dataset
@@ -352,7 +698,7 @@ function StockHeatmapInner() {
     if (!filtered.length) return null;
     const top = filtered[0];
     const totalVol = filtered.reduce((s, p) => s + p.volume, 0);
-    const avgPct = filtered.reduce((s, p) => s + p.changePercent, 0) / filtered.length;
+    const avgPct   = filtered.reduce((s, p) => s + p.changePercent, 0) / filtered.length;
     return { top, totalVol, avgPct, count: filtered.length };
   }, [activeData, sectorFilter]);
 
@@ -360,16 +706,20 @@ function StockHeatmapInner() {
     gainersQuery.refetch();
     losersQuery.refetch();
     volumeQuery.refetch();
+    if (activeTab === "highs52")  highs52Query.refetch();
+    if (activeTab === "lows52")   lows52Query.refetch();
+    if (activeTab === "volatile") volatileQuery.refetch();
+    if (activeTab === "smallcap") smallcapQuery.refetch();
   }
 
-  const isFetching = activeQuery.isFetching;
-
-  // Reset sector filter when tab changes
   function handleTabChange(tab: TabId) {
     setActiveTab(tab);
     setSectorFilter("ALL");
     setSortBy("default");
+    setViewMode("cells");
   }
+
+  const isFetching = activeQuery.isFetching;
 
   return (
     <div style={{ background: "#050608", minHeight: "100vh", color: "#F0F4FF", fontFamily: "'IBM Plex Sans', sans-serif" }}>
@@ -395,43 +745,27 @@ function StockHeatmapInner() {
                 Stock Heatmap
               </h1>
               <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#4B5563", lineHeight: 1.6, margin: 0 }}>
-                Top 100 daily movers ranked by gain, loss, or volume. 15-minute delayed data from Yahoo Finance.
+                {TABS.find(t => t.id === activeTab)!.description} · 15-minute delayed data from Yahoo Finance.
               </p>
             </div>
-            <button
-              onClick={refetchAll}
-              disabled={isFetching}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                background: `${accentColor}08`,
-                border: `1px solid ${accentColor}30`,
-                borderRadius: "6px",
-                padding: "8px 14px",
-                cursor: isFetching ? "default" : "pointer",
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: "9px",
-                color: isFetching ? "#374151" : accentColor,
-                letterSpacing: "0.1em",
-                transition: "all 0.15s ease",
-              }}
-            >
-              <RefreshCw size={11} style={{ animation: isFetching ? "spin 0.8s linear infinite" : "none" }} />
-              {isFetching ? "REFRESHING…" : "REFRESH"}
-            </button>
+            <RefreshCountdown
+              onRefresh={refetchAll}
+              isFetching={isFetching}
+              accentColor={accentColor}
+              cacheSecs={CACHE_SECS}
+            />
           </div>
 
           {/* Summary stats */}
           {stats && (
             <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginTop: "14px" }}>
               {[
-                { label: "Showing",      value: `${stats.count} stocks`,                                                        color: "#00D4FF" },
-                { label: "Avg Move",     value: fmtPct(stats.avgPct),                                                           color: stats.avgPct >= 0 ? "#00FF88" : "#FF2D55" },
-                { label: activeTab === "volume" ? "Top Volume" : activeTab === "gainers" ? "Top Gainer" : "Top Loser",
+                { label: "Showing",      value: `${stats.count} stocks`,                                                                                                                       color: "#00D4FF" },
+                { label: "Avg Move",     value: fmtPct(stats.avgPct),                                                                                                                          color: stats.avgPct >= 0 ? "#00FF88" : "#FF2D55" },
+                { label: activeTab === "volume" ? "Top Volume" : activeTab === "losers" || activeTab === "lows52" ? "Top Loser" : "Top Mover",
                   value: `${stats.top.ticker} ${activeTab === "volume" ? fmtVol(stats.top.volume) : fmtPct(stats.top.changePercent)}`,
                   color: accentColor },
-                { label: "Total Volume", value: fmtVol(stats.totalVol),                                                         color: "#94A3B8" },
+                { label: "Total Volume", value: fmtVol(stats.totalVol),                                                                                                                        color: "#94A3B8" },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.1em" }}>{label.toUpperCase()}</span>
@@ -446,23 +780,31 @@ function StockHeatmapInner() {
       {/* ── Content ────────────────────────────────────────── */}
       <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "14px 16px 40px" }}>
 
+        {/* ── Cross-Tab Comparison Strip ────────────────────── */}
+        <CrossTabStrip
+          gainers={gainersQuery.data}
+          losers={losersQuery.data}
+          volume={volumeQuery.data}
+        />
+
         {/* ── Tab Bar ──────────────────────────────────────── */}
-        <div style={{ display: "flex", gap: "4px", marginBottom: "14px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "0" }}>
+        <div style={{ display: "flex", gap: "2px", marginBottom: "14px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "0", overflowX: "auto" }}>
           {TABS.map(tab => {
             const isActive = tab.id === activeTab;
-            const TabIcon = tab.id === "gainers" ? TrendingUp : tab.id === "losers" ? TrendingDown : Volume2;
+            const TabIcon = tab.Icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
+                title={tab.description}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "5px",
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: "9px",
-                  letterSpacing: "0.1em",
-                  padding: "10px 16px",
+                  letterSpacing: "0.08em",
+                  padding: "10px 12px",
                   borderRadius: "4px 4px 0 0",
                   border: "1px solid transparent",
                   borderBottom: isActive ? `2px solid ${tab.accentColor}` : "2px solid transparent",
@@ -471,6 +813,7 @@ function StockHeatmapInner() {
                   cursor: "pointer",
                   transition: "all 0.15s ease",
                   whiteSpace: "nowrap",
+                  flexShrink: 0,
                 }}
               >
                 <TabIcon size={10} />
@@ -483,6 +826,32 @@ function StockHeatmapInner() {
 
         {/* ── Controls ─────────────────────────────────────── */}
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "12px", alignItems: "center" }}>
+          {/* View mode toggle */}
+          <div style={{ display: "flex", gap: "4px" }}>
+            {([
+              { key: "cells"  as const, label: "CELLS",  icon: <BarChart2 size={9} /> },
+              { key: "sector" as const, label: "SECTOR", icon: <Layers size={9} />    },
+            ]).map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => setViewMode(key)}
+                title={key === "cells" ? "Show individual stock cells" : "Collapse into grouped sector view"}
+                style={{
+                  display: "flex", alignItems: "center", gap: "4px",
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "8px", letterSpacing: "0.06em",
+                  padding: "3px 8px", borderRadius: "3px",
+                  border: `1px solid ${viewMode === key ? accentColor : "rgba(255,255,255,0.08)"}`,
+                  background: viewMode === key ? `${accentColor}18` : "transparent",
+                  color: viewMode === key ? accentColor : "#4B5563",
+                  cursor: "pointer", transition: "all 0.15s ease",
+                }}
+              >
+                {icon}{label}
+              </button>
+            ))}
+          </div>
+
           {/* Sector filter */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
             <Filter size={10} style={{ color: "#374151" }} />
@@ -492,6 +861,7 @@ function StockHeatmapInner() {
                 <button
                   key={s}
                   onClick={() => setSectorFilter(s)}
+                  title={s === "ALL" ? "Show all sectors" : s}
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: "8px",
@@ -515,7 +885,7 @@ function StockHeatmapInner() {
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.1em" }}>SORT:</span>
             {[
-              { key: "default"   as const, label: activeTab === "gainers" ? "% GAIN" : activeTab === "losers" ? "% LOSS" : "VOLUME" },
+              { key: "default"   as const, label: activeTab === "losers" || activeTab === "lows52" ? "% LOSS" : activeTab === "volume" ? "VOLUME" : "% GAIN" },
               { key: "volume"    as const, label: "VOLUME" },
               { key: "marketCap" as const, label: "MKT CAP" },
             ].map(({ key, label }) => (
@@ -547,24 +917,26 @@ function StockHeatmapInner() {
             <BarChart2 size={12} style={{ color: accentColor, transition: "color 0.3s ease" }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151", letterSpacing: "0.15em" }}>
               STOCK HEATMAP — {TABS.find(t => t.id === activeTab)!.label}
+              {viewMode === "sector" && " · SECTOR VIEW"}
             </span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#1F2937", marginLeft: "auto" }}>
-              15-MIN DELAYED · CLICK CELL FOR DETAIL
+              15-MIN DELAYED · {viewMode === "cells" ? "CLICK CELL FOR DETAIL" : "GROUPED BY SECTOR"}
             </span>
           </div>
 
           <HeatmapGrid
-            key={activeTab}
+            key={`${activeTab}-${viewMode}`}
             data={activeData}
             isLoading={activeQuery.isLoading}
             error={activeQuery.error}
             tabId={activeTab}
             sectorFilter={sectorFilter}
             sortBy={sortBy}
+            viewMode={viewMode}
           />
 
-          {/* Sector legend */}
-          {activeData && sectors.length > 0 && (
+          {/* Sector legend (cells mode only) */}
+          {viewMode === "cells" && activeData && sectors.length > 0 && (
             <div style={{ marginTop: "12px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#1F2937", letterSpacing: "0.12em", marginBottom: "6px" }}>SECTOR LEGEND</div>
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -583,56 +955,7 @@ function StockHeatmapInner() {
 
         {/* ── Color scale legend ────────────────────────────── */}
         <div style={{ background: "rgba(10,12,18,0.98)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "12px 14px", marginBottom: "14px" }}>
-          {activeTab === "volume" ? (
-            <>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.12em", marginBottom: "8px" }}>COLOR SCALE — DAILY VOLUME</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                {[
-                  { label: "100M+", alpha: "FF" },
-                  { label: "50M",   alpha: "CC" },
-                  { label: "20M",   alpha: "99" },
-                  { label: "10M",   alpha: "66" },
-                  { label: "1M",    alpha: "33" },
-                ].map(({ label, alpha }) => (
-                  <div key={label} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
-                    <div style={{ width: "28px", height: "16px", borderRadius: "2px", background: `#00D4FF${alpha}`, border: "1px solid #00D4FF30" }} />
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151" }}>{label}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.12em", marginBottom: "8px" }}>
-                COLOR SCALE — DAILY CHANGE %
-              </div>
-              {(() => {
-                const pctScale = activeTab === "gainers" ? [
-                  { pct: "+20%+", color: "#00FF88", alpha: "FF" },
-                  { pct: "+10%",  color: "#00FF88", alpha: "BB" },
-                  { pct: "+5%",   color: "#00FF88", alpha: "77" },
-                  { pct: "+2%",   color: "#00FF88", alpha: "44" },
-                  { pct: "0%",    color: "#374151", alpha: "FF" },
-                ] : [
-                  { pct: "0%",    color: "#374151", alpha: "FF" },
-                  { pct: "-2%",   color: "#FF2D55", alpha: "44" },
-                  { pct: "-5%",   color: "#FF2D55", alpha: "77" },
-                  { pct: "-10%",  color: "#FF2D55", alpha: "BB" },
-                  { pct: "-20%+", color: "#FF2D55", alpha: "FF" },
-                ];
-                return (
-                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                    {pctScale.map(({ pct, color, alpha }) => (
-                      <div key={pct} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
-                        <div style={{ width: "28px", height: "16px", borderRadius: "2px", background: `${color}${alpha}`, border: `1px solid ${color}30` }} />
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151" }}>{pct}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </>
-          )}
+          <ColorScaleLegend tabId={activeTab} />
         </div>
 
         {/* Disclaimer */}
