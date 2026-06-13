@@ -46,8 +46,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: "Upgrade to Pro — $59/mo",
-    ctaSecondary: "Founding Access — $49/mo",
+    ctaPrimary: "Unlock Operator — $79/mo",
+    ctaSecondary: "Founding Access — $199 one-time",
     features: [
       "Full macro regime intelligence",
       "Advanced trading signals",
@@ -122,8 +122,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-orange-400",
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
-    ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Founding Access — $49/mo",
+    ctaPrimary: "Unlock Operator — $79/mo",
+    ctaSecondary: "Founding Access — $199 one-time",
     features: [
       "FAULTLINE Pressure Index™",
       "Liquidity stress monitoring",
@@ -141,8 +141,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Founding Access — $49/mo",
+    ctaPrimary: "Unlock Operator — $79/mo",
+    ctaSecondary: "Founding Access — $199 one-time",
     features: [
       "Diagnostic AI™ analysis",
       "Position Guidance™",
@@ -160,8 +160,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-blue-400",
     accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
-    ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Founding Access — $49/mo",
+    ctaPrimary: "Unlock Operator — $79/mo",
+    ctaSecondary: "Founding Access — $199 one-time",
     features: [
       "Crypto systemic risk score",
       "BTC macro correlation tracking",
@@ -179,8 +179,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-orange-400",
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
-    ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Founding Access — $49/mo",
+    ctaPrimary: "Unlock Operator — $79/mo",
+    ctaSecondary: "Founding Access — $199 one-time",
     features: [
       "Primary rupture detection",
       "Contagion chain mapping",
@@ -198,8 +198,8 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-blue-400",
     accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
-    ctaPrimary: "Unlock Pro — $59/mo",
-    ctaSecondary: "Founding Access — $49/mo",
+    ctaPrimary: "Unlock Operator — $79/mo",
+    ctaSecondary: "Founding Access — $199 one-time",
     features: [
       "Save any crypto token",
       "Live signal label monitoring",
@@ -428,7 +428,7 @@ export function PremiumGateFull({
                     : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
                 >
                   <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : 'Upgrade to Pro — $59/mo'}
+                  {checkoutMutation.isPending ? 'Loading...' : 'Unlock Analyst — $39/mo'}
                 </button>
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
@@ -441,7 +441,7 @@ export function PremiumGateFull({
                   }}
                 >
                   <Shield className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : 'Founding Access — $49/mo locked'}
+                  {checkoutMutation.isPending ? 'Loading...' : 'Founding Access — $199 one-time'}
                 </button>
               </>
             ) : (

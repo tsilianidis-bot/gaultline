@@ -38,17 +38,18 @@ function Counter({ target, suffix = "" }: { target: number; suffix?: string }) {
 
 // ── Status ticker ─────────────────────────────────────────────
 const TICKER_ITEMS = [
-  "● LIVE — PRESSURE MONITOR ACTIVE",
-  "FRED DATA STREAMING",
+  "● LIVE — PRESSURE MONITORING ACTIVE",
+  "MOVE WITHIN THE FAULTLINES",
   "REGIME: LATE-CYCLE ELEVATED",
   "SIGNALS ENGINE: ONLINE",
   "TREASURY STRESS: ELEVATED",
   "AI CONCENTRATION: 74%",
-  "VOLATILITY REGIME: SUPPRESSED",
+  "FAULTLINES FORMING — READ THEM NOW",
   "LIQUIDITY CONDITIONS: TIGHTENING",
   "CREDIT SPREADS: WIDENING",
-  "YIELD CURVE: INVERTED",
+  "POSITIONED BEFORE THE QUAKE",
   "AFTERSHOCK ENGINE: SCANNING",
+  "TOP FUNDS MOVE FIRST — NOW YOU CAN TOO",
 ];
 
 function StatusTicker() {
@@ -144,7 +145,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
             <button onClick={onRequestAccess} className="text-[11px] font-mono tracking-widest text-[#FFD700] hover:text-white transition-colors px-4 py-2 border border-[#FFD700]/30 hover:border-[#FFD700]/60 rounded">
-              REQUEST ACCESS
+              MOVE FIRST →
             </button>
             <a href={getLoginUrl()} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded">
               MEMBER LOGIN
@@ -215,8 +216,8 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div>
-                  <div className="text-[13px] font-mono font-bold tracking-widest text-[#FFD700]">REQUEST FOUNDING ACCESS</div>
-                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Lifetime rate · Limited spots</div>
+                  <div className="text-[13px] font-mono font-bold tracking-widest text-[#FFD700]">MOVE BEFORE THE QUAKE</div>
+                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Founder access · $199 one-time · Limited spots</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 8h10M9 4l4 4-4 4" />
@@ -372,18 +373,18 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" />
             <div className="absolute w-3 h-3 rounded-full bg-[#00FF88]/20 animate-ping" />
           </div>
-          <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">PLATFORM LIVE — FOUNDING ACCESS OPEN</span>
+          <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">PLATFORM LIVE — PRESSURE MONITORING ACTIVE</span>
         </div>
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-5 leading-[1.05]">
-          Know when the market<br />
-          <span className="text-[#00D4FF]">is about to break.</span>
+          Move before the quake.<br />
+          <span className="text-[#00D4FF]">Not after it.</span>
         </h1>
 
         {/* Sub */}
         <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-8 leading-relaxed">
-          FAULTLINE reads systemic pressure before it becomes a headline. Real-time macro intelligence for traders and analysts who need to position early — not react late.
+          FAULTLINE maps the stress fractures forming beneath the market — before they become headlines. Position inside the faultlines while others are still reacting to the surface.
         </p>
 
         {/* CTAs — mobile-first, safe-area aware */}
@@ -403,7 +404,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 border border-[#FFD700]/50 hover:border-[#FFD700] text-[#FFD700] font-mono font-bold text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
             style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px" }}
           >
-            REQUEST ACCESS
+            MOVE BEFORE THE QUAKE →
           </button>
         </div>
 
@@ -414,7 +415,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
 
         {/* Clarity tags — below CTAs on mobile so they don’t push buttons down */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-          {["Macro Pressure", "Liquidity Stress", "Crypto Rotation", "Systemic Risk", "Volatility Regimes"].map((item, i) => (
+          {["Pre-Quake Positioning", "Pressure Before Headlines", "Faultline Detection", "Regime Shifts Early", "Move Inside the Lines"].map((item, i) => (
             <span key={i} className="text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/60 border border-[#00D4FF]/15 px-2.5 py-1 rounded-full bg-[#00D4FF]/5">{item}</span>
           ))}
         </div>
@@ -493,7 +494,7 @@ function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => voi
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 text-center">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#050608]/90 border border-[#00D4FF]/20 rounded-lg backdrop-blur-sm">
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
-            <span className="text-[11px] font-mono tracking-[0.25em] text-[#00D4FF]/80">LIVE INTELLIGENCE TERMINAL — FOUNDING ACCESS OPEN</span>
+            <span className="text-[11px] font-mono tracking-[0.25em] text-[#00D4FF]/80">LIVE INTELLIGENCE TERMINAL — MOVE WITHIN THE FAULTLINES</span>
           </div>
         </div>
       </div>
@@ -503,22 +504,22 @@ function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => voi
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="order-2 lg:order-1">
             <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 border border-[#00D4FF]/20 px-4 py-1.5 rounded-full mb-6">
-              SYSTEMIC INTELLIGENCE
+              PROACTIVE INTELLIGENCE
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6 leading-[1.1]">
-              Every asset class.<br />
-              <span className="text-[#00D4FF]">Every pressure point.</span><br />
-              One terminal.
+              The fractures form<br />
+              <span className="text-[#00D4FF]">weeks before the break.</span><br />
+              FAULTLINE sees them.
             </h2>
             <p className="text-[#A8B8CC] text-base leading-relaxed mb-8">
-              FAULTLINE maps contagion pathways across equities, bonds, crypto, commodities, and currencies — showing you where stress is concentrating before it cascades into a visible market event.
+              Most platforms tell you what happened. FAULTLINE tells you what’s building. Cross-asset stress, liquidity deterioration, and contagion pathways — mapped in real time so you can move inside the faultlines, not scramble after them.
             </p>
             <div className="space-y-3 mb-8">
               {[
-                "Cross-asset contagion detection in real time",
-                "AI concentration risk mapped to individual holdings",
-                "Liquidity stress propagation across market layers",
-                "Regime-aware signal classification for every asset",
+                "Stress fractures detected before they cascade",
+                "AI concentration risk mapped to your holdings",
+                "Liquidity deterioration tracked across market layers",
+                "Regime shifts identified as they form — not after",
               ].map((item) => (
                 <div key={item} className="flex items-start gap-3">
                   <span className="text-[#00D4FF] mt-0.5 flex-shrink-0">◈</span>
@@ -530,7 +531,7 @@ function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => voi
               onClick={onRequestAccess}
               className="px-8 py-4 bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#050608] font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97]"
             >
-              REQUEST FOUNDING ACCESS
+              POSITION INSIDE THE FAULTLINES
             </button>
           </div>
           <div className="order-1 lg:order-2 relative">
@@ -552,15 +553,15 @@ function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => voi
 
 // ── Features ──────────────────────────────────────────────────
 const FEATURES = [
-  { icon: "◈", title: "Live Macro Pressure Engine", desc: "Real-time synthesis of Treasury, inflation, liquidity, and credit signals into a single systemic-risk score." },
-  { icon: "◉", title: "Treasury & Bond Market Stress", desc: "Track yield curve dynamics, auction demand, and sovereign credit conditions in real time." },
-  { icon: "◎", title: "AI Bubble & Concentration Tracking", desc: "Monitor index concentration, AI-driven valuations, and capex cycles for signs of late-stage froth." },
-  { icon: "◈", title: "Historical Crash Analog Engine", desc: "Compare today's macro conditions against historical regimes — 1929, 2000, 2008, 2020." },
-  { icon: "◉", title: "Real-Time Regime Shift Detection", desc: "Identify transitions between expansion, late-cycle, contraction, and crisis regimes as they happen." },
-  { icon: "◎", title: "Signals Intelligence Screener", desc: "Filter equities and assets by macro exposure, regime sensitivity, and systemic pressure correlation." },
-  { icon: "◈", title: "Live Risk Alerts", desc: "Instant notifications when pressure thresholds break, regimes shift, or systemic anomalies surface." },
-  { icon: "◉", title: "Liquidity & Credit Monitoring", desc: "Track repo rates, reserve balances, credit spreads, and funding stress across global markets." },
-  { icon: "◈", title: "Complete Market Awareness™", desc: "Daily Market Preflight checklist — review the full risk picture before acting. Tracks which platform sections you have reviewed today and computes an awareness score from 0–100." },
+  { icon: "◈", title: "Pressure Before Headlines", desc: "The FAULTLINE Pressure Index™ synthesizes Treasury, inflation, liquidity, and credit signals into a single score — updated before the news cycle catches up." },
+  { icon: "◉", title: "Regime Detection in Real Time", desc: "Identify the transition from late-cycle to contraction as it forms — not after the Fed confirms it. The same read top macro funds pay millions to get." },
+  { icon: "◎", title: "AI Bubble Exposure Mapping", desc: "Track index concentration and AI-driven valuations before they unwind. Know your exposure before the crowded trade reverses." },
+  { icon: "◈", title: "Historical Crash Analog Engine", desc: "Pattern-match today’s conditions against 2000, 2008, 2020. See which historical fracture your current regime most resembles — and what came next." },
+  { icon: "◉", title: "Faultline Detection Across Asset Classes", desc: "Cross-asset stress mapped in real time — equities, bonds, crypto, commodities. See where pressure is concentrating before it cascades." },
+  { icon: "◎", title: "Signals Intelligence Screener", desc: "Every equity and asset classified by macro regime alignment and systemic pressure exposure. Know which names are positioned for the current environment." },
+  { icon: "◈", title: "Pre-Move Stress Testing", desc: "Run your next trade through the Situation Room before you risk capital. Get a probability-weighted favorability score, threat board, and action bias." },
+  { icon: "◉", title: "Liquidity & Credit Early Warning", desc: "Repo rates, reserve balances, credit spreads, and funding stress — tracked continuously. The same signals that warned institutional desks in 2008 and 2020." },
+  { icon: "◈", title: "Complete Market Awareness™", desc: "Daily Market Preflight — review the full risk picture before acting. Tracks your daily awareness score from 0–100. Know your environment before you trade it." },
 ];
 
 function FeaturesSection() {
@@ -573,10 +574,10 @@ function FeaturesSection() {
             INTELLIGENCE ENGINE
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            Systemic intelligence.<br /><span className="text-[#00D4FF]">Before the fracture.</span>
+            The intelligence top funds use<br /><span className="text-[#00D4FF]">before the quake hits.</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-2xl mx-auto text-base leading-relaxed">
-            FAULTLINE converts live Treasury, inflation, liquidity, credit, and AI concentration data into a unified macroeconomic intelligence engine — built for traders, analysts, and institutions monitoring late-cycle market stress.
+            Top macro funds don’t react to collapses — they’re already positioned before them. FAULTLINE gives self-directed traders the same systemic intelligence layer: pressure detection, regime shifts, and faultline mapping in real time.
           </p>
         </div>
 
@@ -602,31 +603,31 @@ const TRADER_STYLES = [
   {
     icon: "⚡",
     role: "Day Traders",
-    desc: "Check whether today's market pressure supports risk-on entries or warns against chasing.",
+    desc: "Know whether today’s pressure regime supports risk-on entries before you size in — not after you’re already in the trade.",
     color: "#00D4FF",
   },
   {
     icon: "◈",
     role: "Swing Traders",
-    desc: "See whether the current regime supports follow-through over the next several days or weeks.",
+    desc: "Confirm the regime supports follow-through before committing capital. Move with the faultlines, not against them.",
     color: "#00FF88",
   },
   {
     icon: "◎",
     role: "Long-Term Investors",
-    desc: "Understand whether macro pressure is building beneath the market before adding or trimming exposure.",
+    desc: "See macro pressure building beneath the surface before it shows up in your portfolio. Trim or add exposure on your terms, not the market’s.",
     color: "#FFD700",
   },
   {
     icon: "◉",
     role: "Options Traders",
-    desc: "Use volatility, drawdown pressure, and regime signals to frame risk before entering directional trades.",
+    desc: "Frame your risk with volatility, drawdown pressure, and regime signals before entering directional trades. Know the environment you’re pricing into.",
     color: "#A855F7",
   },
   {
     icon: "₿",
     role: "Crypto Traders",
-    desc: "Track liquidity, speculation pressure, and risk appetite before adding or reducing crypto exposure.",
+    desc: "Track liquidity, speculation pressure, and risk appetite before adding or reducing exposure. Know when the risk-on cycle is building — before the move.",
     color: "#FF9500",
   },
 ];
@@ -655,13 +656,13 @@ function SituationRoomSection({ onRequestAccess }: { onRequestAccess: () => void
             COMMAND CENTER
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-            Enter the FAULTLINE<br /><span className="text-[#00D4FF]">Situation Room.</span>
+            Brief before you trade.<br /><span className="text-[#00D4FF]">Like the top funds do.</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-2xl mx-auto text-base leading-relaxed mb-3">
-            Before you risk capital, stress-test your next move against market regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and ticker/sector signals.
+            Every institutional desk runs a pre-trade brief before risking capital. The Situation Room gives you that same process: stress-test your next move against regime pressure, crash risk, liquidity, credit stress, volatility, and AI speculation — before you pull the trigger.
           </p>
           <p className="text-[#64748B] max-w-xl mx-auto text-sm leading-relaxed">
-            Built for traders who want more than charts.
+            Position inside the faultlines. Not after the break.
           </p>
         </div>
 
@@ -705,8 +706,8 @@ function SituationRoomSection({ onRequestAccess }: { onRequestAccess: () => void
               BUILT FOR EVERY TRADING STYLE
             </div>
             <h3 className="text-2xl sm:text-3xl font-bold text-white">
-              Whether you trade intraday, swing positions, invest long-term, or track crypto cycles,
-              <span className="text-[#00D4FF]"> FAULTLINE gives you a probability-weighted read</span> on whether current market conditions support or threaten your next move.
+              Whether you trade intraday, swing positions, invest long-term, or track crypto cycles —
+              <span className="text-[#00D4FF]"> FAULTLINE puts you in the position top funds occupy:</span> knowing the environment before you enter it.
             </h3>
           </div>
 
@@ -731,63 +732,63 @@ const MODULES = [
     badge: "LIVE",
     badgeColor: "#00FF88",
     title: "FAULTLINE Pressure Index™",
-    desc: "A unified systemic-risk score synthesizing macro, credit, liquidity, and AI concentration signals in real time. The single number that tells you where the market stands.",
-    tags: ["Macro Synthesis", "Real-Time", "Regime Detection"],
+    desc: "The single number that tells you where the market stands before it moves. Synthesizes macro, credit, liquidity, and AI concentration signals in real time — the same read top macro desks build their own models to generate.",
+    tags: ["Pre-Move Read", "Real-Time", "Regime Detection"],
     link: "/app/pressure",
   },
   {
-    badge: "PREMIUM",
+    badge: "ANALYST+",
     badgeColor: "#FFD700",
     title: "Aftershock Engine™",
-    desc: "Contagion and cascade risk detection. Identifies systemic fault lines before they fracture into market-wide dislocations. Proprietary scoring across 500+ assets.",
-    tags: ["Contagion Risk", "Cascade Detection", "Systemic Scoring"],
+    desc: "Contagion pathways mapped before they cascade. The Aftershock Engine identifies which markets fracture next when stress begins propagating — so you’re positioned before the second wave, not reacting to it.",
+    tags: ["Contagion Mapping", "Cascade Detection", "Pre-Fracture"],
     link: "/app/aftershock",
   },
   {
-    badge: "PREMIUM",
+    badge: "ANALYST+",
     badgeColor: "#FFD700",
     title: "Stock Intelligence Engine",
-    desc: "Classifies individual equities by momentum, macro regime alignment, volatility, and systemic pressure exposure. Signal labels from Momentum Breakout to Recession Defensive.",
-    tags: ["Momentum Analysis", "Regime Alignment", "Signal Labels"],
+    desc: "Every equity classified by momentum, macro regime alignment, and systemic pressure exposure. Know which names are positioned for the current environment — before the rotation becomes obvious.",
+    tags: ["Regime Alignment", "Pre-Rotation", "Signal Labels"],
     link: "/app/signals",
   },
   {
-    badge: "PREMIUM",
+    badge: "ANALYST+",
     badgeColor: "#FFD700",
     title: "Crypto Intelligence",
-    desc: "Real-time digital asset risk analysis across macro correlation, liquidity conditions, and systemic exposure. Full intelligence layer for the digital asset market.",
-    tags: ["Digital Assets", "Macro Correlation", "Liquidity Risk"],
+    desc: "Liquidity conditions, macro correlation, and risk appetite tracked across digital assets in real time. Know when the risk-on cycle is building or breaking before the move is visible on-chain.",
+    tags: ["Pre-Move Crypto", "Macro Correlation", "Liquidity Risk"],
     link: "/app/crypto",
   },
   {
-    badge: "LIVE",
+    badge: "OPERATOR+",
     badgeColor: "#00D4FF",
     title: "Complete Market Awareness™",
-    desc: "Market Preflight — a daily pre-decision review checklist. Before acting, review the full FAULTLINE risk picture: Pressure Index, regime, alerts, signal context, and possible future outcomes. Tracks your daily awareness score from 0–100.",
-    tags: ["Daily Preflight", "Awareness Score", "Pre-Decision Review"],
+    desc: "Market Preflight — review the full FAULTLINE risk picture before you act. Pressure Index, regime, alerts, signal context, and possible outcomes. Tracks your daily awareness score from 0–100. Top funds brief before every session. Now you can too.",
+    tags: ["Daily Preflight", "Awareness Score", "Pre-Decision"],
     link: "/app",
   },
   {
-    badge: "NEW",
+    badge: "ANALYST+",
     badgeColor: "#A855F7",
     title: "Historical Analog Engine",
-    desc: "Pattern-match today’s macro conditions against historical crash episodes — Dot-Com Bubble, GFC, COVID Liquidity Crisis, 2022 Inflation Shock. Similarity scoring, timeline overlays, and outcome analysis.",
-    tags: ["Crash Patterns", "Similarity Score", "Outcome Analysis"],
+    desc: "Pattern-match today’s macro conditions against 2000, 2008, 2020, 2022. See which historical fracture your regime most resembles, the timeline of what followed, and how top funds were positioned at each stage.",
+    tags: ["Crash Analogs", "Regime Similarity", "Outcome Analysis"],
     link: "/app/analogs",
   },
   {
-    badge: "NEW",
+    badge: "ANALYST+",
     badgeColor: "#00D4FF",
     title: "FAULTLINE Situation Room",
-    desc: "Stress-test your next move before risking capital. Select a move type, timeframe, and optional ticker — receive a Move Favorability Score, Threat Board, Green Lights, Action Bias, and invalidation triggers.",
-    tags: ["Move Favorability Score", "Threat Board", "Green Lights"],
+    desc: "Run your next move through the pressure engine before you risk capital. Get a probability-weighted favorability score, threat board, green lights, and action bias — the pre-trade brief that institutional desks do internally.",
+    tags: ["Pre-Trade Brief", "Move Favorability", "Threat Board"],
     link: "/app/situation-room",
   },
   {
-    badge: "NEW",
+    badge: "ANALYST+",
     badgeColor: "#A855F7",
     title: "Portfolio Intelligence",
-    desc: "Eight-dimensional risk analysis for your holdings: Portfolio Pressure Score, AI Bubble Exposure, Rate Sensitivity, Concentration Risk, Liquidity Risk, Recession Exposure, Crash Vulnerability, and Regime Alignment.",
+    desc: "Eight-dimensional risk analysis: Portfolio Pressure Score, AI Bubble Exposure, Rate Sensitivity, Concentration Risk, Liquidity Risk, Recession Exposure, Crash Vulnerability, and Regime Alignment. Know your real exposure before the environment shifts.",
     tags: ["Portfolio Risk", "Regime Alignment", "8 Risk Dimensions"],
     link: "/app/portfolio",
   },
@@ -802,10 +803,10 @@ function ModulesSection() {
             PLATFORM MODULES
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            The full <span className="text-[#FFD700]">intelligence stack.</span>
+            Eight engines. One edge.<br /><span className="text-[#FFD700]">Move before the market does.</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-xl mx-auto text-base">
-            Eight interconnected intelligence engines. One unified platform.
+            Every module is designed for one purpose: give you the read that top hedge funds already have — before the rest of the market catches on.
           </p>
         </div>
 
@@ -882,11 +883,11 @@ function RiskEngineSection({ onRequestAccess }: { onRequestAccess: () => void })
               AFTERSHOCK ENGINE™
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 leading-[1.05]">
-              Detect the cascade<br />
-              <span className="text-[#00D4FF]">before it hits.</span>
+              The second wave is already<br />
+              <span className="text-[#00D4FF]">forming. See it now.</span>
             </h2>
             <p className="text-[#A8B8CC] text-base sm:text-lg max-w-xl mx-auto mb-8">
-              The Aftershock Engine™ maps contagion pathways and systemic pressure cascades — identifying which markets will fracture next when stress begins to propagate.
+              The Aftershock Engine™ maps contagion pathways before they cascade. When stress begins propagating, top funds are already positioned for the second fracture. FAULTLINE shows you where it’s building.
             </p>
             <button
               onClick={onRequestAccess}
@@ -906,18 +907,18 @@ function HowItWorksSection() {
   const steps = [
     {
       num: "01",
-      title: "Live Data Ingestion",
-      desc: "FRED, Treasury, inflation, liquidity, AI concentration, and global market signals — streamed and parsed in real time, around the clock. 50+ data sources, zero manual refresh.",
+      title: "The Pressure Builds Before the Break",
+      desc: "Every major dislocation — 2008, 2020, 2022 — had a pressure signature weeks before the collapse. FRED, Treasury, inflation, liquidity, and AI concentration signals streamed continuously from 50+ sources. The fractures form in the data first.",
     },
     {
       num: "02",
-      title: "FAULTLINE Pressure Index™",
-      desc: "Our proprietary macro-pressure algorithm converts raw market stress into a unified systemic-risk score — instantly revealing whether pressure is building or releasing across the full macro landscape.",
+      title: "FAULTLINE Reads the Faultlines",
+      desc: "Our proprietary Pressure Index™ converts raw market stress into a single systemic-risk score — the same unified read that top macro funds build internal models to generate. Updated in real time. No end-of-day lag. No headline dependency.",
     },
     {
       num: "03",
-      title: "Actionable Intelligence",
-      desc: "Regime analysis, stock intelligence, systemic-pressure monitoring, and real-time risk alerts — delivered before the rest of the market catches the shift. Position early, not late.",
+      title: "You Move Inside the Lines",
+      desc: "Regime analysis, signals, Situation Room pre-trade briefs, and Aftershock cascade mapping — delivered before the market catches the shift. You’re positioned with the top funds. Not reacting with everyone else.",
     },
   ];
 
@@ -930,7 +931,7 @@ function HowItWorksSection() {
             INTELLIGENCE PIPELINE
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            From raw signals to<br /><span className="text-[#00D4FF]">actionable intelligence.</span>
+            How top funds stay ahead.<br /><span className="text-[#00D4FF]">Now accessible to you.</span>
           </h2>
         </div>
 
@@ -1047,7 +1048,7 @@ function ProofSection() {
       regimeColor: "#f97316",
       regimeBg: "rgba(249,115,22,0.08)",
       regimeBorder: "rgba(249,115,22,0.3)",
-      outcome: "S&P 500 fell ~49% from peak to trough over 30 months.",
+      outcome: "S&P 500 fell ~49% from peak to trough over 30 months. Funds with the pressure read were already defensive or short.",
       icon: "📉",
     },
     {
@@ -1058,7 +1059,7 @@ function ProofSection() {
       regimeColor: "#ef4444",
       regimeBg: "rgba(239,68,68,0.08)",
       regimeBorder: "rgba(239,68,68,0.35)",
-      outcome: "S&P 500 fell ~57% peak-to-trough. Unemployment hit 10%. 8 consecutive CRITICAL months.",
+      outcome: "S&P 500 fell ~57% peak-to-trough. The funds that moved before Lehman weren’t lucky — they read the pressure.",
       icon: "🔴",
     },
     {
@@ -1069,7 +1070,7 @@ function ProofSection() {
       regimeColor: "#f97316",
       regimeBg: "rgba(249,115,22,0.08)",
       regimeBorder: "rgba(249,115,22,0.3)",
-      outcome: "S&P 500 fell ~34% in 33 days. Model flagged HIGH RISK before the bottom.",
+      outcome: "S&P 500 fell ~34% in 33 days. FAULTLINE flagged HIGH RISK before the bottom. The read was there before the headlines.",
       icon: "⚡",
     },
   ];
@@ -1094,11 +1095,11 @@ function ProofSection() {
             METHODOLOGY VALIDATED — 25 YEARS OF PROOF
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-5 leading-[1.1]">
-            The engine called every<br />
-            <span className="text-[#22C55E]">major crash since 2000.</span>
+            The pressure was there<br />
+            <span className="text-[#22C55E]">before every major crash.</span>
           </h2>
           <p className="text-[#A8B8CC] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            FAULTLINE's six-vector Pressure Engine was back-tested against 25 years of FRED macroeconomic data — the same engine running live today, applied to the same data that was available at the time. No hindsight. No curve-fitting.
+            FAULTLINE’s Pressure Engine was back-tested against 25 years of FRED macroeconomic data — the same engine running live today. In every case, the pressure signature was elevated before the collapse. Top funds read those signals. Most traders didn’t.
           </p>
         </div>
 
@@ -1208,20 +1209,20 @@ function AudienceSection() {
     {
       role: "Active Traders",
       sub: "Macro & Futures Desks",
-      desc: "Detect pressure spikes hours before the headlines. Size positions ahead of regime shifts instead of reacting to them. FAULTLINE is the edge before the edge becomes consensus.",
-      tags: ["Regime Timing", "Pressure Spikes", "Early Positioning"],
+      desc: "Top macro funds don’t react to regime shifts — they’re already positioned before them. FAULTLINE gives you the same pressure read: detect spikes hours before the headlines, size positions ahead of the shift, and move with the faultlines.",
+      tags: ["Pre-Regime Positioning", "Pressure Before Headlines", "Move First"],
     },
     {
       role: "Investors & Allocators",
       sub: "Capital Preservation",
-      desc: "Monitor late-cycle stress, AI concentration, and Treasury liquidity in a single intelligence layer. Know when systemic risk is building before it shows up in your portfolio.",
-      tags: ["Tail Risk", "Capital Preservation", "Macro Overlay"],
+      desc: "Late-cycle stress, AI concentration, and Treasury liquidity deterioration all have pressure signatures before they show up in your portfolio. FAULTLINE lets you act on your terms — not the market’s.",
+      tags: ["Tail Risk Early Warning", "Capital Preservation", "Pre-Collapse Read"],
     },
     {
       role: "Macro Analysts",
       sub: "Systemic Intelligence",
-      desc: "Study regime shifts, historical crash analogs, and systemic-risk telemetry in real time. FAULTLINE gives you the data infrastructure that institutional desks spend millions building.",
-      tags: ["Regime Analysis", "Crash Analogs", "Systemic Telemetry"],
+      desc: "The data infrastructure institutional desks spend millions building — regime shifts, crash analogs, systemic-risk telemetry, contagion mapping — now accessible in a single platform. The read before the consensus forms.",
+      tags: ["Regime Analysis", "Crash Analogs", "Institutional-Grade Data"],
     },
   ];
 
@@ -1233,7 +1234,7 @@ function AudienceSection() {
             BUILT FOR
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            Built for those who need to<br /><span className="text-[#00D4FF]">know before the market does.</span>
+            Built for those who move<br /><span className="text-[#00D4FF]">with the top funds. Not after them.</span>
           </h2>
         </div>
 
@@ -1295,7 +1296,7 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         <div className="text-center max-w-4xl mx-auto">
           {/* Eyebrow */}
           <div className="inline-block text-[10px] font-mono tracking-[0.4em] text-[#FFD700]/60 border border-[#FFD700]/20 px-4 py-1.5 rounded-full mb-10">
-            FOUNDING ACCESS — LIMITED AVAILABILITY
+            FOUNDER ACCESS — MOVE BEFORE THE QUAKE
           </div>
 
           {/* Sleeper headline — reveals on scroll */}
@@ -1335,7 +1336,7 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
             className="text-lg sm:text-xl text-[#A8B8CC] max-w-2xl mx-auto mb-10 leading-relaxed transition-all duration-700"
             style={{ opacity: revealed ? 1 : 0, transform: revealed ? "translateY(0)" : "translateY(20px)", transitionDelay: "400ms" }}
           >
-            The intelligence advantage is real. The window is narrow. Founding access gives you the full platform — signals, pressure engine, Aftershock™, crypto intelligence — before the price changes.
+            The top funds were already positioned before 2008. Before 2020. Before every major collapse. The pressure was there. The read was available. FAULTLINE gives you that same intelligence layer — before the quake, not after it.
           </p>
 
           {/* CTA buttons */}
@@ -1347,7 +1348,7 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
               onClick={onRequestAccess}
               className="w-full sm:w-auto px-10 py-5 bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#050608] font-mono font-black text-base tracking-[0.2em] rounded transition-all duration-150 active:scale-[0.97] shadow-[0_0_40px_rgba(255,215,0,0.3)] hover:shadow-[0_0_60px_rgba(255,215,0,0.5)]"
             >
-              REQUEST FOUNDING ACCESS
+              POSITION INSIDE THE FAULTLINES
             </button>
             <a
               href={PLATFORM_URL}
@@ -1365,7 +1366,7 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
             style={{ opacity: revealed ? 1 : 0, transitionDelay: "800ms" }}
           >
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
-            <span className="text-[10px] font-mono tracking-[0.3em] text-[#64748B]">FOUNDING SPOTS FILLING — ACCESS CLOSES WHEN CAPACITY IS REACHED</span>
+            <span className="text-[10px] font-mono tracking-[0.3em] text-[#64748B]">FOUNDER SPOTS FILLING — POSITION INSIDE THE FAULTLINES BEFORE CAPACITY IS REACHED</span>
           </div>
         </div>
       </div>
@@ -1400,21 +1401,20 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
 
   const tiers: Tier[] = [
     {
-      name: "PREVIEW ACCESS",
+      name: "OBSERVER",
       tagline: "Free Intelligence",
       price: "Free",
       priceSub: "no credit card required",
-      desc: "Start monitoring systemic pressure. Discover what institutional intelligence feels like.",
+      desc: "See what the pressure looks like. Get a taste of the intelligence layer top funds pay millions to build.",
       features: [
-        "FAULTLINE Pressure Index™ (live preview)",
+        "FAULTLINE Pressure Index™ (delayed 24h)",
+        "1 watchlist ticker",
         "Limited stock intelligence previews",
         "Limited crypto signal previews",
         "Daily macro snapshot",
-        "Teaser dashboards",
-        "Limited market searches",
         "Public market briefings",
       ],
-      cta: "Unlock Full Intelligence",
+      cta: "Start Observing Free",
       ctaLink: PLATFORM_URL,
       featured: false,
       accentColor: "#64748B",
@@ -1427,7 +1427,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       annualPrice: "$7.99",
       annualSub: "billed $95.88/year — save 20%",
       priceSub: "/month — cancel anytime",
-      desc: "Fast, intelligent, connected. Built for traders who want institutional signals without the institutional price.",
+      desc: "Fast signals, portfolio tracking, and push alerts on the go. Know the pressure reading before you enter any position.",
       features: [
         "Limited stock signals (BUY/SELL/HOLD)",
         "Limited crypto signals",
@@ -1448,42 +1448,65 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       glowColor: "rgba(34,211,238,0.1)",
     },
     {
-      name: "FAULTLINE PRO",
-      tagline: "Institutional-grade intelligence.",
-      price: "$59",
-      annualPrice: "$47",
-      annualSub: "billed $564/year — save 20%",
+      name: "ANALYST",
+      tagline: "Active self-directed investor.",
+      price: "$39",
+      annualPrice: "$32",
+      annualSub: "billed $390/year — save 18%",
       priceSub: "/month — cancel anytime",
-      desc: "The complete intelligence suite. Every engine, every signal, every edge — fully unlocked.",
+      desc: "Real-time Pressure Index, full Signals, Situation Room pre-trade briefs, and crash analog engine. Move with the intelligence layer, not behind it.",
       features: [
-        "Everything in Core",
+        "Real-time Pressure Index™",
+        "Full Signals Engine",
+        "10 watchlist tickers",
+        "Situation Room (5/mo)",
+        "Insider Intelligence",
         "AI Diagnostic Intelligence™",
         "Full crypto intelligence engine",
-        "Advanced market analysis",
-        "Advanced systemic-risk engine",
-        "Full dashboard suite",
-        "Premium alerts",
-        "Advanced watchlists",
         "Macro regime analysis",
         "Advanced Aftershock Engine™",
         "Historical analog engine",
         "Full risk scoring system",
       ],
-      cta: "Upgrade to Pro",
+      cta: "Unlock Analyst",
+      ctaAction: onRequestAccess,
+      featured: false,
+      accentColor: "#00D4FF",
+      glowColor: "rgba(0,212,255,0.12)",
+    },
+    {
+      name: "OPERATOR",
+      tagline: "Serious trader / portfolio manager.",
+      price: "$79",
+      annualPrice: "$66",
+      annualSub: "billed $790/year — save 17%",
+      priceSub: "/month — cancel anytime",
+      desc: "Everything unlimited. The full institutional brief: Situation Room, Market Preflight, Track Record, and API access. Position inside the faultlines with no limits.",
+      features: [
+        "Everything in Analyst",
+        "Unlimited Situation Room",
+        "Market Preflight",
+        "Track Record",
+        "API access",
+        "Priority support",
+        "Unlimited watchlist tickers",
+        "Premium alerts",
+      ],
+      cta: "Unlock Operator",
       ctaAction: onRequestAccess,
       featured: true,
       accentColor: "#00D4FF",
       glowColor: "rgba(0,212,255,0.15)",
     },
     {
-      name: "FOUNDING ACCESS",
-      tagline: "Early institutional access.",
-      price: "$49",
-      priceSub: "/month — locked for life",
-      desc: "Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.",
+      name: "FOUNDER",
+      tagline: "Move first. Pay once. Never again.",
+      price: "$199",
+      priceSub: "one-time — lifetime access",
+      desc: "Everything in Operator, forever. The top funds built their own intelligence infrastructure. You’re getting it for $199 — once.",
       features: [
-        "Everything in Pro",
-        "Permanent discounted rate",
+        "Everything in Operator",
+        "Lifetime access — pay once",
         "Founder badge",
         "Future feature grandfathering",
         "Roadmap previews",
@@ -1491,7 +1514,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         "Early beta systems",
         "Exclusive founder-only tools",
       ],
-      cta: "Lock In $49/mo",
+      cta: "Lock In Founder Access",
       ctaAction: onRequestAccess,
       featured: false,
       scarcity: true,
@@ -1512,10 +1535,10 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
             INTELLIGENCE ACCESS
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            Start free. Scale to<br /><span className="text-[#00D4FF]">institutional intelligence.</span>
+            Get the read top funds have.<br /><span className="text-[#00D4FF]">Before the quake hits.</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-xl mx-auto text-base mb-8">
-            From free monitoring to the full institutional suite — choose the tier that fits your edge.
+            From free pressure monitoring to the full institutional brief — choose the tier that puts you inside the faultlines.
           </p>
 
           {/* Annual toggle */}
@@ -2070,7 +2093,7 @@ function Footer() {
             </div>
             <div className="text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/40 mb-4">SYSTEMIC RISK INTELLIGENCE</div>
             <p className="text-[#64748B] text-sm leading-relaxed">
-              Real-time macroeconomic and systemic-risk intelligence. FAULTLINE converts live Treasury, inflation, liquidity, credit, and AI concentration data into a unified pressure index — before markets react.
+              Move within the faultlines before the quake. FAULTLINE gives self-directed traders the same systemic pressure intelligence top hedge funds use to position before collapses — not react to them.
             </p>
           </div>
 
@@ -2111,7 +2134,7 @@ function Footer() {
                   Launch Platform →
                 </a>
               </li>
-              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founding Access — $49/mo</a></li>
+              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founder Access — $199 one-time</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
               <li><a href="/contact" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Contact Us</a></li>
               <li><a href="mailto:jt@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">jt@getfaultline.live</a></li>
@@ -2124,7 +2147,7 @@ function Footer() {
             © 2026 FAULTLINE. All rights reserved.
           </div>
           <div className="text-[#00D4FF]/40 text-[10px] font-mono tracking-widest">
-            MONITOR THE PRESSURE. BEFORE THE SHIFT.
+            MOVE WITHIN THE FAULTLINES. BEFORE THE QUAKE.
           </div>
           <div className="text-[#4B5563] text-[10px] font-mono">
             <span className="flex gap-3 flex-wrap justify-center sm:justify-end">
@@ -2156,17 +2179,17 @@ function AboutSection() {
               WHY FAULTLINE EXISTS
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6 leading-tight">
-              Most traders see the crash.<br />
-              <span className="text-[#00D4FF]">We built the tool to see it coming.</span>
+              Top funds don’t react to crashes.<br />
+              <span className="text-[#00D4FF]">They’re positioned before them.</span>
             </h2>
             <p className="text-[#A8B8CC] text-sm leading-relaxed mb-4">
-              Every major market dislocation — 2008, 2020, 2022 — had a pressure signature weeks before the break. Yield curves inverted. Liquidity dried up. Volatility suppression gave way. The signals were there. Most people just didn't have a single place to read them.
+              Every major dislocation — 2008, 2020, 2022 — had a pressure signature weeks before the break. Yield curves inverted. Liquidity dried up. Volatility suppression gave way. The signals were there. The funds that read them moved first. Most traders waited for the headline.
             </p>
             <p className="text-[#A8B8CC] text-sm leading-relaxed mb-4">
-              FAULTLINE was built to solve that. We aggregate macro stress indicators, credit spreads, Treasury liquidity, AI concentration risk, and regime telemetry into one unified pressure score — the <span className="text-[#00D4FF] font-mono">FAULTLINE Pressure Index™</span>.
+              FAULTLINE was built to close that gap. We aggregate macro stress indicators, credit spreads, Treasury liquidity, AI concentration risk, and regime telemetry into one unified pressure score — the <span className="text-[#00D4FF] font-mono">FAULTLINE Pressure Index™</span>. The same read institutional desks spend millions to generate, now accessible to self-directed traders.
             </p>
             <p className="text-[#A8B8CC] text-sm leading-relaxed">
-              It's not a prediction engine. It's a pressure gauge. When the gauge is elevated, you pay attention. When it spikes, you act. That's the edge.
+              It’s not a prediction engine. It’s a pressure gauge. Move within the faultlines while they’re still forming. Not after the quake.
             </p>
           </div>
           {/* Right: stats/facts */}
@@ -2195,7 +2218,7 @@ export default function MarketingSite() {
 
   useSEO({
     title: "FAULTLINE — Market Risk Intelligence Platform",
-    description: "Real-time macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.",
+    description: "Move within the faultlines before the quake. FAULTLINE gives self-directed traders the same systemic pressure intelligence top hedge funds use to position before collapses — not react to them.",
     canonical: "/",
   });
 
