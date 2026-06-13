@@ -247,7 +247,7 @@ export interface StockPerformer {
 }
 
 // Cache for 3 minutes — screener data doesn't change second-by-second
-const performersCache = new LRUCache<string, StockPerformer[]>(4, 3 * 60_000);
+const performersCache = new LRUCache<string, StockPerformer[]>(8, 3 * 60_000);
 
 /**
  * Fetch top N daily stock gainers from Yahoo Finance screener.
@@ -348,6 +348,172 @@ async function getPolygonTopGainers(limit: number): Promise<StockPerformer[]> {
 
   } catch (err: any) {
     log.warn(`[Yahoo Proxy] Polygon gainers fallback also failed: ${err?.message}`);
+    return [];
+  }
+}
+
+/**
+ * Fetch top N daily stock losers from Yahoo Finance screener.
+ * Returns sorted by changePercent ascending (biggest losers first).
+ */
+export async function getTopStockLosers(limit = 100): Promise<StockPerformer[]> {
+  const cacheKey = `losers_${limit}`;
+  const cached = performersCache.get(cacheKey);
+  if (cached) return cached;
+  const count = Math.min(limit, 100);
+  const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=day_losers&count=${count}&start=0`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://finance.yahoo.com/losers/",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`Yahoo screener HTTP ${res.status}`);
+    const json = await res.json() as any;
+    const quotes: any[] = json?.finance?.result?.[0]?.quotes ?? [];
+    if (!quotes.length) throw new Error("Empty screener response");
+    const losers: StockPerformer[] = quotes
+      .filter((q: any) => q.symbol && q.regularMarketChangePercent != null)
+      .slice(0, count)
+      .map((q: any) => ({
+        ticker:        q.symbol,
+        name:          q.shortName ?? q.longName ?? q.symbol,
+        price:         q.regularMarketPrice ?? 0,
+        change:        q.regularMarketChange ?? 0,
+        changePercent: q.regularMarketChangePercent ?? 0,
+        volume:        q.regularMarketVolume ?? 0,
+        marketCap:     q.marketCap ?? null,
+        sector:        q.sector ?? null,
+        avgVolume:     q.averageDailyVolume3Month ?? null,
+        source:        "yahoo-screener" as const,
+        fetchedAt:     Date.now(),
+      }))
+      .sort((a, b) => a.changePercent - b.changePercent);
+    performersCache.set(cacheKey, losers);
+    log.info(`[Yahoo Proxy] Top ${losers.length} stock losers fetched`);
+    return losers;
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] Losers screener fetch failed: ${err?.message}`);
+    captureError(err as Error, { source: "yahooProxy", stage: "losers_screener_fetch_failed" }).catch(() => {});
+    return getPolygonTopLosers(count);
+  }
+}
+
+/**
+ * Fetch top N stocks by volume from Yahoo Finance screener.
+ * Returns sorted by volume descending — highest volume regardless of direction.
+ */
+export async function getTopStockByVolume(limit = 100): Promise<StockPerformer[]> {
+  const cacheKey = `volume_${limit}`;
+  const cached = performersCache.get(cacheKey);
+  if (cached) return cached;
+  const count = Math.min(limit, 100);
+  const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=most_actives&count=${count}&start=0`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://finance.yahoo.com/most-active/",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`Yahoo screener HTTP ${res.status}`);
+    const json = await res.json() as any;
+    const quotes: any[] = json?.finance?.result?.[0]?.quotes ?? [];
+    if (!quotes.length) throw new Error("Empty screener response");
+    const byVolume: StockPerformer[] = quotes
+      .filter((q: any) => q.symbol && q.regularMarketVolume != null)
+      .slice(0, count)
+      .map((q: any) => ({
+        ticker:        q.symbol,
+        name:          q.shortName ?? q.longName ?? q.symbol,
+        price:         q.regularMarketPrice ?? 0,
+        change:        q.regularMarketChange ?? 0,
+        changePercent: q.regularMarketChangePercent ?? 0,
+        volume:        q.regularMarketVolume ?? 0,
+        marketCap:     q.marketCap ?? null,
+        sector:        q.sector ?? null,
+        avgVolume:     q.averageDailyVolume3Month ?? null,
+        source:        "yahoo-screener" as const,
+        fetchedAt:     Date.now(),
+      }))
+      .sort((a, b) => b.volume - a.volume);
+    performersCache.set(cacheKey, byVolume);
+    log.info(`[Yahoo Proxy] Top ${byVolume.length} stocks by volume fetched`);
+    return byVolume;
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] Volume screener fetch failed: ${err?.message}`);
+    captureError(err as Error, { source: "yahooProxy", stage: "volume_screener_fetch_failed" }).catch(() => {});
+    return getPolygonMostActive(count);
+  }
+}
+
+/** Fallback: Polygon losers snapshot */
+async function getPolygonTopLosers(limit: number): Promise<StockPerformer[]> {
+  const apiKey = process.env.POLYGON_API_KEY;
+  if (!apiKey) return [];
+  try {
+    const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/losers?include_otc=false&apiKey=${apiKey}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`Polygon losers HTTP ${res.status}`);
+    const json = await res.json() as any;
+    const tickers: any[] = json?.tickers ?? [];
+    return tickers.slice(0, limit).map((t: any) => ({
+      ticker:        t.ticker,
+      name:          t.ticker,
+      price:         t.day?.c ?? t.prevDay?.c ?? 0,
+      change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
+      changePercent: t.todaysChangePerc ?? 0,
+      volume:        t.day?.v ?? 0,
+      marketCap:     null,
+      sector:        null,
+      avgVolume:     null,
+      source:        "yahoo-screener" as const,
+      fetchedAt:     Date.now(),
+    })).sort((a, b) => a.changePercent - b.changePercent);
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] Polygon losers fallback failed: ${err?.message}`);
+    return [];
+  }
+}
+
+/** Fallback: Polygon most active (merge gainers + losers, sort by volume) */
+async function getPolygonMostActive(limit: number): Promise<StockPerformer[]> {
+  const apiKey = process.env.POLYGON_API_KEY;
+  if (!apiKey) return [];
+  try {
+    const [gainersRes, losersRes] = await Promise.all([
+      fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/gainers?include_otc=false&apiKey=${apiKey}`, { signal: AbortSignal.timeout(10_000) }),
+      fetch(`https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/losers?include_otc=false&apiKey=${apiKey}`, { signal: AbortSignal.timeout(10_000) }),
+    ]);
+    const [gainersJson, losersJson] = await Promise.all([gainersRes.json(), losersRes.json()]) as any[];
+    const all = [...(gainersJson?.tickers ?? []), ...(losersJson?.tickers ?? [])];
+    const seen = new Set<string>();
+    return all
+      .filter(t => { if (seen.has(t.ticker)) return false; seen.add(t.ticker); return true; })
+      .map((t: any) => ({
+        ticker:        t.ticker,
+        name:          t.ticker,
+        price:         t.day?.c ?? 0,
+        change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
+        changePercent: t.todaysChangePerc ?? 0,
+        volume:        t.day?.v ?? 0,
+        marketCap:     null,
+        sector:        null,
+        avgVolume:     null,
+        source:        "yahoo-screener" as const,
+        fetchedAt:     Date.now(),
+      }))
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, limit);
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] Polygon most-active fallback failed: ${err?.message}`);
     return [];
   }
 }

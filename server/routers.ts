@@ -27,7 +27,7 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
-import { getQuotes, getTopStockPerformers } from "./yahooProxy";
+import { getQuotes, getTopStockPerformers, getTopStockLosers, getTopStockByVolume } from "./yahooProxy";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
@@ -1551,7 +1551,7 @@ export const appRouter = router({
   // ── Contact Us ────────────────────────────────────────────────────────────────
   // ── Stocks Heatmap ─────────────────────────────────────────────────────────
   stocks: router({
-    // Top 100 daily stock performers (gainers) for the heatmap
+    // Top 100 daily stock gainers for the heatmap
     getTopPerformers: protectedProcedure
       .input(z.object({ limit: z.number().min(1).max(100).default(100) }).optional())
       .query(async ({ input }) => {
@@ -1559,6 +1559,26 @@ export const appRouter = router({
           return await getTopStockPerformers(input?.limit ?? 100);
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stock performers fetch failed", cause: err });
+        }
+      }),
+    // Top 100 daily stock losers for the heatmap
+    getTopLosers: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(100) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getTopStockLosers(input?.limit ?? 100);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stock losers fetch failed", cause: err });
+        }
+      }),
+    // Top 100 stocks by volume for the heatmap
+    getTopByVolume: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(100) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getTopStockByVolume(input?.limit ?? 100);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stock volume fetch failed", cause: err });
         }
       }),
   }),

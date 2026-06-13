@@ -1164,3 +1164,12 @@
 - [x] Expand crypto heatmap from top 30 to top 100 coins (CryptoSearch.tsx + server limit)
 - [x] Add top 100 stock performers heatmap — server procedure, data fetch, dedicated page
 - [x] Wire stock heatmap into navigation
+
+## Stock Heatmap Multi-Tab Expansion
+
+- [x] Add getTopStockLosers() and getTopStockByVolume() server functions to yahooProxy.ts
+- [x] Add stocks.getTopLosers and stocks.getTopByVolume tRPC procedures to routers.ts
+- [x] Rebuild StockHeatmap.tsx with 3 tabs: Top Gainers, Top Losers, Highest Volume
+- [x] Add sector filter panel (ALL + each GICS sector) that works across all 3 tabs
+- [x] Move Stock Heatmap nav item next to other stock/equity tabs in AppLayout.tsx (SIGNALS group)
+- [x] Ensure each tab shows top 100 entries with correct color coding (green=gain, red=loss, blue=volume)
