@@ -9,6 +9,7 @@
 import type { Express, Request, Response } from "express";
 import { LRUCache } from "./lruCache";
 import { log } from "./logger";
+import { captureError } from "./errorTracking";
 
 const FRED_API_KEY = "458f0a0564e325c70e60f016f6f85f79";
 const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
@@ -52,6 +53,7 @@ export function registerFredProxy(app: Express) {
 
       if (!fredRes.ok) {
         log.error(`[FRED Proxy] HTTP ${fredRes.status} for ${seriesId}`);
+        captureError(new Error(`FRED HTTP ${fredRes.status} for ${seriesId}`), { source: "fredProxy", seriesId }).catch(() => {});
         res.status(fredRes.status).json({ error: `FRED returned HTTP ${fredRes.status}` });
         return;
       }
@@ -64,6 +66,7 @@ export function registerFredProxy(app: Express) {
       res.json(data);
     } catch (err) {
       log.error(`[FRED Proxy] Error fetching ${seriesId}`, { err: err as Error });
+      captureError(err as Error, { source: "fredProxy", seriesId }).catch(() => {});
       res.status(502).json({ error: "Failed to fetch from FRED API" });
     }
   });

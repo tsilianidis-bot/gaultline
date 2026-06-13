@@ -18,6 +18,7 @@
 //   POST /api/signals/clear-cache    — clear quote cache
 // ============================================================
 import { log } from "./logger";
+import { captureError } from "./errorTracking";
 import type { Express, Request, Response } from "express";
 import { getQuote as getYahooQuote, getQuotes as getYahooQuotes } from "./yahooProxy";
 
@@ -301,6 +302,7 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     })
     .catch(err => {
       log.warn("[Signals Proxy] Yahoo Finance bulk fetch failed", { err });
+    captureError(err as Error, { source: "signalsProxy", stage: "yahoo_bulk" }).catch(() => {});
     });
 
   // ── Polygon grouped bars fetch (with longer timeout for large payload) ──
@@ -344,6 +346,7 @@ async function fetchLiveQuotes(apiKey: string): Promise<{ quotes: QuoteResult[];
     polygonSucceeded = true;
   })().catch(err => {
     log.warn("[Signals Proxy] Polygon grouped bars fetch failed", { err });
+    captureError(err as Error, { source: "signalsProxy", stage: "grouped_bars" }).catch(() => {});
   });
 
   // Wait for both to complete

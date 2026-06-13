@@ -1,4 +1,5 @@
 // ============================================================
+import { captureError } from "./errorTracking";
 // FAULTLINE — Yahoo Finance Intraday Quote Proxy
 // server/yahooProxy.ts
 //
@@ -153,6 +154,7 @@ async function fetchQuoteWithFallback(ticker: string): Promise<YahooQuote> {
     return q;
   } catch (polyErr: any) {
     log.warn(`[Yahoo Proxy] Polygon fallback also failed for ${ticker}: ${polyErr?.message}`);
+    captureError(polyErr as Error, { source: "yahooProxy", ticker, stage: "both_sources_failed" }).catch(() => {});
   }
 
   // 3. Return error placeholder
