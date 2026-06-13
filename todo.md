@@ -1158,3 +1158,9 @@
 - [x] Confirm TypeScript passes (0 errors)
 - [x] Confirm full test suite passes
 - [x] Save final checkpoint with version ID
+
+## Heatmap Expansion
+
+- [x] Expand crypto heatmap from top 30 to top 100 coins (CryptoSearch.tsx + server limit)
+- [x] Add top 100 stock performers heatmap — server procedure, data fetch, dedicated page
+- [x] Wire stock heatmap into navigation

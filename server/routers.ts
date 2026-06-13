@@ -27,7 +27,7 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
-import { getQuotes } from "./yahooProxy";
+import { getQuotes, getTopStockPerformers } from "./yahooProxy";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
@@ -1549,7 +1549,21 @@ export const appRouter = router({
   }),
 
   // ── Contact Us ────────────────────────────────────────────────────────────────
-  contact: router({
+  // ── Stocks Heatmap ─────────────────────────────────────────────────────────
+  stocks: router({
+    // Top 100 daily stock performers (gainers) for the heatmap
+    getTopPerformers: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(100) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getTopStockPerformers(input?.limit ?? 100);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stock performers fetch failed", cause: err });
+        }
+      }),
+  }),
+
+    contact: router({
     submit: publicProcedure
       .input(z.object({
         name: z.string().min(1).max(100),

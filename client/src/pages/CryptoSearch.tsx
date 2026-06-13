@@ -538,7 +538,7 @@ function CryptoSearchInner() {
 
   // Top markets for heatmap
   const { data: topMarkets, isLoading: isLoadingMarkets } = trpc.crypto.getTopMarkets.useQuery(
-    { limit: 30 },
+    { limit: 100 },
     { staleTime: 2 * 60_000, refetchOnWindowFocus: false }
   );
 
@@ -787,7 +787,7 @@ function CryptoSearchInner() {
         <div style={{ background: "rgba(10,12,18,0.98)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "14px", marginBottom: "14px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
             <BarChart2 size={12} style={{ color: "#00D4FF" }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151", letterSpacing: "0.15em" }}>MARKET HEATMAP — TOP 30 BY MARKET CAP</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151", letterSpacing: "0.15em" }}>MARKET HEATMAP — TOP 100 BY MARKET CAP</span>
           </div>
           {isLoadingMarkets ? (
             <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>

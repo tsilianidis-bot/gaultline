@@ -94,6 +94,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "crypto",           label: "Crypto Intelligence",shortLabel: "Crypto",     icon: Bitcoin,   path: "/app/crypto-search" },
       { id: "crypto-signals",   label: "Crypto Signals",     shortLabel: "Crypto Sig", icon: BarChart3, path: "/app/crypto-signals" },
       { id: "crypto-watchlist", label: "Crypto Watchlist",   shortLabel: "Crypto Watch",icon: Bookmark, path: "/app/crypto-watchlist" },
+      { id: "stock-heatmap",    label: "Stock Heatmap",       shortLabel: "Stock Heat",  icon: BarChart2, path: "/app/stock-heatmap" },
     ],
   },
   {

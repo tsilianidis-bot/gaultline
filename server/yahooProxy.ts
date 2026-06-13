@@ -229,3 +229,125 @@ export function getQuoteCacheStats(): { size: number; tickers: string[] } {
     tickers: [],
   };
 }
+
+// ── Top Stock Performers (Daily Gainers Screener) ─────────────
+
+export interface StockPerformer {
+  ticker: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  volume: number;
+  marketCap: number | null;
+  sector: string | null;
+  avgVolume: number | null;
+  source: "yahoo-screener";
+  fetchedAt: number;
+}
+
+// Cache for 3 minutes — screener data doesn't change second-by-second
+const performersCache = new LRUCache<string, StockPerformer[]>(4, 3 * 60_000);
+
+/**
+ * Fetch top N daily stock gainers from Yahoo Finance screener.
+ * Uses the same predefined screener Yahoo Finance uses for "Top Gainers".
+ * No API key required. Returns sorted by changePercent descending.
+ */
+export async function getTopStockPerformers(limit = 100): Promise<StockPerformer[]> {
+  const cacheKey = `gainers_${limit}`;
+  const cached = performersCache.get(cacheKey);
+  if (cached) return cached;
+
+  const count = Math.min(limit, 100);
+
+  // Yahoo Finance screener — day_gainers predefined screen
+  const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=day_gainers&count=${count}&start=0`;
+
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://finance.yahoo.com/gainers/",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!res.ok) throw new Error(`Yahoo screener HTTP ${res.status}`);
+
+    const json = await res.json() as any;
+    const quotes: any[] = json?.finance?.result?.[0]?.quotes ?? [];
+
+    if (!quotes.length) throw new Error("Empty screener response");
+
+    const performers: StockPerformer[] = quotes
+      .filter((q: any) => q.symbol && q.regularMarketChangePercent != null)
+      .slice(0, count)
+      .map((q: any) => ({
+        ticker:        q.symbol,
+        name:          q.shortName ?? q.longName ?? q.symbol,
+        price:         q.regularMarketPrice ?? 0,
+        change:        q.regularMarketChange ?? 0,
+        changePercent: q.regularMarketChangePercent ?? 0,
+        volume:        q.regularMarketVolume ?? 0,
+        marketCap:     q.marketCap ?? null,
+        sector:        q.sector ?? null,
+        avgVolume:     q.averageDailyVolume3Month ?? null,
+        source:        "yahoo-screener" as const,
+        fetchedAt:     Date.now(),
+      }))
+      .sort((a, b) => b.changePercent - a.changePercent);
+
+    performersCache.set(cacheKey, performers);
+    log.info(`[Yahoo Proxy] Top ${performers.length} stock performers fetched`);
+    return performers;
+
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] Screener fetch failed: ${err?.message} — falling back to Polygon gainers`);
+    captureError(err as Error, { source: "yahooProxy", stage: "screener_fetch_failed" }).catch(() => {});
+
+    // Fallback: return top gainers from the existing signals catalog via Polygon
+    return getPolygonTopGainers(count);
+  }
+}
+
+/**
+ * Fallback: fetch top gainers from Polygon.io's snapshot endpoint.
+ * Uses the /v2/snapshot/locale/us/markets/stocks/gainers endpoint.
+ */
+async function getPolygonTopGainers(limit: number): Promise<StockPerformer[]> {
+  const apiKey = process.env.POLYGON_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const url = `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/gainers?include_otc=false&apiKey=${apiKey}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`Polygon gainers HTTP ${res.status}`);
+
+    const json = await res.json() as any;
+    const tickers: any[] = json?.tickers ?? [];
+
+    return tickers
+      .slice(0, limit)
+      .map((t: any) => ({
+        ticker:        t.ticker,
+        name:          t.ticker,
+        price:         t.day?.c ?? t.prevDay?.c ?? 0,
+        change:        (t.day?.c ?? 0) - (t.prevDay?.c ?? 0),
+        changePercent: (t.todaysChangePerc ?? 0),
+        volume:        t.day?.v ?? 0,
+        marketCap:     null,
+        sector:        null,
+        avgVolume:     null,
+        source:        "yahoo-screener" as const,
+        fetchedAt:     Date.now(),
+      }))
+      .sort((a, b) => b.changePercent - a.changePercent);
+
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] Polygon gainers fallback also failed: ${err?.message}`);
+    return [];
+  }
+}

@@ -60,6 +60,7 @@ const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
 const Methodology      = lazy(() => import("./pages/Methodology"));
+const StockHeatmap     = lazy(() => import("./pages/StockHeatmap"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -215,6 +216,7 @@ function Router() {
               <Route path="/app/reading-history" component={ReadingHistory} />
               <Route path="/app/seo-optimizer" component={SeoOptimizer} />
               <Route path="/app/analytics" component={AnalyticsDashboard} />
+              <Route path="/app/stock-heatmap" component={StockHeatmap} />
               <Route component={Dashboard} />
             </Switch>
           </Suspense>
