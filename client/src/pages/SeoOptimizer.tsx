@@ -1,44 +1,74 @@
 /**
- * FAULTLINE — SEO Optimizer
- * ============================================================
- * Features:
- *  - URL analysis with overall score + grade
- *  - Categorized SEO checks (pass/warning/fail)
- *  - Keyword density table with prominence scoring
- *  - Readability score (Flesch-Kincaid)
- *  - SERP preview (desktop + mobile)
- *  - Technical SEO audit
- *  - AI-powered meta title/description/keyword suggestions
- *  - Meta tag generator (standalone tool)
- *  - Copy-to-clipboard for all generated content
- * ============================================================
+ * FAULTLINE — SEO Optimizer (Simplified)
+ * One-click flow: Enter URL → Analyze → Fix Everything
  */
 
 import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
-  Search, Globe, CheckCircle2, XCircle, AlertTriangle, Info,
-  Copy, RefreshCw, Sparkles, BarChart2, Link2, FileText,
-  Tag, Eye, Smartphone, Monitor, ChevronDown, ChevronUp,
-  TrendingUp, Shield, Zap, BookOpen, ExternalLink, Hash,
-  Wrench, CheckCheck, Code2, ArrowRight, Flame,
+  Search, Globe, CheckCircle2, XCircle, AlertTriangle,
+  Copy, RefreshCw, Sparkles, Zap, Shield, Wrench,
+  ChevronDown, ChevronUp, Code2, ArrowRight, CheckCheck,
+  Flame, Tag, Hash, Eye, Monitor, Smartphone, Link2,
+  FileText, BookOpen, BarChart2, TrendingUp, ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 
-// ── Auto Fix Types ───────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────
+
+type SeoCheck = {
+  id: string;
+  category: "meta" | "content" | "technical" | "links" | "performance";
+  label: string;
+  status: "pass" | "warning" | "fail" | "info";
+  score: number;
+  maxScore: number;
+  detail: string;
+  recommendation?: string;
+};
+
+type SeoAnalysisResult = {
+  url: string;
+  fetchedAt: number;
+  overallScore: number;
+  grade: "A" | "B" | "C" | "D" | "F";
+  checks: SeoCheck[];
+  meta: {
+    title: string | null; titleLength: number;
+    description: string | null; descriptionLength: number;
+    keywords: string | null; canonical: string | null;
+    robots: string | null; viewport: string | null;
+    ogTitle: string | null; ogDescription: string | null;
+    ogImage: string | null; twitterCard: string | null;
+    twitterTitle: string | null; twitterDescription: string | null;
+    schemaTypes: string[];
+  };
+  headings: { h1: string[]; h2: string[]; h3: string[]; h4: string[]; h5: string[]; h6: string[] };
+  keywords: { word: string; count: number; density: number; prominence: number }[];
+  readability: { score: number; grade: string; avgWordsPerSentence: number; avgSyllablesPerWord: number; sentenceCount: number };
+  links: { internal: number; external: number; broken: number; nofollow: number; totalLinks: number };
+  technical: {
+    hasCanonical: boolean; hasRobots: boolean; hasViewport: boolean; hasOgTags: boolean;
+    hasTwitterCard: boolean; hasSchema: boolean; hasHttps: boolean; hasAltTags: boolean;
+    imagesWithoutAlt: number; totalImages: number;
+  };
+  serpPreview: { title: string; url: string; description: string; breadcrumb: string };
+  aiSuggestions: {
+    metaTitle: string; metaDescription: string; focusKeywords: string[];
+    contentGaps: string[]; improvements: string[]; estimatedDifficulty: "Low" | "Medium" | "High";
+  };
+  wordCount: number;
+  pageTitle: string;
+};
+
 type AutoFix = {
   checkId: string;
   label: string;
@@ -62,66 +92,6 @@ type AutoFixResult = {
   fixes: AutoFix[];
   htmlSnippets: HtmlSnippet[];
   estimatedImpact: "High" | "Medium" | "Low";
-};
-
-// ── Types (mirrored from server) ──────────────────────────────
-type SeoCheck = {
-  id: string;
-  category: "meta" | "content" | "technical" | "links" | "performance";
-  label: string;
-  status: "pass" | "warning" | "fail" | "info";
-  score: number;
-  maxScore: number;
-  detail: string;
-  recommendation?: string;
-};
-
-type SeoAnalysisResult = {
-  url: string;
-  fetchedAt: number;
-  overallScore: number;
-  grade: "A" | "B" | "C" | "D" | "F";
-  checks: SeoCheck[];
-  meta: {
-    title: string | null;
-    titleLength: number;
-    description: string | null;
-    descriptionLength: number;
-    keywords: string | null;
-    canonical: string | null;
-    robots: string | null;
-    viewport: string | null;
-    ogTitle: string | null;
-    ogDescription: string | null;
-    ogImage: string | null;
-    twitterCard: string | null;
-    twitterTitle: string | null;
-    twitterDescription: string | null;
-    schemaTypes: string[];
-  };
-  headings: {
-    h1: string[];
-    h2: string[];
-    h3: string[];
-    h4: string[];
-    h5: string[];
-    h6: string[];
-  };
-  keywords: { word: string; count: number; density: number; prominence: number }[];
-  readability: { score: number; grade: string; avgWordsPerSentence: number; avgSyllablesPerWord: number; sentenceCount: number };
-  links: { internal: number; external: number; broken: number; nofollow: number; totalLinks: number };
-  technical: {
-    hasCanonical: boolean; hasRobots: boolean; hasViewport: boolean; hasOgTags: boolean;
-    hasTwitterCard: boolean; hasSchema: boolean; hasHttps: boolean; hasAltTags: boolean;
-    imagesWithoutAlt: number; totalImages: number;
-  };
-  serpPreview: { title: string; url: string; description: string; breadcrumb: string };
-  aiSuggestions: {
-    metaTitle: string; metaDescription: string; focusKeywords: string[];
-    contentGaps: string[]; improvements: string[]; estimatedDifficulty: "Low" | "Medium" | "High";
-  };
-  wordCount: number;
-  pageTitle: string;
 };
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -149,28 +119,8 @@ function scoreColor(score: number) {
   return "text-red-400";
 }
 
-function statusIcon(status: SeoCheck["status"]) {
-  if (status === "pass") return <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
-  if (status === "warning") return <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />;
-  if (status === "fail") return <XCircle className="w-4 h-4 text-red-400 shrink-0" />;
-  return <Info className="w-4 h-4 text-cyan-400 shrink-0" />;
-}
-
-function statusBadge(status: SeoCheck["status"]) {
-  if (status === "pass") return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 text-[10px]">PASS</Badge>;
-  if (status === "warning") return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[10px]">WARN</Badge>;
-  if (status === "fail") return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-[10px]">FAIL</Badge>;
-  return <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30 text-[10px]">INFO</Badge>;
-}
-
 function copyToClipboard(text: string, label: string) {
-  navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied to clipboard`));
-}
-
-function difficultyColor(d: string) {
-  if (d === "Low") return "text-emerald-400 bg-emerald-500/10 border-emerald-500/30";
-  if (d === "Medium") return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
-  return "text-red-400 bg-red-500/10 border-red-500/30";
+  navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied`));
 }
 
 // ── Score Ring ────────────────────────────────────────────────
@@ -179,8 +129,6 @@ function ScoreRing({ score, grade }: { score: number; grade: string }) {
   const r = 52;
   const circ = 2 * Math.PI * r;
   const dash = (score / 100) * circ;
-  const colorClass = gradeColor(grade);
-
   return (
     <div className="relative w-36 h-36 flex items-center justify-center">
       <svg width="144" height="144" className="absolute inset-0 -rotate-90">
@@ -195,45 +143,65 @@ function ScoreRing({ score, grade }: { score: number; grade: string }) {
         />
       </svg>
       <div className="relative text-center">
-        <div className={`text-4xl font-black font-mono ${colorClass}`}>{score}</div>
-        <div className={`text-xs font-bold tracking-widest ${colorClass}`}>GRADE {grade}</div>
+        <div className={`text-4xl font-black font-mono ${gradeColor(grade)}`}>{score}</div>
+        <div className={`text-xs font-bold tracking-widest ${gradeColor(grade)}`}>GRADE {grade}</div>
       </div>
     </div>
   );
 }
 
-// ── Check Card ────────────────────────────────────────────────
+// ── Fix Card ──────────────────────────────────────────────────
 
-function CheckCard({ check }: { check: SeoCheck }) {
-  const [open, setOpen] = useState(false);
+function FixCard({ fix, index, expanded, onToggle }: {
+  fix: AutoFix; index: number; expanded: boolean; onToggle: () => void;
+}) {
   return (
-    <div
-      className={`border rounded-lg overflow-hidden transition-all duration-200 ${
-        check.status === "pass" ? "border-emerald-500/20 bg-emerald-500/5" :
-        check.status === "warning" ? "border-yellow-500/20 bg-yellow-500/5" :
-        check.status === "fail" ? "border-red-500/20 bg-red-500/5" :
-        "border-cyan-500/20 bg-cyan-500/5"
-      }`}
-    >
+    <div className={`border rounded-xl overflow-hidden transition-all ${
+      fix.severity === "critical" ? "border-red-500/25 bg-red-500/5" :
+      fix.severity === "important" ? "border-yellow-500/25 bg-yellow-500/5" :
+      "border-white/10 bg-white/[0.02]"
+    }`}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
       >
-        {statusIcon(check.status)}
-        <span className="flex-1 text-sm font-medium text-white/90">{check.label}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-white/40 font-mono">{check.score}/{check.maxScore}</span>
-          {statusBadge(check.status)}
-          {open ? <ChevronUp className="w-3 h-3 text-white/40" /> : <ChevronDown className="w-3 h-3 text-white/40" />}
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black ${
+          fix.severity === "critical" ? "bg-red-500/20 text-red-400" :
+          fix.severity === "important" ? "bg-yellow-500/20 text-yellow-400" :
+          "bg-white/10 text-white/50"
+        }`}>{index + 1}</div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-white/90 truncate">{fix.label}</div>
+          <div className="text-xs text-white/40 truncate">{fix.problem}</div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge className={`text-[10px] border ${
+            fix.severity === "critical" ? "bg-red-500/10 text-red-400 border-red-500/20" :
+            fix.severity === "important" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
+            "bg-white/5 text-white/40 border-white/10"
+          }`}>{fix.severity}</Badge>
+          {expanded ? <ChevronUp className="w-3.5 h-3.5 text-white/30" /> : <ChevronDown className="w-3.5 h-3.5 text-white/30" />}
         </div>
       </button>
-      {open && (
-        <div className="px-4 pb-3 space-y-2">
-          <p className="text-xs text-white/60">{check.detail}</p>
-          {check.recommendation && (
-            <div className="flex items-start gap-2 bg-white/5 rounded p-2">
-              <Zap className="w-3 h-3 text-cyan-400 mt-0.5 shrink-0" />
-              <p className="text-xs text-cyan-300">{check.recommendation}</p>
+      {expanded && (
+        <div className="px-4 pb-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <ArrowRight className="w-3.5 h-3.5 text-cyan-400 mt-0.5 shrink-0" />
+            <p className="text-sm text-white/70">{fix.solution}</p>
+          </div>
+          {fix.codeSnippet && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Code2 className="w-3.5 h-3.5 text-cyan-400/70" />
+                  <span className="text-xs text-white/40 uppercase tracking-wider">Code Fix</span>
+                </div>
+                <button onClick={() => copyToClipboard(fix.codeSnippet!, "Code fix")}
+                  className="flex items-center gap-1.5 text-xs text-white/30 hover:text-cyan-400 transition-colors">
+                  <Copy className="w-3 h-3" />Copy
+                </button>
+              </div>
+              <pre className="bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-emerald-300/90 overflow-x-auto font-mono leading-relaxed whitespace-pre-wrap">{fix.codeSnippet}</pre>
             </div>
           )}
         </div>
@@ -242,40 +210,16 @@ function CheckCard({ check }: { check: SeoCheck }) {
   );
 }
 
-// ── SERP Preview ──────────────────────────────────────────────
-
-function SerpPreview({ serp, isMobile }: { serp: SeoAnalysisResult["serpPreview"]; isMobile: boolean }) {
-  return (
-    <div className={`rounded-lg border border-white/10 bg-white/5 p-4 ${isMobile ? "max-w-sm" : ""}`}>
-      <div className="text-xs text-white/40 mb-2 font-mono uppercase tracking-wider">
-        {isMobile ? "Mobile SERP" : "Desktop SERP"} Preview
-      </div>
-      <div className="space-y-1">
-        <div className="text-xs text-green-400/80 truncate">{serp.breadcrumb}</div>
-        <div className="text-base font-medium text-blue-400 hover:underline cursor-pointer leading-tight line-clamp-2">
-          {serp.title}
-        </div>
-        <div className="text-xs text-white/60 leading-relaxed line-clamp-3">
-          {serp.description}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Meta Generator Panel ──────────────────────────────────────
+// ── Meta Generator ────────────────────────────────────────────
 
 function MetaGenerator() {
   const [topic, setTopic] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [pageType, setPageType] = useState<"blog" | "landing" | "product" | "category" | "homepage" | "about" | "service">("blog");
+  const [pageType, setPageType] = useState<"blog" | "landing" | "product" | "category" | "homepage" | "about" | "service">("landing");
   const [result, setResult] = useState<{ titles: string[]; descriptions: string[]; keywords: string[] } | null>(null);
 
   const generateMeta = trpc.seo.generateMeta.useMutation({
-    onSuccess: (data) => {
-      setResult(data);
-      toast.success("Meta tags generated");
-    },
+    onSuccess: (data) => { setResult(data); toast.success("Meta tags generated"); },
     onError: (err) => toast.error(err.message),
   });
 
@@ -284,28 +228,20 @@ function MetaGenerator() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="md:col-span-1">
           <label className="text-xs text-white/50 uppercase tracking-wider mb-1.5 block">Topic / Page Subject</label>
-          <Input
-            value={topic}
-            onChange={e => setTopic(e.target.value)}
-            placeholder="e.g. Macro risk intelligence platform"
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm"
-          />
+          <Input value={topic} onChange={e => setTopic(e.target.value)}
+            placeholder="e.g. Market risk intelligence platform"
+            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm" />
         </div>
         <div>
           <label className="text-xs text-white/50 uppercase tracking-wider mb-1.5 block">Target Keyword</label>
-          <Input
-            value={keyword}
-            onChange={e => setKeyword(e.target.value)}
+          <Input value={keyword} onChange={e => setKeyword(e.target.value)}
             placeholder="e.g. market risk analysis"
-            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm"
-          />
+            className="bg-white/5 border-white/10 text-white placeholder:text-white/30 h-9 text-sm" />
         </div>
         <div>
           <label className="text-xs text-white/50 uppercase tracking-wider mb-1.5 block">Page Type</label>
           <Select value={pageType} onValueChange={(v) => setPageType(v as typeof pageType)}>
-            <SelectTrigger className="bg-white/5 border-white/10 text-white h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="bg-white/5 border-white/10 text-white h-9 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent className="bg-[#0a0f1a] border-white/10">
               {["blog", "landing", "product", "category", "homepage", "about", "service"].map(t => (
                 <SelectItem key={t} value={t} className="text-white/80 capitalize">{t}</SelectItem>
@@ -314,22 +250,15 @@ function MetaGenerator() {
           </Select>
         </div>
       </div>
-
-      <Button
-        onClick={() => generateMeta.mutate({ topic, targetKeyword: keyword, pageType })}
+      <Button onClick={() => generateMeta.mutate({ topic, targetKeyword: keyword, pageType })}
         disabled={!topic.trim() || !keyword.trim() || generateMeta.isPending}
-        className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 h-9"
-      >
-        {generateMeta.isPending ? (
-          <><RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />Generating…</>
-        ) : (
-          <><Sparkles className="w-3.5 h-3.5 mr-2" />Generate Meta Tags</>
-        )}
+        className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 h-9">
+        {generateMeta.isPending
+          ? <><RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />Generating…</>
+          : <><Sparkles className="w-3.5 h-3.5 mr-2" />Generate Meta Tags</>}
       </Button>
-
       {result && (
         <div className="space-y-4 pt-2">
-          {/* Titles */}
           <div>
             <div className="text-xs text-white/50 uppercase tracking-wider mb-2">Meta Title Options</div>
             <div className="space-y-2">
@@ -344,8 +273,6 @@ function MetaGenerator() {
               ))}
             </div>
           </div>
-
-          {/* Descriptions */}
           <div>
             <div className="text-xs text-white/50 uppercase tracking-wider mb-2">Meta Description Options</div>
             <div className="space-y-2">
@@ -362,19 +289,13 @@ function MetaGenerator() {
               ))}
             </div>
           </div>
-
-          {/* Keywords */}
           <div>
             <div className="text-xs text-white/50 uppercase tracking-wider mb-2">Suggested Keywords</div>
             <div className="flex flex-wrap gap-2">
               {result.keywords.map((k, i) => (
-                <button
-                  key={i}
-                  onClick={() => copyToClipboard(k, "Keyword")}
-                  className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-white/70 hover:border-cyan-500/40 hover:text-cyan-400 transition-all"
-                >
-                  <Hash className="w-3 h-3" />
-                  {k}
+                <button key={i} onClick={() => copyToClipboard(k, "Keyword")}
+                  className="flex items-center gap-1.5 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs text-white/70 hover:border-cyan-500/40 hover:text-cyan-400 transition-all">
+                  <Hash className="w-3 h-3" />{k}
                 </button>
               ))}
             </div>
@@ -387,35 +308,25 @@ function MetaGenerator() {
 
 // ── Main Page ─────────────────────────────────────────────────
 
+type ActiveSection = "overview" | "checks" | "keywords" | "serp" | "technical" | "ai" | "fixes" | "meta-gen";
+
 export default function SeoOptimizer() {
   useSEO(PAGE_SEO.seoOptimizer);
   const [url, setUrl] = useState("");
   const [result, setResult] = useState<SeoAnalysisResult | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>("all");
-  const [serpView, setSerpView] = useState<"desktop" | "mobile">("desktop");
   const [autoFixResult, setAutoFixResult] = useState<AutoFixResult | null>(null);
-  const [expandedSnippet, setExpandedSnippet] = useState<number | null>(null);
+  const [activeSection, setActiveSection] = useState<ActiveSection>("overview");
   const [expandedFix, setExpandedFix] = useState<number | null>(null);
+  const [expandedSnippet, setExpandedSnippet] = useState<number | null>(null);
+  const [serpView, setSerpView] = useState<"desktop" | "mobile">("desktop");
 
-  const autoFix = trpc.seo.autoFix.useMutation({
-    onSuccess: (data) => {
-      setAutoFixResult(data as AutoFixResult);
-      toast.success("Auto Fix plan generated");
-    },
-    onError: (err) => toast.error(err.message || "Auto fix failed"),
-  });
-
-  const handleAutoFix = useCallback(() => {
-    if (!result) return;
-    setAutoFixResult(null);
-    autoFix.mutate({ analysisJson: JSON.stringify(result) });
-  }, [result, autoFix]);
-
+  // ── Analyze ──────────────────────────────────────────────────
   const analyzeUrl = trpc.seo.analyzeUrl.useMutation({
     onSuccess: (data) => {
       setResult(data as SeoAnalysisResult);
-      setActiveCategory("all");
-      toast.success("SEO analysis complete");
+      setAutoFixResult(null);
+      setActiveSection("overview");
+      toast.success("Analysis complete");
     },
     onError: (err) => toast.error(err.message || "Analysis failed"),
   });
@@ -430,10 +341,21 @@ export default function SeoOptimizer() {
     analyzeUrl.mutate({ url: target });
   }, [url, analyzeUrl]);
 
-  const categories = ["all", "meta", "content", "technical", "links"];
-  const filteredChecks = result?.checks.filter(c =>
-    activeCategory === "all" || c.category === activeCategory
-  ) ?? [];
+  // ── Auto Fix ─────────────────────────────────────────────────
+  const autoFix = trpc.seo.autoFix.useMutation({
+    onSuccess: (data) => {
+      setAutoFixResult(data as AutoFixResult);
+      setActiveSection("fixes");
+      toast.success("Auto-fix plan ready");
+    },
+    onError: (err) => toast.error(err.message || "Auto fix failed"),
+  });
+
+  const handleAutoFix = useCallback(() => {
+    if (!result) return;
+    setAutoFixResult(null);
+    autoFix.mutate({ analysisJson: JSON.stringify(result) });
+  }, [result, autoFix]);
 
   const checkCounts = result ? {
     pass: result.checks.filter(c => c.status === "pass").length,
@@ -441,22 +363,37 @@ export default function SeoOptimizer() {
     fail: result.checks.filter(c => c.status === "fail").length,
   } : null;
 
+  const issueCount = checkCounts ? checkCounts.fail + checkCounts.warning : 0;
+
+  // ── Section Nav ───────────────────────────────────────────────
+  const sections: { id: ActiveSection; label: string; icon: React.ElementType }[] = [
+    { id: "overview", label: "Overview", icon: BarChart2 },
+    { id: "checks", label: "Checks", icon: Shield },
+    { id: "keywords", label: "Keywords", icon: Tag },
+    { id: "serp", label: "SERP", icon: Eye },
+    { id: "technical", label: "Technical", icon: Zap },
+    { id: "ai", label: "AI Tips", icon: Sparkles },
+    { id: "fixes", label: "Fixes", icon: Wrench },
+    { id: "meta-gen", label: "Meta Gen", icon: TrendingUp },
+  ];
+
   return (
     <div className="min-h-screen bg-[#030712] text-white">
-      {/* Header */}
-      <div className="border-b border-white/5 bg-[#030712]/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3 mb-4">
+      {/* ── Sticky Header ── */}
+      <div className="border-b border-white/5 bg-[#030712]/90 backdrop-blur-sm sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 py-4 space-y-3">
+          {/* Title row */}
+          <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
               <Search className="w-4 h-4 text-cyan-400" />
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight text-white">SEO Optimizer</h1>
-              <p className="text-xs text-white/40">Analyze any URL for on-page SEO, keywords, readability, and AI-powered improvements</p>
+              <p className="text-xs text-white/40">Analyze any URL · One-click fix all issues</p>
             </div>
           </div>
 
-          {/* URL Input */}
+          {/* URL bar */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
@@ -464,7 +401,7 @@ export default function SeoOptimizer() {
                 value={url}
                 onChange={e => setUrl(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAnalyze()}
-                placeholder="https://example.com/page-to-analyze"
+                placeholder="https://yoursite.com"
                 className="pl-9 bg-white/5 border-white/10 text-white placeholder:text-white/30 h-10 text-sm focus:border-cyan-500/50"
               />
             </div>
@@ -473,34 +410,80 @@ export default function SeoOptimizer() {
               disabled={!url.trim() || analyzeUrl.isPending}
               className="bg-cyan-500 hover:bg-cyan-400 text-black font-bold h-10 px-6 shrink-0"
             >
-              {analyzeUrl.isPending ? (
-                <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Analyzing…</>
-              ) : (
-                <><Search className="w-4 h-4 mr-2" />Analyze</>
-              )}
+              {analyzeUrl.isPending
+                ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Analyzing…</>
+                : <><Search className="w-4 h-4 mr-2" />Analyze</>}
             </Button>
+            {result && (
+              <Button
+                onClick={handleAutoFix}
+                disabled={autoFix.isPending}
+                className="bg-orange-500 hover:bg-orange-400 text-black font-bold h-10 px-5 shrink-0"
+              >
+                {autoFix.isPending
+                  ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Fixing…</>
+                  : <><Wrench className="w-4 h-4 mr-2" />Fix All
+                    {issueCount > 0 && (
+                      <span className="ml-1.5 w-5 h-5 rounded-full bg-black/30 text-white text-[10px] font-black flex items-center justify-center">
+                        {issueCount}
+                      </span>
+                    )}
+                  </>}
+              </Button>
+            )}
           </div>
 
-          {/* Quick examples */}
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs text-white/30">Try:</span>
-            {["https://getfaultline.live", "https://getfaultline.live/blog"].map(ex => (
-              <button
-                key={ex}
-                onClick={() => setUrl(ex)}
-                className="text-xs text-cyan-500/60 hover:text-cyan-400 transition-colors"
-              >
-                {ex.replace("https://", "")}
-              </button>
-            ))}
-          </div>
+          {/* Quick links */}
+          {!result && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-white/30">Try:</span>
+              {["https://getfaultline.live", "https://getfaultline.live/blog"].map(ex => (
+                <button key={ex} onClick={() => setUrl(ex)}
+                  className="text-xs text-cyan-500/60 hover:text-cyan-400 transition-colors">
+                  {ex.replace("https://", "")}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Section nav — only shown after analysis */}
+          {result && (
+            <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-none">
+              {sections.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setActiveSection(id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all ${
+                    activeSection === id
+                      ? id === "fixes" ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                        : "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                      : "text-white/40 hover:text-white/70 border border-transparent"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                  {id === "fixes" && autoFixResult && (
+                    <span className="w-4 h-4 rounded-full bg-orange-500 text-white text-[9px] font-black flex items-center justify-center">
+                      {autoFixResult.fixes.length}
+                    </span>
+                  )}
+                  {id === "checks" && checkCounts && checkCounts.fail > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
+                      {checkCounts.fail}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Loading state */}
+      <div className="max-w-5xl mx-auto px-4 py-6">
+
+        {/* ── Loading ── */}
         {analyzeUrl.isPending && (
-          <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
             <div className="relative">
               <div className="w-16 h-16 rounded-full border-2 border-cyan-500/20 border-t-cyan-500 animate-spin" />
               <Globe className="absolute inset-0 m-auto w-6 h-6 text-cyan-400/60" />
@@ -512,175 +495,241 @@ export default function SeoOptimizer() {
           </div>
         )}
 
-        {/* Empty state */}
+        {/* ── Empty state ── */}
         {!analyzeUrl.isPending && !result && (
-          <div className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Meta Generator — available even without URL analysis */}
-              <div className="md:col-span-2 border border-white/10 rounded-xl bg-white/[0.02] p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
-                  <h2 className="text-sm font-bold tracking-wider uppercase text-white/80">AI Meta Tag Generator</h2>
-                  <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[10px]">No URL needed</Badge>
-                </div>
-                <MetaGenerator />
-              </div>
-            </div>
-
-            {/* Feature cards */}
+          <div className="space-y-8">
+            {/* Feature grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { icon: BarChart2, label: "SEO Score", desc: "0–100 score with letter grade", color: "text-cyan-400" },
-                { icon: Tag, label: "Keyword Analysis", desc: "Density, prominence, top 20 terms", color: "text-emerald-400" },
-                { icon: Eye, label: "SERP Preview", desc: "See how Google displays your page", color: "text-purple-400" },
-                { icon: Sparkles, label: "AI Suggestions", desc: "LLM-generated meta & improvements", color: "text-yellow-400" },
-                { icon: Shield, label: "Technical Audit", desc: "Canonical, OG, schema, HTTPS", color: "text-red-400" },
-                { icon: Link2, label: "Link Analysis", desc: "Internal, external, nofollow counts", color: "text-blue-400" },
-                { icon: BookOpen, label: "Readability", desc: "Flesch-Kincaid reading ease score", color: "text-orange-400" },
-                { icon: FileText, label: "Heading Structure", desc: "H1–H6 hierarchy audit", color: "text-pink-400" },
+                { icon: BarChart2, label: "SEO Score", desc: "0–100 with letter grade", color: "text-cyan-400" },
+                { icon: Shield, label: "14 SEO Checks", desc: "Pass / warn / fail audit", color: "text-emerald-400" },
+                { icon: Tag, label: "Keyword Analysis", desc: "Density & prominence", color: "text-purple-400" },
+                { icon: Eye, label: "SERP Preview", desc: "Desktop & mobile views", color: "text-yellow-400" },
+                { icon: Sparkles, label: "AI Suggestions", desc: "LLM-powered improvements", color: "text-orange-400" },
+                { icon: Wrench, label: "One-Click Fix", desc: "Auto-generates all code fixes", color: "text-red-400" },
+                { icon: BookOpen, label: "Readability", desc: "Flesch-Kincaid score", color: "text-blue-400" },
+                { icon: TrendingUp, label: "Meta Generator", desc: "AI meta tags from topic", color: "text-pink-400" },
               ].map(({ icon: Icon, label, desc, color }) => (
-                <div key={label} className="border border-white/8 rounded-lg p-4 bg-white/[0.02]">
+                <div key={label} className="border border-white/8 rounded-xl p-4 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
                   <Icon className={`w-5 h-5 ${color} mb-2`} />
                   <div className="text-sm font-medium text-white/80">{label}</div>
                   <div className="text-xs text-white/40 mt-0.5">{desc}</div>
                 </div>
               ))}
             </div>
+
+            {/* Standalone Meta Generator */}
+            <div className="border border-white/10 rounded-xl bg-white/[0.02] p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-cyan-400" />
+                <h2 className="text-sm font-bold tracking-wider uppercase text-white/80">AI Meta Tag Generator</h2>
+                <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-[10px]">No URL needed</Badge>
+              </div>
+              <MetaGenerator />
+            </div>
           </div>
         )}
 
-        {/* Results */}
+        {/* ── Results ── */}
         {result && !analyzeUrl.isPending && (
-          <div className="space-y-6">
-            {/* Score overview */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              {/* Main score */}
-              <div className={`border rounded-xl p-6 flex flex-col items-center justify-center gap-3 ${gradeBg(result.grade)}`}>
-                <ScoreRing score={result.overallScore} grade={result.grade} />
-                <div className="text-center">
-                  <div className="text-xs text-white/50 uppercase tracking-wider">Overall SEO Score</div>
-                  <div className="text-xs text-white/30 mt-1 truncate max-w-[160px]">
-                    {result.url.replace(/^https?:\/\//, "").substring(0, 40)}
+          <div className="space-y-5">
+
+            {/* ── OVERVIEW ── */}
+            {activeSection === "overview" && (
+              <div className="space-y-5">
+                {/* Score + stats */}
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                  <div className={`border rounded-xl p-6 flex flex-col items-center justify-center gap-3 ${gradeBg(result.grade)}`}>
+                    <ScoreRing score={result.overallScore} grade={result.grade} />
+                    <div className="text-center">
+                      <div className="text-xs text-white/50 uppercase tracking-wider">Overall SEO Score</div>
+                      <div className="text-xs text-white/30 mt-1 truncate max-w-[160px]">
+                        {result.url.replace(/^https?:\/\//, "").substring(0, 40)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {checkCounts && (
+                      <>
+                        <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <span className="text-xs text-white/50 uppercase tracking-wider">Passed</span>
+                          </div>
+                          <div className="text-3xl font-black text-emerald-400">{checkCounts.pass}</div>
+                          <div className="text-xs text-white/30">checks</div>
+                        </div>
+                        <div className="border border-yellow-500/20 bg-yellow-500/5 rounded-xl p-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                            <span className="text-xs text-white/50 uppercase tracking-wider">Warnings</span>
+                          </div>
+                          <div className="text-3xl font-black text-yellow-400">{checkCounts.warning}</div>
+                          <div className="text-xs text-white/30">checks</div>
+                        </div>
+                        <div className="border border-red-500/20 bg-red-500/5 rounded-xl p-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <XCircle className="w-4 h-4 text-red-400" />
+                            <span className="text-xs text-white/50 uppercase tracking-wider">Failed</span>
+                          </div>
+                          <div className="text-3xl font-black text-red-400">{checkCounts.fail}</div>
+                          <div className="text-xs text-white/30">checks</div>
+                        </div>
+                      </>
+                    )}
+                    <div className="border border-white/10 bg-white/[0.02] rounded-xl p-4">
+                      <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Word Count</div>
+                      <div className={`text-2xl font-black ${scoreColor(Math.min(100, (result.wordCount / 1000) * 100))}`}>
+                        {result.wordCount.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-white/30">words</div>
+                    </div>
+                    <div className="border border-white/10 bg-white/[0.02] rounded-xl p-4">
+                      <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Readability</div>
+                      <div className={`text-2xl font-black ${scoreColor(result.readability.score)}`}>{result.readability.score}</div>
+                      <div className="text-xs text-white/30">{result.readability.grade}</div>
+                    </div>
+                    <div className="border border-white/10 bg-white/[0.02] rounded-xl p-4">
+                      <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Total Links</div>
+                      <div className="text-2xl font-black text-white/80">{result.links.totalLinks}</div>
+                      <div className="text-xs text-white/30">{result.links.internal} int · {result.links.external} ext</div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Stats grid */}
-              <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-3">
-                {checkCounts && (
-                  <>
-                    <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        <span className="text-xs text-white/50 uppercase tracking-wider">Passed</span>
-                      </div>
-                      <div className="text-3xl font-black text-emerald-400">{checkCounts.pass}</div>
-                      <div className="text-xs text-white/30">checks</div>
+                {/* One-Click Fix CTA */}
+                {issueCount > 0 && !autoFixResult && (
+                  <div className="border border-orange-500/20 bg-orange-500/5 rounded-xl p-6 flex flex-col sm:flex-row items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
+                      <Wrench className="w-6 h-6 text-orange-400" />
                     </div>
-                    <div className="border border-yellow-500/20 bg-yellow-500/5 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <AlertTriangle className="w-4 h-4 text-yellow-400" />
-                        <span className="text-xs text-white/50 uppercase tracking-wider">Warnings</span>
+                    <div className="flex-1 text-center sm:text-left">
+                      <div className="text-base font-bold text-white/90 mb-1">
+                        {issueCount} issue{issueCount !== 1 ? "s" : ""} found — fix them all automatically
                       </div>
-                      <div className="text-3xl font-black text-yellow-400">{checkCounts.warning}</div>
-                      <div className="text-xs text-white/30">checks</div>
-                    </div>
-                    <div className="border border-red-500/20 bg-red-500/5 rounded-xl p-4">
-                      <div className="flex items-center gap-2 mb-1">
-                        <XCircle className="w-4 h-4 text-red-400" />
-                        <span className="text-xs text-white/50 uppercase tracking-wider">Failed</span>
+                      <div className="text-sm text-white/50">
+                        AI generates ready-to-paste code fixes, optimized meta tags, and a prioritized action plan in one click.
                       </div>
-                      <div className="text-3xl font-black text-red-400">{checkCounts.fail}</div>
-                      <div className="text-xs text-white/30">checks</div>
                     </div>
-                  </>
-                )}
-                <div className="border border-white/10 bg-white/[0.02] rounded-xl p-4">
-                  <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Word Count</div>
-                  <div className={`text-2xl font-black ${scoreColor(Math.min(100, (result.wordCount / 1000) * 100))}`}>
-                    {result.wordCount.toLocaleString()}
-                  </div>
-                  <div className="text-xs text-white/30">words</div>
-                </div>
-                <div className="border border-white/10 bg-white/[0.02] rounded-xl p-4">
-                  <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Readability</div>
-                  <div className={`text-2xl font-black ${scoreColor(result.readability.score)}`}>
-                    {result.readability.score}
-                  </div>
-                  <div className="text-xs text-white/30">{result.readability.grade}</div>
-                </div>
-                <div className="border border-white/10 bg-white/[0.02] rounded-xl p-4">
-                  <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Total Links</div>
-                  <div className="text-2xl font-black text-white/80">{result.links.totalLinks}</div>
-                  <div className="text-xs text-white/30">{result.links.internal} int · {result.links.external} ext</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Main tabs */}
-            <Tabs defaultValue="checks" className="space-y-4">
-              <TabsList className="bg-white/5 border border-white/10 h-10 p-1">
-                <TabsTrigger value="checks" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
-                  <Shield className="w-3.5 h-3.5 mr-1.5" />SEO Checks
-                </TabsTrigger>
-                <TabsTrigger value="keywords" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
-                  <Tag className="w-3.5 h-3.5 mr-1.5" />Keywords
-                </TabsTrigger>
-                <TabsTrigger value="serp" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
-                  <Eye className="w-3.5 h-3.5 mr-1.5" />SERP Preview
-                </TabsTrigger>
-                <TabsTrigger value="ai" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
-                  <Sparkles className="w-3.5 h-3.5 mr-1.5" />AI Suggestions
-                </TabsTrigger>
-                <TabsTrigger value="technical" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
-                  <Zap className="w-3.5 h-3.5 mr-1.5" />Technical
-                </TabsTrigger>
-                <TabsTrigger value="meta-gen" className="text-xs data-[state=active]:bg-cyan-500/20 data-[state=active]:text-cyan-400">
-                  <TrendingUp className="w-3.5 h-3.5 mr-1.5" />Meta Generator
-                </TabsTrigger>
-                <TabsTrigger value="auto-fix" className="text-xs data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400 relative">
-                  <Wrench className="w-3.5 h-3.5 mr-1.5" />Auto Fix
-                  {checkCounts && checkCounts.fail > 0 && (
-                    <span className="ml-1.5 w-4 h-4 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center">
-                      {checkCounts.fail}
-                    </span>
-                  )}
-                </TabsTrigger>
-              </TabsList>
-
-              {/* SEO Checks Tab */}
-              <TabsContent value="checks" className="space-y-4">
-                {/* Category filter */}
-                <div className="flex gap-2 flex-wrap">
-                  {categories.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => setActiveCategory(cat)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-                        activeCategory === cat
-                          ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400"
-                          : "bg-white/5 border-white/10 text-white/50 hover:border-white/20"
-                      }`}
+                    <Button
+                      onClick={handleAutoFix}
+                      disabled={autoFix.isPending}
+                      className="bg-orange-500 hover:bg-orange-400 text-black font-bold h-11 px-8 shrink-0"
                     >
-                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                      {cat !== "all" && (
-                        <span className="ml-1.5 text-white/30">
-                          ({result.checks.filter(c => c.category === cat).length})
+                      {autoFix.isPending
+                        ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Generating…</>
+                        : <><Wrench className="w-4 h-4 mr-2" />Fix All Issues</>}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Auto-fix generating */}
+                {autoFix.isPending && (
+                  <div className="border border-orange-500/20 bg-orange-500/5 rounded-xl p-6 flex items-center gap-4">
+                    <div className="relative w-10 h-10 shrink-0">
+                      <div className="w-10 h-10 rounded-full border-2 border-orange-500/20 border-t-orange-500 animate-spin" />
+                      <Wrench className="absolute inset-0 m-auto w-4 h-4 text-orange-400/60" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white/80">AI is generating fix plan…</div>
+                      <div className="text-xs text-white/40 mt-0.5">Writing code snippets and prioritized recommendations</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Fix plan ready */}
+                {autoFixResult && !autoFix.isPending && (
+                  <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4 flex items-center gap-3">
+                    <CheckCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-white/90">{autoFixResult.summary}</div>
+                      <div className="text-xs text-white/40 mt-0.5">
+                        {autoFixResult.fixes.length} fixes · {autoFixResult.htmlSnippets.length} HTML snippets ·{" "}
+                        <span className={autoFixResult.estimatedImpact === "High" ? "text-red-400" : autoFixResult.estimatedImpact === "Medium" ? "text-yellow-400" : "text-emerald-400"}>
+                          {autoFixResult.estimatedImpact} impact
                         </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+                      </div>
+                    </div>
+                    <Button onClick={() => setActiveSection("fixes")} variant="outline"
+                      className="border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 h-8 text-xs shrink-0">
+                      View Fixes →
+                    </Button>
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  {filteredChecks.map(check => (
-                    <CheckCard key={check.id} check={check} />
-                  ))}
-                </div>
-              </TabsContent>
+                {/* Top issues quick list */}
+                {checkCounts && checkCounts.fail > 0 && (
+                  <div className="border border-white/10 rounded-xl p-4">
+                    <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Top Issues to Fix</div>
+                    <div className="space-y-2">
+                      {result.checks.filter(c => c.status === "fail").slice(0, 5).map(c => (
+                        <div key={c.id} className="flex items-start gap-2">
+                          <XCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="text-sm text-white/80">{c.label}</div>
+                            {c.recommendation && <div className="text-xs text-white/40 mt-0.5">{c.recommendation}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {checkCounts.fail > 5 && (
+                      <button onClick={() => setActiveSection("checks")} className="mt-3 text-xs text-cyan-400/70 hover:text-cyan-400 transition-colors">
+                        View all {checkCounts.fail} failed checks →
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
-              {/* Keywords Tab */}
-              <TabsContent value="keywords" className="space-y-4">
+            {/* ── SEO CHECKS ── */}
+            {activeSection === "checks" && (
+              <div className="space-y-2">
+                <div className="text-xs text-white/50 uppercase tracking-wider mb-3">
+                  {checkCounts?.pass} passed · {checkCounts?.warning} warnings · {checkCounts?.fail} failed
+                </div>
+                {result.checks.map(check => (
+                  <div key={check.id} className={`border rounded-xl overflow-hidden ${
+                    check.status === "pass" ? "border-emerald-500/20 bg-emerald-500/5" :
+                    check.status === "warning" ? "border-yellow-500/20 bg-yellow-500/5" :
+                    check.status === "fail" ? "border-red-500/20 bg-red-500/5" :
+                    "border-cyan-500/20 bg-cyan-500/5"
+                  }`}>
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      {check.status === "pass" ? <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" /> :
+                       check.status === "warning" ? <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" /> :
+                       check.status === "fail" ? <XCircle className="w-4 h-4 text-red-400 shrink-0" /> :
+                       <Zap className="w-4 h-4 text-cyan-400 shrink-0" />}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-white/90">{check.label}</div>
+                        <div className="text-xs text-white/50 mt-0.5">{check.detail}</div>
+                        {check.recommendation && (
+                          <div className="flex items-start gap-1.5 mt-1.5 bg-white/5 rounded px-2 py-1.5">
+                            <Zap className="w-3 h-3 text-cyan-400 mt-0.5 shrink-0" />
+                            <p className="text-xs text-cyan-300">{check.recommendation}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-white/30 font-mono">{check.score}/{check.maxScore}</span>
+                        <Badge className={`text-[10px] border ${
+                          check.status === "pass" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" :
+                          check.status === "warning" ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30" :
+                          check.status === "fail" ? "bg-red-500/20 text-red-400 border-red-500/30" :
+                          "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+                        }`}>
+                          {check.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── KEYWORDS ── */}
+            {activeSection === "keywords" && (
+              <div className="space-y-4">
                 <div className="border border-white/10 rounded-xl overflow-hidden">
                   <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-white/5 border-b border-white/10 text-xs text-white/40 uppercase tracking-wider">
                     <div className="col-span-4">Keyword</div>
@@ -690,36 +739,30 @@ export default function SeoOptimizer() {
                   </div>
                   {result.keywords.length === 0 ? (
                     <div className="px-4 py-8 text-center text-white/30 text-sm">No significant keywords found</div>
-                  ) : (
-                    result.keywords.map((kw, i) => (
-                      <div key={kw.word} className={`grid grid-cols-12 gap-2 px-4 py-2.5 items-center border-b border-white/5 last:border-0 ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
-                        <div className="col-span-4 flex items-center gap-2">
-                          <span className="text-xs text-white/20 font-mono w-4">{i + 1}</span>
-                          <span className="text-sm text-white/80 font-medium">{kw.word}</span>
-                        </div>
-                        <div className="col-span-2 text-center">
-                          <span className="text-sm font-mono text-white/60">{kw.count}</span>
-                        </div>
-                        <div className="col-span-3">
-                          <div className="flex items-center gap-2">
-                            <Progress value={Math.min(100, kw.density * 20)} className="h-1.5 flex-1" />
-                            <span className="text-xs font-mono text-white/40 w-10 text-right">{kw.density.toFixed(2)}%</span>
-                          </div>
-                        </div>
-                        <div className="col-span-3">
-                          <div className="flex items-center gap-2">
-                            <Progress value={kw.prominence} className="h-1.5 flex-1" />
-                            <span className={`text-xs font-mono w-8 text-right ${kw.prominence >= 80 ? "text-emerald-400" : kw.prominence >= 60 ? "text-cyan-400" : "text-white/40"}`}>
-                              {kw.prominence}
-                            </span>
-                          </div>
+                  ) : result.keywords.map((kw, i) => (
+                    <div key={kw.word} className={`grid grid-cols-12 gap-2 px-4 py-2.5 items-center border-b border-white/5 last:border-0 ${i % 2 === 0 ? "" : "bg-white/[0.01]"}`}>
+                      <div className="col-span-4 flex items-center gap-2">
+                        <span className="text-xs text-white/20 font-mono w-4">{i + 1}</span>
+                        <span className="text-sm text-white/80 font-medium">{kw.word}</span>
+                      </div>
+                      <div className="col-span-2 text-center"><span className="text-sm font-mono text-white/60">{kw.count}</span></div>
+                      <div className="col-span-3">
+                        <div className="flex items-center gap-2">
+                          <Progress value={Math.min(100, kw.density * 20)} className="h-1.5 flex-1" />
+                          <span className="text-xs font-mono text-white/40 w-10 text-right">{kw.density.toFixed(2)}%</span>
                         </div>
                       </div>
-                    ))
-                  )}
+                      <div className="col-span-3">
+                        <div className="flex items-center gap-2">
+                          <Progress value={kw.prominence} className="h-1.5 flex-1" />
+                          <span className={`text-xs font-mono w-8 text-right ${kw.prominence >= 80 ? "text-emerald-400" : kw.prominence >= 60 ? "text-cyan-400" : "text-white/40"}`}>
+                            {kw.prominence}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                {/* Headings breakdown */}
                 <div className="border border-white/10 rounded-xl p-4">
                   <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Heading Structure</div>
                   <div className="space-y-2">
@@ -740,37 +783,36 @@ export default function SeoOptimizer() {
                     })}
                   </div>
                 </div>
-              </TabsContent>
+              </div>
+            )}
 
-              {/* SERP Preview Tab */}
-              <TabsContent value="serp" className="space-y-4">
+            {/* ── SERP PREVIEW ── */}
+            {activeSection === "serp" && (
+              <div className="space-y-4">
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => setSerpView("desktop")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs transition-all ${serpView === "desktop" ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400" : "bg-white/5 border-white/10 text-white/50"}`}
-                  >
-                    <Monitor className="w-3.5 h-3.5" />Desktop
-                  </button>
-                  <button
-                    onClick={() => setSerpView("mobile")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs transition-all ${serpView === "mobile" ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400" : "bg-white/5 border-white/10 text-white/50"}`}
-                  >
-                    <Smartphone className="w-3.5 h-3.5" />Mobile
-                  </button>
+                  {(["desktop", "mobile"] as const).map(v => (
+                    <button key={v} onClick={() => setSerpView(v)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-xs transition-all ${serpView === v ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-400" : "bg-white/5 border-white/10 text-white/50"}`}>
+                      {v === "desktop" ? <Monitor className="w-3.5 h-3.5" /> : <Smartphone className="w-3.5 h-3.5" />}
+                      {v.charAt(0).toUpperCase() + v.slice(1)}
+                    </button>
+                  ))}
                 </div>
-
-                <SerpPreview serp={result.serpPreview} isMobile={serpView === "mobile"} />
-
-                {/* Meta details */}
+                <div className={`rounded-lg border border-white/10 bg-white/5 p-4 ${serpView === "mobile" ? "max-w-sm" : ""}`}>
+                  <div className="text-xs text-white/40 mb-2 font-mono uppercase tracking-wider">{serpView} SERP Preview</div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-green-400/80 truncate">{result.serpPreview.breadcrumb}</div>
+                    <div className="text-base font-medium text-blue-400 hover:underline cursor-pointer leading-tight line-clamp-2">{result.serpPreview.title}</div>
+                    <div className="text-xs text-white/60 leading-relaxed line-clamp-3">{result.serpPreview.description}</div>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="border border-white/10 rounded-xl p-4 space-y-3">
-                    <div className="text-xs text-white/50 uppercase tracking-wider">Current Meta Title</div>
+                    <div className="text-xs text-white/50 uppercase tracking-wider">Meta Title</div>
                     <div className="text-sm text-white/80">{result.meta.title || <span className="text-red-400/70 italic">Missing</span>}</div>
                     <div className="flex items-center gap-2">
                       <Progress value={result.meta.titleLength > 0 ? Math.min(100, (result.meta.titleLength / 60) * 100) : 0} className="h-1.5 flex-1" />
-                      <span className={`text-xs font-mono ${result.meta.titleLength >= 50 && result.meta.titleLength <= 60 ? "text-emerald-400" : "text-yellow-400"}`}>
-                        {result.meta.titleLength}/60
-                      </span>
+                      <span className={`text-xs font-mono ${result.meta.titleLength >= 50 && result.meta.titleLength <= 60 ? "text-emerald-400" : "text-yellow-400"}`}>{result.meta.titleLength}/60</span>
                     </div>
                     {result.meta.title && (
                       <button onClick={() => copyToClipboard(result.meta.title!, "Title")} className="flex items-center gap-1 text-xs text-white/30 hover:text-cyan-400 transition-colors">
@@ -779,13 +821,11 @@ export default function SeoOptimizer() {
                     )}
                   </div>
                   <div className="border border-white/10 rounded-xl p-4 space-y-3">
-                    <div className="text-xs text-white/50 uppercase tracking-wider">Current Meta Description</div>
+                    <div className="text-xs text-white/50 uppercase tracking-wider">Meta Description</div>
                     <div className="text-sm text-white/80 leading-relaxed">{result.meta.description || <span className="text-red-400/70 italic">Missing</span>}</div>
                     <div className="flex items-center gap-2">
                       <Progress value={result.meta.descriptionLength > 0 ? Math.min(100, (result.meta.descriptionLength / 160) * 100) : 0} className="h-1.5 flex-1" />
-                      <span className={`text-xs font-mono ${result.meta.descriptionLength >= 120 && result.meta.descriptionLength <= 160 ? "text-emerald-400" : "text-yellow-400"}`}>
-                        {result.meta.descriptionLength}/160
-                      </span>
+                      <span className={`text-xs font-mono ${result.meta.descriptionLength >= 120 && result.meta.descriptionLength <= 160 ? "text-emerald-400" : "text-yellow-400"}`}>{result.meta.descriptionLength}/160</span>
                     </div>
                     {result.meta.description && (
                       <button onClick={() => copyToClipboard(result.meta.description!, "Description")} className="flex items-center gap-1 text-xs text-white/30 hover:text-cyan-400 transition-colors">
@@ -794,20 +834,69 @@ export default function SeoOptimizer() {
                     )}
                   </div>
                 </div>
-              </TabsContent>
+              </div>
+            )}
 
-              {/* AI Suggestions Tab */}
-              <TabsContent value="ai" className="space-y-4">
+            {/* ── TECHNICAL ── */}
+            {activeSection === "technical" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { label: "HTTPS", value: result.technical.hasHttps, icon: Shield },
+                    { label: "Canonical", value: result.technical.hasCanonical, icon: Link2 },
+                    { label: "Viewport", value: result.technical.hasViewport, icon: Smartphone },
+                    { label: "Open Graph", value: result.technical.hasOgTags, icon: Globe },
+                    { label: "Twitter Card", value: result.technical.hasTwitterCard, icon: ExternalLink },
+                    { label: "Structured Data", value: result.technical.hasSchema, icon: FileText },
+                    { label: "Robots Meta", value: result.technical.hasRobots, icon: Shield },
+                    { label: "All Images Alt", value: result.technical.hasAltTags, icon: Eye },
+                  ].map(({ label, value, icon: Icon }) => (
+                    <div key={label} className={`border rounded-xl p-4 ${value ? "border-emerald-500/20 bg-emerald-500/5" : "border-red-500/20 bg-red-500/5"}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <Icon className={`w-4 h-4 ${value ? "text-emerald-400" : "text-red-400"}`} />
+                        {value ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
+                      </div>
+                      <div className="text-xs font-medium text-white/80">{label}</div>
+                    </div>
+                  ))}
+                </div>
+                {result.technical.totalImages > 0 && (
+                  <div className="border border-white/10 rounded-xl p-4">
+                    <div className="text-xs text-white/50 uppercase tracking-wider mb-2">Image Alt Text</div>
+                    <div className="flex items-center gap-3">
+                      <Progress value={((result.technical.totalImages - result.technical.imagesWithoutAlt) / result.technical.totalImages) * 100} className="flex-1 h-2" />
+                      <span className="text-sm font-mono text-white/60 shrink-0">
+                        {result.technical.totalImages - result.technical.imagesWithoutAlt}/{result.technical.totalImages} with alt
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {result.meta.schemaTypes.length > 0 && (
+                  <div className="border border-white/10 rounded-xl p-4">
+                    <div className="text-xs text-white/50 uppercase tracking-wider mb-2">Schema Types Detected</div>
+                    <div className="flex flex-wrap gap-2">
+                      {result.meta.schemaTypes.map(t => (
+                        <Badge key={t} className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20 text-xs">{t}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── AI SUGGESTIONS ── */}
+            {activeSection === "ai" && (
+              <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="w-4 h-4 text-cyan-400" />
                   <span className="text-sm font-medium text-white/80">AI-Powered Recommendations</span>
-                  <Badge className={`border text-[10px] ${difficultyColor(result.aiSuggestions.estimatedDifficulty)}`}>
-                    {result.aiSuggestions.estimatedDifficulty} Difficulty
-                  </Badge>
+                  <Badge className={`border text-[10px] ${
+                    result.aiSuggestions.estimatedDifficulty === "Low" ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" :
+                    result.aiSuggestions.estimatedDifficulty === "Medium" ? "text-yellow-400 bg-yellow-500/10 border-yellow-500/30" :
+                    "text-red-400 bg-red-500/10 border-red-500/30"
+                  }`}>{result.aiSuggestions.estimatedDifficulty} Difficulty</Badge>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Optimized title */}
                   <div className="border border-cyan-500/20 bg-cyan-500/5 rounded-xl p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="text-xs text-cyan-400/70 uppercase tracking-wider">Optimized Meta Title</div>
@@ -818,8 +907,6 @@ export default function SeoOptimizer() {
                     <div className="text-sm text-white/90 font-medium">{result.aiSuggestions.metaTitle}</div>
                     <div className="text-xs text-white/30 font-mono">{result.aiSuggestions.metaTitle.length} characters</div>
                   </div>
-
-                  {/* Optimized description */}
                   <div className="border border-cyan-500/20 bg-cyan-500/5 rounded-xl p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="text-xs text-cyan-400/70 uppercase tracking-wider">Optimized Meta Description</div>
@@ -831,25 +918,18 @@ export default function SeoOptimizer() {
                     <div className="text-xs text-white/30 font-mono">{result.aiSuggestions.metaDescription.length} characters</div>
                   </div>
                 </div>
-
-                {/* Focus keywords */}
                 <div className="border border-white/10 rounded-xl p-4">
                   <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Recommended Focus Keywords</div>
                   <div className="flex flex-wrap gap-2">
                     {result.aiSuggestions.focusKeywords.map((kw, i) => (
-                      <button
-                        key={i}
-                        onClick={() => copyToClipboard(kw, "Keyword")}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-400 hover:bg-emerald-500/20 transition-all"
-                      >
+                      <button key={i} onClick={() => copyToClipboard(kw, "Keyword")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-400 hover:bg-emerald-500/20 transition-all">
                         <Hash className="w-3 h-3" />{kw}
                       </button>
                     ))}
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Content gaps */}
                   <div className="border border-white/10 rounded-xl p-4">
                     <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Content Gaps</div>
                     <div className="space-y-2">
@@ -863,8 +943,6 @@ export default function SeoOptimizer() {
                       ))}
                     </div>
                   </div>
-
-                  {/* Improvements */}
                   <div className="border border-white/10 rounded-xl p-4">
                     <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Priority Improvements</div>
                     <div className="space-y-2">
@@ -877,126 +955,33 @@ export default function SeoOptimizer() {
                     </div>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
+            )}
 
-              {/* Technical Tab */}
-              <TabsContent value="technical" className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {[
-                    { label: "HTTPS", value: result.technical.hasHttps, icon: Shield },
-                    { label: "Canonical", value: result.technical.hasCanonical, icon: Link2 },
-                    { label: "Viewport", value: result.technical.hasViewport, icon: Smartphone },
-                    { label: "Open Graph", value: result.technical.hasOgTags, icon: Globe },
-                    { label: "Twitter Card", value: result.technical.hasTwitterCard, icon: ExternalLink },
-                    { label: "Structured Data", value: result.technical.hasSchema, icon: FileText },
-                    { label: "Robots Meta", value: result.technical.hasRobots, icon: Shield },
-                    { label: "All Images Alt", value: result.technical.hasAltTags, icon: Eye },
-                  ].map(({ label, value, icon: Icon }) => (
-                    <div key={label} className={`border rounded-xl p-4 ${value ? "border-emerald-500/20 bg-emerald-500/5" : "border-red-500/20 bg-red-500/5"}`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon className={`w-4 h-4 ${value ? "text-emerald-400" : "text-red-400"}`} />
-                        {value ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 ml-auto" /> : <XCircle className="w-3.5 h-3.5 text-red-400 ml-auto" />}
-                      </div>
-                      <div className="text-xs text-white/70 font-medium">{label}</div>
-                      <div className={`text-xs mt-0.5 ${value ? "text-emerald-400/70" : "text-red-400/70"}`}>{value ? "Present" : "Missing"}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Schema types */}
-                {result.meta.schemaTypes.length > 0 && (
-                  <div className="border border-white/10 rounded-xl p-4">
-                    <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Detected Schema Types</div>
-                    <div className="flex flex-wrap gap-2">
-                      {result.meta.schemaTypes.map((t, i) => (
-                        <Badge key={i} className="bg-purple-500/10 text-purple-400 border-purple-500/20">{t}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Images */}
-                {result.technical.totalImages > 0 && (
-                  <div className="border border-white/10 rounded-xl p-4">
-                    <div className="text-xs text-white/50 uppercase tracking-wider mb-2">Image Audit</div>
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <div className="text-2xl font-black text-white/80">{result.technical.totalImages}</div>
-                        <div className="text-xs text-white/30">total images</div>
-                      </div>
-                      <div>
-                        <div className={`text-2xl font-black ${result.technical.imagesWithoutAlt > 0 ? "text-red-400" : "text-emerald-400"}`}>
-                          {result.technical.imagesWithoutAlt}
-                        </div>
-                        <div className="text-xs text-white/30">missing alt text</div>
-                      </div>
-                      <div className="flex-1">
-                        <Progress
-                          value={result.technical.totalImages > 0 ? ((result.technical.totalImages - result.technical.imagesWithoutAlt) / result.technical.totalImages) * 100 : 100}
-                          className="h-2"
-                        />
-                        <div className="text-xs text-white/30 mt-1">alt text coverage</div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Canonical & robots */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {result.meta.canonical && (
-                    <div className="border border-white/10 rounded-xl p-4">
-                      <div className="text-xs text-white/50 uppercase tracking-wider mb-2">Canonical URL</div>
-                      <div className="text-xs text-cyan-400/80 break-all">{result.meta.canonical}</div>
-                    </div>
-                  )}
-                  {result.meta.robots && (
-                    <div className="border border-white/10 rounded-xl p-4">
-                      <div className="text-xs text-white/50 uppercase tracking-wider mb-2">Robots Meta</div>
-                      <div className="text-xs text-white/70 font-mono">{result.meta.robots}</div>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              {/* Meta Generator Tab */}
-              <TabsContent value="meta-gen" className="space-y-4">
-                <div className="border border-white/10 rounded-xl p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="w-4 h-4 text-cyan-400" />
-                    <h2 className="text-sm font-bold tracking-wider uppercase text-white/80">AI Meta Tag Generator</h2>
-                  </div>
-                  <MetaGenerator />
-                </div>
-              </TabsContent>
-
-              {/* Auto Fix Tab */}
-              <TabsContent value="auto-fix" className="space-y-4">
-                {/* Trigger button */}
+            {/* ── AUTO FIXES ── */}
+            {activeSection === "fixes" && (
+              <div className="space-y-5">
+                {/* Not yet generated */}
                 {!autoFixResult && !autoFix.isPending && (
-                  <div className="border border-orange-500/20 bg-orange-500/5 rounded-xl p-6 flex flex-col items-center gap-4">
+                  <div className="border border-orange-500/20 bg-orange-500/5 rounded-xl p-8 flex flex-col items-center gap-4">
                     <div className="w-14 h-14 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
                       <Wrench className="w-6 h-6 text-orange-400" />
                     </div>
                     <div className="text-center">
                       <div className="text-base font-bold text-white/90 mb-1">AI Auto Fix Engine</div>
                       <div className="text-sm text-white/50 max-w-md">
-                        Analyzes all {checkCounts ? checkCounts.fail + checkCounts.warning : 0} issues found and generates
-                        ready-to-paste code fixes, optimized meta tags, and a prioritized action plan.
+                        Analyzes all {issueCount} issues and generates ready-to-paste code fixes, optimized meta tags, and a prioritized action plan.
                       </div>
                     </div>
-                    <Button
-                      onClick={handleAutoFix}
-                      className="bg-orange-500 hover:bg-orange-400 text-black font-bold h-10 px-8"
-                    >
-                      <Wrench className="w-4 h-4 mr-2" />
-                      Generate Auto Fixes
+                    <Button onClick={handleAutoFix} className="bg-orange-500 hover:bg-orange-400 text-black font-bold h-11 px-8">
+                      <Wrench className="w-4 h-4 mr-2" />Fix All {issueCount} Issues
                     </Button>
                   </div>
                 )}
 
                 {/* Loading */}
                 {autoFix.isPending && (
-                  <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
                     <div className="relative">
                       <div className="w-14 h-14 rounded-full border-2 border-orange-500/20 border-t-orange-500 animate-spin" />
                       <Wrench className="absolute inset-0 m-auto w-5 h-5 text-orange-400/60" />
@@ -1011,7 +996,7 @@ export default function SeoOptimizer() {
                 {/* Results */}
                 {autoFixResult && !autoFix.isPending && (
                   <div className="space-y-5">
-                    {/* Summary bar */}
+                    {/* Summary */}
                     <div className="flex items-center gap-3 border border-white/10 rounded-xl p-4 bg-white/[0.02]">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                         autoFixResult.estimatedImpact === "High" ? "bg-red-500/10 border border-red-500/20" :
@@ -1026,7 +1011,7 @@ export default function SeoOptimizer() {
                       <div className="flex-1">
                         <div className="text-sm text-white/80">{autoFixResult.summary}</div>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-white/40">{autoFixResult.fixes.length} fixes generated</span>
+                          <span className="text-xs text-white/40">{autoFixResult.fixes.length} fixes</span>
                           <span className="text-xs text-white/40">·</span>
                           <span className="text-xs text-white/40">{autoFixResult.htmlSnippets.length} HTML snippets</span>
                           <Badge className={`text-[10px] border ml-1 ${
@@ -1036,77 +1021,20 @@ export default function SeoOptimizer() {
                           }`}>{autoFixResult.estimatedImpact} Impact</Badge>
                         </div>
                       </div>
-                      <Button
-                        onClick={handleAutoFix}
-                        variant="outline"
-                        className="border-white/10 text-white/50 hover:text-white h-8 text-xs shrink-0"
-                      >
+                      <Button onClick={handleAutoFix} variant="outline"
+                        className="border-white/10 text-white/50 hover:text-white h-8 text-xs shrink-0">
                         <RefreshCw className="w-3 h-3 mr-1.5" />Re-run
                       </Button>
                     </div>
 
-                    {/* Individual Fixes */}
+                    {/* Fix cards */}
                     <div>
                       <div className="text-xs text-white/50 uppercase tracking-wider mb-3">Prioritized Fixes</div>
                       <div className="space-y-2">
                         {autoFixResult.fixes.map((fix, i) => (
-                          <div
-                            key={fix.checkId}
-                            className={`border rounded-xl overflow-hidden transition-all ${
-                              fix.severity === "critical" ? "border-red-500/25 bg-red-500/5" :
-                              fix.severity === "important" ? "border-yellow-500/25 bg-yellow-500/5" :
-                              "border-white/10 bg-white/[0.02]"
-                            }`}
-                          >
-                            <button
-                              onClick={() => setExpandedFix(expandedFix === i ? null : i)}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
-                            >
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[10px] font-black ${
-                                fix.severity === "critical" ? "bg-red-500/20 text-red-400" :
-                                fix.severity === "important" ? "bg-yellow-500/20 text-yellow-400" :
-                                "bg-white/10 text-white/50"
-                              }`}>{i + 1}</div>
-                              <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-white/90 truncate">{fix.label}</div>
-                                <div className="text-xs text-white/40 truncate">{fix.problem}</div>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Badge className={`text-[10px] border ${
-                                  fix.severity === "critical" ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                                  fix.severity === "important" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" :
-                                  "bg-white/5 text-white/40 border-white/10"
-                                }`}>{fix.severity}</Badge>
-                                {expandedFix === i ? <ChevronUp className="w-3.5 h-3.5 text-white/30" /> : <ChevronDown className="w-3.5 h-3.5 text-white/30" />}
-                              </div>
-                            </button>
-
-                            {expandedFix === i && (
-                              <div className="px-4 pb-4 space-y-3">
-                                <div className="flex items-start gap-2">
-                                  <ArrowRight className="w-3.5 h-3.5 text-cyan-400 mt-0.5 shrink-0" />
-                                  <p className="text-sm text-white/70">{fix.solution}</p>
-                                </div>
-                                {fix.codeSnippet && (
-                                  <div className="relative">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                      <div className="flex items-center gap-1.5">
-                                        <Code2 className="w-3.5 h-3.5 text-cyan-400/70" />
-                                        <span className="text-xs text-white/40 uppercase tracking-wider">Code Fix</span>
-                                      </div>
-                                      <button
-                                        onClick={() => copyToClipboard(fix.codeSnippet!, "Code fix")}
-                                        className="flex items-center gap-1.5 text-xs text-white/30 hover:text-cyan-400 transition-colors"
-                                      >
-                                        <Copy className="w-3 h-3" />Copy
-                                      </button>
-                                    </div>
-                                    <pre className="bg-black/40 border border-white/10 rounded-lg p-3 text-xs text-emerald-300/90 overflow-x-auto font-mono leading-relaxed whitespace-pre-wrap">{fix.codeSnippet}</pre>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                          <FixCard key={fix.checkId} fix={fix} index={i}
+                            expanded={expandedFix === i}
+                            onToggle={() => setExpandedFix(expandedFix === i ? null : i)} />
                         ))}
                       </div>
                     </div>
@@ -1118,10 +1046,8 @@ export default function SeoOptimizer() {
                         <div className="space-y-3">
                           {autoFixResult.htmlSnippets.map((snippet, i) => (
                             <div key={i} className="border border-cyan-500/20 bg-cyan-500/5 rounded-xl overflow-hidden">
-                              <button
-                                onClick={() => setExpandedSnippet(expandedSnippet === i ? null : i)}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
-                              >
+                              <button onClick={() => setExpandedSnippet(expandedSnippet === i ? null : i)}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors">
                                 <Code2 className="w-4 h-4 text-cyan-400 shrink-0" />
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-white/90">{snippet.label}</div>
@@ -1135,10 +1061,8 @@ export default function SeoOptimizer() {
                               {expandedSnippet === i && (
                                 <div className="px-4 pb-4">
                                   <div className="flex justify-end mb-1.5">
-                                    <button
-                                      onClick={() => copyToClipboard(snippet.code, snippet.label)}
-                                      className="flex items-center gap-1.5 text-xs text-white/30 hover:text-cyan-400 transition-colors"
-                                    >
+                                    <button onClick={() => copyToClipboard(snippet.code, snippet.label)}
+                                      className="flex items-center gap-1.5 text-xs text-white/30 hover:text-cyan-400 transition-colors">
                                       <Copy className="w-3 h-3" />Copy all
                                     </button>
                                   </div>
@@ -1151,17 +1075,28 @@ export default function SeoOptimizer() {
                       </div>
                     )}
 
-                    {/* All fixed confirmation */}
                     {autoFixResult.fixes.filter(f => f.severity === "critical").length === 0 && (
                       <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4 flex items-center gap-3">
                         <CheckCheck className="w-5 h-5 text-emerald-400 shrink-0" />
-                        <div className="text-sm text-emerald-300/80">No critical issues found. Apply the remaining fixes above to maximize your SEO score.</div>
+                        <div className="text-sm text-emerald-300/80">No critical issues found. Apply the remaining fixes to maximize your SEO score.</div>
                       </div>
                     )}
                   </div>
                 )}
-              </TabsContent>
-            </Tabs>
+              </div>
+            )}
+
+            {/* ── META GENERATOR ── */}
+            {activeSection === "meta-gen" && (
+              <div className="border border-white/10 rounded-xl bg-white/[0.02] p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <h2 className="text-sm font-bold tracking-wider uppercase text-white/80">AI Meta Tag Generator</h2>
+                </div>
+                <MetaGenerator />
+              </div>
+            )}
+
           </div>
         )}
       </div>
