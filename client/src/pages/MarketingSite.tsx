@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { PRICING_PLANS } from "../../../shared/tiers";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
@@ -1423,7 +1424,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
     {
       name: "FAULTLINE CORE",
       tagline: "Mobile-first market intelligence.",
-      price: "$9.99",
+      price: PRICING_PLANS.core.priceLabel,
       annualPrice: "$7.99",
       annualSub: "billed $95.88/year — save 20%",
       priceSub: "/month — cancel anytime",
@@ -1501,7 +1502,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
     {
       name: "FOUNDER",
       tagline: "Move first. Pay once. Never again.",
-      price: "$199",
+      price: PRICING_PLANS.lifetime.priceLabel,
       priceSub: "one-time — lifetime access",
       desc: "Everything in Operator, forever. The top funds built their own intelligence infrastructure. You’re getting it for $199 — once.",
       features: [
@@ -1740,7 +1741,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
               Fast access to market signals, crypto rotation, volatility shifts, and daily macro intelligence — all in your pocket.
             </p>
             <p className="text-[#A8B8CC] text-sm leading-relaxed mb-8">
-              FAULTLINE Core is a $9.99/month mobile companion. Install it to your iPhone or Android home screen and get institutional-grade signals without the institutional price.
+              FAULTLINE Core is a ${PRICING_PLANS.core.priceLabel}/month mobile companion. Install it to your iPhone or Android home screen and get institutional-grade signals without the institutional price.
             </p>
 
             {/* 5 tabs */}
@@ -1942,7 +1943,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                 }}
               >
                 <div className="text-[8px] font-mono tracking-widest text-[#22D3EE]/60 mb-0.5">FAULTLINE CORE</div>
-                <div className="text-xl font-bold text-[#22D3EE]">$9.99<span className="text-xs font-normal text-[#64748B]">/mo</span></div>
+                <div className="text-xl font-bold text-[#22D3EE]">{PRICING_PLANS.core.priceLabel}</div>
                 <div className="text-[8px] font-mono text-[#64748B]">MOST POPULAR ENTRY</div>
               </div>
 

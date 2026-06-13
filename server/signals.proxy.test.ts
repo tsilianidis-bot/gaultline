@@ -14,6 +14,12 @@
  */
 import { describe, it, expect, beforeAll } from "vitest";
 
+// INTEGRATION TEST — requires running dev server + live network.
+// Skip automatically unless RUN_INTEGRATION_TESTS=1 is set.
+// Run manually: RUN_INTEGRATION_TESTS=1 pnpm test server/signals.proxy.test.ts
+const isIntegrationEnv = !!process.env.RUN_INTEGRATION_TESTS;
+const describeIf = isIntegrationEnv ? describe : describe.skip;
+
 const BASE_URL = "http://localhost:3000";
 
 const EXPECTED_TICKERS = [
@@ -72,7 +78,7 @@ beforeAll(async () => {
   response = await res.json() as QuotesResponse;
 }, 35000);
 
-describe("GET /api/signals/quotes — response structure", () => {
+describeIf("GET /api/signals/quotes — response structure", () => {
   it("returns a valid JSON response with expected top-level fields", () => {
     expect(response).toBeDefined();
     expect(response.quotes).toBeInstanceOf(Array);
@@ -99,7 +105,7 @@ describe("GET /api/signals/quotes — response structure", () => {
   });
 });
 
-describe("GET /api/signals/quotes — quote data quality", () => {
+describeIf("GET /api/signals/quotes — quote data quality", () => {
   it("returns non-zero prices for live data", () => {
     if (response.source === "live") {
       const liveQuotes = response.quotes.filter(q => q.price > 0);
@@ -163,7 +169,7 @@ describe("GET /api/signals/quotes — quote data quality", () => {
   });
 });
 
-describe("GET /api/signals/quotes — security", () => {
+describeIf("GET /api/signals/quotes — security", () => {
   it("does NOT expose the Polygon API key in the response body", async () => {
     const rawText = JSON.stringify(response);
     // The API key should not appear in any response field
@@ -183,7 +189,7 @@ describe("GET /api/signals/quotes — security", () => {
   });
 });
 
-describe("GET /api/signals/health — health endpoint", () => {
+describeIf("GET /api/signals/health — health endpoint", () => {
   it("returns health status with expected fields", async () => {
     const res = await fetch(`${BASE_URL}/api/signals/health`);
     expect(res.ok).toBe(true);
@@ -199,7 +205,7 @@ describe("GET /api/signals/health — health endpoint", () => {
   });
 });
 
-describe("GET /api/signals/quotes — caching", () => {
+describeIf("GET /api/signals/quotes — caching", () => {
   it("returns a valid response with correct shape on any call", async () => {
     const res = await fetch(`${BASE_URL}/api/signals/quotes`, {
       signal: AbortSignal.timeout(20000),
@@ -219,7 +225,7 @@ describe("GET /api/signals/quotes — caching", () => {
   }, 25000);
 });
 
-describe("GET /api/signals/ticker/:symbol — per-ticker endpoint", () => {
+describeIf("GET /api/signals/ticker/:symbol — per-ticker endpoint", () => {
   it("returns 400 for an invalid ticker symbol", async () => {
     const res = await fetch(`${BASE_URL}/api/signals/ticker/INVALID123`);
     expect(res.status).toBe(400);

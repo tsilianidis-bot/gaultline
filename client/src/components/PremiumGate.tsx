@@ -58,12 +58,12 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Signals Engine Locked",
     subtitle: "CORE SIGNAL ENGINE",
     description:
-      "FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Unlock with Core at $9.99/mo.",
+      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Unlock with Core at ${PRICING_PLANS.core.priceLabel}.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: "Unlock Core — $9.99/mo",
+    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
     ctaSecondary: "Upgrade to Pro",
     features: [
       "True RSI / MACD / SMA signals",
@@ -77,12 +77,12 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Portfolio Monitor Locked",
     subtitle: "LIVE PORTFOLIO INTELLIGENCE",
     description:
-      "Track your positions with live P&L and regime-aware risk scoring. Available from Core at $9.99/mo. AI guidance requires Pro.",
+      `Track your positions with live P&L and regime-aware risk scoring. Available from Core at ${PRICING_PLANS.core.priceLabel}. AI guidance requires Pro.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: "Unlock Core — $9.99/mo",
+    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
     ctaSecondary: "Upgrade to Pro",
     features: [
       "Live P&L tracking",
@@ -96,12 +96,12 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Alt Rotation Engine Locked",
     subtitle: "ALTERNATIVE ASSET ROTATION",
     description:
-      "Monitor rotation signals across crypto, commodities, and alternative assets. Available from Core at $9.99/mo.",
+      `Monitor rotation signals across crypto, commodities, and alternative assets. Available from Core at ${PRICING_PLANS.core.priceLabel}.`,
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: "Unlock Core — $9.99/mo",
+    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
     ctaSecondary: "Upgrade to Pro",
     features: [
       "Crypto rotation signals",

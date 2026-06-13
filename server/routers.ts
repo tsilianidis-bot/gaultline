@@ -236,6 +236,11 @@ export const appRouter = router({
     // Get the current FAULTLINE Pressure Index with all risk vectors
     getCurrentPressure: publicProcedure.query(async () => {
       try {
+        // Feature flag gate — admin can disable the pressure engine from the Admin Portal
+        const engineEnabled = await getFeatureFlag("pressure_engine");
+        if (!engineEnabled) {
+          throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Pressure engine is temporarily disabled for maintenance." });
+        }
         const result = await calculateFaultlinePressure();
         // Fire-and-forget audit insert — never blocks the response
         insertPressureRun({
