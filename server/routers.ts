@@ -28,6 +28,7 @@ import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
 import { getQuotes, getTopStockPerformers, getTopStockLosers, getTopStockByVolume } from "./yahooProxy";
+import { getAsymmetricOpportunities } from "./asymmetricOpportunities";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
@@ -1579,6 +1580,16 @@ export const appRouter = router({
           return await getTopStockByVolume(input?.limit ?? 100);
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Stock volume fetch failed", cause: err });
+        }
+      }),
+    // Asymmetric Opportunities — high reward/risk setups with AI scoring
+    getAsymmetricOpportunities: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(30).default(20) }).optional())
+      .query(async ({ input }) => {
+        try {
+          return await getAsymmetricOpportunities(input?.limit ?? 20);
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Asymmetric opportunities fetch failed", cause: err });
         }
       }),
   }),

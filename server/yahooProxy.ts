@@ -517,3 +517,234 @@ async function getPolygonMostActive(limit: number): Promise<StockPerformer[]> {
     return [];
   }
 }
+
+// ── Extended Screeners ────────────────────────────────────────
+
+/**
+ * Fetch top N stocks near 52-week highs from Yahoo Finance screener.
+ * Uses the "52_wk_high" predefined screen.
+ * Returns sorted by 52-week high proximity (closest to high first).
+ */
+export async function getTopNear52WeekHigh(limit = 100): Promise<StockPerformer[]> {
+  const cacheKey = `52wk_high_${limit}`;
+  const cached = performersCache.get(cacheKey);
+  if (cached) return cached;
+  const count = Math.min(limit, 100);
+  const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=52_wk_high&count=${count}&start=0`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://finance.yahoo.com/screener/",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`Yahoo screener HTTP ${res.status}`);
+    const json = await res.json() as any;
+    const quotes: any[] = json?.finance?.result?.[0]?.quotes ?? [];
+    if (!quotes.length) throw new Error("Empty screener response");
+    const results: StockPerformer[] = quotes
+      .filter((q: any) => q.symbol && q.regularMarketPrice != null)
+      .slice(0, count)
+      .map((q: any) => ({
+        ticker:        q.symbol,
+        name:          q.shortName ?? q.longName ?? q.symbol,
+        price:         q.regularMarketPrice ?? 0,
+        change:        q.regularMarketChange ?? 0,
+        changePercent: q.regularMarketChangePercent ?? 0,
+        volume:        q.regularMarketVolume ?? 0,
+        marketCap:     q.marketCap ?? null,
+        sector:        q.sector ?? null,
+        avgVolume:     q.averageDailyVolume3Month ?? null,
+        fiftyTwoWeekHigh: q.fiftyTwoWeekHigh ?? null,
+        fiftyTwoWeekLow:  q.fiftyTwoWeekLow ?? null,
+        source:        "yahoo-screener" as const,
+        fetchedAt:     Date.now(),
+      }))
+      // Sort by proximity to 52-week high (price / 52wkHigh, descending)
+      .sort((a: any, b: any) => {
+        const aProx = a.fiftyTwoWeekHigh ? a.price / a.fiftyTwoWeekHigh : 0;
+        const bProx = b.fiftyTwoWeekHigh ? b.price / b.fiftyTwoWeekHigh : 0;
+        return bProx - aProx;
+      });
+    performersCache.set(cacheKey, results);
+    log.info(`[Yahoo Proxy] Top ${results.length} stocks near 52-week high fetched`);
+    return results;
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] 52-week high screener failed: ${err?.message}`);
+    captureError(err as Error, { source: "yahooProxy", stage: "52wk_high_fetch_failed" }).catch(() => {});
+    return [];
+  }
+}
+
+/**
+ * Fetch top N stocks near 52-week lows from Yahoo Finance screener.
+ * Uses the "52_wk_low" predefined screen.
+ * Returns sorted by proximity to 52-week low (closest to low first).
+ */
+export async function getTopNear52WeekLow(limit = 100): Promise<StockPerformer[]> {
+  const cacheKey = `52wk_low_${limit}`;
+  const cached = performersCache.get(cacheKey);
+  if (cached) return cached;
+  const count = Math.min(limit, 100);
+  const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=52_wk_low&count=${count}&start=0`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://finance.yahoo.com/screener/",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`Yahoo screener HTTP ${res.status}`);
+    const json = await res.json() as any;
+    const quotes: any[] = json?.finance?.result?.[0]?.quotes ?? [];
+    if (!quotes.length) throw new Error("Empty screener response");
+    const results: StockPerformer[] = quotes
+      .filter((q: any) => q.symbol && q.regularMarketPrice != null)
+      .slice(0, count)
+      .map((q: any) => ({
+        ticker:        q.symbol,
+        name:          q.shortName ?? q.longName ?? q.symbol,
+        price:         q.regularMarketPrice ?? 0,
+        change:        q.regularMarketChange ?? 0,
+        changePercent: q.regularMarketChangePercent ?? 0,
+        volume:        q.regularMarketVolume ?? 0,
+        marketCap:     q.marketCap ?? null,
+        sector:        q.sector ?? null,
+        avgVolume:     q.averageDailyVolume3Month ?? null,
+        fiftyTwoWeekHigh: q.fiftyTwoWeekHigh ?? null,
+        fiftyTwoWeekLow:  q.fiftyTwoWeekLow ?? null,
+        source:        "yahoo-screener" as const,
+        fetchedAt:     Date.now(),
+      }))
+      // Sort by proximity to 52-week low (price / 52wkLow, ascending = closest to low first)
+      .sort((a: any, b: any) => {
+        const aProx = a.fiftyTwoWeekLow ? a.price / a.fiftyTwoWeekLow : 999;
+        const bProx = b.fiftyTwoWeekLow ? b.price / b.fiftyTwoWeekLow : 999;
+        return aProx - bProx;
+      });
+    performersCache.set(cacheKey, results);
+    log.info(`[Yahoo Proxy] Top ${results.length} stocks near 52-week low fetched`);
+    return results;
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] 52-week low screener failed: ${err?.message}`);
+    captureError(err as Error, { source: "yahooProxy", stage: "52wk_low_fetch_failed" }).catch(() => {});
+    return [];
+  }
+}
+
+/**
+ * Fetch top N most volatile stocks (highest intraday range %) from Yahoo Finance screener.
+ * Uses the "most_actives" screen as a proxy (high volume = high volatility candidates),
+ * then re-sorts by intraday range = (high - low) / open.
+ */
+export async function getMostVolatileStocks(limit = 100): Promise<StockPerformer[]> {
+  const cacheKey = `volatile_${limit}`;
+  const cached = performersCache.get(cacheKey);
+  if (cached) return cached;
+  const count = Math.min(limit, 100);
+  // Use most_actives as the source pool — high-volume stocks tend to have the widest ranges
+  const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=most_actives&count=${count}&start=0`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://finance.yahoo.com/most-active/",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`Yahoo screener HTTP ${res.status}`);
+    const json = await res.json() as any;
+    const quotes: any[] = json?.finance?.result?.[0]?.quotes ?? [];
+    if (!quotes.length) throw new Error("Empty screener response");
+    const results: StockPerformer[] = quotes
+      .filter((q: any) => q.symbol && q.regularMarketPrice != null)
+      .slice(0, count)
+      .map((q: any) => {
+        const high = q.regularMarketDayHigh ?? q.regularMarketPrice ?? 0;
+        const low  = q.regularMarketDayLow  ?? q.regularMarketPrice ?? 0;
+        const open = q.regularMarketOpen    ?? q.regularMarketPrice ?? 1;
+        const intradayRange = open > 0 ? ((high - low) / open) * 100 : 0;
+        return {
+          ticker:        q.symbol,
+          name:          q.shortName ?? q.longName ?? q.symbol,
+          price:         q.regularMarketPrice ?? 0,
+          change:        q.regularMarketChange ?? 0,
+          changePercent: q.regularMarketChangePercent ?? 0,
+          volume:        q.regularMarketVolume ?? 0,
+          marketCap:     q.marketCap ?? null,
+          sector:        q.sector ?? null,
+          avgVolume:     q.averageDailyVolume3Month ?? null,
+          intradayRange,
+          source:        "yahoo-screener" as const,
+          fetchedAt:     Date.now(),
+        };
+      })
+      .sort((a: any, b: any) => b.intradayRange - a.intradayRange);
+    performersCache.set(cacheKey, results);
+    log.info(`[Yahoo Proxy] Top ${results.length} most volatile stocks fetched`);
+    return results;
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] Volatile screener failed: ${err?.message}`);
+    captureError(err as Error, { source: "yahooProxy", stage: "volatile_fetch_failed" }).catch(() => {});
+    return [];
+  }
+}
+
+/**
+ * Fetch top N small-cap runners — stocks with market cap < $2B showing strong momentum.
+ * Uses the "small_cap_gainers" predefined screen.
+ */
+export async function getSmallCapRunners(limit = 100): Promise<StockPerformer[]> {
+  const cacheKey = `smallcap_${limit}`;
+  const cached = performersCache.get(cacheKey);
+  if (cached) return cached;
+  const count = Math.min(limit, 100);
+  const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?formatted=false&scrIds=small_cap_gainers&count=${count}&start=0`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://finance.yahoo.com/screener/",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`Yahoo screener HTTP ${res.status}`);
+    const json = await res.json() as any;
+    const quotes: any[] = json?.finance?.result?.[0]?.quotes ?? [];
+    if (!quotes.length) throw new Error("Empty screener response");
+    const results: StockPerformer[] = quotes
+      .filter((q: any) => q.symbol && q.regularMarketChangePercent != null)
+      .slice(0, count)
+      .map((q: any) => ({
+        ticker:        q.symbol,
+        name:          q.shortName ?? q.longName ?? q.symbol,
+        price:         q.regularMarketPrice ?? 0,
+        change:        q.regularMarketChange ?? 0,
+        changePercent: q.regularMarketChangePercent ?? 0,
+        volume:        q.regularMarketVolume ?? 0,
+        marketCap:     q.marketCap ?? null,
+        sector:        q.sector ?? null,
+        avgVolume:     q.averageDailyVolume3Month ?? null,
+        source:        "yahoo-screener" as const,
+        fetchedAt:     Date.now(),
+      }))
+      .sort((a, b) => b.changePercent - a.changePercent);
+    performersCache.set(cacheKey, results);
+    log.info(`[Yahoo Proxy] Top ${results.length} small-cap runners fetched`);
+    return results;
+  } catch (err: any) {
+    log.warn(`[Yahoo Proxy] Small-cap runners screener failed: ${err?.message}`);
+    captureError(err as Error, { source: "yahooProxy", stage: "smallcap_fetch_failed" }).catch(() => {});
+    return [];
+  }
+}

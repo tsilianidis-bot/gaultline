@@ -1128,6 +1128,13 @@ function SignalsInner() {
   const [filters, setFilters] = useState<SignalFilters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
   const [activeCategory, setActiveCategory] = useState<ScreeningCategory | 'All'>('All');
+  const [activeView, setActiveView] = useState<'signals' | 'asymmetric'>('signals');
+
+  // ── Asymmetric Opportunities query ────────────────────────
+  const { data: asymData, isLoading: asymLoading, refetch: asymRefetch } = trpc.stocks.getAsymmetricOpportunities.useQuery(
+    { limit: 20 },
+    { staleTime: 5 * 60 * 1000, enabled: activeView === 'asymmetric' }
+  );
 
   const updateFilter = useCallback(<K extends keyof SignalFilters>(key: K, value: SignalFilters[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -1227,6 +1234,51 @@ function SignalsInner() {
         badgeColor="green"
         rightSlot={<PreflightTrigger currentPage="signals" regimeLabel={regimeForSignals.label} actionKey="viewed_signals" />}
       />
+
+      {/* ── View Switcher Tab Bar ────────────────────────── */}
+      <div style={{
+        display: 'flex', gap: '0',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(8,10,14,0.95)',
+        padding: '0 16px',
+        overflowX: 'auto',
+      }}>
+        {([
+          { key: 'signals', label: 'SIGNALS', icon: '⚡', color: regimeColor },
+          { key: 'asymmetric', label: 'ASYMMETRIC OPPORTUNITIES', icon: '◈', color: '#A855F7' },
+        ] as const).map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveView(tab.key)}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '12px', letterSpacing: '0.12em',
+              padding: '12px 16px',
+              border: 'none',
+              borderBottom: activeView === tab.key ? `2px solid ${tab.color}` : '2px solid transparent',
+              background: 'transparent',
+              color: activeView === tab.key ? tab.color : 'rgba(100,116,139,0.55)',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease',
+              flexShrink: 0,
+            }}
+          >{tab.icon} {tab.label}</button>
+        ))}
+      </div>
+
+      {activeView === 'asymmetric' && (
+        <AsymmetricOpportunitiesView
+          data={asymData ?? []}
+          isLoading={asymLoading}
+          onRefresh={() => asymRefetch()}
+          regimeColor="#A855F7"
+          regimeLabel={engine?.output?.regime?.label ?? 'MODERATE RISK'}
+          pressureIndex={engine?.output?.overall?.score ?? 5}
+        />
+      )}
+
+      {activeView === 'signals' && (<>
 
       {/* ── Regime Context Banner ─────────────────────────── */}
       <div style={{
@@ -1558,6 +1610,8 @@ function SignalsInner() {
       }}>
         Probabilistic macro-regime intelligence. Not financial advice. Trading signals are algorithmic estimates only — not investment recommendations. Past performance does not guarantee future results.
       </div>
+
+      </>)}
     </div>
   );
 }
@@ -1630,5 +1684,623 @@ export default function Signals() {
     <PremiumGateFull variant="signals">
       <SignalsInner />
     </PremiumGateFull>
+  );
+}
+
+// ── Asymmetric Opportunities Types (mirror server) ────────────
+type AsymConviction = 'HIGH' | 'MODERATE' | 'SPECULATIVE';
+type AsymSetupType =
+  | 'Momentum Breakout'
+  | 'Oversold Reversal'
+  | 'Volume Surge'
+  | 'Near-Support Coil'
+  | 'Small-Cap Runner'
+  | 'Sector Rotation Play'
+  | 'Macro Dislocation';
+
+interface AsymmetricOpportunity {
+  ticker: string;
+  name: string;
+  sector: string | null;
+  price: number;
+  changePercent: number;
+  volume: number;
+  marketCap: number | null;
+  asymmetryRatio: number;
+  upsideTarget: number;
+  downsideRisk: number;
+  upsidePct: number;
+  downsidePct: number;
+  momentumScore: number;
+  supportProximity: number;
+  volumeSurge: number;
+  macroFit: number;
+  compositeScore: number;
+  conviction: AsymConviction;
+  setupType: AsymSetupType;
+  catalyst: string;
+  riskFactors: string[];
+  entryThesis: string;
+  whyAsymmetric: string;
+  invalidation: string;
+  source: 'yahoo-screener';
+  fetchedAt: number;
+  aiEnriched: boolean;
+}
+
+// ── Conviction colors ─────────────────────────────────────────
+const CONVICTION_COLORS: Record<AsymConviction, { bg: string; text: string; border: string }> = {
+  HIGH:        { bg: 'rgba(168,85,247,0.15)', text: '#A855F7', border: 'rgba(168,85,247,0.35)' },
+  MODERATE:    { bg: 'rgba(0,212,255,0.12)',  text: '#00D4FF', border: 'rgba(0,212,255,0.3)'   },
+  SPECULATIVE: { bg: 'rgba(255,215,0,0.10)',  text: '#FFD700', border: 'rgba(255,215,0,0.25)'  },
+};
+
+// ── Tooltip wrapper ───────────────────────────────────────────
+function InfoTooltip({ tip, children }: { tip: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+  return (
+    <span
+      style={{ position: 'relative', display: 'inline-block', cursor: 'help' }}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      {children}
+      {show && (
+        <span style={{
+          position: 'absolute', bottom: '120%', left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(8,10,14,0.97)',
+          border: '1px solid rgba(168,85,247,0.25)',
+          borderRadius: '4px',
+          padding: '6px 10px',
+          fontSize: '11px',
+          color: 'rgba(148,163,184,0.9)',
+          whiteSpace: 'pre-wrap',
+          maxWidth: '220px',
+          zIndex: 100,
+          pointerEvents: 'none',
+          lineHeight: 1.5,
+          letterSpacing: '0.04em',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.6)',
+        }}>{tip}</span>
+      )}
+    </span>
+  );
+}
+
+// ── Score bar ─────────────────────────────────────────────────
+function ScoreBar({ value, color, label, tip }: { value: number; color: string; label: string; tip: string }) {
+  return (
+    <InfoTooltip tip={tip}>
+      <div style={{ marginBottom: '5px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+          <span style={{ fontSize: '10px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.08em' }}>{label}</span>
+          <span style={{ fontSize: '10px', color, fontWeight: 700 }}>{Math.round(value)}</span>
+        </div>
+        <div style={{ height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{
+            height: '100%', width: `${value}%`,
+            background: `linear-gradient(90deg, ${color}80, ${color})`,
+            borderRadius: '2px',
+            transition: 'width 0.6s cubic-bezier(0.23,1,0.32,1)',
+          }} />
+        </div>
+      </div>
+    </InfoTooltip>
+  );
+}
+
+// ── Asymmetric Card ───────────────────────────────────────────
+function AsymmetricCard({ opp }: { opp: AsymmetricOpportunity }) {
+  const [expanded, setExpanded] = useState(false);
+  const cc = CONVICTION_COLORS[opp.conviction];
+  const positive = opp.changePercent >= 0;
+  const capLabel = opp.marketCap
+    ? opp.marketCap >= 10e9 ? 'LARGE'
+    : opp.marketCap >= 2e9 ? 'MID'
+    : opp.marketCap >= 300e6 ? 'SMALL'
+    : 'MICRO'
+    : '—';
+
+  return (
+    <div
+      onClick={() => setExpanded(e => !e)}
+      style={{
+        background: 'rgba(8,10,14,0.92)',
+        border: `1px solid ${cc.border}`,
+        borderRadius: '4px',
+        padding: '14px',
+        cursor: 'pointer',
+        transition: 'all 0.2s cubic-bezier(0.23,1,0.32,1)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = cc.text + '55';
+        (e.currentTarget as HTMLDivElement).style.background = 'rgba(12,15,20,0.97)';
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLDivElement).style.borderColor = cc.border;
+        (e.currentTarget as HTMLDivElement).style.background = 'rgba(8,10,14,0.92)';
+      }}
+    >
+      {/* Composite score bar */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0,
+        height: '2px', width: `${opp.compositeScore}%`,
+        background: `linear-gradient(90deg, ${cc.text}60, ${cc.text})`,
+      }} />
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700, fontSize: '17px',
+              color: '#F0F4FF', letterSpacing: '0.05em',
+            }}>{opp.ticker}</span>
+
+            {/* Conviction badge */}
+            <InfoTooltip tip={
+              opp.conviction === 'HIGH' ? 'HIGH conviction: composite score ≥75 and asymmetry ratio ≥3:1. Strong technical + macro alignment.'
+              : opp.conviction === 'MODERATE' ? 'MODERATE conviction: composite score ≥55 and asymmetry ratio ≥2:1. Solid setup with some uncertainty.'
+              : 'SPECULATIVE: lower composite score or asymmetry ratio. Higher risk, higher potential reward.'
+            }>
+              <span style={{
+                fontSize: '10px', letterSpacing: '0.1em',
+                padding: '2px 6px', borderRadius: '2px',
+                background: cc.bg, color: cc.text,
+                border: `1px solid ${cc.border}`,
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}>{opp.conviction}</span>
+            </InfoTooltip>
+
+            {/* Cap badge */}
+            <span style={{
+              fontSize: '10px', letterSpacing: '0.08em',
+              padding: '1px 5px', borderRadius: '2px',
+              background: 'rgba(255,255,255,0.04)',
+              color: 'rgba(100,116,139,0.75)',
+              fontFamily: "'IBM Plex Mono', monospace",
+            }}>{capLabel}</span>
+          </div>
+
+          <div style={{
+            fontSize: '12px', color: 'rgba(100,116,139,0.65)',
+            marginTop: '2px', maxWidth: '160px',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{opp.name}</div>
+
+          {opp.sector && (
+            <div style={{
+              fontSize: '10px', color: 'rgba(100,116,139,0.5)',
+              letterSpacing: '0.06em', marginTop: '1px',
+            }}>{opp.sector}</div>
+          )}
+        </div>
+
+        {/* Price + change */}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontWeight: 700, fontSize: '15px', color: '#F0F4FF',
+          }}>${opp.price.toFixed(2)}</div>
+          <div style={{
+            fontSize: '12px', fontWeight: 700,
+            color: positive ? '#00D4FF' : '#FF2D55',
+          }}>{positive ? '+' : ''}{opp.changePercent.toFixed(2)}%</div>
+        </div>
+      </div>
+
+      {/* Asymmetry ratio + setup type */}
+      <div style={{
+        display: 'flex', gap: '8px', alignItems: 'center',
+        marginBottom: '10px', flexWrap: 'wrap',
+      }}>
+        <InfoTooltip tip={`Asymmetry Ratio = estimated upside % ÷ estimated downside %.\nTarget: $${opp.upsideTarget.toFixed(2)} (+${opp.upsidePct.toFixed(1)}%)\nStop: $${opp.downsideRisk.toFixed(2)} (-${opp.downsidePct.toFixed(1)}%)\nA ratio ≥3:1 is considered high asymmetry.`}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '4px',
+            padding: '5px 10px',
+            background: cc.bg, border: `1px solid ${cc.border}`,
+            borderRadius: '3px',
+          }}>
+            <span style={{ fontSize: '11px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.08em' }}>RATIO</span>
+            <span style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700, fontSize: '18px', color: cc.text,
+            }}>{opp.asymmetryRatio.toFixed(1)}:1</span>
+          </div>
+        </InfoTooltip>
+
+        <InfoTooltip tip={`Setup type detected by FAULTLINE scoring engine based on momentum, support proximity, volume, and market cap signals.`}>
+          <span style={{
+            fontSize: '11px', letterSpacing: '0.06em',
+            padding: '4px 8px', borderRadius: '2px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            color: 'rgba(148,163,184,0.8)',
+          }}>{opp.setupType}</span>
+        </InfoTooltip>
+      </div>
+
+      {/* Upside / Downside targets */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr',
+        gap: '6px', marginBottom: '10px',
+      }}>
+        <InfoTooltip tip={`Estimated upside target based on 52-week high proximity and setup type.\nTarget: $${opp.upsideTarget.toFixed(2)}`}>
+          <div style={{
+            padding: '6px 8px',
+            background: 'rgba(0,212,255,0.06)',
+            border: '1px solid rgba(0,212,255,0.12)',
+            borderRadius: '3px',
+          }}>
+            <div style={{ fontSize: '10px', color: 'rgba(0,212,255,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>▲ UPSIDE TARGET</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#00D4FF' }}>+{opp.upsidePct.toFixed(1)}%</div>
+            <div style={{ fontSize: '10px', color: 'rgba(100,116,139,0.6)' }}>${opp.upsideTarget.toFixed(2)}</div>
+          </div>
+        </InfoTooltip>
+        <InfoTooltip tip={`Estimated stop/downside risk based on 52-week low proximity and ATR.\nStop: $${opp.downsideRisk.toFixed(2)}`}>
+          <div style={{
+            padding: '6px 8px',
+            background: 'rgba(255,45,85,0.06)',
+            border: '1px solid rgba(255,45,85,0.12)',
+            borderRadius: '3px',
+          }}>
+            <div style={{ fontSize: '10px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>▼ DOWNSIDE RISK</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: '#FF2D55' }}>-{opp.downsidePct.toFixed(1)}%</div>
+            <div style={{ fontSize: '10px', color: 'rgba(100,116,139,0.6)' }}>${opp.downsideRisk.toFixed(2)}</div>
+          </div>
+        </InfoTooltip>
+      </div>
+
+      {/* Catalyst */}
+      <div style={{
+        padding: '7px 9px',
+        background: 'rgba(168,85,247,0.05)',
+        border: '1px solid rgba(168,85,247,0.12)',
+        borderRadius: '3px',
+        marginBottom: '8px',
+      }}>
+        <div style={{ fontSize: '10px', color: 'rgba(168,85,247,0.7)', letterSpacing: '0.1em', marginBottom: '3px' }}>CATALYST</div>
+        <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.5 }}>{opp.catalyst}</div>
+      </div>
+
+      {/* Scores (always visible) */}
+      <div style={{ marginBottom: '8px' }}>
+        <ScoreBar value={opp.momentumScore}    color="#00D4FF" label="MOMENTUM"         tip="Momentum score (0–100). Sweet spot: +2% to +8% daily change. Parabolic moves score lower." />
+        <ScoreBar value={opp.supportProximity} color="#A855F7" label="SUPPORT PROXIMITY" tip="How close the price is to its 52-week low (support floor). Higher = more room to bounce." />
+        <ScoreBar value={opp.volumeSurge}      color="#FFD700" label="VOLUME SURGE"      tip="Current volume vs 3-month average. 2× = 75 score. 5× = 100 score. Confirms institutional interest." />
+        <ScoreBar value={opp.macroFit}         color="#00FF88" label="MACRO FIT"         tip="How well this setup aligns with the current FAULTLINE macro regime. Higher = regime tailwind." />
+      </div>
+
+      {/* Composite score */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: expanded ? '10px' : '0' }}>
+        <InfoTooltip tip="Composite score = weighted blend of momentum (25%), support proximity (20%), volume surge (15%), market cap (15%), volatility (10%), macro fit (15%).">
+          <span style={{ fontSize: '11px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>
+            COMPOSITE SCORE
+          </span>
+        </InfoTooltip>
+        <span style={{
+          fontFamily: "'Rajdhani', sans-serif",
+          fontWeight: 700, fontSize: '16px', color: cc.text,
+        }}>{Math.round(opp.compositeScore)}/100</span>
+      </div>
+
+      {/* Expanded details */}
+      {expanded && (
+        <div style={{
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          paddingTop: '10px',
+          animation: 'fl-fade-in 0.2s ease',
+        }}>
+          {/* Entry thesis */}
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'rgba(168,85,247,0.7)', letterSpacing: '0.1em', marginBottom: '4px' }}>ENTRY THESIS</div>
+            <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.6 }}>{opp.entryThesis}</div>
+          </div>
+
+          {/* Why asymmetric */}
+          <div style={{
+            padding: '8px 10px',
+            background: 'rgba(168,85,247,0.06)',
+            border: '1px solid rgba(168,85,247,0.15)',
+            borderRadius: '3px',
+            marginBottom: '10px',
+          }}>
+            <div style={{ fontSize: '10px', color: 'rgba(168,85,247,0.7)', letterSpacing: '0.1em', marginBottom: '3px' }}>WHY ASYMMETRIC</div>
+            <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.85)', lineHeight: 1.5 }}>{opp.whyAsymmetric}</div>
+          </div>
+
+          {/* Risk factors */}
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', color: 'rgba(255,45,85,0.7)', letterSpacing: '0.1em', marginBottom: '6px' }}>RISK FACTORS</div>
+            {opp.riskFactors.map((r, i) => (
+              <div key={i} style={{
+                display: 'flex', gap: '6px', alignItems: 'flex-start',
+                marginBottom: '4px',
+              }}>
+                <span style={{ color: '#FF2D55', fontSize: '11px', flexShrink: 0 }}>▸</span>
+                <span style={{ fontSize: '12px', color: 'rgba(148,163,184,0.75)', lineHeight: 1.4 }}>{r}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Invalidation */}
+          <div style={{
+            padding: '7px 9px',
+            background: 'rgba(255,45,85,0.05)',
+            border: '1px solid rgba(255,45,85,0.12)',
+            borderRadius: '3px',
+          }}>
+            <div style={{ fontSize: '10px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.1em', marginBottom: '3px' }}>INVALIDATION</div>
+            <div style={{ fontSize: '12px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.5 }}>{opp.invalidation}</div>
+          </div>
+
+          {/* AI enrichment badge */}
+          {opp.aiEnriched && (
+            <div style={{
+              marginTop: '8px', textAlign: 'right',
+              fontSize: '10px', color: 'rgba(168,85,247,0.5)',
+              letterSpacing: '0.06em',
+            }}>◈ AI-ENRICHED ANALYSIS</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Asymmetric Opportunities View ─────────────────────────────
+function AsymmetricOpportunitiesView({
+  data, isLoading, onRefresh, regimeColor, regimeLabel, pressureIndex,
+}: {
+  data: AsymmetricOpportunity[];
+  isLoading: boolean;
+  onRefresh: () => void;
+  regimeColor: string;
+  regimeLabel: string;
+  pressureIndex: number;
+}) {
+  const [convictionFilter, setConvictionFilter] = useState<AsymConviction | 'ALL'>('ALL');
+  const [setupFilter, setSetupFilter] = useState<AsymSetupType | 'ALL'>('ALL');
+  const [sortBy, setSortBy] = useState<'composite' | 'ratio' | 'upside'>('composite');
+
+  const filtered = useMemo(() => {
+    let items = [...data];
+    if (convictionFilter !== 'ALL') items = items.filter(o => o.conviction === convictionFilter);
+    if (setupFilter !== 'ALL') items = items.filter(o => o.setupType === setupFilter);
+    items.sort((a, b) =>
+      sortBy === 'composite' ? b.compositeScore - a.compositeScore
+      : sortBy === 'ratio'   ? b.asymmetryRatio - a.asymmetryRatio
+      : b.upsidePct - a.upsidePct
+    );
+    return items;
+  }, [data, convictionFilter, setupFilter, sortBy]);
+
+  const setupTypes: AsymSetupType[] = [
+    'Momentum Breakout', 'Oversold Reversal', 'Volume Surge',
+    'Near-Support Coil', 'Small-Cap Runner', 'Sector Rotation Play', 'Macro Dislocation',
+  ];
+
+  const highCount = data.filter(o => o.conviction === 'HIGH').length;
+  const modCount  = data.filter(o => o.conviction === 'MODERATE').length;
+  const specCount = data.filter(o => o.conviction === 'SPECULATIVE').length;
+
+  return (
+    <div style={{ padding: '0 0 40px 0' }}>
+      {/* Header banner */}
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(8,10,14,0.98), rgba(12,8,20,0.95))',
+        borderBottom: '1px solid rgba(168,85,247,0.15)',
+        padding: '16px 16px 14px',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', top: '-40px', right: '-40px',
+          width: '200px', height: '200px',
+          background: 'radial-gradient(circle, rgba(168,85,247,0.06) 0%, transparent 70%)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{
+                width: '6px', height: '6px', borderRadius: '50%',
+                background: '#A855F7', boxShadow: '0 0 8px #A855F7',
+                animation: 'fl-pulse 2s ease-in-out infinite',
+              }} />
+              <span style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                fontWeight: 700, fontSize: '13px',
+                color: '#A855F7', letterSpacing: '0.1em',
+              }}>ASYMMETRIC OPPORTUNITIES</span>
+            </div>
+            <p style={{
+              fontSize: '10px', color: 'rgba(100,116,139,0.75)',
+              lineHeight: 1.5, margin: 0, maxWidth: '500px',
+            }}>
+              AI-scored setups with high reward-to-risk ratios. Each opportunity is evaluated across 7 dimensions:
+              momentum, support proximity, volume surge, market cap, volatility, macro fit, and asymmetry ratio.
+              Regime: <span style={{ color: '#A855F7' }}>{regimeLabel}</span>
+            </p>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div style={{ fontSize: '11px', color: 'rgba(100,116,139,0.6)', marginBottom: '2px' }}>OPPORTUNITIES</div>
+            <div style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700, fontSize: '22px', color: '#A855F7',
+            }}>{data.length}</div>
+          </div>
+        </div>
+
+        {/* Conviction summary */}
+        {data.length > 0 && (
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+            {([['HIGH', '#A855F7', highCount], ['MODERATE', '#00D4FF', modCount], ['SPECULATIVE', '#FFD700', specCount]] as const).map(([label, color, count]) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ fontSize: '10px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>{label}:</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color }}>{count}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Controls */}
+      <div style={{
+        padding: '12px 16px',
+        display: 'flex', gap: '8px', alignItems: 'center',
+        flexWrap: 'wrap',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
+      }}>
+        {/* Conviction filter */}
+        <div style={{ display: 'flex', gap: '4px' }}>
+          {(['ALL', 'HIGH', 'MODERATE', 'SPECULATIVE'] as const).map(c => (
+            <button
+              key={c}
+              onClick={() => setConvictionFilter(c)}
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px', letterSpacing: '0.08em',
+                padding: '4px 8px', borderRadius: '2px',
+                border: convictionFilter === c
+                  ? `1px solid ${c === 'ALL' ? '#A855F7' : CONVICTION_COLORS[c as AsymConviction].text}40`
+                  : '1px solid rgba(255,255,255,0.06)',
+                background: convictionFilter === c
+                  ? c === 'ALL' ? 'rgba(168,85,247,0.1)' : CONVICTION_COLORS[c as AsymConviction].bg
+                  : 'transparent',
+                color: convictionFilter === c
+                  ? c === 'ALL' ? '#A855F7' : CONVICTION_COLORS[c as AsymConviction].text
+                  : 'rgba(100,116,139,0.6)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >{c}</button>
+          ))}
+        </div>
+
+        {/* Sort */}
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as typeof sortBy)}
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '11px', letterSpacing: '0.06em',
+            padding: '4px 8px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '2px',
+            color: '#94A3B8', cursor: 'pointer',
+          }}
+        >
+          <option value="composite">SORT: COMPOSITE</option>
+          <option value="ratio">SORT: RATIO</option>
+          <option value="upside">SORT: UPSIDE %</option>
+        </select>
+
+        {/* Setup type filter */}
+        <select
+          value={setupFilter}
+          onChange={e => setSetupFilter(e.target.value as typeof setupFilter)}
+          style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '11px', letterSpacing: '0.06em',
+            padding: '4px 8px',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: '2px',
+            color: '#94A3B8', cursor: 'pointer',
+          }}
+        >
+          <option value="ALL">ALL SETUPS</option>
+          {setupTypes.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <span style={{ fontSize: '11px', color: 'rgba(100,116,139,0.5)' }}>{filtered.length} RESULTS</span>
+          <button
+            onClick={onRefresh}
+            disabled={isLoading}
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '11px', letterSpacing: '0.1em',
+              padding: '4px 8px',
+              border: '1px solid rgba(168,85,247,0.2)',
+              borderRadius: '2px',
+              background: 'rgba(168,85,247,0.06)',
+              color: isLoading ? 'rgba(100,116,139,0.3)' : '#A855F7',
+              cursor: isLoading ? 'default' : 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >↻ REFRESH</button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: '12px 16px 0' }}>
+        {isLoading ? (
+          <div>
+            <div style={{
+              padding: '16px',
+              background: 'rgba(168,85,247,0.04)',
+              border: '1px solid rgba(168,85,247,0.1)',
+              borderRadius: '4px',
+              marginBottom: '12px',
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '12px', color: '#A855F7', letterSpacing: '0.1em', marginBottom: '6px' }}>
+                ◈ SCANNING MARKETS FOR ASYMMETRIC SETUPS...
+              </div>
+              <div style={{ fontSize: '11px', color: 'rgba(100,116,139,0.6)' }}>
+                Fetching screener data · Scoring 7 dimensions · AI enriching top opportunities
+              </div>
+              <div style={{ fontSize: '10px', color: 'rgba(100,116,139,0.4)', marginTop: '4px' }}>
+                This may take 15–30 seconds on first load
+              </div>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '8px',
+            }}>
+              {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{
+            textAlign: 'center', padding: '48px 24px',
+            color: 'rgba(100,116,139,0.65)',
+            fontSize: '11px', letterSpacing: '0.1em',
+          }}>
+            {data.length === 0
+              ? 'NO ASYMMETRIC OPPORTUNITIES FOUND — Market conditions may not favor high-asymmetry setups right now.'
+              : 'NO RESULTS MATCH CURRENT FILTERS'}
+          </div>
+        ) : (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+            gap: '8px',
+          }}>
+            {filtered.map(opp => (
+              <AsymmetricCard key={opp.ticker} opp={opp} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Disclaimer */}
+      <div style={{
+        margin: '24px 16px 0',
+        fontSize: '11px', letterSpacing: '0.06em',
+        color: 'rgba(55,65,81,0.5)',
+        textAlign: 'center', lineHeight: 1.5,
+      }}>
+        Asymmetric opportunity scores are algorithmic estimates based on technical and macro signals. Not financial advice.
+        Upside/downside targets are probabilistic estimates, not guarantees. Always conduct your own research before trading.
+      </div>
+    </div>
   );
 }

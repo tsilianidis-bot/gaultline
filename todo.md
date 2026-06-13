@@ -1173,3 +1173,35 @@
 - [x] Add sector filter panel (ALL + each GICS sector) that works across all 3 tabs
 - [x] Move Stock Heatmap nav item next to other stock/equity tabs in AppLayout.tsx (SIGNALS group)
 - [x] Ensure each tab shows top 100 entries with correct color coding (green=gain, red=loss, blue=volume)
+
+## Stock Heatmap Enhancements (Round 2)
+
+- [ ] Add cross-tab comparison strip — banner above tabs showing top gainer, top loser, and highest volume stock simultaneously
+- [ ] Add auto-refresh countdown timer — "Refreshes in X:XX" countdown next to Refresh button (3-min server cache cycle)
+- [ ] Add Sector Heatmap sub-view — toggle to collapse 100 individual cells into grouped sector view (avg gain/loss/volume per GICS sector)
+
+## Stock Heatmap — Additional Classification Tabs + Volume Fix
+
+- [ ] Fix volume tab: color cells red/green based on price direction (not blue intensity)
+- [ ] Add "52-WEEK HIGHS" tab — stocks near/at 52-week high, colored by proximity %
+- [ ] Add "52-WEEK LOWS" tab — stocks near/at 52-week low, colored by proximity %
+- [ ] Add "MOST VOLATILE" tab — highest intraday range (high-low/open %), colored by volatility intensity
+- [ ] Add "OVERSOLD" tab — RSI-based screener (low RSI = deeply oversold), colored by RSI depth
+- [ ] Add "OVERBOUGHT" tab — RSI-based screener (high RSI = overbought), colored by RSI level
+- [ ] Add backend screener functions for new tabs in yahooProxy.ts
+- [ ] Wire new tRPC procedures in routers.ts
+- [ ] Add cross-tab comparison strip (top gainer, top loser, highest volume shown simultaneously)
+- [ ] Add auto-refresh countdown timer next to Refresh button
+- [ ] Add Sector Heatmap sub-view toggle (collapse 100 cells into grouped sector averages)
+
+## Asymmetric Opportunities Tab (Signals Page)
+
+- [x] Build server/asymmetricOpportunities.ts — scoring engine that identifies high-reward/low-risk setups
+  - [x] Score each stock on: momentum (RSI/MACD), proximity to support, volume surge, market cap (<$10B preferred), short interest, sector strength
+  - [x] Compute asymmetry ratio: estimated upside % / estimated downside % from key levels
+  - [x] LLM classification: catalyst, risk factors, conviction level, entry thesis
+- [x] Add stocks.getAsymmetricOpportunities tRPC procedure in routers.ts
+- [x] Add "ASYMMETRIC OPPORTUNITIES" tab to Signals.tsx tab bar
+- [x] Build AsymmetricOpportunityCard component with: ticker, company, sector, asymmetry ratio, conviction badge, upside/downside targets, catalyst, risk factors, AI thesis
+- [x] Ensure hover tooltips on all data points explaining what each metric means
+- [x] TypeScript: 0 errors, tests passing (426 passed)
