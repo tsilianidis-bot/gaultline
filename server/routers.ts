@@ -1,4 +1,5 @@
 import { COOKIE_NAME } from "@shared/const";
+import { analyticsRouter, blogRouter, billingRouter, adminRouter } from "./routers/index";
 import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -20,7 +21,9 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getXPostQueue, getXPostQueueStats,
   getPressureHistory, getPressureHistoryStats,
   getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem,
-  deleteUser } from "./db";
+  deleteUser,
+  insertPressureRun, getRecentPressureRuns, countPressureRuns,
+  getAllFeatureFlags, getFeatureFlag, setFeatureFlag } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
@@ -52,61 +55,7 @@ export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
 
-  billing: router({
-    getPlans: publicProcedure.query(() => {
-      return Object.values(PLANS).map(p => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        amount: p.amount,
-        interval: p.interval,
-        available: !!p.priceId,
-      }));
-    }),
-
-    createCheckout: protectedProcedure
-      .input(z.object({
-        planId: z.enum(['core', 'core_annual', 'premium', 'premium_annual', 'founding', 'lifetime']),
-        origin: z.string().url(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const plan = PLANS[input.planId];
-        if (!plan.priceId) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'This plan is not yet available for purchase. Please contact us.' });
-        }
-        const session = await stripe.checkout.sessions.create({
-          mode: plan.interval === 'one_time' ? 'payment' : 'subscription',
-          payment_method_types: ['card'],
-          customer_email: ctx.user.email ?? undefined,
-          allow_promotion_codes: true,
-          line_items: [{ price: plan.priceId, quantity: 1 }],
-          client_reference_id: ctx.user.id.toString(),
-          metadata: {
-            user_id: ctx.user.id.toString(),
-            customer_email: ctx.user.email ?? '',
-            customer_name: ctx.user.name ?? '',
-            plan_id: input.planId,
-          },
-          success_url: `${input.origin}/app/account?payment=success`,
-          cancel_url: `${input.origin}/app/account?payment=cancelled`,
-        });
-        return { url: session.url };
-      }),
-
-    createPortalSession: protectedProcedure
-      .input(z.object({ origin: z.string().url() }))
-      .mutation(async ({ ctx, input }) => {
-        const user = ctx.user as any;
-        if (!user.stripeCustomerId) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No billing account found. Please make a purchase first.' });
-        }
-        const session = await stripe.billingPortal.sessions.create({
-          customer: user.stripeCustomerId,
-          return_url: `${input.origin}/app/dashboard`,
-        });
-        return { url: session.url };
-      }),
-  }),
+  billing: billingRouter,
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -287,7 +236,25 @@ export const appRouter = router({
     // Get the current FAULTLINE Pressure Index with all risk vectors
     getCurrentPressure: publicProcedure.query(async () => {
       try {
-        return await calculateFaultlinePressure();
+        const result = await calculateFaultlinePressure();
+        // Fire-and-forget audit insert — never blocks the response
+        insertPressureRun({
+          overallPressure: result.overallPressure,
+          regime: result.regime,
+          level: result.level,
+          dataSource: result.dataSource,
+          vectorsJson: JSON.stringify(result.vectors),
+          alertsJson: JSON.stringify(result.alerts),
+          topAnalogJson: JSON.stringify(result.topAnalog),
+          rawInputsJson: JSON.stringify(
+            result.vectors.reduce((acc, v) => ({ ...acc, [v.id]: v.rawInputs }), {})
+          ),
+          engineVersion: "1.0.0",
+        }).catch(err => {
+          // Non-fatal: audit failure must never break the pressure response
+          console.warn("[Pressure Audit] Failed to write run record", err);
+        });
+        return result;
       } catch (err) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Pressure engine failed", cause: err });
       }
@@ -1050,314 +1017,8 @@ export const appRouter = router({
       }),
   }),
 
-  admin: router({
-    // List all registered users — admin only
-    getUsers: protectedProcedure
-      .query(async ({ ctx }) => {
-        try {
-          if (ctx.user.role !== "admin") {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-          }
-          return await getAllUsers();
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch users", cause: err });
-        }
-      }),
-
-    // List all users with tier info — admin only
-    getUsersWithTier: protectedProcedure
-      .query(async ({ ctx }) => {
-        try {
-          if (ctx.user.role !== "admin") {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-          }
-          return await getAllUsersWithTier();
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch users", cause: err });
-        }
-      }),
-
-    // Set a user's access tier — admin only
-    setUserTier: protectedProcedure
-      .input(z.object({
-        userId: z.number().int().positive(),
-        tier: z.enum(['free', 'core', 'premium', 'founding']),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        try {
-          if (ctx.user.role !== "admin") {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-          }
-          await setUserTier(input.userId, input.tier);
-          return { success: true };
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to set tier", cause: err });
-        }
-      }),
-
-    // List all founding access requests — admin only
-    getFoundingRequests: protectedProcedure
-      .query(async ({ ctx }) => {
-        try {
-          if (ctx.user.role !== "admin") {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-          }
-          return await getFoundingRequests();
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch requests", cause: err });
-        }
-      }),
-
-    // Platform stats — admin only
-    getPlatformStats: protectedProcedure
-      .query(async ({ ctx }) => {
-        try {
-          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-          return await getPlatformStats();
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch stats', cause: err });
-        }
-      }),
-
-    // Activity feed — admin only
-    getActivityFeed: protectedProcedure
-      .query(async ({ ctx }) => {
-        try {
-          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-          return await getActivityFeed(30);
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch activity', cause: err });
-        }
-      }),
-
-    // Update founding request status — admin only
-    updateFoundingRequestStatus: protectedProcedure
-      .input(z.object({
-        id: z.number().int().positive(),
-        status: z.enum(['pending', 'approved', 'rejected']),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        try {
-          if (ctx.user.role !== "admin") {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
-          }
-          await updateFoundingRequestStatus(input.id, input.status);
-          return { success: true };
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update request", cause: err });
-        }
-      }),
-
-    getStats: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-      const [signups, waitlist, conversion] = await Promise.all([
-        getSignupTimeSeries(30),
-        getWaitlistTimeSeries(30),
-        getConversionStats(),
-      ]);
-      return { signups, waitlist, conversion };
-    }),
-
-    // Send founding access approval email — admin only
-    sendApprovalEmail: protectedProcedure
-      .input(z.object({
-        email: z.string().email(),
-        name: z.string().optional(),
-        origin: z.string().url(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-        }
-        const emailPayload = buildApprovalEmail({
-          name: input.name ?? '',
-          email: input.email,
-          siteUrl: input.origin,
-        });
-        const result = await sendEmail(emailPayload);
-        if (!result.success) {
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: result.error ?? 'Failed to send email',
-          });
-        }
-        return { success: true, sentTo: input.email };
-      }),
-
-    // Remove a user account and all their data — admin only
-    removeUser: protectedProcedure
-      .input(z.object({
-        userId: z.number().int().positive(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-        }
-        // Prevent admin from deleting themselves
-        if (input.userId === ctx.user.id) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'You cannot remove your own account.' });
-        }
-        try {
-          await deleteUser(input.userId);
-          return { success: true };
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to remove user', cause: err });
-        }
-      }),
-  }),
-  blog: router({
-    // Public: list published posts
-    list: publicProcedure
-      .input(z.object({
-        limit: z.number().int().min(1).max(50).default(20),
-        offset: z.number().int().min(0).default(0),
-        category: z.string().optional(),
-      }))
-      .query(async ({ input }) => {
-        try {
-          const posts = await getBlogPosts({ publishedOnly: true, ...input });
-          return posts;
-        } catch (err) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch posts', cause: err });
-        }
-      }),
-
-    // Public: get single post by slug
-    getBySlug: publicProcedure
-      .input(z.object({ slug: z.string().min(1) }))
-      .query(async ({ input }) => {
-        try {
-          const post = await getBlogPostBySlug(input.slug);
-          if (!post || !post.published) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' });
-          return post;
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch post', cause: err });
-        }
-      }),
-
-    // Public: get categories
-    getCategories: publicProcedure.query(async () => {
-      try {
-        return await getBlogCategories();
-      } catch (err) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch categories', cause: err });
-      }
-    }),
-
-    // Admin: list all posts (including drafts)
-    adminList: protectedProcedure.query(async ({ ctx }) => {
-      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-      try {
-        return await getBlogPosts({ publishedOnly: false, limit: 100 });
-      } catch (err) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to fetch posts', cause: err });
-      }
-    }),
-
-    // Admin: get single post by id (for editing)
-    adminGetById: protectedProcedure
-      .input(z.object({ id: z.number().int().positive() }))
-      .query(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-        const post = await getBlogPostById(input.id);
-        if (!post) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' });
-        return post;
-      }),
-
-    // Admin: create post
-    create: protectedProcedure
-      .input(z.object({
-        slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
-        title: z.string().min(1).max(300),
-        subtitle: z.string().max(400).optional(),
-        content: z.string().min(1),
-        author: z.string().max(100).default('FAULTLINE'),
-        category: z.string().max(80).default('Macro Intelligence'),
-        tags: z.string().max(500).optional(),
-        published: z.boolean().default(false),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-        try {
-          const id = await createBlogPost({
-            ...input,
-            published: input.published ? 1 : 0,
-            publishedAt: input.published ? new Date() : null,
-          });
-          return { id };
-        } catch (err: any) {
-          if (err?.code === 'ER_DUP_ENTRY') throw new TRPCError({ code: 'CONFLICT', message: 'A post with this slug already exists' });
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create post', cause: err });
-        }
-      }),
-
-    // Admin: update post
-    update: protectedProcedure
-      .input(z.object({
-        id: z.number().int().positive(),
-        slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
-        title: z.string().min(1).max(300).optional(),
-        subtitle: z.string().max(400).optional(),
-        content: z.string().min(1).optional(),
-        author: z.string().max(100).optional(),
-        category: z.string().max(80).optional(),
-        tags: z.string().max(500).optional(),
-        published: z.boolean().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-        try {
-          const { id, published, ...rest } = input;
-          const existing = await getBlogPostById(id);
-          if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'Post not found' });
-          const updateData: Record<string, unknown> = { ...rest };
-          if (published !== undefined) {
-            updateData.published = published ? 1 : 0;
-            if (published && !existing.publishedAt) updateData.publishedAt = new Date();
-          }
-          await updateBlogPost(id, updateData as any);
-          return { success: true };
-        } catch (err) {
-          if (err instanceof TRPCError) throw err;
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to update post', cause: err });
-        }
-      }),
-
-    // Admin: delete post
-    delete: protectedProcedure
-      .input(z.object({ id: z.number().int().positive() }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
-        try {
-          await deleteBlogPost(input.id);
-          return { success: true };
-        } catch (err) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to delete post', cause: err });
-        }
-      }),
-
-    // Public: increment view count when a post is opened
-    incrementViewCount: publicProcedure
-      .input(z.object({ slug: z.string().min(1) }))
-      .mutation(async ({ input }) => {
-        try {
-          await incrementBlogPostViewCount(input.slug);
-          return { success: true };
-        } catch (err) {
-          // Non-critical — don't throw, just swallow
-          return { success: false };
-        }
-      }),
-  }),
+  admin: adminRouter,
+  blog: blogRouter,
 
   xPostQueue: router({
     list: protectedProcedure
@@ -1842,192 +1503,7 @@ export const appRouter = router({
   }),
 
   // ── Analytics Dashboard ──────────────────────────────────────
-  analytics: router({
-    // Overview: total pageviews, sessions, unique visitors, bounce rate, avg duration
-    getOverview: protectedProcedure
-      .input(z.object({
-        days: z.number().min(1).max(365).default(30),
-      }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { pageViews, analyticsSessions, siteEvents } = await import('../drizzle/schema');
-        const { sql, gte, count } = await import('drizzle-orm');
-        const since = new Date(Date.now() - input.days * 86400000);
-
-        const [pvRow] = await db.select({ total: count() }).from(pageViews).where(gte(pageViews.createdAt, since));
-        const [sessRow] = await db.select({ total: count() }).from(analyticsSessions).where(gte(analyticsSessions.startedAt, since));
-        const [evtRow] = await db.select({ total: count() }).from(siteEvents).where(gte(siteEvents.createdAt, since));
-
-        // Bounce rate and avg duration from sessions
-        const sessStats = await db.select({
-          bounces: sql<number>`SUM(isBounce)`,
-          totalSess: count(),
-          avgDuration: sql<number>`AVG(durationSecs)`,
-        }).from(analyticsSessions).where(gte(analyticsSessions.startedAt, since));
-
-        const s = sessStats[0];
-        const bounceRate = s.totalSess > 0 ? Math.round((Number(s.bounces) / Number(s.totalSess)) * 100) : 0;
-        const avgDuration = Math.round(Number(s.avgDuration) || 0);
-
-        return {
-          pageViews: Number(pvRow.total),
-          sessions: Number(sessRow.total),
-          events: Number(evtRow.total),
-          bounceRate,
-          avgDurationSecs: avgDuration,
-          days: input.days,
-        };
-      }),
-
-    // Top pages by view count
-    getTopPages: protectedProcedure
-      .input(z.object({ days: z.number().min(1).max(365).default(30), limit: z.number().min(1).max(50).default(20) }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { pageViews } = await import('../drizzle/schema');
-        const { sql, gte, desc } = await import('drizzle-orm');
-        const since = new Date(Date.now() - input.days * 86400000);
-        return db.select({
-          path: pageViews.path,
-          views: sql<number>`COUNT(*)`,
-          uniqueSessions: sql<number>`COUNT(DISTINCT sessionId)`,
-        })
-          .from(pageViews)
-          .where(gte(pageViews.createdAt, since))
-          .groupBy(pageViews.path)
-          .orderBy(desc(sql`COUNT(*)`))  
-          .limit(input.limit);
-      }),
-
-    // Device breakdown
-    getDevices: protectedProcedure
-      .input(z.object({ days: z.number().min(1).max(365).default(30) }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { pageViews } = await import('../drizzle/schema');
-        const { sql, gte, desc } = await import('drizzle-orm');
-        const since = new Date(Date.now() - input.days * 86400000);
-        const [devices, browsers, os] = await Promise.all([
-          db.select({ deviceType: pageViews.deviceType, count: sql<number>`COUNT(*)` })
-            .from(pageViews).where(gte(pageViews.createdAt, since))
-            .groupBy(pageViews.deviceType).orderBy(desc(sql`COUNT(*)`)),
-          db.select({ browser: pageViews.browser, count: sql<number>`COUNT(*)` })
-            .from(pageViews).where(gte(pageViews.createdAt, since))
-            .groupBy(pageViews.browser).orderBy(desc(sql`COUNT(*)`)),
-          db.select({ os: pageViews.os, count: sql<number>`COUNT(*)` })
-            .from(pageViews).where(gte(pageViews.createdAt, since))
-            .groupBy(pageViews.os).orderBy(desc(sql`COUNT(*)`)),
-        ]);
-        return { devices, browsers, os };
-      }),
-
-    // Country breakdown
-    getCountries: protectedProcedure
-      .input(z.object({ days: z.number().min(1).max(365).default(30), limit: z.number().default(20) }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { pageViews } = await import('../drizzle/schema');
-        const { sql, gte, desc } = await import('drizzle-orm');
-        const since = new Date(Date.now() - input.days * 86400000);
-        return db.select({ country: pageViews.country, count: sql<number>`COUNT(*)` })
-          .from(pageViews).where(gte(pageViews.createdAt, since))
-          .groupBy(pageViews.country).orderBy(desc(sql`COUNT(*)`)).limit(input.limit);
-      }),
-
-    // Referrer / traffic sources
-    getReferrers: protectedProcedure
-      .input(z.object({ days: z.number().min(1).max(365).default(30), limit: z.number().default(20) }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { analyticsSessions } = await import('../drizzle/schema');
-        const { sql, gte, desc, isNotNull } = await import('drizzle-orm');
-        const since = new Date(Date.now() - input.days * 86400000);
-        return db.select({ referrer: analyticsSessions.referrer, count: sql<number>`COUNT(*)` })
-          .from(analyticsSessions)
-          .where(gte(analyticsSessions.startedAt, since))
-          .groupBy(analyticsSessions.referrer)
-          .orderBy(desc(sql`COUNT(*)`)).limit(input.limit);
-      }),
-
-    // Custom events breakdown
-    getEvents: protectedProcedure
-      .input(z.object({ days: z.number().min(1).max(365).default(30), limit: z.number().default(30) }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { siteEvents } = await import('../drizzle/schema');
-        const { sql, gte, desc } = await import('drizzle-orm');
-        const since = new Date(Date.now() - input.days * 86400000);
-        return db.select({ eventName: siteEvents.eventName, count: sql<number>`COUNT(*)`, uniqueSessions: sql<number>`COUNT(DISTINCT sessionId)` })
-          .from(siteEvents).where(gte(siteEvents.createdAt, since))
-          .groupBy(siteEvents.eventName).orderBy(desc(sql`COUNT(*)`)).limit(input.limit);
-      }),
-
-    // Daily pageview time series for chart
-    getTimeSeries: protectedProcedure
-      .input(z.object({ days: z.number().min(1).max(90).default(30) }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { pageViews, analyticsSessions } = await import('../drizzle/schema');
-        const { sql, gte } = await import('drizzle-orm');
-        const since = new Date(Date.now() - input.days * 86400000);
-        const [pvSeries, sessSeries] = await Promise.all([
-          db.select({
-            date: sql<string>`DATE(createdAt)`,
-            views: sql<number>`COUNT(*)`,
-          }).from(pageViews).where(gte(pageViews.createdAt, since))
-            .groupBy(sql`DATE(createdAt)`).orderBy(sql`DATE(createdAt)`),
-          db.select({
-            date: sql<string>`DATE(startedAt)`,
-            sessions: sql<number>`COUNT(*)`,
-          }).from(analyticsSessions).where(gte(analyticsSessions.startedAt, since))
-            .groupBy(sql`DATE(startedAt)`).orderBy(sql`DATE(startedAt)`),
-        ]);
-        return { pageViews: pvSeries, sessions: sessSeries };
-      }),
-
-    // Recent visitor sessions list
-    getSessions: protectedProcedure
-      .input(z.object({ limit: z.number().min(1).max(100).default(50), offset: z.number().default(0) }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { analyticsSessions } = await import('../drizzle/schema');
-        const { desc } = await import('drizzle-orm');
-        return db.select().from(analyticsSessions)
-          .orderBy(desc(analyticsSessions.startedAt))
-          .limit(input.limit).offset(input.offset);
-      }),
-
-    // UTM campaign performance
-    getCampaigns: protectedProcedure
-      .input(z.object({ days: z.number().min(1).max(365).default(30) }))
-      .query(async ({ input }) => {
-        const db = await getDb();
-        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-        const { analyticsSessions } = await import('../drizzle/schema');
-        const { sql, gte, desc, isNotNull } = await import('drizzle-orm');
-        const since = new Date(Date.now() - input.days * 86400000);
-        return db.select({
-          utmSource: analyticsSessions.utmSource,
-          utmMedium: analyticsSessions.utmMedium,
-          utmCampaign: analyticsSessions.utmCampaign,
-          sessions: sql<number>`COUNT(*)`,
-          avgDuration: sql<number>`AVG(durationSecs)`,
-          bounceRate: sql<number>`ROUND(SUM(isBounce)/COUNT(*)*100,1)`,
-        })
-          .from(analyticsSessions)
-          .where(gte(analyticsSessions.startedAt, since))
-          .groupBy(analyticsSessions.utmSource, analyticsSessions.utmMedium, analyticsSessions.utmCampaign)
-          .orderBy(desc(sql`COUNT(*)`)).limit(20);
-      }),
-  }),
+  analytics: analyticsRouter,
 
   // ── SEO Optimizer ────────────────────────────────────────────
   seo: router({

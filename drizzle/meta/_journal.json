@@ -134,6 +134,20 @@
       "when": 1781190673145,
       "tag": "0018_chubby_inhumans",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1781384013646,
+      "tag": "0019_left_catseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1781384484552,
+      "tag": "0020_slimy_strong_guy",
+      "breakpoints": true
     }
   ]
 }

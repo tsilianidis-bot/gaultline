@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -704,4 +704,78 @@ export async function removeMobileWatchlistItem(userId: number, id: number) {
       eq(mobileWatchlist.id, id),
       eq(mobileWatchlist.userId, userId)
     ));
+}
+
+// ── Pressure Engine Audit Trail ──────────────────────────────────────────────
+
+/**
+ * Insert a new pressure run audit record.
+ * Called by the pressure router after every successful engine execution.
+ * Fire-and-forget — never throws, logs on failure.
+ */
+export async function insertPressureRun(run: InsertPressureRun): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.insert(pressureRuns).values(run);
+  } catch (err) {
+    log.warn("[Database] Failed to insert pressure run audit record", { err });
+  }
+}
+
+/**
+ * Retrieve the N most recent pressure run records for admin inspection.
+ */
+export async function getRecentPressureRuns(limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(pressureRuns).orderBy(desc(pressureRuns.computedAt)).limit(limit);
+}
+
+/**
+ * Count total pressure runs in the audit table.
+ */
+export async function countPressureRuns(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select({ total: count() }).from(pressureRuns);
+  return result[0]?.total ?? 0;
+}
+
+// ── Feature Flags ─────────────────────────────────────────────────────────────
+
+/**
+ * Get all feature flags. Returns an empty array if DB is unavailable.
+ */
+export async function getAllFeatureFlags() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(featureFlags).orderBy(featureFlags.key);
+}
+
+/**
+ * Get a single feature flag by key.
+ * Returns true (enabled) as the safe default if DB is unavailable or key not found.
+ */
+export async function getFeatureFlag(key: string): Promise<boolean> {
+  try {
+    const db = await getDb();
+    if (!db) return true; // safe default: features enabled when DB is down
+    const rows = await db.select().from(featureFlags).where(eq(featureFlags.key, key)).limit(1);
+    if (rows.length === 0) return true; // unknown flags default to enabled
+    return rows[0]!.enabled === 1;
+  } catch {
+    return true; // safe default on error
+  }
+}
+
+/**
+ * Set a feature flag enabled/disabled. Admin-only — enforce at the router level.
+ */
+export async function setFeatureFlag(key: string, enabled: boolean, updatedBy?: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(featureFlags)
+    .set({ enabled: enabled ? 1 : 0, ...(updatedBy ? { updatedBy } : {}) })
+    .where(eq(featureFlags.key, key));
 }

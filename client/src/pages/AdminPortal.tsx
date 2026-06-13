@@ -803,9 +803,110 @@ function StatsTab() {
   );
 }
 
+// ── Engine Audit + Feature Flags Tab ─────────────────────────────────────────
+
+function EngineTab() {
+  const { data: runsData, isLoading: runsLoading } = trpc.admin.getPressureRuns.useQuery({ limit: 50 });
+  const { data: flags, isLoading: flagsLoading, refetch: refetchFlags } = trpc.admin.getFeatureFlags.useQuery();
+  const toggleFlag = trpc.admin.setFeatureFlag.useMutation({ onSuccess: () => refetchFlags() });
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "36px" }}>
+
+      {/* Feature Flags */}
+      <div>
+        <SectionHeader title="Feature Flags" sub="Kill switches — toggle without redeploying" />
+        {flagsLoading ? (
+          <p style={{ ...MONO, fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>Loading flags...</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {(flags ?? []).map(flag => (
+              <div key={flag.key} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "8px", padding: "12px 16px",
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ ...MONO, fontSize: "11px", color: "rgba(0,212,255,0.8)", letterSpacing: "0.08em" }}>{flag.key}</p>
+                  <p style={{ ...SANS, fontSize: "11px", color: "rgba(100,116,139,0.6)", marginTop: "2px" }}>{flag.description ?? ""}</p>
+                </div>
+                <button
+                  onClick={() => toggleFlag.mutate({ key: flag.key, enabled: flag.enabled !== 1 })}
+                  style={{
+                    ...MONO, fontSize: "10px", letterSpacing: "0.1em", padding: "6px 14px",
+                    borderRadius: "4px", cursor: "pointer", border: "1px solid",
+                    background: flag.enabled === 1 ? "rgba(0,212,255,0.08)" : "rgba(239,68,68,0.08)",
+                    borderColor: flag.enabled === 1 ? "rgba(0,212,255,0.3)" : "rgba(239,68,68,0.3)",
+                    color: flag.enabled === 1 ? "rgba(0,212,255,0.9)" : "rgba(239,68,68,0.9)",
+                  }}
+                >
+                  {flag.enabled === 1 ? "ENABLED" : "DISABLED"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Pressure Engine Audit Trail */}
+      <div>
+        <SectionHeader
+          title="Pressure Engine Audit Trail"
+          sub={`${runsData?.total ?? "—"} total runs recorded`}
+        />
+        {runsLoading ? (
+          <p style={{ ...MONO, fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>Loading runs...</p>
+        ) : (
+          <div style={{
+            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: "10px", overflow: "hidden",
+          }}>
+            <div style={{
+              display: "grid", gridTemplateColumns: "60px 1fr 80px 80px 90px 120px",
+              gap: "0", padding: "10px 16px",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(255,255,255,0.02)",
+            }}>
+              {["ID", "REGIME", "SCORE", "LEVEL", "SOURCE", "COMPUTED AT"].map(h => (
+                <p key={h} style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.12em" }}>{h}</p>
+              ))}
+            </div>
+            {(runsData?.runs ?? []).slice(0, 50).map(run => (
+              <div key={run.id} style={{
+                display: "grid", gridTemplateColumns: "60px 1fr 80px 80px 90px 120px",
+                gap: "0", padding: "9px 16px",
+                borderBottom: "1px solid rgba(255,255,255,0.03)",
+              }}>
+                <p style={{ ...MONO, fontSize: "10px", color: "rgba(100,116,139,0.5)" }}>#{run.id}</p>
+                <p style={{ ...MONO, fontSize: "10px", color: "rgba(226,232,240,0.8)" }}>{run.regime}</p>
+                <p style={{ ...MONO, fontSize: "10px", color: run.overallPressure >= 65 ? "rgba(239,68,68,0.9)" : run.overallPressure >= 45 ? "rgba(251,191,36,0.9)" : "rgba(0,212,255,0.9)" }}>
+                  {run.overallPressure}
+                </p>
+                <p style={{ ...MONO, fontSize: "10px", color: "rgba(100,116,139,0.7)" }}>{run.level}</p>
+                <p style={{ ...MONO, fontSize: "10px", color: run.dataSource === "live" ? "rgba(0,212,255,0.7)" : "rgba(251,191,36,0.7)" }}>
+                  {run.dataSource.toUpperCase()}
+                </p>
+                <p style={{ ...MONO, fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>
+                  {new Date(run.computedAt).toLocaleString()}
+                </p>
+              </div>
+            ))}
+            {(runsData?.runs ?? []).length === 0 && (
+              <p style={{ ...MONO, fontSize: "11px", color: "rgba(100,116,139,0.4)", padding: "20px 16px" }}>
+                No runs recorded yet. Engine audit begins on next pressure query.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+    </div>
+  );
+}
+
 // ── Main Portal ───────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "waitlist" | "users" | "health" | "stats";
+type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "overview", label: "Overview",       icon: "◈" },
@@ -813,6 +914,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "users",    label: "Users",           icon: "◉" },
   { id: "stats",    label: "Statistics",      icon: "◑" },
   { id: "health",   label: "Platform Health", icon: "◌" },
+  { id: "engine",   label: "Engine & Flags",  icon: "⚙" },
 ];
 
 export default function AdminPortal() {
@@ -896,6 +998,7 @@ export default function AdminPortal() {
       {activeTab === "users"    && <UsersTab />}
       {activeTab === "stats"    && <StatsTab />}
       {activeTab === "health"   && <HealthTab />}
+      {activeTab === "engine"   && <EngineTab />}
     </div>
   );
 }

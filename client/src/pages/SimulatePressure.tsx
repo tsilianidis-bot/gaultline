@@ -6,6 +6,7 @@
    Design: Palantir Noir — void-black, neon gold/electric-blue/crimson
    Typography: Rajdhani 700 (display) + IBM Plex Mono (data)
    ============================================================ */
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback } from 'react';
 import {
   ResponsiveContainer, RadarChart, Radar, PolarGrid,
@@ -592,6 +593,7 @@ export default function SimulatePressure() {
           box-shadow: 0 0 8px rgba(0,212,255,0.4);
         }
       `}</style>
+      <DisclaimerBanner />
     </div>
   );
 }

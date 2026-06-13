@@ -3,6 +3,7 @@
    Macro-regime-aware market scanner with live Yahoo Finance + Polygon.io data
    + actionable BUY / SELL / HOLD trading signals.
    ============================================================ */
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useEngine } from '@/contexts/EngineContext';
 import { trpc } from '@/lib/trpc';

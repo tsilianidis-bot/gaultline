@@ -3,11 +3,13 @@
    Cinematic acquisition funnel. No login required.
    Viral, shareable, institutional.
    ============================================================ */
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
+import { PRICING_PLANS } from '../../../shared/tiers';
 
 const PLATFORM_URL = "/app";
 
@@ -329,13 +331,24 @@ export default function PressureIndex() {
                 <div className="text-[9px] font-mono tracking-[0.3em] text-white/30 mb-4">RISK VECTORS</div>
                 <div className="space-y-3">
                   {vectors.length > 0 ? (
-                    vectors.map((v: { id: string; label: string; score: number }) => (
-                      <VectorBar
-                        key={v.id}
-                        label={v.label.toUpperCase().slice(0, 18)}
-                        value={Math.round(v.score)}
-                        color={pressureColor(v.score)}
-                      />
+                    vectors.map((v: { id: string; label: string; score: number; dataStatus?: string; fallbackReason?: string; source?: string }) => (
+                      <div key={v.id}>
+                        <VectorBar
+                          label={v.label.toUpperCase().slice(0, 18)}
+                          value={Math.round(v.score)}
+                          color={pressureColor(v.score)}
+                        />
+                        {v.dataStatus && v.dataStatus !== "live" && (
+                          <div
+                            className="text-[8px] font-mono mt-0.5 ml-1"
+                            style={{ color: v.dataStatus === "static" ? "rgba(251,191,36,0.6)" : "rgba(255,255,255,0.3)" }}
+                            title={v.fallbackReason ?? v.dataStatus}
+                          >
+                            {v.dataStatus === "static" ? "⚠ STATIC ESTIMATE" : v.dataStatus === "fallback" ? "⚠ FALLBACK" : v.dataStatus === "delayed" ? "⏱ DELAYED" : v.dataStatus.toUpperCase()}
+                            {v.source ? ` · ${v.source}` : ""}
+                          </div>
+                        )}
+                      </div>
                     ))
                   ) : (
                     // Placeholder bars while loading
@@ -476,9 +489,9 @@ export default function PressureIndex() {
             {/* Tier mini-cards */}
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
               {[
-                { tier: "CORE", price: "$9.99/mo", tagline: "Mobile-first intelligence", color: "#22D3EE", features: ["Signals screener", "Portfolio tracker", "Alt Rotation"] },
-                { tier: "PRO", price: "$59/mo", tagline: "Institutional-grade suite", color: "#00D4FF", features: ["AI Diagnostic™", "Crypto intelligence", "Aftershock Engine™"], badge: "RECOMMENDED" },
-                { tier: "FOUNDING", price: "$49/mo", tagline: "Rate locked for life", color: "#FFD700", features: ["Everything in Pro", "Founder badge", "Early beta access"], badge: "LIMITED" },
+                { tier: "CORE", price: PRICING_PLANS.core.priceLabel, tagline: "Mobile-first intelligence", color: "#22D3EE", features: ["Signals screener", "Portfolio tracker", "Alt Rotation"] },
+                { tier: "PRO", price: PRICING_PLANS.premium.priceLabel, tagline: "Institutional-grade suite", color: "#00D4FF", features: ["AI Diagnostic™", "Crypto intelligence", "Aftershock Engine™"], badge: "RECOMMENDED" },
+                { tier: "FOUNDING", price: PRICING_PLANS.founding.priceLabel, tagline: "Rate locked for life", color: "#FFD700", features: ["Everything in Pro", "Founder badge", "Early beta access"], badge: "LIMITED" },
               ].map((t) => (
                 <div
                   key={t.tier}
@@ -530,6 +543,7 @@ export default function PressureIndex() {
           </Link>
         </div>
       </footer>
+      <DisclaimerBanner variant="compact" />
     </div>
   );
 }

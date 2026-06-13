@@ -59,6 +59,7 @@ const ContactUs = lazy(() => import("./pages/ContactUs"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
+const Methodology      = lazy(() => import("./pages/Methodology"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -128,6 +129,10 @@ function Router() {
         </ErrorBoundary>
       </Route>
       {/* Public Pressure Index — no login required */}
+      <Route path="/methodology">
+        {() => <Suspense fallback={<PageLoader />}><Methodology /></Suspense>}
+      </Route>
+
       <Route path="/pressure-index">
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>

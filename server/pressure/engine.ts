@@ -18,6 +18,18 @@ import { log } from "../logger";
 
 export type PressureLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
 
+/**
+ * Data freshness status for a risk vector or output field.
+ * - live: refreshed from a live or near-live external source
+ * - delayed: sourced from a provider with known publication lag
+ * - cached: served from server-side cache, not freshly fetched
+ * - stale: cache is older than expected refresh window
+ * - fallback: live source failed; using last known good value
+ * - static: hardcoded constant or model estimate, not fetched
+ * - unavailable: source is down and no fallback is available
+ */
+export type DataStatus = "live" | "delayed" | "cached" | "stale" | "fallback" | "static" | "unavailable";
+
 export interface RiskVector {
   /** Machine-readable identifier */
   id: string;
@@ -37,6 +49,12 @@ export interface RiskVector {
   weight: number;
   /** The raw FRED value(s) that drove this score */
   rawInputs: Record<string, number | null>;
+  /** Data freshness status for this vector's inputs */
+  dataStatus: DataStatus;
+  /** Primary data source for this vector */
+  source: string;
+  /** If dataStatus is static/fallback/stale, explains why */
+  fallbackReason?: string;
 }
 
 export interface HistoricalAnalog {
@@ -71,6 +89,8 @@ export interface FaultlinePressureOutput {
   timestamp: string;
   /** Whether live FRED data was used */
   dataSource: "live" | "fallback";
+  /** ISO timestamp of the most recent data refresh */
+  lastUpdated: string;
 }
 
 // ── FRED data shape returned by the bulk endpoint ────────────
@@ -548,6 +568,9 @@ export async function calculateFaultlinePressure(
       trend: liquidityResult.trend,
       weight: 0.20,
       rawInputs: { hySpread: hy, sofr },
+      dataStatus: dataSource === "live" ? "live" as DataStatus : "fallback" as DataStatus,
+      source: "FRED: BAMLH0A0HYM2 (HY Spread), SOFR",
+      ...(dataSource === "fallback" ? { fallbackReason: "FRED data unavailable; using last known values" } : {}),
     },
     {
       id: "credit-contagion",
@@ -559,6 +582,9 @@ export async function calculateFaultlinePressure(
       trend: creditResult.trend,
       weight: 0.20,
       rawInputs: { hySpread: hy, tsy10y: tsy10, unemployment },
+      dataStatus: dataSource === "live" ? "live" as DataStatus : "fallback" as DataStatus,
+      source: "FRED: BAMLH0A0HYM2, DGS10, UNRATE",
+      ...(dataSource === "fallback" ? { fallbackReason: "FRED data unavailable; using last known values" } : {}),
     },
     {
       id: "volatility-regime",
@@ -570,6 +596,9 @@ export async function calculateFaultlinePressure(
       trend: volatilityResult.trend,
       weight: 0.15,
       rawInputs: { tsy10y: tsy10, tsy2y: tsy2 },
+      dataStatus: dataSource === "live" ? "live" as DataStatus : "fallback" as DataStatus,
+      source: "FRED: DGS10, DGS2",
+      ...(dataSource === "fallback" ? { fallbackReason: "FRED data unavailable; using last known values" } : {}),
     },
     {
       id: "macro-sensitivity",
@@ -581,6 +610,9 @@ export async function calculateFaultlinePressure(
       trend: macroResult.trend,
       weight: 0.20,
       rawInputs: { cpi, ppi, fedFunds },
+      dataStatus: dataSource === "live" ? "delayed" as DataStatus : "fallback" as DataStatus,
+      source: "FRED: CPIAUCSL, PPIACO, FEDFUNDS (monthly lag)",
+      ...(dataSource === "fallback" ? { fallbackReason: "FRED data unavailable; using last known values" } : {}),
     },
     {
       id: "market-breadth",
@@ -592,6 +624,9 @@ export async function calculateFaultlinePressure(
       trend: breadthResult.trend,
       weight: 0.10,
       rawInputs: { unemployment, tsy10y: tsy10 },
+      dataStatus: dataSource === "live" ? "delayed" as DataStatus : "fallback" as DataStatus,
+      source: "FRED: UNRATE (monthly lag), DGS10",
+      ...(dataSource === "fallback" ? { fallbackReason: "FRED data unavailable; using last known values" } : {}),
     },
     {
       id: "ai-bubble",
@@ -603,6 +638,9 @@ export async function calculateFaultlinePressure(
       trend: aiResult.trend,
       weight: 0.15,
       rawInputs: { tsy10y: tsy10, hySpread: hy },
+      dataStatus: "static" as DataStatus,
+      source: "Static model estimate (top-7 mega-cap AI concentration ~32% of S&P 500)",
+      fallbackReason: "AI concentration baseline is a static model estimate. No live market-cap data source is currently wired. Score is adjusted dynamically by live FRED rate and spread inputs.",
     },
   ];
 
@@ -621,6 +659,7 @@ export async function calculateFaultlinePressure(
   // ── 8. Generate alerts ─────────────────────────────────────
   const alerts = generateAlerts(vectors, overallPressure);
 
+  const now = new Date().toISOString();
   return {
     overallPressure,
     regime,
@@ -629,7 +668,8 @@ export async function calculateFaultlinePressure(
     alerts,
     topAnalog,
     analogs,
-    timestamp: new Date().toISOString(),
+    timestamp: now,
+    lastUpdated: now,
     dataSource,
   };
 }

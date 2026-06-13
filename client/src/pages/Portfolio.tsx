@@ -4,6 +4,7 @@
    Yahoo Finance 15-min delayed quotes + FAULTLINE pressure engine.
    Design: Palantir Noir — void black, neon accents.
    ============================================================ */
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useCallback, useEffect } from "react";
 import {
   Plus, Trash2, Edit3, ChevronDown, ChevronUp, RefreshCw,

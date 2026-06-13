@@ -9,6 +9,7 @@ import { Activity, TrendingUp, Star, RotateCcw, FileText, LogIn, Share, X } from
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { PRICING_PLANS } from "../../../shared/tiers";
 
 // ── iOS Add-to-Home-Screen banner ─────────────────────────────
 function iOSSafari(): boolean {
@@ -113,14 +114,14 @@ function CoreGate() {
         <p className="text-[#A8B8CC] text-sm mb-2 leading-relaxed">
           The FAULTLINE Core mobile app requires a Core subscription.
         </p>
-        <p className="text-[#22D3EE] text-sm font-mono font-bold mb-8">$9.99 / month</p>
+        <p className="text-[#22D3EE] text-sm font-mono font-bold mb-8">{PRICING_PLANS.core.priceLabel}</p>
         <div className="w-full max-w-xs space-y-3">
           <a
             href="/app/account"
             className="block w-full py-3 text-center font-mono font-bold text-sm tracking-widest rounded-lg"
             style={{ background: "rgba(34,211,238,0.15)", border: "1px solid rgba(34,211,238,0.4)", color: "#22D3EE" }}
           >
-            UPGRADE TO CORE — $9.99/MO
+            {PRICING_PLANS.core.priceLabel.toUpperCase().replace("/MO", "")} — {PRICING_PLANS.core.priceLabel.toUpperCase()}
           </a>
           <a
             href="/app"

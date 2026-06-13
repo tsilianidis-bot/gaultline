@@ -3,6 +3,7 @@
    Palantir Noir aesthetic: void black, neon cyan, scanlines,
    corner brackets, Framer Motion animations.
    ============================================================ */
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
@@ -1176,6 +1177,7 @@ export default function Pressure() {
                         </div>
           </motion.div>
         </div>
+        <DisclaimerBanner />
         </div>{/* /padding div */}
       </div>
     </div>

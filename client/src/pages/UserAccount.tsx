@@ -11,6 +11,15 @@ import { getLoginUrl } from '@/const';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { toast } from 'sonner';
 import { useSearch } from 'wouter';
+import { TIER_META, PRICING_PLANS, type AccessTier } from '../../../shared/tiers';
+
+// Icon map for tiers (React nodes cannot live in shared/)
+const TIER_ICONS: Record<AccessTier, React.ReactNode> = {
+  free:     <User size={18} />,
+  core:     <Zap size={18} />,
+  premium:  <Zap size={18} />,
+  founding: <Crown size={18} />,
+};
 
 // ── Tier config ────────────────────────────────────────────────
 const TIER_CONFIG = {
@@ -81,7 +90,7 @@ const TIER_CONFIG = {
     description: 'Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.',
     features: [
       { label: 'Everything in Pro', available: true },
-      { label: 'Permanent discounted rate ($49/mo)', available: true },
+      { label: 'Permanent founding rate ($49/mo locked)', available: true },
       { label: 'Founding member badge', available: true },
       { label: 'Future feature grandfathering', available: true },
       { label: 'Roadmap previews & early beta', available: true },
@@ -692,7 +701,7 @@ export default function UserAccount() {
               }}
             >
               <Zap size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : 'CORE — $9.99/MONTH'}
+              {checkoutMutation.isPending ? 'LOADING...' : `CORE — ${PRICING_PLANS.core.priceLabel.toUpperCase()}`}
             </button>
             <button
               onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
@@ -712,7 +721,7 @@ export default function UserAccount() {
               }}
             >
               <CreditCard size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : 'UPGRADE — $59/MONTH'}
+              {checkoutMutation.isPending ? 'LOADING...' : `UPGRADE — ${PRICING_PLANS.premium.priceLabel.toUpperCase()}`}
             </button>
             <button
               onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
@@ -732,7 +741,7 @@ export default function UserAccount() {
               }}
             >
               <Crown size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : 'FOUNDING — $49/MONTH FOR LIFE'}
+              {checkoutMutation.isPending ? 'LOADING...' : `FOUNDING — ${PRICING_PLANS.founding.priceLabel.toUpperCase()}`}
             </button>
             <button
               onClick={() => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin })}
@@ -752,7 +761,7 @@ export default function UserAccount() {
               }}
             >
               <Crown size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : 'LIFETIME — $1,200 ONE-TIME'}
+              {checkoutMutation.isPending ? 'LOADING...' : `LIFETIME — ${PRICING_PLANS.lifetime.priceLabel.toUpperCase()}`}
             </button>
           </div>
 

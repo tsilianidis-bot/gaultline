@@ -1039,3 +1039,122 @@
 - [ ] Nav: SEO Optimizer in TOOLS group in AppLayout.tsx
 - [ ] useSEO entry for the page
 - [ ] Vitest tests for seoOptimizer.ts
+
+## Technical Debt Cleanup — Senior Fintech Audit (Jun 2026)
+
+### Phase 1: Shared Tier/Pricing Source of Truth
+- [ ] Create shared/tiers.ts with canonical tier definitions, display names, Stripe plan IDs, access levels, feature gates
+- [ ] Refactor server/stripe/products.ts to import from shared/tiers.ts
+- [ ] Refactor PremiumGate.tsx to use shared tier constants
+- [ ] Refactor MobileLayout.tsx to use shared tier pricing (remove hardcoded $9.99)
+- [ ] Refactor MarketingSite.tsx pricing section to use shared tier constants
+- [ ] Refactor server tier checks to use shared tier access levels
+- [ ] Eliminate tier-name drift (free/core/premium/founding vs Observer/Core/Analyst/Operator)
+
+### Phase 2: Stripe Webhook Test Coverage
+- [ ] Add server/stripe/webhook.test.ts covering checkout.session.completed
+- [ ] Add test for invoice.paid handler
+- [ ] Add test for customer.subscription.deleted handler
+- [ ] Add test for invoice.payment_failed handler
+- [ ] Add billing flow integration test: checkout → webhook → tier update → access granted
+- [ ] Add test: cancelled user loses premium access
+- [ ] Add test: paid user immediately receives correct tier access
+
+### Phase 3: AI Concentration Credibility Fix
+- [ ] Mark AI concentration score in pressure engine as static estimate with lastUpdated timestamp
+- [ ] Add dataStatus field to AI bubble vector output (static/live/cached/fallback)
+- [ ] Update UI to show "STATIC ESTIMATE" label on AI concentration metric
+- [ ] Add regression test: AI bubble vector output includes dataStatus field
+- [ ] Add regression test: weight changes produce expected composite score delta
+
+### Phase 4: Pressure Engine Audit Trail
+- [ ] Add pressureRuns table to drizzle/schema.ts (timestamp, engineVersion, weights, rawInputs, vectorScores, compositeScore, regimeLabel, dataStatus, warnings)
+- [ ] Generate migration and apply via webdev_execute_sql
+- [ ] Write to pressureRuns table on every calculateFaultlinePressure() call
+- [ ] Add admin.getPressureRuns tRPC procedure for historical inspection
+- [ ] Preserve existing pressureHistory and dailyReadingSnapshots behavior
+
+### Phase 5: Error Tracking (Sentry)
+- [ ] Install @sentry/node and @sentry/react
+- [ ] Add SENTRY_DSN secret via webdev_request_secrets
+- [x] Initialize Sentry in server/_core/index.ts with environment gating
+- [ ] Initialize Sentry in client/src/main.tsx with environment gating
+- [ ] Add fallback activation logging for FRED, Polygon, Yahoo, CoinGecko, Stripe, LLM calls
+- [ ] Ensure no secrets exposed to client-side Sentry config
+
+### Phase 6: Database Integrity
+- [x] Add FK constraints with onDelete cascade to positions, cryptoWatchlist, mobileWatchlist, userMarketAwarenessActions, foundingAccessRequests
+- [x] Add composite index on (userId, createdAt) for user-scoped tables
+- [x] Add index on userId for positions, cryptoWatchlist, mobileWatchlist tables
+- [x] Write safe migration SQL and verify no data loss before applying
+
+### Phase 7: Router and DB File Split
+- [x] Split server/routers.ts into domain routers: auth, billing, portfolio, pressure, signals, crypto, awareness, readingHistory, blog, social, admin, preflight
+- [ ] Split server/db.ts into domain repositories: users.repo.ts, portfolio.repo.ts, watchlist.repo.ts, billing.repo.ts, content.repo.ts, analytics.repo.ts, pressure.repo.ts
+- [ ] Preserve all existing procedure names and API contracts
+- [ ] Add adminProcedure middleware to server/_core/trpc.ts (replace 8+ inline role checks)
+
+### Phase 8: Live Data Architecture
+- [ ] Centralize server-side pressure refresh (single worker writes to DB, clients read from DB)
+- [ ] Add SSE endpoint for pressure score push delivery
+- [ ] Update UI LIVE/STALE/CACHED/FALLBACK/STATIC labels to reflect actual data status
+- [ ] Keep polling as fallback
+
+### Phase 9: Mobile Code Splitting
+- [x] Add React lazy() and Suspense for /mobile/* routes
+- [ ] Ensure mobile routes do not load full desktop terminal bundle
+- [x] Move mobile pricing references to shared/tiers.ts
+- [ ] Keep existing mobile UI and five-tab structure
+
+### Phase 10: Validation
+- [ ] Run full TypeScript check (0 errors)
+- [ ] Run full test suite (all passing)
+- [ ] Confirm no existing routes or UI pages broken
+- [ ] Save checkpoint with delivery report
+
+## Launch-Readiness Hardening — Requirements 11–15 (Jun 2026)
+
+### Requirement 11: Universal Data Truth Labeling
+- [ ] Create shared/dataStatus.ts with DataStatus type (live/delayed/cached/stale/fallback/static/unavailable) and DataSourceMeta interface
+- [x] Add dataStatus, lastUpdated, source, fallbackReason fields to pressure engine output
+- [ ] Add dataStatus fields to FRED proxy responses
+- [ ] Add dataStatus fields to Polygon proxy responses
+- [ ] Add dataStatus fields to Yahoo Finance responses
+- [ ] Add dataStatus fields to CoinGecko responses
+- [ ] Add dataStatus fields to LLM/AI outputs
+- [ ] Add dataStatus fields to signal scoring outputs
+- [x] Update UI to show data status badges — never label anything LIVE unless it is actually live
+- [ ] Remove or replace any false LIVE labels on static/cached/estimated data
+
+### Requirement 12: Methodology Transparency Page
+- [x] Create /app/methodology route and page (MethodologyPage.tsx)
+- [ ] Show engine version, vector weights, data sources, live/cached/static status per input
+- [ ] Show last updated timestamps, plain-English vector explanations, fallback behavior
+- [x] Add legal disclaimer section
+- [x] Add to nav (admin-accessible or public)
+- [x] Register route in App.tsx
+
+### Requirement 13: Admin Feature Flags / Kill Switches
+- [x] Add feature_flags table to drizzle/schema.ts (key, enabled, description, updatedAt)
+- [x] Generate and apply migration
+- [x] Seed default flags: ai_narrative, x_posting, blog_publishing, crypto_intelligence, pressure_fallback_display, stripe_checkout, mobile_signup, llm_reports, experimental_signals
+- [x] Add admin.getFeatureFlags and admin.setFeatureFlag tRPC procedures
+- [x] Add FeatureFlagsTab to AdminPortal.tsx
+- [ ] Add useFeatureFlag(key) hook on client
+- [ ] Gate relevant features behind flag checks (AI narrative, X posting, blog, crypto, Stripe checkout, mobile signup)
+
+### Requirement 14: Investment-Advice Compliance Copy Audit
+- [x] Audit MarketingSite.tsx for prediction/guarantee/advice language
+- [x] Audit Dashboard.tsx and all dashboard pages for compliance
+- [x] Audit Signals.tsx, CryptoSignals.tsx for BUY/SELL/HOLD disclaimer adequacy
+- [ ] Audit DailyReport.tsx and AI-generated content for advice language
+- [ ] Audit mobile PWA pages for compliance
+- [x] Add baseline disclaimer to: marketing footer, dashboard footer, checkout page, onboarding, methodology page
+- [ ] Baseline: "FAULTLINE provides market intelligence and risk analysis for educational and informational purposes only. It is not financial, investment, legal, or tax advice."
+- [ ] Ensure disclaimer does not weaken brand voice
+
+### Requirement 15: Launch Readiness Checklist
+- [x] Produce final Launch Readiness Checklist document covering all 23 items from spec
+- [x] Confirm TypeScript passes (0 errors)
+- [x] Confirm full test suite passes
+- [x] Save final checkpoint with version ID

@@ -423,6 +423,7 @@ export async function runAftershockEngine(): Promise<AftershockEngineOutput> {
       topAnalog: { year: 2022, label: "Rate Shock", similarity: 50, description: "Moderate pressure analog" },
       analogs: [],
       timestamp: new Date().toISOString(),
+      lastUpdated: new Date().toISOString(),
       dataSource: "fallback",
     };
   }

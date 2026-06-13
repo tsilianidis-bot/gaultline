@@ -1,4 +1,5 @@
-import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
 
 /**
  * Core user table backing auth flow.
@@ -66,7 +67,7 @@ export type InsertUser = typeof users.$inferInsert;
  */
 export const positions = mysqlTable("positions", {
   id:        int("id").autoincrement().primaryKey(),
-  userId:    int("userId").notNull(),            // FK → users.id
+  userId:    int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   ticker:    varchar("ticker", { length: 20 }).notNull(),
   name:      varchar("name", { length: 120 }).notNull(),
   shares:    decimal("shares", { precision: 18, scale: 8 }).notNull(),   // supports fractional crypto
@@ -76,7 +77,12 @@ export const positions = mysqlTable("positions", {
   openedAt:  timestamp("openedAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (t) => ({
+  /** Fast lookup of all positions for a given user */
+  userIdIdx: index("positions_userId_idx").on(t.userId),
+  /** Fast lookup of all users holding a given ticker */
+  tickerIdx:  index("positions_ticker_idx").on(t.ticker),
+}));
 
 export type Position = typeof positions.$inferSelect;
 export type InsertPosition = typeof positions.$inferInsert;
@@ -88,11 +94,14 @@ export type InsertPosition = typeof positions.$inferInsert;
  */
 export const cryptoWatchlist = mysqlTable("cryptoWatchlist", {
   id:      int("id").autoincrement().primaryKey(),
-  userId:  int("userId").notNull(),
+  userId:  int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   symbol:  varchar("symbol", { length: 20 }).notNull(),
   name:    varchar("name", { length: 120 }).notNull(),
   addedAt: timestamp("addedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  userIdIdx:        index("cryptoWatchlist_userId_idx").on(t.userId),
+  userSymbolIdx:    index("cryptoWatchlist_userId_symbol_idx").on(t.userId, t.symbol),
+}));
 
 export type CryptoWatchlistItem = typeof cryptoWatchlist.$inferSelect;
 export type InsertCryptoWatchlistItem = typeof cryptoWatchlist.$inferInsert;
@@ -200,12 +209,15 @@ export type InsertPressureHistory = typeof pressureHistory.$inferInsert;
  */
 export const mobileWatchlist = mysqlTable("mobileWatchlist", {
   id:        int("id").autoincrement().primaryKey(),
-  userId:    int("userId").notNull(),
+  userId:    int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   symbol:    varchar("symbol", { length: 30 }).notNull(),
   name:      varchar("name", { length: 120 }).notNull(),
   type:      mysqlEnum("type", ["stock", "crypto"]).notNull().default("stock"),
   addedAt:   timestamp("addedAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  userIdIdx:     index("mobileWatchlist_userId_idx").on(t.userId),
+  userSymbolIdx: index("mobileWatchlist_userId_symbol_idx").on(t.userId, t.symbol),
+}));
 export type MobileWatchlistItem = typeof mobileWatchlist.$inferSelect;
 export type InsertMobileWatchlistItem = typeof mobileWatchlist.$inferInsert;
 
@@ -217,13 +229,18 @@ export type InsertMobileWatchlistItem = typeof mobileWatchlist.$inferInsert;
  */
 export const userMarketAwarenessActions = mysqlTable("userMarketAwarenessActions", {
   id:          int("id").autoincrement().primaryKey(),
-  userId:      int("userId").notNull(),
+  userId:      int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   actionKey:   varchar("actionKey", { length: 80 }).notNull(),
   sourcePage:  varchar("sourcePage", { length: 80 }),
   metadata:    text("metadata"),           // JSON string for optional context
   completedAt: timestamp("completedAt").defaultNow().notNull(),
   createdAt:   timestamp("createdAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  /** Fast lookup of today's actions for a given user */
+  userCompletedIdx: index("marketAwareness_userId_completedAt_idx").on(t.userId, t.completedAt),
+  /** Fast lookup of a specific action key across all users */
+  actionKeyIdx:     index("marketAwareness_actionKey_idx").on(t.actionKey),
+}));
 export type UserMarketAwarenessAction = typeof userMarketAwarenessActions.$inferSelect;
 export type InsertUserMarketAwarenessAction = typeof userMarketAwarenessActions.$inferInsert;
 
@@ -302,7 +319,14 @@ export const pageViews = mysqlTable("pageViews", {
   /** Screen width in pixels */
   screenWidth: int("screenWidth"),
   createdAt:   timestamp("createdAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  /** Analytics dashboard: count views per path in a time range */
+  pathCreatedIdx:    index("pageViews_path_createdAt_idx").on(t.path, t.createdAt),
+  /** Per-session page history */
+  sessionIdIdx:      index("pageViews_sessionId_idx").on(t.sessionId),
+  /** Per-user page history */
+  userIdCreatedIdx:  index("pageViews_userId_createdAt_idx").on(t.userId, t.createdAt),
+}));
 export type PageView = typeof pageViews.$inferSelect;
 export type InsertPageView = typeof pageViews.$inferInsert;
 
@@ -334,7 +358,10 @@ export const analyticsSessions = mysqlTable("analyticsSessions", {
   utmCampaign:  varchar("utmCampaign", { length: 128 }),
   startedAt:    timestamp("startedAt").defaultNow().notNull(),
   lastSeenAt:   timestamp("lastSeenAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  startedAtIdx:  index("analyticsSessions_startedAt_idx").on(t.startedAt),
+  userIdIdx:     index("analyticsSessions_userId_idx").on(t.userId),
+}));
 export type AnalyticsSession = typeof analyticsSessions.$inferSelect;
 export type InsertAnalyticsSession = typeof analyticsSessions.$inferInsert;
 
@@ -354,6 +381,66 @@ export const siteEvents = mysqlTable("siteEvents", {
   country:   varchar("country", { length: 4 }),
   deviceType: varchar("deviceType", { length: 16 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (t) => ({
+  /** Count events by name in a time range */
+  eventNameCreatedIdx: index("siteEvents_eventName_createdAt_idx").on(t.eventName, t.createdAt),
+  /** Per-user event history */
+  userIdIdx:           index("siteEvents_userId_idx").on(t.userId),
+}));
 export type SiteEvent = typeof siteEvents.$inferSelect;
 export type InsertSiteEvent = typeof siteEvents.$inferInsert;
+
+// ── Pressure Engine Audit Trail ──────────────────────────────
+/**
+ * Immutable audit log of every pressure engine execution.
+ * One row per calculateFaultlinePressure() call that completes successfully.
+ * Used for reproducibility, debugging, and admin inspection.
+ * Never deleted — append-only.
+ */
+export const pressureRuns = mysqlTable("pressureRuns", {
+  id:               int("id").autoincrement().primaryKey(),
+  /** Composite pressure index 0–100 */
+  overallPressure:  int("overallPressure").notNull(),
+  /** Regime label e.g. ELEVATED RISK, HIGH STRESS */
+  regime:           varchar("regime", { length: 80 }).notNull(),
+  /** Qualitative level: Low | Moderate | Elevated | High | Critical */
+  level:            varchar("level", { length: 20 }).notNull(),
+  /** Whether live FRED data was used or fallback values */
+  dataSource:       mysqlEnum("dataSource", ["live", "fallback"]).notNull(),
+  /** JSON array of RiskVector objects (scores, drivers, dataStatus, source) */
+  vectorsJson:      text("vectorsJson").notNull(),
+  /** JSON array of PressureAlert objects */
+  alertsJson:       text("alertsJson").notNull(),
+  /** JSON object of the top historical analog match */
+  topAnalogJson:    text("topAnalogJson").notNull(),
+  /** Raw FRED input values used in this run (for reproducibility) */
+  rawInputsJson:    text("rawInputsJson"),
+  /** Engine version tag — increment manually when scoring logic changes */
+  engineVersion:    varchar("engineVersion", { length: 20 }).default("1.0.0").notNull(),
+  /** ISO timestamp when this run was computed */
+  computedAt:       timestamp("computedAt").defaultNow().notNull(),
+});
+export type PressureRun = typeof pressureRuns.$inferSelect;
+export type InsertPressureRun = typeof pressureRuns.$inferInsert;
+
+// ── Feature Flags / Kill Switches ────────────────────────────
+/**
+ * Admin-controlled feature flags for disabling risky or broken features
+ * without a redeploy. All production-safe features default to enabled (1).
+ * One row per feature key — unique constraint prevents duplicates.
+ */
+export const featureFlags = mysqlTable("featureFlags", {
+  id:          int("id").autoincrement().primaryKey(),
+  /** Machine-readable feature key e.g. ai_narrative, x_posting */
+  key:         varchar("key", { length: 80 }).notNull().unique(),
+  /** Whether the feature is currently enabled (1) or disabled (0) */
+  enabled:     int("enabled").default(1).notNull(),
+  /** Human-readable description of what this flag controls */
+  description: text("description"),
+  /** Admin user ID who last changed this flag (null = system default) */
+  updatedBy:   int("updatedBy"),
+  updatedAt:   timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt:   timestamp("createdAt").defaultNow().notNull(),
+});
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type InsertFeatureFlag = typeof featureFlags.$inferInsert;

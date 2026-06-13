@@ -2136,6 +2136,7 @@ function Footer() {
               </li>
               <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founder Access — $199 one-time</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
+              <li><a href="/methodology" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Methodology</a></li>
               <li><a href="/contact" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Contact Us</a></li>
               <li><a href="mailto:jt@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">jt@getfaultline.live</a></li>
             </ul>
@@ -2154,6 +2155,8 @@ function Footer() {
               <a href="/legal" className="hover:text-[#00D4FF] transition-colors">Privacy Policy</a>
               <span className="opacity-30">·</span>
               <a href="/legal" className="hover:text-[#00D4FF] transition-colors">Terms of Use</a>
+              <span className="opacity-30">·</span>
+              <a href="/methodology" className="hover:text-[#00D4FF] transition-colors">Methodology</a>
               <span className="opacity-30">·</span>
               <a href="/contact" className="hover:text-[#00D4FF] transition-colors">Contact Us</a>
               <span className="opacity-30">·</span>

@@ -4,23 +4,21 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { trackUpgradeClick } from "@/hooks/useAnalytics";
+import {
+  tierMeetsRequirement,
+  GATE_REQUIRED_TIER,
+  PRICING_PLANS,
+  type GateVariant,
+  type AccessTier,
+} from '../../../shared/tiers';
 
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type PremiumGateVariant =
-  | "founding"       // "Founding Access Required"
-  | "signals"        // "Advanced Signals Restricted" — Core tier
-  | "portfolio"      // "Portfolio Monitor" — Core tier
-  | "altRotation"    // "Alt Rotation" — Core tier
-  | "risk"           // "Real-Time Risk Engine Locked" — Premium tier
-  | "intelligence"   // "Premium Intelligence Locked" — Premium tier
-  | "crypto"         // "Crypto Intelligence Locked" — Premium tier
-  | "aftershock"     // "Aftershock Engine™ Locked" — Premium tier
-  | "watchlist";     // "Watchlist Locked" — Premium tier
+export type PremiumGateVariant = GateVariant;
 
 /** Which minimum tier is required to pass this gate */
-export type GateTier = 'core' | 'premium';
+export type GateTier = AccessTier;
 
 interface PremiumGateConfig {
   title: string;
@@ -210,12 +208,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
   },
 };
 
-/** Returns true if the user's tier meets or exceeds the required tier */
-function hasRequiredAccess(userTier: string, requiredTier: GateTier): boolean {
-  if (userTier === 'founding' || userTier === 'premium') return true;
-  if (requiredTier === 'core' && userTier === 'core') return true;
-  return false;
-}
+// hasRequiredAccess is now provided by shared/tiers.ts tierMeetsRequirement
 
 // ─── Full-Page Gate ────────────────────────────────────────────────────────────
 
@@ -261,7 +254,7 @@ export function PremiumGateFull({
 
   const tier = tierQuery.data?.tier ?? 'free';
   const cfg = GATE_CONFIGS[variant];
-  const hasAccess = isAuthenticated && hasRequiredAccess(tier, cfg.requiredTier);
+  const hasAccess = isAuthenticated && tierMeetsRequirement(tier as AccessTier, GATE_REQUIRED_TIER[variant]);
 
   // User has sufficient access — show full content
   if (hasAccess) {
@@ -377,7 +370,7 @@ export function PremiumGateFull({
           </div>
 
           {/* Founding urgency banner (only for premium/founding gates) */}
-          {(cfg.requiredTier === 'premium') && (
+          {(GATE_REQUIRED_TIER[variant] === 'premium') && (
             <div
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg mb-6 text-center"
               style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
@@ -404,7 +397,7 @@ export function PremiumGateFull({
             {isLoggedIn ? (
               // Logged-in users: show Stripe upgrade buttons based on context
               <>
-                {cfg.requiredTier === 'core' && !isCoreTier && (
+                {GATE_REQUIRED_TIER[variant] === 'core' && !isCoreTier && (
                   <button
                     onClick={() => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin })}
                     disabled={checkoutMutation.isPending}
@@ -416,19 +409,19 @@ export function PremiumGateFull({
                     }}
                   >
                     <Zap className="w-4 h-4" />
-                    {checkoutMutation.isPending ? 'Loading...' : 'Unlock Core — $9.99/mo'}
+                    {checkoutMutation.isPending ? 'Loading...' : `Unlock Core — ${PRICING_PLANS.core.priceLabel}`}
                   </button>
                 )}
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin })}
                   disabled={checkoutMutation.isPending}
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={cfg.requiredTier === 'premium'
+                  style={GATE_REQUIRED_TIER[variant] === 'premium'
                     ? { background: "#00D4FF", color: "#050608", boxShadow: "0 0 24px rgba(0,212,255,0.45)" }
                     : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
                 >
                   <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : 'Unlock Analyst — $39/mo'}
+                  {checkoutMutation.isPending ? 'Loading...' : `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`}
                 </button>
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
@@ -441,7 +434,7 @@ export function PremiumGateFull({
                   }}
                 >
                   <Shield className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : 'Founding Access — $199 one-time'}
+                  {checkoutMutation.isPending ? 'Loading...' : `Founding Access — ${PRICING_PLANS.founding.priceLabel}`}
                 </button>
               </>
             ) : (

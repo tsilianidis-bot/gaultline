@@ -17,6 +17,7 @@ import { handleScheduledXPost, handleXNewsMonitor } from "../scheduledXPost";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { captureError, flushErrorTracking } from "../errorTracking";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -122,6 +123,17 @@ async function startServer() {
     createExpressMiddleware({
       router: appRouter,
       createContext,
+      onError({ error, path, ctx }) {
+        // Only capture 5xx errors — 4xx are expected client errors (UNAUTHORIZED, NOT_FOUND, etc.)
+        if (error.code === "INTERNAL_SERVER_ERROR") {
+          captureError(error.cause ?? error, {
+            procedure: path ?? "unknown",
+            userId: (ctx as { user?: { id: number } } | undefined)?.user?.id,
+            userTier: (ctx as { user?: { accessTier: string } } | undefined)?.user?.accessTier,
+            trpcCode: error.code,
+          }).catch(() => {});
+        }
+      },
     })
   );
 
@@ -144,4 +156,15 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch(err => {
+  captureError(err, { procedure: "server.startup" }).catch(() => {});
+  console.error("[Server] Fatal startup error:", err);
+  process.exit(1);
+});
+
+// Graceful shutdown — flush Sentry events before Cloud Run terminates the container
+process.on("SIGTERM", async () => {
+  process.stdout.write("[Server] SIGTERM received — flushing error tracking...\n");
+  await flushErrorTracking(3000);
+  process.exit(0);
+});

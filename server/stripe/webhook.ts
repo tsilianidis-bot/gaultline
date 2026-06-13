@@ -3,19 +3,20 @@ import { stripe } from './client';
 import { ENV } from '../_core/env';
 import { getPlanByPriceId } from './products';
 import { updateUserStripe, getUserByStripeCustomerId } from '../db';
+import type { AccessTier } from '../../shared/tiers';
 
 /**
  * Resolve the access tier for a completed checkout session.
  * Always fetches line items from the Stripe API — they are NOT included
  * in the webhook payload by default, so we must call listLineItems().
  */
-async function resolveTierFromSession(sessionId: string): Promise<'core' | 'premium' | 'founding'> {
+async function resolveTierFromSession(sessionId: string): Promise<Exclude<AccessTier, 'free'>> {
   try {
     const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
     const priceId = lineItems.data[0]?.price?.id;
     if (priceId) {
       const plan = getPlanByPriceId(priceId);
-      if (plan) return plan.tier;
+      if (plan && plan.tier !== 'free') return plan.tier;
     }
   } catch (err: any) {
     console.warn('[Stripe Webhook] Could not fetch line items for session', sessionId, '—', err.message);
@@ -29,13 +30,13 @@ async function resolveTierFromSession(sessionId: string): Promise<'core' | 'prem
  * Resolve the access tier for a subscription (used on invoice.paid renewals).
  * Looks up the price on the first subscription item.
  */
-async function resolveTierFromSubscription(subscriptionId: string): Promise<'core' | 'premium' | 'founding' | null> {
+async function resolveTierFromSubscription(subscriptionId: string): Promise<Exclude<AccessTier, 'free'> | null> {
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     const priceId = subscription.items.data[0]?.price?.id;
     if (priceId) {
       const plan = getPlanByPriceId(priceId);
-      if (plan) return plan.tier;
+      if (plan && plan.tier !== 'free') return plan.tier;
     }
   } catch (err: any) {
     console.warn('[Stripe Webhook] Could not fetch subscription', subscriptionId, '—', err.message);

@@ -1,0 +1,9 @@
+/**
+ * Domain router barrel
+ * Re-exports all extracted domain routers for use in the main appRouter.
+ * Add new domain routers here as they are extracted from server/routers.ts.
+ */
+export { analyticsRouter } from "./analytics";
+export { blogRouter } from "./blog";
+export { billingRouter } from "./billing";
+export { adminRouter } from "./admin";

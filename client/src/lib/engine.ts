@@ -81,6 +81,12 @@ export interface DomainScore {
   riskLevel: 'critical' | 'high' | 'elevated' | 'moderate' | 'low';
   description: string;
   drivers: string[];   // top contributing factors
+  /** Data freshness: live = FRED-sourced, delayed = FRED with lag, static = model estimate, fallback = last known value */
+  dataStatus?: 'live' | 'delayed' | 'static' | 'fallback' | 'unavailable';
+  /** Human-readable explanation when dataStatus is not live */
+  fallbackReason?: string;
+  /** Data source identifier e.g. FRED, Polygon, static-model */
+  source?: string;
 }
 
 export interface RegimeOutput {
@@ -227,6 +233,9 @@ function scoreAIBubble(ind: RawIndicators): DomainScore {
     riskLevel: toRiskLevel(score),
     description: 'AI/mega-cap concentration, capex growth, and monetization gap composite.',
     drivers,
+    dataStatus: 'static',
+    fallbackReason: 'AI concentration baseline is a static model estimate. No live market-cap data source is currently wired. Score is adjusted dynamically by live FRED rate and spread inputs.',
+    source: 'static-model',
   };
 }
 

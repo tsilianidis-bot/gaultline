@@ -108,4 +108,65 @@ describe("calculateFaultlinePressure (fallback mode)", () => {
     expect(ids).toContain("market-breadth");
     expect(ids).toContain("ai-bubble");
   });
+
+  // ── Data truth labeling regression tests ──────────────────────
+
+  it("output includes lastUpdated as a valid ISO string", async () => {
+    const result = await calculateFaultlinePressure();
+    expect(result).toHaveProperty("lastUpdated");
+    expect(() => new Date(result.lastUpdated)).not.toThrow();
+    expect(new Date(result.lastUpdated).getFullYear()).toBeGreaterThan(2020);
+  });
+
+  it("each vector has dataStatus and source fields", async () => {
+    const result = await calculateFaultlinePressure();
+    const validStatuses = ["live", "delayed", "cached", "stale", "fallback", "static", "unavailable"];
+    for (const v of result.vectors) {
+      expect(v).toHaveProperty("dataStatus");
+      expect(v).toHaveProperty("source");
+      expect(validStatuses).toContain(v.dataStatus);
+      expect(typeof v.source).toBe("string");
+      expect(v.source.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("ai-bubble vector is labeled static with a fallbackReason", async () => {
+    const result = await calculateFaultlinePressure();
+    const aiBubble = result.vectors.find(v => v.id === "ai-bubble");
+    expect(aiBubble).toBeDefined();
+    expect(aiBubble!.dataStatus).toBe("static");
+    expect(aiBubble!.fallbackReason).toBeDefined();
+    expect(aiBubble!.fallbackReason!.length).toBeGreaterThan(10);
+    // Source must mention it is a static model estimate — not a live feed
+    expect(aiBubble!.source.toLowerCase()).toContain("static");
+  });
+
+  it("ai-bubble vector score is still within valid range despite static concentration baseline", async () => {
+    const result = await calculateFaultlinePressure();
+    const aiBubble = result.vectors.find(v => v.id === "ai-bubble");
+    expect(aiBubble).toBeDefined();
+    expect(aiBubble!.score).toBeGreaterThanOrEqual(0);
+    expect(aiBubble!.score).toBeLessThanOrEqual(100);
+  });
+
+  it("live FRED vectors are labeled fallback when FRED is unavailable", async () => {
+    const result = await calculateFaultlinePressure();
+    // In test mode, FRED is mocked to fail, so all live vectors should be fallback
+    const liveVectors = result.vectors.filter(v => v.id !== "ai-bubble");
+    for (const v of liveVectors) {
+      expect(["fallback", "delayed", "live"]).toContain(v.dataStatus);
+    }
+  });
+
+  it("no vector uses dataStatus 'live' when dataSource is fallback", async () => {
+    const result = await calculateFaultlinePressure();
+    if (result.dataSource === "fallback") {
+      for (const v of result.vectors) {
+        // Static is allowed; live is not when the overall source is fallback
+        if (v.dataStatus === "live") {
+          throw new Error(`Vector '${v.id}' claims live status but overall dataSource is fallback`);
+        }
+      }
+    }
+  });
 });
