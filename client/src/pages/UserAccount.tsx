@@ -764,6 +764,24 @@ export default function UserAccount() {
               {checkoutMutation.isPending ? 'LOADING...' : `LIFETIME — ${PRICING_PLANS.lifetime.priceLabel.toUpperCase()}`}
             </button>
           </div>
+          {/* Limited spots disclaimer */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 14px',
+            background: 'rgba(255,215,0,0.04)',
+            border: '1px solid rgba(255,215,0,0.15)',
+            borderRadius: '8px',
+            marginBottom: '16px',
+          }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFD700', flexShrink: 0 }} />
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '9px', letterSpacing: '0.12em',
+              color: 'rgba(255,215,0,0.55)',
+            }}>
+              FOUNDING COHORT IS LIMITED — SPOTS CLOSE WITHOUT NOTICE — PRICE LOCKS AT SIGNUP
+            </span>
+          </div>
 
           <FoundingAccessForm userEmail={profile?.email ?? user?.email} />
         </div>

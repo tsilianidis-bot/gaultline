@@ -45,7 +45,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
     ctaPrimary: "Unlock Operator — $79/mo",
-    ctaSecondary: "Founding Access — $199 one-time",
+    ctaSecondary: "Founding Access — $299 one-time · Limited spots",
     features: [
       "Full macro regime intelligence",
       "Advanced trading signals",
@@ -121,7 +121,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
     ctaPrimary: "Unlock Operator — $79/mo",
-    ctaSecondary: "Founding Access — $199 one-time",
+    ctaSecondary: "Founding Access — $299 one-time · Limited spots",
     features: [
       "FAULTLINE Pressure Index™",
       "Liquidity stress monitoring",
@@ -140,7 +140,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
     ctaPrimary: "Unlock Operator — $79/mo",
-    ctaSecondary: "Founding Access — $199 one-time",
+    ctaSecondary: "Founding Access — $299 one-time · Limited spots",
     features: [
       "Diagnostic AI™ analysis",
       "Position Guidance™",
@@ -159,7 +159,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
     ctaPrimary: "Unlock Operator — $79/mo",
-    ctaSecondary: "Founding Access — $199 one-time",
+    ctaSecondary: "Founding Access — $299 one-time · Limited spots",
     features: [
       "Crypto systemic risk score",
       "BTC macro correlation tracking",
@@ -178,7 +178,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
     ctaPrimary: "Unlock Operator — $79/mo",
-    ctaSecondary: "Founding Access — $199 one-time",
+    ctaSecondary: "Founding Access — $299 one-time · Limited spots",
     features: [
       "Primary rupture detection",
       "Contagion chain mapping",
@@ -197,7 +197,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
     ctaPrimary: "Unlock Operator — $79/mo",
-    ctaSecondary: "Founding Access — $199 one-time",
+    ctaSecondary: "Founding Access — $299 one-time · Limited spots",
     features: [
       "Save any crypto token",
       "Live signal label monitoring",
@@ -371,18 +371,23 @@ export function PremiumGateFull({
 
           {/* Founding urgency banner (only for premium/founding gates) */}
           {(GATE_REQUIRED_TIER[variant] === 'premium') && (
-            <div
-              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg mb-6 text-center"
-              style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
-            >
-              <div className="relative flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FFD700]" />
-                <div className="absolute w-3 h-3 rounded-full bg-[#FFD700]/20 animate-ping" />
+            <>
+              <div
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg mb-2 text-center"
+                style={{ background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)' }}
+              >
+                <div className="relative flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#FFD700]" />
+                  <div className="absolute w-3 h-3 rounded-full bg-[#FFD700]/20 animate-ping" />
+                </div>
+                <span className="text-[10px] font-mono tracking-[0.25em] text-[#FFD700]/80">
+                  FOUNDING ACCESS OPEN — LIMITED AVAILABILITY
+                </span>
               </div>
-              <span className="text-[10px] font-mono tracking-[0.25em] text-[#FFD700]/80">
-                FOUNDING ACCESS OPEN — LIMITED AVAILABILITY
-              </span>
-            </div>
+              <p className="text-[9px] font-mono text-[#FFD700]/50 text-center mb-6 tracking-widest">
+                FOUNDING COHORT IS LIMITED. SPOTS CLOSE WITHOUT NOTICE.
+              </p>
+            </>
           )}
 
           {/* Tier separator */}

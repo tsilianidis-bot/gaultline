@@ -218,7 +218,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
               >
                 <div>
                   <div className="text-[13px] font-mono font-bold tracking-widest text-[#FFD700]">MOVE BEFORE THE QUAKE</div>
-                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Founder access · $199 one-time · Limited spots</div>
+                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Founder access · $299 one-time · Limited spots remaining</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 8h10M9 4l4 4-4 4" />
@@ -1367,7 +1367,7 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
             style={{ opacity: revealed ? 1 : 0, transitionDelay: "800ms" }}
           >
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
-            <span className="text-[10px] font-mono tracking-[0.3em] text-[#64748B]">FOUNDER SPOTS FILLING — POSITION INSIDE THE FAULTLINES BEFORE CAPACITY IS REACHED</span>
+            <span className="text-[10px] font-mono tracking-[0.3em] text-[#64748B]">FOUNDING COHORT IS LIMITED — SPOTS CLOSE WITHOUT NOTICE — PRICE LOCKS AT SIGNUP</span>
           </div>
         </div>
       </div>
@@ -1504,7 +1504,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       tagline: "Move first. Pay once. Never again.",
       price: PRICING_PLANS.lifetime.priceLabel,
       priceSub: "one-time — lifetime access",
-      desc: "Everything in Operator, forever. The top funds built their own intelligence infrastructure. You’re getting it for $199 — once.",
+      desc: "Everything in Operator, forever. The top funds built their own intelligence infrastructure. You’re getting it for $299 — once. Limited founding cohort.",
       features: [
         "Everything in Operator",
         "Lifetime access — pay once",
@@ -2135,7 +2135,7 @@ function Footer() {
                   Launch Platform →
                 </a>
               </li>
-              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founder Access — $199 one-time</a></li>
+              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founder Access — $299 · Limited Spots</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
               <li><a href="/methodology" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Methodology</a></li>
               <li><a href="/contact" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Contact Us</a></li>

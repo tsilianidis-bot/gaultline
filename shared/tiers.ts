@@ -10,8 +10,8 @@
  *
  * PRICING NOTE (as of June 2026):
  * - The `founding` plan is a monthly subscription at $49/mo locked for life.
- * - The `lifetime` plan is a one-time payment of $1,200.
- * - Some UI surfaces previously showed "Founding Access — $199 one-time" —
+ * - The `lifetime` plan is a one-time payment of $299.
+ * - Some UI surfaces previously showed "Founding Access — $199 one-time" (now $299) —
  *   this was a mismatch. The Stripe product ($49/mo) is the source of truth.
  * - PremiumGate previously showed "$79/mo" for Operator — this was a stale
  *   marketing name. The canonical premium plan is $59/mo.
@@ -221,8 +221,8 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
     planId: 'lifetime',
     tier: 'founding',
     name: 'FAULTLINE Founding Lifetime',
-    amountCents: 120000,
-    priceLabel: '$1,200 one-time',
+    amountCents: 29900,
+    priceLabel: '$299 one-time',
     interval: 'one_time',
     description: 'One-time payment — full founding access forever. No monthly charges, no renewals.',
     available: true,
