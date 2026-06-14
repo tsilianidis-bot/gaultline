@@ -380,6 +380,97 @@ export default function Blog() {
           }
         />
 
+        {/* ── Editorial Introduction ─────────────────────────────────── */}
+        <div className="mb-10 p-6 rounded-xl border border-white/8 bg-gradient-to-br from-white/[0.03] to-transparent">
+          <p className="text-slate-300 text-sm leading-relaxed mb-4 max-w-3xl" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+            <strong className="text-white">FAULTLINE Intelligence Briefings</strong> is the editorial arm of the FAULTLINE macro risk platform — a publication dedicated to understanding systemic market pressure, macro regime shifts, and the fault lines forming beneath global financial markets before they become crises.
+          </p>
+          <p className="text-slate-400 text-sm leading-relaxed mb-4 max-w-3xl" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+            Every briefing is grounded in the same analytical framework that powers the FAULTLINE Pressure Index™: a multi-factor model that aggregates credit spreads, volatility regimes, liquidity conditions, breadth deterioration, and macro policy signals into a single, real-time risk score. When the index moves, we explain why — and what it means for your portfolio.
+          </p>
+          <p className="text-slate-400 text-sm leading-relaxed max-w-3xl" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+            Our intelligence covers five core domains: <strong className="text-slate-300">macro intelligence</strong> (Fed policy, yield curves, credit cycles), <strong className="text-slate-300">market risk analysis</strong> (equity regime, sector rotation, momentum breakdowns), <strong className="text-slate-300">risk intelligence</strong> (systemic contagion, tail risk, crash analogs), <strong className="text-slate-300">crypto intelligence</strong> (digital asset macro correlation, stablecoin liquidity, BTC dominance cycles), and <strong className="text-slate-300">platform updates</strong> (new FAULTLINE features, methodology changes, and signal improvements).
+          </p>
+        </div>
+
+        {/* ── Topic Pillars ─────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+          {[
+            {
+              color: "#00D4FF",
+              label: "MACRO INTELLIGENCE",
+              heading: "Fed Policy & Macro Regime",
+              body: "Decoding Federal Reserve signals, yield curve dynamics, credit cycle positioning, and the macro regimes that define whether risk assets advance or retreat. FAULTLINE tracks the full macro stack — from M2 money supply to real rates — and translates it into actionable intelligence.",
+            },
+            {
+              color: "#F59E0B",
+              label: "MARKET ANALYSIS",
+              heading: "Equity Regime & Sector Rotation",
+              body: "Identifying where we are in the market cycle, which sectors are absorbing institutional flows, and where momentum is building or breaking down. Our market analysis integrates breadth data, sector leadership shifts, and FAULTLINE's proprietary signal catalog to surface high-conviction setups.",
+            },
+            {
+              color: "#EF4444",
+              label: "RISK INTELLIGENCE",
+              heading: "Systemic Risk & Contagion",
+              body: "Mapping the fault lines in global financial markets: credit contagion pathways, liquidity fragility, historical crash analogs, and the systemic pressure signals that precede market dislocations. The FAULTLINE Pressure Index™ is the backbone of every risk intelligence briefing.",
+            },
+            {
+              color: "#A78BFA",
+              label: "CRYPTO INTELLIGENCE",
+              heading: "Digital Asset Macro Correlation",
+              body: "Bitcoin and digital assets do not move in isolation. FAULTLINE connects crypto market structure — BTC dominance, stablecoin supply, exchange flows, and speculative pressure — to the broader macro regime, helping investors understand when crypto is a risk-on amplifier and when it is a leading indicator of broader stress.",
+            },
+            {
+              color: "#34D399",
+              label: "PLATFORM UPDATES",
+              heading: "New Features & Methodology",
+              body: "Transparency into how FAULTLINE works: new signal additions, scoring methodology updates, data source changes, and platform improvements. Every update to the FAULTLINE Pressure Index™ or signal catalog is documented here so users understand exactly what changed and why.",
+            },
+            {
+              color: "#64748B",
+              label: "ABOUT THIS PUBLICATION",
+              heading: "Who We Write For",
+              body: "FAULTLINE Intelligence Briefings is written for serious investors, traders, and financial professionals who need to understand macro risk before it moves markets. We do not write for entertainment — we write for decision-making. Every briefing is designed to be read in under five minutes and acted on immediately.",
+            },
+          ].map(({ color, label, heading, body }) => (
+            <div key={label} style={{ background: `${color}06`, border: `1px solid ${color}20`, borderLeft: `3px solid ${color}`, borderRadius: "8px", padding: "16px 18px" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, letterSpacing: "0.15em", marginBottom: "8px" }}>{label}</div>
+              <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#F0F4FF", marginBottom: "8px", lineHeight: 1.2 }}>{heading}</h3>
+              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0 }}>{body}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── What to Expect ────────────────────────────────────────────── */}
+        <div className="mb-10 p-5 rounded-lg border border-white/6 bg-white/[0.02]">
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151", letterSpacing: "0.2em", marginBottom: "12px" }}>WHAT TO EXPECT FROM EACH BRIEFING</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+            {[
+              { label: "Pressure Context",    desc: "Where the FAULTLINE Pressure Index™ stands and what is driving the reading." },
+              { label: "Regime Classification", desc: "Whether the current macro environment is Bullish, Neutral, Elevated Risk, or Crisis." },
+              { label: "Key Risk Vectors",    desc: "The two or three fault lines most likely to cause a market dislocation in the near term." },
+              { label: "Signal Highlights",   desc: "Top signals from the FAULTLINE catalog — momentum, macro fit, and conviction levels." },
+              { label: "Actionable Framing",  desc: "Not investment advice, but a clear framework for thinking about risk and positioning." },
+              { label: "Historical Analog",   desc: "When relevant, a comparison to prior market regimes that share similar structural characteristics." },
+            ].map(({ label, desc }) => (
+              <div key={label} className="flex gap-3">
+                <span style={{ color: "#00D4FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", flexShrink: 0, marginTop: "2px" }}>→</span>
+                <div>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", letterSpacing: "0.06em" }}>{label}: </span>
+                  <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#4B5563" }}>{desc}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Divider ───────────────────────────────────────────────────── */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="h-px flex-1 bg-white/6" />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#1F2937", letterSpacing: "0.2em" }}>LATEST BRIEFINGS</span>
+          <div className="h-px flex-1 bg-white/6" />
+        </div>
+
         {/* Category filter */}
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
