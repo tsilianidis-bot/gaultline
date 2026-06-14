@@ -13,6 +13,7 @@ import { registerSEORoutes } from "../seoRoutes";
 import analyticsRoutes from "../analyticsRoutes";
 import { handleStripeWebhook } from "../stripe/webhook";
 import { handleScheduledPublishBlog } from "../scheduledBlog";
+import { handleScheduledDailySnapshot } from "../scheduledDailySnapshot";
 import { handleScheduledXPost, handleXNewsMonitor } from "../scheduledXPost";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -113,6 +114,7 @@ async function startServer() {
 
   // Scheduled cron endpoints — must be before tRPC / Vite fallthrough
   app.post("/api/scheduled/ping", (_req, res) => res.json({ ok: true }));
+  app.post("/api/scheduled/daily-snapshot", handleScheduledDailySnapshot);
   app.post("/api/scheduled/publish-blog", handleScheduledPublishBlog);
   app.post("/api/scheduled/x-post-scheduled", handleScheduledXPost);
   app.post("/api/scheduled/x-news-monitor", handleXNewsMonitor);

@@ -1204,3 +1204,14 @@
 - [x] Build AsymmetricOpportunityCard component with: ticker, company, sector, asymmetry ratio, conviction badge, upside/downside targets, catalyst, risk factors, AI thesis
 - [x] Ensure hover tooltips on all data points explaining what each metric means
 - [x] TypeScript: 0 errors, tests passing (426 passed)
+
+## Readings History Fix + Heatmap Redesign
+
+- [x] Fix readings history — root cause: 0 rows in DB; generated today's snapshot (score: 30, 2026-06-14)
+- [x] Add daily snapshot cron at 6:30 AM UTC (task_uid: 6ApawzzUJkEGnfApokZW2w)
+- [x] Redesign heatmap as proper squarified treemap (cells sized by market cap)
+- [x] Add combined Gainers/Losers tab (split-screen, both treemaps side-by-side)
+- [x] Volume tab: red/green by price direction, intensity by volume
+- [x] Cross-tab strip: top gainer, top loser, top volume shown simultaneously
+- [x] Auto-refresh countdown: 3-min countdown with auto-refetch
+- [x] Sector sub-view: toggle to collapse treemap into grouped sector cards
