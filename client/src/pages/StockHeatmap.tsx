@@ -1,19 +1,19 @@
 // ============================================================
-// FAULTLINE — Stock Heatmap (Treemap Layout)
+// FAULTLINE — Stock Heatmap (Uniform Grid, Crypto-style)
 // client/src/pages/StockHeatmap.tsx
 //
 // Tabs:
-//   1. GAINERS / LOSERS  — split-screen side-by-side
-//   2. TOP GAINERS       — full treemap, green
-//   3. TOP LOSERS        — full treemap, red
-//   4. HIGHEST VOLUME    — treemap, red/green by direction
-//   5. 52-WEEK HIGHS     — treemap, gold
-//   6. 52-WEEK LOWS      — treemap, pink
-//   7. MOST VOLATILE     — treemap, orange
-//   8. SMALL-CAP RUNNERS — treemap, purple
+//   1. GAINERS / LOSERS  — split-screen side-by-side grids
+//   2. TOP GAINERS       — uniform grid, green
+//   3. TOP LOSERS        — uniform grid, red
+//   4. HIGHEST VOLUME    — uniform grid, red/green by direction
+//   5. 52-WEEK HIGHS     — uniform grid, gold
+//   6. 52-WEEK LOWS      — uniform grid, pink
+//   7. MOST VOLATILE     — uniform grid, orange
+//   8. SMALL-CAP RUNNERS — uniform grid, purple
 //
-// Treemap: cells sized proportionally by market cap (or volume for
-// the volume tab). Uses a squarified treemap algorithm.
+// Grid style matches the CryptoSearch heatmap: equal-sized cells
+// in an auto-fill responsive grid, colored by % change intensity.
 // ============================================================
 
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
@@ -112,114 +112,24 @@ const TABS: {
   { id: "smallcap", label: "SMALL-CAP RUNNERS",   shortLabel: "SM-CAP",   accentColor: "#A78BFA", description: "Small-cap gainers with strong momentum",         Icon: Activity      },
 ];
 
-// ── Squarified Treemap Algorithm ──────────────────────────────
+// ── Heat Cell (matches CryptoSearch style) ────────────────────
 
-interface TreemapRect {
-  x: number; y: number; w: number; h: number;
-  stock: StockPerformer;
-  rank: number;
-}
-
-function squarify(
-  items: { value: number; stock: StockPerformer; rank: number }[],
-  x: number, y: number, w: number, h: number,
-): TreemapRect[] {
-  if (items.length === 0) return [];
-  if (items.length === 1) {
-    return [{ x, y, w, h, stock: items[0].stock, rank: items[0].rank }];
-  }
-
-  const totalValue = items.reduce((s, i) => s + i.value, 0);
-  if (totalValue === 0) return [];
-
-  const results: TreemapRect[] = [];
-
-  function layoutRow(
-    row: typeof items,
-    rx: number, ry: number, rw: number, rh: number,
-    isHorizontal: boolean,
-  ) {
-    const rowTotal = row.reduce((s, i) => s + i.value, 0);
-    let offset = 0;
-    for (const item of row) {
-      const frac = item.value / rowTotal;
-      if (isHorizontal) {
-        const cellW = rw * frac;
-        results.push({ x: rx + offset, y: ry, w: cellW, h: rh, stock: item.stock, rank: item.rank });
-        offset += cellW;
-      } else {
-        const cellH = rh * frac;
-        results.push({ x: rx, y: ry + offset, w: rw, h: cellH, stock: item.stock, rank: item.rank });
-        offset += cellH;
-      }
-    }
-  }
-
-  function worst(row: typeof items, side: number): number {
-    const rowTotal = row.reduce((s, i) => s + i.value, 0);
-    const s2 = side * side;
-    const r2 = rowTotal * rowTotal;
-    const maxV = Math.max(...row.map(i => i.value));
-    const minV = Math.min(...row.map(i => i.value));
-    return Math.max((s2 * maxV) / r2, r2 / (s2 * minV));
-  }
-
-  let remaining = [...items];
-  let cx = x, cy = y, cw = w, ch = h;
-
-  while (remaining.length > 0) {
-    const isHorizontal = cw >= ch;
-    const side = isHorizontal ? ch : cw;
-    const totalRemaining = remaining.reduce((s, i) => s + i.value, 0);
-
-    let row: typeof items = [];
-    let i = 0;
-    while (i < remaining.length) {
-      const candidate = [...row, remaining[i]];
-      if (row.length > 0 && worst(candidate, side) > worst(row, side)) break;
-      row = candidate;
-      i++;
-    }
-    if (row.length === 0) row = [remaining[0]];
-
-    const rowTotal = row.reduce((s, i) => s + i.value, 0);
-    const rowFrac = rowTotal / totalRemaining;
-
-    if (isHorizontal) {
-      const rowW = cw * rowFrac;
-      layoutRow(row, cx, cy, rowW, ch, false);
-      cx += rowW; cw -= rowW;
-    } else {
-      const rowH = ch * rowFrac;
-      layoutRow(row, cx, cy, cw, rowH, true);
-      cy += rowH; ch -= rowH;
-    }
-
-    remaining = remaining.slice(row.length);
-  }
-
-  return results;
-}
-
-// ── Treemap Cell ──────────────────────────────────────────────
-
-function TreemapCell({
-  rect,
+function HeatCell({
+  stock,
   tabId,
+  rank,
   isSelected,
   onClick,
 }: {
-  rect: TreemapRect;
+  stock: StockPerformer;
   tabId: TabId;
+  rank: number;
   isSelected: boolean;
   onClick: () => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-  const { stock, w, h } = rect;
   const pct = stock.changePercent;
   const positive = pct >= 0;
 
-  // Color logic
   let color: string;
   let intensity: number;
   let displayValue: string;
@@ -232,107 +142,65 @@ function TreemapCell({
     color = "#FF2D55";
     intensity = Math.min(Math.abs(pct) / 15, 1);
     displayValue = fmtPct(pct);
-  } else if (tabId === "gainers" || tabId === "highs52" || tabId === "split") {
-    color = positive ? "#00FF88" : "#FF2D55";
+  } else if (tabId === "highs52") {
+    color = "#FFD700";
     intensity = Math.min(Math.abs(pct) / 15, 1);
     displayValue = fmtPct(pct);
   } else if (tabId === "volatile") {
     color = "#FF9500";
     intensity = Math.min(Math.abs(pct) / 15, 1);
     displayValue = fmtPct(pct);
-  } else {
-    // smallcap
+  } else if (tabId === "smallcap") {
     color = "#A78BFA";
+    intensity = Math.min(Math.abs(pct) / 15, 1);
+    displayValue = fmtPct(pct);
+  } else {
+    // gainers, split
+    color = positive ? "#00FF88" : "#FF2D55";
     intensity = Math.min(Math.abs(pct) / 15, 1);
     displayValue = fmtPct(pct);
   }
 
-  const alpha = Math.max(0x1A, Math.round(intensity * 0xCC)).toString(16).padStart(2, "0");
-
-  // Determine what text to show based on cell size
-  const showTicker  = w > 28 && h > 20;
-  const showValue   = w > 36 && h > 32;
-  const showPrice   = w > 50 && h > 44;
-  const showName    = w > 80 && h > 56;
-  const showRank    = w > 28 && h > 14;
-
-  const symSize = w > 90 ? "13px" : w > 60 ? "11px" : "9px";
-  const valSize = w > 90 ? "11px" : "9px";
+  const alpha = Math.round(intensity * 200).toString(16).padStart(2, "0");
 
   return (
     <div
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
       title={`${stock.name} (${stock.ticker})\n${fmtPct(pct)} | $${stock.price.toFixed(2)}\nVol: ${fmtVol(stock.volume)}\nMkt Cap: ${fmt(stock.marketCap)}${stock.sector ? `\nSector: ${stock.sector}` : ""}`}
       style={{
-        position: "absolute",
-        left: `${rect.x}px`,
-        top:  `${rect.y}px`,
-        width: `${w}px`,
-        height: `${h}px`,
         background: `${color}${alpha}`,
-        border: `1px solid ${isSelected ? color : (hovered ? color + "80" : color + "25")}`,
-        boxSizing: "border-box",
-        cursor: "pointer",
-        overflow: "hidden",
-        transition: "border-color 0.12s ease, box-shadow 0.12s ease",
-        boxShadow: isSelected ? `inset 0 0 0 2px ${color}` : hovered ? `0 0 8px ${color}30` : "none",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "2px",
+        border: `1px solid ${isSelected ? color : color + "30"}`,
+        borderRadius: "4px",
+        padding: "6px 4px",
         textAlign: "center",
+        cursor: "pointer",
+        transition: "all 0.15s ease",
+        boxShadow: isSelected ? `0 0 0 2px ${color}` : "none",
+        outline: "none",
       }}
     >
-      {showRank && w > 28 && h > 14 && (
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "6px", color: "#64748B", lineHeight: 1, marginBottom: "1px" }}>#{rect.rank}</div>
-      )}
-      {showTicker && (
-        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: symSize, color: "#F0F4FF", letterSpacing: "0.02em", lineHeight: 1.1 }}>{stock.ticker}</div>
-      )}
-      {showValue && (
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: valSize, color, fontWeight: 600, lineHeight: 1.1 }}>{displayValue}</div>
-      )}
-      {showPrice && (
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", lineHeight: 1 }}>${stock.price.toFixed(2)}</div>
-      )}
-      {showName && (
-        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "8px", color: "#374151", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: `${w - 8}px` }}>{stock.name}</div>
-      )}
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#64748B", marginBottom: "1px" }}>#{rank}</div>
+      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "11px", color: "#F0F4FF", lineHeight: 1.1 }}>{stock.ticker}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, fontWeight: 600, lineHeight: 1.2 }}>{displayValue}</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>${stock.price.toFixed(2)}</div>
     </div>
   );
 }
 
-// ── Treemap Container ─────────────────────────────────────────
+// ── Uniform Grid ──────────────────────────────────────────────
 
-function Treemap({
+function HeatGrid({
   data,
   tabId,
   sectorFilter,
   sortBy,
-  height = 480,
 }: {
   data: StockPerformer[];
   tabId: TabId;
   sectorFilter: string;
   sortBy: "default" | "volume" | "marketCap";
-  height?: number;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(900);
   const [selectedStock, setSelectedStock] = useState<{ stock: StockPerformer; rank: number } | null>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const ro = new ResizeObserver(entries => {
-      setContainerWidth(entries[0].contentRect.width);
-    });
-    ro.observe(containerRef.current);
-    setContainerWidth(containerRef.current.offsetWidth);
-    return () => ro.disconnect();
-  }, []);
 
   const filtered = useMemo(() => {
     let list = sectorFilter === "ALL" ? data : data.filter(p => p.sector === sectorFilter);
@@ -341,22 +209,8 @@ function Treemap({
     return list;
   }, [data, sectorFilter, sortBy]);
 
-  const rects = useMemo(() => {
-    if (containerWidth < 10 || filtered.length === 0) return [];
-    // Weight by market cap; fallback to volume, then equal weight
-    const items = filtered.map((stock, i) => ({
-      value: Math.max(stock.marketCap ?? stock.volume ?? 1, 1),
-      stock,
-      rank: i + 1,
-    }));
-    return squarify(items, 0, 0, containerWidth, height);
-  }, [filtered, containerWidth, height]);
-
-  const accentColor = TABS.find(t => t.id === tabId)?.accentColor ?? "#00FF88";
-
   return (
     <>
-      {/* Detail panel */}
       {selectedStock && (
         <DetailPanel
           stock={selectedStock.stock}
@@ -365,33 +219,27 @@ function Treemap({
           onClose={() => setSelectedStock(null)}
         />
       )}
-      <div
-        ref={containerRef}
-        style={{ position: "relative", width: "100%", height: `${height}px`, background: "rgba(5,6,8,0.95)", borderRadius: "4px", overflow: "hidden" }}
-      >
-        {rects.map(rect => (
-          <TreemapCell
-            key={rect.stock.ticker}
-            rect={rect}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: "4px" }}>
+        {filtered.map((stock, i) => (
+          <HeatCell
+            key={stock.ticker}
+            stock={stock}
             tabId={tabId}
-            isSelected={selectedStock?.stock.ticker === rect.stock.ticker}
+            rank={i + 1}
+            isSelected={selectedStock?.stock.ticker === stock.ticker}
             onClick={() => setSelectedStock(
-              selectedStock?.stock.ticker === rect.stock.ticker ? null : { stock: rect.stock, rank: rect.rank }
+              selectedStock?.stock.ticker === stock.ticker ? null : { stock, rank: i + 1 }
             )}
           />
         ))}
-        {rects.length === 0 && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#374151" }}>
+        {filtered.length === 0 && (
+          <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "40px 0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#374151" }}>
             No data matches the current filter.
           </div>
         )}
-        {/* Watermark */}
-        <div style={{ position: "absolute", bottom: "4px", right: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#1F2937", pointerEvents: "none" }}>
-          FAULTLINE · YAHOO FINANCE · 15-MIN DELAYED
-        </div>
       </div>
-      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#1F2937", margin: "4px 0 0", textAlign: "right" }}>
-        Cell size = market cap · Color intensity = {tabId === "volume" ? "volume" : "% change"} · Click cell for detail
+      <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#1F2937", margin: "8px 0 0", textAlign: "right" }}>
+        Click any cell for detail · {filtered.length} stocks shown
       </p>
     </>
   );
@@ -436,7 +284,7 @@ function SectorHeatmap({ data, tabId }: { data: StockPerformer[]; tabId: TabId }
             style={{ background: `${baseColor}${alpha}`, border: `1px solid ${baseColor}40`, borderLeft: `3px solid ${g.color}`, borderRadius: "4px", padding: "10px 10px 8px" }}
           >
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: g.color, letterSpacing: "0.08em", marginBottom: "4px" }}>
-              {g.sector.split(" ").map(w => w[0]).join("")} — {g.sector}
+              {g.sector}
             </div>
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: baseColor }}>
               {tabId === "volume" ? fmtVol(g.totalVol) : fmtPct(g.avgPct)}
@@ -472,7 +320,7 @@ function DetailPanel({ stock, rank, tabId, onClose }: { stock: StockPerformer; r
             {tabId === "volume" ? fmtVol(stock.volume) : fmtPct(pct)}
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8" }}>${stock.price.toFixed(2)}</div>
-          <button onClick={onClose} style={{ marginTop: "6px", background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", padding: "3px 10px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64748B", letterSpacing: "0.1em" }}>CLOSE</button>
+          <button onClick={onClose} style={{ marginTop: "6px", background: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", padding: "3px 10px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64748B", letterSpacing: "0.1em" }}>CLOSE ✕</button>
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px" }}>
@@ -509,22 +357,22 @@ function SplitView({
   sortBy: "default" | "volume" | "marketCap";
 }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
       <div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
           <TrendingUp size={11} style={{ color: "#00FF88" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", letterSpacing: "0.1em" }}>TOP GAINERS</span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#1F2937", marginLeft: "auto" }}>{gainers.length} stocks</span>
         </div>
-        <Treemap data={gainers} tabId="gainers" sectorFilter={sectorFilter} sortBy={sortBy} height={380} />
+        <HeatGrid data={gainers} tabId="gainers" sectorFilter={sectorFilter} sortBy={sortBy} />
       </div>
       <div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
           <TrendingDown size={11} style={{ color: "#FF2D55" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D55", letterSpacing: "0.1em" }}>TOP LOSERS</span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#1F2937", marginLeft: "auto" }}>{losers.length} stocks</span>
         </div>
-        <Treemap data={losers} tabId="losers" sectorFilter={sectorFilter} sortBy={sortBy} height={380} />
+        <HeatGrid data={losers} tabId="losers" sectorFilter={sectorFilter} sortBy={sortBy} />
       </div>
     </div>
   );
@@ -604,7 +452,7 @@ function StockHeatmapInner() {
   const [activeTab, setActiveTab] = useState<TabId>("split");
   const [sectorFilter, setSectorFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<"default" | "volume" | "marketCap">("default");
-  const [viewMode, setViewMode] = useState<"treemap" | "sector">("treemap");
+  const [viewMode, setViewMode] = useState<"grid" | "sector">("grid");
 
   const CACHE_SECS = 180;
 
@@ -651,7 +499,7 @@ function StockHeatmapInner() {
     setActiveTab(tab);
     setSectorFilter("ALL");
     setSortBy("default");
-    setViewMode("treemap");
+    setViewMode("grid");
   }
 
   const isFetching = activeQuery.isFetching || (activeTab === "split" && losersQuery.isFetching);
@@ -672,7 +520,7 @@ function StockHeatmapInner() {
             <div>
               <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "clamp(22px, 5vw, 32px)", color: "#F0F4FF", letterSpacing: "0.04em", lineHeight: 1.1, margin: "0 0 4px" }}>Stock Heatmap</h1>
               <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#4B5563", lineHeight: 1.6, margin: 0 }}>
-                {TABS.find(t => t.id === activeTab)!.description} · Cell size = market cap · 15-min delayed.
+                {TABS.find(t => t.id === activeTab)!.description} · 15-min delayed data.
               </p>
             </div>
             <RefreshCountdown onRefresh={refetchAll} isFetching={isFetching} accentColor={accentColor} cacheSecs={CACHE_SECS} />
@@ -707,10 +555,10 @@ function StockHeatmapInner() {
           {activeTab !== "split" && (
             <div style={{ display: "flex", gap: "4px" }}>
               {([
-                { key: "treemap" as const, label: "TREEMAP", icon: <BarChart2 size={9} /> },
-                { key: "sector"  as const, label: "SECTOR",  icon: <Layers size={9} />    },
+                { key: "grid"   as const, label: "GRID",   icon: <BarChart2 size={9} /> },
+                { key: "sector" as const, label: "SECTOR", icon: <Layers size={9} />    },
               ]).map(({ key, label, icon }) => (
-                <button key={key} onClick={() => setViewMode(key)} title={key === "treemap" ? "Treemap view (cells sized by market cap)" : "Grouped sector view"} style={{ display: "flex", alignItems: "center", gap: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.06em", padding: "3px 8px", borderRadius: "3px", border: `1px solid ${viewMode === key ? accentColor : "rgba(255,255,255,0.08)"}`, background: viewMode === key ? `${accentColor}18` : "transparent", color: viewMode === key ? accentColor : "#4B5563", cursor: "pointer", transition: "all 0.15s ease" }}>
+                <button key={key} onClick={() => setViewMode(key)} title={key === "grid" ? "Uniform grid view" : "Grouped sector view"} style={{ display: "flex", alignItems: "center", gap: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.06em", padding: "3px 8px", borderRadius: "3px", border: `1px solid ${viewMode === key ? accentColor : "rgba(255,255,255,0.08)"}`, background: viewMode === key ? `${accentColor}18` : "transparent", color: viewMode === key ? accentColor : "#4B5563", cursor: "pointer", transition: "all 0.15s ease" }}>
                   {icon}{label}
                 </button>
               ))}
@@ -732,10 +580,11 @@ function StockHeatmapInner() {
 
           {/* Sort */}
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.1em" }}>SIZE BY:</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.1em" }}>SORT:</span>
             {([
-              { key: "default"   as const, label: "MKT CAP" },
-              { key: "volume"    as const, label: "VOLUME"  },
+              { key: "default"   as const, label: "DEFAULT"  },
+              { key: "volume"    as const, label: "VOLUME"   },
+              { key: "marketCap" as const, label: "MKT CAP"  },
             ]).map(({ key, label }) => (
               <button key={key} onClick={() => setSortBy(key)} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", padding: "3px 8px", borderRadius: "3px", border: `1px solid ${sortBy === key ? accentColor : "rgba(255,255,255,0.08)"}`, background: sortBy === key ? `${accentColor}18` : "transparent", color: sortBy === key ? accentColor : "#4B5563", cursor: "pointer", letterSpacing: "0.06em", transition: "all 0.15s ease" }}>
                 {label}
@@ -770,7 +619,7 @@ function StockHeatmapInner() {
           ) : viewMode === "sector" ? (
             <SectorHeatmap data={activeData} tabId={activeTab} />
           ) : (
-            <Treemap data={activeData} tabId={activeTab} sectorFilter={sectorFilter} sortBy={sortBy} height={520} />
+            <HeatGrid data={activeData} tabId={activeTab} sectorFilter={sectorFilter} sortBy={sortBy} />
           )}
         </div>
 
