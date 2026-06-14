@@ -1,8 +1,11 @@
 /**
- * FAULTLINE — GA4 SPA Route Tracker
+ * FAULTLINE — SPA Route Tracker
  * ============================================================
  * Mounts once at the app root. Listens to wouter location
- * changes and fires a GA4 page_view event on every navigation.
+ * changes and:
+ *  1. Fires a GA4 page_view event on every navigation.
+ *  2. POSTs to /api/analytics/pageview to populate the
+ *     internal FAULTLINE Analytics Dashboard.
  * Also fires session_start on first mount and sets up scroll
  * depth tracking.
  * ============================================================
@@ -14,6 +17,8 @@ import {
   trackScrollDepth,
   resetScrollMilestones,
 } from "@/hooks/useAnalytics";
+import { getConsentChoice } from "@/components/CookieConsent";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // Map route paths to human-readable page titles for GA4
 const PAGE_TITLES: Record<string, string> = {
@@ -50,22 +55,85 @@ const PAGE_TITLES: Record<string, string> = {
   "/app/situation-room": "FAULTLINE — Situation Room",
   "/app/insider-intelligence": "FAULTLINE — Insider Intelligence",
   "/app/seo-optimizer": "FAULTLINE — SEO Optimizer",
+  "/app/stock-heatmap": "FAULTLINE — Stock Heatmap",
+  "/app/analytics": "FAULTLINE — Site Analytics",
 };
 
 function getPageTitle(path: string): string {
-  // Exact match first
   if (PAGE_TITLES[path]) return PAGE_TITLES[path];
-  // Prefix match for dynamic routes (e.g. /blog/:slug)
   for (const [route, title] of Object.entries(PAGE_TITLES)) {
     if (path.startsWith(route + "/")) return title;
   }
   return document.title || "FAULTLINE";
 }
 
+// ── Internal analytics session ID ─────────────────────────────────────────────
+// Persisted in sessionStorage so it resets on new browser sessions.
+function getOrCreateSessionId(): string {
+  try {
+    const key = "fl_sid";
+    let sid = sessionStorage.getItem(key);
+    if (!sid) {
+      sid = crypto.randomUUID();
+      sessionStorage.setItem(key, sid);
+    }
+    return sid;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+// ── Parse UTM params from URL ──────────────────────────────────────────────────
+function getUtmParams() {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    return {
+      utmSource: sp.get("utm_source") ?? undefined,
+      utmMedium: sp.get("utm_medium") ?? undefined,
+      utmCampaign: sp.get("utm_campaign") ?? undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+// ── POST to internal analytics endpoint (fire-and-forget) ─────────────────────
+function sendInternalPageView(path: string, title: string, userId?: number) {
+  // Only track if user has accepted cookies, or hasn't decided yet (default allow)
+  const consent = getConsentChoice();
+  if (consent === "declined") return;
+
+  const sessionId = getOrCreateSessionId();
+  const { utmSource, utmMedium, utmCampaign } = getUtmParams();
+
+  fetch("/api/analytics/pageview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sessionId,
+      userId,
+      path,
+      title,
+      referrer: document.referrer || undefined,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      screenWidth: window.screen?.width,
+    }),
+    // keepalive ensures the request completes even if the page navigates away
+    keepalive: true,
+  }).catch(() => {
+    // Silently ignore — analytics must never break the app
+  });
+}
+
 export default function RouteTracker() {
   const [location] = useLocation();
   const prevLocation = useRef<string | null>(null);
   const sessionFired = useRef(false);
+
+  const { user } = useAuth();
+  const userId = (user as any)?.id as number | undefined;
 
   // Fire page_view on every route change
   useEffect(() => {
@@ -78,7 +146,10 @@ export default function RouteTracker() {
     // Small delay to let document.title update from useSEO
     const timer = setTimeout(() => {
       const title = getPageTitle(location);
+      // 1. GA4
       trackPageView(location, title);
+      // 2. Internal FAULTLINE analytics
+      sendInternalPageView(location, title, userId);
     }, 150);
 
     return () => clearTimeout(timer);
