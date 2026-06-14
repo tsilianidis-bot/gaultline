@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -778,4 +778,105 @@ export async function setFeatureFlag(key: string, enabled: boolean, updatedBy?: 
   await db.update(featureFlags)
     .set({ enabled: enabled ? 1 : 0, ...(updatedBy ? { updatedBy } : {}) })
     .where(eq(featureFlags.key, key));
+}
+
+// ── Sim Portfolio DB Helpers ($10K → $1M) ────────────────────────────────────
+
+export async function getSimAccounts() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(simPortfolioAccounts).orderBy(simPortfolioAccounts.accountType);
+}
+
+export async function upsertSimAccount(data: Omit<InsertSimPortfolioAccount, 'id' | 'createdAt' | 'updatedAt'>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.insert(simPortfolioAccounts).values(data).onDuplicateKeyUpdate({
+    set: { cashBalance: data.cashBalance, updatedAt: new Date() },
+  });
+}
+
+export async function getSimOpenPositions(accountId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const q = db.select().from(simPortfolioPositions).where(
+    accountId !== undefined
+      ? and(eq(simPortfolioPositions.status, 'open'), eq(simPortfolioPositions.accountId, accountId))
+      : eq(simPortfolioPositions.status, 'open')
+  ).orderBy(desc(simPortfolioPositions.openedAt));
+  return q;
+}
+
+export async function getAllSimPositions() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(simPortfolioPositions).orderBy(desc(simPortfolioPositions.openedAt));
+}
+
+export async function insertSimPosition(data: Omit<InsertSimPortfolioPosition, 'id' | 'openedAt' | 'updatedAt'>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(simPortfolioPositions).values(data);
+  const okPacket = result[0] as unknown as { insertId: number };
+  return okPacket?.insertId ?? 0;
+}
+
+export async function updateSimPosition(id: number, data: Partial<InsertSimPortfolioPosition>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(simPortfolioPositions).set({ ...data, updatedAt: new Date() }).where(eq(simPortfolioPositions.id, id));
+}
+
+export async function insertSimTrade(data: Omit<InsertSimPortfolioTrade, 'id' | 'executedAt'>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(simPortfolioTrades).values(data);
+  const okPacket = result[0] as unknown as { insertId: number };
+  return okPacket?.insertId ?? 0;
+}
+
+export async function getSimTrades(accountId?: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  const q = db.select().from(simPortfolioTrades)
+    .where(accountId !== undefined ? eq(simPortfolioTrades.accountId, accountId) : undefined)
+    .orderBy(desc(simPortfolioTrades.executedAt))
+    .limit(limit);
+  return q;
+}
+
+export async function getSimJournalEntries(limit = 60) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(simPortfolioJournal)
+    .orderBy(desc(simPortfolioJournal.date))
+    .limit(limit);
+}
+
+export async function getSimJournalByDate(date: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(simPortfolioJournal)
+    .where(eq(simPortfolioJournal.date, date)).limit(1);
+  return rows[0] ?? undefined;
+}
+
+export async function upsertSimJournalEntry(data: Omit<InsertSimPortfolioJournalEntry, 'id' | 'createdAt'>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.insert(simPortfolioJournal).values(data).onDuplicateKeyUpdate({
+    set: {
+      pressureScore: data.pressureScore,
+      regime: data.regime,
+      totalValue: data.totalValue,
+      stocksValue: data.stocksValue,
+      cryptoValue: data.cryptoValue,
+      dailyPnl: data.dailyPnl,
+      dailyPnlPct: data.dailyPnlPct,
+      journalEntry: data.journalEntry,
+      holdingsJson: data.holdingsJson,
+      tradesJson: data.tradesJson,
+      tradesMade: data.tradesMade,
+    },
+  });
 }

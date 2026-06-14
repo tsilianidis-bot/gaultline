@@ -1215,3 +1215,80 @@
 - [x] Cross-tab strip: top gainer, top loser, top volume shown simultaneously
 - [x] Auto-refresh countdown: 3-min countdown with auto-refetch
 - [x] Sector sub-view: toggle to collapse treemap into grouped sector cards
+
+## Founding Request Email Notifications Fix
+- [ ] Add SENDGRID_API_KEY secret
+- [ ] Wire sendEmail() to founding request handler so owner gets email at jt@getfaultline.live
+- [ ] Add form confirmation state to founding access request form to prevent duplicate submissions
+
+## $10K → $1M Simulated Portfolio ("The Proof")
+- [x] DB schema: simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal tables
+- [x] Apply migration SQL via webdev_execute_sql
+- [x] DB helpers in server/db.ts: getSimAccounts, upsertSimAccount, getSimOpenPositions, insertSimPosition, updateSimPosition, insertSimTrade, getSimTrades, getSimJournalEntries, upsertSimJournalEntry
+- [x] Build server/simPortfolioEngine.ts: trade decision logic with COMPREHENSIVE rationale
+  - [x] Each trade decision must document: (1) FAULTLINE pressure score + regime at time of trade, (2) domain scores (credit/AI/treasury/recession/liquidity) that influenced decision, (3) technical indicators (RSI, MACD, SMA crossover, support/resistance), (4) volume confirmation, (5) asymmetry ratio (upside/downside), (6) catalyst (why NOW), (7) risk factors, (8) invalidation condition, (9) position sizing rationale
+  - [x] BUY rationale: full multi-paragraph narrative, not just a one-liner
+  - [x] SELL rationale: explain what changed vs entry thesis, which FAULTLINE signal triggered exit
+  - [x] HOLD rationale: daily documentation of why position is maintained despite market moves
+- [x] Build server/simPortfolioJournal.ts: AI daily journal generator
+  - [x] Per-position daily commentary: what the stock/crypto did, why we hold/sold, what FAULTLINE says
+  - [x] Portfolio-level narrative: macro regime context, sector rotation, risk posture
+  - [x] Forward-looking section: what to watch, potential triggers for action
+- [x] Add tRPC procedures: simPortfolio.getOverview, getPositions, getTrades, getJournal, runDailyUpdate (admin)
+- [x] Daily cron via manus-heartbeat to auto-generate journal entries and mark-to-market positions (task_uid: NLfVgFwkKYoY9HeDuANsMD, fires 9 PM UTC weekdays)
+- [x] Add sim_portfolio_visible feature flag to DB (default: false)
+- [x] Add on/off toggle to owner/admin portal for sim portfolio visibility
+- [x] Build client/src/pages/SimPortfolio.tsx:
+  - [x] Hero: $10K stocks + $10K crypto starting capital, current value, total return %, days running
+  - [x] Equity curve chart (total portfolio value over time, split stocks vs crypto)
+  - [x] Current positions grid (stocks + crypto tabs): ticker, entry price, current price, shares/units, P&L $, P&L %, FAULTLINE signal badge, hold/sell recommendation
+  - [x] Trade log with FULL rationale panel: each trade expandable to show all 9 rationale dimensions
+  - [x] Daily journal feed: date-stamped AI entries explaining market conditions, FAULTLINE readings, and decisions
+  - [x] Progress bar: $10K → $1M milestone tracker
+  - [x] Visibility gate: if sim_portfolio_visible=false, show "Coming Soon" or hide from nav
+- [ ] Seed initial stock positions (5-8 tickers from asymmetric opportunities engine) — deferred: engine will buy when signals align
+- [ ] Seed initial crypto positions (3-5 coins from crypto signals) — deferred: engine will buy when signals align
+- [x] Generate first daily journal entry (first evaluation ran — held cash per current market conditions)
+- [x] Add nav item to AppLayout (INTELLIGENCE group) — admin/owner only until sim_portfolio_visible enabled
+- [x] TypeScript: 0 errors, tests passing
+- [x] Admin preview banner added to SimPortfolio.tsx (amber banner with feature flag instructions)
+- [x] Nav item filtered to admin-only in AppLayout.tsx (desktop + mobile)
+
+## Real-Time Trade Recon (On-Demand Owner Scanner)
+- [ ] Build server/tradeRecon.ts: on-demand scanner that checks all stock + crypto tickers, fetches live prices, runs full 9-dimension scoring, returns ranked opportunities with BUY/WATCH/AVOID classification and full rationale
+- [ ] Add tRPC procedure: simPortfolio.runTradeRecon (admin-only, returns ranked list of opportunities)
+- [ ] Add "TRADE RECON" panel to SimPortfolio.tsx (admin-only): trigger button, loading state, ranked opportunity cards with score bars, conviction badges, full rationale expandable, entry/target/stop levels
+- [ ] TypeScript: 0 errors after Trade Recon implementation
+
+## Owner $100K Portfolio + Trade Recon Scanner
+- [ ] Add accountLabel column to simPortfolioAccounts (to distinguish "DEMO $10K" vs "OWNER $100K")
+- [ ] Seed owner accounts: stocks $100,000 + crypto $100,000 (accountLabel = "owner")
+- [ ] Build server/tradeRecon.ts: real-time scanner — fetch live prices for all stock + crypto candidates, run 9-dimension scoring, LLM rationale, return ranked BUY/WATCH/AVOID list
+- [ ] Add tRPC procedure: simPortfolio.runTradeRecon (owner-only, returns ranked opportunities with full rationale)
+- [ ] Add tRPC procedure: simPortfolio.executeReconTrade (owner-only, executes a specific trade from recon results against the owner $100K account)
+- [ ] Add "OWNER $100K ACCOUNT" section to SimPortfolio.tsx showing owner portfolio separately from demo
+- [ ] Add "TRADE RECON" panel to SimPortfolio.tsx: scan button, ranked opportunity cards, one-click execute
+- [ ] TypeScript: 0 errors
+
+## Owner Simulation Module (/owner/simulation) ✅ COMPLETE
+- [x] DB schema: owner_simulation_accounts, owner_simulation_positions, owner_simulation_trades, owner_simulation_daily_snapshots, owner_simulation_objectives tables
+- [x] Apply migration SQL via webdev_execute_sql
+- [x] Seed owner account: $100,000 starting capital
+- [x] Build server/ownerSimulation.ts: opportunity engine (FAULTLINE-powered scoring), DB helpers, all tRPC procedures
+- [x] tRPC procedures: ownerSim.getAccount, resetAccount, getObjective, setObjective, getOpportunities, enterTrade, closePosition, getPositions, getTrades, getValuation, getGoalProgress, getDailySnapshots, generateJournal, rejectTrade
+- [x] Build client/src/pages/OwnerSimulation.tsx: full premium dark cinematic cockpit UI
+  - [x] Objective clarifier (required before opportunities): 6 objective types + custom, asset preference, risk mode, max position size, max loss, timeframe
+  - [x] Owner Simulation header: starting capital, current value, daily P&L, total P&L, cash available, open risk, goal $1M, progress bar, FAULTLINE regime, bull/bear pressure
+  - [x] Real-time opportunity cards: ticker, asset type, direction, entry zone, stop-loss, target 1/2, position size, risk $, R/R ratio, FAULTLINE confidence, why now, invalidation, objective fit, LIVE/STALE/SIMULATION labels
+  - [x] Trade execution: Simulate Buy, Add, Close, Reject (with reason)
+  - [x] Risk controls: position size, max loss if stop hit, % of account at risk, warning if exceeds limits
+  - [x] Portfolio table: open positions with unrealized P&L, mark-to-market
+  - [x] Closed trades log with realized P&L
+  - [x] $1M goal tracker: milestones ($125K/$150K/$200K/$250K/$500K/$750K/$1M), pace, ahead/behind/neutral
+  - [x] AI journal panel: daily entry with objective, trades taken/skipped, what worked, mistakes, AI summary
+  - [x] NOT FINANCIAL ADVICE / SIMULATION ONLY disclaimer banner
+  - [x] Mobile responsive
+- [x] Add /owner/simulation route to App.tsx (admin-only guard)
+- [x] Add "Owner Simulation" nav button in admin section of AppLayout (Trophy icon)
+- [x] TypeScript: 0 errors
+- [x] Tests passing: 426 tests, 0 failures

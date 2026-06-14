@@ -14,6 +14,7 @@ import analyticsRoutes from "../analyticsRoutes";
 import { handleStripeWebhook } from "../stripe/webhook";
 import { handleScheduledPublishBlog } from "../scheduledBlog";
 import { handleScheduledDailySnapshot } from "../scheduledDailySnapshot";
+import { handleScheduledSimPortfolio } from "../scheduledSimPortfolio";
 import { handleScheduledXPost, handleXNewsMonitor } from "../scheduledXPost";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -118,6 +119,7 @@ async function startServer() {
   app.post("/api/scheduled/publish-blog", handleScheduledPublishBlog);
   app.post("/api/scheduled/x-post-scheduled", handleScheduledXPost);
   app.post("/api/scheduled/x-news-monitor", handleXNewsMonitor);
+  app.post("/api/scheduled/daily-sim-portfolio", handleScheduledSimPortfolio);
 
   // tRPC API
   app.use(

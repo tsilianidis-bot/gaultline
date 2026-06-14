@@ -444,3 +444,261 @@ export const featureFlags = mysqlTable("featureFlags", {
 });
 export type FeatureFlag = typeof featureFlags.$inferSelect;
 export type InsertFeatureFlag = typeof featureFlags.$inferInsert;
+
+// ── $10K → $1M Simulated Portfolio ("The Proof") ─────────────────────────────
+
+/**
+ * One row per simulated portfolio account (stocks + crypto are separate accounts).
+ * Tracks starting capital, current value, and account metadata.
+ */
+export const simPortfolioAccounts = mysqlTable("simPortfolioAccounts", {
+  id:             int("id").autoincrement().primaryKey(),
+  /** "stocks" or "crypto" */
+  accountType:    mysqlEnum("accountType", ["stocks", "crypto"]).notNull(),
+  /** "demo" = public $10K demo account, "owner" = owner $100K command account */
+  accountLabel:   varchar("accountLabel", { length: 32 }).notNull().default("demo"),
+  /** Starting capital in USD */
+  startingCapital: decimal("startingCapital", { precision: 14, scale: 2 }).notNull().default("10000.00"),
+  /** Cash not yet deployed */
+  cashBalance:    decimal("cashBalance", { precision: 14, scale: 2 }).notNull().default("10000.00"),
+  /** ISO date the account was started e.g. 2026-06-14 */
+  startedAt:      varchar("startedAt", { length: 12 }).notNull(),
+  createdAt:      timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:      timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type SimPortfolioAccount = typeof simPortfolioAccounts.$inferSelect;
+export type InsertSimPortfolioAccount = typeof simPortfolioAccounts.$inferInsert;
+
+/**
+ * Open and closed simulated positions.
+ * Each row represents one lot (one BUY trade that may later be closed by a SELL).
+ */
+export const simPortfolioPositions = mysqlTable("simPortfolioPositions", {
+  id:              int("id").autoincrement().primaryKey(),
+  accountId:       int("accountId").notNull(),
+  ticker:          varchar("ticker", { length: 16 }).notNull(),
+  name:            varchar("name", { length: 128 }),
+  /** "stock" | "crypto" */
+  assetType:       mysqlEnum("assetType", ["stock", "crypto"]).notNull(),
+  /** Number of shares or units */
+  quantity:        decimal("quantity", { precision: 18, scale: 8 }).notNull(),
+  /** Average cost basis per unit */
+  entryPrice:      decimal("entryPrice", { precision: 14, scale: 6 }).notNull(),
+  /** Total cost of this position */
+  totalCost:       decimal("totalCost", { precision: 14, scale: 2 }).notNull(),
+  /** Most recent mark-to-market price */
+  currentPrice:    decimal("currentPrice", { precision: 14, scale: 6 }),
+  /** "open" | "closed" */
+  status:          mysqlEnum("status", ["open", "closed"]).default("open").notNull(),
+  /** Price at which position was closed (null if still open) */
+  exitPrice:       decimal("exitPrice", { precision: 14, scale: 6 }),
+  /** FAULTLINE signal that triggered the entry */
+  entrySignal:     varchar("entrySignal", { length: 128 }),
+  /** FAULTLINE signal that triggered the exit */
+  exitSignal:      varchar("exitSignal", { length: 128 }),
+  /** Short rationale for entry (1-2 sentences) */
+  entryRationale:  text("entryRationale"),
+  /** Short rationale for exit (1-2 sentences) */
+  exitRationale:   text("exitRationale"),
+  openedAt:        timestamp("openedAt").defaultNow().notNull(),
+  closedAt:        timestamp("closedAt"),
+  updatedAt:       timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type SimPortfolioPosition = typeof simPortfolioPositions.$inferSelect;
+export type InsertSimPortfolioPosition = typeof simPortfolioPositions.$inferInsert;
+
+/**
+ * Immutable trade log — one row per BUY or SELL action.
+ */
+export const simPortfolioTrades = mysqlTable("simPortfolioTrades", {
+  id:            int("id").autoincrement().primaryKey(),
+  accountId:     int("accountId").notNull(),
+  positionId:    int("positionId"),
+  ticker:        varchar("ticker", { length: 16 }).notNull(),
+  assetType:     mysqlEnum("assetType", ["stock", "crypto"]).notNull(),
+  /** "BUY" | "SELL" */
+  action:        mysqlEnum("action", ["BUY", "SELL"]).notNull(),
+  quantity:      decimal("quantity", { precision: 18, scale: 8 }).notNull(),
+  price:         decimal("price", { precision: 14, scale: 6 }).notNull(),
+  totalValue:    decimal("totalValue", { precision: 14, scale: 2 }).notNull(),
+  /** FAULTLINE pressure score at time of trade */
+  pressureScore: int("pressureScore"),
+  /** Regime label at time of trade */
+  regime:        varchar("regime", { length: 80 }),
+  /** 1-2 sentence rationale referencing FAULTLINE signals */
+  rationale:     text("rationale"),
+  executedAt:    timestamp("executedAt").defaultNow().notNull(),
+});
+export type SimPortfolioTrade = typeof simPortfolioTrades.$inferSelect;
+export type InsertSimPortfolioTrade = typeof simPortfolioTrades.$inferInsert;
+
+/**
+ * Daily journal entries — AI-generated documentation of why positions
+ * were held, traded, or adjusted based on FAULTLINE platform readings.
+ * One entry per day per account type (or one combined entry).
+ */
+export const simPortfolioJournal = mysqlTable("simPortfolioJournal", {
+  id:                int("id").autoincrement().primaryKey(),
+  /** ISO date string e.g. 2026-06-14 */
+  date:              varchar("date", { length: 12 }).notNull().unique(),
+  /** FAULTLINE pressure score on this date */
+  pressureScore:     int("pressureScore"),
+  /** Regime label on this date */
+  regime:            varchar("regime", { length: 80 }),
+  /** Total portfolio value (stocks + crypto) at market close */
+  totalValue:        decimal("totalValue", { precision: 14, scale: 2 }),
+  /** Stocks account value */
+  stocksValue:       decimal("stocksValue", { precision: 14, scale: 2 }),
+  /** Crypto account value */
+  cryptoValue:       decimal("cryptoValue", { precision: 14, scale: 2 }),
+  /** Daily P&L in USD */
+  dailyPnl:          decimal("dailyPnl", { precision: 14, scale: 2 }),
+  /** Daily P&L as percentage */
+  dailyPnlPct:       decimal("dailyPnlPct", { precision: 8, scale: 4 }),
+  /** AI-generated journal entry (markdown) — explains market conditions and decisions */
+  journalEntry:      text("journalEntry").notNull(),
+  /** JSON array of tickers held on this date */
+  holdingsJson:      text("holdingsJson"),
+  /** JSON array of trades executed on this date */
+  tradesJson:        text("tradesJson"),
+  /** Whether any trades were made today */
+  tradesMade:        int("tradesMade").default(0).notNull(),
+  createdAt:         timestamp("createdAt").defaultNow().notNull(),
+});
+export type SimPortfolioJournalEntry = typeof simPortfolioJournal.$inferSelect;
+export type InsertSimPortfolioJournalEntry = typeof simPortfolioJournal.$inferInsert;
+
+// ── Owner Simulation Module ──────────────────────────────────
+// Private admin-only $100K virtual trading cockpit.
+// Route: /owner/simulation
+
+/**
+ * One row per simulation account (one per owner/admin user).
+ * Tracks the virtual $100K → $1M journey.
+ */
+export const ownerSimulationAccounts = mysqlTable("ownerSimulationAccounts", {
+  id:              int("id").autoincrement().primaryKey(),
+  userId:          int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  startingCapital: decimal("startingCapital", { precision: 14, scale: 2 }).notNull().default("100000.00"),
+  currentCash:     decimal("currentCash", { precision: 14, scale: 2 }).notNull().default("100000.00"),
+  currentValue:    decimal("currentValue", { precision: 14, scale: 2 }).notNull().default("100000.00"),
+  targetValue:     decimal("targetValue", { precision: 14, scale: 2 }).notNull().default("1000000.00"),
+  /** ISO date account was started */
+  startedAt:       varchar("startedAt", { length: 12 }).notNull(),
+  createdAt:       timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:       timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type OwnerSimulationAccount = typeof ownerSimulationAccounts.$inferSelect;
+export type InsertOwnerSimulationAccount = typeof ownerSimulationAccounts.$inferInsert;
+
+/**
+ * Open and closed simulated positions for the owner simulation account.
+ */
+export const ownerSimulationPositions = mysqlTable("ownerSimulationPositions", {
+  id:              int("id").autoincrement().primaryKey(),
+  accountId:       int("accountId").notNull(),
+  symbol:          varchar("symbol", { length: 20 }).notNull(),
+  name:            varchar("name", { length: 128 }),
+  assetType:       mysqlEnum("assetType", ["stock", "crypto"]).notNull(),
+  quantity:        decimal("quantity", { precision: 18, scale: 8 }).notNull(),
+  averageEntry:    decimal("averageEntry", { precision: 14, scale: 6 }).notNull(),
+  currentPrice:    decimal("currentPrice", { precision: 14, scale: 6 }),
+  marketValue:     decimal("marketValue", { precision: 14, scale: 2 }),
+  unrealizedPnl:   decimal("unrealizedPnl", { precision: 14, scale: 2 }),
+  stopLoss:        decimal("stopLoss", { precision: 14, scale: 6 }),
+  targetOne:       decimal("targetOne", { precision: 14, scale: 6 }),
+  targetTwo:       decimal("targetTwo", { precision: 14, scale: 6 }),
+  /** Objective selected when trade was entered */
+  objective:       varchar("objective", { length: 64 }),
+  /** FAULTLINE pressure score at entry */
+  pressureAtEntry: int("pressureAtEntry"),
+  /** Regime label at entry */
+  regimeAtEntry:   varchar("regimeAtEntry", { length: 80 }),
+  /** "open" | "closed" */
+  status:          mysqlEnum("status", ["open", "closed"]).default("open").notNull(),
+  openedAt:        timestamp("openedAt").defaultNow().notNull(),
+  closedAt:        timestamp("closedAt"),
+  updatedAt:       timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type OwnerSimulationPosition = typeof ownerSimulationPositions.$inferSelect;
+export type InsertOwnerSimulationPosition = typeof ownerSimulationPositions.$inferInsert;
+
+/**
+ * Immutable trade log for the owner simulation account.
+ */
+export const ownerSimulationTrades = mysqlTable("ownerSimulationTrades", {
+  id:                    int("id").autoincrement().primaryKey(),
+  accountId:             int("accountId").notNull(),
+  positionId:            int("positionId"),
+  symbol:                varchar("symbol", { length: 20 }).notNull(),
+  assetType:             mysqlEnum("assetType", ["stock", "crypto"]).notNull(),
+  side:                  mysqlEnum("side", ["BUY", "SELL", "TRIM", "ADD"]).notNull(),
+  quantity:              decimal("quantity", { precision: 18, scale: 8 }).notNull(),
+  entryPrice:            decimal("entryPrice", { precision: 14, scale: 6 }).notNull(),
+  exitPrice:             decimal("exitPrice", { precision: 14, scale: 6 }),
+  notionalValue:         decimal("notionalValue", { precision: 14, scale: 2 }).notNull(),
+  realizedPnl:           decimal("realizedPnl", { precision: 14, scale: 2 }),
+  stopLoss:              decimal("stopLoss", { precision: 14, scale: 6 }),
+  targetOne:             decimal("targetOne", { precision: 14, scale: 6 }),
+  targetTwo:             decimal("targetTwo", { precision: 14, scale: 6 }),
+  faultlineScoreAtEntry: int("faultlineScoreAtEntry"),
+  pressureIndexAtEntry:  int("pressureIndexAtEntry"),
+  regimeAtEntry:         varchar("regimeAtEntry", { length: 80 }),
+  bullBearAtEntry:       varchar("bullBearAtEntry", { length: 40 }),
+  objective:             varchar("objective", { length: 64 }),
+  rationale:             text("rationale"),
+  /** "open" | "closed" | "watchlist" | "rejected" */
+  status:                mysqlEnum("status", ["open", "closed", "watchlist", "rejected"]).default("open").notNull(),
+  rejectionReason:       text("rejectionReason"),
+  createdAt:             timestamp("createdAt").defaultNow().notNull(),
+  closedAt:              timestamp("closedAt"),
+});
+export type OwnerSimulationTrade = typeof ownerSimulationTrades.$inferSelect;
+export type InsertOwnerSimulationTrade = typeof ownerSimulationTrades.$inferInsert;
+
+/**
+ * Daily performance snapshots for the owner simulation account.
+ */
+export const ownerSimulationDailySnapshots = mysqlTable("ownerSimulationDailySnapshots", {
+  id:              int("id").autoincrement().primaryKey(),
+  accountId:       int("accountId").notNull(),
+  /** ISO date YYYY-MM-DD */
+  date:            varchar("date", { length: 12 }).notNull(),
+  startValue:      decimal("startValue", { precision: 14, scale: 2 }),
+  endValue:        decimal("endValue", { precision: 14, scale: 2 }),
+  dailyPnl:        decimal("dailyPnl", { precision: 14, scale: 2 }),
+  dailyReturnPct:  decimal("dailyReturnPct", { precision: 8, scale: 4 }),
+  bestTrade:       varchar("bestTrade", { length: 128 }),
+  worstTrade:      varchar("worstTrade", { length: 128 }),
+  /** AI-generated day summary (markdown) */
+  aiSummary:       text("aiSummary"),
+  tradesCount:     int("tradesCount").default(0).notNull(),
+  createdAt:       timestamp("createdAt").defaultNow().notNull(),
+});
+export type OwnerSimulationDailySnapshot = typeof ownerSimulationDailySnapshots.$inferSelect;
+export type InsertOwnerSimulationDailySnapshot = typeof ownerSimulationDailySnapshots.$inferInsert;
+
+/**
+ * Session objective settings for the owner simulation.
+ * One row per session/update — latest row is the active objective.
+ */
+export const ownerSimulationObjectives = mysqlTable("ownerSimulationObjectives", {
+  id:               int("id").autoincrement().primaryKey(),
+  accountId:        int("accountId").notNull(),
+  /** e.g. "short_swing" | "long_position" | "crypto_momentum" | "defensive" | "ai_tech" | "custom" */
+  objectiveType:    varchar("objectiveType", { length: 32 }).notNull(),
+  /** "stocks" | "crypto" | "both" */
+  assetPreference:  varchar("assetPreference", { length: 16 }).notNull().default("both"),
+  /** "aggressive" | "balanced" | "defensive" */
+  riskMode:         varchar("riskMode", { length: 16 }).notNull().default("balanced"),
+  /** Max position size as % of account (e.g. 10 = 10%) */
+  maxPositionSizePct: decimal("maxPositionSizePct", { precision: 5, scale: 2 }).notNull().default("10.00"),
+  /** Max loss per trade in USD */
+  maxLossPerTrade:  decimal("maxLossPerTrade", { precision: 14, scale: 2 }).notNull().default("2000.00"),
+  /** "intraday" | "1_5_days" | "2_6_weeks" | "3_12_months" */
+  timeframe:        varchar("timeframe", { length: 20 }).notNull().default("1_5_days"),
+  customNote:       text("customNote"),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+});
+export type OwnerSimulationObjective = typeof ownerSimulationObjectives.$inferSelect;
+export type InsertOwnerSimulationObjective = typeof ownerSimulationObjectives.$inferInsert;

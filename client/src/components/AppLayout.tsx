@@ -75,6 +75,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "diagnostic", label: "AI Market Explanation", shortLabel: "AI Expl", icon: Cpu,           path: "/app/diagnostic" },
       { id: "ai-watch",   label: "AI Sector Watch",       shortLabel: "AI Watch",icon: Brain,         path: "/app/ai-watch" },
       { id: "charts",     label: "Charts",               shortLabel: "Charts",  icon: BarChart2,     path: "/app/charts" },
+      { id: "sim-portfolio", label: "$10K → $1M Portfolio", shortLabel: "$10K→$1M", icon: TrendingUp,   path: "/app/sim-portfolio" },
     ],
   },
   {
@@ -109,6 +110,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 // Admin-only nav items (appended at runtime if user is admin)
 const ADMIN_NAV_ITEMS: NavItem[] = [
+  { id: "owner-simulation", label: "Owner Simulation", shortLabel: "Sim", icon: Trophy, path: "/owner/simulation" },
   { id: "x-posts",      label: "X Posts",     shortLabel: "X Posts",   icon: Zap,       path: "/app/x-posts" },
   { id: "x-post-queue", label: "Post Queue",   shortLabel: "Queue",     icon: Settings,  path: "/app/x-post-queue" },
   { id: "admin-blog",   label: "Admin Blog",   shortLabel: "Admin Blog",icon: Newspaper, path: "/app/admin/blog" },
@@ -467,7 +469,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 {group.label}
               </span>
               {/* Group items */}
-              {group.items.map(tab => {
+              {group.items.filter(tab => !(tab.id === 'sim-portfolio' && !isAdmin)).map(tab => {
                 const Icon = tab.icon;
                 const active = isActive(tab.path);
                 const isTrackRecord = tab.id === 'track-record';
@@ -684,7 +686,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   {group.label}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                  {group.items.map(tab => {
+                  {group.items.filter(tab => !(tab.id === 'sim-portfolio' && !isAdmin)).map(tab => {
                     const Icon = tab.icon;
                     const active = isActive(tab.path);
                     const isTR = tab.id === 'track-record';

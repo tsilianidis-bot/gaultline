@@ -1,4 +1,5 @@
 import { COOKIE_NAME } from "@shared/const";
+import { ENV } from "./_core/env";
 import { analyticsRouter, blogRouter, billingRouter, adminRouter } from "./routers/index";
 import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -29,6 +30,12 @@ import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngi
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
 import { getQuotes, getTopStockPerformers, getTopStockLosers, getTopStockByVolume, getTopNear52WeekHigh, getTopNear52WeekLow, getMostVolatileStocks, getSmallCapRunners } from "./yahooProxy";
 import { getAsymmetricOpportunities } from "./asymmetricOpportunities";
+import {
+  getSimAccounts, upsertSimAccount, getSimOpenPositions, insertSimPosition, updateSimPosition,
+  insertSimTrade, getSimTrades, getSimJournalEntries, upsertSimJournalEntry,
+} from "./db";
+import { valuateSimPortfolio, runDailyEvaluation } from "./simPortfolioEngine";
+import { generateDailyJournal } from "./simPortfolioJournal";
 import { runAftershockEngine, getAssetContagionChain, getAllContagionAssets, clearAftershockCache } from "./aftershockEngine";
 import { computeCryptoSignal, computeCryptoSignals, clearCryptoSignalCache } from "./cryptoSignals";
 import { computeAltRotation, clearAltRotationCache } from "./altRotationEngine";
@@ -46,6 +53,11 @@ import { sendEmail, buildApprovalEmail } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
 import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ThesisType } from './tradePreflight';
 import { getPreFlightData } from './preFlight';
+import {
+  getOrCreateOwnerAccount, getOwnerPositions, getOwnerTrades, getOwnerObjective, setOwnerObjective,
+  getDailySnapshots, upsertDailySnapshot, scanOpportunities, executeTrade, markToMarket,
+  calcGoalProgress, generateOwnerJournal, OBJECTIVE_TYPES,
+} from './ownerSimulation';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { xPostQueue, users } from '../drizzle/schema';
@@ -1632,9 +1644,451 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Asymmetric opportunities fetch failed", cause: err });
         }
       }),
+    }),
+  simPortfolio: router({
+    getOverview: publicProcedure
+      .query(async ({ ctx }) => {
+        try {
+          const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
+          const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
+          if (!featureEnabled && !isAdminOrOwner) return { visible: false as const, accounts: [], valuation: null, startDate: null, startingCapital: 20000 };
+          const accounts = await getSimAccounts();
+          const openPositions = await getSimOpenPositions();
+          const stocksAccount = accounts.find(a => a.accountType === "stocks");
+          const cryptoAccount = accounts.find(a => a.accountType === "crypto");
+          const stocksCash = parseFloat(stocksAccount?.cashBalance ?? "10000");
+          const cryptoCash = parseFloat(cryptoAccount?.cashBalance ?? "10000");
+          const valuation = await valuateSimPortfolio(openPositions, stocksCash, cryptoCash);
+          return { visible: true as const, isAdminOrOwner, accounts, valuation, startDate: stocksAccount?.createdAt ?? null, startingCapital: 20000 };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Sim portfolio overview failed", cause: err });
+        }
+      }),
+    getPositions: publicProcedure
+      .query(async ({ ctx }) => {
+        const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
+        const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
+        if (!featureEnabled && !isAdminOrOwner) return [];
+        return getSimOpenPositions();
+      }),
+    getTrades: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(200).default(100) }).optional())
+      .query(async ({ ctx, input }) => {
+        const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
+        const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
+        if (!featureEnabled && !isAdminOrOwner) return [];
+        return getSimTrades(undefined, input?.limit ?? 100);
+      }),
+    getJournal: publicProcedure
+      .input(z.object({ limit: z.number().min(1).max(60).default(30) }).optional())
+      .query(async ({ ctx, input }) => {
+        const featureEnabled = await getFeatureFlag("sim_portfolio_visible");
+        const isAdminOrOwner = ctx.user?.role === "admin" || ctx.user?.openId === ENV.ownerOpenId;
+        if (!featureEnabled && !isAdminOrOwner) return [];
+        return getSimJournalEntries(input?.limit ?? 30);
+      }),
+    runDailyUpdate: protectedProcedure
+      .mutation(async () => {
+        try {
+          const { pressure, stockDecisions, cryptoDecisions } = await runDailyEvaluation();
+          const accounts = await getSimAccounts();
+          const openPositions = await getSimOpenPositions();
+          const stocksAccount = accounts.find(a => a.accountType === "stocks");
+          const cryptoAccount = accounts.find(a => a.accountType === "crypto");
+          const stocksCash = parseFloat(stocksAccount?.cashBalance ?? "10000");
+          const cryptoCash = parseFloat(cryptoAccount?.cashBalance ?? "10000");
+          const previousValuation = await valuateSimPortfolio(openPositions, stocksCash, cryptoCash);
+          const previousTotal = previousValuation.totalValue;
+          const tradesSummary: string[] = [];
+          for (const decision of [...stockDecisions, ...cryptoDecisions]) {
+            if (decision.action === "BUY" && decision.quantity > 0) {
+              const isStock = decision.assetType === "stock";
+              const account = accounts.find(a => a.accountType === (isStock ? "stocks" : "crypto"));
+              if (!account) continue;
+              const cash = parseFloat(account.cashBalance);
+              const cost = decision.price * decision.quantity;
+              if (cost > cash) continue;
+              await insertSimPosition({
+                accountId: account.id,
+                ticker: decision.ticker,
+                name: decision.name,
+                assetType: decision.assetType,
+                quantity: decision.quantity.toString(),
+                entryPrice: decision.price.toString(),
+                totalCost: cost.toString(),
+                entrySignal: decision.signal,
+                entryRationale: JSON.stringify(decision.rationale),
+                status: "open",
+              });
+              await insertSimTrade({
+                accountId: account.id,
+                ticker: decision.ticker,
+                assetType: decision.assetType,
+                action: "BUY",
+                quantity: decision.quantity.toString(),
+                price: decision.price.toString(),
+                totalValue: cost.toString(),
+                rationale: JSON.stringify(decision.rationale),
+                pressureScore: pressure.overallPressure,
+                regime: pressure.regime,
+              });
+              const newCash = cash - cost;
+              await upsertSimAccount({ ...account, cashBalance: newCash.toString() });
+              tradesSummary.push(decision.rationale.actionSummary);
+            }
+          }
+          const updatedAccounts = await getSimAccounts();
+          const updatedPositions = await getSimOpenPositions();
+          const updatedStocksCash = parseFloat(updatedAccounts.find(a => a.accountType === "stocks")?.cashBalance ?? "10000");
+          const updatedCryptoCash = parseFloat(updatedAccounts.find(a => a.accountType === "crypto")?.cashBalance ?? "10000");
+          const updatedValuation = await valuateSimPortfolio(updatedPositions, updatedStocksCash, updatedCryptoCash);
+          const journal = await generateDailyJournal(
+            updatedValuation,
+            previousTotal,
+            tradesSummary.join(" | ") || "No trades executed",
+            pressure,
+          );
+          // Combine all journal sections into a single markdown journalEntry
+          const journalEntry = [
+            `## FAULTLINE Portfolio Journal — ${journal.date}`,
+            `**Pressure Index:** ${journal.pressureScore}/100 | **Regime:** ${journal.pressureRegime} (${journal.pressureLevel})`,
+            `**Portfolio Value:** $${journal.totalValue.toFixed(2)} | **Daily P&L:** ${journal.dailyPnl >= 0 ? '+' : ''}$${journal.dailyPnl.toFixed(2)} (${journal.dailyPnlPct >= 0 ? '+' : ''}${journal.dailyPnlPct.toFixed(2)}%)`,
+            `### Macro Narrative`,
+            journal.macroNarrative,
+            `### Risk Assessment`,
+            journal.riskAssessment,
+            `### Actions Taken`,
+            journal.actionsTaken,
+            `### Position Commentary`,
+            journal.positionCommentary.map(p => `**${p.ticker}** (${p.action}): ${p.commentary}`).join('\n\n'),
+            `### Forward Looking`,
+            journal.forwardLooking,
+          ].join('\n\n');
+          await upsertSimJournalEntry({
+            date: journal.date,
+            pressureScore: journal.pressureScore,
+            regime: journal.pressureRegime,
+            totalValue: journal.totalValue.toString(),
+            stocksValue: journal.stocksValue.toString(),
+            cryptoValue: journal.cryptoValue.toString(),
+            dailyPnl: journal.dailyPnl.toString(),
+            dailyPnlPct: journal.dailyPnlPct.toString(),
+            journalEntry,
+            holdingsJson: JSON.stringify(journal.positionCommentary.map(p => p.ticker)),
+            tradesJson: JSON.stringify(tradesSummary),
+            tradesMade: tradesSummary.length,
+          });
+          return { success: true, tradesExecuted: tradesSummary.length, journalDate: journal.date };
+        } catch (err) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Daily update failed", cause: err });
+        }
+      }),
+    }),
+  // ── Owner Simulation Module ──────────────────────────────────
+  // Private admin-only $100K → $1M virtual trading cockpit.
+  ownerSim: router({
+    // Get or create the owner's simulation account
+    getAccount: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Owner simulation is admin-only' });
+      try {
+        const account = await getOrCreateOwnerAccount(ctx.user.id);
+        const valuation = await markToMarket(account.id);
+        const goal = calcGoalProgress(valuation.totalValue);
+        return { account, valuation, goal };
+      } catch (err) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to load simulation account', cause: err });
+      }
+    }),
+
+    // Reset account back to $100K (clears all positions and trades)
+    resetAccount: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
+      const { ownerSimulationAccounts: accounts, ownerSimulationPositions: positions, ownerSimulationTrades: trades } = await import('../drizzle/schema');
+      const acct = await getOrCreateOwnerAccount(ctx.user.id);
+      await db.update(positions).set({ status: 'closed', closedAt: new Date(), updatedAt: new Date() }).where(eq(positions.accountId, acct.id));
+      await db.update(accounts).set({ currentCash: '100000.00', currentValue: '100000.00', updatedAt: new Date() }).where(eq(accounts.id, acct.id));
+      return { success: true };
+    }),
+
+    // Get current objective
+    getObjective: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+      const account = await getOrCreateOwnerAccount(ctx.user.id);
+      const objective = await getOwnerObjective(account.id);
+      return { objective, objectiveTypes: OBJECTIVE_TYPES };
+    }),
+
+    // Set objective for this session
+    setObjective: protectedProcedure
+      .input(z.object({
+        objectiveType: z.enum(['short_swing', 'long_position', 'crypto_momentum', 'defensive', 'ai_tech_momentum', 'custom']),
+        assetPreference: z.enum(['stocks', 'crypto', 'both']).default('both'),
+        riskMode: z.enum(['aggressive', 'balanced', 'defensive']).default('balanced'),
+        maxPositionSizePct: z.number().min(1).max(50).default(10),
+        maxLossPerTrade: z.number().min(100).max(50000).default(2000),
+        timeframe: z.enum(['intraday', '1_5_days', '2_6_weeks', '3_12_months']).default('1_5_days'),
+        customNote: z.string().max(500).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const account = await getOrCreateOwnerAccount(ctx.user.id);
+        await setOwnerObjective({
+          accountId: account.id,
+          objectiveType: input.objectiveType,
+          assetPreference: input.assetPreference,
+          riskMode: input.riskMode,
+          maxPositionSizePct: input.maxPositionSizePct.toString(),
+          maxLossPerTrade: input.maxLossPerTrade.toString(),
+          timeframe: input.timeframe,
+          customNote: input.customNote ?? null,
+        });
+        return { success: true };
+      }),
+
+    // Scan for real-time trade opportunities
+    getOpportunities: protectedProcedure
+      .input(z.object({
+        assetFilter: z.enum(['stocks', 'crypto', 'both']).default('both'),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        try {
+          const account = await getOrCreateOwnerAccount(ctx.user.id);
+          const objective = await getOwnerObjective(account.id);
+          const valuation = await markToMarket(account.id);
+          const opportunities = await scanOpportunities(
+            objective,
+            valuation.totalValue,
+            input?.assetFilter ?? 'both',
+          );
+          return { opportunities, scannedAt: Date.now() };
+        } catch (err) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Opportunity scan failed', cause: err });
+        }
+      }),
+
+    // Get open positions
+    getPositions: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+      const account = await getOrCreateOwnerAccount(ctx.user.id);
+      return getOwnerPositions(account.id);
+    }),
+
+    // Get trade history
+    getTrades: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(500).default(100) }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const account = await getOrCreateOwnerAccount(ctx.user.id);
+        return getOwnerTrades(account.id, input?.limit ?? 100);
+      }),
+
+    // Enter a simulated trade
+    enterTrade: protectedProcedure
+      .input(z.object({
+        opportunity: z.object({
+          id: z.string(),
+          ticker: z.string(),
+          name: z.string(),
+          sector: z.string(),
+          assetType: z.enum(['stock', 'crypto']),
+          direction: z.enum(['LONG', 'AVOID', 'WATCH', 'TRIM', 'DEFENSIVE']),
+          currentPrice: z.number(),
+          changePercent: z.number(),
+          volume: z.number(),
+          marketCap: z.number().nullable(),
+          dataFreshness: z.enum(['LIVE', 'DELAYED', 'STALE', 'UNAVAILABLE']),
+          entryZoneLow: z.number(),
+          entryZoneHigh: z.number(),
+          stopLoss: z.number(),
+          targetOne: z.number(),
+          targetTwo: z.number(),
+          riskRewardRatio: z.number(),
+          suggestedPositionSizePct: z.number(),
+          suggestedPositionSizeUsd: z.number(),
+          riskAmountUsd: z.number(),
+          faultlineConfidence: z.number(),
+          compositeScore: z.number(),
+          momentumScore: z.number(),
+          macroFit: z.number(),
+          objectiveFit: z.boolean(),
+          objectiveFitReason: z.string(),
+          whyNow: z.string(),
+          invalidation: z.string(),
+          keyRisks: z.array(z.string()),
+          labels: z.array(z.string()),
+          fetchedAt: z.number(),
+        }),
+        side: z.enum(['BUY', 'SELL', 'TRIM', 'ADD']),
+        quantity: z.number().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        try {
+          const account = await getOrCreateOwnerAccount(ctx.user.id);
+          const objective = await getOwnerObjective(account.id);
+          const pressure = await calculateFaultlinePressure();
+          const result = await executeTrade(account.id, input.opportunity, input.side, input.quantity, pressure, objective);
+          return result;
+        } catch (err) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: (err as Error).message, cause: err });
+        }
+      }),
+
+    // Close a position by symbol
+    closePosition: protectedProcedure
+      .input(z.object({
+        symbol: z.string(),
+        assetType: z.enum(['stock', 'crypto']),
+        currentPrice: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        try {
+          const account = await getOrCreateOwnerAccount(ctx.user.id);
+          const objective = await getOwnerObjective(account.id);
+          const pressure = await calculateFaultlinePressure();
+          // Build a minimal opportunity object for executeTrade
+          const fakeOpp = {
+            id: `close-${input.symbol}`,
+            ticker: input.symbol,
+            name: input.symbol,
+            sector: 'N/A',
+            assetType: input.assetType,
+            direction: 'AVOID' as const,
+            currentPrice: input.currentPrice,
+            changePercent: 0,
+            volume: 0,
+            marketCap: null,
+            dataFreshness: 'LIVE' as const,
+            entryZoneLow: input.currentPrice,
+            entryZoneHigh: input.currentPrice,
+            stopLoss: input.currentPrice * 0.9,
+            targetOne: input.currentPrice * 1.1,
+            targetTwo: input.currentPrice * 1.2,
+            riskRewardRatio: 1.5,
+            suggestedPositionSizePct: 10,
+            suggestedPositionSizeUsd: 10000,
+            riskAmountUsd: 1000,
+            faultlineConfidence: 50,
+            compositeScore: 50,
+            momentumScore: 50,
+            macroFit: 50,
+            objectiveFit: true,
+            objectiveFitReason: 'Manual close',
+            whyNow: 'Manual position close',
+            invalidation: 'N/A',
+            keyRisks: [],
+            labels: [],
+            fetchedAt: Date.now(),
+          };
+          const db = await getDb();
+          if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+          const { ownerSimulationPositions: positions } = await import('../drizzle/schema');
+          const { and: andOp, eq: eqOp } = await import('drizzle-orm');
+          const openPos = await db.select().from(positions)
+            .where(andOp(eqOp(positions.accountId, account.id), eqOp(positions.symbol, input.symbol), eqOp(positions.status, 'open')))
+            .limit(1);
+          if (!openPos[0]) throw new TRPCError({ code: 'NOT_FOUND', message: `No open position for ${input.symbol}` });
+          const qty = parseFloat(openPos[0].quantity.toString());
+          const result = await executeTrade(account.id, fakeOpp, 'SELL', qty, pressure, objective);
+          return result;
+        } catch (err) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: (err as Error).message, cause: err });
+        }
+      }),
+
+    // Mark-to-market valuation
+    getValuation: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+      const account = await getOrCreateOwnerAccount(ctx.user.id);
+      return markToMarket(account.id);
+    }),
+
+    // Goal progress
+    getGoalProgress: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+      const account = await getOrCreateOwnerAccount(ctx.user.id);
+      const valuation = await markToMarket(account.id);
+      return calcGoalProgress(valuation.totalValue);
+    }),
+
+    // Daily snapshots
+    getDailySnapshots: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(90).default(30) }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const account = await getOrCreateOwnerAccount(ctx.user.id);
+        return getDailySnapshots(account.id, input?.limit ?? 30);
+      }),
+
+    // Generate today's AI journal entry
+    generateJournal: protectedProcedure.mutation(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+      try {
+        const account = await getOrCreateOwnerAccount(ctx.user.id);
+        const objective = await getOwnerObjective(account.id);
+        const valuation = await markToMarket(account.id);
+        const trades = await getOwnerTrades(account.id, 20);
+        const today = new Date().toISOString().slice(0, 10);
+        const todayTrades = trades.filter(t => t.createdAt && new Date(t.createdAt).toISOString().slice(0, 10) === today);
+        const pressure = await calculateFaultlinePressure();
+        const journal = await generateOwnerJournal(account.id, objective, todayTrades, valuation.totalValue, pressure);
+        // Save snapshot
+        await upsertDailySnapshot({
+          accountId: account.id,
+          date: today,
+          endValue: valuation.totalValue.toString(),
+          dailyPnl: (valuation.totalValue - 100000).toString(),
+          dailyReturnPct: (((valuation.totalValue - 100000) / 100000) * 100).toString(),
+          tradesCount: todayTrades.length,
+          aiSummary: journal,
+        });
+        return { journal, savedAt: Date.now() };
+      } catch (err) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Journal generation failed', cause: err });
+      }
+    }),
+
+    // Reject a trade opportunity with a reason
+    rejectTrade: protectedProcedure
+      .input(z.object({
+        symbol: z.string(),
+        assetType: z.enum(['stock', 'crypto']),
+        price: z.number(),
+        reason: z.string().min(1).max(500),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const account = await getOrCreateOwnerAccount(ctx.user.id);
+        const objective = await getOwnerObjective(account.id);
+        const pressure = await calculateFaultlinePressure();
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR' });
+        const { ownerSimulationTrades: trades } = await import('../drizzle/schema');
+        await db.insert(trades).values({
+          accountId: account.id,
+          symbol: input.symbol,
+          assetType: input.assetType,
+          side: 'BUY',
+          quantity: '0',
+          entryPrice: input.price.toString(),
+          notionalValue: '0',
+          faultlineScoreAtEntry: pressure.overallPressure,
+          pressureIndexAtEntry: pressure.overallPressure,
+          regimeAtEntry: pressure.regime,
+          objective: objective?.objectiveType ?? null,
+          rationale: `REJECTED: ${input.reason}`,
+          status: 'rejected',
+          rejectionReason: input.reason,
+        });
+        return { success: true };
+      }),
   }),
 
-    contact: router({
+  contact: router({
     submit: publicProcedure
       .input(z.object({
         name: z.string().min(1).max(100),
