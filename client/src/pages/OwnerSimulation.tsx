@@ -722,6 +722,21 @@ export default function OwnerSimulation() {
     },
     onError: (e) => toast.error(e.message),
   });
+  const [optimalAction, setOptimalAction] = useState<{
+    actionType: string; ticker?: string; assetType?: string; headline: string;
+    rationale: string; confidence: number; urgency: string;
+    suggestedSize?: string; entryZone?: string; stopLoss?: string; target?: string;
+    timeframe: string; supportingSignals: string[]; counterArguments: string[];
+    generatedAt: number;
+  } | null>(null);
+  const [showOptimalRationale, setShowOptimalRationale] = useState(false);
+  const optimalActionMut = trpc.ownerSim.getOptimalAction.useMutation({
+    onSuccess: (data) => {
+      setOptimalAction(data as typeof optimalAction);
+      toast.success("Optimal action computed");
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   // Derived data
   const account = accountQuery.data?.account;
@@ -957,6 +972,147 @@ export default function OwnerSimulation() {
 
           {/* ── Opportunities Tab ── */}
           <TabsContent value="opportunities" className="mt-4">
+            {/* ── OPTIMAL ACTION PANEL ── */}
+            <div className="mb-5">
+              {optimalAction ? (
+                <div className={`rounded-xl border p-4 space-y-3 ${
+                  optimalAction.urgency === "CRITICAL" ? "border-[#FF2D55]/60 bg-[#FF2D55]/5" :
+                  optimalAction.urgency === "HIGH"     ? "border-[#FF6B35]/60 bg-[#FF6B35]/5" :
+                  optimalAction.urgency === "MEDIUM"   ? "border-[#FFD700]/40 bg-[#FFD700]/5" :
+                                                         "border-[#00D4FF]/30 bg-[#00D4FF]/5"
+                }`}>
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Zap className={`w-4 h-4 flex-shrink-0 ${
+                        optimalAction.urgency === "CRITICAL" ? "text-[#FF2D55]" :
+                        optimalAction.urgency === "HIGH"     ? "text-[#FF6B35]" :
+                        optimalAction.urgency === "MEDIUM"   ? "text-[#FFD700]" : "text-[#00D4FF]"
+                      }`} />
+                      <span className="text-[10px] font-mono text-[#64748B] tracking-widest">OPTIMAL ACTION</span>
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                        optimalAction.actionType === "BUY" || optimalAction.actionType === "ADD" ? "border-[#00D4FF]/50 text-[#00D4FF] bg-[#00D4FF]/10" :
+                        optimalAction.actionType === "SELL" || optimalAction.actionType === "TRIM" ? "border-[#FF2D55]/50 text-[#FF2D55] bg-[#FF2D55]/10" :
+                        optimalAction.actionType === "RAISE_CASH" || optimalAction.actionType === "HEDGE" ? "border-[#FF6B35]/50 text-[#FF6B35] bg-[#FF6B35]/10" :
+                        "border-[#64748B]/50 text-[#64748B] bg-[#64748B]/10"
+                      }`}>{optimalAction.actionType.replace("_", " ")}</span>
+                      {optimalAction.ticker && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-white/20 text-[#F4F8FF] bg-white/5">{optimalAction.ticker}</span>
+                      )}
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                        optimalAction.urgency === "CRITICAL" ? "bg-[#FF2D55]/20 text-[#FF2D55]" :
+                        optimalAction.urgency === "HIGH"     ? "bg-[#FF6B35]/20 text-[#FF6B35]" :
+                        optimalAction.urgency === "MEDIUM"   ? "bg-[#FFD700]/20 text-[#FFD700]" :
+                                                               "bg-[#00D4FF]/10 text-[#00D4FF]"
+                      }`}>{optimalAction.urgency} URGENCY</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-right">
+                        <div className="text-xs text-[#64748B] font-mono">CONFIDENCE</div>
+                        <div className="text-sm font-mono font-bold text-[#F4F8FF]">{optimalAction.confidence}%</div>
+                      </div>
+                      <Button
+                        size="sm" variant="outline"
+                        onClick={() => optimalActionMut.mutate()}
+                        disabled={optimalActionMut.isPending}
+                        className="border-white/10 text-[#64748B] font-mono text-xs"
+                      >
+                        <RefreshCw className={`w-3 h-3 mr-1 ${optimalActionMut.isPending ? "animate-spin" : ""}`} />
+                        REFRESH
+                      </Button>
+                    </div>
+                  </div>
+                  {/* Confidence bar */}
+                  <div className="w-full bg-white/5 rounded-full h-1">
+                    <div
+                      className={`h-1 rounded-full transition-all ${
+                        optimalAction.confidence >= 75 ? "bg-[#00D4FF]" :
+                        optimalAction.confidence >= 50 ? "bg-[#FFD700]" : "bg-[#FF6B35]"
+                      }`}
+                      style={{ width: `${optimalAction.confidence}%` }}
+                    />
+                  </div>
+                  {/* Headline */}
+                  <p className="text-[#F4F8FF] font-mono text-sm font-semibold leading-snug">{optimalAction.headline}</p>
+                  {/* Timeframe + size */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <span className="text-[10px] text-[#64748B] font-mono">TIMEFRAME: <span className="text-[#A8B8CC]">{optimalAction.timeframe}</span></span>
+                    {optimalAction.suggestedSize && (
+                      <span className="text-[10px] text-[#64748B] font-mono">SIZE: <span className="text-[#A8B8CC]">{optimalAction.suggestedSize}</span></span>
+                    )}
+                    {optimalAction.entryZone && (
+                      <span className="text-[10px] text-[#64748B] font-mono">ENTRY: <span className="text-[#00D4FF]">{optimalAction.entryZone}</span></span>
+                    )}
+                    {optimalAction.stopLoss && (
+                      <span className="text-[10px] text-[#64748B] font-mono">STOP: <span className="text-[#FF2D55]">{optimalAction.stopLoss}</span></span>
+                    )}
+                    {optimalAction.target && (
+                      <span className="text-[10px] text-[#64748B] font-mono">TARGET: <span className="text-[#00FF88]">{optimalAction.target}</span></span>
+                    )}
+                  </div>
+                  {/* Supporting signals */}
+                  {optimalAction.supportingSignals.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="text-[10px] text-[#64748B] font-mono tracking-widest">SUPPORTING SIGNALS</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {optimalAction.supportingSignals.map((s, i) => (
+                          <span key={i} className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/20">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Rationale toggle */}
+                  <button
+                    onClick={() => setShowOptimalRationale(v => !v)}
+                    className="flex items-center gap-1 text-[10px] font-mono text-[#64748B] hover:text-[#A8B8CC] transition-colors"
+                  >
+                    {showOptimalRationale ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    {showOptimalRationale ? "HIDE RATIONALE" : "VIEW FULL RATIONALE"}
+                  </button>
+                  {showOptimalRationale && (
+                    <div className="space-y-2 pt-1 border-t border-white/5">
+                      <p className="text-xs text-[#A8B8CC] leading-relaxed whitespace-pre-wrap">{optimalAction.rationale}</p>
+                      {optimalAction.counterArguments.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="text-[10px] text-[#FF6B35] font-mono tracking-widest">COUNTER-ARGUMENTS / RISKS</div>
+                          <ul className="space-y-0.5">
+                            {optimalAction.counterArguments.map((c, i) => (
+                              <li key={i} className="text-[10px] text-[#A8B8CC] font-mono flex items-start gap-1.5">
+                                <span className="text-[#FF6B35] mt-0.5">▸</span>{c}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <p className="text-[9px] text-[#64748B] font-mono">Generated: {new Date(optimalAction.generatedAt).toLocaleTimeString()} · SIMULATION ONLY — NOT FINANCIAL ADVICE</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#00D4FF]/10 flex items-center justify-center">
+                      <Zap className="w-4 h-4 text-[#00D4FF]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-mono text-[#F4F8FF] font-semibold">OPTIMAL ACTION ADVISOR</div>
+                      <div className="text-[10px] text-[#64748B] font-mono">AI synthesizes regime + pressure + your positions → single best action</div>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => optimalActionMut.mutate()}
+                    disabled={optimalActionMut.isPending}
+                    className="bg-[#00D4FF]/10 hover:bg-[#00D4FF]/20 border border-[#00D4FF]/30 text-[#00D4FF] font-mono text-xs flex-shrink-0"
+                  >
+                    {optimalActionMut.isPending ? (
+                      <><RefreshCw className="w-3 h-3 mr-1 animate-spin" />ANALYZING...</>
+                    ) : (
+                      <><Zap className="w-3 h-3 mr-1" />GET OPTIMAL ACTION</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
             <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-[#64748B] font-mono">FILTER:</span>

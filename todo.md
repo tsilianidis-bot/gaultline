@@ -1254,21 +1254,11 @@
 - [x] Admin preview banner added to SimPortfolio.tsx (amber banner with feature flag instructions)
 - [x] Nav item filtered to admin-only in AppLayout.tsx (desktop + mobile)
 
-## Real-Time Trade Recon (On-Demand Owner Scanner)
-- [ ] Build server/tradeRecon.ts: on-demand scanner that checks all stock + crypto tickers, fetches live prices, runs full 9-dimension scoring, returns ranked opportunities with BUY/WATCH/AVOID classification and full rationale
-- [ ] Add tRPC procedure: simPortfolio.runTradeRecon (admin-only, returns ranked list of opportunities)
-- [ ] Add "TRADE RECON" panel to SimPortfolio.tsx (admin-only): trigger button, loading state, ranked opportunity cards with score bars, conviction badges, full rationale expandable, entry/target/stop levels
-- [ ] TypeScript: 0 errors after Trade Recon implementation
+## Real-Time Trade Recon (On-Demand Owner Scanner) ✅ SUPERSEDED
+- [x] Superseded by Owner Simulation Module (/owner/simulation) which includes full real-time opportunity scanning, 9-dimension scoring, LLM rationale, and one-click trade execution
 
-## Owner $100K Portfolio + Trade Recon Scanner
-- [ ] Add accountLabel column to simPortfolioAccounts (to distinguish "DEMO $10K" vs "OWNER $100K")
-- [ ] Seed owner accounts: stocks $100,000 + crypto $100,000 (accountLabel = "owner")
-- [ ] Build server/tradeRecon.ts: real-time scanner — fetch live prices for all stock + crypto candidates, run 9-dimension scoring, LLM rationale, return ranked BUY/WATCH/AVOID list
-- [ ] Add tRPC procedure: simPortfolio.runTradeRecon (owner-only, returns ranked opportunities with full rationale)
-- [ ] Add tRPC procedure: simPortfolio.executeReconTrade (owner-only, executes a specific trade from recon results against the owner $100K account)
-- [ ] Add "OWNER $100K ACCOUNT" section to SimPortfolio.tsx showing owner portfolio separately from demo
-- [ ] Add "TRADE RECON" panel to SimPortfolio.tsx: scan button, ranked opportunity cards, one-click execute
-- [ ] TypeScript: 0 errors
+## Owner $100K Portfolio + Trade Recon Scanner ✅ SUPERSEDED
+- [x] Superseded by Owner Simulation Module (/owner/simulation) which includes $100K virtual account, accountLabel column added to simPortfolioAccounts, full trade recon engine, and all procedures
 
 ## Owner Simulation Module (/owner/simulation) ✅ COMPLETE
 - [x] DB schema: owner_simulation_accounts, owner_simulation_positions, owner_simulation_trades, owner_simulation_daily_snapshots, owner_simulation_objectives tables
@@ -1290,5 +1280,12 @@
   - [x] Mobile responsive
 - [x] Add /owner/simulation route to App.tsx (admin-only guard)
 - [x] Add "Owner Simulation" nav button in admin section of AppLayout (Trophy icon)
+- [x] TypeScript: 0 errors
+- [x] Tests passing: 426 tests, 0 failures
+
+## Optimal Action Suggestion Panel (Owner Simulation) ✅ COMPLETE
+- [x] Add ownerSim.getOptimalAction tRPC procedure: synthesize FAULTLINE pressure + regime + open positions + objective → single best recommended action with full rationale
+- [x] Optimal action fields: actionType (BUY/SELL/TRIM/HOLD/RAISE_CASH/HEDGE/REBALANCE/WAIT), ticker (optional), rationale (multi-paragraph), confidence (0-100), urgency (LOW/MEDIUM/HIGH/CRITICAL), supportingSignals[], counterArguments[], suggestedSize, timeframe
+- [x] Add Optimal Action panel to OwnerSimulation.tsx: prominent card above opportunity list, action badge with color, confidence bar, urgency badge, rationale text, supporting signals chips, counter-arguments, refresh button
 - [x] TypeScript: 0 errors
 - [x] Tests passing: 426 tests, 0 failures

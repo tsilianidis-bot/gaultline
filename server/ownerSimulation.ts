@@ -1081,3 +1081,193 @@ export type {
   OwnerSimulationAccount, OwnerSimulationPosition,
   OwnerSimulationTrade, OwnerSimulationObjective, OwnerSimulationDailySnapshot,
 };
+
+// ── Optimal Action Engine ─────────────────────────────────────
+export type OptimalActionType =
+  | "BUY" | "SELL" | "TRIM" | "HOLD" | "RAISE_CASH"
+  | "HEDGE" | "REBALANCE" | "WAIT" | "ADD";
+
+export type UrgencyLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+
+export interface OptimalAction {
+  actionType: OptimalActionType;
+  ticker?: string;
+  assetType?: "stock" | "crypto";
+  headline: string;
+  rationale: string;
+  confidence: number;
+  urgency: UrgencyLevel;
+  suggestedSize?: string;
+  entryZone?: string;
+  stopLoss?: string;
+  target?: string;
+  timeframe: string;
+  supportingSignals: string[];
+  counterArguments: string[];
+  generatedAt: number;
+}
+
+export async function getOptimalAction(
+  accountId: number,
+  accountValue: number,
+): Promise<OptimalAction> {
+  const [pressure, objective, positions] = await Promise.all([
+    calculateFaultlinePressure(),
+    getOwnerObjective(accountId),
+    getOwnerPositions(accountId),
+  ]);
+
+  const objectiveLabel = objective
+    ? OBJECTIVE_TYPES.find(o => o.id === objective.objectiveType)?.label ?? "Custom"
+    : "No Objective Set";
+
+  const openPositionsSummary = positions.length === 0
+    ? "No open positions — fully in cash."
+    : positions.map(p =>
+        `${p.symbol} (${p.assetType}): ${p.quantity} units @ $${parseFloat(p.averageEntry.toString()).toFixed(2)} entry, stop $${parseFloat((p.stopLoss ?? "0").toString()).toFixed(2)}, target $${parseFloat((p.targetOne ?? "0").toString()).toFixed(2)}`
+      ).join("\n");
+
+  const cashAvailable = accountValue - positions.reduce((sum, p) =>
+    sum + parseFloat(p.quantity.toString()) * parseFloat(p.averageEntry.toString()), 0
+  );
+
+  const domains = extractDomainScores(pressure);
+
+  try {
+    const resp = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: "You are FAULTLINE's elite simulation trading advisor. You analyze macroeconomic pressure, market regime, and the owner's portfolio to produce ONE optimal action recommendation. This is for simulation/research purposes only — NOT financial advice.",
+        },
+        {
+          role: "user",
+          content: `Analyze the current situation and recommend ONE optimal action.
+
+FAULTLINE REGIME: ${pressure.regime}
+OVERALL PRESSURE: ${pressure.overallPressure}/100
+REGIME LEVEL: ${pressure.level}
+
+DOMAIN SCORES:
+- Credit Stress: ${domains.credit}/100
+- AI/Tech Bubble: ${domains.aiBubble}/100
+- Treasury Stress: ${domains.treasury}/100
+- Recession Risk: ${domains.recession}/100
+- Liquidity Stress: ${domains.liquidity}/100
+
+OWNER OBJECTIVE: ${objectiveLabel}
+ACCOUNT VALUE: $${accountValue.toFixed(2)}
+CASH AVAILABLE: $${cashAvailable.toFixed(2)}
+CASH %: ${((cashAvailable / accountValue) * 100).toFixed(1)}%
+
+OPEN POSITIONS:
+${openPositionsSummary}
+
+Based on ALL of the above, what is the single most optimal action right now? Consider:
+1. Is the regime favorable for new entries or should cash be raised?
+2. Are any open positions at risk given current pressure scores?
+3. Is there a specific ticker/asset that stands out given the regime?
+4. What does the objective demand given current conditions?
+
+Return JSON:
+{
+  "actionType": "BUY|SELL|TRIM|HOLD|RAISE_CASH|HEDGE|REBALANCE|WAIT|ADD",
+  "ticker": "ticker symbol or null",
+  "assetType": "stock or crypto or null",
+  "headline": "concise 8-12 word action headline",
+  "rationale": "2-4 paragraphs explaining the recommendation",
+  "confidence": 0-100,
+  "urgency": "LOW|MEDIUM|HIGH|CRITICAL",
+  "suggestedSize": "e.g. 5% of account ($5,000) or null",
+  "entryZone": "price range or null",
+  "stopLoss": "price or null",
+  "target": "price or null",
+  "timeframe": "e.g. 1-3 days",
+  "supportingSignals": ["signal 1", "signal 2", "signal 3"],
+  "counterArguments": ["risk 1", "risk 2"]
+}`,
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "optimal_action",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              actionType:        { type: "string" },
+              ticker:            { type: ["string", "null"] },
+              assetType:         { type: ["string", "null"] },
+              headline:          { type: "string" },
+              rationale:         { type: "string" },
+              confidence:        { type: "number" },
+              urgency:           { type: "string" },
+              suggestedSize:     { type: ["string", "null"] },
+              entryZone:         { type: ["string", "null"] },
+              stopLoss:          { type: ["string", "null"] },
+              target:            { type: ["string", "null"] },
+              timeframe:         { type: "string" },
+              supportingSignals: { type: "array", items: { type: "string" } },
+              counterArguments:  { type: "array", items: { type: "string" } },
+            },
+            required: [
+              "actionType", "ticker", "assetType", "headline", "rationale",
+              "confidence", "urgency", "suggestedSize", "entryZone", "stopLoss",
+              "target", "timeframe", "supportingSignals", "counterArguments",
+            ],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const content = resp.choices?.[0]?.message?.content;
+    if (typeof content === "string") {
+      const j = JSON.parse(content);
+      return {
+        actionType:        j.actionType as OptimalActionType,
+        ticker:            j.ticker ?? undefined,
+        assetType:         j.assetType ?? undefined,
+        headline:          j.headline,
+        rationale:         j.rationale,
+        confidence:        Math.min(100, Math.max(0, j.confidence)),
+        urgency:           j.urgency as UrgencyLevel,
+        suggestedSize:     j.suggestedSize ?? undefined,
+        entryZone:         j.entryZone ?? undefined,
+        stopLoss:          j.stopLoss ?? undefined,
+        target:            j.target ?? undefined,
+        timeframe:         j.timeframe,
+        supportingSignals: j.supportingSignals ?? [],
+        counterArguments:  j.counterArguments ?? [],
+        generatedAt:       Date.now(),
+      };
+    }
+  } catch (err) {
+    log.warn("[OwnerSim] Optimal action generation failed", { err: err as Error });
+  }
+
+  // Fallback: rule-based action
+  const fallbackAction: OptimalActionType =
+    pressure.overallPressure > 70 ? "RAISE_CASH" :
+    pressure.overallPressure > 50 ? "WAIT" :
+    positions.length === 0 ? "WAIT" : "HOLD";
+
+  return {
+    actionType: fallbackAction,
+    headline: pressure.overallPressure > 70
+      ? "Elevated pressure — preserve capital, reduce exposure"
+      : "Monitor conditions — no high-conviction entry yet",
+    rationale: `FAULTLINE pressure is currently ${pressure.overallPressure}/100 in a ${pressure.regime} regime. ${pressure.overallPressure > 70 ? "Elevated systemic risk suggests reducing exposure and raising cash until conditions stabilize." : "Conditions are moderate — maintain current positions and wait for higher-conviction setups."}`,
+    confidence: 55,
+    urgency: pressure.overallPressure > 70 ? "HIGH" : "LOW",
+    timeframe: "1-3 days",
+    supportingSignals: [
+      `Regime: ${pressure.regime}`,
+      `Overall Pressure: ${pressure.overallPressure}/100`,
+      `Regime Level: ${pressure.level}`,
+    ],
+    counterArguments: ["AI analysis temporarily unavailable — manual review recommended"],
+    generatedAt: Date.now(),
+  };
+}

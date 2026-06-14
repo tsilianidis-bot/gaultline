@@ -56,7 +56,7 @@ import { getPreFlightData } from './preFlight';
 import {
   getOrCreateOwnerAccount, getOwnerPositions, getOwnerTrades, getOwnerObjective, setOwnerObjective,
   getDailySnapshots, upsertDailySnapshot, scanOpportunities, executeTrade, markToMarket,
-  calcGoalProgress, generateOwnerJournal, OBJECTIVE_TYPES,
+  calcGoalProgress, generateOwnerJournal, getOptimalAction, OBJECTIVE_TYPES,
 } from './ownerSimulation';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
@@ -2084,10 +2084,21 @@ export const appRouter = router({
           status: 'rejected',
           rejectionReason: input.reason,
         });
-        return { success: true };
+                return { success: true };
       }),
-  }),
 
+    getOptimalAction: protectedProcedure.mutation(async ({ ctx }) => {
+      try {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const account = await getOrCreateOwnerAccount(ctx.user.id);
+        const valuation = await markToMarket(account.id);
+        return await getOptimalAction(account.id, valuation.totalValue);
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Optimal action generation failed', cause: err });
+      }
+    }),
+  }),
   contact: router({
     submit: publicProcedure
       .input(z.object({
