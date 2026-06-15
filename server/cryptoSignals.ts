@@ -24,6 +24,7 @@ import {
   computeWildersRSI,
   computeMACD,
   computeSMACrossover,
+  cryptoActionLabel,
   type TradingAction,
   type MACDResult,
   type PriceLevels,
@@ -35,11 +36,19 @@ import type { CoinMarketData, CoinOHLCBar } from "./coingeckoProxy";
 
 export type { TradingAction };
 
+/** Crypto-specific regime label (separate from equity regime). */
+export type CryptoRegimeLabel = "Bullish" | "Neutral" | "Defensive" | "Risk-Off";
+
 export interface CryptoSignalResult {
   symbol: string;
   name: string;
   coinId: string;
+  assetClass: "CRYPTO";         // always CRYPTO for UI labeling
   action: TradingAction;
+  actionLabel: string;         // precision label: "Accumulation Zone" | "Avoid New Entry" | "Hold" | "Watch"
+  cryptoRegime: CryptoRegimeLabel; // overall crypto market regime
+  regimeConflict: boolean;     // true if individual signal conflicts with overall crypto regime
+  regimeConflictExplanation: string | null; // why signal differs from regime (shown in UI)
   confidence: number;          // 0–100
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
@@ -516,11 +525,51 @@ export function computeCryptoSignal(input: CryptoSignalInput): CryptoSignalResul
   // ── Regime alignment ──────────────────────────────────────
   const { alignment: regimeAlignment, score: regimeAlignmentScore } = computeCryptoRegimeAlignment(action, regime);
 
+  // ── Crypto regime label (independent of equity regime) ────────
+  const cryptoRegime: CryptoRegimeLabel =
+    regime.score < 3.5 ? "Bullish" :
+    regime.score < 5.5 ? "Neutral" :
+    regime.score < 7.5 ? "Defensive" : "Risk-Off";
+
+  // ── Regime conflict detection ────────────────────────────────
+  // A conflict exists when the individual signal is bearish (SELL) but the
+  // overall crypto regime is Neutral or Bullish — or vice versa.
+  const isSignalBearish = action === "SELL";
+  const isSignalBullish = action === "BUY";
+  const regimeIsBullish = cryptoRegime === "Bullish";
+  const regimeIsNeutralOrBetter = cryptoRegime === "Bullish" || cryptoRegime === "Neutral";
+  const regimeIsBearish = cryptoRegime === "Defensive" || cryptoRegime === "Risk-Off";
+
+  let regimeConflict = false;
+  let regimeConflictExplanation: string | null = null;
+
+  if (isSignalBearish && regimeIsNeutralOrBetter) {
+    regimeConflict = true;
+    regimeConflictExplanation =
+      `Overall crypto regime is ${cryptoRegime}, but ${symbol} shows asset-specific weakness: ` +
+      `${trend === "Downtrend" ? "price in downtrend" : "overbought conditions"}, ` +
+      `${rsiEstimate > 70 ? `RSI at ${rsiEstimate.toFixed(0)} (overbought)` : `RSI at ${rsiEstimate.toFixed(0)}`}` +
+      `${smaSignal === "Death Cross" ? ", death cross confirmed" : ""}` +
+      `. Individual asset signal differs from broader crypto regime — reduce exposure to this asset only.`;
+  } else if (isSignalBullish && regimeIsBearish) {
+    regimeConflict = true;
+    regimeConflictExplanation =
+      `Overall crypto regime is ${cryptoRegime}, but ${symbol} shows relative strength: ` +
+      `${trend === "Uptrend" ? "price in uptrend" : "oversold bounce potential"}, ` +
+      `${rsiEstimate < 30 ? `RSI at ${rsiEstimate.toFixed(0)} (oversold)` : `RSI at ${rsiEstimate.toFixed(0)}`}` +
+      `. Proceed with caution — counter-trend signal in a defensive regime.`;
+  }
+
   const result: CryptoSignalResult = {
     symbol,
     name,
     coinId,
+    assetClass: "CRYPTO",
     action,
+    actionLabel: cryptoActionLabel(action),
+    cryptoRegime,
+    regimeConflict,
+    regimeConflictExplanation,
     confidence,
     strength,
     timeframe,

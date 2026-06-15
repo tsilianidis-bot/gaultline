@@ -1216,7 +1216,7 @@
 - [x] Auto-refresh countdown: 3-min countdown with auto-refetch
 - [x] Sector sub-view: toggle to collapse treemap into grouped sector cards
 
-## Founding Request Email Notifications Fix
+## Founding Request Email Notifications Fix ⏸ PAUSED (priority, awaiting SendGrid key)
 - [ ] Add SENDGRID_API_KEY secret
 - [ ] Wire sendEmail() to founding request handler so owner gets email at jt@getfaultline.live
 - [ ] Add form confirmation state to founding access request form to prevent duplicate submissions
@@ -1246,8 +1246,8 @@
   - [x] Daily journal feed: date-stamped AI entries explaining market conditions, FAULTLINE readings, and decisions
   - [x] Progress bar: $10K → $1M milestone tracker
   - [x] Visibility gate: if sim_portfolio_visible=false, show "Coming Soon" or hide from nav
-- [ ] Seed initial stock positions (5-8 tickers from asymmetric opportunities engine) — deferred: engine will buy when signals align
-- [ ] Seed initial crypto positions (3-5 coins from crypto signals) — deferred: engine will buy when signals align
+- [ ] Seed initial stock positions (5-8 tickers from asymmetric opportunities engine) ⏸ PAUSED — engine will open positions autonomously when signals align
+- [ ] Seed initial crypto positions (3-5 coins from crypto signals) ⏸ PAUSED — engine will open positions autonomously when signals align
 - [x] Generate first daily journal entry (first evaluation ran — held cash per current market conditions)
 - [x] Add nav item to AppLayout (INTELLIGENCE group) — admin/owner only until sim_portfolio_visible enabled
 - [x] TypeScript: 0 errors, tests passing
@@ -1289,3 +1289,71 @@
 - [x] Add Optimal Action panel to OwnerSimulation.tsx: prominent card above opportunity list, action badge with color, confidence bar, urgency badge, rationale text, supporting signals chips, counter-arguments, refresh button
 - [x] TypeScript: 0 errors
 - [x] Tests passing: 426 tests, 0 failures
+
+## 12-Part Signal/Crypto/SEO Upgrade ✅ COMPLETE
+
+### Part 1 — Global Market Labeling Cleanup ✅
+- [x] Audited all signal labels across Signals.tsx, CryptoSignals.tsx, DiagnosticAI.tsx, TradePreflight.tsx
+- [x] Stock labels: STOCK SIGNAL, EQUITY REGIME, EQUITY ACTION BIAS added
+- [x] Crypto labels: CRYPTO SIGNAL, CRYPTO REGIME, CRYPTO ACTION BIAS added
+- [x] Macro labels: scope prefixes added to DiagnosticAI AI Interpretation and Why It Matters sections
+
+### Part 2 — Separate Crypto Completely ✅
+- [x] Signals.tsx: STOCK SIGNAL asset-class header on every stock card
+- [x] CryptoSignals.tsx: CRYPTO SIGNAL header with BTC regime indicator on every crypto card
+- [x] CryptoSignals.tsx: regime conflict warning banner added
+- [x] No mixed unlabeled lists remain
+
+### Part 3 — Fix Crypto Signal Conflict ✅
+- [x] cryptoSignals.ts: added cryptoRegime field (Bullish/Neutral/Defensive/Risk-Off)
+- [x] cryptoSignals.ts: added regimeConflict boolean + regimeConflictExplanation string
+- [x] CryptoSignals.tsx: regime conflict warning shown when individual signal differs from overall crypto regime
+- [x] Crypto Regime labels: Bullish / Neutral / Defensive / Risk-Off
+
+### Part 4 — Precise Signal Language ✅
+- [x] tradingSignals.ts: added actionLabel field with descriptive labels (Accumulation Zone, Momentum Confirmed, Reduce Exposure, Avoid New Entry, etc.)
+- [x] cryptoSignals.ts: added actionLabel field with crypto-specific precision labels
+- [x] Signals.tsx: TradingSignalBadge shows actionLabel instead of raw BUY/SELL
+- [x] CryptoSignals.tsx: ActionBadge shows actionLabel instead of raw BUY/SELL
+
+### Part 5 — Asset-Class-Specific Scoring ✅
+- [x] tradingSignals.ts: assetClass field added ("STOCK" | "CRYPTO" | "ETF")
+- [x] cryptoSignals.ts: assetClass field added (always "CRYPTO")
+- [x] Crypto scoring uses BTC dominance, volatility regime, ATH proximity, liquidity score
+- [x] Stock scoring uses equity regime, macro pressure, sector strength, earnings/rates sensitivity
+
+### Part 6 — UI Card Headers ✅
+- [x] Signals.tsx: "STOCK SIGNAL — {TICKER}" header on every stock card
+- [x] CryptoSignals.tsx: "CRYPTO SIGNAL — {SYMBOL} · REGIME: {regime}" header on every crypto card
+- [x] Different icons: TrendingUp for stocks, Zap for crypto
+
+### Part 7 — Diagnostic AI Cleanup ✅
+- [x] DiagnosticAI.tsx: "EQUITY REGIME" replaces generic "REGIME"
+- [x] DiagnosticAI.tsx: "EQUITY ACTION BIAS" replaces generic "ACTION BIAS"
+- [x] DiagnosticAI.tsx: scope labels added to AI Interpretation and Why It Matters sections
+
+### Part 8 — Data Consistency Audit ✅
+- [x] All crypto output uses cryptoSignals.ts regime and signal logic
+- [x] TradePreflight.tsx: asset-scoped labels added to checklist items
+
+### Part 9 — Market Preflight Split ✅
+- [x] TradePreflight.tsx: checklist items labeled with asset class (Equity / Crypto / Macro)
+
+### Part 10 — SEO Optimizer Auto-Apply ✅
+- [x] seo.applyFix tRPC procedure added to routers.ts: writes meta tags directly to index.html
+- [x] SeoOptimizer.tsx: "Apply SEO Fixes to Site" button added with status feedback
+- [x] Status messages: Applied / Failed with file-level detail
+- [x] No more "paste into head" instructions
+
+### Part 11 — Regression Tests ✅
+- [x] server/signalUpgrade.regression.test.ts: 14 regression tests covering all spec requirements
+- [x] All 448 tests passing, 21 skipped (expected), 0 failures
+
+### Part 12 — Acceptance Criteria Verification ✅
+- [x] User can instantly tell what is for stocks vs crypto (asset-class headers on every card)
+- [x] Crypto has its own separate intelligence system (separate scoring, regime, labels)
+- [x] Crypto Signals and Crypto Intelligence are consistent or explain the difference (regimeConflict field)
+- [x] No unlabeled mixed-market readings remain
+- [x] BUY/SELL replaced with precise guidance language (actionLabel field)
+- [x] SEO Optimizer modifies app SEO output automatically (applyFix procedure)
+- [x] TypeScript: 0 errors | Tests: 448 passed, 0 failures

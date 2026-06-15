@@ -357,6 +357,33 @@ export default function SeoOptimizer() {
     autoFix.mutate({ analysisJson: JSON.stringify(result) });
   }, [result, autoFix]);
 
+  // ── Apply SEO Fixes to Site ───────────────────────────────────
+  const [applyStatus, setApplyStatus] = useState<{ success: boolean; changes: string[] } | null>(null);
+  const applyFix = trpc.seo.applyFix.useMutation({
+    onSuccess: (data) => {
+      setApplyStatus(data);
+      toast.success(`Applied ${data.changes.length} SEO fix${data.changes.length !== 1 ? 'es' : ''} to index.html`);
+    },
+    onError: (err) => toast.error(err.message || "Apply failed"),
+  });
+
+  const handleApplyFix = useCallback(() => {
+    if (!result) return;
+    // Extract best values from the analysis to apply
+    const title = result.meta.title || undefined;
+    const description = result.meta.description || undefined;
+    const canonicalUrl = result.meta.canonical || undefined;
+    const ogTitle = result.meta.ogTitle || undefined;
+    const ogDescription = result.meta.ogDescription || undefined;
+    const ogImage = result.meta.ogImage || undefined;
+    const twitterCard = result.meta.twitterCard || undefined;
+    const twitterTitle = result.meta.twitterTitle || undefined;
+    const twitterDescription = result.meta.twitterDescription || undefined;
+    const robots = result.meta.robots || undefined;
+    const keywords = result.meta.keywords || undefined;
+    applyFix.mutate({ title, description, canonicalUrl, ogTitle, ogDescription, ogImage, twitterCard, twitterTitle, twitterDescription, robots, keywords });
+  }, [result, applyFix]);
+
   const checkCounts = result ? {
     pass: result.checks.filter(c => c.status === "pass").length,
     warning: result.checks.filter(c => c.status === "warning").length,
@@ -1025,6 +1052,38 @@ export default function SeoOptimizer() {
                         className="border-white/10 text-white/50 hover:text-white h-8 text-xs shrink-0">
                         <RefreshCw className="w-3 h-3 mr-1.5" />Re-run
                       </Button>
+                    </div>
+
+                    {/* Apply SEO Fixes to Site — one-click auto-write to index.html */}
+                    <div className="border border-violet-500/20 bg-violet-500/5 rounded-xl p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
+                          <Zap className="w-4 h-4 text-violet-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold text-white/90">Apply SEO Fixes to Site</div>
+                          <div className="text-xs text-white/40 mt-0.5">Writes title, description, OG tags, Twitter card, canonical URL, robots, and keywords directly to index.html</div>
+                        </div>
+                        <Button
+                          onClick={handleApplyFix}
+                          disabled={applyFix.isPending || !result}
+                          className="bg-violet-600 hover:bg-violet-500 text-white h-8 text-xs shrink-0 border-0">
+                          {applyFix.isPending ? (
+                            <><RefreshCw className="w-3 h-3 mr-1.5 animate-spin" />Applying...</>
+                          ) : (
+                            <><Sparkles className="w-3 h-3 mr-1.5" />Apply Fixes</>
+                          )}
+                        </Button>
+                      </div>
+                      {applyStatus && (
+                        <div className="mt-3 flex items-center gap-2 border border-emerald-500/20 bg-emerald-500/5 rounded-lg px-3 py-2">
+                          <CheckCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span className="text-xs text-emerald-300">
+                            Applied {applyStatus.changes.length} fix{applyStatus.changes.length !== 1 ? 'es' : ''} to index.html:
+                            {' '}{applyStatus.changes.join(', ')}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Fix cards */}

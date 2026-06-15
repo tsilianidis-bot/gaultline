@@ -62,7 +62,9 @@ interface DailyBar {
 
 interface TradingSignalResult {
   ticker: string;
+  assetClass?: 'STOCK' | 'CRYPTO' | 'ETF';
   action: TradingAction;
+  actionLabel?: string;        // precision label e.g. "Accumulation Zone"
   confidence: number;
   strength: 'Strong' | 'Moderate' | 'Weak';
   timeframe: 'Short-Term' | 'Swing' | 'Watch';
@@ -127,12 +129,17 @@ const ACTION_COLORS: Record<TradingAction, { bg: string; text: string; glow: str
 };
 
 // ── Trading Signal Badge ──────────────────────────────────────
-function TradingSignalBadge({ action, confidence, strength }: {
+function TradingSignalBadge({ action, actionLabel, confidence, strength, assetClass }: {
   action: TradingAction;
+  actionLabel?: string;
   confidence: number;
   strength: 'Strong' | 'Moderate' | 'Weak';
+  assetClass?: 'STOCK' | 'CRYPTO' | 'ETF';
 }) {
   const c = ACTION_COLORS[action];
+  const STOCK_LABELS: Record<TradingAction, string> = { BUY: 'Accumulation Zone', SELL: 'Reduce Exposure', HOLD: 'Hold', WATCH: 'Watch' };
+  const CRYPTO_LABELS: Record<TradingAction, string> = { BUY: 'Accumulation Zone', SELL: 'Avoid New Entry', HOLD: 'Hold', WATCH: 'Watch' };
+  const displayLabel = actionLabel ?? (assetClass === 'CRYPTO' ? CRYPTO_LABELS[action] : STOCK_LABELS[action]);
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
       <span style={{
@@ -153,7 +160,7 @@ function TradingSignalBadge({ action, confidence, strength }: {
         {action === 'SELL' && '▼ '}
         {action === 'HOLD' && '◆ '}
         {action === 'WATCH' && '◎ '}
-        {action}
+        {displayLabel}
       </span>
       <span style={{
         fontFamily: "'IBM Plex Mono', monospace",
@@ -428,11 +435,20 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           border: `1px solid ${ACTION_COLORS[tradingSignal.action].text}18`,
           borderRadius: '3px',
         }}>
+          {/* Asset-class header */}
+          <div style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '9px', letterSpacing: '0.14em',
+            color: 'rgba(100,116,139,0.5)',
+            marginBottom: '4px',
+          }}>EQUITY SIGNAL — {stock.ticker}</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
             <TradingSignalBadge
               action={tradingSignal.action}
+              actionLabel={tradingSignal.actionLabel}
               confidence={tradingSignal.confidence}
               strength={tradingSignal.strength}
+              assetClass="STOCK"
             />
             <RegimeAlignmentBadge
               alignment={tradingSignal.regimeAlignment}

@@ -60,6 +60,8 @@ import {
 } from './ownerSimulation';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { resolve, join } from 'path';
 import { xPostQueue, users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
@@ -1558,6 +1560,68 @@ export const appRouter = router({
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: err instanceof Error ? err.message : "Auto fix generation failed", cause: err });
         }
+      }),
+
+    // ── Apply SEO fixes directly to index.html (admin only) ──────
+    applyFix: protectedProcedure
+      .input(z.object({
+        title: z.string().optional(),
+        description: z.string().optional(),
+        canonicalUrl: z.string().optional(),
+        ogTitle: z.string().optional(),
+        ogDescription: z.string().optional(),
+        ogImage: z.string().optional(),
+        twitterCard: z.string().optional(),
+        twitterTitle: z.string().optional(),
+        twitterDescription: z.string().optional(),
+        robots: z.string().optional(),
+        keywords: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+        // Locate index.html — try client/index.html first, then dist/index.html
+        const candidates = [
+          resolve(process.cwd(), 'client', 'index.html'),
+          resolve(process.cwd(), 'dist', 'client', 'index.html'),
+          resolve(process.cwd(), 'dist', 'index.html'),
+        ];
+        const indexPath = candidates.find(p => existsSync(p));
+        if (!indexPath) throw new TRPCError({ code: 'NOT_FOUND', message: 'index.html not found' });
+        let html = readFileSync(indexPath, 'utf-8');
+        const changes: string[] = [];
+
+        // Helper: replace or insert a <meta> tag
+        function upsertMeta(attr: string, attrValue: string, content: string) {
+          const re = new RegExp(`<meta\\s+${attr}=["']${attrValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`, 'i');
+          const tag = `<meta ${attr}="${attrValue}" content="${content}" />`;
+          if (re.test(html)) { html = html.replace(re, tag); }
+          else { html = html.replace('</head>', `  ${tag}\n  </head>`); }
+          changes.push(`${attr}=${attrValue}`);
+        }
+
+        if (input.title) {
+          html = html.replace(/<title>[^<]*<\/title>/, `<title>${input.title}</title>`);
+          changes.push('title');
+        }
+        if (input.description) upsertMeta('name', 'description', input.description);
+        if (input.keywords) upsertMeta('name', 'keywords', input.keywords);
+        if (input.robots) upsertMeta('name', 'robots', input.robots);
+        if (input.canonicalUrl) {
+          const re = /<link\s+rel=["']canonical["'][^>]*>/i;
+          const tag = `<link rel="canonical" href="${input.canonicalUrl}" />`;
+          if (re.test(html)) { html = html.replace(re, tag); }
+          else { html = html.replace('</head>', `  ${tag}\n  </head>`); }
+          changes.push('canonical');
+        }
+        if (input.ogTitle) upsertMeta('property', 'og:title', input.ogTitle);
+        if (input.ogDescription) upsertMeta('property', 'og:description', input.ogDescription);
+        if (input.ogImage) upsertMeta('property', 'og:image', input.ogImage);
+        if (input.twitterCard) upsertMeta('name', 'twitter:card', input.twitterCard);
+        if (input.twitterTitle) upsertMeta('name', 'twitter:title', input.twitterTitle);
+        if (input.twitterDescription) upsertMeta('name', 'twitter:description', input.twitterDescription);
+
+        writeFileSync(indexPath, html, 'utf-8');
+        return { success: true, appliedTo: indexPath, changes };
       }),
   }),
 

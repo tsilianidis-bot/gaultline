@@ -22,7 +22,12 @@ interface CryptoSignalResult {
   symbol: string;
   name: string;
   coinId: string;
+  assetClass?: "CRYPTO";
   action: TradingAction;
+  actionLabel?: string;        // precision label e.g. "Accumulation Zone"
+  cryptoRegime?: "Bullish" | "Neutral" | "Defensive" | "Risk-Off";
+  regimeConflict?: boolean;
+  regimeConflictExplanation?: string | null;
   confidence: number;
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
@@ -164,8 +169,10 @@ function Sparkline({ data, positive }: { data: number[]; positive: boolean }) {
 
 // ── Signal Badge ──────────────────────────────────────────────
 
-function ActionBadge({ action, strength }: { action: TradingAction; strength: string }) {
+function ActionBadge({ action, strength, actionLabel }: { action: TradingAction; strength: string; actionLabel?: string }) {
   const c = ACTION_COLORS[action];
+  const CRYPTO_LABELS: Record<TradingAction, string> = { BUY: 'Accumulation Zone', SELL: 'Avoid New Entry', HOLD: 'Hold', WATCH: 'Watch' };
+  const displayLabel = actionLabel ?? CRYPTO_LABELS[action];
   return (
     <div style={{
       display: "inline-flex", alignItems: "center", gap: "4px",
@@ -176,7 +183,11 @@ function ActionBadge({ action, strength }: { action: TradingAction; strength: st
       fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em",
       color: c.text,
     }}>
-      {action}
+      {action === 'BUY' && '▲ '}
+      {action === 'SELL' && '▼ '}
+      {action === 'HOLD' && '◆ '}
+      {action === 'WATCH' && '◎ '}
+      {displayLabel}
       {strength === "Strong" && (
         <span style={{ fontSize: "7px", color: c.text, opacity: 0.8 }}>★</span>
       )}
@@ -240,6 +251,24 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
       {/* Top accent bar */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "2px", background: c.text, opacity: 0.6 }} />
 
+      {/* Asset-class header */}
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.14em", color: "rgba(100,116,139,0.45)", marginBottom: "4px" }}>
+        CRYPTO SIGNAL — {sig.symbol}{sig.cryptoRegime ? ` · REGIME: ${sig.cryptoRegime.toUpperCase()}` : ""}
+      </div>
+
+      {/* Regime conflict warning */}
+      {sig.regimeConflict && sig.regimeConflictExplanation && (
+        <div style={{
+          marginBottom: "6px", padding: "5px 8px",
+          background: "rgba(255,215,0,0.07)", border: "1px solid rgba(255,215,0,0.2)",
+          borderRadius: "3px",
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
+          color: "rgba(255,215,0,0.8)", lineHeight: 1.4,
+        }}>
+          ⚠ SIGNAL vs REGIME CONFLICT: {sig.regimeConflictExplanation}
+        </div>
+      )}
+
       {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -247,7 +276,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
             <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#F0F4FF", letterSpacing: "0.05em" }}>
               {sig.symbol}
             </span>
-            <ActionBadge action={sig.action} strength={sig.strength} />
+            <ActionBadge action={sig.action} strength={sig.strength} actionLabel={sig.actionLabel} />
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {sig.name}

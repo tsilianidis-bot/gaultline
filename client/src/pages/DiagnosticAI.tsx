@@ -324,7 +324,7 @@ export default function DiagnosticAI() {
             {/* Regime */}
             <div className="intel-module" style={{ padding: "16px 18px", textAlign: "center" }}>
               <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#64748B", letterSpacing: "0.15em", marginBottom: 6 }}>
-                REGIME
+                EQUITY REGIME
               </div>
               <div style={{ fontSize: 11, fontFamily: "'Orbitron', monospace", fontWeight: 700, color: "#F1F5F9", lineHeight: 1.3 }}>
                 {report.regimeLabel}
@@ -356,7 +356,7 @@ export default function DiagnosticAI() {
             {/* Action Bias */}
             <div className="intel-module" style={{ padding: "16px 18px", textAlign: "center" }}>
               <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#64748B", letterSpacing: "0.15em", marginBottom: 8 }}>
-                ACTION BIAS
+                EQUITY ACTION BIAS
               </div>
               <ActionBiasBadge bias={report.actionBias as ActionBias} />
               <div style={{ marginTop: 8 }}>
@@ -382,7 +382,7 @@ export default function DiagnosticAI() {
                 gap: 8,
               }}>
                 <span style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#64748B", letterSpacing: "0.15em" }}>
-                  RISK METRICS — {TABS.find(t => t.id === activeTab)?.label.toUpperCase()}
+                  EQUITY RISK METRICS — {TABS.find(t => t.id === activeTab)?.label.toUpperCase()}
                 </span>
               </div>
               <MetricRow metric={report.crashRisk} />
@@ -402,7 +402,7 @@ export default function DiagnosticAI() {
               {/* AI Interpretation */}
               <div className="intel-module" style={{ padding: "18px 20px" }}>
                 <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#00FF88", letterSpacing: "0.15em", marginBottom: 10 }}>
-                  AI INTERPRETATION
+                  MACRO: AI INTERPRETATION
                 </div>
                 <p style={{ fontSize: 13, lineHeight: 1.7, color: "#CBD5E1", margin: 0 }}>
                   {report.aiInterpretation}
@@ -412,7 +412,7 @@ export default function DiagnosticAI() {
               {/* Why It Matters */}
               <div className="intel-module" style={{ padding: "18px 20px" }}>
                 <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#64B5F6", letterSpacing: "0.15em", marginBottom: 10 }}>
-                  WHY IT MATTERS
+                  MACRO: WHY IT MATTERS
                 </div>
                 <p style={{ fontSize: 13, lineHeight: 1.7, color: "#CBD5E1", margin: 0 }}>
                   {report.whyItMatters}

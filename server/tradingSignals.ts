@@ -22,6 +22,34 @@
 
 export type TradingAction = "BUY" | "SELL" | "HOLD" | "WATCH";
 
+/**
+ * Human-readable precision label for each TradingAction.
+ * Stocks use equity-specific language; crypto overrides these via cryptoSignals.ts.
+ */
+export const STOCK_ACTION_LABELS: Record<TradingAction, string> = {
+  BUY:  "Accumulation Zone",
+  SELL: "Reduce Exposure",
+  HOLD: "Hold",
+  WATCH: "Watch",
+};
+
+export const CRYPTO_ACTION_LABELS: Record<TradingAction, string> = {
+  BUY:  "Accumulation Zone",
+  SELL: "Avoid New Entry",
+  HOLD: "Hold",
+  WATCH: "Watch",
+};
+
+/** Returns the display label for a stock signal action. */
+export function stockActionLabel(action: TradingAction): string {
+  return STOCK_ACTION_LABELS[action];
+}
+
+/** Returns the display label for a crypto signal action. */
+export function cryptoActionLabel(action: TradingAction): string {
+  return CRYPTO_ACTION_LABELS[action];
+}
+
 export interface DailyBar {
   close: number;
   open: number;
@@ -67,7 +95,9 @@ export interface MACDResult {
 
 export interface TradingSignalResult {
   ticker: string;
+  assetClass: "STOCK" | "CRYPTO" | "ETF";  // asset class for UI labeling
   action: TradingAction;
+  actionLabel: string;         // human-readable precision label (e.g. "Accumulation Zone")
   confidence: number;          // 0–100
   strength: "Strong" | "Moderate" | "Weak";
   timeframe: "Short-Term" | "Swing" | "Watch";
@@ -699,7 +729,9 @@ export function computeTradingSignal(
 
   const result: TradingSignalResult = {
     ticker: input.ticker,
+    assetClass: "STOCK",
     action,
+    actionLabel: stockActionLabel(action),
     confidence,
     strength,
     timeframe,
