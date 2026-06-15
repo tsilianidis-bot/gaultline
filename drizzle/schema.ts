@@ -1,4 +1,4 @@
-import { decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, varchar } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 
 /**
@@ -702,3 +702,29 @@ export const ownerSimulationObjectives = mysqlTable("ownerSimulationObjectives",
 });
 export type OwnerSimulationObjective = typeof ownerSimulationObjectives.$inferSelect;
 export type InsertOwnerSimulationObjective = typeof ownerSimulationObjectives.$inferInsert;
+
+// ── Shared Public Reports ────────────────────────────────────
+/**
+ * Shareable public report links.
+ * Premium/founding users can generate a public read-only snapshot of any intelligence report.
+ * The publicShareId is a nanoid (21 chars) — never sequential.
+ */
+export const sharedReports = mysqlTable("sharedReports", {
+  id:             int("id").autoincrement().primaryKey(),
+  ownerUserId:    int("ownerUserId").notNull(),
+  /** "stock_intelligence" | "crypto_intelligence" | "market_preflight" | "diagnostic_ai" | "daily_report" */
+  reportType:     varchar("reportType", { length: 32 }).notNull(),
+  /** Ticker symbol or report subject (e.g. "NVDA", "BTC", "Market Overview") */
+  subject:        varchar("subject", { length: 64 }).notNull(),
+  /** nanoid 21-char random public ID — used in /r/[publicShareId] URL */
+  publicShareId:  varchar("publicShareId", { length: 32 }).notNull().unique(),
+  /** Full report snapshot as JSON — only safe public fields, no proprietary formulas */
+  snapshotJson:   text("snapshotJson").notNull(),
+  /** Optional expiry — null means never expires */
+  expiresAt:      timestamp("expiresAt"),
+  viewCount:      int("viewCount").default(0).notNull(),
+  revoked:        tinyint("revoked").default(0).notNull(),
+  createdAt:      timestamp("createdAt").defaultNow().notNull(),
+});
+export type SharedReport = typeof sharedReports.$inferSelect;
+export type InsertSharedReport = typeof sharedReports.$inferInsert;

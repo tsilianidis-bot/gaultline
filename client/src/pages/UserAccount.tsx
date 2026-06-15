@@ -4,7 +4,7 @@
    and founding access request form.
    ============================================================ */
 import { useState, useEffect } from 'react';
-import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, CheckCircle, Send, AlertCircle, CreditCard } from 'lucide-react';
+import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, CheckCircle, Send, AlertCircle, CreditCard, Share2, Eye, Trash2, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { getLoginUrl } from '@/const';
@@ -854,6 +854,172 @@ export default function UserAccount() {
               You have complete access to the FAULTLINE intelligence platform. Thank you for being a founding member.
             </p>
           </div>
+        </div>
+      )}
+
+      {/* ── Shared Reports Management ── */}
+      <SharedReportsPanel />
+    </div>
+  );
+}
+
+function SharedReportsPanel() {
+  const { user } = useAuth();
+  const reportsQuery = trpc.sharedReports.listMine.useQuery(undefined, { enabled: !!user });
+  const revokeMut = trpc.sharedReports.revoke.useMutation({
+    onSuccess: () => reportsQuery.refetch(),
+    onError: () => toast.error('Failed to revoke link'),
+  });
+
+  if (!user) return null;
+
+  const reports = reportsQuery.data ?? [];
+  const activeReports = reports.filter(r => !r.revoked);
+
+  const REPORT_TYPE_LABELS: Record<string, string> = {
+    stock_intelligence: 'STOCK SIGNALS',
+    crypto_intelligence: 'CRYPTO SIGNALS',
+    market_preflight: 'TRADE PREFLIGHT',
+    diagnostic_ai: 'DIAGNOSTIC AI',
+    daily_report: 'DAILY REPORT',
+  };
+
+  return (
+    <div style={{
+      marginTop: '32px',
+      background: 'rgba(0,212,255,0.02)',
+      border: '1px solid rgba(0,212,255,0.12)',
+      borderRadius: '12px',
+      padding: '24px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Share2 size={16} style={{ color: '#00D4FF' }} />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00D4FF', letterSpacing: '0.12em' }}>
+            SHARED REPORTS
+          </span>
+        </div>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.08em' }}>
+          {activeReports.length} ACTIVE LINK{activeReports.length !== 1 ? 'S' : ''}
+        </span>
+      </div>
+
+      {reportsQuery.isLoading ? (
+        <div style={{ textAlign: 'center', padding: '20px', color: 'rgba(100,116,139,0.5)', fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px' }}>
+          LOADING...
+        </div>
+      ) : reports.length === 0 ? (
+        <div style={{
+          textAlign: 'center', padding: '24px',
+          background: 'rgba(0,212,255,0.02)',
+          border: '1px dashed rgba(0,212,255,0.1)',
+          borderRadius: '8px',
+        }}>
+          <Share2 size={20} style={{ color: 'rgba(100,116,139,0.3)', marginBottom: '8px' }} />
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em' }}>
+            NO SHARED REPORTS YET
+          </div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(100,116,139,0.4)', marginTop: '6px' }}>
+            Use the Share button on any intelligence page to create a public link.
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {reports.map(report => {
+            const isExpired = report.expiresAt ? new Date(report.expiresAt) < new Date() : false;
+            const statusColor = report.revoked ? '#FF2D55' : isExpired ? '#FF9500' : '#00FF88';
+            const statusLabel = report.revoked ? 'REVOKED' : isExpired ? 'EXPIRED' : 'ACTIVE';
+            return (
+              <div key={report.id} style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '12px 16px',
+                background: report.revoked || isExpired ? 'rgba(255,255,255,0.01)' : 'rgba(0,212,255,0.03)',
+                border: `1px solid ${report.revoked || isExpired ? 'rgba(255,255,255,0.06)' : 'rgba(0,212,255,0.1)'}`,
+                borderRadius: '8px',
+                opacity: report.revoked || isExpired ? 0.5 : 1,
+                transition: 'all 0.2s ease',
+              }}>
+                {/* Status dot */}
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
+
+                {/* Report info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00D4FF', letterSpacing: '0.1em', background: 'rgba(0,212,255,0.08)', padding: '2px 6px', borderRadius: '3px' }}>
+                      {REPORT_TYPE_LABELS[report.reportType] ?? report.reportType.toUpperCase()}
+                    </span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: statusColor, letterSpacing: '0.08em' }}>
+                      {statusLabel}
+                    </span>
+                  </div>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#E2E8F0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {report.subject}
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '3px', flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.5)' }}>
+                      <Eye size={9} style={{ display: 'inline', marginRight: '3px' }} />
+                      {report.viewCount} VIEWS
+                    </span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.5)' }}>
+                      {new Date(report.createdAt).toLocaleDateString()}
+                    </span>
+                    {report.expiresAt && (
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: isExpired ? '#FF9500' : 'rgba(100,116,139,0.5)' }}>
+                        EXP {new Date(report.expiresAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {!report.revoked && !isExpired && (
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                    <a
+                      href={report.shareUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open shared report"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '28px', height: '28px',
+                        background: 'rgba(0,212,255,0.08)',
+                        border: '1px solid rgba(0,212,255,0.2)',
+                        borderRadius: '6px',
+                        color: '#00D4FF',
+                        cursor: 'pointer',
+                        textDecoration: 'none',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <ExternalLink size={12} />
+                    </a>
+                    <button
+                      onClick={() => {
+                        if (confirm('Revoke this share link? Anyone with the link will no longer be able to view it.')) {
+                          revokeMut.mutate({ id: report.id });
+                        }
+                      }}
+                      disabled={revokeMut.isPending}
+                      title="Revoke share link"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '28px', height: '28px',
+                        background: 'rgba(255,45,85,0.06)',
+                        border: '1px solid rgba(255,45,85,0.2)',
+                        borderRadius: '6px',
+                        color: '#FF2D55',
+                        cursor: revokeMut.isPending ? 'not-allowed' : 'pointer',
+                        opacity: revokeMut.isPending ? 0.5 : 1,
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

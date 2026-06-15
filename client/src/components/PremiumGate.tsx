@@ -585,27 +585,43 @@ export function PremiumGateCard({
 interface PremiumBlurOverlayProps {
   variant?: PremiumGateVariant;
   label?: string;
+  /** When true, also gates on tier (not just auth). Default: false. */
+  tierAware?: boolean;
   children: React.ReactNode;
 }
 
 export function PremiumBlurOverlay({
   variant = "founding",
   label,
+  tierAware = false,
   children,
 }: PremiumBlurOverlayProps) {
   const { isAuthenticated, loading } = useAuth();
-
-  if (loading || isAuthenticated) return <>{children}</>;
+  const tierQuery = trpc.user.getAccessTier.useQuery(undefined, {
+    enabled: tierAware && isAuthenticated,
+    staleTime: 60_000,
+  });
 
   const cfg = GATE_CONFIGS[variant];
   const loginUrl = getLoginUrl();
+  const tier = (tierQuery.data?.tier ?? 'free') as AccessTier;
+
+  // Still loading — show content unblurred to avoid flash
+  if (loading || (tierAware && isAuthenticated && tierQuery.isLoading)) return <>{children}</>;
+
+  // Auth-only mode: pass if logged in
+  if (!tierAware && isAuthenticated) return <>{children}</>;
+  // Tier-aware mode: pass if tier meets requirement
+  if (tierAware && isAuthenticated && tierMeetsRequirement(tier, GATE_REQUIRED_TIER[variant])) return <>{children}</>;
+
+  const isLoggedIn = isAuthenticated;
 
   return (
     <div className="relative rounded-xl overflow-hidden">
       {/* Blurred content */}
       <div
         className="pointer-events-none select-none"
-        style={{ filter: "blur(5px)", opacity: 0.25 }}
+        style={{ filter: "blur(6px)", opacity: 0.2 }}
         aria-hidden="true"
       >
         {children}
@@ -613,9 +629,9 @@ export function PremiumBlurOverlay({
 
       {/* Glass overlay */}
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl"
+        className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-xl px-4"
         style={{
-          background: `linear-gradient(135deg, rgba(8,12,22,0.85) 0%, rgba(12,16,28,0.9) 100%)`,
+          background: `linear-gradient(135deg, rgba(8,12,22,0.88) 0%, rgba(12,16,28,0.92) 100%)`,
           backdropFilter: "blur(4px)",
           border: `1px solid ${cfg.accentHex}15`,
         }}
@@ -629,21 +645,58 @@ export function PremiumBlurOverlay({
         >
           <Lock className={`w-5 h-5 ${cfg.accentColor}`} />
         </div>
-        <p className="text-white/60 text-sm font-semibold">
+        <p className="text-white/60 text-sm font-semibold text-center">
           {label ?? cfg.title}
         </p>
-        <a
-          href={loginUrl}
-          className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-[1.02]"
-          style={{
-            background: cfg.accentHex,
-            color: "#050608",
-            boxShadow: `0 0 16px ${cfg.accentHex}35`,
-          }}
-        >
-          {cfg.ctaPrimary}
-        </a>
+        {isLoggedIn ? (
+          // Logged in but wrong tier — show upgrade CTA
+          <BlurUpgradeCTA variant={variant} cfg={cfg} />
+        ) : (
+          // Not logged in — show login CTA
+          <a
+            href={loginUrl}
+            className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-[1.02]"
+            style={{
+              background: cfg.accentHex,
+              color: "#050608",
+              boxShadow: `0 0 16px ${cfg.accentHex}35`,
+            }}
+          >
+            Sign In to Unlock
+          </a>
+        )}
       </div>
     </div>
+  );
+}
+
+function BlurUpgradeCTA({ variant, cfg }: { variant: PremiumGateVariant; cfg: PremiumGateConfig }) {
+  const checkoutMutation = trpc.billing.createCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info('Redirecting to checkout...', { description: 'Opening Stripe secure payment page.' });
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (err) => toast.error('Checkout unavailable', { description: err.message }),
+  });
+  const planId = GATE_REQUIRED_TIER[variant] === 'core' ? 'core' : 'premium';
+  return (
+    <button
+      onClick={() => {
+        trackUpgradeClick(variant, 'blur_overlay');
+        checkoutMutation.mutate({ planId, origin: window.location.origin });
+      }}
+      disabled={checkoutMutation.isPending}
+      className="text-xs font-bold px-4 py-2 rounded-lg transition-all hover:scale-[1.02] disabled:opacity-60"
+      style={{
+        background: cfg.accentHex,
+        color: "#050608",
+        boxShadow: `0 0 16px ${cfg.accentHex}35`,
+        cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
+      }}
+    >
+      {checkoutMutation.isPending ? 'Loading...' : cfg.ctaPrimary}
+    </button>
   );
 }

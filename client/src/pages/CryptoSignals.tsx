@@ -13,6 +13,8 @@ import { Link } from "wouter";
 import { RecoveryStatusBadge, AftershockRiskInline } from "@/components/RecoveryStatus";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { ShareReportButton } from "@/components/ShareReportButton";
+import { SizingCalculator } from "@/components/SizingCalculator";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -512,6 +514,18 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
             )}
           </div>
 
+          {/* Sizing Calculator — pre-seeded from signal price levels */}
+          <div style={{ marginBottom: '8px' }}>
+            <SizingCalculator
+              ticker={sig.symbol}
+              assetType="CRYPTO"
+              defaultEntry={sig.priceLevels.entryZone}
+              defaultStop={sig.priceLevels.stopLoss}
+              defaultTarget={sig.priceLevels.targetPrice}
+              defaultExpanded={false}
+            />
+          </div>
+
           {/* Data source */}
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(55,65,81,0.6)", letterSpacing: "0.08em" }}>
             SOURCE: COINGECKO · SIGNALS: FAULTLINE ENGINE
@@ -789,10 +803,33 @@ function CryptoSignalsInner() {
             </div>
             <p style={{ fontSize: "10px", color: "rgba(100,116,139,0.8)", lineHeight: 1.5, margin: 0, maxWidth: "500px" }}>{regimeCtx.description}</p>
           </div>
-          <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", marginBottom: "2px" }}>REGIME SCORE</div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: regimeColor }}>
-              {engine?.output?.overall?.score?.toFixed(1) ?? "—"}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/10</span>
+          <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "6px" }}>
+            {screenerData && (
+              <ShareReportButton
+                reportType="crypto_intelligence"
+                subject={`Crypto Signals — ${screenerData.signals?.length ?? 0} assets · ${regimeCtx.headline}`}
+                snapshotData={{
+                  regime: regimeCtx.headline,
+                  btcDominance: screenerData.btcDominance,
+                  totalMarketCap: screenerData.totalMarketCap,
+                  signals: screenerData.signals?.slice(0, 15).map((s: { symbol: string; action: string; actionLabel?: string; cryptoRegime?: string; regimeConflict?: boolean; confidence?: number }) => ({
+                    symbol: s.symbol,
+                    action: s.action,
+                    actionLabel: s.actionLabel,
+                    cryptoRegime: s.cryptoRegime,
+                    regimeConflict: s.regimeConflict,
+                    confidence: s.confidence,
+                  }))
+                }}
+                size="sm"
+                variant="ghost"
+              />
+            )}
+            <div>
+              <div style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", marginBottom: "2px" }}>REGIME SCORE</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: regimeColor }}>
+                {engine?.output?.overall?.score?.toFixed(1) ?? "—"}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/10</span>
+              </div>
             </div>
           </div>
         </div>

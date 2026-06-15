@@ -10,6 +10,8 @@ import { useEngine } from "@/contexts/EngineContext";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { AlertTriangle, CheckCircle, XCircle, Target, Zap, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Activity, Shield, BarChart2, RefreshCw } from "lucide-react";
+import { ShareReportButton } from "@/components/ShareReportButton";
+import { SizingCalculator } from "@/components/SizingCalculator";
 
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
@@ -208,6 +210,25 @@ export default function TradePreflight() {
           title="Trade Preflight Simulator"
           subtitle="Stress-test your move against today's market regime"
           badge="PREMIUM"
+          rightSlot={
+            result ? (
+              <ShareReportButton
+                reportType="market_preflight"
+                subject={`Trade Preflight — ${result.ticker ?? result.moveLabel ?? "Market"}`}
+                snapshotData={{
+                  ticker: result.ticker,
+                  moveLabel: result.moveLabel,
+                  timeframeLabel: result.timeframeLabel,
+                  moveFavorabilityScore: result.moveFavorabilityScore,
+                  riskLevel: result.riskLevel,
+                  confidenceLevel: result.confidenceLevel,
+                  favorableSetupProbability: result.favorableSetupProbability,
+                  adversePressureProbability: result.adversePressureProbability,
+                }}
+                size="sm"
+              />
+            ) : undefined
+          }
         />
 
         {/* ── Current Market Condition Panel ──────────────────── */}
@@ -593,6 +614,17 @@ export default function TradePreflight() {
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>{result.watchNext.length} indicators to monitor</div>
               )}
             </div>
+
+            {/* Sizing Calculator — standalone mode for ticker-specific preflight */}
+            {result.ticker && (
+              <div style={{ marginBottom: '10px' }}>
+                <SizingCalculator
+                  ticker={result.ticker}
+                  assetType="STOCK"
+                  defaultExpanded={false}
+                />
+              </div>
+            )}
 
             {/* Compliance Disclaimer */}
             <div style={{

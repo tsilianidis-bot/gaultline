@@ -8,6 +8,8 @@ import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useSEO } from "@/hooks/useSEO";
+import { ShareReportButton } from "@/components/ShareReportButton";
+import { PremiumBlurOverlay } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ─────────────────────────────
 
@@ -217,7 +219,25 @@ export default function DiagnosticAI() {
         subtitle="AI-generated daily, weekly, monthly, and yearly market-risk interpretation — powered by FAULTLINE's live pressure engine."
         badge="AI-GENERATED"
         badgeColor="blue"
-        rightSlot={<PreflightTrigger currentPage="diagnostic" actionKey="viewed_diagnostic_ai" />}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            {report && (
+              <ShareReportButton
+                reportType="diagnostic_ai"
+                subject={`Diagnostic AI — ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Timeframe`}
+                snapshotData={{
+                  timeframe: activeTab,
+                  regime: report.regime,
+                  regimeLabel: report.regimeLabel,
+                  actionBias: report.actionBias,
+                  actionBiasScore: report.actionBiasScore,
+                  aiInterpretation: report.aiInterpretation,
+                }}
+              />
+            )}
+            <PreflightTrigger currentPage="diagnostic" actionKey="viewed_diagnostic_ai" />
+          </div>
+        }
       />
       <div style={{ padding: "24px 20px 60px" }}>
 
@@ -399,25 +419,29 @@ export default function DiagnosticAI() {
 
             {/* Right: interpretation panels */}
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {/* AI Interpretation */}
-              <div className="intel-module" style={{ padding: "18px 20px" }}>
-                <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#00FF88", letterSpacing: "0.15em", marginBottom: 10 }}>
-                  MACRO: AI INTERPRETATION
+              {/* AI Interpretation — premium blur for free/core tier */}
+              <PremiumBlurOverlay variant="intelligence" tierAware label="AI Interpretation — Pro Required">
+                <div className="intel-module" style={{ padding: "18px 20px" }}>
+                  <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#00FF88", letterSpacing: "0.15em", marginBottom: 10 }}>
+                    MACRO: AI INTERPRETATION
+                  </div>
+                  <p style={{ fontSize: 13, lineHeight: 1.7, color: "#CBD5E1", margin: 0 }}>
+                    {report.aiInterpretation}
+                  </p>
                 </div>
-                <p style={{ fontSize: 13, lineHeight: 1.7, color: "#CBD5E1", margin: 0 }}>
-                  {report.aiInterpretation}
-                </p>
-              </div>
+              </PremiumBlurOverlay>
 
-              {/* Why It Matters */}
-              <div className="intel-module" style={{ padding: "18px 20px" }}>
-                <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#64B5F6", letterSpacing: "0.15em", marginBottom: 10 }}>
-                  MACRO: WHY IT MATTERS
+              {/* Why It Matters — premium blur for free/core tier */}
+              <PremiumBlurOverlay variant="intelligence" tierAware label="Why It Matters — Pro Required">
+                <div className="intel-module" style={{ padding: "18px 20px" }}>
+                  <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#64B5F6", letterSpacing: "0.15em", marginBottom: 10 }}>
+                    MACRO: WHY IT MATTERS
+                  </div>
+                  <p style={{ fontSize: 13, lineHeight: 1.7, color: "#CBD5E1", margin: 0 }}>
+                    {report.whyItMatters}
+                  </p>
                 </div>
-                <p style={{ fontSize: 13, lineHeight: 1.7, color: "#CBD5E1", margin: 0 }}>
-                  {report.whyItMatters}
-                </p>
-              </div>
+              </PremiumBlurOverlay>
 
               {/* Key Risk Drivers */}
               <div className="intel-module" style={{ padding: "18px 20px" }}>

@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -879,4 +879,53 @@ export async function upsertSimJournalEntry(data: Omit<InsertSimPortfolioJournal
       tradesMade: data.tradesMade,
     },
   });
+}
+
+// ── Shared Reports helpers ────────────────────────────────────────────
+
+export async function createSharedReport(
+  data: Omit<InsertSharedReport, 'id' | 'createdAt' | 'viewCount' | 'revoked'>
+): Promise<{ id: number; publicShareId: string }> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(sharedReports).values({
+    ...data,
+    viewCount: 0,
+    revoked: 0,
+  });
+  const okPacket = result[0] as unknown as { insertId: number };
+  return { id: okPacket?.insertId ?? 0, publicShareId: data.publicShareId };
+}
+
+export async function getSharedReportByPublicId(publicShareId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(sharedReports)
+    .where(eq(sharedReports.publicShareId, publicShareId))
+    .limit(1);
+  return rows[0] ?? undefined;
+}
+
+export async function listSharedReportsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(sharedReports)
+    .where(eq(sharedReports.ownerUserId, userId))
+    .orderBy(desc(sharedReports.createdAt));
+}
+
+export async function revokeSharedReport(id: number, ownerUserId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(sharedReports)
+    .set({ revoked: 1 })
+    .where(and(eq(sharedReports.id, id), eq(sharedReports.ownerUserId, ownerUserId)));
+}
+
+export async function incrementSharedReportViewCount(publicShareId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(sharedReports)
+    .set({ viewCount: sql`${sharedReports.viewCount} + 1` })
+    .where(eq(sharedReports.publicShareId, publicShareId));
 }

@@ -24,7 +24,8 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem,
   deleteUser,
   insertPressureRun, getRecentPressureRuns, countPressureRuns,
-  getAllFeatureFlags, getFeatureFlag, setFeatureFlag } from "./db";
+  getAllFeatureFlags, getFeatureFlag, setFeatureFlag,
+  createSharedReport, getSharedReportByPublicId, listSharedReportsByUser, revokeSharedReport, incrementSharedReportViewCount } from "./db";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
 import { getCryptoIntelligenceResult, computeCryptoSystemicRisk, clearCryptoEngineCache } from "./cryptoEngine";
 import { searchCoins, getTopMarkets, getGlobalStats, getCoinMarketData, getCoinOHLC, getCoinDetail } from "./coingeckoProxy";
@@ -2163,6 +2164,84 @@ export const appRouter = router({
       }
     }),
   }),
+  sharedReports: router({
+    // Create a shareable public link for a report (premium/founding/admin only)
+    create: protectedProcedure
+      .input(z.object({
+        reportType: z.enum(['stock_intelligence', 'crypto_intelligence', 'market_preflight', 'diagnostic_ai', 'daily_report']),
+        subject: z.string().min(1).max(64),
+        snapshotJson: z.string().min(2).max(500000),
+        expiresInDays: z.number().min(1).max(365).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const tier = ctx.user.accessTier;
+        if (!['premium', 'founding'].includes(tier) && ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Share links require Premium or Founding access' });
+        }
+        const { nanoid } = await import('nanoid');
+        const publicShareId = nanoid(21);
+        const expiresAt = input.expiresInDays
+          ? new Date(Date.now() + input.expiresInDays * 86400 * 1000)
+          : undefined;
+        const result = await createSharedReport({
+          ownerUserId: ctx.user.id,
+          reportType: input.reportType,
+          subject: input.subject,
+          publicShareId,
+          snapshotJson: input.snapshotJson,
+          expiresAt,
+        });
+        return { id: result.id, publicShareId, shareUrl: `/r/${publicShareId}` };
+      }),
+
+    // Fetch a public report by its share ID (no auth required)
+    getPublic: publicProcedure
+      .input(z.object({ publicShareId: z.string().min(10).max(32) }))
+      .query(async ({ input }) => {
+        const report = await getSharedReportByPublicId(input.publicShareId);
+        if (!report) throw new TRPCError({ code: 'NOT_FOUND', message: 'Report not found' });
+        if (report.revoked) throw new TRPCError({ code: 'FORBIDDEN', message: 'This link has been revoked' });
+        if (report.expiresAt && new Date(report.expiresAt) < new Date()) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'This link has expired' });
+        }
+        incrementSharedReportViewCount(input.publicShareId).catch(() => {});
+        return {
+          id: report.id,
+          reportType: report.reportType,
+          subject: report.subject,
+          snapshotJson: report.snapshotJson,
+          viewCount: report.viewCount,
+          createdAt: report.createdAt,
+          expiresAt: report.expiresAt,
+        };
+      }),
+
+    // List all share links created by the current user
+    listMine: protectedProcedure
+      .query(async ({ ctx }) => {
+        const reports = await listSharedReportsByUser(ctx.user.id);
+        return reports.map(r => ({
+          id: r.id,
+          reportType: r.reportType,
+          subject: r.subject,
+          publicShareId: r.publicShareId,
+          shareUrl: `/r/${r.publicShareId}`,
+          viewCount: r.viewCount,
+          revoked: r.revoked === 1,
+          expiresAt: r.expiresAt,
+          createdAt: r.createdAt,
+        }));
+      }),
+
+    // Revoke a share link (owner only)
+    revoke: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await revokeSharedReport(input.id, ctx.user.id);
+        return { success: true };
+      }),
+  }),
+
   contact: router({
     submit: publicProcedure
       .input(z.object({

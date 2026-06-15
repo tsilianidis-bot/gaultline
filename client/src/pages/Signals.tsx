@@ -20,6 +20,8 @@ import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import { ShareReportButton } from "@/components/ShareReportButton";
+import { SizingCalculator } from "@/components/SizingCalculator";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -796,6 +798,20 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             </span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00FF88' }}>→</span>
           </Link>
+          {/* Sizing Calculator — pre-seeded from signal price levels */}
+          {tradingSignal && (
+            <div style={{ marginTop: '8px' }}>
+              <SizingCalculator
+                ticker={stock.ticker}
+                assetType="STOCK"
+                defaultEntry={tradingSignal.priceLevels.entryZone}
+                defaultStop={tradingSignal.priceLevels.stopLoss}
+                defaultTarget={tradingSignal.priceLevels.targetPrice}
+                defaultExpanded={false}
+              />
+            </div>
+          )}
+
           {/* Data source */}
           <div style={{
             marginTop: '8px',
@@ -1248,7 +1264,32 @@ function SignalsInner() {
         subtitle="Macro-regime-aware market scanner — live prices, trading signals, and regime-fit scores for 30+ tickers."
         badge="LIVE PRICES"
         badgeColor="green"
-        rightSlot={<PreflightTrigger currentPage="signals" regimeLabel={regimeForSignals.label} actionKey="viewed_signals" />}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            {tradingSignalsData.length > 0 && (
+              <ShareReportButton
+                reportType="stock_intelligence"
+                subject={`Stock Signals — ${tradingSignalsData.length} tickers · ${regimeForSignals.label}`}
+                snapshotData={{
+                  regime: regimeForSignals.label,
+                  signalCount: tradingSignalsData.length,
+                  signals: tradingSignalsData.slice(0, 20).map(s => ({
+                    ticker: s.ticker,
+                    action: s.action,
+                    actionLabel: s.actionLabel,
+                    assetClass: s.assetClass,
+                    strength: s.strength,
+                    confidence: s.confidence,
+                    entryZone: s.priceLevels?.entryZone,
+                    stopLoss: s.priceLevels?.stopLoss,
+                    targetPrice: s.priceLevels?.targetPrice,
+                  }))
+                }}
+              />
+            )}
+            <PreflightTrigger currentPage="signals" regimeLabel={regimeForSignals.label} actionKey="viewed_signals" />
+          </div>
+        }
       />
 
       {/* ── View Switcher Tab Bar ────────────────────────── */}

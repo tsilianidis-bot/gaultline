@@ -1357,3 +1357,46 @@
 - [x] BUY/SELL replaced with precise guidance language (actionLabel field)
 - [x] SEO Optimizer modifies app SEO output automatically (applyFix procedure)
 - [x] TypeScript: 0 errors | Tests: 448 passed, 0 failures
+
+## Feature 1 — Shareable Public Report Links ✅ COMPLETE
+- [x] DB: shared_reports table (id, ownerUserId, reportType, publicShareId (nanoid), snapshotJson, createdAt, expiresAt, viewCount, revoked)
+- [x] Apply migration SQL
+- [x] DB helpers: createSharedReport, getSharedReportByPublicId, revokeSharedReport, listSharedReportsByUser, incrementSharedReportViewCount
+- [x] tRPC procedures: sharedReports.create, sharedReports.getPublic (public), sharedReports.revoke, sharedReports.listMine
+- [x] Public report page at /r/:publicShareId: clean branded read-only view, no private data
+- [x] CTA banner: "Powered by FAULTLINE — Unlock full market intelligence."
+- [x] Share button in Stock Intelligence (Signals.tsx)
+- [x] Share button in CryptoSignals page
+- [x] Share button in TradePreflight / Market Preflight
+- [x] Share button in DiagnosticAI
+- [x] Shared Reports management panel in UserAccount.tsx (list, revoke, copy link, view count)
+- [x] nanoid(21) used for publicShareId — no sequential IDs
+
+## Feature 2 — Paywall Blur with CTA ✅ COMPLETE
+- [x] User tier detection: free vs premium/founding via accessTier field
+- [x] PremiumBlurOverlay extended with tierAware mode: blurs content for wrong-tier authenticated users
+- [x] Blur/lock premium sections for free users with upgrade CTA routing to Stripe checkout
+- [x] Founding and premium users see everything unlocked
+- [x] Applied to: DiagnosticAI (AI Interpretation + Why It Matters panels)
+- [x] Existing PremiumGateFull already gates Signals and CryptoSignals pages
+
+## Feature 3 — Interactive Sizing Calculator ✅ COMPLETE
+- [x] SizingCalculator reusable component (client/src/components/SizingCalculator.tsx)
+  - [x] Inputs: account size, risk per trade %, entry price, stop price, target price
+  - [x] Outputs: dollar risk, position size, shares/units, max loss, max gain, R/R ratio, % of account
+  - [x] If R/R < 1.5, shows caution banner
+  - [x] Educational disclaimer: "Not financial advice — educational decision support only"
+  - [x] Collapsible, pre-seeded with signal price levels when available
+- [x] Integrated into Stock Intelligence (Signals.tsx StockCard expanded section)
+- [x] Integrated into CryptoSignals expanded card
+- [x] Integrated into TradePreflight result section
+
+## Growth Features Tests ✅ COMPLETE
+- [x] Test: free vs premium access enforcement (tierMeetsRequirement logic — 8 tests)
+- [x] Test: public report fetch returns correct snapshot (access control tests)
+- [x] Test: revoked report returns FORBIDDEN error
+- [x] Test: expired report returns FORBIDDEN error
+- [x] Test: valid non-revoked non-expired report is accessible
+- [x] Test: sizing calculator math (dollar risk, shares, max loss, R/R, position %) — 14 tests
+- [x] TypeScript: 0 errors
+- [x] All tests passing: 494 passed, 21 skipped, 0 failures (server/growthFeatures.regression.test.ts — 46 tests)

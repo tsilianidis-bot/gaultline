@@ -63,6 +63,7 @@ const Methodology      = lazy(() => import("./pages/Methodology"));
 const StockHeatmap     = lazy(() => import("./pages/StockHeatmap"));
 const SimPortfolio     = lazy(() => import("./pages/SimPortfolio"));
 const OwnerSimulation  = lazy(() => import("./pages/OwnerSimulation"));
+const PublicSharedReport = lazy(() => import("./pages/PublicSharedReport"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -98,6 +99,15 @@ const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 function Router() {
   return (
     <Switch>
+      {/* Public Shared Report — no login required, no AppLayout */}
+      <Route path="/r/:publicShareId">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <PublicSharedReport />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+
       {/* Blog — standalone public pages */}
       <Route path="/blog/:slug">
         <ErrorBoundary>
