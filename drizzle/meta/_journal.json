@@ -176,6 +176,13 @@
       "when": 1781641734727,
       "tag": "0024_strange_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "5",
+      "when": 1781646591619,
+      "tag": "0025_cold_deathbird",
+      "breakpoints": true
     }
   ]
 }

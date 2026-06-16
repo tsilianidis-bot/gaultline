@@ -28,7 +28,7 @@ import { desc, eq, and, gte } from "drizzle-orm";
 // ── Types ─────────────────────────────────────────────────────
 
 export type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | "Avoid";
-export type OutlookTimeframe = "short" | "swing" | "long";
+export type OutlookTimeframe = "day" | "short" | "swing" | "long";
 export type OutlookRiskLevel = "Low" | "Moderate" | "High" | "Extreme";
 export type OutlookDataStatus = "Live" | "Delayed" | "Cached" | "Unavailable";
 export type TradeReadiness = "Cleared" | "Caution" | "Defensive";
@@ -287,9 +287,10 @@ function pressureToBearProb(pressure: number): number {
 }
 
 function timeframeLabel(tf: OutlookTimeframe): string {
-  if (tf === "short") return "1–5 Days";
-  if (tf === "swing") return "1–4 Weeks";
-  return "1–3 Months";
+  if (tf === "day")   return "Intraday";
+  if (tf === "short") return "1\u20135 Days";
+  if (tf === "swing") return "1\u20134 Weeks";
+  return "1\u20133 Months";
 }
 
 // ── Deterministic Stock Scoring Engine ────────────────────────
@@ -336,8 +337,8 @@ function scoreStockFactors(
   const liquidityVec = getVec("liquidity_stress");
   const structureScore = clamp(100 - (creditVec * 0.5 + liquidityVec * 0.5));
 
-  // Timeframe adjustment — longer timeframes smooth out short-term noise
-  const tfMultiplier = timeframe === "short" ? 1.0 : timeframe === "swing" ? 0.9 : 0.8;
+  // Timeframe adjustment — day trade amplifies momentum; longer timeframes smooth noise
+  const tfMultiplier = timeframe === "day" ? 1.1 : timeframe === "short" ? 1.0 : timeframe === "swing" ? 0.9 : 0.8;
 
   const factors: OutlookScoreFactor[] = [
     { name: "Trend",            score: clamp(trendScore * tfMultiplier),    weight: 0.20, label: scoreToLabel(trendScore),    note: `Macro pressure at ${p}/100 — ${p > 60 ? "bearish trend conditions" : p > 40 ? "mixed trend" : "favorable trend environment"}` },
@@ -407,8 +408,7 @@ function scoreCryptoFactors(
   const creditVec = getVec("credit_contagion");
   const structureScore = clamp(100 - (creditVec * 0.4 + liquidityVec * 0.6));
 
-  const tfMultiplier = timeframe === "short" ? 1.0 : timeframe === "swing" ? 0.9 : 0.8;
-
+    const tfMultiplier = timeframe === "day" ? 1.1 : timeframe === "short" ? 1.0 : timeframe === "swing" ? 0.9 : 0.8;
   const factors: OutlookScoreFactor[] = [
     { name: "Trend",           score: clamp(trendScore * tfMultiplier),    weight: 0.20, label: scoreToLabel(trendScore),    note: `Macro pressure ${p}/100 — ${p > 60 ? "risk-off conditions" : "risk-on environment"}` },
     { name: "BTC Dominance",   score: clamp(btcDomScore * tfMultiplier),   weight: 0.20, label: scoreToLabel(btcDomScore),   note: isBTC ? "BTC is the defensive crypto asset" : `BTC dominance ${p > 60 ? "rising — headwind for alts" : "stable or falling — supportive"}` },
@@ -747,7 +747,7 @@ CURRENT DATA:
 - FAULTLINE Pressure Index: ${p}/100 (${regimeLabel})
 - Outlook Direction: ${direction}
 - Outlook Score: ${scoreBreakdown.composite}/100
-- Timeframe: ${timeframe === "short" ? "Short-Term (1-5 days)" : timeframe === "swing" ? "Swing (1-4 weeks)" : "Long-Term (1-3 months)"}
+- Timeframe: ${timeframe === "day" ? "Day Trade (Intraday)" : timeframe === "short" ? "Short-Term (1-5 days)" : timeframe === "swing" ? "Swing (1-4 weeks)" : "Long-Term (1-3 months)"}
 - Top Bullish Factor: ${topFactors[0]?.name} (${topFactors[0]?.score}/100) — ${topFactors[0]?.note}
 - Top Bearish Factor: ${bottomFactors[0]?.name} (${bottomFactors[0]?.score}/100) — ${bottomFactors[0]?.note}
 - Regime: ${pressure.regime}

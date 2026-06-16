@@ -739,7 +739,7 @@ export const outlookHistory = mysqlTable("outlookHistory", {
   id:           int("id").autoincrement().primaryKey(),
   symbol:       varchar("symbol", { length: 30 }).notNull(),
   assetType:    mysqlEnum("assetType", ["stock", "crypto"]).notNull(),
-  timeframe:    mysqlEnum("timeframe", ["short", "swing", "long"]).notNull().default("swing"),
+  timeframe:    mysqlEnum("timeframe", ["day", "short", "swing", "long"]).notNull().default("swing"),
   outlookScore: int("outlookScore").notNull(),
   direction:    mysqlEnum("direction", ["Bullish", "Bearish", "Neutral", "Avoid"]).notNull(),
   confidence:   int("confidence").notNull(),

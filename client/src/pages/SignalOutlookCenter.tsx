@@ -6,7 +6,8 @@
 // actionable market intelligence. Separate stock/crypto paths.
 // Five core questions answered for every asset.
 // ============================================================
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
 import { useSEO } from "@/hooks/useSEO";
@@ -19,7 +20,7 @@ import {
 
 // ── Types (mirrored from server) ─────────────────────────────
 type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | "Avoid";
-type OutlookTimeframe = "short" | "swing" | "long";
+type OutlookTimeframe = "day" | "short" | "swing" | "long";
 type OutlookRiskLevel = "Low" | "Moderate" | "High" | "Extreme";
 type TradeReadiness = "Cleared" | "Caution" | "Defensive";
 
@@ -969,12 +970,26 @@ export default function SignalOutlookCenter() {
     description: "Transform raw signals into actionable market intelligence. Separate stock and crypto outlooks with AI interpretation.",
   });
 
-  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [selectedAssetType, setSelectedAssetType] = useState<"stock" | "crypto">("stock");
+  const searchStr = useSearch();
+  const urlParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+  const urlSymbol = urlParams.get("symbol")?.toUpperCase() ?? null;
+  const urlType = (urlParams.get("type") === "crypto" ? "crypto" : "stock") as "stock" | "crypto";
+
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(urlSymbol);
+  const [selectedAssetType, setSelectedAssetType] = useState<"stock" | "crypto">(urlSymbol ? urlType : "stock");
   const [timeframe, setTimeframe] = useState<OutlookTimeframe>("swing");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchAssetType, setSearchAssetType] = useState<"stock" | "crypto">("stock");
   const [activeTab, setActiveTab] = useState<"stocks" | "crypto">("stocks");
+
+  // Sync when URL params change (deep-link from signal cards)
+  useEffect(() => {
+    if (urlSymbol) {
+      setSelectedSymbol(urlSymbol);
+      setSelectedAssetType(urlType);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlSymbol, urlType]);
 
   const { data: topOpps, isLoading: topLoading } = trpc.outlook.getTopOpportunities.useQuery(
     undefined,
@@ -1011,7 +1026,7 @@ export default function SignalOutlookCenter() {
           {/* Timeframe selector */}
           <div style={{ display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap" }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", alignSelf: "center" }}>TIMEFRAME:</span>
-            {(["short", "swing", "long"] as OutlookTimeframe[]).map(tf => (
+            {(["day", "short", "swing", "long"] as OutlookTimeframe[]).map(tf => (
               <button
                 key={tf}
                 onClick={() => setTimeframe(tf)}
@@ -1024,7 +1039,7 @@ export default function SignalOutlookCenter() {
                   transition: "all 0.15s ease",
                 }}
               >
-                {tf === "short" ? "Short (1-5d)" : tf === "swing" ? "Swing (1-4w)" : "Long (1-3m)"}
+                {tf === "day" ? "Day Trade" : tf === "short" ? "Short (1-5d)" : tf === "swing" ? "Swing (1-4w)" : "Long (1-3m)"}
               </button>
             ))}
           </div>

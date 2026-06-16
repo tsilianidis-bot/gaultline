@@ -1,0 +1,1 @@
+ALTER TABLE `outlookHistory` MODIFY COLUMN `timeframe` enum('day','short','swing','long') NOT NULL DEFAULT 'swing';

@@ -798,6 +798,37 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             </span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00FF88' }}>→</span>
           </Link>
+          {/* Open Signal Outlook Center */}
+          <Link
+            href={`/app/signal-outlook?symbol=${stock.ticker}&type=stock`}
+            onClick={e => e.stopPropagation()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '8px 12px',
+              marginTop: '6px',
+              borderRadius: '4px',
+              background: 'rgba(0,212,255,0.04)',
+              border: '1px solid rgba(0,212,255,0.12)',
+              textDecoration: 'none',
+              cursor: 'pointer',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.09)';
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,212,255,0.28)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.04)';
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,212,255,0.12)';
+            }}
+          >
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#00D4FF', letterSpacing: '0.1em' }}>
+              🔭 SIGNAL OUTLOOK — {stock.ticker}
+            </span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00D4FF' }}>→</span>
+          </Link>
           {/* Sizing Calculator — pre-seeded from signal price levels */}
           {tradingSignal && (
             <div style={{ marginTop: '8px' }}>

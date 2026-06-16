@@ -12,7 +12,7 @@ import {
   type OutlookTimeframe,
 } from "../signalOutlook";
 
-const timeframeSchema = z.enum(["short", "swing", "long"]).default("swing");
+const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
 
 export const outlookRouter = router({

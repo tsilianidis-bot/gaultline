@@ -1440,3 +1440,66 @@
 - [x] Write regression tests for signalOutlook.ts scoring engine (10/10 passing)
 - [x] TypeScript: 0 errors
 - [x] Full test suite passing
+
+## Signal + Outlook UX Restructure & Crypto Search Fix
+
+### Crypto Search Fix
+- [ ] Add TAO (bittensor), PENDLE, WLD, DYDX, MANTA, ZK, STRK, BLUR, FLOKI, MEME, TURBO, ORDI, SATS, RATS, BOME, NOT, DOGS, HMSTR, CATI, MAJOR to SYMBOL_MAP in coingeckoProxy.ts
+- [ ] Verify TAO and Bittensor resolve correctly via getCoinMarketData
+- [ ] Verify crypto.getSignal works for TAO, Bittensor, ETH, Ethereum, SOL, Solana
+
+### Timeframe Expansion
+- [ ] Add "day" to OutlookTimeframe type in signalOutlook.ts (Day Trade)
+- [ ] Add timeframeLabel for "day" → "Intraday"
+- [ ] Add Day Trade scoring logic (intraday bias, VWAP condition, momentum trigger, high volatility warning)
+- [ ] Update timeframeSchema in server/routers/outlook.ts to include "day"
+- [ ] Update SignalOutlookCenter.tsx timeframe selector to show Day Trade / Short-Term / Swing / Long-Term
+- [ ] Add Day Trade Framework section to FullOutlookResult (intradayBias, openingRangeCondition, vwapCondition, volumeConfirmation, momentumTrigger, highVolatilityWarning, avoidConditions)
+
+### Signals Page Restructure
+- [ ] Add Stocks/Crypto top-level switch to Signals.tsx
+- [ ] Add Signals/Outlook tab structure inside each asset class
+- [ ] Add Quick Outlook badge (score, direction, confidence, risk) to every StockCard
+- [ ] Add [Open Outlook] button to every StockCard (navigates to /app/signal-outlook?symbol=X&type=stock)
+- [ ] Add Top Opportunities section inside Stock Signals tab
+- [ ] Add Watchlist Signals section inside Stock Signals tab (for logged-in users)
+- [ ] Add inline Stock Outlook tab inside Signals page (embeds SignalOutlookCenter content)
+
+### CryptoSignals Page Restructure
+- [ ] Add Signals/Outlook tab structure to CryptoSignals.tsx
+- [ ] Add Quick Outlook badge (score, direction, confidence, risk) to every CryptoSignalCard
+- [ ] Add [Open Outlook] button to every CryptoSignalCard (navigates to /app/signal-outlook?symbol=X&type=crypto)
+- [ ] Add Top Opportunities section inside Crypto Signals tab
+- [ ] Add Watchlist Signals section inside Crypto Signals tab (for logged-in users)
+
+### Signal Outlook Center Deep-Link Support
+- [ ] Add useSearch() URL param support to SignalOutlookCenter.tsx (?symbol=X&type=stock|crypto&tf=day|short|swing|long)
+- [ ] Auto-trigger outlook on page load when URL params are present
+
+### Mobile UX
+- [ ] Verify one-thumb navigation on Signals restructure
+- [ ] Verify Crypto not buried beneath Stocks on mobile
+- [ ] Verify Signals/Outlook tabs work on mobile
+
+### QA
+- [ ] TAO appears in Crypto Signals search
+- [ ] Bittensor appears in Crypto Signals search
+- [ ] Open Outlook button on every stock signal card
+- [ ] Open Outlook button on every crypto signal card
+- [ ] Day Trade timeframe in SignalOutlookCenter
+- [ ] Short-Term timeframe in SignalOutlookCenter
+- [ ] Swing Trade timeframe in SignalOutlookCenter
+- [ ] Long-Term timeframe in SignalOutlookCenter
+- [ ] No AI-generated fake price levels
+- [ ] TypeScript: 0 errors
+- [ ] All tests passing
+
+## Signals UX Restructure + Crypto Search Fix (Jun 16 2026)
+- [x] Fix crypto search — add TAO, Bittensor, ONDO, PENDLE, EIGEN, ETHFI, PYTH, STRK, MANTA, BLAST, DEGEN, BRETT, FLOKI, BONK, WIF, POPCAT, GOAT, PNUT, MOODENG and 10+ more to SYMBOL_MAP
+- [x] Expand OutlookTimeframe to include 'day' (Day Trade) in signalOutlook.ts, outlook router, and DB schema
+- [x] Add 🔭 SIGNAL OUTLOOK button to every StockCard expanded section in Signals.tsx (deep-links to /app/signal-outlook?symbol=X&type=stock)
+- [x] Add 🔭 SIGNAL OUTLOOK button to every CryptoSignalCard expanded section in CryptoSignals.tsx (deep-links to /app/signal-outlook?symbol=X&type=crypto)
+- [x] Wire URL param deep-linking in SignalOutlookCenter.tsx (useSearch from wouter — ?symbol=X&type=stock|crypto auto-populates and runs the outlook)
+- [x] Add Day Trade timeframe button to SignalOutlookCenter timeframe selector UI
+- [x] TypeScript: 0 errors
+- [x] Full test suite: 504 passed / 525 total
