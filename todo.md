@@ -1400,3 +1400,8 @@
 - [x] Test: sizing calculator math (dollar risk, shares, max loss, R/R, position %) — 14 tests
 - [x] TypeScript: 0 errors
 - [x] All tests passing: 494 passed, 21 skipped, 0 failures (server/growthFeatures.regression.test.ts — 46 tests)
+
+## External Visibility / Injected Platform Strategy
+
+- [x] Write external-platform-distribution.md — full 5-channel strategy doc (TradingView, Discord, Product Hunt, RapidAPI, Slack)
+- [x] Write platform-launch-checklist.md — marketing/admin launch checklist with priority order
