@@ -1,6 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { ENV } from "./_core/env";
-import { analyticsRouter, blogRouter, billingRouter, adminRouter } from "./routers/index";
+import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter } from "./routers/index";
 import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -72,6 +72,8 @@ export const appRouter = router({
   system: systemRouter,
 
   billing: billingRouter,
+
+  outlook: outlookRouter,
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),

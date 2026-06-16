@@ -7,3 +7,4 @@ export { analyticsRouter } from "./analytics";
 export { blogRouter } from "./blog";
 export { billingRouter } from "./billing";
 export { adminRouter } from "./admin";
+export { outlookRouter } from "./outlook";

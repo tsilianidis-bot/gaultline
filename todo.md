@@ -1405,3 +1405,38 @@
 
 - [x] Write external-platform-distribution.md — full 5-channel strategy doc (TradingView, Discord, Product Hunt, RapidAPI, Slack)
 - [x] Write platform-launch-checklist.md — marketing/admin launch checklist with priority order
+
+## Signal Outlook Center™
+
+### Backend
+- [x] Add outlookHistory table to drizzle/schema.ts and apply migration
+- [x] Create server/signalOutlook.ts — deterministic scoring engine (Stock 8-factor, Crypto 8-factor)
+- [x] Add LLM interpretation layer to signalOutlook.ts (Why This Outlook, What Could Change It, FAULTLINE Environment impact)
+- [x] Add outlook.getTopOpportunities tRPC procedure (top 5 stock + top 5 crypto)
+- [x] Add outlook.getOutlook tRPC procedure (full outlook for a symbol + timeframe)
+- [x] Add outlook.getHistory tRPC procedure (24h/7d/30d comparison)
+- [x] Add outlook.getWatchlistOutlooks tRPC procedure (quick outlook for all watchlist items)
+
+### Frontend
+- [x] Create client/src/pages/SignalOutlookCenter.tsx — landing screen with top opportunities grid
+- [x] Build OutlookCard component — score, direction, confidence, risk, regime alignment
+- [x] Build FaultlineEnvironment section — pressure reading, trend, regime, bull/bear probability
+- [x] Build WhyThisOutlook section — AI plain-English explanation of all 8 factors
+- [x] Build WhatCouldChangeThis section — invalidation scenarios
+- [x] Build WhatWouldFaultlineDo section — 3-scenario analysis (Aggressive/Balanced/Defensive)
+- [x] Build StockOutlookAnalysis section — sector, SPY/QQQ alignment, relative strength, earnings risk
+- [x] Build CryptoOutlookAnalysis section — BTC dominance, ETH leadership, alt rotation, liquidity
+- [x] Build DiagnosticAI2 integration section — primary driver, bull/bear case, macro path
+- [x] Build PreflightImpact section — does current awareness support/oppose this trade
+- [x] Build TradeReadiness section — Cleared/Caution/Defensive from Situation Room
+- [x] Build OutlookHistory section — 24h/7d/30d comparison with trend indicator
+- [x] Build TradeFramework section — entry/opportunity/risk zones (calculated only, never invented)
+- [x] Wire watchlist quick-outlook chips to Signal Outlook Center
+- [x] Add /app/signal-outlook route to App.tsx
+- [x] Add Signal Outlook to FLAGSHIP nav group in AppLayout.tsx
+- [x] Mobile QA — one-thumb navigation, no horizontal scroll, large typography
+
+### QA
+- [x] Write regression tests for signalOutlook.ts scoring engine (10/10 passing)
+- [x] TypeScript: 0 errors
+- [x] Full test suite passing

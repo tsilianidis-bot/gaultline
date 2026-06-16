@@ -728,3 +728,28 @@ export const sharedReports = mysqlTable("sharedReports", {
 });
 export type SharedReport = typeof sharedReports.$inferSelect;
 export type InsertSharedReport = typeof sharedReports.$inferInsert;
+
+// ── Signal Outlook History ───────────────────────────────────
+/**
+ * Stores periodic snapshots of outlook scores for a symbol so users
+ * can compare current vs 24h / 7d / 30d readings.
+ * Written by the outlook engine on every full outlook computation.
+ */
+export const outlookHistory = mysqlTable("outlookHistory", {
+  id:           int("id").autoincrement().primaryKey(),
+  symbol:       varchar("symbol", { length: 30 }).notNull(),
+  assetType:    mysqlEnum("assetType", ["stock", "crypto"]).notNull(),
+  timeframe:    mysqlEnum("timeframe", ["short", "swing", "long"]).notNull().default("swing"),
+  outlookScore: int("outlookScore").notNull(),
+  direction:    mysqlEnum("direction", ["Bullish", "Bearish", "Neutral", "Avoid"]).notNull(),
+  confidence:   int("confidence").notNull(),
+  riskLevel:    mysqlEnum("riskLevel", ["Low", "Moderate", "High", "Extreme"]).notNull(),
+  pressureIndex: int("pressureIndex").notNull(),
+  regime:       varchar("regime", { length: 40 }).notNull(),
+  snapshotAt:   timestamp("snapshotAt").defaultNow().notNull(),
+}, (t) => ({
+  symbolIdx:     index("outlookHistory_symbol_idx").on(t.symbol),
+  symbolTimeIdx: index("outlookHistory_symbol_time_idx").on(t.symbol, t.snapshotAt),
+}));
+export type OutlookHistory = typeof outlookHistory.$inferSelect;
+export type InsertOutlookHistory = typeof outlookHistory.$inferInsert;

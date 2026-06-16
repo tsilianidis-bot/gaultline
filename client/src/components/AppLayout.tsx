@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -40,6 +40,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "pre-flight",     label: "Pre-Flight",     shortLabel: "Pre-Flight",  icon: Shield,     path: "/app/pre-flight" },
       { id: "situation-room", label: "Situation Room",  shortLabel: "Sit. Room",   icon: Crosshair,  path: "/app/situation-room" },
+      { id: "signal-outlook",  label: "Signal Outlook Center", shortLabel: "Outlook",    icon: Telescope,  path: "/app/signal-outlook" },
     ],
   },
   {
