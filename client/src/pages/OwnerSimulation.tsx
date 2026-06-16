@@ -26,8 +26,243 @@ import {
   Trophy, Target, TrendingUp, TrendingDown, Shield, Zap, RefreshCw,
   AlertTriangle, ChevronDown, ChevronUp, BookOpen, BarChart3, DollarSign,
   Clock, CheckCircle2, XCircle, Eye, Minus, Plus, Activity, Cpu,
-  ArrowUpRight, ArrowDownRight, Crosshair, Lock,
+  ArrowUpRight, ArrowDownRight, Crosshair, Lock, Search, Loader2,
 } from "lucide-react";
+
+// ── Manual Ticker Search Component ─────────────────────────────────────
+function ManualSearch({ accountValue, onTrade }: { accountValue: number; onTrade: (opp: Opportunity) => void }) {
+  const [symbol, setSymbol] = useState("");
+  const [assetType, setAssetType] = useState<"stock" | "crypto">("stock");
+  const [result, setResult] = useState<Opportunity | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const lookupMut = trpc.ownerSim.lookupTicker.useMutation({
+    onSuccess: (opp) => {
+      setResult(opp as unknown as Opportunity);
+      setError(null);
+    },
+    onError: (err) => {
+      setResult(null);
+      setError(err.message);
+    },
+  });
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const s = symbol.trim().toUpperCase();
+    if (!s) return;
+    setResult(null);
+    setError(null);
+    lookupMut.mutate({ symbol: s, assetType });
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div>
+        <h3 className="text-[#00D4FF] font-mono text-sm tracking-widest font-bold">MANUAL TICKER SEARCH</h3>
+        <p className="text-[#A8B8CC] text-xs mt-1">
+          Search any stock ticker or crypto symbol. FAULTLINE will build a full opportunity analysis on demand.
+        </p>
+      </div>
+
+      {/* Search form */}
+      <form onSubmit={handleSearch} className="flex gap-2">
+        {/* STOCK / CRYPTO toggle */}
+        <div className="flex rounded border border-white/10 overflow-hidden flex-shrink-0">
+          {(["stock", "crypto"] as const).map(t => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setAssetType(t)}
+              className={`px-3 py-2 text-xs font-mono font-bold tracking-wider transition-all ${
+                assetType === t
+                  ? "bg-[#00D4FF]/15 text-[#00D4FF] border-r border-[#00D4FF]/30"
+                  : "bg-transparent text-[#64748B] hover:text-[#A8B8CC] border-r border-white/10"
+              } last:border-r-0`}
+            >
+              {t.toUpperCase()}
+            </button>
+          ))}
+        </div>
+
+        {/* Symbol input */}
+        <Input
+          value={symbol}
+          onChange={e => setSymbol(e.target.value.toUpperCase())}
+          placeholder={assetType === "stock" ? "AAPL, TSLA, NVDA..." : "BTC, ETH, TAO, SOL..."}
+          className="flex-1 bg-[#111520] border-white/10 text-[#F4F8FF] font-mono placeholder:text-[#64748B] uppercase"
+          maxLength={20}
+        />
+
+        {/* Search button */}
+        <Button
+          type="submit"
+          disabled={lookupMut.isPending || !symbol.trim()}
+          className="bg-[#00D4FF] text-[#050608] hover:bg-[#00D4FF]/90 font-mono font-bold tracking-wider px-5 flex-shrink-0"
+        >
+          {lookupMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+        </Button>
+      </form>
+
+      {/* Loading state */}
+      {lookupMut.isPending && (
+        <div className="flex items-center gap-3 p-4 rounded-xl border border-[#00D4FF]/20 bg-[#00D4FF]/5">
+          <Loader2 className="w-5 h-5 text-[#00D4FF] animate-spin flex-shrink-0" />
+          <div>
+            <div className="text-[#00D4FF] font-mono text-xs font-bold tracking-wider">ANALYZING {symbol}...</div>
+            <div className="text-[#A8B8CC] text-xs mt-0.5">Fetching live data and building FAULTLINE opportunity analysis</div>
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border border-[#FF2D55]/30 bg-[#FF2D55]/5">
+          <XCircle className="w-5 h-5 text-[#FF2D55] flex-shrink-0 mt-0.5" />
+          <div>
+            <div className="text-[#FF2D55] font-mono text-xs font-bold tracking-wider">LOOKUP FAILED</div>
+            <div className="text-[#A8B8CC] text-xs mt-1">{error}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Result card */}
+      {result && (
+        <div className="rounded-xl border border-white/10 bg-[#0C0F16] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-start justify-between p-4 border-b border-white/8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#00D4FF]/10 border border-[#00D4FF]/20 flex items-center justify-center">
+                <span className="text-[#00D4FF] font-mono text-xs font-bold">{result.assetType === "crypto" ? "₿" : "$"}</span>
+              </div>
+              <div>
+                <div className="text-[#F4F8FF] font-mono font-bold text-base">{result.ticker}</div>
+                <div className="text-[#A8B8CC] text-xs">{result.name}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs font-mono font-bold px-2 py-1 rounded border ${dirBg(result.direction)}`}>
+                {result.direction}
+              </span>
+              <span className="text-[#A8B8CC] text-xs font-mono">{result.assetType.toUpperCase()}</span>
+            </div>
+          </div>
+
+          {/* Price + scores */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 border-b border-white/8">
+            {[
+              { label: "PRICE", value: `$${fmt(result.currentPrice)}`, color: "text-[#F4F8FF]" },
+              { label: "24H CHANGE", value: fmtPct(result.changePercent), color: result.changePercent >= 0 ? "text-[#00FF88]" : "text-[#FF2D55]" },
+              { label: "CONFIDENCE", value: `${result.faultlineConfidence}%`, color: result.faultlineConfidence >= 70 ? "text-[#00FF88]" : result.faultlineConfidence >= 50 ? "text-[#FFD700]" : "text-[#FF2D55]" },
+              { label: "COMPOSITE SCORE", value: result.compositeScore.toString(), color: result.compositeScore >= 70 ? "text-[#00FF88]" : result.compositeScore >= 50 ? "text-[#FFD700]" : "text-[#FF2D55]" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-white/3 rounded-lg p-3">
+                <div className="text-[#64748B] text-[10px] font-mono tracking-widest mb-1">{label}</div>
+                <div className={`font-mono font-bold text-sm ${color}`}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Trade levels */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 p-4 border-b border-white/8">
+            {[
+              { label: "ENTRY ZONE", value: `$${fmt(result.entryZoneLow)} – $${fmt(result.entryZoneHigh)}`, color: "text-[#00D4FF]" },
+              { label: "STOP LOSS", value: `$${fmt(result.stopLoss)}`, color: "text-[#FF2D55]" },
+              { label: "TARGET 1", value: `$${fmt(result.targetOne)}`, color: "text-[#00FF88]" },
+              { label: "TARGET 2", value: `$${fmt(result.targetTwo)}`, color: "text-[#00FF88]" },
+              { label: "RISK/REWARD", value: `${fmt(result.riskRewardRatio)}x`, color: result.riskRewardRatio >= 2 ? "text-[#00FF88]" : "text-[#FFD700]" },
+              { label: "POSITION SIZE", value: `$${fmt(result.suggestedPositionSizeUsd, 0)} (${fmt(result.suggestedPositionSizePct, 1)}%)`, color: "text-[#F4F8FF]" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="bg-white/3 rounded-lg p-3">
+                <div className="text-[#64748B] text-[10px] font-mono tracking-widest mb-1">{label}</div>
+                <div className={`font-mono font-bold text-xs ${color}`}>{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Why Now + Invalidation */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border-b border-white/8">
+            <div className="bg-[#00FF88]/5 border border-[#00FF88]/15 rounded-lg p-3">
+              <div className="text-[#00FF88] text-[10px] font-mono tracking-widest mb-2 font-bold">WHY NOW</div>
+              <div className="text-[#A8B8CC] text-xs leading-relaxed">{result.whyNow}</div>
+            </div>
+            <div className="bg-[#FF2D55]/5 border border-[#FF2D55]/15 rounded-lg p-3">
+              <div className="text-[#FF2D55] text-[10px] font-mono tracking-widest mb-2 font-bold">INVALIDATION</div>
+              <div className="text-[#A8B8CC] text-xs leading-relaxed">{result.invalidation}</div>
+            </div>
+          </div>
+
+          {/* Key risks */}
+          {result.keyRisks?.length > 0 && (
+            <div className="p-4 border-b border-white/8">
+              <div className="text-[#FFD700] text-[10px] font-mono tracking-widest mb-2 font-bold">KEY RISKS</div>
+              <div className="flex flex-wrap gap-2">
+                {result.keyRisks.map((r, i) => (
+                  <span key={i} className="text-xs bg-[#FFD700]/10 border border-[#FFD700]/20 text-[#FFD700] px-2 py-1 rounded font-mono">{r}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Labels */}
+          {result.labels?.length > 0 && (
+            <div className="p-4 border-b border-white/8">
+              <div className="text-[#A8B8CC] text-[10px] font-mono tracking-widest mb-2">FAULTLINE LABELS</div>
+              <div className="flex flex-wrap gap-1.5">
+                {result.labels.map((l, i) => (
+                  <span key={i} className="text-[10px] bg-[#00D4FF]/8 border border-[#00D4FF]/20 text-[#00D4FF] px-2 py-0.5 rounded font-mono">{l}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Objective fit */}
+          <div className="p-4 border-b border-white/8 flex items-start gap-3">
+            {result.objectiveFit
+              ? <CheckCircle2 className="w-4 h-4 text-[#00FF88] flex-shrink-0 mt-0.5" />
+              : <XCircle className="w-4 h-4 text-[#FF2D55] flex-shrink-0 mt-0.5" />}
+            <div>
+              <div className={`text-xs font-mono font-bold ${result.objectiveFit ? "text-[#00FF88]" : "text-[#FF2D55]"}`}>
+                {result.objectiveFit ? "FITS CURRENT OBJECTIVE" : "DOES NOT FIT CURRENT OBJECTIVE"}
+              </div>
+              <div className="text-[#A8B8CC] text-xs mt-0.5">{result.objectiveFitReason}</div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          {result.direction !== "AVOID" && (
+            <div className="p-4">
+              <Button
+                onClick={() => onTrade(result)}
+                className="w-full bg-[#00FF88] text-[#050608] hover:bg-[#00FF88]/90 font-mono font-bold tracking-wider"
+              >
+                <Crosshair className="w-4 h-4 mr-2" />
+                SIMULATE TRADE — {result.ticker}
+              </Button>
+            </div>
+          )}
+          {result.direction === "AVOID" && (
+            <div className="p-4">
+              <div className="text-center text-[#FF2D55] font-mono text-xs font-bold tracking-wider py-2">
+                ⚠ AVOID — FAULTLINE does not recommend entering this position in the current regime.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!result && !lookupMut.isPending && !error && (
+        <div className="text-center py-12 text-[#64748B]">
+          <Search className="w-8 h-8 mx-auto mb-3 opacity-40" />
+          <div className="font-mono text-xs tracking-wider">ENTER A TICKER SYMBOL TO BEGIN</div>
+          <div className="text-[10px] mt-1">Supports any stock (AAPL, TSLA, NVDA, META...) or crypto (BTC, ETH, TAO, SOL, AVAX...)</div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Types ─────────────────────────────────────────────────────
 type ObjectiveType = "short_swing" | "long_position" | "crypto_momentum" | "defensive" | "ai_tech_momentum" | "custom";
@@ -956,6 +1191,7 @@ export default function OwnerSimulation() {
           <TabsList className="bg-[#0C0F16] border border-white/8 p-1">
             {[
               { id: "opportunities", label: "OPPORTUNITIES", icon: Crosshair },
+              { id: "search", label: "SEARCH", icon: Search },
               { id: "positions", label: "POSITIONS", icon: BarChart3 },
               { id: "trades", label: "TRADE LOG", icon: Clock },
               { id: "journal", label: "JOURNAL", icon: BookOpen },
@@ -1364,6 +1600,14 @@ export default function OwnerSimulation() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          {/* ── Search Tab ── */}
+          <TabsContent value="search" className="mt-4">
+            <ManualSearch
+              accountValue={accountQuery.data?.valuation?.totalValue ?? 100000}
+              onTrade={(opp) => setSelectedOpp(opp)}
+            />
           </TabsContent>
         </Tabs>
       </div>

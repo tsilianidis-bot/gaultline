@@ -58,6 +58,7 @@ import {
   getOrCreateOwnerAccount, getOwnerPositions, getOwnerTrades, getOwnerObjective, setOwnerObjective,
   getDailySnapshots, upsertDailySnapshot, scanOpportunities, executeTrade, markToMarket,
   calcGoalProgress, generateOwnerJournal, getOptimalAction, OBJECTIVE_TYPES,
+  buildStockOpportunity, buildCryptoOpportunity,
 } from './ownerSimulation';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
@@ -2165,6 +2166,65 @@ export const appRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Optimal action generation failed', cause: err });
       }
     }),
+
+    // Manual ticker lookup — build a full TradeOpportunity on demand for any stock or crypto symbol
+    lookupTicker: protectedProcedure
+      .input(z.object({
+        symbol: z.string().min(1).max(20).transform(s => s.toUpperCase().trim()),
+        assetType: z.enum(['stock', 'crypto']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+        const account = await getOrCreateOwnerAccount(ctx.user.id);
+        const objective = await getOwnerObjective(account.id);
+        const valuation = await markToMarket(account.id);
+        const pressure = await calculateFaultlinePressure();
+
+        if (input.assetType === 'stock') {
+          const { getQuote } = await import('./yahooProxy');
+          const quote = await getQuote(input.symbol);
+          if (!quote.price || quote.source === 'error') {
+            throw new TRPCError({ code: 'NOT_FOUND', message: `No price data found for ${input.symbol}. Verify the ticker symbol and try again.` });
+          }
+          const opp = await buildStockOpportunity(
+            input.symbol,
+            (quote as { name?: string }).name ?? input.symbol,
+            (quote as { sector?: string }).sector ?? 'Unknown',
+            pressure,
+            objective,
+            valuation.totalValue,
+          );
+          if (!opp) throw new TRPCError({ code: 'NOT_FOUND', message: `Could not build opportunity for ${input.symbol}` });
+          return opp;
+        } else {
+          // Crypto — resolve symbol to CoinGecko ID, fallback to search
+          let coinData = await getCoinMarketData(input.symbol);
+          if (!coinData) {
+            const results = await searchCoins(input.symbol);
+            if (results.length > 0) coinData = await getCoinMarketData(results[0].id);
+          }
+          if (!coinData) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: `No CoinGecko data found for "${input.symbol}". Try the full coin name (e.g. "bittensor") or check the symbol.` });
+          }
+          const rawPrice = {
+            usd: coinData.currentPrice,
+            usd_24h_change: coinData.priceChangePercent24h ?? 0,
+            usd_24h_vol: coinData.totalVolume ?? 0,
+            usd_market_cap: coinData.marketCap ?? 0,
+          };
+          const opp = await buildCryptoOpportunity(
+            input.symbol,
+            coinData.id,
+            coinData.name,
+            rawPrice,
+            pressure,
+            objective,
+            valuation.totalValue,
+          );
+          if (!opp) throw new TRPCError({ code: 'NOT_FOUND', message: `Could not build crypto opportunity for ${input.symbol}` });
+          return opp;
+        }
+      }),
   }),
   sharedReports: router({
     // Create a shareable public link for a report (premium/founding/admin only)

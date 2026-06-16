@@ -406,7 +406,7 @@ Labels must be chosen from: ["AI Bubble Exposure", "Momentum Breakout", "Oversol
 }
 
 // ── Stock opportunity builder ─────────────────────────────────
-async function buildStockOpportunity(
+export async function buildStockOpportunity(
   ticker: string,
   name: string,
   sector: string,
@@ -518,7 +518,7 @@ async function buildStockOpportunity(
 }
 
 // ── Crypto opportunity builder ────────────────────────────────
-async function buildCryptoOpportunity(
+export async function buildCryptoOpportunity(
   ticker: string,
   coinId: string,
   name: string,
