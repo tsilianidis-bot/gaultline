@@ -108,11 +108,50 @@ export interface PreflightImpact {
   reviewBeforeEntering: string[];
 }
 
+export interface TradeParameterLevel {
+  description: string;   // e.g. "Near current price — momentum entry"
+  rationale: string;     // one-line explanation of why this level matters
+}
+
+export interface TakeProfitTier {
+  tier: 1 | 2 | 3;
+  description: string;   // e.g. "First resistance zone — partial exit"
+  rationale: string;
+}
+
 export interface TradeFramework {
   available: boolean;
-  potentialEntryZone: { low: number; high: number } | null;
-  potentialOpportunityZone: { low: number; high: number } | null;
-  potentialRiskZone: { low: number; high: number } | null;
+  noTradeRecommended: boolean;   // true when direction is Avoid or score < 30
+  noTradeReason: string | null;  // explanation when noTradeRecommended is true
+
+  // Entry
+  entryZone: TradeParameterLevel | null;
+
+  // Stop levels (3-tier, no absolute prices — described conceptually)
+  tradeStop: TradeParameterLevel | null;     // tight stop for active traders
+  swingStop: TradeParameterLevel | null;     // medium-term structural stop
+  thesisFailure: TradeParameterLevel | null; // full invalidation level
+
+  // Take-profit ladder (up to 3 tiers)
+  takeProfitLadder: TakeProfitTier[];
+
+  // Timeframe-specific parameters
+  maxHoldTime: string;           // e.g. "1–3 days", "1–4 weeks", "1–3 months"
+  idealHoldCondition: string;    // what must remain true to hold
+  exitTrigger: string;           // what forces an exit regardless of price
+
+  // Confidence & risk
+  parameterConfidence: number;   // 0–100 — how reliable are these parameters
+  riskRating: "Low" | "Moderate" | "High" | "Extreme";
+
+  // Bull / bear case for this specific trade
+  bullCaseForTrade: string;
+  bearCaseForTrade: string;
+
+  // Do-not-trade conditions
+  doNotTradeIf: string[];
+
+  // Legacy fields kept for backward compatibility
   explanation: string;
   dataInsufficient: boolean;
 }
@@ -525,28 +564,210 @@ function buildCryptoAnalysis(
 
 function buildTradeFramework(
   scoreBreakdown: OutlookScoreBreakdown,
-  direction: OutlookDirection
+  direction: OutlookDirection,
+  timeframe: OutlookTimeframe,
+  assetType: "stock" | "crypto",
+  pressure: FaultlinePressureOutput
 ): TradeFramework {
-  // We do not have live price data in this engine — framework is conceptual only
-  // The UI will show this as zone descriptions, not absolute prices
-  if (direction === "Avoid" || scoreBreakdown.composite < 30) {
+  const p = pressure.overallPressure;
+  const score = scoreBreakdown.composite;
+  const isHighPressure = p > 60;
+  const isCrypto = assetType === "crypto";
+
+  // ── No-trade gate ────────────────────────────────────────────
+  if (direction === "Avoid" || score < 30) {
+    const reasons: string[] = [];
+    if (direction === "Avoid") reasons.push(`Outlook direction is Avoid — no trade setup exists`);
+    if (score < 30) reasons.push(`Outlook score ${score}/100 is below the minimum threshold for a trade framework`);
+    if (isHighPressure) reasons.push(`FAULTLINE Pressure Index at ${p}/100 — systemic risk is elevated`);
     return {
       available: false,
-      potentialEntryZone: null,
-      potentialOpportunityZone: null,
-      potentialRiskZone: null,
-      explanation: "Insufficient outlook score to define a trade framework. Avoid new entries.",
-      dataInsufficient: true,
+      noTradeRecommended: true,
+      noTradeReason: reasons.join(". "),
+      entryZone: null,
+      tradeStop: null,
+      swingStop: null,
+      thesisFailure: null,
+      takeProfitLadder: [],
+      maxHoldTime: "N/A",
+      idealHoldCondition: "N/A — no trade recommended",
+      exitTrigger: "Do not enter",
+      parameterConfidence: 0,
+      riskRating: "Extreme",
+      bullCaseForTrade: "No bull case — outlook is Avoid",
+      bearCaseForTrade: `Score ${score}/100 with ${direction} direction indicates high risk of loss`,
+      doNotTradeIf: reasons,
+      explanation: reasons.join(". "),
+      dataInsufficient: false,
     };
   }
 
+  // ── Timeframe parameters ─────────────────────────────────────
+  const tfParams: Record<OutlookTimeframe, {
+    maxHold: string;
+    entryDesc: string;
+    entryRationale: string;
+    tradeStopDesc: string;
+    tradeStopRationale: string;
+    swingStopDesc: string;
+    swingStopRationale: string;
+    thesisDesc: string;
+    thesisRationale: string;
+    tp1Desc: string; tp1Rationale: string;
+    tp2Desc: string; tp2Rationale: string;
+    tp3Desc: string; tp3Rationale: string;
+    holdCondition: string;
+    exitTrigger: string;
+  }> = {
+    day: {
+      maxHold: "Same session (close before market close)",
+      entryDesc: isCrypto
+        ? "Near current price during the first 30 minutes of the session — wait for opening range to establish"
+        : "Within the opening range (first 30 minutes) — enter on a confirmed breakout above the opening high",
+      entryRationale: "Day trades require momentum confirmation at the open; entering before the range is established increases whipsaw risk",
+      tradeStopDesc: isCrypto
+        ? "Below the opening range low or the 15-minute VWAP — whichever is tighter"
+        : "Below the opening range low — a break here signals the intraday thesis has failed",
+      tradeStopRationale: "Intraday stops must be tight; the opening range low is the key structural level for day trades",
+      swingStopDesc: "Below the prior day's low — a close below this level means the broader intraday structure is broken",
+      swingStopRationale: "Prior day's low is the intraday swing stop; breaching it typically means the session is trending against the trade",
+      thesisDesc: "Below the prior week's low — if price reaches here on an intraday trade, the setup has completely failed",
+      thesisRationale: "Thesis failure for a day trade is a full structural breakdown; exit immediately with no averaging down",
+      tp1Desc: "First intraday resistance (prior day's high or a key intraday pivot)",
+      tp1Rationale: "Take partial profits at the first resistance; this locks in gains and reduces risk on the remaining position",
+      tp2Desc: "Second intraday resistance or a measured move equal to the opening range height",
+      tp2Rationale: "Measured move targets are the most reliable intraday TP levels; they represent the natural extension of the opening range",
+      tp3Desc: "Extended target at 2x the opening range height — only reached on high-momentum days",
+      tp3Rationale: "Extended targets require strong volume confirmation; reduce size significantly before this level",
+      holdCondition: "Price remains above VWAP and volume is expanding; momentum indicators are not diverging",
+      exitTrigger: "Price closes below VWAP on 15-minute chart, or market close — whichever comes first",
+    },
+    short: {
+      maxHold: "1–5 trading days",
+      entryDesc: isCrypto
+        ? "On a pullback to the nearest support level or after a confirmed breakout above recent resistance"
+        : "On a pullback to the 5-day moving average or after a confirmed break above the prior week's high",
+      entryRationale: "Short-term entries require a defined catalyst; chasing price without a pullback increases the cost basis unnecessarily",
+      tradeStopDesc: isCrypto
+        ? "Below the most recent swing low (last 3–5 days) — a break here signals the short-term momentum has reversed"
+        : "Below the prior day's low or the 5-day moving average — whichever is closer to entry",
+      tradeStopRationale: "Short-term stops should be placed at the nearest structural low to keep the risk-reward ratio favorable",
+      swingStopDesc: isCrypto
+        ? "Below the 10-day moving average — a close below signals the short-term trend has changed"
+        : "Below the 10-day moving average or the prior week's low",
+      swingStopRationale: "The 10-day MA is the key trend indicator for short-term trades; a close below it means the setup is no longer valid",
+      thesisDesc: "Below the prior 2-week low — a breach here means the short-term bullish thesis has failed completely",
+      thesisRationale: "Thesis failure for a short-term trade is a 2-week structural breakdown; exit without hesitation",
+      tp1Desc: "Prior week's high or the nearest resistance level",
+      tp1Rationale: "Take 30–50% off at the first resistance to lock in gains; this is where most short-term moves stall",
+      tp2Desc: "Next resistance level or a 1:2 risk-reward target from entry",
+      tp2Rationale: "A 1:2 R:R is the minimum acceptable for short-term trades; this tier captures the bulk of the move",
+      tp3Desc: "Extended target at 1:3 R:R — only reached on strong momentum with expanding volume",
+      tp3Rationale: "Extended targets require volume confirmation; trail stop aggressively if price reaches this level",
+      holdCondition: "Price remains above the 5-day moving average and FAULTLINE pressure is not rising sharply",
+      exitTrigger: "Price closes below the 5-day MA, or FAULTLINE Pressure Index rises above 70, or the catalyst that drove the trade is invalidated",
+    },
+    swing: {
+      maxHold: "1–4 weeks",
+      entryDesc: isCrypto
+        ? "On a pullback to the 20-day moving average or a key support level — wait for a daily close above the level before entering"
+        : "On a pullback to the 20-day moving average or a prior breakout level — enter on the first close back above the level",
+      entryRationale: "Swing entries require patience; entering on the first close above a key level reduces the risk of a false breakout",
+      tradeStopDesc: isCrypto
+        ? "Below the most recent weekly swing low — a close below signals the swing trade has failed"
+        : "Below the most recent weekly low or the 20-day moving average",
+      tradeStopRationale: "Swing stops should be placed at weekly structural lows; this gives the trade room to breathe while protecting against a trend reversal",
+      swingStopDesc: isCrypto
+        ? "Below the 50-day moving average — a weekly close below this level signals a medium-term trend change"
+        : "Below the 50-day moving average or the prior month's low",
+      swingStopRationale: "The 50-day MA is the key trend indicator for swing trades; a weekly close below it means the medium-term trend has changed",
+      thesisDesc: "Below the prior 4-week low — a breach here means the swing trade thesis has completely failed",
+      thesisRationale: "Thesis failure for a swing trade is a monthly structural breakdown; this level should never be reached if stops are respected",
+      tp1Desc: "Prior month's high or the nearest weekly resistance level",
+      tp1Rationale: "Take 25–40% off at the first monthly resistance; this is where swing moves typically consolidate",
+      tp2Desc: "Next major resistance level or a 1:2 risk-reward target from entry",
+      tp2Rationale: "The 1:2 R:R tier captures the core of most swing moves; trail stop to breakeven after this level",
+      tp3Desc: "Extended target at 1:3 R:R — only reached on strong fundamental catalysts or regime shifts",
+      tp3Rationale: "Extended swing targets require a fundamental driver; reduce size to 25% of original position at this level",
+      holdCondition: "Price remains above the 20-day MA, FAULTLINE pressure is stable or falling, and the original catalyst remains intact",
+      exitTrigger: "Weekly close below the 20-day MA, FAULTLINE Pressure Index rises above 65, or the original catalyst is invalidated",
+    },
+    long: {
+      maxHold: "1–3 months",
+      entryDesc: isCrypto
+        ? "On a significant pullback to the 50-day or 200-day moving average — enter only after a weekly close above the level"
+        : "On a pullback to the 50-day moving average or a prior quarterly breakout level — enter on a monthly close above the level",
+      entryRationale: "Long-term entries require major structural confirmation; a monthly close above a key level is the minimum requirement",
+      tradeStopDesc: isCrypto
+        ? "Below the 50-day moving average — a monthly close below signals the long-term trend is in question"
+        : "Below the 50-day moving average or the prior quarter's low",
+      tradeStopRationale: "Long-term stops should be placed at major structural levels; the 50-day MA is the minimum stop for a long-term position",
+      swingStopDesc: isCrypto
+        ? "Below the 200-day moving average — a monthly close below signals a major trend reversal"
+        : "Below the 200-day moving average or the prior 6-month low",
+      swingStopRationale: "The 200-day MA is the ultimate trend indicator; a monthly close below it signals a major bear market",
+      thesisDesc: "Below the prior 3-month low — a breach here means the long-term investment thesis has fundamentally changed",
+      thesisRationale: "Thesis failure for a long-term position requires a complete re-evaluation of the fundamental case",
+      tp1Desc: "Prior quarterly high or the nearest major resistance level",
+      tp1Rationale: "Take 20–30% off at the first quarterly resistance; long-term positions should be managed in tranches",
+      tp2Desc: "Next major resistance level or a 1:2 risk-reward target from entry",
+      tp2Rationale: "The 1:2 R:R tier represents a significant move for a long-term position; trail stop to breakeven after this level",
+      tp3Desc: "Extended target at 1:3 R:R or the prior all-time high area",
+      tp3Rationale: "Extended long-term targets require fundamental confirmation; reduce size to 25% of original position at this level",
+      holdCondition: "Price remains above the 50-day MA, FAULTLINE pressure is below 60, and the fundamental thesis remains intact",
+      exitTrigger: "Monthly close below the 50-day MA, FAULTLINE Pressure Index rises above 70 and stays elevated for 2+ weeks, or a fundamental change in the investment thesis",
+    },
+  };
+
+  const tf = tfParams[timeframe];
+
+  // ── Do-not-trade conditions ───────────────────────────────────
+  const doNotTradeIf: string[] = [];
+  if (isHighPressure) doNotTradeIf.push(`FAULTLINE Pressure Index is at ${p}/100 — systemic risk is elevated; reduce position size or wait for pressure to fall below 60`);
+  if (direction === "Bearish") doNotTradeIf.push("Outlook direction is Bearish — this is a short setup, not a long entry; do not buy into a bearish outlook");
+  if (direction === "Neutral") doNotTradeIf.push("Outlook direction is Neutral — wait for a directional signal before entering");
+  if (score < 50) doNotTradeIf.push(`Outlook score is ${score}/100 — below 50 means the balance of evidence does not support a high-conviction entry`);
+  if (timeframe === "day" && p > 50) doNotTradeIf.push("Day trading in elevated pressure environments amplifies risk; consider reducing size by 50% or skipping the session");
+  if (isCrypto && p > 55) doNotTradeIf.push("Crypto is highly sensitive to macro pressure; a pressure index above 55 significantly increases the risk of sharp reversals");
+
+  // ── Confidence ───────────────────────────────────────────────
+  const baseConfidence = score;
+  const pressurePenalty = isHighPressure ? 20 : p > 45 ? 10 : 0;
+  const timeframePenalty = timeframe === "day" ? 10 : timeframe === "long" ? 5 : 0;
+  const parameterConfidence = Math.max(10, Math.min(95, baseConfidence - pressurePenalty - timeframePenalty));
+
+  // ── Risk rating ───────────────────────────────────────────────
+  const riskRating: TradeFramework["riskRating"] = p > 65 ? "Extreme" : p > 50 ? "High" : p > 35 ? "Moderate" : "Low";
+
+  // ── Bull / bear case for this specific trade ─────────────────
+  const topFactor = [...scoreBreakdown.factors].sort((a, b) => b.score - a.score)[0];
+  const bottomFactor = [...scoreBreakdown.factors].sort((a, b) => a.score - b.score)[0];
+  const bullCaseForTrade = `${topFactor?.name ?? "Momentum"} is the strongest factor at ${topFactor?.score ?? score}/100. ${tf.holdCondition}.`;
+  const bearCaseForTrade = `${bottomFactor?.name ?? "Macro"} is the primary headwind at ${bottomFactor?.score ?? 50}/100. ${isHighPressure ? `FAULTLINE pressure at ${p}/100 adds systemic risk.` : "Monitor for deterioration in macro conditions."}`;
+
   return {
     available: true,
-    potentialEntryZone: null,     // Requires live price data — shown as "Unavailable" in UI
-    potentialOpportunityZone: null,
-    potentialRiskZone: null,
-    explanation: "Entry, opportunity, and risk zones require live price data. Use the Signals tab for calculated price levels.",
-    dataInsufficient: true,
+    noTradeRecommended: false,
+    noTradeReason: null,
+    entryZone: { description: tf.entryDesc, rationale: tf.entryRationale },
+    tradeStop: { description: tf.tradeStopDesc, rationale: tf.tradeStopRationale },
+    swingStop: { description: tf.swingStopDesc, rationale: tf.swingStopRationale },
+    thesisFailure: { description: tf.thesisDesc, rationale: tf.thesisRationale },
+    takeProfitLadder: [
+      { tier: 1, description: tf.tp1Desc, rationale: tf.tp1Rationale },
+      { tier: 2, description: tf.tp2Desc, rationale: tf.tp2Rationale },
+      { tier: 3, description: tf.tp3Desc, rationale: tf.tp3Rationale },
+    ],
+    maxHoldTime: tf.maxHold,
+    idealHoldCondition: tf.holdCondition,
+    exitTrigger: tf.exitTrigger,
+    parameterConfidence,
+    riskRating,
+    bullCaseForTrade,
+    bearCaseForTrade,
+    doNotTradeIf,
+    explanation: `${direction} outlook with ${score}/100 conviction. ${tf.maxHold} timeframe. ${doNotTradeIf.length > 0 ? "Caution: " + doNotTradeIf[0] : "Conditions are acceptable for entry."}`,
+    dataInsufficient: false,
   };
 }
 
@@ -1018,7 +1239,7 @@ export async function getFullOutlook(
   const scenarios = buildScenarios(assetType, sym, direction, pressure);
 
   // Trade framework
-  const tradeFramework = buildTradeFramework(scoreBreakdown, direction);
+  const tradeFramework = buildTradeFramework(scoreBreakdown, direction, timeframe, assetType, pressure);
 
   // History
   const history = await getOutlookHistory(sym, timeframe);

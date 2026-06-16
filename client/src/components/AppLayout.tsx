@@ -40,7 +40,6 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "pre-flight",     label: "Pre-Flight",     shortLabel: "Pre-Flight",  icon: Shield,     path: "/app/pre-flight" },
       { id: "situation-room", label: "Situation Room",  shortLabel: "Sit. Room",   icon: Crosshair,  path: "/app/situation-room" },
-      { id: "signal-outlook",  label: "Signal Outlook Center", shortLabel: "Outlook",    icon: Telescope,  path: "/app/signal-outlook" },
     ],
   },
   {
@@ -64,6 +63,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "SIGNALS",
     items: [
       { id: "signals",      label: "Stock & Market Signals",shortLabel: "Signals",    icon: Radio,     path: "/app/signals" },
+      { id: "signal-outlook", label: "Signal Outlook Center", shortLabel: "Sig Outlook", icon: Telescope, path: "/app/signal-outlook" },
       { id: "watchlist",    label: "Watchlist",             shortLabel: "Watch",      icon: Bell,      path: "/app/watchlist" },
       { id: "portfolio",    label: "Portfolio",             shortLabel: "Port",       icon: Briefcase, path: "/app/portfolio" },
       { id: "stock-heatmap",label: "Stock Heatmap",         shortLabel: "Stock Heat", icon: BarChart2, path: "/app/stock-heatmap" },

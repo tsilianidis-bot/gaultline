@@ -895,26 +895,118 @@ function FullOutlookView({
         icon={<Target size={14} color="#64B5F6" />}
         collapsible
       >
-        {d.tradeFramework.dataInsufficient ? (
+        {d.tradeFramework.noTradeRecommended ? (
           <div style={{
-            background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.2)",
             borderRadius: "6px", padding: "12px",
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#6B7280", lineHeight: 1.6,
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-              <Info size={12} color="#4B5563" />
-              <span style={{ color: "#94A3B8" }}>Price Levels Not Available</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+              <AlertTriangle size={13} color="#FF2D55" />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#FF2D55", fontWeight: 700 }}>NO TRADE RECOMMENDED</span>
             </div>
-            {d.tradeFramework.explanation}
-            <div style={{ marginTop: "8px" }}>
-              <a href="/app/signals" style={{ color: "#64B5F6", textDecoration: "none", fontSize: "10px" }}>
-                → View calculated price levels in Stock & Market Signals
-              </a>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
+              {d.tradeFramework.noTradeReason}
             </div>
           </div>
         ) : (
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8" }}>
-            {d.tradeFramework.explanation}
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+
+            {/* Confidence + Risk + Max Hold row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
+              {[
+                { label: "PARAMETER CONFIDENCE", value: `${d.tradeFramework.parameterConfidence}/100`, color: d.tradeFramework.parameterConfidence >= 60 ? "#00FF88" : d.tradeFramework.parameterConfidence >= 40 ? "#FF9500" : "#FF2D55" },
+                { label: "RISK RATING", value: d.tradeFramework.riskRating, color: d.tradeFramework.riskRating === "Low" ? "#00FF88" : d.tradeFramework.riskRating === "Moderate" ? "#64B5F6" : d.tradeFramework.riskRating === "High" ? "#FF9500" : "#FF2D55" },
+                { label: "MAX HOLD TIME", value: d.tradeFramework.maxHoldTime, color: "#94A3B8" },
+              ].map(item => (
+                <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "6px", padding: "8px 10px" }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginBottom: "4px", letterSpacing: "0.08em" }}>{item.label}</div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: item.color }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Entry Zone */}
+            {d.tradeFramework.entryZone && (
+              <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "6px", padding: "10px 12px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", marginBottom: "4px", letterSpacing: "0.08em" }}>ENTRY ZONE</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#E2E8F0", lineHeight: 1.5 }}>{d.tradeFramework.entryZone.description}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "4px" }}>{d.tradeFramework.entryZone.rationale}</div>
+              </div>
+            )}
+
+            {/* Stop levels */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.08em" }}>STOP LEVELS (3-TIER)</div>
+              {[
+                { label: "TRADE STOP", level: d.tradeFramework.tradeStop, color: "#FF9500" },
+                { label: "SWING STOP", level: d.tradeFramework.swingStop, color: "#FF6B35" },
+                { label: "THESIS FAILURE", level: d.tradeFramework.thesisFailure, color: "#FF2D55" },
+              ].map(item => item.level && (
+                <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid rgba(255,255,255,0.06)`, borderLeft: `3px solid ${item.color}40`, borderRadius: "0 6px 6px 0", padding: "8px 10px" }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color, marginBottom: "3px", letterSpacing: "0.08em" }}>{item.label}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", lineHeight: 1.5 }}>{item.level.description}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>{item.level.rationale}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Take-profit ladder */}
+            {d.tradeFramework.takeProfitLadder.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.08em" }}>TAKE-PROFIT LADDER</div>
+                {d.tradeFramework.takeProfitLadder.map(tp => (
+                  <div key={tp.tier} style={{ background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", marginBottom: "3px", letterSpacing: "0.08em" }}>TP {tp.tier}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", lineHeight: 1.5 }}>{tp.description}</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>{tp.rationale}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Hold condition + exit trigger */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <div style={{ background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00FF88", marginBottom: "4px", letterSpacing: "0.08em" }}>IDEAL HOLD CONDITION</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5 }}>{d.tradeFramework.idealHoldCondition}</div>
+              </div>
+              <div style={{ background: "rgba(255,45,85,0.03)", border: "1px solid rgba(255,45,85,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF2D55", marginBottom: "4px", letterSpacing: "0.08em" }}>EXIT TRIGGER</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5 }}>{d.tradeFramework.exitTrigger}</div>
+              </div>
+            </div>
+
+            {/* Bull / bear case */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <div style={{ background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00FF88", marginBottom: "4px", letterSpacing: "0.08em" }}>BULL CASE FOR THIS TRADE</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5 }}>{d.tradeFramework.bullCaseForTrade}</div>
+              </div>
+              <div style={{ background: "rgba(255,45,85,0.03)", border: "1px solid rgba(255,45,85,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF2D55", marginBottom: "4px", letterSpacing: "0.08em" }}>BEAR CASE FOR THIS TRADE</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.5 }}>{d.tradeFramework.bearCaseForTrade}</div>
+              </div>
+            </div>
+
+            {/* Do-not-trade conditions */}
+            {d.tradeFramework.doNotTradeIf.length > 0 && (
+              <div style={{ background: "rgba(255,149,0,0.04)", border: "1px solid rgba(255,149,0,0.15)", borderRadius: "6px", padding: "10px 12px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF9500", marginBottom: "6px", letterSpacing: "0.08em" }}>DO NOT TRADE IF</div>
+                {d.tradeFramework.doNotTradeIf.map((cond, i) => (
+                  <div key={i} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6, marginBottom: "3px" }}>
+                    ⚠ {cond}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Link to Signals for live price levels */}
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textAlign: "center", paddingTop: "4px" }}>
+              For live ATR-based price levels with exact entry/stop/target prices, use{" "}
+              <a href="/app/signals" style={{ color: "#64B5F6", textDecoration: "none" }}>Stock & Market Signals</a>{" "}or{" "}
+              <a href="/app/crypto-signals" style={{ color: "#64B5F6", textDecoration: "none" }}>Crypto Signals</a>
+            </div>
+
           </div>
         )}
       </Section>
