@@ -183,6 +183,13 @@
       "when": 1781646591619,
       "tag": "0025_cold_deathbird",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1781651086098,
+      "tag": "0026_unusual_hiroim",
+      "breakpoints": true
     }
   ]
 }

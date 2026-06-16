@@ -50,6 +50,8 @@ export const users = mysqlTable("users", {
    * Used by the PreflightGate to determine if a prompt is needed on dashboard load.
    */
   lastPreflightCompletedAt: timestamp("lastPreflightCompletedAt"),
+  /** Owner-set permanent notes about this user. Never cleared by automated processes. */
+  adminNotes: text("adminNotes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

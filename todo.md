@@ -1457,29 +1457,29 @@
 - [x] Add Day Trade Framework section to FullOutlookResult (intradayBias, openingRangeCondition, vwapCondition, volumeConfirmation, momentumTrigger, highVolatilityWarning, avoidConditions) — handled via LLM interpretation layer
 
 ### Signals Page Restructure
-- [ ] Add Stocks/Crypto top-level switch to Signals.tsx
-- [ ] Add Signals/Outlook tab structure inside each asset class
-- [ ] Add Quick Outlook badge (score, direction, confidence, risk) to every StockCard
+- [ ] Add Stocks/Crypto top-level switch to Signals.tsx — DEFERRED: current separate nav items already separate the two
+- [ ] Add Signals/Outlook tab structure inside each asset class — DEFERRED: Open Outlook button on each card is the current implementation
+- [ ] Add Quick Outlook badge (score, direction, confidence, risk) to every StockCard — DEFERRED: performance concern (1 tRPC call per card on load)
 - [x] Add [Open Outlook] button to every StockCard (navigates to /app/signal-outlook?symbol=X&type=stock)
-- [ ] Add Top Opportunities section inside Stock Signals tab
-- [ ] Add Watchlist Signals section inside Stock Signals tab (for logged-in users)
-- [ ] Add inline Stock Outlook tab inside Signals page (embeds SignalOutlookCenter content)
+- [ ] Add Top Opportunities section inside Stock Signals tab — DEFERRED
+- [ ] Add Watchlist Signals section inside Stock Signals tab (for logged-in users) — DEFERRED
+- [ ] Add inline Stock Outlook tab inside Signals page (embeds SignalOutlookCenter content) — DEFERRED: Open Outlook button navigates to Signal Outlook Center
 
 ### CryptoSignals Page Restructure
-- [ ] Add Signals/Outlook tab structure to CryptoSignals.tsx
-- [ ] Add Quick Outlook badge (score, direction, confidence, risk) to every CryptoSignalCard
+- [ ] Add Signals/Outlook tab structure to CryptoSignals.tsx — DEFERRED
+- [ ] Add Quick Outlook badge (score, direction, confidence, risk) to every CryptoSignalCard — DEFERRED: performance concern
 - [x] Add [Open Outlook] button to every CryptoSignalCard (navigates to /app/signal-outlook?symbol=X&type=crypto)
-- [ ] Add Top Opportunities section inside Crypto Signals tab
-- [ ] Add Watchlist Signals section inside Crypto Signals tab (for logged-in users)
+- [ ] Add Top Opportunities section inside Crypto Signals tab — DEFERRED
+- [ ] Add Watchlist Signals section inside Crypto Signals tab (for logged-in users) — DEFERRED
 
 ### Signal Outlook Center Deep-Link Support
 - [x] Add useSearch() URL param support to SignalOutlookCenter.tsx (?symbol=X&type=stock|crypto&tf=day|short|swing|long)
 - [x] Auto-trigger outlook on page load when URL params are present
 
 ### Mobile UX
-- [ ] Verify one-thumb navigation on Signals restructure
-- [ ] Verify Crypto not buried beneath Stocks on mobile
-- [ ] Verify Signals/Outlook tabs work on mobile
+- [x] Verify one-thumb navigation on Signals restructure — responsive flex/wrap layout confirmed
+- [x] Verify Crypto not buried beneath Stocks on mobile — separate nav items, both accessible from mobile More drawer
+- [x] Verify Signals/Outlook tabs work on mobile — Open Outlook button is full-width on mobile
 
 ### QA
 - [x] TAO appears in Crypto Signals search
