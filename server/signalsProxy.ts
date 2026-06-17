@@ -684,7 +684,7 @@ const DAILY_BARS_TTL_MS = 60 * 60 * 1000; // 1 hour (bars don't change intraday)
  * Uses the /v2/aggs/ticker/{sym}/range/1/day endpoint.
  * Returns empty array on failure (graceful degradation for free tier).
  */
-async function fetchDailyBars(
+export async function fetchDailyBars(
   apiKey: string,
   symbol: string,
   days: number

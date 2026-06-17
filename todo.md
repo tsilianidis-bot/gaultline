@@ -1512,3 +1512,10 @@
 - [x] Update SignalOutlookCenter.tsx — display real dollar prices and % from entry on Entry Zone, Stop Levels, and Take-Profit Ladder
 - [x] Remove "For live ATR-based price levels, use Signals" placeholder link
 - [x] TypeScript: 0 errors | Tests: 504/525 passing
+
+## Signal Intelligence Calculated Price Levels (Jun 17, 2026)
+- [x] Build server/priceLevels.ts — pure math engine: ATR, classic pivot points, SMA 20/50/200, Bollinger Bands, prev highs/lows → Support 1-3, Resistance 1-3, Entry Zone, Risk Zone, TP1/TP2/Stretch Target, Invalidation Level
+- [x] Wire priceLevels.ts into getFullOutlook — fetch daily bars via signalsProxy/coingeckoProxy, compute levels, attach calculatedLevels to FullOutlookResult
+- [x] Update SignalOutlookCenter.tsx — add prominent Calculated Levels section immediately after outlook summary (Support/Resistance grid + Trade Framework levels per timeframe)
+- [x] Fallback: display "Calculated levels unavailable" when insufficient data; never fabricate values
+- [x] TypeScript: 0 errors | Tests: all passing

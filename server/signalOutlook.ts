@@ -25,7 +25,9 @@ import { getDb } from "./db";
 import { outlookHistory } from "../drizzle/schema";
 import { desc, eq, and, gte } from "drizzle-orm";
 import { getQuote } from "./yahooProxy";
-import { getCoinMarketData } from "./coingeckoProxy";
+import { getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
+import { fetchDailyBars } from "./signalsProxy";
+import { computeCalculatedLevels, type CalculatedLevels } from "./priceLevels";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -253,6 +255,9 @@ export interface FullOutlookResult {
 
   // Trade Framework (calculated only)
   tradeFramework: TradeFramework;
+
+  // Calculated Price Levels (ATR, Pivot Points, SMA, Bollinger Bands, Prev Highs/Lows)
+  calculatedLevels: CalculatedLevels;
 
   // History comparison
   history: OutlookHistoryComparison | null;
@@ -1416,30 +1421,56 @@ export async function getFullOutlook(
   // Scenarios
   const scenarios = buildScenarios(assetType, sym, direction, pressure);
 
-  // Fetch live price data for ATR-based trade framework calculations
+  // Fetch live price data + daily bars for trade framework and calculated levels
   let livePrice: number | null = null;
   let priceHigh: number | null = null;
   let priceLow: number | null = null;
+  let dailyBarsForLevels: Array<{ close: number; open: number; high: number; low: number; volume: number; timestamp: number }> = [];
+
   try {
     if (assetType === "stock") {
-      const quote = await getQuote(sym);
+      const [quote, bars] = await Promise.all([
+        getQuote(sym),
+        (async () => {
+          const apiKey = process.env.POLYGON_API_KEY;
+          if (!apiKey) return [];
+          return fetchDailyBars(apiKey, sym, 252);
+        })(),
+      ]);
       livePrice = quote.price ?? null;
       priceHigh = quote.high ?? null;
       priceLow  = quote.low  ?? null;
+      dailyBarsForLevels = bars;
     } else {
-      const coinData = await getCoinMarketData(sym);
+      const [coinData, ohlcBars] = await Promise.all([
+        getCoinMarketData(sym),
+        getCoinOHLC(sym, 90),
+      ]);
       if (coinData) {
         livePrice = coinData.currentPrice;
         priceHigh = coinData.high24h;
         priceLow  = coinData.low24h;
       }
+      // Convert CoinOHLC bars to the common OHLCBar format
+      dailyBarsForLevels = ohlcBars.map(b => ({
+        close: b.close, open: b.open, high: b.high, low: b.low,
+        volume: 0, timestamp: b.timestamp,
+      }));
     }
   } catch {
-    // Non-critical — trade framework will show null prices gracefully
+    // Non-critical — trade framework and levels will show gracefully
   }
 
-  // Trade framework
+  // Trade framework (ATR-based entry/stop/target from live price)
   const tradeFramework = buildTradeFramework(scoreBreakdown, direction, timeframe, assetType, pressure, livePrice, priceHigh, priceLow);
+
+  // Calculated price levels (pivot points, SMA, Bollinger Bands, prev highs/lows)
+  const calculatedLevels = computeCalculatedLevels(
+    dailyBarsForLevels,
+    livePrice ?? 0,
+    direction,
+    timeframe
+  );
 
   // History
   const history = await getOutlookHistory(sym, timeframe);
@@ -1475,6 +1506,7 @@ export async function getFullOutlook(
     preflightImpact,
     tradeReadiness,
     tradeFramework,
+    calculatedLevels,
     history,
     cached: false,
   };

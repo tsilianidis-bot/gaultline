@@ -534,6 +534,225 @@ function FullOutlookView({
         </div>
       </div>
 
+      {/* ── CALCULATED PRICE LEVELS ── */}
+      <div style={{ marginBottom: "12px" }}>
+        {d.calculatedLevels.available ? (
+          <div style={{
+            background: "rgba(0,0,0,0.4)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "12px",
+            overflow: "hidden",
+          }}>
+            {/* Header */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "12px 16px",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              background: "rgba(255,255,255,0.02)",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Target size={14} color="#00D4FF" />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", fontWeight: 700, color: "#E2E8F0", letterSpacing: "0.06em" }}>CALCULATED PRICE LEVELS</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {d.calculatedLevels.atrPct != null && (
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563" }}>ATR {d.calculatedLevels.atrPct}%</span>
+                )}
+                <span style={{
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
+                  color: d.calculatedLevels.dataQuality === "full" ? "#00FF88" : d.calculatedLevels.dataQuality === "partial" ? "#FFD700" : "#FF9500",
+                  background: d.calculatedLevels.dataQuality === "full" ? "rgba(0,255,136,0.08)" : d.calculatedLevels.dataQuality === "partial" ? "rgba(255,215,0,0.08)" : "rgba(255,149,0,0.08)",
+                  border: `1px solid ${d.calculatedLevels.dataQuality === "full" ? "rgba(0,255,136,0.2)" : d.calculatedLevels.dataQuality === "partial" ? "rgba(255,215,0,0.2)" : "rgba(255,149,0,0.2)"}`,
+                  borderRadius: "3px", padding: "2px 6px",
+                }}>{d.calculatedLevels.barsUsed}D DATA</span>
+              </div>
+            </div>
+
+            {/* Current Price + Key Indicators */}
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: "8px" }}>
+                {[
+                  { label: "CURRENT PRICE", value: d.calculatedLevels.currentPrice != null ? `$${d.calculatedLevels.currentPrice < 1 ? d.calculatedLevels.currentPrice.toFixed(4) : d.calculatedLevels.currentPrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#F1F5F9" },
+                  { label: "PIVOT POINT", value: d.calculatedLevels.pivotPoint != null ? `$${d.calculatedLevels.pivotPoint < 1 ? d.calculatedLevels.pivotPoint.toFixed(4) : d.calculatedLevels.pivotPoint.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#94A3B8" },
+                  { label: "SMA-20", value: d.calculatedLevels.sma20 != null ? `$${d.calculatedLevels.sma20 < 1 ? d.calculatedLevels.sma20.toFixed(4) : d.calculatedLevels.sma20.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: d.calculatedLevels.sma20 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma20 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
+                  { label: "SMA-50", value: d.calculatedLevels.sma50 != null ? `$${d.calculatedLevels.sma50 < 1 ? d.calculatedLevels.sma50.toFixed(4) : d.calculatedLevels.sma50.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: d.calculatedLevels.sma50 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma50 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
+                  { label: "SMA-200", value: d.calculatedLevels.sma200 != null ? `$${d.calculatedLevels.sma200 < 1 ? d.calculatedLevels.sma200.toFixed(4) : d.calculatedLevels.sma200.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: d.calculatedLevels.sma200 != null && d.calculatedLevels.currentPrice != null ? (d.calculatedLevels.currentPrice > d.calculatedLevels.sma200 ? "#00FF88" : "#FF2D55") : "#94A3B8" },
+                  { label: "52W HIGH", value: d.calculatedLevels.weekHigh52 != null ? `$${d.calculatedLevels.weekHigh52 < 1 ? d.calculatedLevels.weekHigh52.toFixed(4) : d.calculatedLevels.weekHigh52.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#FF9500" },
+                  { label: "52W LOW", value: d.calculatedLevels.weekLow52 != null ? `$${d.calculatedLevels.weekLow52 < 1 ? d.calculatedLevels.weekLow52.toFixed(4) : d.calculatedLevels.weekLow52.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#64B5F6" },
+                  { label: "BOLL UPPER", value: d.calculatedLevels.bollingerUpper != null ? `$${d.calculatedLevels.bollingerUpper < 1 ? d.calculatedLevels.bollingerUpper.toFixed(4) : d.calculatedLevels.bollingerUpper.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#A78BFA" },
+                  { label: "BOLL LOWER", value: d.calculatedLevels.bollingerLower != null ? `$${d.calculatedLevels.bollingerLower < 1 ? d.calculatedLevels.bollingerLower.toFixed(4) : d.calculatedLevels.bollingerLower.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—", color: "#A78BFA" },
+                ].map(item => (
+                  <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px", padding: "8px 10px" }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", letterSpacing: "0.08em", marginBottom: "3px" }}>{item.label}</div>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: item.color }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Support + Resistance side by side */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              {/* Support */}
+              <div style={{ padding: "12px 16px", borderRight: "1px solid rgba(255,255,255,0.04)" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", letterSpacing: "0.08em", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#00FF88" }} />
+                  SUPPORT LEVELS
+                </div>
+                {[
+                  { key: "S1", level: d.calculatedLevels.supportResistance.support1 },
+                  { key: "S2", level: d.calculatedLevels.supportResistance.support2 },
+                  { key: "S3", level: d.calculatedLevels.supportResistance.support3 },
+                ].map(({ key, level }) => level ? (
+                  <div key={key} style={{ marginBottom: "8px" }} title={level.description}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00FF8880", letterSpacing: "0.06em" }}>{key} · {level.method}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF8899" }}>{level.pctFromCurrent.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>
+                      ${level.price < 1 ? level.price.toFixed(4) : level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>{level.description}</div>
+                  </div>
+                ) : (
+                  <div key={key} style={{ marginBottom: "8px" }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{key} · —</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Resistance */}
+              <div style={{ padding: "12px 16px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D55", letterSpacing: "0.08em", marginBottom: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#FF2D55" }} />
+                  RESISTANCE LEVELS
+                </div>
+                {[
+                  { key: "R1", level: d.calculatedLevels.supportResistance.resistance1 },
+                  { key: "R2", level: d.calculatedLevels.supportResistance.resistance2 },
+                  { key: "R3", level: d.calculatedLevels.supportResistance.resistance3 },
+                ].map(({ key, level }) => level ? (
+                  <div key={key} style={{ marginBottom: "8px" }} title={level.description}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF2D5580", letterSpacing: "0.06em" }}>{key} · {level.method}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D5599" }}>+{level.pctFromCurrent.toFixed(1)}%</span>
+                    </div>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#FF2D55" }}>
+                      ${level.price < 1 ? level.price.toFixed(4) : level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", marginTop: "1px" }}>{level.description}</div>
+                  </div>
+                ) : (
+                  <div key={key} style={{ marginBottom: "8px" }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{key} · —</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Trade Framework: Entry / Risk / Targets / Invalidation */}
+            <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64B5F6", letterSpacing: "0.08em", marginBottom: "10px" }}>TRADE FRAMEWORK</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px" }}>
+                {[
+                  { label: "ENTRY ZONE", level: d.calculatedLevels.tradeFramework.entryZone, color: "#00FF88", border: "rgba(0,255,136,0.2)", bg: "rgba(0,255,136,0.04)" },
+                  { label: "RISK ZONE", level: d.calculatedLevels.tradeFramework.riskZone, color: "#FF2D55", border: "rgba(255,45,85,0.2)", bg: "rgba(255,45,85,0.04)" },
+                  { label: "PROFIT TARGET 1", level: d.calculatedLevels.tradeFramework.profitTarget1, color: "#00D4FF", border: "rgba(0,212,255,0.2)", bg: "rgba(0,212,255,0.04)" },
+                  { label: "PROFIT TARGET 2", level: d.calculatedLevels.tradeFramework.profitTarget2, color: "#00D4FF", border: "rgba(0,212,255,0.2)", bg: "rgba(0,212,255,0.03)" },
+                  { label: "STRETCH TARGET", level: d.calculatedLevels.tradeFramework.stretchTarget, color: "#A78BFA", border: "rgba(167,139,250,0.2)", bg: "rgba(167,139,250,0.04)" },
+                  { label: "INVALIDATION", level: d.calculatedLevels.tradeFramework.invalidationLevel, color: "#FF9500", border: "rgba(255,149,0,0.2)", bg: "rgba(255,149,0,0.04)" },
+                ].map(item => item.level ? (
+                  <div key={item.label} style={{ background: item.bg, border: `1px solid ${item.border}`, borderRadius: "8px", padding: "10px 12px" }} title={item.level.description}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color, letterSpacing: "0.08em", marginBottom: "4px" }}>{item.label}</div>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: item.color }}>
+                      ${item.level.price < 1 ? item.level.price.toFixed(4) : item.level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563" }}>{item.level.method}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: item.color + "99" }}>
+                        {item.level.pctFromCurrent > 0 ? "+" : ""}{item.level.pctFromCurrent.toFixed(1)}%
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", marginTop: "3px", lineHeight: 1.4 }}>{item.level.description}</div>
+                  </div>
+                ) : null)}
+              </div>
+            </div>
+
+            {/* Timeframe-Specific Levels */}
+            {(() => {
+              const tf = d.timeframe;
+              const tfl = d.calculatedLevels.timeframeSpecific;
+              const tfData = tf === "day" ? [
+                { label: "INTRADAY SUPPORT", level: tfl.day.intradaySupport, color: "#00FF88" },
+                { label: "INTRADAY RESISTANCE", level: tfl.day.intradayResistance, color: "#FF2D55" },
+                { label: "DAY TARGET 1", level: tfl.day.dayTradeTarget1, color: "#00D4FF" },
+                { label: "DAY TARGET 2", level: tfl.day.dayTradeTarget2, color: "#00D4FF" },
+                { label: "INTRADAY INVALIDATION", level: tfl.day.intradayInvalidation, color: "#FF9500" },
+              ] : tf === "short" ? [
+                { label: "NEAR-TERM SUPPORT", level: tfl.short.nearTermSupport, color: "#00FF88" },
+                { label: "NEAR-TERM RESISTANCE", level: tfl.short.nearTermResistance, color: "#FF2D55" },
+                { label: "TARGET 1", level: tfl.short.target1, color: "#00D4FF" },
+                { label: "TARGET 2", level: tfl.short.target2, color: "#00D4FF" },
+                { label: "RISK LEVEL", level: tfl.short.riskLevel, color: "#FF9500" },
+              ] : tf === "swing" ? [
+                { label: "SWING SUPPORT", level: tfl.swing.swingSupport, color: "#00FF88" },
+                { label: "SWING RESISTANCE", level: tfl.swing.swingResistance, color: "#FF2D55" },
+                { label: "SWING TARGET 1", level: tfl.swing.swingTarget1, color: "#00D4FF" },
+                { label: "SWING TARGET 2", level: tfl.swing.swingTarget2, color: "#00D4FF" },
+                { label: "SWING INVALIDATION", level: tfl.swing.swingInvalidation, color: "#FF9500" },
+              ] : [
+                { label: "LT SUPPORT ZONE", level: tfl.long.longTermSupportZone, color: "#00FF88" },
+                { label: "LT RESISTANCE ZONE", level: tfl.long.longTermResistanceZone, color: "#FF2D55" },
+                { label: "LT TARGET (LOW)", level: tfl.long.longTermTargetLow, color: "#00D4FF" },
+                { label: "LT TARGET (HIGH)", level: tfl.long.longTermTargetHigh, color: "#A78BFA" },
+                { label: "LT INVALIDATION", level: tfl.long.longTermInvalidation, color: "#FF9500" },
+              ];
+              return (
+                <div style={{ padding: "12px 16px" }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", letterSpacing: "0.08em", marginBottom: "10px" }}>
+                    {tf === "day" ? "INTRADAY LEVELS" : tf === "short" ? "SHORT-TERM LEVELS (1–5 DAYS)" : tf === "swing" ? "SWING LEVELS (1–6 WEEKS)" : "LONG-TERM LEVELS (3–12 MONTHS)"}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px" }}>
+                    {tfData.map(item => item.level ? (
+                      <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${item.color}25`, borderRadius: "6px", padding: "8px 10px" }} title={item.level.description}>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color + "99", letterSpacing: "0.08em", marginBottom: "3px" }}>{item.label}</div>
+                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: item.color }}>
+                          ${item.level.price < 1 ? item.level.price.toFixed(4) : item.level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "2px" }}>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151" }}>{item.level.method}</span>
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color + "88" }}>
+                            {item.level.pctFromCurrent > 0 ? "+" : ""}{item.level.pctFromCurrent.toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    ) : null)}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        ) : (
+          <div style={{
+            background: "rgba(0,0,0,0.3)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: "8px",
+            padding: "16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+          }}>
+            <Target size={16} color="#4B5563" />
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#6B7280", fontWeight: 700, marginBottom: "3px" }}>CALCULATED LEVELS UNAVAILABLE</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563" }}>
+                {d.calculatedLevels.insufficientDataReason ?? "Insufficient market data to calculate price levels for this asset."}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── FAULTLINE ENVIRONMENT ── */}
       <Section
         title="FAULTLINE Environment"
