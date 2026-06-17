@@ -1104,71 +1104,26 @@ export default function SignalOutlookCenter() {
     }
   }, [searchQuery, searchAssetType, handleSelect]);
 
-  // If a symbol is selected, show full outlook
-  if (selectedSymbol) {
-    return (
-      <div style={{ padding: "0 0 40px" }}>
-        <PageHeader
-          title="Signal Outlook Center™"
-          subtitle={`Full outlook for ${selectedSymbol}`}
-          badge="INTELLIGENCE"
-          badgeColor="blue"
-        />
-        <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 16px" }}>
-          {/* Timeframe selector */}
-          <div style={{ display: "flex", gap: "6px", marginBottom: "16px", flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", alignSelf: "center" }}>TIMEFRAME:</span>
-            {(["day", "short", "swing", "long"] as OutlookTimeframe[]).map(tf => (
-              <button
-                key={tf}
-                onClick={() => setTimeframe(tf)}
-                style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",
-                  color: timeframe === tf ? "#00D4FF" : "#4B5563",
-                  background: timeframe === tf ? "rgba(0,212,255,0.08)" : "transparent",
-                  border: `1px solid ${timeframe === tf ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.08)"}`,
-                  borderRadius: "4px", padding: "4px 10px", cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                {tf === "day" ? "Day Trade" : tf === "short" ? "Short (1-5d)" : tf === "swing" ? "Swing (1-4w)" : "Long (1-3m)"}
-              </button>
-            ))}
-          </div>
-          <FullOutlookView
-            symbol={selectedSymbol}
-            assetType={selectedAssetType}
-            timeframe={timeframe}
-            onBack={handleBack}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Landing screen
+  // ── Single unified page: search + top opps always visible, report renders inline ──
   return (
-    <div style={{ padding: "0 0 40px" }}>
+    <div style={{ padding: "0 0 60px" }}>
       <PageHeader
         title="Signal Outlook Center™"
-        subtitle="Transform raw signals into actionable market intelligence"
+        subtitle={selectedSymbol ? `Analyst report — ${selectedSymbol}` : "Transform raw signals into actionable market intelligence"}
         badge="INTELLIGENCE"
         badgeColor="blue"
       />
 
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 16px" }}>
 
-        {/* ── Search ── */}
+        {/* ── Search bar ── */}
         <div style={{
           background: "rgba(255,255,255,0.03)",
           border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: "10px",
-          padding: "16px",
-          marginBottom: "20px",
+          padding: "14px 16px",
+          marginBottom: "16px",
         }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", marginBottom: "10px", letterSpacing: "0.08em" }}>
-            LOOK UP ANY SYMBOL
-          </div>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
             <div style={{ position: "relative", flex: 1, minWidth: "160px" }}>
               <Search size={14} color="#4B5563" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} />
@@ -1176,7 +1131,7 @@ export default function SignalOutlookCenter() {
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSearch()}
-                placeholder="NVDA, BTC, ETH, TSLA..."
+                placeholder="NVDA, BTC, ETH, TSLA, TAO..."
                 style={{
                   width: "100%",
                   background: "rgba(255,255,255,0.04)",
@@ -1227,9 +1182,116 @@ export default function SignalOutlookCenter() {
               <Eye size={12} /> Get Outlook
             </button>
           </div>
+
+          {/* Quick access chips — always visible below search */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginTop: "10px" }}>
+            {[
+              { symbol: "NVDA", type: "stock" as const },
+              { symbol: "TSLA", type: "stock" as const },
+              { symbol: "META", type: "stock" as const },
+              { symbol: "PLTR", type: "stock" as const },
+              { symbol: "AMD",  type: "stock" as const },
+              { symbol: "AAPL", type: "stock" as const },
+              { symbol: "SPY",  type: "stock" as const },
+              { symbol: "BTC",  type: "crypto" as const },
+              { symbol: "ETH",  type: "crypto" as const },
+              { symbol: "SOL",  type: "crypto" as const },
+              { symbol: "TAO",  type: "crypto" as const },
+              { symbol: "AVAX", type: "crypto" as const },
+              { symbol: "LINK", type: "crypto" as const },
+            ].map(item => (
+              <button
+                key={`${item.symbol}_${item.type}`}
+                onClick={() => handleSelect(item.symbol, item.type)}
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
+                  color: selectedSymbol === item.symbol && selectedAssetType === item.type
+                    ? (item.type === "crypto" ? "#F7931A" : "#00D4FF")
+                    : item.type === "crypto" ? "rgba(247,147,26,0.7)" : "#6B7280",
+                  background: selectedSymbol === item.symbol && selectedAssetType === item.type
+                    ? item.type === "crypto" ? "rgba(247,147,26,0.12)" : "rgba(0,212,255,0.08)"
+                    : "rgba(255,255,255,0.02)",
+                  border: `1px solid ${selectedSymbol === item.symbol && selectedAssetType === item.type
+                    ? item.type === "crypto" ? "rgba(247,147,26,0.35)" : "rgba(0,212,255,0.3)"
+                    : item.type === "crypto" ? "rgba(247,147,26,0.12)" : "rgba(255,255,255,0.06)"}`,
+                  borderRadius: "3px", padding: "3px 8px", cursor: "pointer",
+                  transition: "all 0.12s ease",
+                }}
+              >
+                {item.symbol}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* ── Top Opportunities ── */}
+        {/* ── Inline analyst report (renders when symbol is selected) ── */}
+        {selectedSymbol && (
+          <div style={{
+            background: "rgba(0,212,255,0.02)",
+            border: "1px solid rgba(0,212,255,0.12)",
+            borderRadius: "12px",
+            padding: "16px",
+            marginBottom: "20px",
+          }}>
+            {/* Report header: symbol + timeframe selector + clear */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00D4FF" }}>
+                  {selectedSymbol}
+                </span>
+                <span style={{
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
+                  color: selectedAssetType === "crypto" ? "#F7931A" : "#64B5F6",
+                  background: selectedAssetType === "crypto" ? "rgba(247,147,26,0.1)" : "rgba(100,181,246,0.1)",
+                  border: `1px solid ${selectedAssetType === "crypto" ? "rgba(247,147,26,0.2)" : "rgba(100,181,246,0.2)"}`,
+                  borderRadius: "2px", padding: "2px 5px",
+                }}>
+                  {selectedAssetType === "crypto" ? "CRYPTO" : "STOCK"}
+                </span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563" }}>ANALYST REPORT</span>
+              </div>
+              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginLeft: "auto" }}>
+                {(["day", "short", "swing", "long"] as OutlookTimeframe[]).map(tf => (
+                  <button
+                    key={tf}
+                    onClick={() => setTimeframe(tf)}
+                    style={{
+                      fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
+                      color: timeframe === tf ? "#00D4FF" : "#4B5563",
+                      background: timeframe === tf ? "rgba(0,212,255,0.08)" : "transparent",
+                      border: `1px solid ${timeframe === tf ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.08)"}`,
+                      borderRadius: "3px", padding: "3px 8px", cursor: "pointer",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {tf === "day" ? "DAY" : tf === "short" ? "1-5D" : tf === "swing" ? "1-4W" : "1-3M"}
+                  </button>
+                ))}
+                <button
+                  onClick={handleBack}
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
+                    color: "#4B5563", background: "transparent",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "3px", padding: "3px 8px", cursor: "pointer",
+                    marginLeft: "4px",
+                  }}
+                >
+                  ✕ Clear
+                </button>
+              </div>
+            </div>
+
+            <FullOutlookView
+              symbol={selectedSymbol}
+              assetType={selectedAssetType}
+              timeframe={timeframe}
+              onBack={handleBack}
+            />
+          </div>
+        )}
+
+        {/* ── Top Opportunities (always visible) ── */}
         <div style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8", letterSpacing: "0.08em" }}>
             TOP OPPORTUNITIES
@@ -1271,82 +1333,6 @@ export default function SignalOutlookCenter() {
             ))}
           </div>
         )}
-
-        {/* ── Quick access grid ── */}
-        <div style={{
-          background: "rgba(255,255,255,0.02)",
-          border: "1px solid rgba(255,255,255,0.06)",
-          borderRadius: "10px",
-          padding: "14px 16px",
-        }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", marginBottom: "10px", letterSpacing: "0.08em" }}>
-            QUICK ACCESS
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {[
-              { symbol: "NVDA", type: "stock" as const },
-              { symbol: "TSLA", type: "stock" as const },
-              { symbol: "META", type: "stock" as const },
-              { symbol: "PLTR", type: "stock" as const },
-              { symbol: "AMD",  type: "stock" as const },
-              { symbol: "AAPL", type: "stock" as const },
-              { symbol: "SPY",  type: "stock" as const },
-              { symbol: "BTC",  type: "crypto" as const },
-              { symbol: "ETH",  type: "crypto" as const },
-              { symbol: "SOL",  type: "crypto" as const },
-              { symbol: "AVAX", type: "crypto" as const },
-              { symbol: "LINK", type: "crypto" as const },
-            ].map(item => (
-              <button
-                key={`${item.symbol}_${item.type}`}
-                onClick={() => handleSelect(item.symbol, item.type)}
-                style={{
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",
-                  color: item.type === "crypto" ? "#F7931A" : "#94A3B8",
-                  background: "rgba(255,255,255,0.03)",
-                  border: `1px solid ${item.type === "crypto" ? "rgba(247,147,26,0.15)" : "rgba(255,255,255,0.08)"}`,
-                  borderRadius: "4px", padding: "5px 10px", cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = item.type === "crypto" ? "rgba(247,147,26,0.4)" : "rgba(255,255,255,0.2)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = item.type === "crypto" ? "rgba(247,147,26,0.15)" : "rgba(255,255,255,0.08)"; }}
-              >
-                {item.symbol}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── How it works ── */}
-        <div style={{
-          marginTop: "16px",
-          background: "rgba(0,212,255,0.03)",
-          border: "1px solid rgba(0,212,255,0.08)",
-          borderRadius: "10px",
-          padding: "14px 16px",
-        }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", marginBottom: "10px", letterSpacing: "0.08em" }}>
-            HOW SIGNAL OUTLOOK CENTER™ WORKS
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px" }}>
-            {[
-              { label: "8-Factor Scoring", desc: "Each asset scored across 8 deterministic factors: trend, relative strength, volume, volatility, sector, breadth, regime, structure." },
-              { label: "AI Interpretation", desc: "FAULTLINE AI explains what the scores mean in plain English — no jargon, no fabricated data." },
-              { label: "Separate Paths", desc: "Stock and crypto outlooks use different factor sets. No cross-contamination of signals." },
-              { label: "Environment Context", desc: "Every outlook is grounded in the current FAULTLINE Pressure Index and macro regime." },
-              { label: "Invalidation Scenarios", desc: "5 specific scenarios that would change the outlook — so you know what to watch." },
-              { label: "No Invented Data", desc: "Price levels require live data. If unavailable, the framework says so — never fabricates numbers." },
-            ].map(item => (
-              <div key={item.label} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#00D4FF", marginTop: "5px", flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 600, color: "#94A3B8", marginBottom: "2px" }}>{item.label}</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", lineHeight: 1.5 }}>{item.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
       </div>
     </div>

@@ -271,6 +271,71 @@ const SYMBOL_MAP: Record<string, string> = {
   CTSI:   "cartesi",
 };
 
+// ── Name → CoinGecko ID map (full-name search: "Bittensor", "Ethereum", etc.) ──
+const NAME_MAP: Record<string, string> = {
+  BITCOIN:          "bitcoin",
+  ETHEREUM:         "ethereum",
+  SOLANA:           "solana",
+  BITTENSOR:        "bittensor",
+  CHAINLINK:        "chainlink",
+  AVALANCHE:        "avalanche-2",
+  POLKADOT:         "polkadot",
+  CARDANO:          "cardano",
+  DOGECOIN:         "dogecoin",
+  LITECOIN:         "litecoin",
+  RIPPLE:           "ripple",
+  COSMOS:           "cosmos",
+  UNISWAP:          "uniswap",
+  AAVE:             "aave",
+  MAKER:            "maker",
+  NEAR:             "near",
+  APTOS:            "aptos",
+  ARBITRUM:         "arbitrum",
+  OPTIMISM:         "optimism",
+  INJECTIVE:        "injective-protocol",
+  CELESTIA:         "celestia",
+  RENDER:           "render-token",
+  WORLDCOIN:        "worldcoin-wld",
+  FILECOIN:         "filecoin",
+  ARWEAVE:          "arweave",
+  PENDLE:           "pendle",
+  ONDO:             "ondo-finance",
+  EIGENLAYER:       "eigenlayer",
+  ETHENA:           "ethena",
+  STARKNET:         "starknet",
+  HYPERLIQUID:      "hyperliquid",
+  PEPE:             "pepe",
+  SHIBA:            "shiba-inu",
+  "SHIBA INU":      "shiba-inu",
+  BONK:             "bonk",
+  FLOKI:            "floki",
+  NOTCOIN:          "notcoin",
+  HAMSTER:          "hamster-kombat",
+  "HAMSTER KOMBAT": "hamster-kombat",
+  DOGWIFHAT:        "dogwifcoin",
+  "DOG WIF HAT":    "dogwifcoin",
+  POPCAT:           "popcat",
+  FETCH:            "fetch-ai",
+  "FETCH AI":       "fetch-ai",
+  OCEAN:            "ocean-protocol",
+  "OCEAN PROTOCOL": "ocean-protocol",
+  "THE GRAPH":      "the-graph",
+  PYTH:             "pyth-network",
+  "PYTH NETWORK":   "pyth-network",
+  SEI:              "sei-network",
+  "SEI NETWORK":    "sei-network",
+  JUPITER:          "jupiter-exchange-solana",
+  BERACHAIN:        "berachain-bera",
+  LIDO:             "lido-dao",
+  "LIDO DAO":       "lido-dao",
+};
+
+/** Resolve a user query (symbol, full name, or CoinGecko ID) to a CoinGecko ID */
+function resolveCgId(query: string): string {
+  const upper = query.toUpperCase().trim();
+  return SYMBOL_MAP[upper] ?? NAME_MAP[upper] ?? query.toLowerCase().trim();
+}
+
 function mapRawCoin(c: Record<string, unknown>): CoinMarketData {
   const high = (c.high_24h as number) ?? 0;
   const low  = (c.low_24h  as number) ?? 0;
@@ -315,9 +380,8 @@ export async function searchCoins(query: string): Promise<CoinSearchResult[]> {
   const cached = searchCache.peek(key);
   if (cached) return cached.value;
 
-  // First check symbol map
-  const upperQuery = query.toUpperCase().trim();
-  const cgId = SYMBOL_MAP[upperQuery];
+  // Check symbol map and name map for exact match
+  const cgId = SYMBOL_MAP[query.toUpperCase().trim()] ?? NAME_MAP[query.toUpperCase().trim()];
 
   interface CoinSearchItem {
     id: string;
@@ -354,8 +418,7 @@ export async function searchCoins(query: string): Promise<CoinSearchResult[]> {
 }
 
 export async function getCoinMarketData(idOrSymbol: string): Promise<CoinMarketData | null> {
-  const upper = idOrSymbol.toUpperCase();
-  const cgId = SYMBOL_MAP[upper] ?? idOrSymbol.toLowerCase();
+  const cgId = resolveCgId(idOrSymbol);
   const cached = assetCache.peek(cgId);
   if (cached) return cached.value;
 

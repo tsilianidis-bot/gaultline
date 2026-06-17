@@ -2241,6 +2241,7 @@ export default function MarketingSite() {
       <StatusTicker />
       <Nav onRequestAccess={scrollToForm} />
       <Hero onRequestAccess={scrollToForm} />
+      <ProofSection />
       <AboutSection />
       <VisualShowcaseSection onRequestAccess={scrollToForm} />
       <FeaturesSection />
@@ -2249,7 +2250,6 @@ export default function MarketingSite() {
       <RiskEngineSection onRequestAccess={scrollToForm} />
       <HowItWorksSection />
       <PromoVideoSection />
-      <ProofSection />
       <AudienceSection />
       <IWantInSection onRequestAccess={scrollToForm} />
       <PricingSection onRequestAccess={scrollToForm} />
