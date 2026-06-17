@@ -24,6 +24,8 @@ import { LRUCache } from "./lruCache";
 import { getDb } from "./db";
 import { outlookHistory } from "../drizzle/schema";
 import { desc, eq, and, gte } from "drizzle-orm";
+import { getQuote } from "./yahooProxy";
+import { getCoinMarketData } from "./coingeckoProxy";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -109,13 +111,18 @@ export interface PreflightImpact {
 }
 
 export interface TradeParameterLevel {
-  description: string;   // e.g. "Near current price — momentum entry"
-  rationale: string;     // one-line explanation of why this level matters
+  price: number | null;         // calculated dollar price (null if unavailable)
+  pctFromEntry: number | null;  // % distance from entry price (negative = below entry)
+  label: string;                // short label, e.g. "Trade Stop", "Entry Zone"
+  description: string;          // e.g. "Near current price — momentum entry"
+  rationale: string;            // one-line explanation of why this level matters
 }
 
 export interface TakeProfitTier {
   tier: 1 | 2 | 3;
-  description: string;   // e.g. "First resistance zone — partial exit"
+  price: number | null;         // calculated dollar target price
+  pctFromEntry: number | null;  // % gain from entry to this target
+  description: string;          // e.g. "First resistance zone — partial exit"
   rationale: string;
 }
 
@@ -567,7 +574,10 @@ function buildTradeFramework(
   direction: OutlookDirection,
   timeframe: OutlookTimeframe,
   assetType: "stock" | "crypto",
-  pressure: FaultlinePressureOutput
+  pressure: FaultlinePressureOutput,
+  livePrice?: number | null,
+  priceHigh?: number | null,
+  priceLow?: number | null
 ): TradeFramework {
   const p = pressure.overallPressure;
   const score = scoreBreakdown.composite;
@@ -739,24 +749,192 @@ function buildTradeFramework(
   // ── Risk rating ───────────────────────────────────────────────
   const riskRating: TradeFramework["riskRating"] = p > 65 ? "Extreme" : p > 50 ? "High" : p > 35 ? "Moderate" : "Low";
 
-  // ── Bull / bear case for this specific trade ─────────────────
+    // ── Bull / bear case for this specific trade ─────────────────
   const topFactor = [...scoreBreakdown.factors].sort((a, b) => b.score - a.score)[0];
   const bottomFactor = [...scoreBreakdown.factors].sort((a, b) => a.score - b.score)[0];
   const bullCaseForTrade = `${topFactor?.name ?? "Momentum"} is the strongest factor at ${topFactor?.score ?? score}/100. ${tf.holdCondition}.`;
   const bearCaseForTrade = `${bottomFactor?.name ?? "Macro"} is the primary headwind at ${bottomFactor?.score ?? 50}/100. ${isHighPressure ? `FAULTLINE pressure at ${p}/100 adds systemic risk.` : "Monitor for deterioration in macro conditions."}`;
 
+  // ── ATR-based price level calculations ───────────────────────
+  // Use live price data when available; fall back to null prices gracefully.
+  const hasPrice = livePrice != null && livePrice > 0;
+  const entry = hasPrice ? livePrice! : null;
+  const high = priceHigh != null && priceHigh > 0 ? priceHigh! : (entry ?? 0) * 1.01;
+  const low  = priceLow  != null && priceLow  > 0 ? priceLow!  : (entry ?? 0) * 0.99;
+
+  // ATR: use single-bar (high - low) as fallback; clamp to minimum 0.5% of price
+  const rawAtr = high - low;
+  const atr = entry ? Math.max(rawAtr, entry * 0.005) : 0;
+
+  const isBull = direction === "Bullish" || direction === "Neutral";
+  const fmt2 = (n: number) => parseFloat(n.toFixed(2));
+  const fmtPct = (price: number, ref: number) => parseFloat(((price - ref) / ref * 100).toFixed(1));
+
+  // ── Per-timeframe ATR multipliers ─────────────────────────────
+  // Day:   tighter stops (0.5× ATR), smaller TP targets (0.5–1.5× ATR)
+  // Short: standard stops (0.75× ATR), TP1 1:1, TP2 2:1, TP3 3:1
+  // Swing: full 3-tier stops, TP ladder 1:1 / 2:1 / 3:1
+  // Long:  wider stops (1.5× ATR), larger TP targets (2–5× ATR)
+  let calcEntry: number | null = null;
+  let calcTradeStop: number | null = null;
+  let calcSwingStop: number | null = null;
+  let calcThesisFailure: number | null = null;
+  let calcTp1: number | null = null;
+  let calcTp2: number | null = null;
+  let calcTp3: number | null = null;
+
+  if (entry && atr > 0) {
+    calcEntry = fmt2(entry);
+
+    if (timeframe === "day") {
+      // Day trade: very tight stops, quick TP targets
+      const stopDist = atr * 0.5;
+      const tp1Dist  = atr * 0.5;
+      const tp2Dist  = atr * 1.0;
+      const tp3Dist  = atr * 1.5;
+      if (isBull) {
+        calcTradeStop    = fmt2(Math.max(entry * 0.96, entry - stopDist));
+        calcSwingStop    = fmt2(Math.max(entry * 0.93, entry - atr * 0.75));
+        calcThesisFailure = fmt2(Math.max(entry * 0.90, entry - atr * 1.0));
+        calcTp1 = fmt2(entry + tp1Dist);
+        calcTp2 = fmt2(entry + tp2Dist);
+        calcTp3 = fmt2(entry + tp3Dist);
+      } else {
+        calcTradeStop    = fmt2(Math.min(entry * 1.04, entry + stopDist));
+        calcSwingStop    = fmt2(Math.min(entry * 1.07, entry + atr * 0.75));
+        calcThesisFailure = fmt2(Math.min(entry * 1.10, entry + atr * 1.0));
+        calcTp1 = fmt2(entry - tp1Dist);
+        calcTp2 = fmt2(entry - tp2Dist);
+        calcTp3 = fmt2(entry - tp3Dist);
+      }
+    } else if (timeframe === "short") {
+      // Short-term: 0.75× ATR trade stop, 1:1 / 2:1 / 3:1 TP ladder
+      const rawTradeStop = low - atr * 0.75;
+      const rawSwingStop = low - atr * 1.5;
+      const rawThesis    = low - atr * 2.5;
+      if (isBull) {
+        calcTradeStop    = fmt2(Math.min(entry * 0.96, Math.max(entry * 0.85, rawTradeStop)));
+        calcSwingStop    = fmt2(Math.min(entry * 0.92, Math.max(entry * 0.80, rawSwingStop)));
+        calcThesisFailure = fmt2(Math.min(entry * 0.88, Math.max(entry * 0.70, rawThesis)));
+        const risk = entry - calcTradeStop;
+        calcTp1 = fmt2(entry + risk * 1);
+        calcTp2 = fmt2(entry + risk * 2);
+        calcTp3 = fmt2(entry + risk * 3);
+      } else {
+        calcTradeStop    = fmt2(Math.max(entry * 1.04, Math.min(entry * 1.15, high + atr * 0.75)));
+        calcSwingStop    = fmt2(Math.max(entry * 1.08, Math.min(entry * 1.20, high + atr * 1.5)));
+        calcThesisFailure = fmt2(Math.max(entry * 1.12, Math.min(entry * 1.30, high + atr * 2.5)));
+        const risk = calcTradeStop - entry;
+        calcTp1 = fmt2(entry - risk * 1);
+        calcTp2 = fmt2(entry - risk * 2);
+        calcTp3 = fmt2(entry - risk * 3);
+      }
+    } else if (timeframe === "swing") {
+      // Swing: full 3-tier stops, 1:1 / 2:1 / 3:1 TP ladder
+      const rawTradeStop = low - atr * 0.75;
+      const rawSwingStop = low - atr * 1.5;
+      const rawThesis    = low - atr * 2.5;
+      if (isBull) {
+        calcTradeStop    = fmt2(Math.min(entry * 0.95, Math.max(entry * 0.85, rawTradeStop)));
+        calcSwingStop    = fmt2(Math.min(entry * 0.90, Math.max(entry * 0.75, rawSwingStop)));
+        calcThesisFailure = fmt2(Math.min(entry * 0.82, Math.max(entry * 0.60, rawThesis)));
+        const risk = entry - calcTradeStop;
+        calcTp1 = fmt2(entry + risk * 1);
+        calcTp2 = fmt2(entry + risk * 2);
+        calcTp3 = fmt2(entry + risk * 3);
+      } else {
+        calcTradeStop    = fmt2(Math.max(entry * 1.05, Math.min(entry * 1.15, high + atr * 0.75)));
+        calcSwingStop    = fmt2(Math.max(entry * 1.10, Math.min(entry * 1.25, high + atr * 1.5)));
+        calcThesisFailure = fmt2(Math.max(entry * 1.18, Math.min(entry * 1.40, high + atr * 2.5)));
+        const risk = calcTradeStop - entry;
+        calcTp1 = fmt2(entry - risk * 1);
+        calcTp2 = fmt2(entry - risk * 2);
+        calcTp3 = fmt2(entry - risk * 3);
+      }
+    } else {
+      // Long-term: wider stops (1.5× ATR), larger TP targets (2–5× ATR)
+      const rawTradeStop = low - atr * 1.5;
+      const rawSwingStop = low - atr * 2.5;
+      const rawThesis    = low - atr * 4.0;
+      if (isBull) {
+        calcTradeStop    = fmt2(Math.min(entry * 0.93, Math.max(entry * 0.80, rawTradeStop)));
+        calcSwingStop    = fmt2(Math.min(entry * 0.88, Math.max(entry * 0.70, rawSwingStop)));
+        calcThesisFailure = fmt2(Math.min(entry * 0.80, Math.max(entry * 0.50, rawThesis)));
+        const risk = entry - calcTradeStop;
+        calcTp1 = fmt2(entry + risk * 1.5);
+        calcTp2 = fmt2(entry + risk * 3.0);
+        calcTp3 = fmt2(entry + risk * 5.0);
+      } else {
+        calcTradeStop    = fmt2(Math.max(entry * 1.07, Math.min(entry * 1.20, high + atr * 1.5)));
+        calcSwingStop    = fmt2(Math.max(entry * 1.12, Math.min(entry * 1.30, high + atr * 2.5)));
+        calcThesisFailure = fmt2(Math.max(entry * 1.20, Math.min(entry * 1.50, high + atr * 4.0)));
+        const risk = calcTradeStop - entry;
+        calcTp1 = fmt2(entry - risk * 1.5);
+        calcTp2 = fmt2(entry - risk * 3.0);
+        calcTp3 = fmt2(entry - risk * 5.0);
+      }
+    }
+  }
+
+  // R:R ratio using Trade Stop as primary risk measure
+  const rrRatio = (calcEntry && calcTradeStop && calcTp1)
+    ? parseFloat((Math.abs(calcTp1 - calcEntry) / Math.abs(calcTradeStop - calcEntry)).toFixed(1))
+    : null;
+
   return {
     available: true,
     noTradeRecommended: false,
     noTradeReason: null,
-    entryZone: { description: tf.entryDesc, rationale: tf.entryRationale },
-    tradeStop: { description: tf.tradeStopDesc, rationale: tf.tradeStopRationale },
-    swingStop: { description: tf.swingStopDesc, rationale: tf.swingStopRationale },
-    thesisFailure: { description: tf.thesisDesc, rationale: tf.thesisRationale },
+    entryZone: {
+      price: calcEntry,
+      pctFromEntry: calcEntry ? 0 : null,
+      label: "Entry Zone",
+      description: tf.entryDesc,
+      rationale: tf.entryRationale,
+    },
+    tradeStop: {
+      price: calcTradeStop,
+      pctFromEntry: (calcEntry && calcTradeStop) ? fmtPct(calcTradeStop, calcEntry) : null,
+      label: "Trade Stop",
+      description: tf.tradeStopDesc,
+      rationale: tf.tradeStopRationale,
+    },
+    swingStop: {
+      price: calcSwingStop,
+      pctFromEntry: (calcEntry && calcSwingStop) ? fmtPct(calcSwingStop, calcEntry) : null,
+      label: "Swing Stop",
+      description: tf.swingStopDesc,
+      rationale: tf.swingStopRationale,
+    },
+    thesisFailure: {
+      price: calcThesisFailure,
+      pctFromEntry: (calcEntry && calcThesisFailure) ? fmtPct(calcThesisFailure, calcEntry) : null,
+      label: "Thesis Failure",
+      description: tf.thesisDesc,
+      rationale: tf.thesisRationale,
+    },
     takeProfitLadder: [
-      { tier: 1, description: tf.tp1Desc, rationale: tf.tp1Rationale },
-      { tier: 2, description: tf.tp2Desc, rationale: tf.tp2Rationale },
-      { tier: 3, description: tf.tp3Desc, rationale: tf.tp3Rationale },
+      {
+        tier: 1,
+        price: calcTp1,
+        pctFromEntry: (calcEntry && calcTp1) ? fmtPct(calcTp1, calcEntry) : null,
+        description: tf.tp1Desc,
+        rationale: tf.tp1Rationale,
+      },
+      {
+        tier: 2,
+        price: calcTp2,
+        pctFromEntry: (calcEntry && calcTp2) ? fmtPct(calcTp2, calcEntry) : null,
+        description: tf.tp2Desc,
+        rationale: tf.tp2Rationale,
+      },
+      {
+        tier: 3,
+        price: calcTp3,
+        pctFromEntry: (calcEntry && calcTp3) ? fmtPct(calcTp3, calcEntry) : null,
+        description: tf.tp3Desc,
+        rationale: tf.tp3Rationale,
+      },
     ],
     maxHoldTime: tf.maxHold,
     idealHoldCondition: tf.holdCondition,
@@ -766,8 +944,8 @@ function buildTradeFramework(
     bullCaseForTrade,
     bearCaseForTrade,
     doNotTradeIf,
-    explanation: `${direction} outlook with ${score}/100 conviction. ${tf.maxHold} timeframe. ${doNotTradeIf.length > 0 ? "Caution: " + doNotTradeIf[0] : "Conditions are acceptable for entry."}`,
-    dataInsufficient: false,
+    explanation: `${direction} outlook with ${score}/100 conviction. ${tf.maxHold} timeframe.${rrRatio ? ` R:R ratio ${rrRatio}:1.` : ""} ${doNotTradeIf.length > 0 ? "Caution: " + doNotTradeIf[0] : "Conditions are acceptable for entry."}`,
+    dataInsufficient: !hasPrice,
   };
 }
 
@@ -1238,8 +1416,30 @@ export async function getFullOutlook(
   // Scenarios
   const scenarios = buildScenarios(assetType, sym, direction, pressure);
 
+  // Fetch live price data for ATR-based trade framework calculations
+  let livePrice: number | null = null;
+  let priceHigh: number | null = null;
+  let priceLow: number | null = null;
+  try {
+    if (assetType === "stock") {
+      const quote = await getQuote(sym);
+      livePrice = quote.price ?? null;
+      priceHigh = quote.high ?? null;
+      priceLow  = quote.low  ?? null;
+    } else {
+      const coinData = await getCoinMarketData(sym);
+      if (coinData) {
+        livePrice = coinData.currentPrice;
+        priceHigh = coinData.high24h;
+        priceLow  = coinData.low24h;
+      }
+    }
+  } catch {
+    // Non-critical — trade framework will show null prices gracefully
+  }
+
   // Trade framework
-  const tradeFramework = buildTradeFramework(scoreBreakdown, direction, timeframe, assetType, pressure);
+  const tradeFramework = buildTradeFramework(scoreBreakdown, direction, timeframe, assetType, pressure, livePrice, priceHigh, priceLow);
 
   // History
   const history = await getOutlookHistory(sym, timeframe);

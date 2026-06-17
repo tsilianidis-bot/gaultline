@@ -1503,3 +1503,12 @@
 - [x] Add Day Trade timeframe button to SignalOutlookCenter timeframe selector UI
 - [x] TypeScript: 0 errors
 - [x] Full test suite: 504 passed / 525 total
+
+## Trade Framework Real Price Numbers (Jun 17, 2026)
+- [x] Update TradeParameterLevel interface — add price, pctFromEntry, label fields
+- [x] Update TakeProfitTier interface — add price, pctFromEntry fields
+- [x] Update buildTradeFramework — accept livePrice, priceHigh, priceLow params; implement ATR-based calculations for all 4 timeframes (day/short/swing/long)
+- [x] Update getFullOutlook — fetch live price via getQuote (stocks) or getCoinMarketData (crypto) before calling buildTradeFramework
+- [x] Update SignalOutlookCenter.tsx — display real dollar prices and % from entry on Entry Zone, Stop Levels, and Take-Profit Ladder
+- [x] Remove "For live ATR-based price levels, use Signals" placeholder link
+- [x] TypeScript: 0 errors | Tests: 504/525 passing

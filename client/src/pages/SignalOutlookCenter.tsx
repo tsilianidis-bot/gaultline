@@ -928,8 +928,17 @@ function FullOutlookView({
             {/* Entry Zone */}
             {d.tradeFramework.entryZone && (
               <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: "6px", padding: "10px 12px" }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", marginBottom: "4px", letterSpacing: "0.08em" }}>ENTRY ZONE</div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#E2E8F0", lineHeight: 1.5 }}>{d.tradeFramework.entryZone.description}</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", letterSpacing: "0.08em" }}>ENTRY ZONE</div>
+                  {d.tradeFramework.entryZone.price != null && (
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#00FF88" }}>
+                      ${d.tradeFramework.entryZone.price < 1
+                        ? d.tradeFramework.entryZone.price.toFixed(4)
+                        : d.tradeFramework.entryZone.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#E2E8F0", lineHeight: 1.5 }}>{d.tradeFramework.entryZone.description}</div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "4px" }}>{d.tradeFramework.entryZone.rationale}</div>
               </div>
             )}
@@ -943,7 +952,23 @@ function FullOutlookView({
                 { label: "THESIS FAILURE", level: d.tradeFramework.thesisFailure, color: "#FF2D55" },
               ].map(item => item.level && (
                 <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: `1px solid rgba(255,255,255,0.06)`, borderLeft: `3px solid ${item.color}40`, borderRadius: "0 6px 6px 0", padding: "8px 10px" }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color, marginBottom: "3px", letterSpacing: "0.08em" }}>{item.label}</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: item.color, letterSpacing: "0.08em" }}>{item.label}</div>
+                    {item.level.price != null && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        {item.level.pctFromEntry != null && (
+                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: item.color + "CC" }}>
+                            {item.level.pctFromEntry > 0 ? "+" : ""}{item.level.pctFromEntry.toFixed(1)}%
+                          </span>
+                        )}
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: item.color }}>
+                          ${item.level.price < 1
+                            ? item.level.price.toFixed(4)
+                            : item.level.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", lineHeight: 1.5 }}>{item.level.description}</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>{item.level.rationale}</div>
                 </div>
@@ -956,7 +981,23 @@ function FullOutlookView({
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.08em" }}>TAKE-PROFIT LADDER</div>
                 {d.tradeFramework.takeProfitLadder.map(tp => (
                   <div key={tp.tier} style={{ background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.1)", borderRadius: "6px", padding: "8px 10px" }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", marginBottom: "3px", letterSpacing: "0.08em" }}>TP {tp.tier}</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.08em" }}>TP {tp.tier}</div>
+                      {tp.price != null && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          {tp.pctFromEntry != null && (
+                            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FFCC" }}>
+                              +{tp.pctFromEntry.toFixed(1)}%
+                            </span>
+                          )}
+                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00D4FF" }}>
+                            ${tp.price < 1
+                              ? tp.price.toFixed(4)
+                              : tp.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", lineHeight: 1.5 }}>{tp.description}</div>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", marginTop: "3px" }}>{tp.rationale}</div>
                   </div>
@@ -1000,12 +1041,12 @@ function FullOutlookView({
               </div>
             )}
 
-            {/* Link to Signals for live price levels */}
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textAlign: "center", paddingTop: "4px" }}>
-              For live ATR-based price levels with exact entry/stop/target prices, use{" "}
-              <a href="/app/signals" style={{ color: "#64B5F6", textDecoration: "none" }}>Stock & Market Signals</a>{" "}or{" "}
-              <a href="/app/crypto-signals" style={{ color: "#64B5F6", textDecoration: "none" }}>Crypto Signals</a>
-            </div>
+            {/* Data note */}
+            {d.tradeFramework.dataInsufficient && (
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textAlign: "center", paddingTop: "4px" }}>
+                Live price data unavailable — price levels could not be calculated for this asset.
+              </div>
+            )}
 
           </div>
         )}
