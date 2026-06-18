@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -72,6 +72,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "INTELLIGENCE",
     items: [
+      { id: "social-intelligence", label: "Social Intelligence", shortLabel: "Social", icon: MessageSquare, path: "/app/social-intelligence" },
       { id: "alerts",     label: "Alerts",               shortLabel: "Alerts",  icon: AlertTriangle, path: "/app/alerts" },
       { id: "diagnostic", label: "AI Market Explanation", shortLabel: "AI Expl", icon: Cpu,           path: "/app/diagnostic" },
       { id: "ai-watch",   label: "AI Sector Watch",       shortLabel: "AI Watch",icon: Brain,         path: "/app/ai-watch" },

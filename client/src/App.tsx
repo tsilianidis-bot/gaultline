@@ -65,6 +65,7 @@ const SimPortfolio     = lazy(() => import("./pages/SimPortfolio"));
 const OwnerSimulation  = lazy(() => import("./pages/OwnerSimulation"));
 const PublicSharedReport = lazy(() => import("./pages/PublicSharedReport"));
 const SignalOutlookCenter = lazy(() => import("./pages/SignalOutlookCenter"));
+const SocialIntelligence = lazy(() => import("./pages/SocialIntelligence"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -221,6 +222,7 @@ function Router() {
               <Route path="/app/trade-preflight" component={TradePreflight} />
               <Route path="/app/situation-room" component={SituationRoom} />
               <Route path="/app/signal-outlook" component={SignalOutlookCenter} />
+              <Route path="/app/social-intelligence" component={SocialIntelligence} />
               <Route path="/app/pre-flight" component={PreFlight} />
               <Route path="/app/insider-intelligence" component={InsiderIntelligence} />
               <Route path="/app/account" component={UserAccount} />

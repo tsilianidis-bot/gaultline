@@ -2304,6 +2304,41 @@ export const appRouter = router({
       }),
   }),
 
+  social: router({
+    getIntelligence: publicProcedure
+      .query(async () => {
+        try {
+          const { getSocialIntelligenceData } = await import('./socialIntelligence');
+          return getSocialIntelligenceData();
+        } catch (err) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Social intelligence fetch failed', cause: err });
+        }
+      }),
+
+    getTickerNews: publicProcedure
+      .input(z.object({ ticker: z.string().min(1).max(10).toUpperCase() }))
+      .query(async ({ input }) => {
+        try {
+          const { getSocialIntelligenceData } = await import('./socialIntelligence');
+          const data = await getSocialIntelligenceData();
+          const tickerNews = data.latestNews.filter(n =>
+            n.tickers.includes(input.ticker) || n.primaryTicker === input.ticker
+          );
+          const sentiment = data.sentimentLeaderboard.find(s => s.ticker === input.ticker) ?? null;
+          return { news: tickerNews, sentiment };
+        } catch (err) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Ticker news fetch failed', cause: err });
+        }
+      }),
+
+    clearCache: protectedProcedure
+      .mutation(async () => {
+        const { clearSocialIntelligenceCache } = await import('./socialIntelligence');
+        clearSocialIntelligenceCache();
+        return { cleared: true };
+      }),
+  }),
+
   contact: router({
     submit: publicProcedure
       .input(z.object({
