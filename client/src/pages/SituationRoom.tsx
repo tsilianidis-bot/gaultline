@@ -330,7 +330,7 @@ export default function SituationRoom() {
       moveType: selectedMove,
       timeframe: selectedTimeframe,
       ticker: resolvedTicker,
-      thesisType: selectedThesis,
+      // thesisType is now auto-inferred server-side from moveType + timeframe
     });
   };
 
@@ -517,142 +517,26 @@ export default function SituationRoom() {
           </div>
 
           {/* Thesis Type */}
+          {/* FAULTLINE interprets — no thesis selection needed */}
           <div style={{ marginBottom: "16px" }}>
-            {/* Section header */}
-            <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "8px" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Thesis Type</div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#475569" }}>— select the strategy behind your move</div>
-            </div>
-            {/* How-to-use explanation */}
             <div style={{
-              padding: "10px 14px",
-              background: "rgba(167,139,250,0.05)",
-              border: "1px solid rgba(167,139,250,0.12)",
+              padding: "12px 16px",
+              background: "rgba(0,212,255,0.04)",
+              border: "1px solid rgba(0,212,255,0.12)",
               borderRadius: "6px",
-              marginBottom: "10px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
             }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#A78BFA", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "6px" }}>How to use this</div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6, marginBottom: "8px" }}>
-                Your <strong style={{ color: "#CBD5E1" }}>Thesis Type</strong> tells FAULTLINE <em>why</em> you are making this move — not just what you are doing.
-                FAULTLINE then stress-tests your thesis against the current macro regime, volatility environment, and market structure to tell you whether the conditions support it.
+              <div style={{ flexShrink: 0, marginTop: "2px" }}>
+                <Zap size={14} color="#00D4FF" />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "6px" }}>
-                {[
-                  { step: "1", label: "Pick your thesis", detail: "Choose the strategy that best describes why you are making this move. Each card shows the key conditions FAULTLINE checks." },
-                  { step: "2", label: "FAULTLINE stress-tests it", detail: "The engine evaluates whether current macro, volatility, and market structure conditions support your thesis — or work against it." },
-                  { step: "3", label: "Read the Thesis Stress Test", detail: "Scroll to the Thesis Stress Test panel in the results. It shows the core dependency, failure points, and a go / no-go verdict." },
-                ].map(s => (
-                  <div key={s.step} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                    <div style={{
-                      flexShrink: 0,
-                      width: "18px", height: "18px",
-                      borderRadius: "50%",
-                      background: "rgba(167,139,250,0.15)",
-                      border: "1px solid rgba(167,139,250,0.3)",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: "9px", color: "#A78BFA",
-                    }}>{s.step}</div>
-                    <div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", marginBottom: "2px" }}>{s.label}</div>
-                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.4 }}>{s.detail}</div>
-                    </div>
-                  </div>
-                ))}
+              <div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>FAULTLINE interprets for you</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6 }}>
+                  Just tell FAULTLINE what you are considering and when. The engine reads the current market structure, macro regime, and volatility environment — then tells you what the market is signalling about your move, what conditions to watch for, and what would invalidate the setup.
+                </div>
               </div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px" }}>
-              {THESIS_OPTIONS.map(th => {
-                const sel = selectedThesis === th.value;
-                return (
-                  <button
-                    key={th.value}
-                    onClick={() => setSelectedThesis(th.value)}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      gap: "0",
-                      padding: "0",
-                      background: sel ? "rgba(167,139,250,0.10)" : "rgba(255,255,255,0.025)",
-                      border: sel ? "1px solid rgba(167,139,250,0.45)" : "1px solid rgba(255,255,255,0.07)",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
-                      textAlign: "left",
-                      overflow: "hidden",
-                      boxShadow: sel ? "0 0 16px rgba(167,139,250,0.15)" : "none",
-                    }}
-                  >
-                    {/* Card header */}
-                    <div style={{
-                      width: "100%",
-                      padding: "10px 12px 8px",
-                      borderBottom: sel ? "1px solid rgba(167,139,250,0.2)" : "1px solid transparent",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}>
-                      <span style={{ fontSize: "16px", lineHeight: 1 }}>{th.icon}</span>
-                      <div>
-                        <div style={{
-                          fontFamily: "'IBM Plex Mono', monospace",
-                          fontSize: "11px",
-                          fontWeight: "600",
-                          color: sel ? "#A78BFA" : "#94A3B8",
-                          letterSpacing: "0.08em",
-                          textTransform: "uppercase",
-                        }}>{th.label}</div>
-                        <div style={{
-                          fontFamily: "'IBM Plex Sans', sans-serif",
-                          fontSize: "10px",
-                          color: sel ? "rgba(167,139,250,0.7)" : "#475569",
-                          marginTop: "1px",
-                        }}>{th.sub}</div>
-                      </div>
-                      {sel && (
-                        <div style={{
-                          marginLeft: "auto",
-                          width: "6px", height: "6px",
-                          borderRadius: "50%",
-                          background: "#A78BFA",
-                          boxShadow: "0 0 6px rgba(167,139,250,0.8)",
-                          flexShrink: 0,
-                        }} />
-                      )}
-                    </div>
-                    {/* Expanded body — always visible */}
-                    <div style={{ padding: "8px 12px 10px", width: "100%" }}>
-                      <div style={{
-                        fontFamily: "'IBM Plex Sans', sans-serif",
-                        fontSize: "11px",
-                        color: sel ? "#94A3B8" : "#475569",
-                        lineHeight: 1.5,
-                        marginBottom: "8px",
-                      }}>{th.description}</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                        {th.conditions.map((c, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
-                            <span style={{
-                              fontFamily: "'IBM Plex Mono', monospace",
-                              fontSize: "9px",
-                              color: sel ? "#A78BFA" : "#374151",
-                              marginTop: "2px",
-                              flexShrink: 0,
-                            }}>›</span>
-                            <span style={{
-                              fontFamily: "'IBM Plex Mono', monospace",
-                              fontSize: "10px",
-                              color: sel ? "#64748B" : "#374151",
-                              lineHeight: 1.4,
-                            }}>{c}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
             </div>
           </div>
 
@@ -948,21 +832,55 @@ export default function SituationRoom() {
             )}
             <div style={{ marginBottom: "10px" }} />
 
-            {/* ═══ NEW: THESIS STRESS TEST ═══ */}
-            {result.thesisStressTest && (
-              <CollapsiblePanel open={open.thesisStressTest} onToggle={() => toggle("thesisStressTest")} icon={<FlaskConical size={14} />} title="Thesis Stress Test" color="#F59E0B">
-                <div style={{ marginBottom: "12px" }}>
-                  <div style={{ display: "inline-block", padding: "3px 10px", background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.30)", borderRadius: "3px", marginBottom: "8px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#F59E0B", letterSpacing: "0.1em" }}>{result.thesisStressTest.thesisLabel}</span>
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "5px" }}>Core Dependency</div>
-                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#CBD5E1", lineHeight: 1.6 }}>{result.thesisStressTest.coreDependency}</div>
+            {/* ═══ FAULTLINE MARKET INTERPRETATION ═══ */}
+            {result.marketInterpretation && (
+              <div style={{
+                padding: "16px",
+                background: "rgba(0,212,255,0.04)",
+                border: "1px solid rgba(0,212,255,0.18)",
+                borderRadius: "6px",
+                marginBottom: "10px",
+              }}>
+                {/* Header */}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                  <Zap size={14} color="#00D4FF" />
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#00D4FF", letterSpacing: "0.15em", textTransform: "uppercase" }}>FAULTLINE READS</div>
                 </div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Failure Points</div>
-                {result.thesisStressTest.failurePoints.map((fp: string, i: number) => (
-                  <ListRow key={i} text={fp} color="#F59E0B" icon={<AlertTriangle size={12} />} />
-                ))}
-              </CollapsiblePanel>
+                {/* Headline */}
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#E2E8F0", lineHeight: 1.6, marginBottom: "10px", fontWeight: 500 }}>
+                  {result.marketInterpretation.headline}
+                </div>
+                {/* Setup context */}
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6, marginBottom: "14px", paddingBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  {result.marketInterpretation.setupContext}
+                </div>
+                {/* Opportunity window */}
+                <div style={{ marginBottom: "14px", paddingBottom: "12px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "5px" }}>Opportunity Window</div>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#CBD5E1", lineHeight: 1.6 }}>{result.marketInterpretation.opportunityWindow}</div>
+                </div>
+                {/* Two-column: Watch For + Invalidation */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  <div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#22C55E", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Watch For</div>
+                    {result.marketInterpretation.watchFor.map((item: string, i: number) => (
+                      <div key={i} style={{ display: "flex", gap: "6px", alignItems: "flex-start", marginBottom: "5px" }}>
+                        <span style={{ color: "#22C55E", fontSize: "10px", marginTop: "2px", flexShrink: 0 }}>›</span>
+                        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8", lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#FF6B35", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Invalidation</div>
+                    {result.marketInterpretation.invalidationConditions.map((item: string, i: number) => (
+                      <div key={i} style={{ display: "flex", gap: "6px", alignItems: "flex-start", marginBottom: "5px" }}>
+                        <span style={{ color: "#FF6B35", fontSize: "10px", marginTop: "2px", flexShrink: 0 }}>›</span>
+                        <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8", lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
             <div style={{ marginBottom: "10px" }} />
 

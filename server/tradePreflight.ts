@@ -138,6 +138,15 @@ export interface ThesisStressTest {
   failurePoints: string[];
 }
 
+// FAULTLINE-led interpretation — no user thesis input required
+export interface MarketInterpretation {
+  headline: string;          // What FAULTLINE reads about this move right now
+  setupContext: string;      // What the market structure is saying
+  watchFor: string[];        // Key signals to monitor
+  invalidationConditions: string[]; // What would kill the setup
+  opportunityWindow: string; // When/how this move makes most sense
+}
+
 export interface TradeSimulationOutput {
   marketStatus: MarketStatus;
   moveType: MoveType;
@@ -166,6 +175,7 @@ export interface TradeSimulationOutput {
   positionSizing: PositionSizing;
   historicalAnalogs: HistoricalAnalog[];
   thesisStressTest: ThesisStressTest;
+  marketInterpretation: MarketInterpretation;
   explanation: string;
   generatedAt: string;
 }
@@ -204,6 +214,26 @@ const THESIS_LABELS: Record<ThesisType, string> = {
   sector_rotation: "Sector Rotation",
   other: "Other",
 };
+
+// Auto-infer thesis from move + timeframe — user never needs to pick one
+export function inferThesisFromMove(moveType: MoveType, timeframe: SimulatorTimeframe): ThesisType {
+  if (moveType === "increase_crypto" || moveType === "reduce_crypto") return "crypto_cycle";
+  if (moveType === "rotate_sectors") return "sector_rotation";
+  if (moveType === "hedge" || moveType === "raise_cash") return "mean_reversion";
+  if (moveType === "sell" || moveType === "trim") {
+    return timeframe === "six_twelve_months" ? "long_term" : "momentum";
+  }
+  if (moveType === "buy_add_risk" || moveType === "buy_specific_ticker") {
+    if (timeframe === "six_twelve_months") return "long_term";
+    if (timeframe === "one_three_months") return "value";
+    if (timeframe === "this_week") return "breakout";
+    return "momentum"; // today
+  }
+  if (moveType === "sell_specific_ticker") {
+    return timeframe === "six_twelve_months" ? "long_term" : "momentum";
+  }
+  return "other";
+}
 
 // Timeframe smoothing: longer horizons smooth toward neutral (50)
 const TIMEFRAME_SMOOTH: Record<SimulatorTimeframe, number> = {
@@ -1237,6 +1267,173 @@ function computeHistoricalAnalogs(
   return analogs.slice(0, 3);
 }
 
+// ── FAULTLINE Market Interpretation ────────────────────────────
+
+function computeMarketInterpretation(
+  moveType: MoveType,
+  timeframe: SimulatorTimeframe,
+  inferredThesis: ThesisType,
+  favorability: number,
+  pressure: FaultlinePressureOutput,
+  ticker?: string
+): MarketInterpretation {
+  const p = pressure.overallPressure;
+  const tickerRef = ticker ? ` for ${ticker.toUpperCase()}` : "";
+  const moveLabel = MOVE_LABELS[moveType];
+  const tfLabel = TIMEFRAME_LABELS[timeframe];
+  const creditScore = getVectorScore(pressure.vectors, "credit-contagion");
+  const liquidityScore = getVectorScore(pressure.vectors, "liquidity-stress");
+  const volatilityScore = getVectorScore(pressure.vectors, "volatility-regime");
+
+  // Headline: what FAULTLINE reads about this move right now
+  const headlineMap: Record<string, string> = {
+    high_favorable: `Market conditions are aligned${tickerRef} — the setup for "${moveLabel}" over ${tfLabel.toLowerCase()} is structurally supported.`,
+    mid_favorable: `Conditions${tickerRef} are mixed. "${moveLabel}" over ${tfLabel.toLowerCase()} is possible but requires selective execution.`,
+    low_favorable: `Current market structure works against "${moveLabel}"${tickerRef} over ${tfLabel.toLowerCase()}. Elevated pressure reduces the probability of a clean setup.`,
+  };
+  const headline = favorability >= 65 ? headlineMap.high_favorable
+    : favorability >= 40 ? headlineMap.mid_favorable
+    : headlineMap.low_favorable;
+
+  // Setup context: what the market structure is saying
+  const regimePressure = p >= 60 ? "elevated systemic pressure" : p >= 40 ? "moderate macro uncertainty" : "low macro pressure";
+  const liquidityState = liquidityScore >= 55 ? "liquidity is tightening" : liquidityScore >= 35 ? "liquidity is adequate but not expanding" : "liquidity conditions are supportive";
+  const creditState = creditScore >= 55 ? "credit spreads are widening — risk appetite is contracting" : creditScore >= 35 ? "credit stress is moderate" : "credit conditions are benign";
+  const setupContext = `FAULTLINE is reading ${regimePressure} with ${liquidityState} and ${creditState}. ` +
+    `This ${favorability >= 55 ? "supports" : favorability >= 40 ? "partially supports" : "challenges"} the "${moveLabel}" setup${tickerRef} over the ${tfLabel.toLowerCase()} window.`;
+
+  // What to watch for (signals that confirm or deny the setup)
+  const watchForMap: Record<ThesisType, string[]> = {
+    momentum: [
+      "Breadth expanding — more stocks participating confirms the trend",
+      `VIX staying below 20 — volatility compression supports momentum${tickerRef}`,
+      "Volume on up-days exceeding volume on down-days",
+      "Sector leadership broadening beyond mega-cap names",
+    ],
+    breakout: [
+      `Price holding above the breakout level on a closing basis${tickerRef}`,
+      "Volume on the breakout day exceeding the 20-day average",
+      "No immediate reversal within the first 2–3 sessions",
+      "Macro data not surprising to the downside during the breakout window",
+    ],
+    mean_reversion: [
+      "Oversold conditions stabilizing — RSI recovering from below 30",
+      "Volume declining on down-days — selling pressure exhausting",
+      "No fundamental catalyst confirming the trend continuation",
+      "Credit spreads not widening further — systemic risk not escalating",
+    ],
+    long_term: [
+      "Macro regime not shifting to structural bear",
+      "Earnings revision cycle remaining positive or stabilizing",
+      `FAULTLINE Pressure Index staying below 65/100 on a sustained basis`,
+      "No structural change to the fundamental thesis",
+    ],
+    value: [
+      "Catalyst or re-rating event becoming visible on the horizon",
+      "Earnings estimates stabilizing — no further downward revisions",
+      "Credit conditions not tightening for the specific sector",
+      "Relative strength improving vs. the broader market",
+    ],
+    ai_theme: [
+      "Hyperscaler capex guidance remaining strong in earnings calls",
+      "AI-exposed names holding above their 50-day moving averages",
+      "No regulatory action targeting AI infrastructure or data",
+      "Earnings delivery from AI-exposed names meeting or beating estimates",
+    ],
+    crypto_cycle: [
+      "Bitcoin dominance trend — rising dominance signals risk-off within crypto",
+      "Macro liquidity conditions — crypto amplifies macro moves by 2–3x",
+      "On-chain activity and exchange inflows for cycle phase confirmation",
+      "Stablecoin market cap trend — expansion signals fresh capital entering",
+    ],
+    sector_rotation: [
+      "Relative strength of target sector vs. S&P 500 improving",
+      "Fund flows into the target sector confirming the rotation",
+      "Rate environment supporting the rotation target",
+      "Earnings cycle leadership shifting toward the target sector",
+    ],
+    other: [
+      "Key macro data releases not surprising against your position",
+      "Volatility not spiking — VIX below 25 keeps execution cleaner",
+      "Liquidity conditions not deteriorating further",
+      "Your specific thesis assumptions remaining intact",
+    ],
+  };
+
+  // Invalidation conditions
+  const invalidationMap: Record<ThesisType, string[]> = {
+    momentum: [
+      `VIX spikes above 25 — momentum historically underperforms in high-vol regimes`,
+      "Market breadth collapses — narrow leadership signals exhaustion",
+      p >= 55 ? `FAULTLINE Pressure Index rising above ${Math.min(p + 10, 80)}/100 — systemic pressure reverses momentum` : "FAULTLINE Pressure Index rising above 55/100",
+    ],
+    breakout: [
+      `${ticker ? ticker.toUpperCase() + " price" : "Price"} closing back below the breakout level — false breakout confirmed`,
+      "Volume failing to confirm on the breakout session",
+      "Credit spreads widening materially during the breakout window",
+    ],
+    mean_reversion: [
+      "Price continuing to make new lows — structural trend, not a reversion",
+      `Liquidity stress rising above ${Math.min(liquidityScore + 20, 80)}/100 — forced selling extends the move`,
+      "Fundamental catalyst confirming the trend continuation",
+    ],
+    long_term: [
+      "FAULTLINE Pressure Index sustaining above 65/100 for 3+ months",
+      "Fundamental thesis deteriorating — earnings power or balance sheet weakening",
+      "Structural regime change in inflation, rates, or growth",
+    ],
+    value: [
+      "Earnings estimates continuing to fall — value trap forming",
+      "Credit conditions tightening for the sector — refinancing risk rising",
+      "Catalyst timeline extending beyond 12 months — capital tied up",
+    ],
+    ai_theme: [
+      "Hyperscaler capex cuts signaling AI cycle exhaustion",
+      "Rate shock compressing growth multiples across AI names",
+      "Regulatory action restricting AI infrastructure or data access",
+    ],
+    crypto_cycle: [
+      "Macro liquidity tightening — crypto amplifies macro drawdowns by 2–3x",
+      "Exchange or protocol failure — systemic contagion risk",
+      "Bitcoin dominance breakdown — altcoin contagion spreading",
+    ],
+    sector_rotation: [
+      "Crisis-level pressure — sector correlations converge, eliminating rotation benefit",
+      "Macro regime shift creating unexpected headwinds for the target sector",
+      "Liquidity shock hitting all sectors simultaneously",
+    ],
+    other: [
+      "Macro regime deteriorating — systemic pressure undermines the position",
+      "Volatility spike above 25 — execution risk and stop-loss levels tested",
+      "Key assumption underlying your move proving incorrect",
+    ],
+  };
+
+  // Opportunity window
+  const windowMap: Record<SimulatorTimeframe, string> = {
+    today: volatilityScore >= 55
+      ? "Intraday window is narrow — elevated volatility requires tight entries and defined exits before the close."
+      : "Intraday window is open. Look for the first 30–60 minutes of price action to confirm direction before committing.",
+    this_week: creditScore >= 50
+      ? "Short-term window is compressed by credit stress. Staged entry over 2–3 sessions reduces timing risk."
+      : "1–5 session window. Enter on confirmation, not anticipation. Macro data releases this week are the key risk.",
+    one_three_months: p >= 55
+      ? "Tactical window requires patience. Wait for pressure to show signs of stabilizing before full position sizing."
+      : "1–3 month window is constructive. Scale in over 2–4 weeks to reduce single-entry timing risk.",
+    six_twelve_months: p >= 65
+      ? "Strategic window is open but requires drawdown tolerance. Elevated pressure means the path will not be linear."
+      : "6–12 month window is well-supported by current regime. Build position over 4–8 weeks and define your invalidation level.",
+  };
+
+  return {
+    headline,
+    setupContext,
+    watchFor: watchForMap[inferredThesis],
+    invalidationConditions: invalidationMap[inferredThesis],
+    opportunityWindow: windowMap[timeframe],
+  };
+}
+
 // ── NEW: Thesis Stress Test ───────────────────────────────────
 
 function computeThesisStressTest(
@@ -1471,9 +1668,21 @@ export async function runTradePreflightSimulation(
   const entryQuality = computeEntryQuality(input.moveType, favorability, pressure, input.timeframe);
   const positionSizing = computePositionSizing(input.moveType, favorability, pressure);
   const historicalAnalogs = computeHistoricalAnalogs(input.moveType, pressure, input.timeframe, input.ticker);
+  // Auto-infer thesis — user never needs to classify it
+  const inferredThesis = inferThesisFromMove(input.moveType, input.timeframe);
   const thesisStressTest = computeThesisStressTest(
-    input.thesisType ?? "other",
+    inferredThesis,
     input.moveType,
+    pressure,
+    input.ticker
+  );
+
+  // Build FAULTLINE market interpretation
+  const marketInterpretation = computeMarketInterpretation(
+    input.moveType,
+    input.timeframe,
+    inferredThesis,
+    favorability,
     pressure,
     input.ticker
   );
@@ -1485,7 +1694,7 @@ export async function runTradePreflightSimulation(
     timeframe: input.timeframe,
     timeframeLabel: TIMEFRAME_LABELS[input.timeframe],
     ticker: input.ticker,
-    thesisType: input.thesisType,
+    thesisType: inferredThesis,
     marketCondition,
     moveFavorabilityScore: favorability,
     favorableSetupProbability: favorable,
@@ -1505,6 +1714,7 @@ export async function runTradePreflightSimulation(
     positionSizing,
     historicalAnalogs,
     thesisStressTest,
+    marketInterpretation,
     generatedAt: new Date().toISOString(),
   };
 
