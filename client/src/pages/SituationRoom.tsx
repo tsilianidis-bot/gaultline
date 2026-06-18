@@ -71,16 +71,79 @@ const TIMEFRAME_OPTIONS: { value: SimulatorTimeframe; label: string; sub: string
   { value: "six_twelve_months",label: "6–12 Months", sub: "Strategic" },
 ];
 
-const THESIS_OPTIONS: { value: ThesisType; label: string }[] = [
-  { value: "momentum",        label: "Momentum" },
-  { value: "breakout",        label: "Breakout" },
-  { value: "mean_reversion",  label: "Mean Reversion" },
-  { value: "long_term",       label: "Long-Term" },
-  { value: "value",           label: "Value" },
-  { value: "ai_theme",        label: "AI Theme" },
-  { value: "crypto_cycle",    label: "Crypto Cycle" },
-  { value: "sector_rotation", label: "Sector Rotation" },
-  { value: "other",           label: "Other" },
+const THESIS_OPTIONS: { value: ThesisType; label: string; icon: string; sub: string; description: string; conditions: string[] }[] = [
+  {
+    value: "momentum",
+    label: "Momentum",
+    icon: "⚡",
+    sub: "Ride the trend",
+    description: "Price and volume are accelerating in a clear direction. You are trading with the trend, not against it.",
+    conditions: ["RSI above 55 and rising", "Price above 20-day and 50-day MA", "Volume confirming the move", "Regime not in contraction"],
+  },
+  {
+    value: "breakout",
+    label: "Breakout",
+    icon: "🔓",
+    sub: "Break above resistance",
+    description: "Price is breaking through a key level — resistance, consolidation range, or all-time high — with conviction.",
+    conditions: ["Price clearing a defined resistance zone", "Volume spike on the break", "No major macro headwind", "Volatility regime not extreme"],
+  },
+  {
+    value: "mean_reversion",
+    label: "Mean Reversion",
+    icon: "↩",
+    sub: "Snap back to average",
+    description: "Price has stretched too far from its mean and is likely to revert. You are fading the extreme, not chasing it.",
+    conditions: ["RSI below 30 or above 70 (extended)", "Price far from 20-day MA", "No structural breakdown in play", "Low macro stress"],
+  },
+  {
+    value: "long_term",
+    label: "Long-Term Hold",
+    icon: "🏛",
+    sub: "Multi-month conviction",
+    description: "You are building or holding a position based on a 6–18 month thesis. Short-term noise is acceptable.",
+    conditions: ["Strong fundamental or macro tailwind", "Price above 200-day MA", "Regime not in structural bear", "Drawdown tolerance defined"],
+  },
+  {
+    value: "value",
+    label: "Value",
+    icon: "⚖",
+    sub: "Buy below intrinsic worth",
+    description: "The asset is trading below what you believe it is worth. You are buying the discount, not the momentum.",
+    conditions: ["Valuation metrics below historical average", "Catalyst or re-rating event visible", "No deteriorating fundamentals", "Patience for 3–12 month horizon"],
+  },
+  {
+    value: "ai_theme",
+    label: "AI Theme",
+    icon: "🤖",
+    sub: "Structural AI cycle play",
+    description: "You are positioned in the AI infrastructure or application cycle — semiconductors, data centers, software, or enablers.",
+    conditions: ["AI capex cycle intact", "Earnings revisions positive", "No regulatory shock risk", "Concentration risk managed"],
+  },
+  {
+    value: "crypto_cycle",
+    label: "Crypto Cycle",
+    icon: "₿",
+    sub: "Crypto market cycle timing",
+    description: "You are trading the crypto market cycle — accumulation, expansion, or distribution phase — based on on-chain and macro signals.",
+    conditions: ["Bitcoin dominance trend", "Macro liquidity conditions", "Halving cycle position", "Risk-on / risk-off regime"],
+  },
+  {
+    value: "sector_rotation",
+    label: "Sector Rotation",
+    icon: "⟳",
+    sub: "Shift capital between sectors",
+    description: "Capital is rotating out of one sector and into another as the macro cycle evolves. You are following the money.",
+    conditions: ["Relative strength divergence between sectors", "Rate environment shifting", "Earnings cycle leadership changing", "Regime transition signal"],
+  },
+  {
+    value: "other",
+    label: "Other / Custom",
+    icon: "◈",
+    sub: "Describe your own thesis",
+    description: "Your thesis does not fit a standard category. FAULTLINE will stress-test it against current macro conditions regardless.",
+    conditions: ["Custom thesis evaluated on macro fit", "Regime compatibility checked", "Key risk factors identified", "Invalidation conditions defined"],
+  },
 ];
 
 const VERDICT_CONFIG: Record<VerdictType, { label: string; color: string; glow: string; borderColor: string }> = {
@@ -455,22 +518,96 @@ export default function SituationRoom() {
 
           {/* Thesis Type */}
           <div style={{ marginBottom: "16px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Thesis Type</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "10px" }}>Thesis Type</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px" }}>
               {THESIS_OPTIONS.map(th => {
                 const sel = selectedThesis === th.value;
                 return (
-                  <button key={th.value} onClick={() => setSelectedThesis(th.value)}
+                  <button
+                    key={th.value}
+                    onClick={() => setSelectedThesis(th.value)}
                     style={{
-                      padding: "6px 12px",
-                      background: sel ? "rgba(167,139,250,0.14)" : "rgba(255,255,255,0.025)",
-                      border: sel ? "1px solid rgba(167,139,250,0.50)" : "1px solid rgba(255,255,255,0.07)",
-                      borderRadius: "4px", cursor: "pointer",
-                      fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px",
-                      color: sel ? "#A78BFA" : "#64748B",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: "0",
+                      padding: "0",
+                      background: sel ? "rgba(167,139,250,0.10)" : "rgba(255,255,255,0.025)",
+                      border: sel ? "1px solid rgba(167,139,250,0.45)" : "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: "6px",
+                      cursor: "pointer",
                       transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
+                      textAlign: "left",
+                      overflow: "hidden",
+                      boxShadow: sel ? "0 0 16px rgba(167,139,250,0.15)" : "none",
+                    }}
+                  >
+                    {/* Card header */}
+                    <div style={{
+                      width: "100%",
+                      padding: "10px 12px 8px",
+                      borderBottom: sel ? "1px solid rgba(167,139,250,0.2)" : "1px solid transparent",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
                     }}>
-                    {th.label}
+                      <span style={{ fontSize: "16px", lineHeight: 1 }}>{th.icon}</span>
+                      <div>
+                        <div style={{
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: "11px",
+                          fontWeight: "600",
+                          color: sel ? "#A78BFA" : "#94A3B8",
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                        }}>{th.label}</div>
+                        <div style={{
+                          fontFamily: "'IBM Plex Sans', sans-serif",
+                          fontSize: "10px",
+                          color: sel ? "rgba(167,139,250,0.7)" : "#475569",
+                          marginTop: "1px",
+                        }}>{th.sub}</div>
+                      </div>
+                      {sel && (
+                        <div style={{
+                          marginLeft: "auto",
+                          width: "6px", height: "6px",
+                          borderRadius: "50%",
+                          background: "#A78BFA",
+                          boxShadow: "0 0 6px rgba(167,139,250,0.8)",
+                          flexShrink: 0,
+                        }} />
+                      )}
+                    </div>
+                    {/* Expanded body — always visible */}
+                    <div style={{ padding: "8px 12px 10px", width: "100%" }}>
+                      <div style={{
+                        fontFamily: "'IBM Plex Sans', sans-serif",
+                        fontSize: "11px",
+                        color: sel ? "#94A3B8" : "#475569",
+                        lineHeight: 1.5,
+                        marginBottom: "8px",
+                      }}>{th.description}</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                        {th.conditions.map((c, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
+                            <span style={{
+                              fontFamily: "'IBM Plex Mono', monospace",
+                              fontSize: "9px",
+                              color: sel ? "#A78BFA" : "#374151",
+                              marginTop: "2px",
+                              flexShrink: 0,
+                            }}>›</span>
+                            <span style={{
+                              fontFamily: "'IBM Plex Mono', monospace",
+                              fontSize: "10px",
+                              color: sel ? "#64748B" : "#374151",
+                              lineHeight: 1.4,
+                            }}>{c}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </button>
                 );
               })}
