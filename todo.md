@@ -1521,11 +1521,11 @@
 - [x] TypeScript: 0 errors | Tests: all passing
 
 ## Social Intelligence Module
-- [ ] Build server/socialIntelligence.ts — tRPC procedures: trending tickers, sentiment scores, social buzz leaderboard, narrative tracker
-- [ ] Build client/src/pages/SocialIntelligence.tsx — full page with all sections matching FAULTLINE design language
-- [ ] Wire /app/social-intelligence route in App.tsx
-- [ ] Add SOCIAL INTELLIGENCE nav item in AppLayout under INTELLIGENCE group
-- [ ] TypeScript: 0 errors | Tests passing
+- [x] Build server/socialIntelligence.ts — tRPC procedures: trending tickers, sentiment scores, social buzz leaderboard, narrative tracker
+- [x] Build client/src/pages/SocialIntelligence.tsx — full page with all sections matching FAULTLINE design language
+- [x] Wire /app/social-intelligence route in App.tsx
+- [x] Add SOCIAL INTELLIGENCE nav item in AppLayout under INTELLIGENCE group
+- [x] TypeScript: 0 errors | Tests passing
 
 ## Social Intelligence Module (June 2026)
 - [x] Build server/socialIntelligence.ts — data layer using Polygon.io News API + Yahoo Finance trending/screener

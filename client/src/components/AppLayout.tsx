@@ -19,7 +19,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
 // ── Navigation structure ──────────────────────────────────────
-// Groups define the cognitive flow: overview → stress → signals → intelligence → tools → crypto → account
+// Groups define the cognitive flow: command → markets → intelligence → analysis → account
+// Owner Portal is a separate admin-only group rendered last with distinct styling
 
 type NavItem = {
   id: string;
@@ -36,88 +37,73 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    label: "FLAGSHIP",
+    label: "COMMAND",
     items: [
-      { id: "pre-flight",     label: "Pre-Flight",     shortLabel: "Pre-Flight",  icon: Shield,     path: "/app/pre-flight" },
-      { id: "situation-room", label: "Situation Room",  shortLabel: "Sit. Room",   icon: Crosshair,  path: "/app/situation-room" },
+      { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight", icon: Shield,         path: "/app/pre-flight" },
+      { id: "situation-room", label: "Situation Room",       shortLabel: "Sit. Room",  icon: Crosshair,      path: "/app/situation-room" },
+      { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",       icon: LayoutDashboard,path: "/app" },
+      { id: "report",         label: "Daily Briefing",       shortLabel: "Briefing",   icon: FileText,       path: "/app/report" },
     ],
   },
   {
-    label: "OVERVIEW",
+    label: "MARKETS",
     items: [
-      { id: "dashboard", label: "Dashboard",           shortLabel: "Dash",    icon: LayoutDashboard, path: "/app" },
-      { id: "report",    label: "Daily Market Briefing",shortLabel: "Briefing",icon: FileText,        path: "/app/report" },
-      { id: "guide",     label: "How to Use FAULTLINE", shortLabel: "Guide",   icon: BookOpen,        path: "/app/guide" },
-    ],
-  },
-  {
-    label: "MARKET STRESS",
-    items: [
-      { id: "pressure",  label: "Market Stress",        shortLabel: "Stress",  icon: Gauge,     path: "/app/pressure" },
-      { id: "scores",    label: "Risk Score Breakdown",  shortLabel: "Scores",  icon: Activity,  path: "/app/scores" },
-      { id: "analogs",   label: "Historical Comparisons",shortLabel: "History", icon: Clock,     path: "/app/analogs" },
-      { id: "reading-history", label: "Reading History",       shortLabel: "Readings", icon: History,  path: "/app/reading-history" },
-    ],
-  },
-  {
-    label: "SIGNALS",
-    items: [
-      { id: "signals",      label: "Stock & Market Signals",shortLabel: "Signals",    icon: Radio,     path: "/app/signals" },
-      { id: "signal-outlook", label: "Signal Outlook Center", shortLabel: "Sig Outlook", icon: Telescope, path: "/app/signal-outlook" },
-      { id: "watchlist",    label: "Watchlist",             shortLabel: "Watch",      icon: Bell,      path: "/app/watchlist" },
-      { id: "portfolio",    label: "Portfolio",             shortLabel: "Port",       icon: Briefcase, path: "/app/portfolio" },
-      { id: "stock-heatmap",label: "Stock Heatmap",         shortLabel: "Stock Heat", icon: BarChart2, path: "/app/stock-heatmap" },
+      { id: "signals",          label: "Signals",            shortLabel: "Signals",     icon: Radio,     path: "/app/signals" },
+      { id: "signal-outlook",   label: "Signal Outlook",     shortLabel: "Outlook",     icon: Telescope, path: "/app/signal-outlook" },
+      { id: "watchlist",        label: "Watchlist",          shortLabel: "Watch",       icon: Bell,      path: "/app/watchlist" },
+      { id: "portfolio",        label: "Portfolio",          shortLabel: "Portfolio",   icon: Briefcase, path: "/app/portfolio" },
+      { id: "stock-heatmap",    label: "Stock Heatmap",      shortLabel: "Heatmap",     icon: BarChart2, path: "/app/stock-heatmap" },
+      { id: "crypto",           label: "Crypto",             shortLabel: "Crypto",      icon: Bitcoin,   path: "/app/crypto-search" },
+      { id: "crypto-signals",   label: "Crypto Signals",     shortLabel: "Crypto Sig",  icon: BarChart3, path: "/app/crypto-signals" },
+      { id: "crypto-watchlist", label: "Crypto Watchlist",   shortLabel: "Crypto Watch",icon: Bookmark,  path: "/app/crypto-watchlist" },
     ],
   },
   {
     label: "INTELLIGENCE",
     items: [
-      { id: "social-intelligence", label: "Social Intelligence", shortLabel: "Social", icon: MessageSquare, path: "/app/social-intelligence" },
-      { id: "alerts",     label: "Alerts",               shortLabel: "Alerts",  icon: AlertTriangle, path: "/app/alerts" },
-      { id: "diagnostic", label: "AI Market Explanation", shortLabel: "AI Expl", icon: Cpu,           path: "/app/diagnostic" },
-      { id: "ai-watch",   label: "AI Sector Watch",       shortLabel: "AI Watch",icon: Brain,         path: "/app/ai-watch" },
-      { id: "charts",     label: "Charts",               shortLabel: "Charts",  icon: BarChart2,     path: "/app/charts" },
-      { id: "sim-portfolio", label: "$10K → $1M Portfolio", shortLabel: "$10K→$1M", icon: TrendingUp,   path: "/app/sim-portfolio" },
+      { id: "social-intelligence",  label: "Social Intelligence", shortLabel: "Social",   icon: MessageSquare, path: "/app/social-intelligence" },
+      { id: "diagnostic",           label: "AI Market Analysis",  shortLabel: "AI Analysis",icon: Cpu,          path: "/app/diagnostic" },
+      { id: "ai-watch",             label: "AI Sector Watch",     shortLabel: "AI Watch",  icon: Brain,         path: "/app/ai-watch" },
+      { id: "insider-intelligence", label: "Insider Intelligence",shortLabel: "Insider",   icon: Eye,           path: "/app/insider-intelligence" },
+      { id: "alerts",               label: "Alerts",              shortLabel: "Alerts",    icon: AlertTriangle, path: "/app/alerts" },
     ],
   },
   {
-    label: "TOOLS",
+    label: "ANALYSIS",
     items: [
-      { id: "scenarios",   label: "Scenarios",         shortLabel: "Scen",      icon: TrendingUp, path: "/app/scenarios" },
-      { id: "simulate",    label: "Pressure Simulator",shortLabel: "Simulator", icon: Zap,        path: "/app/simulate" },
-      { id: "alt-rotation",label: "Sector Rotation",   shortLabel: "Rotation",  icon: RotateCcw,  path: "/app/alt-rotation" },
-      { id: "aftershock",  label: "Aftershock Engine", shortLabel: "Aftershock",icon: Waves,      path: "/app/aftershock" },
-      { id: "insider-intelligence", label: "Insider Intelligence", shortLabel: "Insider", icon: Eye, path: "/app/insider-intelligence" },
-      { id: "seo-optimizer", label: "SEO Optimizer", shortLabel: "SEO", icon: Search, path: "/app/seo-optimizer" },
-      { id: "analytics", label: "Site Analytics", shortLabel: "Analytics", icon: BarChart2, path: "/app/analytics" },
-    ],
-  },
-  {
-    label: "CRYPTO",
-    items: [
-      { id: "crypto",           label: "Crypto Intelligence",shortLabel: "Crypto",     icon: Bitcoin,   path: "/app/crypto-search" },
-      { id: "crypto-signals",   label: "Crypto Signals",     shortLabel: "Crypto Sig", icon: BarChart3, path: "/app/crypto-signals" },
-      { id: "crypto-watchlist", label: "Crypto Watchlist",   shortLabel: "Crypto Watch",icon: Bookmark, path: "/app/crypto-watchlist" },
+      { id: "pressure",     label: "Market Stress",       shortLabel: "Stress",     icon: Gauge,     path: "/app/pressure" },
+      { id: "scores",       label: "Risk Scores",         shortLabel: "Scores",     icon: Activity,  path: "/app/scores" },
+      { id: "analogs",      label: "Historical Analogs",  shortLabel: "Analogs",    icon: Clock,     path: "/app/analogs" },
+      { id: "charts",       label: "Charts",              shortLabel: "Charts",     icon: BarChart2, path: "/app/charts" },
+      { id: "scenarios",    label: "Scenarios",           shortLabel: "Scenarios",  icon: TrendingUp,path: "/app/scenarios" },
+      { id: "simulate",     label: "Pressure Simulator",  shortLabel: "Simulator",  icon: Zap,       path: "/app/simulate" },
+      { id: "alt-rotation", label: "Sector Rotation",     shortLabel: "Rotation",   icon: RotateCcw, path: "/app/alt-rotation" },
+      { id: "aftershock",   label: "Aftershock Engine",   shortLabel: "Aftershock", icon: Waves,     path: "/app/aftershock" },
     ],
   },
   {
     label: "ACCOUNT",
     items: [
-      { id: "account",     label: "Account",     shortLabel: "Account",  icon: User,     path: "/app/account" },
-      { id: "track-record",label: "Track Record",shortLabel: "Track Rec",icon: Trophy,   path: "/app/track-record" },
-      { id: "blog",        label: "Blog",        shortLabel: "Blog",     icon: Newspaper,path: "/app/blog" },
+      { id: "account",          label: "Account",       shortLabel: "Account",   icon: User,      path: "/app/account" },
+      { id: "track-record",     label: "Track Record",  shortLabel: "Track Rec", icon: Trophy,    path: "/app/track-record" },
+      { id: "reading-history",  label: "Reading History",shortLabel: "Readings", icon: History,   path: "/app/reading-history" },
+      { id: "sim-portfolio",    label: "$10K → $1M",    shortLabel: "$10K→$1M",  icon: TrendingUp,path: "/app/sim-portfolio" },
+      { id: "blog",             label: "Blog",          shortLabel: "Blog",      icon: Newspaper, path: "/app/blog" },
+      { id: "guide",            label: "Guide",         shortLabel: "Guide",     icon: BookOpen,  path: "/app/guide" },
     ],
   },
 ];
 
-// Admin-only nav items (appended at runtime if user is admin)
+// Owner Portal nav items — admin-only group rendered last with distinct amber styling
 const ADMIN_NAV_ITEMS: NavItem[] = [
-  { id: "owner-simulation", label: "Owner Simulation", shortLabel: "Sim", icon: Trophy, path: "/owner/simulation" },
-  { id: "x-posts",      label: "X Posts",     shortLabel: "X Posts",   icon: Zap,       path: "/app/x-posts" },
-  { id: "x-post-queue", label: "Post Queue",   shortLabel: "Queue",     icon: Settings,  path: "/app/x-post-queue" },
-  { id: "admin-blog",   label: "Admin Blog",   shortLabel: "Admin Blog",icon: Newspaper, path: "/app/admin/blog" },
-  { id: "admin-users",  label: "Users",        shortLabel: "Users",     icon: Shield,    path: "/app/admin/users" },
-  { id: "admin-portal", label: "Admin Portal", shortLabel: "Admin",     icon: Shield,    path: "/app/admin" },
+  { id: "admin-portal",     label: "Owner Portal",     shortLabel: "Portal",    icon: Shield,    path: "/app/admin" },
+  { id: "admin-users",      label: "Users",            shortLabel: "Users",     icon: User,      path: "/app/admin/users" },
+  { id: "x-posts",          label: "X Posts",          shortLabel: "X Posts",   icon: Zap,       path: "/app/x-posts" },
+  { id: "x-post-queue",     label: "Post Queue",       shortLabel: "Queue",     icon: Settings,  path: "/app/x-post-queue" },
+  { id: "admin-blog",       label: "Blog Manager",     shortLabel: "Blog Mgr",  icon: Newspaper, path: "/app/admin/blog" },
+  { id: "owner-simulation", label: "Owner Simulation", shortLabel: "Simulation",icon: Trophy,    path: "/owner/simulation" },
+  { id: "seo-optimizer",    label: "SEO Optimizer",    shortLabel: "SEO",       icon: Search,    path: "/app/seo-optimizer" },
+  { id: "analytics",        label: "Site Analytics",   shortLabel: "Analytics", icon: BarChart2, path: "/app/analytics" },
 ];
 
 // Flat list for convenience
@@ -445,15 +431,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
           overflowX: 'auto',
           scrollbarWidth: 'none',
         }}>
-          {[...NAV_GROUPS, ...(isAdmin ? [{ label: "ADMIN", items: ADMIN_NAV_ITEMS }] : [])].map((group, gi) => (
+          {[...NAV_GROUPS, ...(isAdmin ? [{ label: "OWNER PORTAL", items: ADMIN_NAV_ITEMS }] : [])].map((group, gi) => {
+            const isOwnerPortal = group.label === 'OWNER PORTAL';
+            return (
             <div key={group.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
               {/* Group divider (not before first group) */}
               {gi > 0 && (
                 <div style={{
                   width: '1px',
                   height: '28px',
-                  background: 'rgba(255,255,255,0.07)',
-                  margin: '0 8px',
+                  background: isOwnerPortal ? 'rgba(255,170,0,0.35)' : 'rgba(255,255,255,0.07)',
+                  margin: isOwnerPortal ? '0 12px' : '0 8px',
                   flexShrink: 0,
                 }} />
               )}
@@ -461,12 +449,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '12px',
-                color: '#374151',
+                color: isOwnerPortal ? 'rgba(255,170,0,0.7)' : '#374151',
                 letterSpacing: '0.18em',
                 textTransform: 'uppercase',
                 padding: '0 6px',
                 flexShrink: 0,
                 userSelect: 'none',
+                ...(isOwnerPortal ? { textShadow: '0 0 8px rgba(255,170,0,0.4)' } : {}),
               }}>
                 {group.label}
               </span>
@@ -552,7 +541,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 );
               })}
             </div>
-          ))}
+            );
+          })}
         </nav>
       </header>
 
@@ -678,12 +668,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
 
             {/* Groups in drawer */}
-            {[...NAV_GROUPS, ...(isAdmin ? [{ label: "ADMIN", items: ADMIN_NAV_ITEMS }] : [])].map(group => (
+            {[...NAV_GROUPS, ...(isAdmin ? [{ label: "OWNER PORTAL", items: ADMIN_NAV_ITEMS }] : [])].map(group => {
+              const isOwnerPortalGroup = group.label === 'OWNER PORTAL';
+              return (
               <div key={group.label} style={{ marginBottom: 16 }}>
                 <div style={{
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px',
-                  color: '#374151', letterSpacing: '0.2em', textTransform: 'uppercase',
+                  color: isOwnerPortalGroup ? 'rgba(255,170,0,0.7)' : '#374151',
+                  letterSpacing: '0.2em', textTransform: 'uppercase',
                   marginBottom: 8, paddingLeft: 4,
+                  ...(isOwnerPortalGroup ? { textShadow: '0 0 8px rgba(255,170,0,0.4)', borderTop: '1px solid rgba(255,170,0,0.2)', paddingTop: 12 } : {}),
                 }}>
                   {group.label}
                 </div>
@@ -738,7 +732,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   })}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
