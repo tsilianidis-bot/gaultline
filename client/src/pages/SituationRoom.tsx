@@ -518,7 +518,49 @@ export default function SituationRoom() {
 
           {/* Thesis Type */}
           <div style={{ marginBottom: "16px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "10px" }}>Thesis Type</div>
+            {/* Section header */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginBottom: "8px" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Thesis Type</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#475569" }}>— select the strategy behind your move</div>
+            </div>
+            {/* How-to-use explanation */}
+            <div style={{
+              padding: "10px 14px",
+              background: "rgba(167,139,250,0.05)",
+              border: "1px solid rgba(167,139,250,0.12)",
+              borderRadius: "6px",
+              marginBottom: "10px",
+            }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#A78BFA", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "6px" }}>How to use this</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6, marginBottom: "8px" }}>
+                Your <strong style={{ color: "#CBD5E1" }}>Thesis Type</strong> tells FAULTLINE <em>why</em> you are making this move — not just what you are doing.
+                FAULTLINE then stress-tests your thesis against the current macro regime, volatility environment, and market structure to tell you whether the conditions support it.
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "6px" }}>
+                {[
+                  { step: "1", label: "Pick your thesis", detail: "Choose the strategy that best describes why you are making this move. Each card shows the key conditions FAULTLINE checks." },
+                  { step: "2", label: "FAULTLINE stress-tests it", detail: "The engine evaluates whether current macro, volatility, and market structure conditions support your thesis — or work against it." },
+                  { step: "3", label: "Read the Thesis Stress Test", detail: "Scroll to the Thesis Stress Test panel in the results. It shows the core dependency, failure points, and a go / no-go verdict." },
+                ].map(s => (
+                  <div key={s.step} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <div style={{
+                      flexShrink: 0,
+                      width: "18px", height: "18px",
+                      borderRadius: "50%",
+                      background: "rgba(167,139,250,0.15)",
+                      border: "1px solid rgba(167,139,250,0.3)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontSize: "9px", color: "#A78BFA",
+                    }}>{s.step}</div>
+                    <div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#CBD5E1", marginBottom: "2px" }}>{s.label}</div>
+                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.4 }}>{s.detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "8px" }}>
               {THESIS_OPTIONS.map(th => {
                 const sel = selectedThesis === th.value;
