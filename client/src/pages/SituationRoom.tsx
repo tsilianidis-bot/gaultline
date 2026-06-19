@@ -18,9 +18,8 @@ import {
 
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
-  | "buy_add_risk" | "hold" | "trim" | "sell" | "hedge"
-  | "raise_cash" | "rotate_sectors" | "buy_specific_ticker" | "sell_specific_ticker"
-  | "increase_crypto" | "reduce_crypto";
+  | "add_risk" | "reduce_risk" | "hedge" | "rotate"
+  | "raise_cash" | "deploy_cash" | "buy_specific_asset" | "sell_specific_asset";
 
 type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twelve_months";
 
@@ -29,6 +28,110 @@ type ThesisType =
   | "value" | "ai_theme" | "crypto_cycle" | "sector_rotation" | "other";
 
 type VerdictType = "APPROVED" | "CAUTION" | "WAIT" | "DEFENSIVE" | "HIGH_CONVICTION";
+
+type ExposureCategory =
+  | "ai_infrastructure" | "technology" | "large_cap_growth" | "small_cap_growth"
+  | "value" | "dividend" | "financials" | "industrials" | "energy" | "healthcare"
+  | "international" | "emerging_markets" | "bitcoin" | "ethereum" | "ai_crypto"
+  | "altcoins" | "memecoins" | "options" | "leveraged_exposure" | "concentrated_position"
+  | "custom_exposure" | "entire_portfolio" | "technology_exposure" | "ai_exposure"
+  | "crypto_exposure" | "single_position" | "market_risk" | "recession_risk" | "inflation_risk";
+
+// Step 2 options per move type
+const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string; sub: string }[]> = {
+  add_risk: [
+    { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Semiconductors, data centers, cloud" },
+    { value: "technology",           label: "Technology",          sub: "Broad tech exposure" },
+    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Mega-cap quality growth" },
+    { value: "small_cap_growth",     label: "Small Cap Growth",    sub: "Higher beta, higher upside" },
+    { value: "value",                label: "Value",               sub: "Below intrinsic worth" },
+    { value: "dividend",             label: "Dividend",            sub: "Income + stability" },
+    { value: "financials",           label: "Financials",          sub: "Banks, insurance, fintech" },
+    { value: "industrials",          label: "Industrials",         sub: "Manufacturing, infrastructure" },
+    { value: "energy",               label: "Energy",              sub: "Oil, gas, renewables" },
+    { value: "healthcare",           label: "Healthcare",          sub: "Biotech, pharma, devices" },
+    { value: "international",        label: "International",       sub: "Non-US developed markets" },
+    { value: "emerging_markets",     label: "Emerging Markets",    sub: "EM exposure" },
+    { value: "bitcoin",              label: "Bitcoin",             sub: "BTC direct exposure" },
+    { value: "ethereum",             label: "Ethereum",            sub: "ETH direct exposure" },
+    { value: "ai_crypto",            label: "AI Crypto",           sub: "AI-themed tokens" },
+    { value: "altcoins",             label: "Altcoins",            sub: "Broad alt exposure" },
+    { value: "options",              label: "Options",             sub: "Calls, spreads, LEAPS" },
+    { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x ETFs, margin" },
+  ],
+  reduce_risk: [
+    { value: "technology",           label: "Technology",          sub: "Trim tech allocation" },
+    { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Trim AI/semis" },
+    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Reduce growth exposure" },
+    { value: "small_cap_growth",     label: "Small Cap Growth",    sub: "Reduce high-beta" },
+    { value: "bitcoin",              label: "Bitcoin",             sub: "Reduce BTC" },
+    { value: "ethereum",             label: "Ethereum",            sub: "Reduce ETH" },
+    { value: "altcoins",             label: "Altcoins",            sub: "Reduce alt exposure" },
+    { value: "leveraged_exposure",   label: "Leveraged",           sub: "Reduce leverage" },
+    { value: "concentrated_position",label: "Concentrated Position",sub: "Trim single large position" },
+    { value: "options",              label: "Options",             sub: "Close or roll options" },
+  ],
+  hedge: [
+    { value: "entire_portfolio",     label: "Entire Portfolio",    sub: "Broad portfolio hedge" },
+    { value: "technology_exposure",  label: "Technology Exposure", sub: "Hedge tech concentration" },
+    { value: "ai_exposure",          label: "AI Exposure",         sub: "Hedge AI/semis" },
+    { value: "crypto_exposure",      label: "Crypto Exposure",     sub: "Hedge crypto book" },
+    { value: "single_position",      label: "Single Position",     sub: "Collar or put on one name" },
+    { value: "market_risk",          label: "Market Risk",         sub: "SPX puts, VIX calls" },
+    { value: "recession_risk",       label: "Recession Risk",      sub: "Defensive rotation hedge" },
+    { value: "inflation_risk",       label: "Inflation Risk",      sub: "TIPS, commodities, gold" },
+  ],
+  rotate: [
+    { value: "technology",           label: "Tech → Financials",   sub: "Growth to value rotation" },
+    { value: "large_cap_growth",     label: "Growth → Value",      sub: "Style rotation" },
+    { value: "energy",               label: "Into Energy",         sub: "Commodity cycle play" },
+    { value: "healthcare",           label: "Into Healthcare",     sub: "Defensive rotation" },
+    { value: "industrials",          label: "Into Industrials",    sub: "Capex cycle play" },
+    { value: "international",        label: "US → International",  sub: "Geographic rotation" },
+    { value: "emerging_markets",     label: "Into EM",             sub: "EM re-rating play" },
+    { value: "bitcoin",              label: "Stocks → Bitcoin",    sub: "Risk-on crypto rotation" },
+  ],
+  raise_cash: [
+    { value: "entire_portfolio",     label: "Across Portfolio",    sub: "Trim broadly, raise cash" },
+    { value: "technology",           label: "From Technology",     sub: "Sell tech, hold cash" },
+    { value: "large_cap_growth",     label: "From Growth",         sub: "Sell growth, hold cash" },
+    { value: "bitcoin",              label: "From Crypto",         sub: "Sell crypto, hold cash" },
+    { value: "concentrated_position",label: "Concentrated Position",sub: "Trim large single name" },
+    { value: "leveraged_exposure",   label: "From Leverage",       sub: "Deleverage, hold cash" },
+  ],
+  deploy_cash: [
+    { value: "ai_infrastructure",    label: "AI Infrastructure",   sub: "Deploy into AI/semis" },
+    { value: "technology",           label: "Technology",          sub: "Deploy into broad tech" },
+    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Deploy into quality growth" },
+    { value: "value",                label: "Value",               sub: "Deploy into value" },
+    { value: "dividend",             label: "Dividend",            sub: "Deploy into income" },
+    { value: "bitcoin",              label: "Bitcoin",             sub: "Deploy into BTC" },
+    { value: "ethereum",             label: "Ethereum",            sub: "Deploy into ETH" },
+    { value: "emerging_markets",     label: "Emerging Markets",    sub: "Deploy into EM" },
+  ],
+  buy_specific_asset: [
+    { value: "ai_infrastructure",    label: "AI / Semis",          sub: "NVDA, AMD, AVGO, TSM" },
+    { value: "technology",           label: "Technology",          sub: "AAPL, MSFT, GOOGL, META" },
+    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Quality mega-cap" },
+    { value: "small_cap_growth",     label: "Small Cap",           sub: "Higher beta names" },
+    { value: "financials",           label: "Financials",          sub: "JPM, GS, BAC, V" },
+    { value: "energy",               label: "Energy",              sub: "XOM, CVX, SLB" },
+    { value: "bitcoin",              label: "Bitcoin",             sub: "BTC or spot ETF" },
+    { value: "ethereum",             label: "Ethereum",            sub: "ETH or spot ETF" },
+    { value: "ai_crypto",            label: "AI Crypto",           sub: "NEAR, FET, RNDR" },
+    { value: "altcoins",             label: "Altcoins",            sub: "SOL, AVAX, DOT" },
+  ],
+  sell_specific_asset: [
+    { value: "ai_infrastructure",    label: "AI / Semis",          sub: "NVDA, AMD, AVGO" },
+    { value: "technology",           label: "Technology",          sub: "AAPL, MSFT, GOOGL" },
+    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Quality mega-cap" },
+    { value: "concentrated_position",label: "Concentrated Position",sub: "Single large holding" },
+    { value: "bitcoin",              label: "Bitcoin",             sub: "BTC or spot ETF" },
+    { value: "ethereum",             label: "Ethereum",            sub: "ETH or spot ETF" },
+    { value: "altcoins",             label: "Altcoins",            sub: "SOL, AVAX, DOT" },
+    { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x ETF, margin" },
+  ],
+};
 
 // ── Crypto asset options ─────────────────────────────────────
 const CRYPTO_OPTIONS: { value: string; label: string; icon: string }[] = [
@@ -50,18 +153,15 @@ const CRYPTO_OPTIONS: { value: string; label: string; icon: string }[] = [
 ];
 
 // ── Constants ─────────────────────────────────────────────────
-const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string }[] = [
-  { value: "buy_add_risk",        label: "Buy / Add Risk",           glyph: "↑" },
-  { value: "hold",                label: "Hold",                     glyph: "—" },
-  { value: "trim",                label: "Trim",                     glyph: "↓" },
-  { value: "sell",                label: "Sell",                     glyph: "✕" },
-  { value: "hedge",               label: "Hedge",                    glyph: "⛨" },
-  { value: "raise_cash",          label: "Raise Cash",               glyph: "◎" },
-  { value: "rotate_sectors",      label: "Rotate Sectors",           glyph: "⟳" },
-  { value: "buy_specific_ticker",  label: "Buy a Specific Ticker",    glyph: "◈" },
-  { value: "sell_specific_ticker", label: "Sell a Specific Ticker",   glyph: "⊖" },
-  { value: "increase_crypto",      label: "Increase Crypto Exposure", glyph: "₿" },
-  { value: "reduce_crypto",       label: "Reduce Crypto Exposure",   glyph: "↙" },
+const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string; sub: string }[] = [
+  { value: "add_risk",           label: "Add Risk",           glyph: "↑", sub: "Increase exposure to a sector, asset class, or theme" },
+  { value: "reduce_risk",        label: "Reduce Risk",        glyph: "↓", sub: "Trim or exit positions to lower overall exposure" },
+  { value: "hedge",              label: "Hedge",              glyph: "⛨", sub: "Protect existing positions against downside" },
+  { value: "rotate",             label: "Rotate",             glyph: "⟳", sub: "Shift capital from one sector or asset to another" },
+  { value: "raise_cash",         label: "Raise Cash",         glyph: "◎", sub: "Sell down and move to cash or equivalents" },
+  { value: "deploy_cash",        label: "Deploy Cash",        glyph: "◈", sub: "Put idle cash to work in the market" },
+  { value: "buy_specific_asset", label: "Buy Specific Asset", glyph: "₿", sub: "Enter a specific stock, ETF, or crypto position" },
+  { value: "sell_specific_asset",label: "Sell Specific Asset",glyph: "✕", sub: "Exit or short a specific position" },
 ];
 
 const TIMEFRAME_OPTIONS: { value: SimulatorTimeframe; label: string; sub: string }[] = [
@@ -294,7 +394,9 @@ export default function SituationRoom() {
   useSEO(PAGE_SEO.situationRoom);
   const { output } = useEngine();
 
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
   const [selectedMove, setSelectedMove] = useState<MoveType | null>(null);
+  const [selectedExposure, setSelectedExposure] = useState<ExposureCategory | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<SimulatorTimeframe>("today");
   const [ticker, setTicker] = useState("");
   const [cryptoSymbol, setCryptoSymbol] = useState<string>("BTC");
@@ -314,8 +416,8 @@ export default function SituationRoom() {
     },
   });
 
-  const isCryptoMove = selectedMove === "increase_crypto" || selectedMove === "reduce_crypto";
-  const isTickerMove = selectedMove === "buy_specific_ticker" || selectedMove === "sell_specific_ticker";
+  const isCryptoMove = false;
+  const isTickerMove = selectedMove === "buy_specific_asset" || selectedMove === "sell_specific_asset";
 
   const handleSimulate = () => {
     if (!selectedMove) return;
@@ -330,11 +432,31 @@ export default function SituationRoom() {
       moveType: selectedMove,
       timeframe: selectedTimeframe,
       ticker: resolvedTicker,
-      // thesisType is now auto-inferred server-side from moveType + timeframe
+      exposureCategory: selectedExposure ?? undefined,
     });
   };
 
-  const handleReset = () => { setShowResult(false); simulate.reset(); };
+  const handleMoveSelect = (move: MoveType) => {
+    setSelectedMove(move);
+    setSelectedExposure(null);
+    setShowResult(false);
+    simulate.reset();
+    setWizardStep(2);
+  };
+
+  const handleExposureSelect = (exp: ExposureCategory) => {
+    setSelectedExposure(exp);
+    setWizardStep(3);
+  };
+
+  const handleReset = () => {
+    setShowResult(false);
+    simulate.reset();
+    setWizardStep(1);
+    setSelectedMove(null);
+    setSelectedExposure(null);
+  };
+
   const toggle = (k: string) => setOpen(p => ({ ...p, [k]: !p[k] }));
 
   const result = simulate.data;
@@ -434,142 +556,173 @@ export default function SituationRoom() {
           marginBottom: "10px",
           animation: "cinematic-reveal 0.55s cubic-bezier(0.23,1,0.32,1) 60ms both",
         }}>
-          <SectionLabel icon={<Crosshair size={14} />} title="Trade Preflight Simulator" color="#00D4FF" />
+          <SectionLabel icon={<Crosshair size={14} />} title="Decision Engine" color="#00D4FF" />
 
-          {/* Move type grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(155px, 1fr))", gap: "6px", marginBottom: "14px" }}>
-            {MOVE_OPTIONS.map(opt => {
-              const sel = selectedMove === opt.value;
+          {/* ── Wizard step indicator ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: "0", marginBottom: "20px" }}>
+            {([1, 2, 3] as const).map((step, i) => {
+              const labels = ["What are you considering?", "What type of exposure?", "When & how?"];
+              const done = wizardStep > step;
+              const active = wizardStep === step;
               return (
-                <button key={opt.value} onClick={() => { setSelectedMove(opt.value); setShowResult(false); simulate.reset(); }}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "8px", padding: "9px 12px",
-                    background: sel ? "rgba(0,212,255,0.11)" : "rgba(255,255,255,0.025)",
-                    border: sel ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: "4px", cursor: "pointer", textAlign: "left",
-                    transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
-                    boxShadow: sel ? "0 0 16px rgba(0,212,255,0.12)" : "none",
-                  }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: sel ? "#00D4FF" : "rgba(100,116,139,0.55)", width: "14px", flexShrink: 0 }}>{opt.glyph}</span>
-                  <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: sel ? "#E2E8F0" : "#94A3B8", fontWeight: sel ? 600 : 400, lineHeight: 1.3 }}>{opt.label}</span>
-                </button>
+                <>
+                  <div key={step} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
+                    <div style={{
+                      width: "26px", height: "26px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                      background: done ? "#00D4FF" : active ? "rgba(0,212,255,0.18)" : "rgba(255,255,255,0.04)",
+                      border: done ? "1px solid #00D4FF" : active ? "1px solid rgba(0,212,255,0.6)" : "1px solid rgba(255,255,255,0.10)",
+                      transition: "all 0.2s ease",
+                    }}>
+                      {done
+                        ? <span style={{ fontSize: "12px", color: "#050608" }}>✓</span>
+                        : <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: active ? "#00D4FF" : "#475569", fontWeight: 700 }}>{step}</span>}
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: active ? "#00D4FF" : done ? "rgba(0,212,255,0.5)" : "rgba(100,116,139,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center", lineHeight: 1.3 }}>{labels[i]}</span>
+                  </div>
+                  {i < 2 && <div style={{ height: "1px", width: "20px", background: wizardStep > step + 1 ? "#00D4FF" : "rgba(255,255,255,0.08)", flexShrink: 0, marginBottom: "16px", transition: "background 0.2s ease" }} />}
+                </>
               );
             })}
           </div>
 
-          {/* Ticker input */}
-          {isTickerMove && (
-            <div style={{ marginBottom: "14px" }}>
-              <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Ticker Symbol</label>
-              <input type="text" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))} placeholder="e.g. NVDA, TSLA, AAPL" maxLength={10}
-                style={{ width: "100%", padding: "10px 14px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "4px", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", letterSpacing: "0.12em", outline: "none", boxSizing: "border-box" }} />
-            </div>
-          )}
-
-          {/* Crypto asset selector */}
-          {isCryptoMove && (
-            <div style={{ marginBottom: "14px" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>
-                Select Asset
-                <span style={{ marginLeft: "8px", color: "rgba(0,212,255,0.6)", fontSize: "10px" }}>— {cryptoSymbol} selected</span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
-                {CRYPTO_OPTIONS.map(opt => {
-                  const sel = cryptoSymbol === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => { setCryptoSymbol(opt.value); setShowResult(false); simulate.reset(); }}
-                      style={{
-                        padding: "8px 4px",
-                        background: sel ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)",
-                        border: sel ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.07)",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        textAlign: "center",
-                        transition: "all 0.15s cubic-bezier(0.23,1,0.32,1)",
-                      }}
-                    >
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: sel ? "#00D4FF" : "#94A3B8", fontWeight: sel ? 700 : 400, marginBottom: "2px" }}>{opt.value}</div>
-                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "9px", color: sel ? "rgba(0,212,255,0.7)" : "rgba(100,116,139,0.5)", lineHeight: 1.2 }}>{opt.label}</div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Timeframe */}
-          <div style={{ marginBottom: "14px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Timeframe</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
-              {TIMEFRAME_OPTIONS.map(tf => {
-                const sel = selectedTimeframe === tf.value;
-                return (
-                  <button key={tf.value} onClick={() => { setSelectedTimeframe(tf.value); setShowResult(false); simulate.reset(); }}
-                    style={{ padding: "10px 8px", background: sel ? "rgba(0,212,255,0.10)" : "rgba(255,255,255,0.02)", border: sel ? "1px solid rgba(0,212,255,0.45)" : "1px solid rgba(255,255,255,0.07)", borderRadius: "4px", cursor: "pointer", textAlign: "center", transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)" }}>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: sel ? "#00D4FF" : "#94A3B8" }}>{tf.label}</div>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{tf.sub}</div>
+          {/* ── STEP 1: What are you considering? ── */}
+          {wizardStep === 1 && (
+            <div style={{ animation: "cinematic-reveal 0.3s cubic-bezier(0.23,1,0.32,1) both" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "10px" }}>Select your move</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: "8px" }}>
+                {MOVE_OPTIONS.map(opt => (
+                  <button key={opt.value} onClick={() => handleMoveSelect(opt.value)}
+                    style={{
+                      display: "flex", flexDirection: "column", gap: "4px", padding: "12px 14px",
+                      background: "rgba(255,255,255,0.025)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "6px", cursor: "pointer", textAlign: "left",
+                      transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.08)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.35)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", color: "#00D4FF", width: "16px", flexShrink: 0 }}>{opt.glyph}</span>
+                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0", letterSpacing: "0.04em" }}>{opt.label}</span>
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(100,116,139,0.6)", lineHeight: 1.4, paddingLeft: "24px" }}>{opt.sub}</div>
                   </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Thesis Type */}
-          {/* FAULTLINE interprets — no thesis selection needed */}
-          <div style={{ marginBottom: "16px" }}>
-            <div style={{
-              padding: "12px 16px",
-              background: "rgba(0,212,255,0.04)",
-              border: "1px solid rgba(0,212,255,0.12)",
-              borderRadius: "6px",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "12px",
-            }}>
-              <div style={{ flexShrink: 0, marginTop: "2px" }}>
-                <Zap size={14} color="#00D4FF" />
+                ))}
               </div>
-              <div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: "4px" }}>FAULTLINE interprets for you</div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6 }}>
-                  Just tell FAULTLINE what you are considering and when. The engine reads the current market structure, macro regime, and volatility environment — then tells you what the market is signalling about your move, what conditions to watch for, and what would invalidate the setup.
+            </div>
+          )}
+
+          {/* ── STEP 2: What type of exposure? ── */}
+          {wizardStep === 2 && selectedMove && (
+            <div style={{ animation: "cinematic-reveal 0.3s cubic-bezier(0.23,1,0.32,1) both" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
+                  <span style={{ color: "#00D4FF" }}>{MOVE_OPTIONS.find(m => m.value === selectedMove)?.label}</span> — select exposure type
+                </div>
+                <button onClick={() => { setWizardStep(1); setSelectedMove(null); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", letterSpacing: "0.1em" }}>← Back</button>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "6px" }}>
+                {(EXPOSURE_STEP2[selectedMove] ?? []).map(opt => (
+                  <button key={opt.value} onClick={() => handleExposureSelect(opt.value)}
+                    style={{
+                      display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px",
+                      background: "rgba(255,255,255,0.025)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: "5px", cursor: "pointer", textAlign: "left",
+                      transition: "all 0.15s cubic-bezier(0.23,1,0.32,1)",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.08)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.35)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
+                  >
+                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: "#CBD5E1" }}>{opt.label}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: When & how? ── */}
+          {wizardStep === 3 && selectedMove && (
+            <div style={{ animation: "cinematic-reveal 0.3s cubic-bezier(0.23,1,0.32,1) both" }}>
+              {/* Summary bar */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", padding: "8px 12px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: "5px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", textTransform: "uppercase", letterSpacing: "0.1em" }}>{MOVE_OPTIONS.find(m => m.value === selectedMove)?.label}</span>
+                  {selectedExposure && <>
+                    <span style={{ color: "rgba(100,116,139,0.4)", fontSize: "10px" }}>›</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(0,212,255,0.7)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{EXPOSURE_STEP2[selectedMove]?.find(e => e.value === selectedExposure)?.label}</span>
+                  </>}
+                </div>
+                <button onClick={() => setWizardStep(2)}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", letterSpacing: "0.1em" }}>← Edit</button>
+              </div>
+
+              {/* Ticker input for specific asset moves */}
+              {isTickerMove && (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Ticker Symbol <span style={{ color: "rgba(100,116,139,0.4)" }}>(optional — leave blank for category analysis)</span></label>
+                  <input type="text" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))} placeholder="e.g. NVDA, TSLA, AAPL, BTC" maxLength={10}
+                    style={{ width: "100%", padding: "10px 14px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "4px", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", letterSpacing: "0.12em", outline: "none", boxSizing: "border-box" }} />
+                </div>
+              )}
+
+              {/* Timeframe */}
+              <div style={{ marginBottom: "16px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>Timeframe</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "6px" }}>
+                  {TIMEFRAME_OPTIONS.map(tf => {
+                    const sel = selectedTimeframe === tf.value;
+                    return (
+                      <button key={tf.value} onClick={() => setSelectedTimeframe(tf.value)}
+                        style={{ padding: "10px 8px", background: sel ? "rgba(0,212,255,0.10)" : "rgba(255,255,255,0.02)", border: sel ? "1px solid rgba(0,212,255,0.45)" : "1px solid rgba(255,255,255,0.07)", borderRadius: "4px", cursor: "pointer", textAlign: "center", transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)" }}>
+                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: sel ? "#00D4FF" : "#94A3B8" }}>{tf.label}</div>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{tf.sub}</div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Run button */}
-          <button onClick={handleSimulate} disabled={!selectedMove || isLoading}
-            style={{
-              width: "100%", padding: "14px",
-              background: selectedMove && !isLoading ? "linear-gradient(135deg, rgba(0,212,255,0.18) 0%, rgba(0,212,255,0.07) 100%)" : "rgba(255,255,255,0.03)",
-              border: selectedMove && !isLoading ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.06)",
-              borderRadius: "4px", cursor: selectedMove && !isLoading ? "pointer" : "not-allowed",
-              transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-            }}>
-            {isLoading ? (
-              <>
-                <div style={{ width: "14px", height: "14px", border: "2px solid rgba(0,212,255,0.3)", borderTopColor: "#00D4FF", borderRadius: "50%", animation: "fl-spin 0.8s linear infinite" }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: "#00D4FF", letterSpacing: "0.15em" }}>RUNNING PREFLIGHT…</span>
-              </>
-            ) : (
-              <>
-                <Zap size={14} color={selectedMove ? "#00D4FF" : "#64748B"} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: selectedMove ? "#00D4FF" : "#64748B", letterSpacing: "0.15em" }}>
-                  {selectedMove ? `RUN PREFLIGHT — ${MOVE_OPTIONS.find(m => m.value === selectedMove)?.label?.toUpperCase()}` : "SELECT A MOVE TO SIMULATE"}
-                </span>
-              </>
-            )}
-          </button>
+              {/* FAULTLINE interprets banner */}
+              <div style={{ marginBottom: "16px", padding: "10px 14px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.10)", borderRadius: "5px", display: "flex", alignItems: "center", gap: "10px" }}>
+                <Zap size={13} color="#00D4FF" style={{ flexShrink: 0 }} />
+                <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "rgba(100,116,139,0.7)", lineHeight: 1.5 }}>FAULTLINE reads current market structure, macro regime, and volatility — then tells you what the market is signalling about your move, what to watch for, and what would invalidate the setup.</span>
+              </div>
 
-          {simulate.isError && (
-            <div style={{ marginTop: "10px", padding: "10px 12px", background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "4px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF2D55" }}>Simulation failed. Please try again.</span>
+              {/* Run button */}
+              <button onClick={handleSimulate} disabled={isLoading}
+                style={{
+                  width: "100%", padding: "14px",
+                  background: !isLoading ? "linear-gradient(135deg, rgba(0,212,255,0.18) 0%, rgba(0,212,255,0.07) 100%)" : "rgba(255,255,255,0.03)",
+                  border: !isLoading ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "4px", cursor: !isLoading ? "pointer" : "not-allowed",
+                  transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                }}>
+                {isLoading ? (
+                  <>
+                    <div style={{ width: "14px", height: "14px", border: "2px solid rgba(0,212,255,0.3)", borderTopColor: "#00D4FF", borderRadius: "50%", animation: "fl-spin 0.8s linear infinite" }} />
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: "#00D4FF", letterSpacing: "0.15em" }}>FAULTLINE READING MARKET…</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap size={14} color="#00D4FF" />
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: "#00D4FF", letterSpacing: "0.15em" }}>RUN FAULTLINE ANALYSIS</span>
+                  </>
+                )}
+              </button>
+
+              {simulate.isError && (
+                <div style={{ marginTop: "10px", padding: "10px 12px", background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "4px" }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF2D55" }}>Analysis failed. Please try again.</span>
+                </div>
+              )}
             </div>
           )}
+
         </div>
 
         {/* ══════════════════════════════════════════════════════

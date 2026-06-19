@@ -15,31 +15,27 @@ import { SizingCalculator } from "@/components/SizingCalculator";
 
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
-  | "buy_add_risk"
-  | "hold"
-  | "trim"
-  | "sell"
+  | "add_risk"
+  | "reduce_risk"
   | "hedge"
+  | "rotate"
   | "raise_cash"
-  | "rotate_sectors"
-  | "buy_specific_ticker"
-  | "increase_crypto"
-  | "reduce_crypto";
+  | "deploy_cash"
+  | "buy_specific_asset"
+  | "sell_specific_asset";
 
 type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twelve_months";
 
 // ── Constants ─────────────────────────────────────────────────
 const MOVE_OPTIONS: { value: MoveType; label: string; icon: string }[] = [
-  { value: "buy_add_risk",       label: "Buy / Add Risk",            icon: "↑" },
-  { value: "hold",               label: "Hold",                      icon: "—" },
-  { value: "trim",               label: "Trim",                      icon: "↓" },
-  { value: "sell",               label: "Sell",                      icon: "✕" },
+  { value: "add_risk",           label: "Add Risk",                  icon: "↑" },
+  { value: "reduce_risk",        label: "Reduce Risk",               icon: "↓" },
   { value: "hedge",              label: "Hedge",                     icon: "⛨" },
+  { value: "rotate",             label: "Rotate",                    icon: "⟳" },
   { value: "raise_cash",         label: "Raise Cash",                icon: "◎" },
-  { value: "rotate_sectors",     label: "Rotate Sectors",            icon: "⟳" },
-  { value: "buy_specific_ticker",label: "Buy a Specific Ticker",     icon: "◈" },
-  { value: "increase_crypto",    label: "Increase Crypto Exposure",  icon: "₿" },
-  { value: "reduce_crypto",      label: "Reduce Crypto Exposure",    icon: "↙" },
+  { value: "deploy_cash",        label: "Deploy Cash",               icon: "◈" },
+  { value: "buy_specific_asset", label: "Buy Specific Asset",        icon: "₿" },
+  { value: "sell_specific_asset",label: "Sell Specific Asset",       icon: "✕" },
 ];
 
 const TIMEFRAME_OPTIONS: { value: SimulatorTimeframe; label: string; sub: string }[] = [
@@ -182,7 +178,7 @@ export default function TradePreflight() {
     simulate.mutate({
       moveType: selectedMove,
       timeframe: selectedTimeframe,
-      ticker: selectedMove === "buy_specific_ticker" && ticker.trim() ? ticker.trim().toUpperCase() : undefined,
+      ticker: selectedMove === "buy_specific_asset" && ticker.trim() ? ticker.trim().toUpperCase() : undefined,
     });
   };
 
@@ -321,7 +317,7 @@ export default function TradePreflight() {
           </div>
 
           {/* Ticker input (conditional) */}
-          {selectedMove === "buy_specific_ticker" && (
+          {selectedMove === "buy_specific_asset" && (
             <div style={{ marginBottom: "14px" }}>
               <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>
                 Ticker Symbol

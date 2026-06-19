@@ -52,7 +52,7 @@ import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
-import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ThesisType } from './tradePreflight';
+import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ExposureCategory } from './tradePreflight';
 import { getPreFlightData } from './preFlight';
 import {
   getOrCreateOwnerAccount, getOwnerPositions, getOwnerTrades, getOwnerObjective, setOwnerObjective,
@@ -1474,31 +1474,27 @@ export const appRouter = router({
     simulate: protectedProcedure
       .input(z.object({
         moveType: z.enum([
-          "buy_add_risk",
-          "hold",
-          "trim",
-          "sell",
+          "add_risk",
+          "reduce_risk",
           "hedge",
+          "rotate",
           "raise_cash",
-          "rotate_sectors",
-          "buy_specific_ticker",
-          "sell_specific_ticker",
-          "increase_crypto",
-          "reduce_crypto",
+          "deploy_cash",
+          "buy_specific_asset",
+          "sell_specific_asset",
         ] as const),
         timeframe: z.enum(["today", "this_week", "one_three_months", "six_twelve_months"] as const),
         ticker: z.string().min(1).max(10).optional(),
-        thesisType: z.enum([
-          "momentum",
-          "breakout",
-          "mean_reversion",
-          "long_term",
-          "value",
-          "ai_theme",
-          "crypto_cycle",
-          "sector_rotation",
-          "other",
+        exposureCategory: z.enum([
+          "ai_infrastructure", "technology", "large_cap_growth", "small_cap_growth",
+          "value", "dividend", "financials", "industrials", "energy", "healthcare",
+          "international", "emerging_markets", "bitcoin", "ethereum", "ai_crypto",
+          "altcoins", "memecoins", "options", "leveraged_exposure", "concentrated_position",
+          "custom_exposure", "entire_portfolio", "technology_exposure", "ai_exposure",
+          "crypto_exposure", "single_position", "market_risk", "recession_risk", "inflation_risk",
         ] as const).optional(),
+        rotateFrom: z.string().max(50).optional(),
+        rotateTo: z.string().max(50).optional(),
       }))
       .mutation(async ({ input }) => {
         try {
@@ -1506,7 +1502,9 @@ export const appRouter = router({
             moveType: input.moveType as MoveType,
             timeframe: input.timeframe as SimulatorTimeframe,
             ticker: input.ticker,
-            thesisType: input.thesisType as ThesisType | undefined,
+            exposureCategory: input.exposureCategory as ExposureCategory | undefined,
+            rotateFrom: input.rotateFrom,
+            rotateTo: input.rotateTo,
           });
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trade Preflight simulation failed", cause: err });

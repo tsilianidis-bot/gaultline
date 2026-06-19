@@ -1535,3 +1535,14 @@
 - [x] Add Social Intelligence nav item to INTELLIGENCE group in AppLayout
 - [x] Write 26 unit tests for socialIntelligence.test.ts — all passing
 - [x] TypeScript: 0 errors
+
+## Situation Room — Institutional Decision Engine Rebuild (Jun 2026)
+- [ ] Add ExposureCategory type and update SimulatorInput in tradePreflight.ts (exposureCategory, rotateFrom, rotateTo)
+- [ ] Update computeMarketInterpretation to use specific exposure context
+- [ ] Update computeRecommendedMoves to use specific exposure context
+- [ ] Add computeRecommendedVehicles function (per exposure category, 4-6 assets each)
+- [ ] Add computePortfolioAllocationChange function (specific % changes)
+- [ ] Rebuild SituationRoom.tsx input panel as 3-step wizard (Move → Exposure Sub-type → Timeframe)
+- [ ] Add Recommended Vehicles panel to results
+- [ ] Add Portfolio Allocation Change panel to results
+- [ ] TypeScript: 0 errors | Tests passing
