@@ -1,9 +1,26 @@
 User-agent: *
-Allow: /
+
+# ── Public marketing & SEO pages ──────────────────────────────
+Allow: /$
 Allow: /blog
+Allow: /blog/
 Allow: /track-record
 Allow: /pressure-index
 Allow: /legal
+Allow: /contact
+Allow: /methodology
+
+# ── Public SEO landing pages (canonical URLs for app features) ─
+Allow: /signals
+Allow: /crypto-signals
+Allow: /situation-room
+Allow: /analogs
+Allow: /stock-market-risk-dashboard
+Allow: /crypto-market-risk-dashboard
+Allow: /ai-bubble-risk-tracker
+Allow: /diagnostic-ai
+
+# ── Authenticated app pages (indexable for discoverability) ────
 Allow: /app/pressure
 Allow: /app/signals
 Allow: /app/scores
@@ -22,13 +39,30 @@ Allow: /app/track-record
 Allow: /app/diagnostic
 Allow: /app/simulate
 Allow: /app/alt-rotation
+Allow: /app/situation-room
+Allow: /app/pre-flight
+Allow: /app/insider-intelligence
+Allow: /app/signal-outlook
+Allow: /app/stock-heatmap
+Allow: /app/trade-preflight
 
+# ── Private / account / payment pages ─────────────────────────
 Disallow: /app/admin
+Disallow: /app/admin/
 Disallow: /app/account
 Disallow: /app/portfolio
 Disallow: /app/watchlist
 Disallow: /app/crypto-watchlist
 Disallow: /app/reading-history
+Disallow: /app/x-posts
+Disallow: /app/x-post-queue
+Disallow: /app/analytics
+Disallow: /app/seo-optimizer
+Disallow: /owner/
+Disallow: /checkout/
+Disallow: /billing/
+Disallow: /login/
 Disallow: /api/
+Disallow: /mobile/
 
 Sitemap: https://getfaultline.live/sitemap.xml

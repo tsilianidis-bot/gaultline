@@ -214,7 +214,7 @@ export default function BlogPost() {
                   <ArrowLeft className="w-3 h-3" /> ALL BRIEFINGS
                 </span>
               </Link>
-              <Link href="/pressure">
+              <Link href="/pressure-index">
                 <span className="flex items-center gap-1 text-xs text-cyan-400 font-['IBM_Plex_Mono'] hover:underline cursor-pointer">
                   VIEW LIVE PRESSURE INDEX <ChevronRight className="w-3 h-3" />
                 </span>

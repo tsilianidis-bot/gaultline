@@ -278,4 +278,53 @@ export const PAGE_SEO = {
       "Track the FAULTLINE Pressure Index™ live. Real-time systemic market stress score aggregating volatility, credit spreads, liquidity, and breadth deterioration.",
     canonical: "/pressure-index",
   },
+  // ── Public SEO landing pages ──────────────────────────────────
+  publicSignals: {
+    title: "Stock Signals — Macro-Regime Intelligence | FAULTLINE",
+    description:
+      "Free access to FAULTLINE Stock Signals: momentum breakouts, macro beneficiaries, AI bubble exposure, liquidity-sensitive names, and recession-defensive classifications. Know which equities fit the current regime.",
+    canonical: "/signals",
+  },
+  publicCryptoSignals: {
+    title: "Crypto Signals — Macro-Aligned Digital Asset Intel",
+    description:
+      "FAULTLINE Crypto Signals: momentum, liquidity, and macro-regime-aligned trading signals for digital assets. Know which crypto assets fit the current macro environment before the move.",
+    canonical: "/crypto-signals",
+  },
+  publicStockMarketRisk: {
+    title: "Stock Market Risk Dashboard — Live Systemic Risk",
+    description:
+      "Real-time stock market risk dashboard: systemic pressure score, regime detection, credit spreads, volatility, liquidity conditions, and breadth deterioration. Know your equity risk before it moves.",
+    canonical: "/stock-market-risk-dashboard",
+  },
+  publicCryptoMarketRisk: {
+    title: "Crypto Market Risk Dashboard — Digital Asset Risk",
+    description:
+      "Live crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Monitor crypto systemic risk in real time.",
+    canonical: "/crypto-market-risk-dashboard",
+  },
+  publicSituationRoom: {
+    title: "Situation Room — Pre-Trade Stress Test | FAULTLINE",
+    description:
+      "Stress-test your next market move against regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and sector signals. The institutional pre-trade brief for self-directed traders.",
+    canonical: "/situation-room",
+  },
+  publicAnalogs: {
+    title: "Historical Market Analogs — Crash Pattern Matching",
+    description:
+      "Pattern-match today's macro conditions against 2000, 2008, 2020, and 2022. See which historical fracture your regime most resembles, the timeline of what followed, and how top funds were positioned.",
+    canonical: "/analogs",
+  },
+  publicAIBubble: {
+    title: "AI Bubble Risk Tracker — Concentration & Valuation",
+    description:
+      "Track AI-driven market concentration and valuation risk before it unwinds. FAULTLINE AI Bubble Risk Tracker monitors index concentration, AI-exposed equities, and crowded-trade reversal signals in real time.",
+    canonical: "/ai-bubble-risk-tracker",
+  },
+  publicDiagnosticAI: {
+    title: "Diagnostic AI™ — Market Health Intelligence",
+    description:
+      "FAULTLINE Diagnostic AI™: AI-powered market health analysis covering regime conditions, risk vectors, and structural vulnerabilities across timeframes. Understand the market's true health before you act.",
+    canonical: "/diagnostic-ai",
+  },
 } as const;

@@ -212,7 +212,7 @@ export function trackEvent(
 // ═══════════════════════════════════════════════════════════════
 
 /** 1. Homepage hero CTA clicked */
-export function trackStartFreeClicked(location: "homepage_hero" | "homepage_nav" | "homepage_section" = "homepage_hero") {
+export function trackStartFreeClicked(location: "homepage_hero" | "homepage_nav" | "homepage_section" | "public_landing" | "public_landing_hero" | "public_landing_bottom" = "homepage_hero") {
   gtag("event", "start_free_clicked", { location, send_to: GA_ID });
 }
 

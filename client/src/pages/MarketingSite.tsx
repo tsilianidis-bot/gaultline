@@ -744,7 +744,7 @@ const MODULES = [
     title: "FAULTLINE Pressure Index™",
     desc: "The single number that tells you where the market stands before it moves. Synthesizes macro, credit, liquidity, and AI concentration signals in real time — the same read top macro desks build their own models to generate.",
     tags: ["Pre-Move Read", "Real-Time", "Regime Detection"],
-    link: "/app/pressure",
+    link: "/stock-market-risk-dashboard",
   },
   {
     badge: "ANALYST+",
@@ -760,7 +760,7 @@ const MODULES = [
     title: "Stock Intelligence Engine",
     desc: "Every equity classified by momentum, macro regime alignment, and systemic pressure exposure. Know which names are positioned for the current environment — before the rotation becomes obvious.",
     tags: ["Regime Alignment", "Pre-Rotation", "Signal Labels"],
-    link: "/app/signals",
+    link: "/signals",
   },
   {
     badge: "ANALYST+",
@@ -768,7 +768,7 @@ const MODULES = [
     title: "Crypto Intelligence",
     desc: "Liquidity conditions, macro correlation, and risk appetite tracked across digital assets in real time. Know when the risk-on cycle is building or breaking before the move is visible on-chain.",
     tags: ["Pre-Move Crypto", "Macro Correlation", "Liquidity Risk"],
-    link: "/app/crypto",
+    link: "/crypto-signals",
   },
   {
     badge: "OPERATOR+",
@@ -784,7 +784,7 @@ const MODULES = [
     title: "Historical Analog Engine",
     desc: "Pattern-match today’s macro conditions against 2000, 2008, 2020, 2022. See which historical fracture your regime most resembles, the timeline of what followed, and how top funds were positioned at each stage.",
     tags: ["Crash Analogs", "Regime Similarity", "Outcome Analysis"],
-    link: "/app/analogs",
+    link: "/analogs",
   },
   {
     badge: "ANALYST+",
@@ -792,7 +792,7 @@ const MODULES = [
     title: "FAULTLINE Situation Room",
     desc: "Run your next move through the pressure engine before you risk capital. Get a probability-weighted favorability score, threat board, green lights, and action bias — the pre-trade brief that institutional desks do internally.",
     tags: ["Pre-Trade Brief", "Move Favorability", "Threat Board"],
-    link: "/app/situation-room",
+    link: "/situation-room",
   },
   {
     badge: "ANALYST+",
@@ -2130,10 +2130,16 @@ function Footer() {
           <div>
             <div className="text-[9px] font-mono tracking-[0.3em] text-[#64748B] mb-4">PLATFORM</div>
             <ul className="space-y-2">
-              {["Pressure Index™", "Regime Detection", "Crash Analog Engine", "Live Risk Alerts", "Aftershock Engine™"].map((item) => (
-                <li key={item}>
-                  <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">
-                    {item}
+              {[
+                { label: "Stock Market Risk Dashboard", href: "/stock-market-risk-dashboard" },
+                { label: "Crypto Market Risk Dashboard", href: "/crypto-market-risk-dashboard" },
+                { label: "Situation Room", href: "/situation-room" },
+                { label: "Historical Analogs", href: "/analogs" },
+                { label: "Pressure Index", href: "/pressure-index" },
+              ].map((item) => (
+                <li key={item.href}>
+                  <a href={item.href} className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">
+                    {item.label}
                   </a>
                 </li>
               ))}
@@ -2144,10 +2150,16 @@ function Footer() {
           <div>
             <div className="text-[9px] font-mono tracking-[0.3em] text-[#64748B] mb-4">INTELLIGENCE</div>
             <ul className="space-y-2">
-              {["Treasury & Bond Stress", "Liquidity & Credit", "AI Concentration", "Stock Intelligence", "Crypto Intelligence"].map((item) => (
-                <li key={item}>
-                  <a href={PLATFORM_URL} target="_blank" rel="noopener noreferrer" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">
-                    {item}
+              {[
+                { label: "Stock Signals", href: "/signals" },
+                { label: "Crypto Signals", href: "/crypto-signals" },
+                { label: "AI Bubble Risk Tracker", href: "/ai-bubble-risk-tracker" },
+                { label: "Diagnostic AI", href: "/diagnostic-ai" },
+                { label: "Track Record", href: "/track-record" },
+              ].map((item) => (
+                <li key={item.href}>
+                  <a href={item.href} className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">
+                    {item.label}
                   </a>
                 </li>
               ))}

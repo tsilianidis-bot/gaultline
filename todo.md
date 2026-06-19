@@ -1572,3 +1572,15 @@
 - [ ] Add Recommended Vehicles panel to results
 - [ ] Add Portfolio Allocation Change panel to results
 - [ ] TypeScript: 0 errors | Tests passing
+
+## SEO / Search Console Indexing Fixes
+- [ ] Audit current robots.txt and sitemap.xml
+- [ ] Fix robots.txt: allow all public SEO pages, block private/admin/billing/checkout/login
+- [ ] Generate correct sitemap.xml with all canonical public URLs (no private pages)
+- [ ] Add canonical tags to all public pages via useSEO hook
+- [ ] Add unique title + meta description to every indexable page
+- [ ] Fix 404 page (find URL from Search Console, restore or 301 redirect)
+- [ ] Fix redirect issues (update internal links/sitemap to point to final destination URLs)
+- [ ] Add internal links from homepage to: Signals, Crypto Signals, Pressure Index, Situation Room, Market Risk Dashboard, AI Bubble Risk Tracker
+- [ ] TypeScript check: 0 errors
+- [ ] Save checkpoint

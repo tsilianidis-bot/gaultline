@@ -238,7 +238,7 @@ export default function TrackRecord() {
             FAULTLINE
           </Link>
           <nav className="flex items-center gap-6 text-sm text-zinc-400">
-            <Link href="/pressure" className="hover:text-white transition-colors">Market Stress</Link>
+            <Link href="/pressure-index" className="hover:text-white transition-colors">Market Stress</Link>
             <Link href="/blog" className="hover:text-white transition-colors">Intelligence Briefings</Link>
             <Link href="/app" className="hover:text-white transition-colors border border-zinc-700 px-3 py-1.5 rounded hover:border-zinc-500">
               Open Platform
@@ -507,7 +507,7 @@ export default function TrackRecord() {
             The live Pressure Index updates daily with real-time market data. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
-            <Link href="/pressure" className="px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-colors text-sm">
+            <Link href="/pressure-index" className="px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-colors text-sm">
               View Live Pressure Index
             </Link>
             <Link href="/app" className="px-6 py-3 border border-zinc-700 text-white font-semibold rounded-lg hover:border-zinc-500 transition-colors text-sm">

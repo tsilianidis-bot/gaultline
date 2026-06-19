@@ -68,6 +68,17 @@ const SignalOutlookCenter = lazy(() => import("./pages/SignalOutlookCenter"));
 const SocialIntelligence = lazy(() => import("./pages/SocialIntelligence"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
 
+// ── Public SEO landing pages (no auth required, crawlable) ────────
+const PublicSignals        = lazy(() => import("./pages/PublicSignals"));
+const PublicCryptoSignals  = lazy(() => import("./pages/PublicCryptoSignals"));
+const PublicStockMarketRisk = lazy(() => import("./pages/PublicStockMarketRisk"));
+const PublicCryptoMarketRisk = lazy(() => import("./pages/PublicCryptoMarketRisk"));
+const PublicSituationRoom  = lazy(() => import("./pages/PublicSituationRoom"));
+const PublicAnalogs        = lazy(() => import("./pages/PublicAnalogs"));
+const PublicAIBubble       = lazy(() => import("./pages/PublicAIBubble"));
+const PublicDiagnosticAI   = lazy(() => import("./pages/PublicDiagnosticAI"));
+const NotFound             = lazy(() => import("./pages/NotFound"));
+
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
 const MobilePulse    = lazy(() => import("./pages/mobile/MobilePulse"));
@@ -188,6 +199,31 @@ function Router() {
           </Suspense>
         </ErrorBoundary>
       </Route>
+      {/* Public SEO landing pages — standalone, no AppLayout, crawlable */}
+      <Route path="/signals">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicSignals /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/crypto-signals">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicCryptoSignals /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock-market-risk-dashboard">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicStockMarketRisk /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/crypto-market-risk-dashboard">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicCryptoMarketRisk /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/situation-room">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicSituationRoom /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/analogs">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicAnalogs /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/ai-bubble-risk-tracker">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicAIBubble /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/diagnostic-ai">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicDiagnosticAI /></Suspense></ErrorBoundary>
+      </Route>
       {/* Marketing site at root — standalone, no AppLayout */}
       <Route path="/">
         <ErrorBoundary>
@@ -244,7 +280,7 @@ function Router() {
               <Route path="/app/stock-heatmap" component={StockHeatmap} />
               <Route path="/app/sim-portfolio" component={SimPortfolio} />
               <Route path="/owner/simulation" component={OwnerSimulation} />
-              <Route component={Dashboard} />
+              <Route component={NotFound} />
             </Switch>
           </Suspense>
           </ErrorBoundary>

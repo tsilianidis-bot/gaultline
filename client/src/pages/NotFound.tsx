@@ -1,52 +1,69 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Home } from "lucide-react";
-import { useLocation } from "wouter";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function NotFound() {
-  const [, setLocation] = useLocation();
-
-  const handleGoHome = () => {
-    setLocation("/");
-  };
+  useSEO({
+    title: "404 — Page Not Found | FAULTLINE",
+    description: "The page you're looking for doesn't exist. Return to FAULTLINE market risk intelligence.",
+    canonical: "/404",
+  });
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-              <AlertCircle className="relative h-16 w-16 text-red-500" />
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#050608] text-white flex flex-col items-center justify-center px-6">
+      <div className="text-center max-w-xl">
+        <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/50 mb-4">
+          ERROR 404
+        </div>
+        <h1 className="text-6xl font-bold text-white mb-4 font-mono">
+          4<span className="text-[#00D4FF]">0</span>4
+        </h1>
+        <p className="text-[#A8B8CC] text-lg mb-2">
+          Page not found.
+        </p>
+        <p className="text-[#64748B] text-sm mb-10">
+          The page you're looking for doesn't exist or has been moved.
+        </p>
 
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">404</h1>
-
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">
-            Page Not Found
-          </h2>
-
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sorry, the page you are looking for doesn't exist.
-            <br />
-            It may have been moved or deleted.
-          </p>
-
-          <div
-            id="not-found-button-group"
-            className="flex flex-col sm:flex-row gap-3 justify-center"
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <a
+            href="/"
+            className="inline-flex items-center justify-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] font-bold px-8 py-3 rounded bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors"
           >
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
+            ← RETURN HOME
+          </a>
+          <a
+            href="/app"
+            className="inline-flex items-center justify-center gap-2 text-[12px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-8 py-3 rounded border border-[rgba(168,184,204,0.2)] hover:border-[rgba(168,184,204,0.4)]"
+          >
+            ENTER PLATFORM
+          </a>
+        </div>
+
+        <div className="border-t border-[rgba(255,255,255,0.05)] pt-8">
+          <div className="text-[10px] font-mono tracking-[0.2em] text-[#374151] mb-4">
+            POPULAR PAGES
           </div>
-        </CardContent>
-      </Card>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {[
+              { label: "Pressure Index", href: "/pressure-index" },
+              { label: "Stock Signals", href: "/signals" },
+              { label: "Crypto Signals", href: "/crypto-signals" },
+              { label: "Situation Room", href: "/situation-room" },
+              { label: "Market Analogs", href: "/analogs" },
+              { label: "AI Bubble Tracker", href: "/ai-bubble-risk-tracker" },
+              { label: "Blog", href: "/blog" },
+              { label: "Track Record", href: "/track-record" },
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-[11px] font-mono tracking-widest text-[#64748B] hover:text-[#00D4FF] transition-colors px-3 py-1.5 border border-[rgba(255,255,255,0.05)] hover:border-[rgba(0,212,255,0.2)] rounded"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
