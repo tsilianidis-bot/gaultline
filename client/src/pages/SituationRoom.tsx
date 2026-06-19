@@ -1435,6 +1435,40 @@ export default function SituationRoom() {
                                 {sector.tickers.map((t: any, ti: number) => {
                                   const actionColor = t.action === "LONG" ? "#00FF88" : t.action === "WATCH" ? "#FF9500" : "#FF2D55";
                                   const rrColor = t.riskRewardRatio >= 3 ? "#00FF88" : t.riskRewardRatio >= 2 ? "#FF9500" : "#FF2D55";
+
+                                  // Client-side INVALID TEMPLATE DATA DETECTED guard.
+                                  // Detects the exact placeholder values that were produced by the
+                                  // basePrice=100 fallback bug: stop=$88, T1=$125, T2=$140.
+                                  const isTemplateData =
+                                    Math.abs(t.currentPrice - 100) < 0.01 &&
+                                    (Math.abs(t.stopLoss - 88) < 0.01 ||
+                                     Math.abs(t.targetOne - 125) < 0.01 ||
+                                     Math.abs(t.targetTwo - 140) < 0.01);
+
+                                  // Dynamic price formatting: 4 decimals for sub-$1 (e.g. GRT $0.1923),
+                                  // 3 for sub-$10 (e.g. FET $1.423), 2 for everything else.
+                                  const fmtPrice = (p: number) =>
+                                    p < 1 ? p.toFixed(4) : p < 10 ? p.toFixed(3) : p.toFixed(2);
+
+                                  // Format the live price timestamp for display (HH:MM)
+                                  const priceTime = t.priceTimestamp
+                                    ? new Date(t.priceTimestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                                    : null;
+
+                                  if (isTemplateData) {
+                                    return (
+                                      <div key={ti} style={{ padding: "10px 12px", background: "rgba(255,45,85,0.06)", border: "1px solid rgba(255,45,85,0.3)", borderRadius: "5px" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{t.ticker}</span>
+                                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF2D55", padding: "2px 8px", background: "rgba(255,45,85,0.12)", borderRadius: "3px", border: "1px solid rgba(255,45,85,0.3)", textTransform: "uppercase", letterSpacing: "0.08em" }}>INVALID TEMPLATE DATA DETECTED</span>
+                                        </div>
+                                        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#FF2D55", lineHeight: 1.5 }}>
+                                          This card received placeholder values (price=$100, stop=$88, T1=$125, T2=$140). Live market data could not be fetched. The card has been blocked from rendering to prevent display of fake trade levels.
+                                        </div>
+                                      </div>
+                                    );
+                                  }
+
                                   return (
                                     <div key={ti} style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "5px" }}>
                                       {/* Ticker row */}
@@ -1445,17 +1479,17 @@ export default function SituationRoom() {
                                         </div>
                                         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                                           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: actionColor, padding: "2px 6px", background: `${actionColor}12`, borderRadius: "3px", border: `1px solid ${actionColor}25`, textTransform: "uppercase" }}>{t.action}</span>
-                                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#CBD5E1" }}>${t.currentPrice.toFixed(2)}</span>
+                                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#CBD5E1" }}>${fmtPrice(t.currentPrice)}</span>
                                         </div>
                                       </div>
                                       {/* Trade parameters grid */}
                                       <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px", marginBottom: "6px" }}>
                                         {[
-                                          { label: "ENTRY LOW", val: `$${t.entryZoneLow.toFixed(2)}`, color: "#00D4FF" },
-                                          { label: "ENTRY HIGH", val: `$${t.entryZoneHigh.toFixed(2)}`, color: "#00D4FF" },
-                                          { label: "STOP", val: `$${t.stopLoss.toFixed(2)}`, color: "#FF2D55" },
-                                          { label: "T1", val: `$${t.targetOne.toFixed(2)}`, color: "#00FF88" },
-                                          { label: "T2", val: `$${t.targetTwo.toFixed(2)}`, color: "#00FF88" },
+                                          { label: "ENTRY LOW",  val: `$${fmtPrice(t.entryZoneLow)}`,  color: "#00D4FF" },
+                                          { label: "ENTRY HIGH", val: `$${fmtPrice(t.entryZoneHigh)}`, color: "#00D4FF" },
+                                          { label: "STOP",       val: `$${fmtPrice(t.stopLoss)}`,       color: "#FF2D55" },
+                                          { label: "T1",         val: `$${fmtPrice(t.targetOne)}`,      color: "#00FF88" },
+                                          { label: "T2",         val: `$${fmtPrice(t.targetTwo)}`,      color: "#00FF88" },
                                         ].map((p, pi) => (
                                           <div key={pi} style={{ padding: "5px 6px", background: `${p.color}06`, border: `1px solid ${p.color}15`, borderRadius: "3px", textAlign: "center" }}>
                                             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.7)", marginBottom: "2px", letterSpacing: "0.08em" }}>{p.label}</div>
@@ -1475,7 +1509,16 @@ export default function SituationRoom() {
                                         <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#00D4FF" }}>{t.compositeScore}</span>
                                       </div>
                                       {/* Rationale */}
-                                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.5 }}>{t.rationale}</div>
+                                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.5, marginBottom: t.dataSource ? "6px" : 0 }}>{t.rationale}</div>
+                                      {/* Live data provenance footer */}
+                                      {t.dataSource && (
+                                        <div style={{ display: "flex", alignItems: "center", gap: "6px", paddingTop: "5px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                                          <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#00FF88", boxShadow: "0 0 5px #00FF8880", flexShrink: 0 }} />
+                                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#334155", letterSpacing: "0.06em" }}>
+                                            LIVE · {t.dataSource}{priceTime ? ` · ${priceTime}` : ""}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 })}

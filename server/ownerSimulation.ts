@@ -19,6 +19,8 @@ import {
 } from "../drizzle/schema";
 import { calculateFaultlinePressure, FaultlinePressureOutput } from "./pressure/engine";
 import { computeTradingSignal, TradingSignalsInput } from "./tradingSignals";
+import { computeCryptoSignal, CryptoSignalInput } from "./cryptoSignals";
+import { getCoinMarketData, getCoinOHLC, getGlobalStats } from "./coingeckoProxy";
 import { getQuote } from "./yahooProxy";
 import { invokeLLM } from "./_core/llm";
 import { log } from "./logger";
@@ -84,6 +86,9 @@ export interface TradeOpportunity {
   labels: string[];                   // e.g. ["AI Bubble Exposure", "Momentum Breakout"]
   // Meta
   fetchedAt: number;
+  // Data provenance — displayed on every recommendation card
+  dataSource?: string;     // e.g. "CoinGecko", "Yahoo Finance"
+  priceTimestamp?: string; // ISO timestamp of the live price fetch
 }
 
 // ── Stock candidates ──────────────────────────────────────────
@@ -110,14 +115,28 @@ const STOCK_UNIVERSE = [
   { ticker: "AMZN", name: "Amazon.com Inc.",           sector: "Consumer Discretionary" },
 ];
 
-const CRYPTO_UNIVERSE = [
-  { ticker: "BTC",  coinId: "bitcoin",              name: "Bitcoin",     sector: "Layer 1" },
-  { ticker: "ETH",  coinId: "ethereum",             name: "Ethereum",    sector: "Layer 1" },
-  { ticker: "SOL",  coinId: "solana",               name: "Solana",      sector: "Layer 1" },
-  { ticker: "AVAX", coinId: "avalanche-2",          name: "Avalanche",   sector: "Layer 1" },
-  { ticker: "LINK", coinId: "chainlink",            name: "Chainlink",   sector: "Oracle" },
-  { ticker: "ARB",  coinId: "arbitrum",             name: "Arbitrum",    sector: "Layer 2" },
-  { ticker: "INJ",  coinId: "injective-protocol",  name: "Injective",   sector: "DeFi" },
+// Exported for tests and Hot Sector sector mapping
+export const CRYPTO_UNIVERSE = [
+  // Layer 1 / Infrastructure
+  { ticker: "BTC",   coinId: "bitcoin",              name: "Bitcoin",          sector: "Layer 1" },
+  { ticker: "ETH",   coinId: "ethereum",             name: "Ethereum",         sector: "Layer 1" },
+  { ticker: "SOL",   coinId: "solana",               name: "Solana",           sector: "Layer 1" },
+  { ticker: "AVAX",  coinId: "avalanche-2",          name: "Avalanche",        sector: "Layer 1" },
+  // Oracle / Middleware
+  { ticker: "LINK",  coinId: "chainlink",            name: "Chainlink",        sector: "Oracle" },
+  // Layer 2
+  { ticker: "ARB",   coinId: "arbitrum",             name: "Arbitrum",         sector: "Layer 2" },
+  // DeFi
+  { ticker: "INJ",   coinId: "injective-protocol",  name: "Injective",        sector: "DeFi" },
+  // AI Crypto — previously missing, caused FET/RNDR to fall back to placeholder data
+  { ticker: "FET",   coinId: "fetch-ai",             name: "Fetch.ai",         sector: "AI Crypto" },
+  { ticker: "RNDR",  coinId: "render-token",         name: "Render Network",   sector: "AI Crypto" },
+  { ticker: "TAO",   coinId: "bittensor",            name: "Bittensor",        sector: "AI Crypto" },
+  { ticker: "WLD",   coinId: "worldcoin-wld",        name: "Worldcoin",        sector: "AI Crypto" },
+  { ticker: "OCEAN", coinId: "ocean-protocol",       name: "Ocean Protocol",   sector: "AI Crypto" },
+  { ticker: "GRT",   coinId: "the-graph",            name: "The Graph",        sector: "AI Crypto" },
+  { ticker: "IO",    coinId: "io-net",               name: "io.net",           sector: "AI Crypto" },
+  { ticker: "AR",    coinId: "arweave",              name: "Arweave",          sector: "AI Crypto" },
 ];
 
 // ── DB helpers ────────────────────────────────────────────────
@@ -534,58 +553,124 @@ export async function buildCryptoOpportunity(
     const volume = rawPrice.usd_24h_vol ?? 0;
     const marketCap = rawPrice.usd_market_cap ?? null;
 
-    const signalInput: TradingSignalsInput = {
-      ticker,
-      price,
-      open: price / (1 + changePercent / 100),
-      high: price * 1.03,
-      low: price * 0.97,
-      changePercent,
-      volumeMillions: volume / 1e6,
-      avgVolume: volume / 1e6,
-      sparkline: [],
-      relativeStrength: 50,
+    // Fetch full CoinGecko market data and 30-day OHLC for ATR-based levels
+    // These calls are cached (90s TTL) so they don't add latency on repeat calls
+    const [marketData, ohlcBars, globalStats] = await Promise.all([
+      getCoinMarketData(coinId),
+      getCoinOHLC(coinId, 30),
+      getGlobalStats(),
+    ]);
+
+    // Build a rich CryptoSignalInput using live CoinGecko data
+    // This uses the same computeCryptoSignal() used by the Crypto Signals page,
+    // ensuring consistent ATR-based price levels across the entire app.
+    const cryptoSignalInput: CryptoSignalInput = {
+      market: marketData ?? {
+        id: coinId,
+        symbol: ticker,
+        name,
+        image: "",
+        currentPrice: price,
+        marketCap: marketCap ?? 0,
+        marketCapRank: 999,
+        fullyDilutedValuation: null,
+        totalVolume: volume,
+        high24h: price * 1.03,
+        low24h: price * 0.97,
+        priceChange24h: price * changePercent / 100,
+        priceChangePercent24h: changePercent,
+        priceChangePercent7d: null,
+        priceChangePercent30d: null,
+        marketCapChange24h: 0,
+        marketCapChangePercent24h: 0,
+        circulatingSupply: 0,
+        totalSupply: null,
+        maxSupply: null,
+        ath: price * 4,
+        athChangePercent: -75,
+        atl: price * 0.05,
+        atlChangePercent: 1900,
+        sparkline7d: [],
+        lastUpdated: new Date().toISOString(),
+        volatility24h: Math.abs(price * 0.03 - price * (-0.03)) / price * 100,
+        distanceFromAth: -75,
+      },
+      ohlcBars: ohlcBars.length > 0 ? ohlcBars : undefined,
+      btcDominance: globalStats?.btcDominance ?? 55,
+      regime: {
+        label: pressure.regime as "Bullish" | "Neutral" | "Defensive" | "Risk-Off",
+        score: pressure.overallPressure / 10,
+      },
     };
-    const regime = { label: pressure.regime, score: pressure.overallPressure / 10 };
-    const signal = computeTradingSignal(signalInput, regime);
+
+    const cryptoSignal = computeCryptoSignal(cryptoSignalInput);
+    const priceLevels = cryptoSignal.priceLevels;
     const domains = extractDomainScores(pressure);
 
+    // Determine direction from crypto signal
     let direction: OpportunityDirection = "WATCH";
-    if (signal.action === "BUY" && signal.confidence >= 50) direction = "LONG";
-    else if (signal.action === "SELL") direction = "AVOID";
+    if (cryptoSignal.action === "BUY" && cryptoSignal.confidence >= 50) direction = "LONG";
+    else if (cryptoSignal.action === "SELL") direction = "AVOID";
     else if (pressure.overallPressure >= 70) direction = "DEFENSIVE";
 
-    const stopLoss = price * 0.88;
-    const targetOne = price * 1.18;
-    const targetTwo = price * 1.35;
-    const entryLow = price * 0.99;
-    const entryHigh = price * 1.01;
+    // Use ATR-based levels from computeCryptoSignal — these are asset-specific
+    // and volatility-aware, unlike the old fixed-multiplier approach.
+    // priceLevels.stopLoss and priceLevels.targetPrice come from:
+    //   stopLoss = price - ATR * 1.5  (for LONG)
+    //   targetPrice = price + ATR * 2.0 (for LONG)
+    // where ATR is computed from 30-day OHLC bars.
+    const stopLoss  = priceLevels.stopLoss  > 0 ? priceLevels.stopLoss  : price * 0.88;
+    const targetOne = priceLevels.targetPrice > 0 ? priceLevels.targetPrice : price * 1.18;
+    // T2 = T1 + 75% of the T1 gain (extends the target proportionally)
+    const targetTwo = targetOne + (targetOne - price) * 0.75;
+    // Entry zone = [support, resistance] from ATR-based support/resistance levels
+    const entryLow  = priceLevels.support  > 0 ? priceLevels.support  : price * 0.99;
+    const entryHigh = priceLevels.resistance > 0 ? Math.min(priceLevels.resistance, price * 1.03) : price * 1.01;
 
     const upside = targetOne - price;
     const downside = price - stopLoss;
     const rrRatio = downside > 0 ? Math.round((upside / downside) * 10) / 10 : 2.0;
 
     const sizing = calcPositionSize(accountValue, price, stopLoss, objective, pressure);
-    const macroFit = Math.max(0, 100 - pressure.overallPressure + signal.confidence / 2);
+    const macroFit = Math.max(0, 100 - pressure.overallPressure + cryptoSignal.confidence / 2);
     const compositeScore = Math.round(
-      (signal.confidence * 0.35) +
+      (cryptoSignal.confidence * 0.35) +
       (macroFit * 0.25) +
       (Math.min(rrRatio * 15, 30) * 0.20) +
       ((direction === "LONG" ? 80 : direction === "WATCH" ? 50 : 20) * 0.20)
     );
 
-    const objFit = scoreObjectiveFit(objective, ticker, "crypto", signal, pressure);
+    // Build a signal-compatible object for objective scoring and rationale
+    const signalForObjFit = {
+      action: cryptoSignal.action,
+      confidence: cryptoSignal.confidence,
+      technicals: {
+        rsiEstimate: cryptoSignal.technicals.rsiEstimate,
+        trend: cryptoSignal.technicals.trend,
+      },
+      regimeAlignment: cryptoSignal.regimeAlignment,
+      priceLevels,
+    };
+
+    const objFit = scoreObjectiveFit(objective, ticker, "crypto", signalForObjFit as any, pressure);
     const objectiveLabel = objective ? OBJECTIVE_TYPES.find(o => o.id === objective.objectiveType)?.label ?? "Custom" : "No Objective";
 
     const rationale = await generateOpportunityRationale(
-      ticker, name, "crypto", direction, price, changePercent, pressure, domains, signal, objectiveLabel
+      ticker, name, "crypto", direction, price, changePercent, pressure, domains, signalForObjFit as any, objectiveLabel
     );
+
+    // Resolve sector from CRYPTO_UNIVERSE (AI tokens get "AI Crypto")
+    const universeEntry = CRYPTO_UNIVERSE.find(c => c.ticker === ticker);
+    const sector = universeEntry?.sector ?? "Crypto";
+
+    // Get the timestamp from CoinGecko market data for provenance display
+    const lastUpdated = marketData?.lastUpdated ?? new Date().toISOString();
 
     return {
       id: `crypto-${ticker}-${Date.now()}`,
       ticker,
       name,
-      sector: "Crypto",
+      sector,
       assetType: "crypto",
       direction,
       currentPrice: price,
@@ -593,6 +678,8 @@ export async function buildCryptoOpportunity(
       volume,
       marketCap,
       dataFreshness: "LIVE",
+      dataSource: "CoinGecko",
+      priceTimestamp: lastUpdated,
       entryZoneLow: entryLow,
       entryZoneHigh: entryHigh,
       stopLoss,
@@ -602,9 +689,9 @@ export async function buildCryptoOpportunity(
       suggestedPositionSizePct: sizing.pct,
       suggestedPositionSizeUsd: sizing.usd,
       riskAmountUsd: sizing.riskUsd,
-      faultlineConfidence: signal.confidence,
+      faultlineConfidence: cryptoSignal.confidence,
       compositeScore,
-      momentumScore: Math.round(signal.technicals.rsiEstimate),
+      momentumScore: cryptoSignal.technicals.momentumScore,
       macroFit: Math.round(macroFit),
       objectiveFit: objFit.fits,
       objectiveFitReason: objFit.reason,

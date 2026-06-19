@@ -368,6 +368,9 @@ export interface HotSectorTicker {
   momentumScore: number;   // 0–100
   compositeScore: number;  // 0–100 overall ranking
   rationale: string;
+  // Data provenance — displayed on every card
+  dataSource?: string;     // e.g. "CoinGecko", "Yahoo Finance"
+  priceTimestamp?: string; // ISO timestamp of the live price
 }
 
 export interface HotSectorPick {
@@ -2077,6 +2080,8 @@ const SECTOR_TICKER_MAP: Record<string, string[]> = {
   "Oracle":                 ["LINK"],
   "Layer 2":                ["ARB"],
   "DeFi":                   ["INJ"],
+  // AI Crypto sector — the missing sector that caused FET/RNDR to fall back to placeholder data
+  "AI Crypto":              ["FET", "RNDR", "TAO", "WLD", "OCEAN", "GRT", "IO", "AR"],
 };
 
 function computeHotSectorPicks(
@@ -2123,21 +2128,64 @@ function computeHotSectorPicks(
         momentumScore: o.momentumScore,
         compositeScore: o.compositeScore,
         rationale: o.whyNow,
+        dataSource: o.dataSource,
+        priceTimestamp: o.priceTimestamp,
       }));
 
+    // Server-side template data validation guard:
+    // Filter out any ticker that still has the known placeholder values.
+    const validatedOpps = sectorOpps.filter(t => !detectTemplateTradeLevels(t));
+
+    // Cross-asset duplication check: if multiple assets share identical levels, reject the batch.
+    if (detectCrossAssetTemplateDuplication(validatedOpps)) {
+      log.warn(`[HotSectors] Cross-asset template duplication detected in sector ${sectorName} — skipping sector`);
+      continue;
+    }
+
     // Only include sectors that have at least one live ticker
-    if (sectorOpps.length > 0) {
+    if (validatedOpps.length > 0) {
       picks.push({
         sector: sectorName,
         sectorScore,
         sectorLabel,
         reason: sectorEntry.reason,
-        tickers: sectorOpps,
+        tickers: validatedOpps,
       });
     }
   }
 
   return picks;
+}
+
+// ── Template Data Validation ─────────────────────────────────
+// Detects the known hardcoded placeholder set that was produced when basePrice
+// defaulted to 100 and fixed multipliers were applied (stop=0.88, T1=1.25, T2=1.40).
+// Returns true if the ticker appears to have fake/template trade levels.
+export function detectTemplateTradeLevels(ticker: HotSectorTicker): boolean {
+  const isPlaceholderPrice = Math.abs(ticker.currentPrice - 100) < 0.01;
+  const isPlaceholderStop  = Math.abs(ticker.stopLoss - 88) < 0.01;
+  const isPlaceholderT1    = Math.abs(ticker.targetOne - 125) < 0.01;
+  const isPlaceholderT2    = Math.abs(ticker.targetTwo - 140) < 0.01;
+  const isPlaceholderEntryLow  = Math.abs(ticker.entryZoneLow - 98) < 0.01;
+  const isPlaceholderEntryHigh = Math.abs(ticker.entryZoneHigh - 101) < 0.01;
+
+  // Flag as template data if price AND at least 2 other levels match the known placeholder set
+  const matchCount = [isPlaceholderStop, isPlaceholderT1, isPlaceholderT2, isPlaceholderEntryLow, isPlaceholderEntryHigh]
+    .filter(Boolean).length;
+
+  return isPlaceholderPrice && matchCount >= 2;
+}
+
+// Validates a batch of tickers for cross-asset template duplication:
+// if multiple assets share identical price + stop + T1, that's a template leak.
+export function detectCrossAssetTemplateDuplication(tickers: HotSectorTicker[]): boolean {
+  if (tickers.length < 2) return false;
+  const seen = new Map<string, number>();
+  for (const t of tickers) {
+    const key = `${t.currentPrice.toFixed(2)}|${t.stopLoss.toFixed(2)}|${t.targetOne.toFixed(2)}`;
+    seen.set(key, (seen.get(key) ?? 0) + 1);
+  }
+  return Array.from(seen.values()).some(count => count >= 2);
 }
 
 function computePortfolioActions(pressure: FaultlinePressureOutput, favorability: number, moveType: MoveType): PortfolioActionRecommendation[] {
@@ -2469,39 +2517,53 @@ function computeRecommendedVehicles(
   const p = pressure.overallPressure;
   const exposureLabel = EXPOSURE_LABELS[category] ?? category;
 
-  const vehicles: RecommendedVehicle[] = vehicleList.map(v => {
-    const opp = allOpps.get(v.ticker.toUpperCase());
-    // Use live prices from opportunity scan if available, else estimate
-    const basePrice = opp?.currentPrice ?? 100;
-    const direction = input.moveType === "reduce_risk" || input.moveType === "raise_cash" || input.moveType === "sell_specific_asset" ? "hedge" : "long";
-    const stopPct = v.riskLevel === "Extreme" ? 0.12 : v.riskLevel === "High" ? 0.09 : v.riskLevel === "Medium" ? 0.07 : 0.05;
-    const t1Pct   = v.riskLevel === "Extreme" ? 0.25 : v.riskLevel === "High" ? 0.18 : v.riskLevel === "Medium" ? 0.12 : 0.08;
-    const t2Pct   = t1Pct * 1.6;
-    const entryLow  = Math.round(basePrice * 0.98 * 100) / 100;
-    const entryHigh = Math.round(basePrice * 1.01 * 100) / 100;
-    const stopLoss  = Math.round(basePrice * (1 - stopPct) * 100) / 100;
-    const targetOne = Math.round(basePrice * (1 + t1Pct) * 100) / 100;
-    const targetTwo = Math.round(basePrice * (1 + t2Pct) * 100) / 100;
-    const riskRewardRatio = Math.round((t1Pct / stopPct) * 10) / 10;
-    const conviction = opp ? Math.round(opp.compositeScore * 0.7 + (100 - p) * 0.3) : Math.round((100 - p) * 0.6 + 40);
+  const vehicles: RecommendedVehicle[] = vehicleList
+    .map(v => {
+      const opp = allOpps.get(v.ticker.toUpperCase());
 
-    return {
-      ticker: v.ticker,
-      name: v.name,
-      assetType: v.assetType,
-      vehicleType: v.vehicleType,
-      rationale: opp?.whyNow ?? `${v.vehicleType} exposure to ${exposureLabel} — aligned with current ${pressure.regime} regime`,
-      riskLevel: v.riskLevel,
-      currentPrice: basePrice,
-      entryZoneLow: entryLow,
-      entryZoneHigh: entryHigh,
-      stopLoss,
-      targetOne,
-      targetTwo,
-      riskRewardRatio,
-      conviction: clamp(conviction, 10, 98),
-    };
-  });
+      // CRITICAL FIX: Never fall back to basePrice=100.
+      // If no live opportunity is available for this ticker, skip it entirely.
+      // The old code used `opp?.currentPrice ?? 100` which produced the exact
+      // placeholder values ($88 stop, $125 T1, $140 T2, $98-$101 entry, conviction 82)
+      // that were reported as the bug.
+      if (!opp || !opp.currentPrice || opp.currentPrice <= 0) {
+        log.warn(`[RecommendedVehicles] No live price for ${v.ticker} — skipping vehicle to avoid placeholder data`);
+        return null;
+      }
+
+      const basePrice = opp.currentPrice;
+
+      // Use live ATR-based levels from the opportunity scan as the primary source.
+      // Fall back to percentage-based estimates only if the opportunity levels are missing.
+      const entryLow  = opp.entryZoneLow  > 0 ? opp.entryZoneLow  : Math.round(basePrice * 0.98 * 100) / 100;
+      const entryHigh = opp.entryZoneHigh > 0 ? opp.entryZoneHigh : Math.round(basePrice * 1.01 * 100) / 100;
+      const stopLoss  = opp.stopLoss      > 0 ? opp.stopLoss      : Math.round(basePrice * (1 - (v.riskLevel === "Extreme" ? 0.12 : v.riskLevel === "High" ? 0.09 : v.riskLevel === "Medium" ? 0.07 : 0.05)) * 100) / 100;
+      const targetOne = opp.targetOne     > 0 ? opp.targetOne     : Math.round(basePrice * (1 + (v.riskLevel === "Extreme" ? 0.25 : v.riskLevel === "High" ? 0.18 : v.riskLevel === "Medium" ? 0.12 : 0.08)) * 100) / 100;
+      const targetTwo = opp.targetTwo     > 0 ? opp.targetTwo     : Math.round(targetOne * 1.15 * 100) / 100;
+
+      const upside = targetOne - basePrice;
+      const downside = basePrice - stopLoss;
+      const riskRewardRatio = downside > 0 ? Math.round((upside / downside) * 10) / 10 : 2.0;
+      const conviction = Math.round(opp.compositeScore * 0.7 + (100 - p) * 0.3);
+
+      return {
+        ticker: v.ticker,
+        name: v.name,
+        assetType: v.assetType,
+        vehicleType: v.vehicleType,
+        rationale: opp.whyNow ?? `${v.vehicleType} exposure to ${exposureLabel} — aligned with current ${pressure.regime} regime`,
+        riskLevel: v.riskLevel,
+        currentPrice: basePrice,
+        entryZoneLow: entryLow,
+        entryZoneHigh: entryHigh,
+        stopLoss,
+        targetOne,
+        targetTwo,
+        riskRewardRatio,
+        conviction: clamp(conviction, 10, 98),
+      };
+    })
+    .filter((v): v is RecommendedVehicle => v !== null);
 
   const isHighPressure = p >= 60;
   const notes = isHighPressure
