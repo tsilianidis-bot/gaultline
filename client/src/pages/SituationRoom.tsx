@@ -903,12 +903,19 @@ export default function SituationRoom() {
               </div>
 
               {/* Run button */}
-              <button onClick={handleSimulate} disabled={isLoading}
+              {!isReadyToSimulate() && !isLoading && (
+                <div style={{ marginBottom: "8px", padding: "8px 12px", background: "rgba(255,149,0,0.06)", border: "1px solid rgba(255,149,0,0.20)", borderRadius: "4px", display: "flex", alignItems: "center", gap: "8px" }}>
+                  <AlertTriangle size={12} color="#FF9500" />
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(255,149,0,0.75)", letterSpacing: "0.06em" }}>Complete all required fields above to run analysis</span>
+                </div>
+              )}
+              <button onClick={handleSimulate} disabled={isLoading || !isReadyToSimulate()}
                 style={{
                   width: "100%", padding: "14px",
-                  background: !isLoading ? "linear-gradient(135deg, rgba(0,212,255,0.18) 0%, rgba(0,212,255,0.07) 100%)" : "rgba(255,255,255,0.03)",
-                  border: !isLoading ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "4px", cursor: !isLoading ? "pointer" : "not-allowed",
+                  background: isLoading ? "rgba(255,255,255,0.03)" : isReadyToSimulate() ? "linear-gradient(135deg, rgba(0,212,255,0.18) 0%, rgba(0,212,255,0.07) 100%)" : "rgba(255,255,255,0.02)",
+                  border: isLoading ? "1px solid rgba(255,255,255,0.06)" : isReadyToSimulate() ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "4px", cursor: (isLoading || !isReadyToSimulate()) ? "not-allowed" : "pointer",
+                  opacity: (!isLoading && !isReadyToSimulate()) ? 0.45 : 1,
                   transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
                   display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                 }}>
@@ -919,8 +926,8 @@ export default function SituationRoom() {
                   </>
                 ) : (
                   <>
-                    <Zap size={14} color="#00D4FF" />
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: "#00D4FF", letterSpacing: "0.15em" }}>RUN FAULTLINE ANALYSIS</span>
+                    <Zap size={14} color={isReadyToSimulate() ? "#00D4FF" : "#64748B"} />
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: isReadyToSimulate() ? "#00D4FF" : "#64748B", letterSpacing: "0.15em" }}>RUN FAULTLINE ANALYSIS</span>
                   </>
                 )}
               </button>
@@ -1504,6 +1511,126 @@ export default function SituationRoom() {
             )}
 
             <div style={{ marginBottom: "10px" }} />
+
+            {/* ═══ RECOMMENDED VEHICLES ═══ */}
+            {result.recommendedVehicles && result.recommendedVehicles.vehicles.length > 0 && (
+              <div style={{ marginBottom: "10px" }}>
+                <CollapsiblePanel
+                  open={open.recVehicles ?? true}
+                  onToggle={() => toggle("recVehicles")}
+                  icon={<Target size={14} />}
+                  title={`Recommended Vehicles — ${result.recommendedVehicles.exposureLabel}`}
+                  color="#00FF88"
+                  count={result.recommendedVehicles.vehicles.length}
+                >
+                  <div style={{ marginBottom: "8px", padding: "8px 10px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "4px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.65)" }}>{result.recommendedVehicles.notes}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingTop: "4px" }}>
+                    {result.recommendedVehicles.vehicles.map((v: any, i: number) => {
+                      const riskColor = v.riskLevel === "Extreme" ? "#FF2D55" : v.riskLevel === "High" ? "#FF9500" : v.riskLevel === "Medium" ? "#FFD60A" : "#00FF88";
+                      const rrColor = v.riskRewardRatio >= 3 ? "#00FF88" : v.riskRewardRatio >= 2 ? "#FFD60A" : "#FF9500";
+                      return (
+                        <div key={i} style={{ padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "5px" }}>
+                          {/* Header row */}
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: "14px", color: "#00D4FF" }}>{v.ticker}</span>
+                              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8" }}>{v.name}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: riskColor, padding: "2px 6px", background: `${riskColor}12`, border: `1px solid ${riskColor}30`, borderRadius: "3px", textTransform: "uppercase" }}>{v.riskLevel}</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", padding: "2px 6px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "3px" }}>{v.vehicleType}</span>
+                            </div>
+                          </div>
+                          {/* Price levels */}
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "5px", marginBottom: "8px" }}>
+                            {[
+                              { label: "PRICE", val: `$${v.currentPrice.toFixed(2)}`, color: "#E2E8F0" },
+                              { label: "ENTRY", val: `$${v.entryZoneLow.toFixed(2)}–$${v.entryZoneHigh.toFixed(2)}`, color: "#00D4FF" },
+                              { label: "STOP",  val: `$${v.stopLoss.toFixed(2)}`, color: "#FF2D55" },
+                              { label: "T1",    val: `$${v.targetOne.toFixed(2)}`, color: "#00FF88" },
+                              { label: "T2",    val: `$${v.targetTwo.toFixed(2)}`, color: "#00FF88" },
+                            ].map((p, pi) => (
+                              <div key={pi} style={{ padding: "5px 6px", background: `${p.color}06`, border: `1px solid ${p.color}15`, borderRadius: "3px", textAlign: "center" }}>
+                                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.6)", marginBottom: "2px", letterSpacing: "0.08em" }}>{p.label}</div>
+                                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "11px", color: p.color }}>{p.val}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* R:R + Conviction row */}
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B" }}>R:R</span>
+                            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: rrColor }}>{v.riskRewardRatio.toFixed(1)}x</span>
+                            <span style={{ width: "1px", height: "12px", background: "rgba(255,255,255,0.08)" }} />
+                            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B" }}>CONVICTION</span>
+                            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#00D4FF" }}>{v.conviction}</span>
+                            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.45)" }}>/100</span>
+                          </div>
+                          {/* Rationale */}
+                          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.5 }}>{v.rationale}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CollapsiblePanel>
+              </div>
+            )}
+
+            {/* ═══ PORTFOLIO IMPACT ═══ */}
+            {result.portfolioImpact && (
+              <div style={{ marginBottom: "10px" }}>
+                <CollapsiblePanel
+                  open={open.portfolioImpact ?? true}
+                  onToggle={() => toggle("portfolioImpact")}
+                  icon={<BarChart2 size={14} />}
+                  title="Portfolio Impact"
+                  color="#FF9500"
+                >
+                  {/* Headline + net risk change */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px", paddingBottom: "10px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{result.portfolioImpact.headline}</div>
+                    <span style={{
+                      fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",
+                      color: result.portfolioImpact.netRiskChange === "Increased" ? "#FF2D55" : result.portfolioImpact.netRiskChange === "Decreased" ? "#00FF88" : "#FFD60A",
+                      padding: "3px 8px",
+                      background: result.portfolioImpact.netRiskChange === "Increased" ? "rgba(255,45,85,0.10)" : result.portfolioImpact.netRiskChange === "Decreased" ? "rgba(0,255,136,0.10)" : "rgba(255,214,10,0.10)",
+                      border: `1px solid ${result.portfolioImpact.netRiskChange === "Increased" ? "rgba(255,45,85,0.30)" : result.portfolioImpact.netRiskChange === "Decreased" ? "rgba(0,255,136,0.30)" : "rgba(255,214,10,0.30)"}`,
+                      borderRadius: "3px", textTransform: "uppercase", letterSpacing: "0.08em", flexShrink: 0,
+                    }}>Risk {result.portfolioImpact.netRiskChange}</span>
+                  </div>
+                  {/* Allocation lines */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "12px" }}>
+                    {result.portfolioImpact.lines.map((line: any, i: number) => {
+                      const changeColor = line.change > 0 ? "#00FF88" : line.change < 0 ? "#FF2D55" : "#64748B";
+                      const changeLabel = line.change > 0 ? `+${line.change}%` : line.change < 0 ? `${line.change}%` : "—";
+                      return (
+                        <div key={i} style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: "#CBD5E1" }}>{line.category}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.6)" }}>{line.currentAllocation}%</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.4)" }}>→</span>
+                              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#E2E8F0" }}>{line.targetAllocation}%</span>
+                              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: changeColor }}>{changeLabel}</span>
+                            </div>
+                          </div>
+                          {/* Visual bar */}
+                          <div style={{ height: "3px", background: "rgba(255,255,255,0.05)", borderRadius: "2px", overflow: "hidden", marginBottom: "5px" }}>
+                            <div style={{ height: "100%", width: `${Math.min(line.targetAllocation * 2, 100)}%`, background: `linear-gradient(90deg, ${changeColor}40, ${changeColor})`, borderRadius: "2px", transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)" }} />
+                          </div>
+                          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", fontStyle: "italic" }}>{line.rationale}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Summary */}
+                  <div style={{ padding: "10px 12px", background: "rgba(255,149,0,0.04)", border: "1px solid rgba(255,149,0,0.12)", borderRadius: "4px" }}>
+                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6 }}>{result.portfolioImpact.summary}</div>
+                  </div>
+                </CollapsiblePanel>
+              </div>
+            )}
 
             {/* ═══ FAULTLINE MARKET INTERPRETATION ═══ */}
             {result.marketInterpretation && (

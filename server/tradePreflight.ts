@@ -255,6 +255,8 @@ export interface TradeSimulationOutput {
   marketInterpretation: MarketInterpretation;
   recommendedMoves: RecommendedMoves;
   hotSectorPicks: HotSectorPick[];
+  recommendedVehicles?: RecommendedVehiclesOutput;
+  portfolioImpact?: PortfolioImpactOutput;
   explanation: string;
   generatedAt: string;
 }
@@ -298,6 +300,46 @@ export interface PortfolioActionRecommendation {
   action: string;   // e.g. "Raise Cash: +10%"
   rationale: string;
   urgency: "low" | "medium" | "high";
+}
+
+// ── Recommended Vehicles ─────────────────────────────────────
+export interface RecommendedVehicle {
+  ticker: string;
+  name: string;
+  assetType: "stock" | "crypto" | "etf";
+  vehicleType: string;   // e.g. "Pure Play", "ETF", "Leveraged", "Hedge"
+  rationale: string;
+  riskLevel: "Low" | "Medium" | "High" | "Extreme";
+  currentPrice: number;
+  entryZoneLow: number;
+  entryZoneHigh: number;
+  stopLoss: number;
+  targetOne: number;
+  targetTwo: number;
+  riskRewardRatio: number;
+  conviction: number;    // 0–100
+}
+
+export interface RecommendedVehiclesOutput {
+  exposureLabel: string;
+  vehicles: RecommendedVehicle[];
+  notes: string;
+}
+
+// ── Portfolio Impact ──────────────────────────────────────────
+export interface PortfolioImpactLine {
+  category: string;        // e.g. "Cash", "Technology", "Crypto"
+  currentAllocation: number;  // % (estimated baseline)
+  targetAllocation: number;   // % (recommended after this move)
+  change: number;             // signed delta
+  rationale: string;
+}
+
+export interface PortfolioImpactOutput {
+  headline: string;
+  lines: PortfolioImpactLine[];
+  netRiskChange: "Increased" | "Decreased" | "Neutral";
+  summary: string;
 }
 
 export interface RecommendedMoves {
@@ -2255,6 +2297,352 @@ async function computeHotSectorPicksFromPressure(
   }
 }
 
+// ── Recommended Vehicles Engine ─────────────────────────────────
+
+// Exposure-to-vehicle mapping: each exposure category maps to 4-6 specific tickers
+const EXPOSURE_VEHICLE_MAP: Record<string, Array<{ ticker: string; name: string; assetType: "stock" | "crypto" | "etf"; vehicleType: string; riskLevel: "Low" | "Medium" | "High" | "Extreme" }>> = {
+  ai_infrastructure:    [
+    { ticker: "NVDA",  name: "NVIDIA Corp",           assetType: "stock", vehicleType: "Pure Play",  riskLevel: "High" },
+    { ticker: "PLTR",  name: "Palantir Technologies",  assetType: "stock", vehicleType: "Pure Play",  riskLevel: "High" },
+    { ticker: "AMD",   name: "Advanced Micro Devices", assetType: "stock", vehicleType: "Pure Play",  riskLevel: "High" },
+    { ticker: "MSFT",  name: "Microsoft Corp",         assetType: "stock", vehicleType: "Mega Cap",   riskLevel: "Medium" },
+    { ticker: "BOTZ",  name: "Global X Robotics & AI ETF", assetType: "etf", vehicleType: "ETF",    riskLevel: "Medium" },
+    { ticker: "SOXL",  name: "Direxion Daily Semi 3x", assetType: "etf",   vehicleType: "Leveraged", riskLevel: "Extreme" },
+  ],
+  technology:           [
+    { ticker: "QQQ",   name: "Invesco QQQ Trust",      assetType: "etf",   vehicleType: "ETF",       riskLevel: "Medium" },
+    { ticker: "AAPL",  name: "Apple Inc",              assetType: "stock", vehicleType: "Mega Cap",  riskLevel: "Low" },
+    { ticker: "MSFT",  name: "Microsoft Corp",         assetType: "stock", vehicleType: "Mega Cap",  riskLevel: "Low" },
+    { ticker: "NVDA",  name: "NVIDIA Corp",            assetType: "stock", vehicleType: "Pure Play", riskLevel: "High" },
+    { ticker: "META",  name: "Meta Platforms",         assetType: "stock", vehicleType: "Mega Cap",  riskLevel: "Medium" },
+    { ticker: "TQQQ",  name: "ProShares UltraPro QQQ", assetType: "etf",   vehicleType: "Leveraged", riskLevel: "Extreme" },
+  ],
+  large_cap_growth:     [
+    { ticker: "SPY",   name: "SPDR S&P 500 ETF",       assetType: "etf",   vehicleType: "ETF",       riskLevel: "Low" },
+    { ticker: "VUG",   name: "Vanguard Growth ETF",    assetType: "etf",   vehicleType: "ETF",       riskLevel: "Low" },
+    { ticker: "AAPL",  name: "Apple Inc",              assetType: "stock", vehicleType: "Mega Cap",  riskLevel: "Low" },
+    { ticker: "GOOGL", name: "Alphabet Inc",           assetType: "stock", vehicleType: "Mega Cap",  riskLevel: "Low" },
+    { ticker: "AMZN",  name: "Amazon.com Inc",         assetType: "stock", vehicleType: "Mega Cap",  riskLevel: "Medium" },
+  ],
+  small_cap_growth:     [
+    { ticker: "IWM",   name: "iShares Russell 2000 ETF", assetType: "etf", vehicleType: "ETF",       riskLevel: "Medium" },
+    { ticker: "SCHA",  name: "Schwab US Small-Cap ETF", assetType: "etf",  vehicleType: "ETF",       riskLevel: "Medium" },
+    { ticker: "RKLB",  name: "Rocket Lab USA",         assetType: "stock", vehicleType: "Pure Play", riskLevel: "High" },
+    { ticker: "IONQ",  name: "IonQ Inc",               assetType: "stock", vehicleType: "Pure Play", riskLevel: "Extreme" },
+    { ticker: "ACHR",  name: "Archer Aviation",        assetType: "stock", vehicleType: "Pure Play", riskLevel: "Extreme" },
+  ],
+  value:                [
+    { ticker: "VTV",   name: "Vanguard Value ETF",     assetType: "etf",   vehicleType: "ETF",       riskLevel: "Low" },
+    { ticker: "BRK.B", name: "Berkshire Hathaway B",   assetType: "stock", vehicleType: "Value",     riskLevel: "Low" },
+    { ticker: "JPM",   name: "JPMorgan Chase",         assetType: "stock", vehicleType: "Value",     riskLevel: "Low" },
+    { ticker: "XOM",   name: "Exxon Mobil Corp",       assetType: "stock", vehicleType: "Value",     riskLevel: "Low" },
+  ],
+  dividend:             [
+    { ticker: "SCHD",  name: "Schwab US Dividend ETF", assetType: "etf",   vehicleType: "ETF",       riskLevel: "Low" },
+    { ticker: "VYM",   name: "Vanguard High Div Yield", assetType: "etf",  vehicleType: "ETF",       riskLevel: "Low" },
+    { ticker: "JNJ",   name: "Johnson & Johnson",      assetType: "stock", vehicleType: "Dividend",  riskLevel: "Low" },
+    { ticker: "KO",    name: "Coca-Cola Co",           assetType: "stock", vehicleType: "Dividend",  riskLevel: "Low" },
+  ],
+  financials:           [
+    { ticker: "XLF",   name: "Financial Select SPDR",  assetType: "etf",   vehicleType: "ETF",       riskLevel: "Low" },
+    { ticker: "JPM",   name: "JPMorgan Chase",         assetType: "stock", vehicleType: "Pure Play", riskLevel: "Low" },
+    { ticker: "GS",    name: "Goldman Sachs",          assetType: "stock", vehicleType: "Pure Play", riskLevel: "Medium" },
+    { ticker: "COIN",  name: "Coinbase Global",        assetType: "stock", vehicleType: "Fintech",   riskLevel: "High" },
+  ],
+  industrials:          [
+    { ticker: "XLI",   name: "Industrial Select SPDR", assetType: "etf",   vehicleType: "ETF",       riskLevel: "Low" },
+    { ticker: "CAT",   name: "Caterpillar Inc",        assetType: "stock", vehicleType: "Pure Play", riskLevel: "Medium" },
+    { ticker: "DE",    name: "Deere & Company",        assetType: "stock", vehicleType: "Pure Play", riskLevel: "Medium" },
+    { ticker: "RKLB",  name: "Rocket Lab USA",         assetType: "stock", vehicleType: "Speculative", riskLevel: "High" },
+  ],
+  energy:               [
+    { ticker: "XLE",   name: "Energy Select SPDR",     assetType: "etf",   vehicleType: "ETF",       riskLevel: "Medium" },
+    { ticker: "XOM",   name: "Exxon Mobil Corp",       assetType: "stock", vehicleType: "Pure Play", riskLevel: "Medium" },
+    { ticker: "CVX",   name: "Chevron Corp",           assetType: "stock", vehicleType: "Pure Play", riskLevel: "Medium" },
+    { ticker: "CCJ",   name: "Cameco Corp (Uranium)",  assetType: "stock", vehicleType: "Uranium",   riskLevel: "High" },
+  ],
+  healthcare:           [
+    { ticker: "XLV",   name: "Health Care Select SPDR", assetType: "etf",  vehicleType: "ETF",       riskLevel: "Low" },
+    { ticker: "UNH",   name: "UnitedHealth Group",     assetType: "stock", vehicleType: "Mega Cap",  riskLevel: "Medium" },
+    { ticker: "ABBV",  name: "AbbVie Inc",             assetType: "stock", vehicleType: "Dividend",  riskLevel: "Low" },
+    { ticker: "MRNA",  name: "Moderna Inc",            assetType: "stock", vehicleType: "Speculative", riskLevel: "High" },
+  ],
+  international:        [
+    { ticker: "EFA",   name: "iShares MSCI EAFE ETF",  assetType: "etf",   vehicleType: "ETF",       riskLevel: "Medium" },
+    { ticker: "VEA",   name: "Vanguard FTSE Dev Mkt",  assetType: "etf",   vehicleType: "ETF",       riskLevel: "Medium" },
+    { ticker: "EWJ",   name: "iShares MSCI Japan ETF", assetType: "etf",   vehicleType: "ETF",       riskLevel: "Medium" },
+  ],
+  emerging_markets:     [
+    { ticker: "EEM",   name: "iShares MSCI EM ETF",    assetType: "etf",   vehicleType: "ETF",       riskLevel: "High" },
+    { ticker: "VWO",   name: "Vanguard FTSE EM ETF",   assetType: "etf",   vehicleType: "ETF",       riskLevel: "High" },
+    { ticker: "BABA",  name: "Alibaba Group",          assetType: "stock", vehicleType: "Pure Play", riskLevel: "High" },
+  ],
+  bitcoin:              [
+    { ticker: "BTC",   name: "Bitcoin",                assetType: "crypto", vehicleType: "Spot",     riskLevel: "High" },
+    { ticker: "IBIT",  name: "iShares Bitcoin Trust",  assetType: "etf",   vehicleType: "ETF",       riskLevel: "High" },
+    { ticker: "MSTR",  name: "MicroStrategy Inc",      assetType: "stock", vehicleType: "Proxy",     riskLevel: "Extreme" },
+    { ticker: "COIN",  name: "Coinbase Global",        assetType: "stock", vehicleType: "Proxy",     riskLevel: "High" },
+  ],
+  ethereum:             [
+    { ticker: "ETH",   name: "Ethereum",               assetType: "crypto", vehicleType: "Spot",     riskLevel: "High" },
+    { ticker: "ETHA",  name: "iShares Ethereum Trust", assetType: "etf",   vehicleType: "ETF",       riskLevel: "High" },
+    { ticker: "COIN",  name: "Coinbase Global",        assetType: "stock", vehicleType: "Proxy",     riskLevel: "High" },
+  ],
+  ai_crypto:            [
+    { ticker: "FET",   name: "Fetch.ai",               assetType: "crypto", vehicleType: "Pure Play", riskLevel: "Extreme" },
+    { ticker: "RNDR",  name: "Render Network",         assetType: "crypto", vehicleType: "Pure Play", riskLevel: "Extreme" },
+    { ticker: "TAO",   name: "Bittensor",              assetType: "crypto", vehicleType: "Pure Play", riskLevel: "Extreme" },
+    { ticker: "NEAR",  name: "NEAR Protocol",          assetType: "crypto", vehicleType: "Layer 1",   riskLevel: "High" },
+  ],
+  altcoins:             [
+    { ticker: "SOL",   name: "Solana",                 assetType: "crypto", vehicleType: "Layer 1",   riskLevel: "High" },
+    { ticker: "AVAX",  name: "Avalanche",              assetType: "crypto", vehicleType: "Layer 1",   riskLevel: "High" },
+    { ticker: "LINK",  name: "Chainlink",              assetType: "crypto", vehicleType: "Oracle",    riskLevel: "High" },
+    { ticker: "ARB",   name: "Arbitrum",               assetType: "crypto", vehicleType: "Layer 2",   riskLevel: "Extreme" },
+    { ticker: "INJ",   name: "Injective Protocol",     assetType: "crypto", vehicleType: "DeFi",      riskLevel: "Extreme" },
+  ],
+  memecoins:            [
+    { ticker: "DOGE",  name: "Dogecoin",               assetType: "crypto", vehicleType: "Meme",      riskLevel: "Extreme" },
+    { ticker: "SHIB",  name: "Shiba Inu",              assetType: "crypto", vehicleType: "Meme",      riskLevel: "Extreme" },
+    { ticker: "PEPE",  name: "Pepe Coin",              assetType: "crypto", vehicleType: "Meme",      riskLevel: "Extreme" },
+  ],
+  options:              [
+    { ticker: "SPY",   name: "SPY Options",            assetType: "etf",   vehicleType: "Options",   riskLevel: "High" },
+    { ticker: "QQQ",   name: "QQQ Options",            assetType: "etf",   vehicleType: "Options",   riskLevel: "High" },
+    { ticker: "NVDA",  name: "NVDA Options",           assetType: "stock", vehicleType: "Options",   riskLevel: "Extreme" },
+  ],
+  leveraged_exposure:   [
+    { ticker: "TQQQ",  name: "ProShares UltraPro QQQ", assetType: "etf",   vehicleType: "3x Leveraged", riskLevel: "Extreme" },
+    { ticker: "SOXL",  name: "Direxion Daily Semi 3x", assetType: "etf",   vehicleType: "3x Leveraged", riskLevel: "Extreme" },
+    { ticker: "UPRO",  name: "ProShares UltraPro S&P", assetType: "etf",   vehicleType: "3x Leveraged", riskLevel: "Extreme" },
+    { ticker: "LABU",  name: "Direxion Daily Bio 3x",  assetType: "etf",   vehicleType: "3x Leveraged", riskLevel: "Extreme" },
+  ],
+  // Hedge categories
+  entire_portfolio:     [
+    { ticker: "SQQQ",  name: "ProShares UltraPro Short QQQ", assetType: "etf", vehicleType: "Inverse", riskLevel: "High" },
+    { ticker: "SH",    name: "ProShares Short S&P500",  assetType: "etf",   vehicleType: "Inverse",   riskLevel: "Medium" },
+    { ticker: "GLD",   name: "SPDR Gold Shares",        assetType: "etf",   vehicleType: "Safe Haven", riskLevel: "Low" },
+    { ticker: "TLT",   name: "iShares 20+ Yr Treasury", assetType: "etf",   vehicleType: "Safe Haven", riskLevel: "Medium" },
+    { ticker: "VIXY",  name: "ProShares VIX Short-Term", assetType: "etf",  vehicleType: "Volatility", riskLevel: "Extreme" },
+  ],
+  technology_exposure:  [
+    { ticker: "SQQQ",  name: "ProShares UltraPro Short QQQ", assetType: "etf", vehicleType: "Inverse", riskLevel: "High" },
+    { ticker: "QID",   name: "ProShares UltraShort QQQ", assetType: "etf",  vehicleType: "Inverse",   riskLevel: "High" },
+    { ticker: "GLD",   name: "SPDR Gold Shares",        assetType: "etf",   vehicleType: "Safe Haven", riskLevel: "Low" },
+  ],
+  crypto_exposure:      [
+    { ticker: "BITI",  name: "ProShares Short Bitcoin", assetType: "etf",   vehicleType: "Inverse",   riskLevel: "High" },
+    { ticker: "GLD",   name: "SPDR Gold Shares",        assetType: "etf",   vehicleType: "Safe Haven", riskLevel: "Low" },
+    { ticker: "USDT",  name: "Tether (Stablecoin)",     assetType: "crypto", vehicleType: "Stablecoin", riskLevel: "Low" },
+  ],
+  market_risk:          [
+    { ticker: "GLD",   name: "SPDR Gold Shares",        assetType: "etf",   vehicleType: "Safe Haven", riskLevel: "Low" },
+    { ticker: "TLT",   name: "iShares 20+ Yr Treasury", assetType: "etf",   vehicleType: "Safe Haven", riskLevel: "Medium" },
+    { ticker: "VIXY",  name: "ProShares VIX Short-Term", assetType: "etf",  vehicleType: "Volatility", riskLevel: "Extreme" },
+    { ticker: "SH",    name: "ProShares Short S&P500",  assetType: "etf",   vehicleType: "Inverse",   riskLevel: "Medium" },
+  ],
+  recession_risk:       [
+    { ticker: "GLD",   name: "SPDR Gold Shares",        assetType: "etf",   vehicleType: "Safe Haven", riskLevel: "Low" },
+    { ticker: "TLT",   name: "iShares 20+ Yr Treasury", assetType: "etf",   vehicleType: "Safe Haven", riskLevel: "Medium" },
+    { ticker: "XLU",   name: "Utilities Select SPDR",   assetType: "etf",   vehicleType: "Defensive", riskLevel: "Low" },
+    { ticker: "XLP",   name: "Consumer Staples SPDR",   assetType: "etf",   vehicleType: "Defensive", riskLevel: "Low" },
+  ],
+  inflation_risk:       [
+    { ticker: "GLD",   name: "SPDR Gold Shares",        assetType: "etf",   vehicleType: "Inflation Hedge", riskLevel: "Low" },
+    { ticker: "TIP",   name: "iShares TIPS Bond ETF",   assetType: "etf",   vehicleType: "Inflation Hedge", riskLevel: "Low" },
+    { ticker: "XLE",   name: "Energy Select SPDR",      assetType: "etf",   vehicleType: "Inflation Hedge", riskLevel: "Medium" },
+    { ticker: "BTC",   name: "Bitcoin",                 assetType: "crypto", vehicleType: "Inflation Hedge", riskLevel: "High" },
+  ],
+};
+
+function computeRecommendedVehicles(
+  input: TradeSimulationInput,
+  allOpps: Map<string, TradeOpportunity>,
+  pressure: FaultlinePressureOutput
+): RecommendedVehiclesOutput | undefined {
+  const category = input.exposureCategory;
+  if (!category) return undefined;
+
+  const vehicleList = EXPOSURE_VEHICLE_MAP[category];
+  if (!vehicleList || vehicleList.length === 0) return undefined;
+
+  const p = pressure.overallPressure;
+  const exposureLabel = EXPOSURE_LABELS[category] ?? category;
+
+  const vehicles: RecommendedVehicle[] = vehicleList.map(v => {
+    const opp = allOpps.get(v.ticker.toUpperCase());
+    // Use live prices from opportunity scan if available, else estimate
+    const basePrice = opp?.currentPrice ?? 100;
+    const direction = input.moveType === "reduce_risk" || input.moveType === "raise_cash" || input.moveType === "sell_specific_asset" ? "hedge" : "long";
+    const stopPct = v.riskLevel === "Extreme" ? 0.12 : v.riskLevel === "High" ? 0.09 : v.riskLevel === "Medium" ? 0.07 : 0.05;
+    const t1Pct   = v.riskLevel === "Extreme" ? 0.25 : v.riskLevel === "High" ? 0.18 : v.riskLevel === "Medium" ? 0.12 : 0.08;
+    const t2Pct   = t1Pct * 1.6;
+    const entryLow  = Math.round(basePrice * 0.98 * 100) / 100;
+    const entryHigh = Math.round(basePrice * 1.01 * 100) / 100;
+    const stopLoss  = Math.round(basePrice * (1 - stopPct) * 100) / 100;
+    const targetOne = Math.round(basePrice * (1 + t1Pct) * 100) / 100;
+    const targetTwo = Math.round(basePrice * (1 + t2Pct) * 100) / 100;
+    const riskRewardRatio = Math.round((t1Pct / stopPct) * 10) / 10;
+    const conviction = opp ? Math.round(opp.compositeScore * 0.7 + (100 - p) * 0.3) : Math.round((100 - p) * 0.6 + 40);
+
+    return {
+      ticker: v.ticker,
+      name: v.name,
+      assetType: v.assetType,
+      vehicleType: v.vehicleType,
+      rationale: opp?.whyNow ?? `${v.vehicleType} exposure to ${exposureLabel} — aligned with current ${pressure.regime} regime`,
+      riskLevel: v.riskLevel,
+      currentPrice: basePrice,
+      entryZoneLow: entryLow,
+      entryZoneHigh: entryHigh,
+      stopLoss,
+      targetOne,
+      targetTwo,
+      riskRewardRatio,
+      conviction: clamp(conviction, 10, 98),
+    };
+  });
+
+  const isHighPressure = p >= 60;
+  const notes = isHighPressure
+    ? `High pressure regime (${p}/100) — prefer lower-risk vehicles and reduce position sizes by 25-30%`
+    : p >= 40
+    ? `Mixed regime (${p}/100) — standard sizing, focus on vehicles with defined stops`
+    : `Favorable regime (${p}/100) — full position sizing appropriate for high-conviction vehicles`;
+
+  return { exposureLabel, vehicles, notes };
+}
+
+// ── Portfolio Impact Engine ────────────────────────────────────
+
+function computePortfolioImpact(
+  input: TradeSimulationInput,
+  favorability: number,
+  pressure: FaultlinePressureOutput
+): PortfolioImpactOutput {
+  const p = pressure.overallPressure;
+  const lines: PortfolioImpactLine[] = [];
+
+  // Baseline allocation assumptions (typical retail portfolio)
+  const baselines: Record<string, number> = {
+    "Cash":                5,
+    "US Large Cap Stocks": 40,
+    "Technology":          20,
+    "Crypto":              5,
+    "International":       10,
+    "Bonds / Fixed Income": 10,
+    "Alternatives / Hedges": 5,
+    "Small Cap / Speculative": 5,
+  };
+
+  let headline = "";
+  let netRiskChange: "Increased" | "Decreased" | "Neutral" = "Neutral";
+  let summary = "";
+
+  switch (input.moveType) {
+    case "add_risk": {
+      const addAmt = favorability >= 70 ? 10 : favorability >= 50 ? 7 : 4;
+      const category = input.exposureCategory ? (EXPOSURE_LABELS[input.exposureCategory] ?? "Risk Assets") : "Risk Assets";
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - addAmt), change: -addAmt, rationale: "Deploy cash into risk assets" });
+      lines.push({ category, currentAllocation: 15, targetAllocation: 15 + addAmt, change: addAmt, rationale: `Adding ${addAmt}% to ${category} — regime supports this move` });
+      headline = `Add ${addAmt}% to ${category}`;
+      netRiskChange = "Increased";
+      summary = `Deploy ${addAmt}% from cash into ${category}. ${favorability >= 70 ? "High favorability supports full sizing." : "Moderate favorability — use staged entries."}`;
+      break;
+    }
+    case "reduce_risk": {
+      const reduceAmt = p >= 65 ? 15 : p >= 45 ? 10 : 5;
+      const category = input.exposureCategory ? (EXPOSURE_LABELS[input.exposureCategory] ?? "Risk Assets") : "Risk Assets";
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + reduceAmt, change: reduceAmt, rationale: "Raise cash as buffer against pressure" });
+      lines.push({ category, currentAllocation: 20, targetAllocation: Math.max(5, 20 - reduceAmt), change: -reduceAmt, rationale: `Reduce ${category} exposure — pressure at ${p}/100` });
+      headline = `Reduce ${category} by ${reduceAmt}%`;
+      netRiskChange = "Decreased";
+      summary = `Trim ${reduceAmt}% from ${category} and hold as cash. ${p >= 65 ? "Elevated pressure warrants meaningful reduction." : "Moderate reduction preserves upside optionality."}`;
+      break;
+    }
+    case "raise_cash": {
+      const raiseAmt = p >= 65 ? 15 : p >= 45 ? 10 : 7;
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + raiseAmt, change: raiseAmt, rationale: "Raise cash buffer" });
+      lines.push({ category: "US Large Cap Stocks", currentAllocation: baselines["US Large Cap Stocks"], targetAllocation: baselines["US Large Cap Stocks"] - Math.round(raiseAmt * 0.6), change: -Math.round(raiseAmt * 0.6), rationale: "Primary source of cash" });
+      lines.push({ category: "Technology", currentAllocation: baselines["Technology"], targetAllocation: baselines["Technology"] - Math.round(raiseAmt * 0.4), change: -Math.round(raiseAmt * 0.4), rationale: "Trim extended tech positions" });
+      headline = `Raise cash to ${baselines["Cash"] + raiseAmt}%`;
+      netRiskChange = "Decreased";
+      summary = `Raise cash from ${baselines["Cash"]}% to ${baselines["Cash"] + raiseAmt}% by trimming large cap and tech. ${input.raiseCashReason === "risk_reduction" ? "Driven by risk reduction objective." : "Tactical positioning for better entries."}`;
+      break;
+    }
+    case "deploy_cash": {
+      const deployAmt = favorability >= 65 ? 10 : 7;
+      const target = input.deployCashTarget ? (EXPOSURE_LABELS[input.deployCashTarget as ExposureCategory] ?? input.deployCashTarget) : "Risk Assets";
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"] + 10, targetAllocation: baselines["Cash"], change: -10, rationale: "Deploy idle cash" });
+      lines.push({ category: target, currentAllocation: 10, targetAllocation: 10 + deployAmt, change: deployAmt, rationale: `Deploy into ${target}` });
+      headline = `Deploy ${deployAmt}% into ${target}`;
+      netRiskChange = "Increased";
+      summary = `Deploy ${deployAmt}% from cash into ${target}. ${favorability >= 65 ? "Favorable setup — full deployment appropriate." : "Moderate setup — staged entry recommended."}`;
+      break;
+    }
+    case "rotate": {
+      const rotateAmt = 10;
+      const from = input.rotateFrom ?? "Current Sector";
+      const to = input.rotateTo ?? "Target Sector";
+      lines.push({ category: from, currentAllocation: 20, targetAllocation: 20 - rotateAmt, change: -rotateAmt, rationale: `Reduce ${from} — regime headwinds` });
+      lines.push({ category: to, currentAllocation: 10, targetAllocation: 10 + rotateAmt, change: rotateAmt, rationale: `Increase ${to} — regime tailwinds` });
+      headline = `Rotate ${rotateAmt}% from ${from} to ${to}`;
+      netRiskChange = "Neutral";
+      summary = `Sector rotation: reduce ${from} by ${rotateAmt}% and add to ${to}. Net portfolio risk unchanged.`;
+      break;
+    }
+    case "hedge": {
+      const hedgeAmt = p >= 65 ? 8 : p >= 45 ? 5 : 3;
+      lines.push({ category: "Alternatives / Hedges", currentAllocation: baselines["Alternatives / Hedges"], targetAllocation: baselines["Alternatives / Hedges"] + hedgeAmt, change: hedgeAmt, rationale: "Add tail-risk protection" });
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - hedgeAmt), change: -hedgeAmt, rationale: "Fund hedge position from cash" });
+      headline = `Add ${hedgeAmt}% hedge allocation`;
+      netRiskChange = "Decreased";
+      summary = `Add ${hedgeAmt}% to hedges. ${p >= 65 ? "Elevated pressure warrants meaningful protection." : "Moderate protection — keep hedges proportional to risk."}`;
+      break;
+    }
+    case "buy_specific_asset": {
+      const buyAmt = input.positionSizeType === "full_position" ? 5 : input.positionSizeType === "add_to_existing" ? 3 : 2;
+      const ticker = input.ticker ?? "Asset";
+      const isStock = !(["BTC","ETH","SOL","AVAX","DOGE","SHIB"].includes((ticker ?? "").toUpperCase()));
+      const category = isStock ? "US Large Cap Stocks" : "Crypto";
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: Math.max(2, baselines["Cash"] - buyAmt), change: -buyAmt, rationale: `Fund ${ticker} position` });
+      lines.push({ category, currentAllocation: baselines[category] ?? 10, targetAllocation: (baselines[category] ?? 10) + buyAmt, change: buyAmt, rationale: `Add ${ticker} — ${input.positionSizeType === "full_position" ? "full position" : input.positionSizeType === "add_to_existing" ? "adding to existing" : "new position"}` });
+      headline = `Buy ${ticker}: +${buyAmt}% allocation`;
+      netRiskChange = "Increased";
+      summary = `Allocate ${buyAmt}% to ${ticker} from cash. ${favorability >= 70 ? "High favorability supports this entry." : "Moderate setup — use defined stop loss."}`;
+      break;
+    }
+    case "sell_specific_asset": {
+      const sellAmt = input.exitType === "full_exit" ? 5 : 3;
+      const ticker = input.ticker ?? "Asset";
+      const isStock = !(["BTC","ETH","SOL","AVAX","DOGE","SHIB"].includes((ticker ?? "").toUpperCase()));
+      const category = isStock ? "US Large Cap Stocks" : "Crypto";
+      lines.push({ category: "Cash", currentAllocation: baselines["Cash"], targetAllocation: baselines["Cash"] + sellAmt, change: sellAmt, rationale: `Proceeds from ${ticker} sale` });
+      lines.push({ category, currentAllocation: baselines[category] ?? 10, targetAllocation: Math.max(0, (baselines[category] ?? 10) - sellAmt), change: -sellAmt, rationale: `Reduce ${ticker} — ${input.exitType === "full_exit" ? "full exit" : input.exitType === "profit_taking" ? "profit taking" : "risk reduction"}` });
+      headline = `Sell ${ticker}: -${sellAmt}% allocation`;
+      netRiskChange = "Decreased";
+      summary = `Reduce ${ticker} by ${sellAmt}% and hold proceeds as cash. ${input.exitType === "profit_taking" ? "Profit-taking exit — consider redeploying on next dip." : "Risk reduction — monitor for re-entry signal."}`;
+      break;
+    }
+    case "hold": {
+      const ticker = input.ticker ?? "Position";
+      lines.push({ category: "Current Portfolio", currentAllocation: 100, targetAllocation: 100, change: 0, rationale: "No allocation changes — hold current positions" });
+      headline = `Hold ${ticker} — no changes`;
+      netRiskChange = "Neutral";
+      summary = `Maintain current allocation. ${input.holdConcern === "volatility" ? "Monitor volatility — consider tightening stops." : input.holdConcern === "drawdown" ? "Drawdown concern — review stop levels." : "No structural reason to exit."}`;
+      break;
+    }
+    default: {
+      lines.push({ category: "Portfolio", currentAllocation: 100, targetAllocation: 100, change: 0, rationale: "No specific allocation change" });
+      headline = "No allocation change";
+      netRiskChange = "Neutral";
+      summary = "No specific portfolio impact identified for this move type.";
+    }
+  }
+
+  return { headline, lines, netRiskChange, summary };
+}
+
 // ── Main Entry Point ──────────────────────────────────────────
 
 // Exported for testing: accepts an optional pre-computed pressure object
@@ -2321,6 +2709,16 @@ export async function runTradePreflightSimulation(
     computeHotSectorPicksFromPressure(pressure),
   ]);
 
+  // Build opportunity map for vehicle lookup
+  const allOppsForVehicles = await scanOpportunities(null, 100000, "both").catch(() => []);
+  const oppByTickerMap = new Map<string, TradeOpportunity>();
+  for (const opp of allOppsForVehicles) {
+    oppByTickerMap.set(opp.ticker.toUpperCase(), opp);
+  }
+
+  const recommendedVehicles = computeRecommendedVehicles(input, oppByTickerMap, pressure);
+  const portfolioImpact = computePortfolioImpact(input, favorability, pressure);
+
   const partial: Omit<TradeSimulationOutput, "explanation"> = {
     marketStatus: marketCondition.marketStatus,
     moveType: input.moveType,
@@ -2351,6 +2749,8 @@ export async function runTradePreflightSimulation(
     marketInterpretation,
     recommendedMoves,
     hotSectorPicks,
+    recommendedVehicles,
+    portfolioImpact,
     generatedAt: new Date().toISOString(),
   };
 

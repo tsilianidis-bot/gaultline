@@ -1563,15 +1563,15 @@
 - [x] TypeScript: 0 errors
 
 ## Situation Room — Institutional Decision Engine Rebuild (Jun 2026)
-- [ ] Add ExposureCategory type and update SimulatorInput in tradePreflight.ts (exposureCategory, rotateFrom, rotateTo)
-- [ ] Update computeMarketInterpretation to use specific exposure context
-- [ ] Update computeRecommendedMoves to use specific exposure context
-- [ ] Add computeRecommendedVehicles function (per exposure category, 4-6 assets each)
-- [ ] Add computePortfolioAllocationChange function (specific % changes)
-- [ ] Rebuild SituationRoom.tsx input panel as 3-step wizard (Move → Exposure Sub-type → Timeframe)
-- [ ] Add Recommended Vehicles panel to results
-- [ ] Add Portfolio Allocation Change panel to results
-- [ ] TypeScript: 0 errors | Tests passing
+- [x] Add ExposureCategory type and update SimulatorInput in tradePreflight.ts (exposureCategory, rotateFrom, rotateTo)
+- [x] Update computeMarketInterpretation to use specific exposure context
+- [x] Update computeRecommendedMoves to use specific exposure context
+- [x] Add computeRecommendedVehicles function (per exposure category, 4-6 assets each)
+- [x] Add computePortfolioAllocationChange / computePortfolioImpact function (specific % changes)
+- [x] Rebuild SituationRoom.tsx input panel as 3-step wizard (Move → Exposure Sub-type → Timeframe)
+- [x] Add Recommended Vehicles panel to results
+- [x] Add Portfolio Allocation Change / Portfolio Impact panel to results
+- [x] TypeScript: 0 errors | Tests passing
 
 ## SEO / Search Console Indexing Fixes
 - [x] Audit current robots.txt and sitemap.xml
@@ -1610,28 +1610,28 @@
 - [x] TypeScript: 0 errors | 553/553 tests passing | Save checkpoint
 
 ## Situation Room — Mandatory Decision Tree Rebuild (Jun 19, 2026)
-- [ ] Audit current SituationRoom.tsx wizard and tradePreflight.ts input types
-- [ ] Extend SimulatorInput in tradePreflight.ts: exposureCategory, rotateFrom, rotateTo, ticker, positionSize (New/Add/Full), exitType (Partial/Full/RiskReduction/ProfitTaking), holdConcern (Volatility/Drawdown/ProfitTaking/NoConcern/Unsure), raiseCashReason, deployCashTarget
-- [ ] Add full ExposureCategory enum for ADD_RISK (18 options), REDUCE_RISK (9), HEDGE (8+ticker), ROTATE (from+to), RAISE_CASH (5 reasons), DEPLOY_CASH (9 targets), BUY_SPECIFIC_ASSET (ticker+positionSize), SELL_SPECIFIC_ASSET (ticker+exitType), HOLD (ticker+concern)
-- [ ] Rebuild SituationRoom.tsx wizard as 3-step flow: Step 1 = Action, Step 2 = Sub-inputs (dynamic per action), Step 3 = Timeframe
-- [ ] Add validation gate: Analyze button disabled until all required fields for the selected action are filled
-- [ ] HEDGE: if Single Position selected, show ticker input field
-- [ ] ROTATE: show both Rotate From and Rotate To dropdowns
-- [ ] BUY_SPECIFIC_ASSET: ticker input + position size radio (New/Add To Existing/Full Position)
-- [ ] SELL_SPECIFIC_ASSET: ticker input + exit type radio (Partial/Full/Risk Reduction/Profit Taking)
-- [ ] HOLD: ticker input + concern dropdown
-- [ ] Extend tradePreflight.ts computeRecommendedMoves to use specific exposure context in analysis
-- [ ] Add computeRecommendedVehicles() — returns 4-6 specific assets per action/exposure combination
-- [ ] Add computePortfolioImpact() — specific % allocation changes per scenario
-- [ ] Add computeProbabilityMatrix() — success probability, risk scenarios, base/bull/bear outcomes
-- [ ] Add computeWhatFaultlineWouldDo() — opinionated recommendation based on current macro regime
-- [ ] Add Recommended Alternatives panel to results
-- [ ] Add "What FAULTLINE Would Do" panel to results
-- [ ] Add Portfolio Impact panel to results
-- [ ] Add Best Vehicles panel to results
-- [ ] Add Risk/Reward panel to results
-- [ ] Add Probability Matrix panel to results
-- [ ] TypeScript: 0 errors | Tests passing | Save checkpoint
+- [x] Audit current SituationRoom.tsx wizard and tradePreflight.ts input types
+- [x] Extend SimulatorInput in tradePreflight.ts: exposureCategory, rotateFrom, rotateTo, ticker, positionSize (New/Add/Full), exitType (Partial/Full/RiskReduction/ProfitTaking), holdConcern (Volatility/Drawdown/ProfitTaking/NoConcern/Unsure), raiseCashReason, deployCashTarget
+- [x] Add full ExposureCategory enum for ADD_RISK (18 options), REDUCE_RISK (9), HEDGE (8+ticker), ROTATE (from+to), RAISE_CASH (5 reasons), DEPLOY_CASH (9 targets), BUY_SPECIFIC_ASSET (ticker+positionSize), SELL_SPECIFIC_ASSET (ticker+exitType), HOLD (ticker+concern)
+- [x] Rebuild SituationRoom.tsx wizard as 3-step flow: Step 1 = Action, Step 2 = Sub-inputs (dynamic per action), Step 3 = Timeframe
+- [x] Add validation gate: Analyze button disabled until all required fields for the selected action are filled
+- [x] HEDGE: if Single Position selected, show ticker input field
+- [x] ROTATE: show both Rotate From and Rotate To dropdowns
+- [x] BUY_SPECIFIC_ASSET: ticker input + position size radio (New/Add To Existing/Full Position)
+- [x] SELL_SPECIFIC_ASSET: ticker input + exit type radio (Partial/Full/Risk Reduction/Profit Taking)
+- [x] HOLD: ticker input + concern dropdown
+- [x] Extend tradePreflight.ts computeRecommendedMoves to use specific exposure context in analysis
+- [x] Add computeRecommendedVehicles() — returns 4-6 specific assets per action/exposure combination
+- [x] Add computePortfolioImpact() — specific % allocation changes per scenario
+- [x] Add computeProbabilityMatrix() — already exists as computeOutcomeSimulator in tradePreflight.ts
+- [x] Add computeWhatFaultlineWouldDo() — already exists as whatFaultlineWouldDo field in computeRecommendedMoves
+- [x] Add Recommended Alternatives panel to results — Recommended Vehicles panel added
+- [x] Add "What FAULTLINE Would Do" panel to results — FAULTLINE READS panel already present
+- [x] Add Portfolio Impact panel to results
+- [x] Add Best Vehicles panel to results — Recommended Vehicles panel added
+- [x] Add Risk/Reward panel to results — Outcome Simulator panel already present
+- [x] Add Probability Matrix panel to results — Outcome Simulator panel already present
+- [x] TypeScript: 0 errors | Tests passing | Save checkpoint
 
 ## Social Intelligence Rebuild (Multi-Source Engine)
 - [x] Audit current socialIntelligence.ts — confirmed only Stocktwits + Polygon news
