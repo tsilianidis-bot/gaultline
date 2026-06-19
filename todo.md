@@ -1574,13 +1574,24 @@
 - [ ] TypeScript: 0 errors | Tests passing
 
 ## SEO / Search Console Indexing Fixes
-- [ ] Audit current robots.txt and sitemap.xml
-- [ ] Fix robots.txt: allow all public SEO pages, block private/admin/billing/checkout/login
-- [ ] Generate correct sitemap.xml with all canonical public URLs (no private pages)
-- [ ] Add canonical tags to all public pages via useSEO hook
-- [ ] Add unique title + meta description to every indexable page
-- [ ] Fix 404 page (find URL from Search Console, restore or 301 redirect)
-- [ ] Fix redirect issues (update internal links/sitemap to point to final destination URLs)
-- [ ] Add internal links from homepage to: Signals, Crypto Signals, Pressure Index, Situation Room, Market Risk Dashboard, AI Bubble Risk Tracker
-- [ ] TypeScript check: 0 errors
-- [ ] Save checkpoint
+- [x] Audit current robots.txt and sitemap.xml
+- [x] Fix robots.txt: allow all public SEO pages, block private/admin/billing/checkout/login
+- [x] Generate correct sitemap.xml with all canonical public URLs (no private pages)
+- [x] Add canonical tags to all public pages via useSEO hook (PAGE_SEO entries for all 8 new public pages)
+- [x] Add unique title + meta description to every indexable page
+- [x] Fix 404 page (NotFound.tsx with FAULTLINE branding + links to key pages, catch-all route in App.tsx)
+- [x] Fix redirect issues (stale /pressure links in TrackRecord.tsx and BlogPost.tsx fixed to /pressure-index; MODULES array updated to public SEO URLs)
+- [x] Add internal links from homepage to: Signals, Crypto Signals, Pressure Index, Situation Room, Market Risk Dashboard, AI Bubble Risk Tracker (footer PLATFORM/INTELLIGENCE columns + module card links)
+- [x] TypeScript check: 0 errors
+- [x] Save checkpoint (7a507a32)
+
+## Situation Room — Hot Sector Picks Panel
+- [x] Audit tradePreflight.ts output shape and sector→ticker mapping in signal data
+- [x] Add HotSectorPick / HotSectorTicker types to tradePreflight.ts
+- [x] Add hotSectorPicks field to TradeSimulationOutput
+- [x] Build SECTOR_TICKER_MAP in tradePreflight.ts mapping all 11 sectors to their tickers
+- [x] Build computeHotSectorPicks() using live scanOpportunities() results, filtered to LONG/WATCH, sorted by compositeScore, top 4 per sector
+- [x] Build computeHotSectorPicksFromPressure() wrapper (async, with fallback [])
+- [x] Wire computeHotSectorPicksFromPressure in parallel with computeRecommendedMoves in runTradePreflightSimulation
+- [x] Build Hot Sector Picks CollapsiblePanel in SituationRoom.tsx: sector header (name, label, score/100), reason, ticker cards with action badge, price, ENTRY LOW/HIGH/STOP/T1/T2 grid, R:R + MOM + SCORE row, rationale
+- [x] TypeScript: 0 errors | 553/553 tests passing | Save checkpoint

@@ -406,6 +406,7 @@ export default function SituationRoom() {
     verdict: true, outcomeSimulator: true, entryQuality: true, positionSizing: true,
     historicalAnalogs: true, thesisStressTest: true,
     recMoves: true, recStocks: true, recCrypto: true, recAlts: false, recSectors: true, recPortfolio: true, recFaultline: true,
+    hotSectorPicks: true,
   });
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -1199,6 +1200,85 @@ export default function SituationRoom() {
                   </div>
                 </CollapsiblePanel>
                 <div style={{ marginBottom: "6px" }} />
+
+                {/* Hot Sector Picks */}
+                {result.hotSectorPicks && result.hotSectorPicks.length > 0 && (
+                  <>
+                    <CollapsiblePanel open={open.hotSectorPicks} onToggle={() => toggle("hotSectorPicks")} icon={<Zap size={14} />} title="Hot Sector Picks" color="#00FF88" count={result.hotSectorPicks.length}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "14px", paddingTop: "4px" }}>
+                        {result.hotSectorPicks.map((sector: any, si: number) => {
+                          const sColor = sector.sectorScore >= 70 ? "#00FF88" : sector.sectorScore >= 50 ? "#FF9500" : "#FF2D55";
+                          return (
+                            <div key={si} style={{ border: `1px solid ${sColor}20`, borderRadius: "6px", overflow: "hidden" }}>
+                              {/* Sector header */}
+                              <div style={{ padding: "10px 14px", background: `${sColor}08`, borderBottom: `1px solid ${sColor}15`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: sColor, boxShadow: `0 0 8px ${sColor}80` }} />
+                                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: sColor, textTransform: "uppercase", letterSpacing: "0.06em" }}>{sector.sector}</span>
+                                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: sColor, padding: "2px 6px", background: `${sColor}12`, borderRadius: "3px", border: `1px solid ${sColor}25` }}>{sector.sectorLabel}</span>
+                                </div>
+                                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: sColor }}>{sector.sectorScore}<span style={{ fontSize: "10px", color: "#64748B", fontWeight: 400 }}>/100</span></span>
+                              </div>
+                              {/* Reason */}
+                              <div style={{ padding: "8px 14px 4px", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.5, borderBottom: `1px solid rgba(255,255,255,0.04)` }}>{sector.reason}</div>
+                              {/* Tickers */}
+                              <div style={{ padding: "8px 10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                                {sector.tickers.map((t: any, ti: number) => {
+                                  const actionColor = t.action === "LONG" ? "#00FF88" : t.action === "WATCH" ? "#FF9500" : "#FF2D55";
+                                  const rrColor = t.riskRewardRatio >= 3 ? "#00FF88" : t.riskRewardRatio >= 2 ? "#FF9500" : "#FF2D55";
+                                  return (
+                                    <div key={ti} style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "5px" }}>
+                                      {/* Ticker row */}
+                                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{t.ticker}</span>
+                                          <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B" }}>{t.name}</span>
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: actionColor, padding: "2px 6px", background: `${actionColor}12`, borderRadius: "3px", border: `1px solid ${actionColor}25`, textTransform: "uppercase" }}>{t.action}</span>
+                                          <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#CBD5E1" }}>${t.currentPrice.toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                      {/* Trade parameters grid */}
+                                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px", marginBottom: "6px" }}>
+                                        {[
+                                          { label: "ENTRY LOW", val: `$${t.entryZoneLow.toFixed(2)}`, color: "#00D4FF" },
+                                          { label: "ENTRY HIGH", val: `$${t.entryZoneHigh.toFixed(2)}`, color: "#00D4FF" },
+                                          { label: "STOP", val: `$${t.stopLoss.toFixed(2)}`, color: "#FF2D55" },
+                                          { label: "T1", val: `$${t.targetOne.toFixed(2)}`, color: "#00FF88" },
+                                          { label: "T2", val: `$${t.targetTwo.toFixed(2)}`, color: "#00FF88" },
+                                        ].map((p, pi) => (
+                                          <div key={pi} style={{ padding: "5px 6px", background: `${p.color}06`, border: `1px solid ${p.color}15`, borderRadius: "3px", textAlign: "center" }}>
+                                            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.7)", marginBottom: "2px", letterSpacing: "0.08em" }}>{p.label}</div>
+                                            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "12px", color: p.color }}>{p.val}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {/* R:R + Momentum + Score row */}
+                                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B" }}>R:R</span>
+                                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: rrColor }}>{t.riskRewardRatio.toFixed(1)}x</span>
+                                        <span style={{ width: "1px", height: "12px", background: "rgba(255,255,255,0.08)" }} />
+                                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B" }}>MOM</span>
+                                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#FF9500" }}>{t.momentumScore}</span>
+                                        <span style={{ width: "1px", height: "12px", background: "rgba(255,255,255,0.08)" }} />
+                                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B" }}>SCORE</span>
+                                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#00D4FF" }}>{t.compositeScore}</span>
+                                      </div>
+                                      {/* Rationale */}
+                                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B", lineHeight: 1.5 }}>{t.rationale}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CollapsiblePanel>
+                    <div style={{ marginBottom: "6px" }} />
+                  </>
+                )}
 
                 {/* Portfolio Actions */}
                 <CollapsiblePanel open={open.recPortfolio} onToggle={() => toggle("recPortfolio")} icon={<DollarSign size={14} />} title="Portfolio Action Recommendations" color="#FF9500" count={result.recommendedMoves.portfolioActions.length}>

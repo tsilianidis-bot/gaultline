@@ -212,6 +212,7 @@ export interface TradeSimulationOutput {
   thesisStressTest: ThesisStressTest;
   marketInterpretation: MarketInterpretation;
   recommendedMoves: RecommendedMoves;
+  hotSectorPicks: HotSectorPick[];
   explanation: string;
   generatedAt: string;
 }
@@ -265,6 +266,32 @@ export interface RecommendedMoves {
   sectorRotation: SectorRotationIntelligence;
   portfolioActions: PortfolioActionRecommendation[];
   generatedAt: string;
+}
+
+// ── Hot Sector Picks types ────────────────────────────────────
+export interface HotSectorTicker {
+  ticker: string;
+  name: string;
+  assetType: "stock" | "crypto";
+  action: string;          // LONG / WATCH / AVOID / DEFENSIVE
+  currentPrice: number;
+  entryZoneLow: number;
+  entryZoneHigh: number;
+  stopLoss: number;
+  targetOne: number;
+  targetTwo: number;
+  riskRewardRatio: number;
+  momentumScore: number;   // 0–100
+  compositeScore: number;  // 0–100 overall ranking
+  rationale: string;
+}
+
+export interface HotSectorPick {
+  sector: string;
+  sectorScore: number;     // 0–100 favorability
+  sectorLabel: string;     // Favorable / Neutral / Unfavorable
+  reason: string;
+  tickers: HotSectorTicker[];
 }
 
 // ── Constants ────────────────────────────────────────────────
@@ -1832,6 +1859,83 @@ function computeSectorRotation(pressure: FaultlinePressureOutput): SectorRotatio
   };
 }
 
+// ── Hot Sector Picks Engine ────────────────────────────────────────
+// Maps the top recommended sectors to their hot tickers from live opportunity scan
+const SECTOR_TICKER_MAP: Record<string, string[]> = {
+  "Technology":             ["NVDA", "PLTR", "AMD", "SMCI", "AAPL", "MSFT", "IONQ", "SOUN", "RGTI", "QUBT"],
+  "Communication Services": ["META"],
+  "Consumer Discretionary": ["TSLA", "AMZN"],
+  "Financials":             ["COIN"],
+  "Industrials":            ["RKLB", "LUNR", "ACHR"],
+  "ETF":                    ["SPY", "QQQ"],
+  // Crypto sectors
+  "Layer 1":                ["BTC", "ETH", "SOL", "AVAX"],
+  "Oracle":                 ["LINK"],
+  "Layer 2":                ["ARB"],
+  "DeFi":                   ["INJ"],
+};
+
+function computeHotSectorPicks(
+  sectorRotation: SectorRotationIntelligence,
+  allOpps: TradeOpportunity[],
+  pressure: FaultlinePressureOutput
+): HotSectorPick[] {
+  // Build a fast lookup from ticker → opportunity
+  const oppByTicker = new Map<string, TradeOpportunity>();
+  for (const opp of allOpps) {
+    oppByTicker.set(opp.ticker.toUpperCase(), opp);
+  }
+
+  const picks: HotSectorPick[] = [];
+
+  // Use the top 3 "increase" sectors from sector rotation
+  for (const sectorEntry of sectorRotation.increase) {
+    const sectorName = sectorEntry.sector;
+    const tickers = SECTOR_TICKER_MAP[sectorName] ?? [];
+
+    // Get the favorability score for this sector
+    const scoreEntry = sectorRotation.favorabilityScores.find(s => s.sector === sectorName);
+    const sectorScore = scoreEntry?.score ?? 60;
+    const sectorLabel = scoreEntry?.label ?? "Neutral";
+
+    // Map tickers to their opportunities, filter to LONG/WATCH, sort by compositeScore desc
+    const sectorOpps: HotSectorTicker[] = tickers
+      .map(t => oppByTicker.get(t))
+      .filter((o): o is TradeOpportunity => !!o && (o.direction === "LONG" || o.direction === "WATCH"))
+      .sort((a, b) => b.compositeScore - a.compositeScore)
+      .slice(0, 4)
+      .map(o => ({
+        ticker: o.ticker,
+        name: o.name,
+        assetType: o.assetType,
+        action: o.direction,
+        currentPrice: o.currentPrice,
+        entryZoneLow: o.entryZoneLow,
+        entryZoneHigh: o.entryZoneHigh,
+        stopLoss: o.stopLoss,
+        targetOne: o.targetOne,
+        targetTwo: o.targetTwo,
+        riskRewardRatio: o.riskRewardRatio,
+        momentumScore: o.momentumScore,
+        compositeScore: o.compositeScore,
+        rationale: o.whyNow,
+      }));
+
+    // Only include sectors that have at least one live ticker
+    if (sectorOpps.length > 0) {
+      picks.push({
+        sector: sectorName,
+        sectorScore,
+        sectorLabel,
+        reason: sectorEntry.reason,
+        tickers: sectorOpps,
+      });
+    }
+  }
+
+  return picks;
+}
+
 function computePortfolioActions(pressure: FaultlinePressureOutput, favorability: number, moveType: MoveType): PortfolioActionRecommendation[] {
   const p = pressure.overallPressure;
   const creditScore = getVectorScore(pressure.vectors, "credit-contagion");
@@ -1975,6 +2079,20 @@ async function computeRecommendedMoves(
   }
 }
 
+// Exported for use in runTradePreflightSimulation
+async function computeHotSectorPicksFromPressure(
+  pressure: FaultlinePressureOutput
+): Promise<HotSectorPick[]> {
+  try {
+    const allOpps = await scanOpportunities(null, 100000, "both");
+    const sectorRotation = computeSectorRotation(pressure);
+    return computeHotSectorPicks(sectorRotation, allOpps, pressure);
+  } catch (err) {
+    log.warn("[Trade Preflight] computeHotSectorPicksFromPressure failed", { err: err as Error });
+    return [];
+  }
+}
+
 // ── Main Entry Point ──────────────────────────────────────────
 
 // Exported for testing: accepts an optional pre-computed pressure object
@@ -2030,8 +2148,11 @@ export async function runTradePreflightSimulation(
     input.rotateTo
   );
 
-  // Build Recommended Moves (async scan of top opportunities)
-  const recommendedMoves = await computeRecommendedMoves(pressure, favorability, input.moveType, input.ticker, input.exposureCategory);
+  // Build Recommended Moves and Hot Sector Picks in parallel
+  const [recommendedMoves, hotSectorPicks] = await Promise.all([
+    computeRecommendedMoves(pressure, favorability, input.moveType, input.ticker, input.exposureCategory),
+    computeHotSectorPicksFromPressure(pressure),
+  ]);
 
   const partial: Omit<TradeSimulationOutput, "explanation"> = {
     marketStatus: marketCondition.marketStatus,
@@ -2062,6 +2183,7 @@ export async function runTradePreflightSimulation(
     thesisStressTest,
     marketInterpretation,
     recommendedMoves,
+    hotSectorPicks,
     generatedAt: new Date().toISOString(),
   };
 
