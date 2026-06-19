@@ -15,6 +15,7 @@
 import { calculateFaultlinePressure, type FaultlinePressureOutput, type RiskVector } from "./pressure/engine";
 import { invokeLLM } from "./_core/llm";
 import { log } from "./logger";
+import { scanOpportunities, type TradeOpportunity } from "./ownerSimulation";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -176,7 +177,59 @@ export interface TradeSimulationOutput {
   historicalAnalogs: HistoricalAnalog[];
   thesisStressTest: ThesisStressTest;
   marketInterpretation: MarketInterpretation;
+  recommendedMoves: RecommendedMoves;
   explanation: string;
+  generatedAt: string;
+}
+
+// ── Recommended Moves types ───────────────────────────────────
+
+export interface TopOpportunityItem {
+  ticker: string;
+  name: string;
+  sector: string;
+  assetType: "stock" | "crypto";
+  favorabilityScore: number;   // 0–100
+  riskRating: string;          // Low / Medium / High / Extreme
+  timeframeAlignment: string;  // e.g. "Day Trade" / "Swing" / "Long-Term"
+  rationale: string;
+  currentPrice: number;
+  entryZoneLow: number;
+  entryZoneHigh: number;
+  stopLoss: number;
+  targetOne: number;
+  targetTwo: number;
+  riskRewardRatio: number;
+  direction: string;           // LONG / AVOID / WATCH / DEFENSIVE
+}
+
+export interface WhatFaultlineWouldDo {
+  actions: string[];           // concise institutional-style action items
+  headline: string;            // e.g. "FAULTLINE would raise cash and stay selective"
+  rationale: string;
+  regime: string;
+  pressureIndex: number;
+}
+
+export interface SectorRotationIntelligence {
+  reduce: Array<{ sector: string; reason: string }>;
+  increase: Array<{ sector: string; reason: string }>;
+  favorabilityScores: Array<{ sector: string; score: number; label: string }>;
+}
+
+export interface PortfolioActionRecommendation {
+  action: string;   // e.g. "Raise Cash: +10%"
+  rationale: string;
+  urgency: "low" | "medium" | "high";
+}
+
+export interface RecommendedMoves {
+  topStocks: TopOpportunityItem[];
+  topCrypto: TopOpportunityItem[];
+  betterAlternatives: TopOpportunityItem[];  // populated when user's move has low favorability
+  whatFaultlineWouldDo: WhatFaultlineWouldDo;
+  sectorRotation: SectorRotationIntelligence;
+  portfolioActions: PortfolioActionRecommendation[];
   generatedAt: string;
 }
 
@@ -1635,6 +1688,217 @@ Write a concise 3-4 sentence institutional-grade explanation of this simulation 
     `This is a market-regime simulation — not personalized financial advice or a guaranteed prediction.`;
 }
 
+// ── Recommended Moves Engine ────────────────────────────────
+
+function opportunityToTopItem(opp: TradeOpportunity, pressure: FaultlinePressureOutput): TopOpportunityItem {
+  const p = pressure.overallPressure;
+  const riskRating = p >= 65 ? "High" : p >= 45 ? "Medium" : "Low";
+  const timeframeAlignment = opp.direction === "LONG" && p < 40 ? "Swing / Long-Term"
+    : opp.direction === "LONG" ? "Day / Short-Term"
+    : opp.direction === "WATCH" ? "Monitor"
+    : "Avoid";
+  return {
+    ticker: opp.ticker,
+    name: opp.name,
+    sector: opp.sector,
+    assetType: opp.assetType,
+    favorabilityScore: opp.compositeScore,
+    riskRating,
+    timeframeAlignment,
+    rationale: opp.whyNow,
+    currentPrice: opp.currentPrice,
+    entryZoneLow: opp.entryZoneLow,
+    entryZoneHigh: opp.entryZoneHigh,
+    stopLoss: opp.stopLoss,
+    targetOne: opp.targetOne,
+    targetTwo: opp.targetTwo,
+    riskRewardRatio: opp.riskRewardRatio,
+    direction: opp.direction,
+  };
+}
+
+function computeSectorRotation(pressure: FaultlinePressureOutput): SectorRotationIntelligence {
+  const p = pressure.overallPressure;
+  const creditScore = getVectorScore(pressure.vectors, "credit-contagion");
+  const macroScore  = getVectorScore(pressure.vectors, "macro-sensitivity");
+  const aiScore     = getVectorScore(pressure.vectors, "ai-bubble");
+  const liquidityScore = getVectorScore(pressure.vectors, "liquidity-stress");
+
+  // Sector favorability scores (0-100, higher = more favorable)
+  const sectorScores: Array<{ sector: string; score: number }> = [
+    { sector: "Technology",             score: clamp(Math.round(invertScore(aiScore) * 0.5 + invertScore(p) * 0.5), 0, 100) },
+    { sector: "Financials",             score: clamp(Math.round(invertScore(creditScore) * 0.6 + invertScore(p) * 0.4), 0, 100) },
+    { sector: "Industrials",            score: clamp(Math.round(invertScore(macroScore) * 0.5 + invertScore(p) * 0.5), 0, 100) },
+    { sector: "Energy",                 score: clamp(Math.round(invertScore(p) * 0.6 + invertScore(creditScore) * 0.4), 0, 100) },
+    { sector: "Healthcare",             score: clamp(Math.round(invertScore(p) * 0.4 + 60), 0, 100) },
+    { sector: "Consumer Staples",       score: clamp(Math.round(p * 0.3 + 55), 0, 100) },
+    { sector: "Consumer Discretionary", score: clamp(Math.round(invertScore(creditScore) * 0.5 + invertScore(p) * 0.5), 0, 100) },
+    { sector: "Utilities",              score: clamp(Math.round(p * 0.4 + 45), 0, 100) },
+    { sector: "Real Estate",            score: clamp(Math.round(invertScore(liquidityScore) * 0.5 + invertScore(macroScore) * 0.5), 0, 100) },
+    { sector: "Communication Services", score: clamp(Math.round(invertScore(aiScore) * 0.4 + invertScore(p) * 0.6), 0, 100) },
+    { sector: "Materials",              score: clamp(Math.round(invertScore(macroScore) * 0.5 + invertScore(p) * 0.5), 0, 100) },
+  ];
+
+  const sorted = [...sectorScores].sort((a, b) => b.score - a.score);
+  const increase = sorted.slice(0, 3).map(s => ({
+    sector: s.sector,
+    reason: s.score >= 70
+      ? `Strong macro alignment — favorable conditions for ${s.sector} in current regime`
+      : `Relative strength vs. peers — ${s.sector} holds up better under current pressure`,
+  }));
+  const reduce = sorted.slice(-3).map(s => ({
+    sector: s.sector,
+    reason: s.score <= 35
+      ? `Elevated headwinds — ${s.sector} faces structural pressure in this regime`
+      : `Relative underperformance — ${s.sector} lags in current macro environment`,
+  }));
+
+  return {
+    increase,
+    reduce,
+    favorabilityScores: sorted.map(s => ({
+      sector: s.sector,
+      score: s.score,
+      label: s.score >= 70 ? "Favorable" : s.score >= 50 ? "Neutral" : "Unfavorable",
+    })),
+  };
+}
+
+function computePortfolioActions(pressure: FaultlinePressureOutput, favorability: number, moveType: MoveType): PortfolioActionRecommendation[] {
+  const p = pressure.overallPressure;
+  const creditScore = getVectorScore(pressure.vectors, "credit-contagion");
+  const volatilityScore = getVectorScore(pressure.vectors, "volatility-regime");
+  const actions: PortfolioActionRecommendation[] = [];
+
+  if (p >= 65) {
+    actions.push({ action: "Raise Cash: +10–15%", rationale: `FAULTLINE Pressure at ${p}/100 — reducing exposure preserves capital for better entries`, urgency: "high" });
+    actions.push({ action: "Add Hedges: +5%", rationale: "Elevated systemic pressure warrants tail-risk protection", urgency: "high" });
+    actions.push({ action: "Reduce Speculative Exposure", rationale: "High-beta and speculative names underperform in elevated-pressure regimes", urgency: "medium" });
+  } else if (p >= 45) {
+    actions.push({ action: "Maintain Core Holdings", rationale: "Mixed regime — hold quality positions, avoid adding new speculative risk", urgency: "low" });
+    actions.push({ action: "Trim Extended Positions", rationale: "Moderate pressure suggests trimming names that have run significantly", urgency: "medium" });
+    if (volatilityScore >= 50) actions.push({ action: "Reduce Position Sizes by 20%", rationale: "Elevated volatility increases execution risk — smaller size reduces P&L swings", urgency: "medium" });
+  } else {
+    actions.push({ action: "Increase Risk: +10–15%", rationale: `Low pressure regime (${p}/100) supports adding risk to high-conviction setups`, urgency: "low" });
+    actions.push({ action: "Maintain Existing Hedges", rationale: "Keep baseline protection even in favorable regimes — conditions can shift quickly", urgency: "low" });
+    if (favorability >= 70) actions.push({ action: "Scale Into Momentum Names", rationale: "High favorability score supports adding to trending positions with defined stops", urgency: "low" });
+  }
+
+  if (creditScore >= 60) {
+    actions.push({ action: "Avoid Credit-Sensitive Names", rationale: "Credit spreads widening — leveraged and low-quality names face refinancing risk", urgency: "high" });
+  }
+
+  return actions;
+}
+
+function computeWhatFaultlineWouldDo(pressure: FaultlinePressureOutput, favorability: number, moveType: MoveType): WhatFaultlineWouldDo {
+  const p = pressure.overallPressure;
+  const creditScore = getVectorScore(pressure.vectors, "credit-contagion");
+  const liquidityScore = getVectorScore(pressure.vectors, "liquidity-stress");
+  const breadthScore = getVectorScore(pressure.vectors, "market-breadth");
+
+  let headline: string;
+  let actions: string[];
+  let rationale: string;
+
+  if (p >= 70) {
+    headline = "Raise cash, reduce exposure, and wait for pressure to stabilize";
+    actions = [
+      "Raise 15–20% cash",
+      "Add tail-risk hedges",
+      "Trim extended momentum names",
+      "Avoid new speculative entries",
+      "Maintain core quality holdings",
+      "Monitor credit spreads for stabilization signal",
+    ];
+    rationale = `FAULTLINE Pressure at ${p}/100 in a ${pressure.regime} regime. Credit stress is ${levelLabel(creditScore).toLowerCase()} and liquidity conditions are ${levelLabel(liquidityScore).toLowerCase()}. The risk-adjusted move is to reduce exposure and preserve capital until pressure shows a sustained decline below 55/100.`;
+  } else if (p >= 50) {
+    headline = "Stay selective — add only to high-conviction setups with defined risk";
+    actions = [
+      "Hold existing quality positions",
+      "Trim names with weakening momentum",
+      "Add selectively to highest-conviction setups only",
+      "Keep position sizes 20–30% smaller than normal",
+      "Maintain existing hedges",
+      `Watch for pressure to drop below 45/100 before adding risk`,
+    ];
+    rationale = `FAULTLINE Pressure at ${p}/100 — mixed regime with ${levelLabel(breadthScore).toLowerCase()} breadth. Selective exposure is warranted. Avoid chasing extended names. Focus on setups with clear invalidation levels and favorable risk/reward.`;
+  } else {
+    headline = "Lean into the regime — add risk to high-conviction setups";
+    actions = [
+      "Add to TAO, PLTR, NVDA on dips",
+      "Increase crypto allocation toward BTC and ETH",
+      "Rotate toward Industrials and Financials",
+      "Scale into momentum names with defined stops",
+      "Maintain 5–10% cash for opportunistic entries",
+      "Avoid defensive/low-beta names in this regime",
+    ];
+    rationale = `FAULTLINE Pressure at ${p}/100 — ${pressure.regime} regime with ${levelLabel(liquidityScore).toLowerCase()} liquidity and ${levelLabel(creditScore).toLowerCase()} credit stress. Conditions support adding risk. Focus on assets with strong momentum and macro alignment.`;
+  }
+
+  return { actions, headline, rationale, regime: pressure.regime, pressureIndex: p };
+}
+
+async function computeRecommendedMoves(
+  pressure: FaultlinePressureOutput,
+  favorability: number,
+  moveType: MoveType,
+  ticker?: string
+): Promise<RecommendedMoves> {
+  try {
+    // Scan top opportunities (use a nominal $100k account for sizing context)
+    const allOpps = await scanOpportunities(null, 100000, "both");
+
+    // Top stocks: LONG direction, sorted by composite score, top 5
+    const topStockOpps = allOpps
+      .filter(o => o.assetType === "stock" && o.direction === "LONG")
+      .slice(0, 5);
+
+    // Top crypto: LONG direction, sorted by composite score, top 5
+    const topCryptoOpps = allOpps
+      .filter(o => o.assetType === "crypto" && o.direction === "LONG")
+      .slice(0, 5);
+
+    // Better alternatives: if user's move has low favorability and a specific ticker,
+    // show top alternatives excluding their ticker
+    const betterAlternativeOpps = favorability < 50 && ticker
+      ? allOpps
+          .filter(o => o.ticker.toUpperCase() !== ticker.toUpperCase() && o.direction === "LONG")
+          .slice(0, 3)
+      : [];
+
+    const topStocks = topStockOpps.map(o => opportunityToTopItem(o, pressure));
+    const topCrypto = topCryptoOpps.map(o => opportunityToTopItem(o, pressure));
+    const betterAlternatives = betterAlternativeOpps.map(o => opportunityToTopItem(o, pressure));
+
+    const whatFaultlineWouldDo = computeWhatFaultlineWouldDo(pressure, favorability, moveType);
+    const sectorRotation = computeSectorRotation(pressure);
+    const portfolioActions = computePortfolioActions(pressure, favorability, moveType);
+
+    return {
+      topStocks,
+      topCrypto,
+      betterAlternatives,
+      whatFaultlineWouldDo,
+      sectorRotation,
+      portfolioActions,
+      generatedAt: new Date().toISOString(),
+    };
+  } catch (err) {
+    log.warn("[Trade Preflight] computeRecommendedMoves failed", { err: err as Error });
+    // Return minimal fallback
+    return {
+      topStocks: [],
+      topCrypto: [],
+      betterAlternatives: [],
+      whatFaultlineWouldDo: computeWhatFaultlineWouldDo(pressure, favorability, moveType),
+      sectorRotation: computeSectorRotation(pressure),
+      portfolioActions: computePortfolioActions(pressure, favorability, moveType),
+      generatedAt: new Date().toISOString(),
+    };
+  }
+}
+
 // ── Main Entry Point ──────────────────────────────────────────
 
 // Exported for testing: accepts an optional pre-computed pressure object
@@ -1687,6 +1951,9 @@ export async function runTradePreflightSimulation(
     input.ticker
   );
 
+  // Build Recommended Moves (async scan of top opportunities)
+  const recommendedMoves = await computeRecommendedMoves(pressure, favorability, input.moveType, input.ticker);
+
   const partial: Omit<TradeSimulationOutput, "explanation"> = {
     marketStatus: marketCondition.marketStatus,
     moveType: input.moveType,
@@ -1715,6 +1982,7 @@ export async function runTradePreflightSimulation(
     historicalAnalogs,
     thesisStressTest,
     marketInterpretation,
+    recommendedMoves,
     generatedAt: new Date().toISOString(),
   };
 

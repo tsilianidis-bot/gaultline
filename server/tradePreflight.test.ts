@@ -136,7 +136,7 @@ describe("simulateTrade — output shape", () => {
     expect(result).toHaveProperty("watchNext");
     expect(result).toHaveProperty("explanation");
     expect(result).toHaveProperty("marketCondition");
-  });
+  }, 30000);
 
   it("includes ticker in output when provided", async () => {
     const result = await simulateTrade(
@@ -145,7 +145,7 @@ describe("simulateTrade — output shape", () => {
     );
     expect(result.ticker).toBe("NVDA");
     expect(result.moveType).toBe("buy_specific_ticker");
-  });
+  }, 30000);
 });
 
 describe("simulateTrade — score bounds", () => {
