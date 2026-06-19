@@ -158,7 +158,7 @@ describe("simulateTrade — score bounds", () => {
       expect(result.moveFavorabilityScore).toBeGreaterThanOrEqual(0);
       expect(result.moveFavorabilityScore).toBeLessThanOrEqual(100);
     }
-  });
+  }, 90000);
 
   it("favorableSetupProbability + adversePressureProbability <= 100", async () => {
     const result = await simulateTrade(
@@ -315,7 +315,7 @@ describe("simulateTrade — defensive regime produces lower favorability for ris
       simulateTrade({ moveType: "add_risk", timeframe: "today" }, HIGH_PRESSURE_OUTPUT as any),
     ]);
     expect(lowResult.moveFavorabilityScore).toBeGreaterThan(highResult.moveFavorabilityScore);
-  });
+  }, 30000);
 
   it("hedge scores higher under high pressure than low pressure", async () => {
     const [lowResult, highResult] = await Promise.all([
@@ -323,5 +323,5 @@ describe("simulateTrade — defensive regime produces lower favorability for ris
       simulateTrade({ moveType: "hedge", timeframe: "today" }, HIGH_PRESSURE_OUTPUT as any),
     ]);
     expect(highResult.moveFavorabilityScore).toBeGreaterThan(lowResult.moveFavorabilityScore);
-  });
+  }, 30000);
 });

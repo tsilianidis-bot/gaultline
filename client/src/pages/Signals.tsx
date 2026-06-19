@@ -10,6 +10,8 @@ import { trpc } from '@/lib/trpc';
 import { TickerSearch } from '@/components/TickerSearch';
 import {
   SIGNAL_STOCKS, SIGNAL_COLORS, CATEGORY_META, ALL_SECTORS, ALL_MARKET_CAPS, ALL_CATEGORIES,
+  ALL_RISK_RATINGS, ALL_VOLATILITY_LEVELS, ALL_LIQUIDITY_LEVELS, ALL_TIMEFRAMES, ALL_BIASES, ALL_ASSET_CLASSES,
+  RISK_COLORS,
   DEFAULT_FILTERS, filterStocks, scoreStockForRegime, getTodaysTopSignals,
   mapRegimeToCode, REGIME_CONTEXT, REGIME_PRIORITY_CATEGORIES,
   type SignalStock, type FaultlineSignal, type ScreeningCategory, type SignalFilters,
@@ -23,6 +25,7 @@ import { PreflightTrigger } from "@/components/MarketPreflight";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackStockSignalViewed } from "@/hooks/useAnalytics";
+import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -389,7 +392,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700, fontSize: '16px',
               color: '#F0F4FF', letterSpacing: '0.05em',
-            }}>{stock.ticker}</span>
+            }}><TickerChip ticker={stock.ticker} name={stock.name} /></span>
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '12px', letterSpacing: '0.1em',
@@ -774,6 +777,64 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             )}
           </div>
 
+          {/* Risk / Volatility / Liquidity / Timeframe / Momentum metadata row */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+            {/* Risk Rating */}
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '9px', letterSpacing: '0.1em',
+              padding: '2px 6px', borderRadius: '2px',
+              background: RISK_COLORS[stock.riskRating]?.bg ?? 'rgba(100,116,139,0.1)',
+              color: RISK_COLORS[stock.riskRating]?.text ?? '#94A3B8',
+              border: `1px solid ${RISK_COLORS[stock.riskRating]?.text ?? '#94A3B8'}30`,
+            }}>RISK: {stock.riskRating.toUpperCase()}</span>
+            {/* Volatility */}
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '9px', letterSpacing: '0.1em',
+              padding: '2px 6px', borderRadius: '2px',
+              background: 'rgba(100,116,139,0.06)',
+              color: stock.volatilityLevel === 'Extreme' ? '#A855F7' : stock.volatilityLevel === 'High' ? '#EF4444' : stock.volatilityLevel === 'Moderate' ? '#FBB724' : '#22C55E',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>VOL: {stock.volatilityLevel.toUpperCase()}</span>
+            {/* Liquidity */}
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '9px', letterSpacing: '0.1em',
+              padding: '2px 6px', borderRadius: '2px',
+              background: 'rgba(100,116,139,0.06)',
+              color: stock.liquidityLevel === 'High' ? '#22C55E' : stock.liquidityLevel === 'Moderate' ? '#FBB724' : '#EF4444',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>LIQ: {stock.liquidityLevel.toUpperCase()}</span>
+            {/* Timeframe */}
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '9px', letterSpacing: '0.1em',
+              padding: '2px 6px', borderRadius: '2px',
+              background: 'rgba(0,212,255,0.06)',
+              color: '#00D4FF',
+              border: '1px solid rgba(0,212,255,0.15)',
+            }}>{stock.timeframe.toUpperCase()}</span>
+            {/* Momentum */}
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '9px', letterSpacing: '0.1em',
+              padding: '2px 6px', borderRadius: '2px',
+              background: 'rgba(100,116,139,0.06)',
+              color: stock.momentum >= 70 ? '#00D4FF' : stock.momentum >= 50 ? '#FBB724' : '#FF2D55',
+              border: '1px solid rgba(255,255,255,0.06)',
+            }}>MOM: {stock.momentum}</span>
+            {/* Bias */}
+            <span style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '9px', letterSpacing: '0.1em',
+              padding: '2px 6px', borderRadius: '2px',
+              background: stock.bias === 'Bullish' ? 'rgba(0,212,255,0.08)' : stock.bias === 'Bearish' ? 'rgba(255,45,85,0.08)' : 'rgba(255,215,0,0.08)',
+              color: stock.bias === 'Bullish' ? '#00D4FF' : stock.bias === 'Bearish' ? '#FF2D55' : '#FFD700',
+              border: `1px solid ${stock.bias === 'Bullish' ? 'rgba(0,212,255,0.2)' : stock.bias === 'Bearish' ? 'rgba(255,45,85,0.2)' : 'rgba(255,215,0,0.2)'}`,
+            }}>{stock.bias.toUpperCase()}</span>
+          </div>
+
           {/* All signals */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {stock.signals.map(sig => <SignalTag key={sig} signal={sig} />)}
@@ -894,7 +955,7 @@ function TopSignalCard({ label, stock, color, icon, liveQuote }: { label: string
         fontWeight: 700, fontSize: '18px',
         color: '#F0F4FF', letterSpacing: '0.05em',
         marginBottom: '2px',
-      }}>{stock.ticker}</div>
+      }}><TickerChip ticker={stock.ticker} name={stock.name} /></div>
       <div style={{
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: '13px', color: 'rgba(100,116,139,0.7)',
@@ -1595,6 +1656,13 @@ function SignalsInner() {
             <FilterSelect label="DEBT SENS." value={filters.debtSensitivity} onChange={v => updateFilter('debtSensitivity', v)} options={['All', 'High', 'Medium', 'Low']} />
             <FilterRange label="MIN RS" value={filters.minRS} min={0} max={100} step={5} onChange={v => updateFilter('minRS', v)} />
             <FilterRange label="MIN VOL SURGE" value={filters.minVolumeSurge} min={0} max={5} step={0.5} onChange={v => updateFilter('minVolumeSurge', v)} suffix="x" />
+            <FilterSelect label="RISK RATING" value={filters.riskRating} onChange={v => updateFilter('riskRating', v)} options={ALL_RISK_RATINGS} />
+            <FilterSelect label="VOLATILITY" value={filters.volatilityLevel} onChange={v => updateFilter('volatilityLevel', v)} options={ALL_VOLATILITY_LEVELS} />
+            <FilterSelect label="LIQUIDITY" value={filters.liquidityLevel} onChange={v => updateFilter('liquidityLevel', v)} options={ALL_LIQUIDITY_LEVELS} />
+            <FilterSelect label="TIMEFRAME" value={filters.timeframe} onChange={v => updateFilter('timeframe', v)} options={ALL_TIMEFRAMES} />
+            <FilterSelect label="BIAS" value={filters.bias} onChange={v => updateFilter('bias', v)} options={ALL_BIASES} />
+            <FilterSelect label="ASSET CLASS" value={filters.assetClass} onChange={v => updateFilter('assetClass', v)} options={ALL_ASSET_CLASSES} />
+            <FilterRange label="MIN MOMENTUM" value={filters.minMomentum} min={0} max={100} step={5} onChange={v => updateFilter('minMomentum', v)} />
           </div>
           <div style={{ display: 'flex', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
             <FilterToggle label="EARNINGS SOON" value={filters.hasEarnings} onChange={v => updateFilter('hasEarnings', v)} />
@@ -1934,11 +2002,7 @@ function AsymmetricCard({ opp }: { opp: AsymmetricOpportunity }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            <span style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: 700, fontSize: '17px',
-              color: '#F0F4FF', letterSpacing: '0.05em',
-            }}>{opp.ticker}</span>
+            <TickerChip ticker={opp.ticker} name={opp.name} />
 
             {/* Conviction badge */}
             <InfoTooltip tip={

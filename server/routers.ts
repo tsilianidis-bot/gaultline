@@ -52,7 +52,7 @@ import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
-import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ExposureCategory } from './tradePreflight';
+import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ExposureCategory, type RaiseCashReason, type DeployCashTarget, type PositionSizeType, type ExitType, type HoldConcern } from './tradePreflight';
 import { getPreFlightData } from './preFlight';
 import {
   getOrCreateOwnerAccount, getOwnerPositions, getOwnerTrades, getOwnerObjective, setOwnerObjective,
@@ -1482,6 +1482,7 @@ export const appRouter = router({
           "deploy_cash",
           "buy_specific_asset",
           "sell_specific_asset",
+          "hold",
         ] as const),
         timeframe: z.enum(["today", "this_week", "one_three_months", "six_twelve_months"] as const),
         ticker: z.string().min(1).max(10).optional(),
@@ -1495,6 +1496,11 @@ export const appRouter = router({
         ] as const).optional(),
         rotateFrom: z.string().max(50).optional(),
         rotateTo: z.string().max(50).optional(),
+        raiseCashReason: z.string().max(50).optional(),
+        deployCashTarget: z.string().max(50).optional(),
+        positionSizeType: z.string().max(50).optional(),
+        exitType: z.string().max(50).optional(),
+        holdConcern: z.string().max(50).optional(),
       }))
       .mutation(async ({ input }) => {
         try {
@@ -1505,6 +1511,11 @@ export const appRouter = router({
             exposureCategory: input.exposureCategory as ExposureCategory | undefined,
             rotateFrom: input.rotateFrom,
             rotateTo: input.rotateTo,
+            raiseCashReason: input.raiseCashReason as RaiseCashReason | undefined,
+            deployCashTarget: input.deployCashTarget as DeployCashTarget | undefined,
+            positionSizeType: input.positionSizeType as PositionSizeType | undefined,
+            exitType: input.exitType as ExitType | undefined,
+            holdConcern: input.holdConcern as HoldConcern | undefined,
           });
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trade Preflight simulation failed", cause: err });

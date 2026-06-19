@@ -15,6 +15,7 @@ import {
   Search, Users, ThumbsUp, ThumbsDown, BookOpen,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Types (mirrored from server) ──────────────────────────────
 type SentimentLabel =
@@ -115,13 +116,64 @@ interface TickerNewsArticle {
   sentimentReasoning: string;
 }
 
-interface TickerSocialData {
+interface SourceSentiment {
+  source: string;
+  available: boolean;
+  bullishPct: number;
+  bearishPct: number;
+  neutralPct: number;
+  volume: number;
+  weight: number;
+  note?: string;
+}
+
+interface SentimentTrend {
+  period: "24h" | "7d" | "30d";
+  direction: "rising" | "falling" | "stable";
+  bullishPct: number;
+  bearishPct: number;
+  volume: number;
+}
+
+interface RedditPost {
+  id: string;
+  title: string;
+  subreddit: string;
+  score: number;
+  numComments: number;
+  url: string;
+  createdUtc: number;
+  selftext?: string;
+}
+
+interface MultiSourceSocialData {
   symbol: string;
   assetType: "stock" | "crypto";
-  stocktwits: StockTwitsData | null;
-  news: TickerNewsArticle[];
+  socialIntelligenceScore: number;
   overallSentiment: SentimentLabel;
   overallSentimentScore: number;
+  overallBullishPct: number;
+  overallBearishPct: number;
+  sources: SourceSentiment[];
+  socialVolume: number;
+  socialMomentum: "rising" | "falling" | "stable";
+  discussionVelocity: string;
+  sentimentTrends: SentimentTrend[];
+  topBullishArguments: string[];
+  topBearishArguments: string[];
+  keyTopics: string[];
+  influencerMentions: string[];
+  retailInterestScore: number;
+  crowdConvictionScore: number;
+  contrarianSignalScore: number;
+  memeHypeDetected: boolean;
+  memeHypeDescription: string;
+  socialRiskWarnings: string[];
+  bullCaseSummary: string;
+  bearCaseSummary: string;
+  stocktwits: StockTwitsData | null;
+  news: TickerNewsArticle[];
+  redditPosts: RedditPost[];
   fetchedAt: number;
 }
 
@@ -239,7 +291,7 @@ function TrendingCard({ t }: { t: TrendingTicker }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 15, color: "#00D4FF" }}>{t.symbol}</span>
+            <TickerChip ticker={t.symbol} name={t.name} />
             <Tooltip>
               <TooltipTrigger asChild>
                 <span style={{
@@ -335,8 +387,8 @@ function SentimentRow({ s, rank }: { s: SentimentSummary; rank: number }) {
         <span style={{ fontSize: 11, color: "var(--fl-text-muted)", fontFamily: "monospace", minWidth: 20 }}>
           #{rank}
         </span>
-        <span style={{ fontSize: 14, fontWeight: 700, color: "#00D4FF", fontFamily: "monospace", minWidth: 56 }}>
-          {s.ticker}
+        <span style={{ minWidth: 56, display: "inline-flex" }}>
+          <TickerChip ticker={s.ticker} name={s.name} />
         </span>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -431,9 +483,7 @@ function NewsCard({ article }: { article: NewsArticle }) {
               </TooltipContent>
             </Tooltip>
             {article.tickers.slice(0, 4).map((t) => (
-              <span key={t} style={{ fontSize: 10, color: "#00D4FF", fontFamily: "monospace", background: "rgba(0,212,255,0.1)", padding: "1px 5px", borderRadius: 3 }}>
-                {t}
-              </span>
+              <TickerChip key={t} ticker={t} compact />
             ))}
             <span style={{ fontSize: 10, color: "var(--fl-text-muted)", marginLeft: "auto" }}>
               {timeAgo(article.publishedUtc)}
@@ -493,9 +543,7 @@ function NarrativeCard({ cluster }: { cluster: NarrativeCluster }) {
       </p>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
         {cluster.tickers.map((t) => (
-          <span key={t} style={{ fontSize: 10, color: "#00D4FF", fontFamily: "monospace", background: "rgba(0,212,255,0.1)", padding: "2px 6px", borderRadius: 3 }}>
-            {t}
-          </span>
+          <TickerChip key={t} ticker={t} />
         ))}
       </div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -557,18 +605,83 @@ function StockTwitsCard({ msg }: { msg: StockTwitsMessage }) {
   );
 }
 
+// ── Score Gauge ──────────────────────────────────────────────
+function ScoreGauge({ score, label, color }: { score: number; label: string; color: string }) {
+  const radius = 28;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+      <svg width={72} height={72} viewBox="0 0 72 72">
+        <circle cx={36} cy={36} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={6} />
+        <circle
+          cx={36} cy={36} r={radius} fill="none" stroke={color} strokeWidth={6}
+          strokeDasharray={circumference} strokeDashoffset={offset}
+          strokeLinecap="round" transform="rotate(-90 36 36)"
+          style={{ transition: "stroke-dashoffset 0.8s ease" }}
+        />
+        <text x={36} y={40} textAnchor="middle" fill={color} fontSize={14} fontWeight={700} fontFamily="monospace">{score}</text>
+      </svg>
+      <span style={{ fontSize: 10, color: "var(--fl-text-muted)", textAlign: "center", letterSpacing: "0.05em" }}>{label}</span>
+    </div>
+  );
+}
+
+// ── Source Attribution Row ────────────────────────────────────
+function SourceRow({ src }: { src: SourceSentiment }) {
+  const totalPct = src.bullishPct + src.bearishPct + src.neutralPct;
+  const bPct = totalPct > 0 ? Math.round((src.bullishPct / totalPct) * 100) : 0;
+  const rPct = totalPct > 0 ? Math.round((src.bearishPct / totalPct) * 100) : 0;
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 10, padding: "8px 0",
+      borderBottom: "1px solid rgba(255,255,255,0.04)",
+    }}>
+      <div style={{ minWidth: 110, fontSize: 12, fontWeight: 600, color: src.available ? "var(--fl-text-primary)" : "var(--fl-text-muted)" }}>
+        {src.source}
+      </div>
+      {src.available ? (
+        <>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+            <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden", gap: 1 }}>
+              <div style={{ width: `${src.bullishPct}%`, background: "#00FF88", minWidth: src.bullishPct > 0 ? 2 : 0 }} />
+              <div style={{ width: `${src.neutralPct}%`, background: "#FF9500", minWidth: src.neutralPct > 0 ? 2 : 0 }} />
+              <div style={{ width: `${src.bearishPct}%`, background: "#FF2D55", minWidth: src.bearishPct > 0 ? 2 : 0 }} />
+            </div>
+            <div style={{ display: "flex", gap: 8, fontSize: 10, color: "var(--fl-text-muted)" }}>
+              <span style={{ color: "#00FF88" }}>▲ {src.bullishPct}%</span>
+              <span style={{ color: "#FF9500" }}>— {src.neutralPct}%</span>
+              <span style={{ color: "#FF2D55" }}>▼ {src.bearishPct}%</span>
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: "var(--fl-text-muted)", minWidth: 60, textAlign: "right" }}>
+            {src.volume} posts
+          </div>
+          <div style={{ fontSize: 10, color: "var(--fl-text-dim)", minWidth: 50, textAlign: "right" }}>
+            {src.weight}% weight
+          </div>
+        </>
+      ) : (
+        <div style={{ flex: 1, fontSize: 11, color: "var(--fl-text-dim)", fontStyle: "italic" }}>
+          {src.note ?? "Source unavailable"}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Ticker Search Panel ──────────────────────────────────────────
 function TickerSearchPanel() {
   const [inputValue, setInputValue] = useState("");
   const [searchSymbol, setSearchSymbol] = useState("");
   const [assetType, setAssetType] = useState<"stock" | "crypto">("stock");
-  const [activeSource, setActiveSource] = useState<"stocktwits" | "news">("stocktwits");
+  const [activeSource, setActiveSource] = useState<"overview" | "sources" | "arguments" | "stocktwits" | "reddit" | "news">("overview");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading, error } = trpc.social.searchTicker.useQuery(
     { symbol: searchSymbol, assetType },
     { enabled: searchSymbol.length > 0, staleTime: 3 * 60 * 1000 }
-  );
+  ) as { data: MultiSourceSocialData | undefined; isLoading: boolean; error: Error | null };
 
   function handleSearch() {
     const sym = inputValue.trim().toUpperCase();
@@ -723,45 +836,187 @@ function TickerSearchPanel() {
             )}
           </div>
 
-          {/* Source Tabs */}
+          {/* ── Social Intelligence Score Row ── */}
+          <div style={{
+            display: "flex", gap: 16, marginBottom: 16, flexWrap: "wrap",
+            padding: "14px 18px",
+            background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8,
+          }}>
+            <ScoreGauge score={data.socialIntelligenceScore} label="SOCIAL SCORE" color="#00D4FF" />
+            <ScoreGauge score={data.retailInterestScore} label="RETAIL INTEREST" color="#FF9500" />
+            <ScoreGauge score={data.crowdConvictionScore} label="CROWD CONVICTION" color="#00FF88" />
+            <ScoreGauge score={data.contrarianSignalScore} label="CONTRARIAN SIGNAL" color="#FF2D55" />
+            <div style={{ flex: 1, minWidth: 160, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                <span style={{ fontSize: 10, color: "#00FF88", fontWeight: 700 }}>▲ {data.overallBullishPct}% Bull</span>
+                <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>{data.overallBearishPct}% Bear ▼</span>
+              </div>
+              <div style={{ height: 8, borderRadius: 4, background: "rgba(255,45,85,0.3)", overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${data.overallBullishPct}%`, background: "#00FF88", borderRadius: 4, transition: "width 0.4s" }} />
+              </div>
+              <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>VOLUME</div>
+                  <div style={{ fontSize: 12, fontFamily: "monospace", color: "var(--fl-text-primary)" }}>{data.socialVolume} signals</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>MOMENTUM</div>
+                  <div style={{ fontSize: 12, fontFamily: "monospace", color: data.socialMomentum === "rising" ? "#00FF88" : data.socialMomentum === "falling" ? "#FF2D55" : "#FF9500" }}>
+                    {data.socialMomentum === "rising" ? "↑ Rising" : data.socialMomentum === "falling" ? "↓ Falling" : "→ Stable"}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>VELOCITY</div>
+                  <div style={{ fontSize: 12, fontFamily: "monospace", color: "var(--fl-text-secondary)" }}>{data.discussionVelocity}</div>
+                </div>
+              </div>
+              {data.memeHypeDetected && (
+                <div style={{ marginTop: 4, padding: "4px 8px", borderRadius: 4, background: "rgba(255,45,85,0.12)", border: "1px solid rgba(255,45,85,0.3)" }}>
+                  <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>🔥 MEME/HYPE DETECTED</span>
+                  {data.memeHypeDescription && <span style={{ fontSize: 10, color: "var(--fl-text-muted)", marginLeft: 6 }}>{data.memeHypeDescription}</span>}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Social Risk Warnings ── */}
+          {data.socialRiskWarnings.length > 0 && (
+            <div style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 6, background: "rgba(255,149,0,0.08)", border: "1px solid rgba(255,149,0,0.25)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <AlertTriangle size={12} color="#FF9500" />
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#FF9500", letterSpacing: "0.05em" }}>SOCIAL RISK WARNINGS</span>
+              </div>
+              {data.socialRiskWarnings.map((w, i) => (
+                <div key={i} style={{ fontSize: 11, color: "var(--fl-text-secondary)", marginBottom: 2 }}>• {w}</div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Source Tabs ── */}
           <div style={{
             display: "flex", gap: 4, marginBottom: 16,
             background: "var(--fl-surface)", border: "1px solid var(--fl-border)",
-            borderRadius: 8, padding: 4,
+            borderRadius: 8, padding: 4, flexWrap: "wrap",
           }}>
-            <button
-              onClick={() => setActiveSource("stocktwits")}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "7px 14px", borderRadius: 5, border: "none",
-                background: activeSource === "stocktwits" ? "rgba(0,212,255,0.15)" : "transparent",
-                color: activeSource === "stocktwits" ? "#00D4FF" : "var(--fl-text-muted)",
-                fontSize: 12, fontWeight: activeSource === "stocktwits" ? 700 : 400,
-                cursor: "pointer", transition: "all 0.15s",
-              }}
-            >
-              <MessageSquare size={13} />
-              StockTwits
-              {st && <span style={{ fontSize: 10, background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 10 }}>{st.messages.length}</span>}
-            </button>
-            <button
-              onClick={() => setActiveSource("news")}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "7px 14px", borderRadius: 5, border: "none",
-                background: activeSource === "news" ? "rgba(0,212,255,0.15)" : "transparent",
-                color: activeSource === "news" ? "#00D4FF" : "var(--fl-text-muted)",
-                fontSize: 12, fontWeight: activeSource === "news" ? 700 : 400,
-                cursor: "pointer", transition: "all 0.15s",
-              }}
-            >
-              <Newspaper size={13} />
-              News
-              {data.news && <span style={{ fontSize: 10, background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 10 }}>{data.news.length}</span>}
-            </button>
+            {([
+              { id: "overview" as const, label: "Overview", icon: <Activity size={12} /> },
+              { id: "sources" as const, label: "Source Breakdown", icon: <BarChart2 size={12} /> },
+              { id: "arguments" as const, label: "Bull / Bear", icon: <Target size={12} /> },
+              { id: "stocktwits" as const, label: "StockTwits", icon: <MessageSquare size={12} />, count: st?.messages.length },
+              { id: "reddit" as const, label: "Reddit", icon: <Hash size={12} />, count: data.redditPosts?.length },
+              { id: "news" as const, label: "News", icon: <Newspaper size={12} />, count: data.news?.length },
+            ] as const).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSource(tab.id)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "6px 12px", borderRadius: 5, border: "none",
+                  background: activeSource === tab.id ? "rgba(0,212,255,0.15)" : "transparent",
+                  color: activeSource === tab.id ? "#00D4FF" : "var(--fl-text-muted)",
+                  fontSize: 11, fontWeight: activeSource === tab.id ? 700 : 400,
+                  cursor: "pointer", transition: "all 0.15s",
+                }}
+              >
+                {tab.icon}
+                {tab.label}
+                {"count" in tab && tab.count !== undefined && (
+                  <span style={{ fontSize: 9, background: "rgba(255,255,255,0.08)", padding: "1px 4px", borderRadius: 8 }}>{tab.count}</span>
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* StockTwits Feed */}
+          {/* ── Overview Tab ── */}
+          {activeSource === "overview" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {/* Sentiment Trends */}
+              <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, padding: "14px 16px" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginBottom: 12 }}>SENTIMENT TRENDS</div>
+                {data.sentimentTrends.map((t) => (
+                  <div key={t.period} style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 11, color: "var(--fl-text-secondary)", fontFamily: "monospace" }}>{t.period}</span>
+                      <span style={{ fontSize: 11, color: t.direction === "rising" ? "#00FF88" : t.direction === "falling" ? "#FF2D55" : "#FF9500" }}>
+                        {t.direction === "rising" ? "↑ Rising" : t.direction === "falling" ? "↓ Falling" : "→ Stable"}
+                      </span>
+                    </div>
+                    <div style={{ height: 5, borderRadius: 3, background: "rgba(255,45,85,0.2)", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${t.bullishPct}%`, background: "#00FF88", borderRadius: 3 }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                      <span style={{ fontSize: 10, color: "#00FF88" }}>{t.bullishPct}% bull</span>
+                      <span style={{ fontSize: 10, color: "#FF2D55" }}>{t.bearishPct}% bear</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Key Topics */}
+              <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, padding: "14px 16px" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginBottom: 12 }}>KEY TOPICS</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {data.keyTopics.map((t, i) => (
+                    <span key={i} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 4, background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.15)", color: "#00D4FF" }}>#{t}</span>
+                  ))}
+                </div>
+                {data.influencerMentions.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginTop: 14, marginBottom: 8 }}>INFLUENCER MENTIONS</div>
+                    {data.influencerMentions.map((m, i) => (
+                      <div key={i} style={{ fontSize: 11, color: "var(--fl-text-secondary)", marginBottom: 4 }}>• {m}</div>
+                    ))}
+                  </>
+                )}
+                {st && (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginTop: 14, marginBottom: 4 }}>STOCKTWITS WATCHLIST</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "monospace", color: "var(--fl-text-primary)" }}>{st.watchlistCount.toLocaleString()}</div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Source Breakdown Tab ── */}
+          {activeSource === "sources" && (
+            <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, padding: "14px 18px" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--fl-text-muted)", letterSpacing: "0.08em", marginBottom: 12 }}>SOURCE ATTRIBUTION</div>
+              {data.sources.map((src) => (
+                <SourceRow key={src.source} src={src} />
+              ))}
+              <div style={{ marginTop: 12, padding: "8px 10px", borderRadius: 5, background: "rgba(255,255,255,0.03)", fontSize: 10, color: "var(--fl-text-dim)", lineHeight: 1.6 }}>
+                Sources marked "Source unavailable" require paid API credentials (X/Twitter, TikTok, Seeking Alpha, TradingView, Telegram, Discord). The Social Intelligence Score is computed from available sources only.
+              </div>
+            </div>
+          )}
+
+          {/* ── Bull / Bear Arguments Tab ── */}
+          {activeSource === "arguments" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.2)", borderRadius: 8, padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                  <ThumbsUp size={13} color="#00FF88" />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#00FF88", letterSpacing: "0.08em" }}>BULL CASE</span>
+                </div>
+                <p style={{ fontSize: 12, color: "var(--fl-text-secondary)", lineHeight: 1.6, marginBottom: 12 }}>{data.bullCaseSummary}</p>
+                {data.topBullishArguments.map((arg, i) => (
+                  <div key={i} style={{ fontSize: 11, color: "var(--fl-text-secondary)", marginBottom: 6, paddingLeft: 10, borderLeft: "2px solid rgba(0,255,136,0.3)" }}>{arg}</div>
+                ))}
+              </div>
+              <div style={{ background: "rgba(255,45,85,0.05)", border: "1px solid rgba(255,45,85,0.2)", borderRadius: 8, padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                  <ThumbsDown size={13} color="#FF2D55" />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#FF2D55", letterSpacing: "0.08em" }}>BEAR CASE</span>
+                </div>
+                <p style={{ fontSize: 12, color: "var(--fl-text-secondary)", lineHeight: 1.6, marginBottom: 12 }}>{data.bearCaseSummary}</p>
+                {data.topBearishArguments.map((arg, i) => (
+                  <div key={i} style={{ fontSize: 11, color: "var(--fl-text-secondary)", marginBottom: 6, paddingLeft: 10, borderLeft: "2px solid rgba(255,45,85,0.3)" }}>{arg}</div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── StockTwits Tab ── */}
           {activeSource === "stocktwits" && (
             <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, overflow: "hidden" }}>
               {st && st.messages.length > 0 ? (
@@ -774,7 +1029,48 @@ function TickerSearchPanel() {
             </div>
           )}
 
-          {/* News Feed */}
+          {/* ── Reddit Tab ── */}
+          {activeSource === "reddit" && (
+            <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, overflow: "hidden" }}>
+              {data.redditPosts && data.redditPosts.length > 0 ? (
+                data.redditPosts.map((post) => (
+                  <a
+                    key={post.id}
+                    href={post.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "block", padding: "12px 16px", borderBottom: "1px solid var(--fl-border)", textDecoration: "none", transition: "background 0.15s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 40, gap: 2 }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: post.score > 100 ? "#FF9500" : "var(--fl-text-muted)", fontFamily: "monospace" }}>{post.score >= 1000 ? (post.score / 1000).toFixed(1) + "k" : post.score}</span>
+                        <span style={{ fontSize: 9, color: "var(--fl-text-dim)" }}>points</span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                          <span style={{ fontSize: 10, color: "#FF9500", fontWeight: 600 }}>r/{post.subreddit}</span>
+                          <span style={{ fontSize: 10, color: "var(--fl-text-dim)" }}>{post.numComments} comments</span>
+                          <ExternalLink size={10} color="var(--fl-text-dim)" style={{ marginLeft: "auto" }} />
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--fl-text-primary)", lineHeight: 1.4 }}>{post.title}</div>
+                        {post.selftext && (
+                          <div style={{ fontSize: 11, color: "var(--fl-text-muted)", marginTop: 4, lineHeight: 1.5 }}>{post.selftext.slice(0, 150)}{post.selftext.length > 150 ? "…" : ""}</div>
+                        )}
+                      </div>
+                    </div>
+                  </a>
+                ))
+              ) : (
+                <div style={{ padding: 40, textAlign: "center", color: "var(--fl-text-muted)", fontSize: 13 }}>
+                  No Reddit posts found for {data.symbol} in the past week.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── News Tab ── */}
           {activeSource === "news" && (
             <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, overflow: "hidden" }}>
               {data.news.length > 0 ? (

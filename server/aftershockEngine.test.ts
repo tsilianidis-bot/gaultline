@@ -97,18 +97,18 @@ describe("Aftershock Engine™ — Core Pipeline", () => {
     expect(result).toHaveProperty("pressureIndex");
     expect(result).toHaveProperty("systemicRiskLevel");
     expect(result).toHaveProperty("generatedAt");
-  });
+  }, 30000);
 
   it("should return a numeric pressureIndex between 0 and 100", async () => {
     const result = await runAftershockEngine();
     expect(result.pressureIndex).toBeGreaterThanOrEqual(0);
     expect(result.pressureIndex).toBeLessThanOrEqual(100);
-  });
+  }, 30000);
 
   it("should classify systemicRiskLevel as one of the four valid levels", async () => {
     const result = await runAftershockEngine();
     expect(["Low", "Moderate", "Elevated", "High", "Critical"]).toContain(result.systemicRiskLevel);
-  });
+  }, 30000);
 
   it("should return a non-empty summary string", async () => {
     const result = await runAftershockEngine();

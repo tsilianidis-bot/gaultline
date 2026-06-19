@@ -1608,3 +1608,101 @@
 - [x] Add TickerSearchPanel component: stock/crypto toggle, search input with quick-access chips (NVDA/AAPL/TSLA/META/BTC/ETH), overall sentiment header (symbol, watchlist count, bull/bear ratio bar), source tabs (StockTwits | News), StockTwits feed, News feed
 - [x] Add "Ticker Search" tab as first/default tab in SocialIntelligence main tabs
 - [x] TypeScript: 0 errors | 553/553 tests passing | Save checkpoint
+
+## Situation Room — Mandatory Decision Tree Rebuild (Jun 19, 2026)
+- [ ] Audit current SituationRoom.tsx wizard and tradePreflight.ts input types
+- [ ] Extend SimulatorInput in tradePreflight.ts: exposureCategory, rotateFrom, rotateTo, ticker, positionSize (New/Add/Full), exitType (Partial/Full/RiskReduction/ProfitTaking), holdConcern (Volatility/Drawdown/ProfitTaking/NoConcern/Unsure), raiseCashReason, deployCashTarget
+- [ ] Add full ExposureCategory enum for ADD_RISK (18 options), REDUCE_RISK (9), HEDGE (8+ticker), ROTATE (from+to), RAISE_CASH (5 reasons), DEPLOY_CASH (9 targets), BUY_SPECIFIC_ASSET (ticker+positionSize), SELL_SPECIFIC_ASSET (ticker+exitType), HOLD (ticker+concern)
+- [ ] Rebuild SituationRoom.tsx wizard as 3-step flow: Step 1 = Action, Step 2 = Sub-inputs (dynamic per action), Step 3 = Timeframe
+- [ ] Add validation gate: Analyze button disabled until all required fields for the selected action are filled
+- [ ] HEDGE: if Single Position selected, show ticker input field
+- [ ] ROTATE: show both Rotate From and Rotate To dropdowns
+- [ ] BUY_SPECIFIC_ASSET: ticker input + position size radio (New/Add To Existing/Full Position)
+- [ ] SELL_SPECIFIC_ASSET: ticker input + exit type radio (Partial/Full/Risk Reduction/Profit Taking)
+- [ ] HOLD: ticker input + concern dropdown
+- [ ] Extend tradePreflight.ts computeRecommendedMoves to use specific exposure context in analysis
+- [ ] Add computeRecommendedVehicles() — returns 4-6 specific assets per action/exposure combination
+- [ ] Add computePortfolioImpact() — specific % allocation changes per scenario
+- [ ] Add computeProbabilityMatrix() — success probability, risk scenarios, base/bull/bear outcomes
+- [ ] Add computeWhatFaultlineWouldDo() — opinionated recommendation based on current macro regime
+- [ ] Add Recommended Alternatives panel to results
+- [ ] Add "What FAULTLINE Would Do" panel to results
+- [ ] Add Portfolio Impact panel to results
+- [ ] Add Best Vehicles panel to results
+- [ ] Add Risk/Reward panel to results
+- [ ] Add Probability Matrix panel to results
+- [ ] TypeScript: 0 errors | Tests passing | Save checkpoint
+
+## Social Intelligence Rebuild (Multi-Source Engine)
+- [x] Audit current socialIntelligence.ts — confirmed only Stocktwits + Polygon news
+- [x] Rebuild server/socialIntelligence.ts as multi-source aggregation engine
+  - [x] X (Twitter) — listed as "Source unavailable" (requires paid API)
+  - [x] Reddit — public JSON API (r/wallstreetbets, r/investing, r/stocks, r/CryptoCurrency, r/Bitcoin, r/ethereum)
+  - [x] Stocktwits (existing, kept)
+  - [x] YouTube — listed as "Source unavailable" (requires paid API)
+  - [x] TikTok — listed as "Source unavailable" (requires paid API)
+  - [x] Seeking Alpha — listed as "Source unavailable" (requires paid API)
+  - [x] TradingView public ideas — listed as "Source unavailable" (requires paid API)
+  - [x] Polygon.io news as financial news source
+  - [x] Crypto-specific communities via Reddit crypto subreddits
+  - [x] Weighted Social Intelligence Score (0-100) combining all available sources
+  - [x] Source breakdown with weight percentages
+  - [x] Bullish/Bearish % per source and overall
+  - [x] Social volume + momentum (rising/falling discussion rate)
+  - [x] Sentiment trend over 24h / 7d / 30d
+  - [x] Top Bullish Arguments (LLM-synthesized)
+  - [x] Top Bearish Arguments (LLM-synthesized)
+  - [x] Key Topics Being Discussed
+  - [x] Influencer / High-Reach Mentions
+  - [x] Retail Interest Score
+  - [x] Crowd Conviction Score
+  - [x] Contrarian Signal Score
+  - [x] Meme/Hype Detection
+  - [x] Social Risk Warnings
+  - [x] Crypto extras: Reddit crypto communities + Telegram/Discord listed as unavailable
+  - [x] "Source unavailable" display when source can't be reached
+- [x] Rebuild SocialIntelligence.tsx UI with:
+  - [x] Overall Social Sentiment panel with 4 ScoreGauge SVG components
+  - [x] Source Breakdown tab with attribution bars per source
+  - [x] Discussion Volume + Velocity
+  - [x] Most Mentioned Topics
+  - [x] Bull Case Summary / Bear Case Summary tab
+  - [x] All 13 metrics displayed clearly
+  - [x] StockTwits tab, Reddit tab, News tab
+  - [x] Sentiment Trends (24h/7d/30d) in Overview tab
+  - [x] Social Risk Warnings panel
+  - [x] Meme/Hype detection indicator
+- [x] TypeScript check: 0 errors
+- [x] Save checkpoint
+
+## Signals Discovery Engine Rebuild (20 Categories)
+- [x] Rewrite client/src/lib/signalsData.ts with 20 broad discovery categories
+  - [x] Mega-Cap Leaders, Large-Cap Momentum, Mid-Cap Growth, Small-Cap Opportunity
+  - [x] Micro-Cap / Speculative, High-Risk Breakout Candidates, Oversold Reversal Candidates
+  - [x] AI / Semiconductors, Energy / Oil / Uranium, Crypto Infrastructure
+  - [x] Meme / Retail Momentum, Biotech / Healthcare Risk, Defense / Aerospace
+  - [x] Fintech / Payments, Consumer Discretionary, Real Estate / Rate Sensitive
+  - [x] Deep Value / Turnaround, Volatility / Event-Driven, Insider / Unusual Volume Watch
+  - [x] Macro Beneficiaries
+  - [x] 100 tickers across all categories with full metadata
+  - [x] riskRating, volatilityLevel, liquidityLevel, timeframe, momentum, bias fields
+  - [x] bullCase, bearCase, invalidationLevel, whyAppearing fields
+  - [x] ALL_RISK_RATINGS, ALL_VOLATILITY_LEVELS, ALL_LIQUIDITY_LEVELS, ALL_TIMEFRAMES, ALL_BIASES, ALL_ASSET_CLASSES exports
+  - [x] RISK_COLORS export for UI badge coloring
+  - [x] Updated filterStocks() to support all new filter dimensions
+  - [x] Updated DEFAULT_FILTERS with new fields
+- [x] Update Signals.tsx filter panel with new filter selects (Risk, Volatility, Liquidity, Timeframe, Bias, Asset Class, Min Momentum)
+- [x] Add risk/volatility/liquidity/timeframe/momentum/bias metadata badges to expanded StockCard
+- [x] TypeScript check: 0 errors
+
+## Sitewide Ticker Quick-Action (TickerChip)
+- [x] Build TickerActionMenu.tsx — TickerChip component with dropdown (Search, View Full Reading, Run Signal Outlook, Add to Watchlist)
+- [x] Wire TickerChip into SocialIntelligence.tsx (TrendingCard, SentimentRow, news cards)
+- [x] Wire TickerChip into Signals.tsx (StockCard header, TopSignalCard, AsymmetricCard)
+- [x] Wire TickerChip into CryptoSearch.tsx (asset symbol display)
+- [x] Wire TickerChip into SignalOutlookCenter.tsx (opp.symbol, d.symbol, selectedSymbol)
+- [ ] Wire TickerChip into Dashboard.tsx (any ticker mentions)
+- [ ] Wire TickerChip into MarketPreflight.tsx (any ticker mentions)
+- [ ] Wire TickerChip into Watchlist pages (all ticker displays)
+- [ ] Wire TickerChip into news card components
+- [x] TypeScript check: 0 errors

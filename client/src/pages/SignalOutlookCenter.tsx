@@ -10,6 +10,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
+import { TickerChip } from "@/components/TickerActionMenu";
 import { useSEO } from "@/hooks/useSEO";
 import {
   Search, TrendingUp, TrendingDown, Minus, AlertTriangle,
@@ -296,9 +297,7 @@ function TopOpportunityCard({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#F1F5F9" }}>
-              {opp.symbol}
-            </span>
+            <TickerChip ticker={opp.symbol} name={opp.name} assetType={opp.assetType} />
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
               color: opp.assetType === "crypto" ? "#F7931A" : "#64B5F6",
@@ -465,9 +464,7 @@ function FullOutlookView({
 
         <div style={{ flex: 1, minWidth: "200px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px", flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: "#F1F5F9" }}>
-              {d.symbol}
-            </span>
+            <TickerChip ticker={d.symbol} name={d.name} assetType={d.assetType} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8" }}>
               {d.name}
             </span>
@@ -1496,9 +1493,7 @@ export default function SignalOutlookCenter() {
             {/* Report header: symbol + timeframe selector + clear */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00D4FF" }}>
-                  {selectedSymbol}
-                </span>
+                <TickerChip ticker={selectedSymbol} assetType={selectedAssetType} />
                 <span style={{
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
                   color: selectedAssetType === "crypto" ? "#F7931A" : "#64B5F6",

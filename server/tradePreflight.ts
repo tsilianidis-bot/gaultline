@@ -27,7 +27,44 @@ export type MoveType =
   | "raise_cash"
   | "deploy_cash"
   | "buy_specific_asset"
-  | "sell_specific_asset";
+  | "sell_specific_asset"
+  | "hold";
+
+export type RaiseCashReason =
+  | "risk_reduction"
+  | "waiting_for_opportunity"
+  | "near_term_expenses"
+  | "market_concerns"
+  | "tactical_positioning";
+
+export type DeployCashTarget =
+  | "ai"
+  | "technology"
+  | "financials"
+  | "energy"
+  | "small_caps"
+  | "bitcoin"
+  | "ethereum"
+  | "ai_crypto"
+  | "custom";
+
+export type PositionSizeType =
+  | "new_position"
+  | "add_to_existing"
+  | "full_position";
+
+export type ExitType =
+  | "partial_exit"
+  | "full_exit"
+  | "risk_reduction"
+  | "profit_taking";
+
+export type HoldConcern =
+  | "volatility"
+  | "drawdown"
+  | "profit_taking"
+  | "no_concern"
+  | "unsure";
 
 // Exposure sub-categories (Step 2 in the decision tree)
 export type ExposureCategory =
@@ -88,8 +125,13 @@ export interface TradeSimulationInput {
   ticker?: string;
   thesisType?: ThesisType;
   exposureCategory?: ExposureCategory;
-  rotateFrom?: string;   // e.g. "Technology"
-  rotateTo?: string;     // e.g. "Financials"
+  rotateFrom?: string;          // ROTATE: from sector/asset
+  rotateTo?: string;            // ROTATE: to sector/asset
+  raiseCashReason?: RaiseCashReason;   // RAISE_CASH: why
+  deployCashTarget?: DeployCashTarget; // DEPLOY_CASH: where
+  positionSizeType?: PositionSizeType; // BUY_SPECIFIC_ASSET: new/add/full
+  exitType?: ExitType;          // SELL_SPECIFIC_ASSET: partial/full/risk/profit
+  holdConcern?: HoldConcern;    // HOLD: concern type
 }
 
 export interface ThreatBoardItem {
@@ -305,6 +347,7 @@ export const MOVE_LABELS: Record<MoveType, string> = {
   deploy_cash: "Deploy Cash",
   buy_specific_asset: "Buy Specific Asset",
   sell_specific_asset: "Sell Specific Asset",
+  hold: "Hold",
 };
 
 // Human-readable labels for exposure categories
@@ -371,6 +414,9 @@ export function inferThesisFromMove(moveType: MoveType, timeframe: SimulatorTime
     if (timeframe === "one_three_months") return "value";
     if (timeframe === "this_week") return "breakout";
     return "momentum"; // today
+  }
+  if (moveType === "hold") {
+    return timeframe === "six_twelve_months" ? "long_term" : "value";
   }
   return "other";
 }
@@ -1418,7 +1464,12 @@ function computeMarketInterpretation(
   ticker?: string,
   exposureCategory?: ExposureCategory,
   rotateFrom?: string,
-  rotateTo?: string
+  rotateTo?: string,
+  raiseCashReason?: RaiseCashReason,
+  deployCashTarget?: DeployCashTarget,
+  positionSizeType?: PositionSizeType,
+  exitType?: ExitType,
+  holdConcern?: HoldConcern
 ): MarketInterpretation {
   const p = pressure.overallPressure;
   const tickerRef = ticker ? ` for ${ticker.toUpperCase()}` : "";
@@ -1433,11 +1484,64 @@ function computeMarketInterpretation(
   const expRef = expLabel ? ` in ${expLabel}` : tickerRef;
   const rotateRef = (rotateFrom && rotateTo) ? ` from ${rotateFrom} into ${rotateTo}` : "";
 
+  // Sub-input context strings
+  const raiseCashReasonLabel: Record<RaiseCashReason, string> = {
+    risk_reduction: "risk reduction",
+    waiting_for_opportunity: "waiting for a better entry",
+    near_term_expenses: "near-term capital needs",
+    market_concerns: "macro/geopolitical concerns",
+    tactical_positioning: "tactical repositioning",
+  };
+  const deployCashTargetLabel: Record<DeployCashTarget, string> = {
+    ai: "AI / Semiconductors",
+    technology: "broad technology",
+    financials: "financials",
+    energy: "energy",
+    small_caps: "small caps",
+    bitcoin: "Bitcoin",
+    ethereum: "Ethereum",
+    ai_crypto: "AI crypto",
+    custom: "a specific asset",
+  };
+  const positionSizeLabel: Record<PositionSizeType, string> = {
+    new_position: "opening a new position",
+    add_to_existing: "adding to an existing position",
+    full_position: "deploying a full position",
+  };
+  const exitTypeLabel: Record<ExitType, string> = {
+    partial_exit: "a partial exit (25–50% trim)",
+    full_exit: "a full exit",
+    risk_reduction: "cutting to stop-loss size",
+    profit_taking: "taking profit at target",
+  };
+  const holdConcernLabel: Record<HoldConcern, string> = {
+    volatility: "uncomfortable with price swings",
+    drawdown: "position is underwater",
+    profit_taking: "considering locking in gains",
+    no_concern: "conviction hold — just validating",
+    unsure: "unsure whether to hold or act",
+  };
+  const raiseCashCtx = raiseCashReason ? ` (reason: ${raiseCashReasonLabel[raiseCashReason]})` : "";
+  const deployCashCtx = deployCashTarget ? ` into ${deployCashTargetLabel[deployCashTarget]}` : "";
+  const positionSizeCtx = positionSizeType ? ` — ${positionSizeLabel[positionSizeType]}` : "";
+  const exitTypeCtx = exitType ? ` via ${exitTypeLabel[exitType]}` : "";
+  const holdConcernCtx = holdConcern ? ` (concern: ${holdConcernLabel[holdConcern]})` : "";
+
+  // Build a move-specific context string from sub-inputs
+  const subInputCtx = (() => {
+    if (moveType === "raise_cash" && raiseCashCtx) return raiseCashCtx;
+    if (moveType === "deploy_cash" && deployCashCtx) return deployCashCtx;
+    if (moveType === "buy_specific_asset" && positionSizeCtx) return positionSizeCtx;
+    if (moveType === "sell_specific_asset" && exitTypeCtx) return exitTypeCtx;
+    if (moveType === "hold" && holdConcernCtx) return holdConcernCtx;
+    return "";
+  })();
+
   // Headline: what FAULTLINE reads about this move right now
   const headlineMap: Record<string, string> = {
-    high_favorable: `Market conditions are aligned${expRef}${rotateRef} — the setup for "${moveLabel}" over ${tfLabel.toLowerCase()} is structurally supported.`,
-    mid_favorable: `Conditions${expRef}${rotateRef} are mixed. "${moveLabel}" over ${tfLabel.toLowerCase()} is possible but requires selective execution.`,
-    low_favorable: `Current market structure works against "${moveLabel}"${expRef}${rotateRef} over ${tfLabel.toLowerCase()}. Elevated pressure reduces the probability of a clean setup.`,
+    high_favorable: `Market conditions are aligned${expRef}${rotateRef}${subInputCtx} — the setup for "${moveLabel}" over ${tfLabel.toLowerCase()} is structurally supported.`,
+    mid_favorable: `Conditions${expRef}${rotateRef}${subInputCtx} are mixed. "${moveLabel}" over ${tfLabel.toLowerCase()} is possible but requires selective execution.`,
+    low_favorable: `Current market structure works against "${moveLabel}"${expRef}${rotateRef}${subInputCtx} over ${tfLabel.toLowerCase()}. Elevated pressure reduces the probability of a clean setup.`,
   };
   const headline = favorability >= 65 ? headlineMap.high_favorable
     : favorability >= 40 ? headlineMap.mid_favorable
@@ -1447,8 +1551,66 @@ function computeMarketInterpretation(
   const regimePressure = p >= 60 ? "elevated systemic pressure" : p >= 40 ? "moderate macro uncertainty" : "low macro pressure";
   const liquidityState = liquidityScore >= 55 ? "liquidity is tightening" : liquidityScore >= 35 ? "liquidity is adequate but not expanding" : "liquidity conditions are supportive";
   const creditState = creditScore >= 55 ? "credit spreads are widening — risk appetite is contracting" : creditScore >= 35 ? "credit stress is moderate" : "credit conditions are benign";
+
+  // Move-specific setup context addendum
+  const moveSpecificCtx = (() => {
+    if (moveType === "raise_cash" && raiseCashReason) {
+      const reasonCtx: Record<RaiseCashReason, string> = {
+        risk_reduction: " Raising cash for risk reduction is a prudent defensive action — FAULTLINE validates whether current pressure justifies the move.",
+        waiting_for_opportunity: " Raising cash to wait for a better entry is a tactical move — FAULTLINE will flag when conditions improve for re-deployment.",
+        near_term_expenses: " Raising cash for near-term expenses is a non-market-driven decision — execution timing should minimize market impact.",
+        market_concerns: " Raising cash on macro/geopolitical concerns aligns with FAULTLINE's risk-off signals — validate against current pressure readings.",
+        tactical_positioning: " Tactical repositioning into cash is a valid interim step — FAULTLINE will assess whether the rotation makes structural sense.",
+      };
+      return reasonCtx[raiseCashReason];
+    }
+    if (moveType === "deploy_cash" && deployCashTarget) {
+      const targetCtx: Record<DeployCashTarget, string> = {
+        ai: " Deploying into AI/Semiconductors — FAULTLINE checks whether the AI cycle thesis is structurally intact given current pressure.",
+        technology: " Deploying into broad technology — FAULTLINE validates whether tech valuations and macro conditions support fresh exposure.",
+        financials: " Deploying into financials — FAULTLINE checks credit conditions and yield curve dynamics for sector support.",
+        energy: " Deploying into energy — FAULTLINE validates commodity cycle positioning against current macro regime.",
+        small_caps: " Deploying into small caps — FAULTLINE checks credit conditions and risk appetite, which small caps amplify.",
+        bitcoin: " Deploying into Bitcoin — FAULTLINE validates macro liquidity and risk-on conditions for crypto re-entry.",
+        ethereum: " Deploying into Ethereum — FAULTLINE checks on-chain conditions and macro liquidity for ETH re-entry.",
+        ai_crypto: " Deploying into AI crypto — FAULTLINE validates both AI cycle and crypto macro conditions simultaneously.",
+        custom: " Deploying into a specific asset — FAULTLINE validates macro and sector conditions for the target.",
+      };
+      return targetCtx[deployCashTarget];
+    }
+    if (moveType === "buy_specific_asset" && positionSizeType) {
+      const sizeCtx: Record<PositionSizeType, string> = {
+        new_position: " Opening a new position — FAULTLINE validates entry timing and market structure before committing fresh capital.",
+        add_to_existing: " Adding to an existing position — FAULTLINE checks whether the original thesis remains intact and conditions support scaling.",
+        full_position: " Deploying a full position — FAULTLINE applies maximum scrutiny to entry conditions given the full allocation risk.",
+      };
+      return sizeCtx[positionSizeType];
+    }
+    if (moveType === "sell_specific_asset" && exitType) {
+      const exitCtx: Record<ExitType, string> = {
+        partial_exit: " Partial exit (25–50% trim) — FAULTLINE validates whether trimming now is structurally justified or premature.",
+        full_exit: " Full exit — FAULTLINE checks whether current conditions support a complete close or if holding has merit.",
+        risk_reduction: " Cutting to stop-loss size — FAULTLINE validates whether risk conditions justify the defensive trim.",
+        profit_taking: " Taking profit at target — FAULTLINE checks whether conditions support locking in gains or extending the hold.",
+      };
+      return exitCtx[exitType];
+    }
+    if (moveType === "hold" && holdConcern) {
+      const concernCtx: Record<HoldConcern, string> = {
+        volatility: " Holding through volatility — FAULTLINE assesses whether current vol regime justifies concern or represents noise.",
+        drawdown: " Holding through a drawdown — FAULTLINE checks whether the drawdown is structural or a temporary pressure spike.",
+        profit_taking: " Holding vs. taking profit — FAULTLINE validates whether the setup still has structural upside or is extended.",
+        no_concern: " Conviction hold — FAULTLINE validates the macro backdrop supports your thesis with no structural red flags.",
+        unsure: " Unsure whether to hold or act — FAULTLINE provides a structured read on whether conditions favor patience or action.",
+      };
+      return concernCtx[holdConcern];
+    }
+    return "";
+  })();
+
   const setupContext = `FAULTLINE is reading ${regimePressure} with ${liquidityState} and ${creditState}. ` +
-    `This ${favorability >= 55 ? "supports" : favorability >= 40 ? "partially supports" : "challenges"} the "${moveLabel}" setup${expRef}${rotateRef} over the ${tfLabel.toLowerCase()} window.`;
+    `This ${favorability >= 55 ? "supports" : favorability >= 40 ? "partially supports" : "challenges"} the "${moveLabel}" setup${expRef}${rotateRef} over the ${tfLabel.toLowerCase()} window.` +
+    moveSpecificCtx;
 
   // What to watch for (signals that confirm or deny the setup)
   const watchForMap: Record<ThesisType, string[]> = {
@@ -2145,7 +2307,12 @@ export async function runTradePreflightSimulation(
     input.ticker,
     input.exposureCategory,
     input.rotateFrom,
-    input.rotateTo
+    input.rotateTo,
+    input.raiseCashReason,
+    input.deployCashTarget,
+    input.positionSizeType,
+    input.exitType,
+    input.holdConcern
   );
 
   // Build Recommended Moves and Hot Sector Picks in parallel

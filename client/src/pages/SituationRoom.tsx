@@ -19,7 +19,8 @@ import {
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
   | "add_risk" | "reduce_risk" | "hedge" | "rotate"
-  | "raise_cash" | "deploy_cash" | "buy_specific_asset" | "sell_specific_asset";
+  | "raise_cash" | "deploy_cash" | "buy_specific_asset" | "sell_specific_asset"
+  | "hold";
 
 type SimulatorTimeframe = "today" | "this_week" | "one_three_months" | "six_twelve_months";
 
@@ -131,6 +132,17 @@ const EXPOSURE_STEP2: Record<MoveType, { value: ExposureCategory; label: string;
     { value: "altcoins",             label: "Altcoins",            sub: "SOL, AVAX, DOT" },
     { value: "leveraged_exposure",   label: "Leveraged",           sub: "2x/3x ETF, margin" },
   ],
+  hold: [
+    { value: "ai_infrastructure",    label: "AI / Semis",          sub: "Holding AI/semis position" },
+    { value: "technology",           label: "Technology",          sub: "Holding tech position" },
+    { value: "large_cap_growth",     label: "Large Cap Growth",    sub: "Holding growth names" },
+    { value: "small_cap_growth",     label: "Small Cap Growth",    sub: "Holding small-cap" },
+    { value: "bitcoin",              label: "Bitcoin",             sub: "Holding BTC" },
+    { value: "ethereum",             label: "Ethereum",            sub: "Holding ETH" },
+    { value: "altcoins",             label: "Altcoins",            sub: "Holding altcoins" },
+    { value: "concentrated_position",label: "Concentrated Position",sub: "Single large holding" },
+    { value: "entire_portfolio",     label: "Entire Portfolio",    sub: "Holding all positions" },
+  ],
 };
 
 // ── Crypto asset options ─────────────────────────────────────
@@ -162,6 +174,66 @@ const MOVE_OPTIONS: { value: MoveType; label: string; glyph: string; sub: string
   { value: "deploy_cash",        label: "Deploy Cash",        glyph: "◈", sub: "Put idle cash to work in the market" },
   { value: "buy_specific_asset", label: "Buy Specific Asset", glyph: "₿", sub: "Enter a specific stock, ETF, or crypto position" },
   { value: "sell_specific_asset",label: "Sell Specific Asset",glyph: "✕", sub: "Exit or short a specific position" },
+  { value: "hold",               label: "Hold",               glyph: "⏸", sub: "Stay in current positions — validate the decision" },
+];
+
+// ── Rotate From/To options ─────────────────────────────────────
+const ROTATE_FROM_OPTIONS = [
+  "Technology", "AI Infrastructure", "Large Cap Growth", "Small Cap Growth",
+  "Financials", "Energy", "Healthcare", "Industrials", "Bitcoin", "Ethereum",
+  "Altcoins", "Leveraged Exposure", "Emerging Markets", "International",
+];
+const ROTATE_TO_OPTIONS = [
+  "Technology", "AI Infrastructure", "Large Cap Growth", "Small Cap Growth",
+  "Financials", "Energy", "Healthcare", "Industrials", "Bitcoin", "Ethereum",
+  "Altcoins", "Emerging Markets", "International", "Cash / T-Bills",
+  "Gold / Commodities", "Dividend / Value",
+];
+
+// ── Raise Cash reason options ──────────────────────────────────
+const RAISE_CASH_REASONS: { value: string; label: string; sub: string }[] = [
+  { value: "risk_reduction",          label: "Risk Reduction",          sub: "Market conditions are deteriorating" },
+  { value: "waiting_for_opportunity", label: "Waiting for Opportunity",  sub: "Dry powder for better entry" },
+  { value: "near_term_expenses",      label: "Near-Term Expenses",       sub: "Capital needed soon" },
+  { value: "market_concerns",         label: "Market Concerns",          sub: "Macro or geopolitical uncertainty" },
+  { value: "tactical_positioning",    label: "Tactical Positioning",     sub: "Rotating to cash before re-entry" },
+];
+
+// ── Deploy Cash target options ─────────────────────────────────
+const DEPLOY_CASH_TARGETS: { value: string; label: string; sub: string }[] = [
+  { value: "ai",          label: "AI / Semis",       sub: "NVDA, AMD, AVGO, TSM" },
+  { value: "technology",  label: "Technology",       sub: "Broad tech ETFs, FAANG" },
+  { value: "financials",  label: "Financials",       sub: "JPM, GS, BAC, V" },
+  { value: "energy",      label: "Energy",           sub: "XOM, CVX, SLB" },
+  { value: "small_caps",  label: "Small Caps",       sub: "IWM, high-beta names" },
+  { value: "bitcoin",     label: "Bitcoin",          sub: "BTC or spot ETF" },
+  { value: "ethereum",    label: "Ethereum",         sub: "ETH or spot ETF" },
+  { value: "ai_crypto",   label: "AI Crypto",        sub: "NEAR, FET, RNDR" },
+  { value: "custom",      label: "Custom / Other",   sub: "Specify a ticker" },
+];
+
+// ── Position size options ──────────────────────────────────────
+const POSITION_SIZE_OPTIONS: { value: string; label: string; sub: string }[] = [
+  { value: "new_position",     label: "New Position",     sub: "Opening fresh exposure" },
+  { value: "add_to_existing",  label: "Add to Existing",  sub: "Scaling into a current holding" },
+  { value: "full_position",    label: "Full Position",    sub: "Deploying full planned allocation" },
+];
+
+// ── Exit type options ──────────────────────────────────────────
+const EXIT_TYPE_OPTIONS: { value: string; label: string; sub: string }[] = [
+  { value: "partial_exit",  label: "Partial Exit",   sub: "Trim 25–50% of position" },
+  { value: "full_exit",     label: "Full Exit",      sub: "Close entire position" },
+  { value: "risk_reduction",label: "Risk Reduction", sub: "Cut to stop-loss size" },
+  { value: "profit_taking", label: "Profit Taking",  sub: "Lock in gains at target" },
+];
+
+// ── Hold concern options ───────────────────────────────────────
+const HOLD_CONCERN_OPTIONS: { value: string; label: string; sub: string }[] = [
+  { value: "volatility",    label: "Volatility",     sub: "Uncomfortable with price swings" },
+  { value: "drawdown",      label: "Drawdown",       sub: "Position is underwater" },
+  { value: "profit_taking", label: "Profit Taking",  sub: "Considering locking in gains" },
+  { value: "no_concern",    label: "No Concern",     sub: "Conviction hold, just validating" },
+  { value: "unsure",        label: "Unsure",         sub: "Not sure if I should hold or act" },
 ];
 
 const TIMEFRAME_OPTIONS: { value: SimulatorTimeframe; label: string; sub: string }[] = [
@@ -401,6 +473,14 @@ export default function SituationRoom() {
   const [ticker, setTicker] = useState("");
   const [cryptoSymbol, setCryptoSymbol] = useState<string>("BTC");
   const [showResult, setShowResult] = useState(false);
+  // Decision tree sub-inputs
+  const [rotateFrom, setRotateFrom] = useState<string>("");
+  const [rotateTo, setRotateTo] = useState<string>("");
+  const [raiseCashReason, setRaiseCashReason] = useState<string>("");
+  const [deployCashTarget, setDeployCashTarget] = useState<string>("");
+  const [positionSize, setPositionSize] = useState<string>("");
+  const [exitType, setExitType] = useState<string>("");
+  const [holdConcern, setHoldConcern] = useState<string>("");
   const [open, setOpen] = useState<Record<string, boolean>>({
     greenLights: true, threatBoard: true, actionBias: true, invalidation: false, watchNext: false,
     verdict: true, outcomeSimulator: true, entryQuality: true, positionSizing: true,
@@ -420,8 +500,21 @@ export default function SituationRoom() {
   const isCryptoMove = false;
   const isTickerMove = selectedMove === "buy_specific_asset" || selectedMove === "sell_specific_asset";
 
+  // Validation: check all required fields for the selected move type are filled
+  const isReadyToSimulate = (): boolean => {
+    if (!selectedMove || !selectedTimeframe) return false;
+    if (selectedMove === "rotate") return rotateFrom.trim().length > 0 && rotateTo.trim().length > 0;
+    if (selectedMove === "raise_cash") return raiseCashReason.trim().length > 0;
+    if (selectedMove === "deploy_cash") return deployCashTarget.trim().length > 0;
+    if (selectedMove === "buy_specific_asset") return ticker.trim().length > 0 && positionSize.trim().length > 0;
+    if (selectedMove === "sell_specific_asset") return ticker.trim().length > 0 && exitType.trim().length > 0;
+    if (selectedMove === "hold") return holdConcern.trim().length > 0;
+    if (selectedMove === "hedge") return selectedExposure !== null;
+    return selectedExposure !== null;
+  };
+
   const handleSimulate = () => {
-    if (!selectedMove) return;
+    if (!selectedMove || !isReadyToSimulate()) return;
     trackSituationRoomUse(selectedMove, selectedTimeframe);
     let resolvedTicker: string | undefined;
     if (isTickerMove && ticker.trim()) {
@@ -441,6 +534,13 @@ export default function SituationRoom() {
       timeframe: selectedTimeframe,
       ticker: resolvedTicker,
       exposureCategory: selectedExposure ?? undefined,
+      rotateFrom: selectedMove === "rotate" ? rotateFrom : undefined,
+      rotateTo: selectedMove === "rotate" ? rotateTo : undefined,
+      raiseCashReason: selectedMove === "raise_cash" ? raiseCashReason : undefined,
+      deployCashTarget: selectedMove === "deploy_cash" ? deployCashTarget : undefined,
+      positionSizeType: selectedMove === "buy_specific_asset" ? positionSize : undefined,
+      exitType: selectedMove === "sell_specific_asset" ? exitType : undefined,
+      holdConcern: selectedMove === "hold" ? holdConcern : undefined,
     });
   };
 
@@ -668,12 +768,114 @@ export default function SituationRoom() {
                   style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", letterSpacing: "0.1em" }}>← Edit</button>
               </div>
 
-              {/* Ticker input for specific asset moves */}
+              {/* ── Ticker input for BUY / SELL specific asset ── */}
               {isTickerMove && (
                 <div style={{ marginBottom: "14px" }}>
-                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Ticker Symbol <span style={{ color: "rgba(100,116,139,0.4)" }}>(optional — leave blank for category analysis)</span></label>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Ticker Symbol <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
                   <input type="text" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))} placeholder="e.g. NVDA, TSLA, AAPL, BTC" maxLength={10}
                     style={{ width: "100%", padding: "10px 14px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "4px", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", letterSpacing: "0.12em", outline: "none", boxSizing: "border-box" }} />
+                </div>
+              )}
+
+              {/* ── ROTATE: From / To selectors ── */}
+              {selectedMove === "rotate" && (
+                <div style={{ marginBottom: "14px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Rotate From <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                    <select value={rotateFrom} onChange={e => setRotateFrom(e.target.value)}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(12,15,22,0.98)", border: rotateFrom ? "1px solid rgba(0,212,255,0.35)" : "1px solid rgba(255,45,85,0.35)", borderRadius: "4px", color: rotateFrom ? "#E2E8F0" : "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", outline: "none", cursor: "pointer" }}>
+                      <option value="">Select sector / asset…</option>
+                      {ROTATE_FROM_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Rotate To <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                    <select value={rotateTo} onChange={e => setRotateTo(e.target.value)}
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(12,15,22,0.98)", border: rotateTo ? "1px solid rgba(0,212,255,0.35)" : "1px solid rgba(255,45,85,0.35)", borderRadius: "4px", color: rotateTo ? "#E2E8F0" : "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", outline: "none", cursor: "pointer" }}>
+                      <option value="">Select sector / asset…</option>
+                      {ROTATE_TO_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* ── RAISE CASH: Why are you raising cash? ── */}
+              {selectedMove === "raise_cash" && (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>Why are you raising cash? <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
+                    {RAISE_CASH_REASONS.map(opt => (
+                      <button key={opt.value} onClick={() => setRaiseCashReason(opt.value)}
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: raiseCashReason === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: raiseCashReason === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: raiseCashReason === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── DEPLOY CASH: Where are you deploying? ── */}
+              {selectedMove === "deploy_cash" && (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>Where are you deploying? <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "6px" }}>
+                    {DEPLOY_CASH_TARGETS.map(opt => (
+                      <button key={opt.value} onClick={() => setDeployCashTarget(opt.value)}
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: deployCashTarget === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: deployCashTarget === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: deployCashTarget === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── BUY SPECIFIC ASSET: Position size ── */}
+              {selectedMove === "buy_specific_asset" && (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>Position size / entry type <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
+                    {POSITION_SIZE_OPTIONS.map(opt => (
+                      <button key={opt.value} onClick={() => setPositionSize(opt.value)}
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: positionSize === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: positionSize === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: positionSize === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── SELL SPECIFIC ASSET: Exit type ── */}
+              {selectedMove === "sell_specific_asset" && (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>Exit type <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
+                    {EXIT_TYPE_OPTIONS.map(opt => (
+                      <button key={opt.value} onClick={() => setExitType(opt.value)}
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: exitType === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: exitType === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: exitType === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ── HOLD: What's your concern? ── */}
+              {selectedMove === "hold" && (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "8px" }}>What's your concern with holding? <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
+                    {HOLD_CONCERN_OPTIONS.map(opt => (
+                      <button key={opt.value} onClick={() => setHoldConcern(opt.value)}
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: holdConcern === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: holdConcern === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: holdConcern === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 

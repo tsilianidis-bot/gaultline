@@ -9,6 +9,7 @@ import { Search, X, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activit
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { RecoveryStatusCard, RecoveryStatusBadge } from "@/components/RecoveryStatus";
+import { TickerChip } from "@/components/TickerActionMenu";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 // ── Inline types (mirrored from server/cryptoEngine.ts) ─────────
@@ -319,7 +320,7 @@ function AssetCard({ asset, risk }: { asset: CryptoAssetIntelligence; risk: Cryp
                 <img src={asset.image} alt={asset.symbol} style={{ width: "32px", height: "32px", borderRadius: "50%", border: `1px solid ${biasColor}30` }} />
               )}
               <div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#F0F4FF", letterSpacing: "0.04em" }}>{asset.symbol}</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#F0F4FF", letterSpacing: "0.04em" }}><TickerChip ticker={asset.symbol} name={asset.name} assetType="crypto" /></div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.08em" }}>{asset.name}</div>
               </div>
             </div>
