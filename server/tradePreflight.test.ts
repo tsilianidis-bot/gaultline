@@ -111,14 +111,14 @@ function makePressure(overallPressure: number, liquidityScore: number, creditSco
 // ── Test suites ───────────────────────────────────────────────
 
 describe("simulateTrade — output shape", () => {
-  it("returns all required fields for a buy_add_risk move", async () => {
+  it("returns all required fields for an add_risk move", async () => {
     const result = await simulateTrade(
-      { moveType: "buy_add_risk", timeframe: "today" },
+      { moveType: "add_risk", timeframe: "today" },
       LOW_PRESSURE_OUTPUT as any
     );
     // Required fields
     expect(result).toHaveProperty("marketStatus");
-    expect(result).toHaveProperty("moveType", "buy_add_risk");
+    expect(result).toHaveProperty("moveType", "add_risk");
     expect(result).toHaveProperty("moveLabel");
     expect(result).toHaveProperty("timeframe", "today");
     expect(result).toHaveProperty("timeframeLabel");
@@ -140,11 +140,11 @@ describe("simulateTrade — output shape", () => {
 
   it("includes ticker in output when provided", async () => {
     const result = await simulateTrade(
-      { moveType: "buy_specific_ticker", timeframe: "this_week", ticker: "NVDA" },
+      { moveType: "buy_specific_asset", timeframe: "this_week", ticker: "NVDA" },
       LOW_PRESSURE_OUTPUT as any
     );
     expect(result.ticker).toBe("NVDA");
-    expect(result.moveType).toBe("buy_specific_ticker");
+    expect(result.moveType).toBe("buy_specific_asset");
   }, 30000);
 });
 
@@ -152,7 +152,7 @@ describe("simulateTrade — score bounds", () => {
   it("moveFavorabilityScore is between 0 and 100", async () => {
     for (const pressure of [LOW_PRESSURE_OUTPUT, MEDIUM_PRESSURE_OUTPUT, HIGH_PRESSURE_OUTPUT]) {
       const result = await simulateTrade(
-        { moveType: "hold", timeframe: "one_three_months" },
+        { moveType: "raise_cash", timeframe: "one_three_months" },
         pressure as any
       );
       expect(result.moveFavorabilityScore).toBeGreaterThanOrEqual(0);
@@ -170,7 +170,7 @@ describe("simulateTrade — score bounds", () => {
 
   it("riskLevel is one of the valid values", async () => {
     const result = await simulateTrade(
-      { moveType: "sell", timeframe: "today" },
+      { moveType: "sell_specific_asset", timeframe: "today" },
       HIGH_PRESSURE_OUTPUT as any
     );
     expect(["Low", "Medium", "High", "Extreme"]).toContain(result.riskLevel);
@@ -188,7 +188,7 @@ describe("simulateTrade — score bounds", () => {
 describe("simulateTrade — market status logic", () => {
   it("returns Cleared when pressure is low", async () => {
     const result = await simulateTrade(
-      { moveType: "buy_add_risk", timeframe: "today" },
+      { moveType: "add_risk", timeframe: "today" },
       makePressure(20, 15, 18) as any
     );
     expect(result.marketStatus).toBe("Cleared");
@@ -196,7 +196,7 @@ describe("simulateTrade — market status logic", () => {
 
   it("returns Caution when overall pressure is in 40-59 range", async () => {
     const result = await simulateTrade(
-      { moveType: "hold", timeframe: "this_week" },
+      { moveType: "raise_cash", timeframe: "this_week" },
       makePressure(45, 30, 30) as any
     );
     expect(result.marketStatus).toBe("Caution");
@@ -212,7 +212,7 @@ describe("simulateTrade — market status logic", () => {
 
   it("returns Defensive when credit score >= 60 even if overall is low", async () => {
     const result = await simulateTrade(
-      { moveType: "trim", timeframe: "today" },
+      { moveType: "reduce_risk", timeframe: "today" },
       makePressure(30, 20, 62) as any
     );
     expect(result.marketStatus).toBe("Defensive");
@@ -222,7 +222,7 @@ describe("simulateTrade — market status logic", () => {
 describe("simulateTrade — threat board", () => {
   it("marketCondition.threatBoard is an array with expected categories", async () => {
     const result = await simulateTrade(
-      { moveType: "buy_add_risk", timeframe: "today" },
+      { moveType: "add_risk", timeframe: "today" },
       HIGH_PRESSURE_OUTPUT as any
     );
     const categories = result.marketCondition.threatBoard.map((t: any) => t.category);
@@ -236,7 +236,7 @@ describe("simulateTrade — threat board", () => {
 
   it("threat board is sorted with critical threats first", async () => {
     const result = await simulateTrade(
-      { moveType: "buy_add_risk", timeframe: "today" },
+      { moveType: "add_risk", timeframe: "today" },
       HIGH_PRESSURE_OUTPUT as any
     );
     const severities = result.marketCondition.threatBoard.map((t: any) => t.severity);
@@ -249,9 +249,9 @@ describe("simulateTrade — threat board", () => {
 
 describe("simulateTrade — all move types", () => {
   const moves: MoveType[] = [
-    "buy_add_risk", "hold", "trim", "sell", "hedge",
-    "raise_cash", "rotate_sectors", "buy_specific_ticker",
-    "increase_crypto", "reduce_crypto",
+    "add_risk", "reduce_risk", "hedge",
+    "raise_cash", "rotate", "deploy_cash",
+    "buy_specific_asset", "sell_specific_asset",
   ];
 
   for (const move of moves) {
@@ -265,7 +265,7 @@ describe("simulateTrade — all move types", () => {
       expect(result.moveLabel.length).toBeGreaterThan(0);
       expect(result.moveFavorabilityScore).toBeGreaterThanOrEqual(0);
       expect(result.moveFavorabilityScore).toBeLessThanOrEqual(100);
-    });
+    }, 30000);
   }
 });
 
@@ -277,19 +277,19 @@ describe("simulateTrade — all timeframes", () => {
   for (const tf of timeframes) {
     it(`handles timeframe: ${tf}`, async () => {
       const result = await simulateTrade(
-        { moveType: "hold", timeframe: tf },
+        { moveType: "raise_cash", timeframe: tf },
         LOW_PRESSURE_OUTPUT as any
       );
       expect(result.timeframe).toBe(tf);
       expect(typeof result.timeframeLabel).toBe("string");
-    });
+    }, 30000);
   }
 });
 
 describe("simulateTrade — array fields are non-empty", () => {
   it("greenLights, redFlags, invalidationTriggers, watchNext are arrays", async () => {
     const result = await simulateTrade(
-      { moveType: "buy_add_risk", timeframe: "today" },
+      { moveType: "add_risk", timeframe: "today" },
       LOW_PRESSURE_OUTPUT as any
     );
     expect(Array.isArray(result.greenLights)).toBe(true);
@@ -300,7 +300,7 @@ describe("simulateTrade — array fields are non-empty", () => {
 
   it("avoidAreas is a non-empty array", async () => {
     const result = await simulateTrade(
-      { moveType: "sell", timeframe: "this_week" },
+      { moveType: "sell_specific_asset", timeframe: "this_week" },
       HIGH_PRESSURE_OUTPUT as any
     );
     expect(Array.isArray(result.avoidAreas)).toBe(true);
@@ -309,10 +309,10 @@ describe("simulateTrade — array fields are non-empty", () => {
 });
 
 describe("simulateTrade — defensive regime produces lower favorability for risk-on moves", () => {
-  it("buy_add_risk scores lower under high pressure than low pressure", async () => {
+  it("add_risk scores lower under high pressure than low pressure", async () => {
     const [lowResult, highResult] = await Promise.all([
-      simulateTrade({ moveType: "buy_add_risk", timeframe: "today" }, LOW_PRESSURE_OUTPUT as any),
-      simulateTrade({ moveType: "buy_add_risk", timeframe: "today" }, HIGH_PRESSURE_OUTPUT as any),
+      simulateTrade({ moveType: "add_risk", timeframe: "today" }, LOW_PRESSURE_OUTPUT as any),
+      simulateTrade({ moveType: "add_risk", timeframe: "today" }, HIGH_PRESSURE_OUTPUT as any),
     ]);
     expect(lowResult.moveFavorabilityScore).toBeGreaterThan(highResult.moveFavorabilityScore);
   });

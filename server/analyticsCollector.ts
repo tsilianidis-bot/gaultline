@@ -1,13 +1,13 @@
 /**
  * FAULTLINE Analytics Collector
- * Server-side event collection: pageviews, sessions, custom events.
- * Parses User-Agent, extracts UTM params, geo-locates by IP.
+ * Server-side event collection: pageviews, sessions, custom events, visitor profiles.
+ * Parses User-Agent, extracts UTM params, geo-locates by IP (country + city + region).
  */
 
 import { Request } from "express";
 import { getDb } from "./db";
-import { analyticsSessions, pageViews, siteEvents } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { analyticsSessions, pageViews, siteEvents, visitorProfiles } from "../drizzle/schema";
+import { eq, sql } from "drizzle-orm";
 
 // ── User-Agent Parsing ────────────────────────────────────────────────────────
 
@@ -48,31 +48,55 @@ export function parseUserAgent(ua: string): {
 
 // ── IP Geolocation ─────────────────────────────────────────────────────────────
 
-const geoCache = new Map<string, string>();
+interface GeoInfo {
+  country: string;
+  countryName: string;
+  city: string;
+  region: string;
+}
 
-export async function getCountryFromIp(ip: string): Promise<string> {
+const geoCache = new Map<string, GeoInfo>();
+
+export async function getGeoFromIp(ip: string): Promise<GeoInfo> {
+  const devFallback: GeoInfo = { country: "US", countryName: "United States", city: "Local", region: "Dev" };
   if (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("192.168") || ip.startsWith("10.")) {
-    return "US"; // local dev fallback
+    return devFallback;
   }
   if (geoCache.has(ip)) return geoCache.get(ip)!;
   try {
-    const res = await fetch(`https://ip-api.com/json/${ip}?fields=countryCode`, {
+    const res = await fetch(`https://ip-api.com/json/${ip}?fields=countryCode,country,city,regionName`, {
       signal: AbortSignal.timeout(2000),
     });
     if (res.ok) {
-      const data = await res.json() as { countryCode?: string };
-      const code = data.countryCode ?? "XX";
-      geoCache.set(ip, code);
+      const data = await res.json() as {
+        countryCode?: string;
+        country?: string;
+        city?: string;
+        regionName?: string;
+      };
+      const geo: GeoInfo = {
+        country: data.countryCode ?? "XX",
+        countryName: data.country ?? "",
+        city: data.city ?? "",
+        region: data.regionName ?? "",
+      };
+      geoCache.set(ip, geo);
       if (geoCache.size > 5000) {
         const firstKey = geoCache.keys().next().value;
         if (firstKey) geoCache.delete(firstKey);
       }
-      return code;
+      return geo;
     }
   } catch {
     // silently fail — analytics should never break the app
   }
-  return "XX";
+  return { country: "XX", countryName: "", city: "", region: "" };
+}
+
+/** @deprecated Use getGeoFromIp instead */
+export async function getCountryFromIp(ip: string): Promise<string> {
+  const geo = await getGeoFromIp(ip);
+  return geo.country;
 }
 
 // ── Extract client IP ─────────────────────────────────────────────────────────
@@ -81,6 +105,57 @@ export function getClientIp(req: Request): string {
   const forwarded = req.headers["x-forwarded-for"];
   if (typeof forwarded === "string") return forwarded.split(",")[0].trim();
   return req.socket?.remoteAddress ?? "127.0.0.1";
+}
+
+// ── Visitor Profile Upsert ────────────────────────────────────────────────────
+
+export async function upsertVisitorProfile(params: {
+  visitorId: string;
+  country: string;
+  countryName: string;
+  city: string;
+  region: string;
+  deviceType: string;
+  browser: string;
+  os: string;
+  referrer?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  isNewSession: boolean;
+}): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+
+    // Use INSERT ... ON DUPLICATE KEY UPDATE for atomic upsert
+    await db.execute(sql`
+      INSERT INTO visitorProfiles
+        (visitorId, visitCount, totalPages, country, countryName, city, region,
+         deviceType, browser, os, firstReferrer, firstUtmSource, firstUtmMedium, firstUtmCampaign,
+         firstSeenAt, lastSeenAt)
+      VALUES
+        (${params.visitorId}, 1, 1,
+         ${params.country}, ${params.countryName}, ${params.city}, ${params.region},
+         ${params.deviceType}, ${params.browser}, ${params.os},
+         ${params.referrer ?? null}, ${params.utmSource ?? null},
+         ${params.utmMedium ?? null}, ${params.utmCampaign ?? null},
+         NOW(), NOW())
+      ON DUPLICATE KEY UPDATE
+        totalPages   = totalPages + 1,
+        visitCount   = visitCount + ${params.isNewSession ? 1 : 0},
+        country      = ${params.country},
+        countryName  = ${params.countryName},
+        city         = ${params.city},
+        region       = ${params.region},
+        deviceType   = ${params.deviceType},
+        browser      = ${params.browser},
+        os           = ${params.os},
+        lastSeenAt   = NOW()
+    `);
+  } catch (err) {
+    console.error("[Analytics] Visitor profile upsert error:", err);
+  }
 }
 
 // ── Session Management ────────────────────────────────────────────────────────
@@ -99,10 +174,11 @@ export async function upsertSession(params: {
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
-}): Promise<void> {
+}): Promise<boolean> {
+  // Returns true if this is a new session
   try {
     const db = await getDb();
-    if (!db) return;
+    if (!db) return false;
     const existing = await db
       .select()
       .from(analyticsSessions)
@@ -132,12 +208,16 @@ export async function upsertSession(params: {
         startedAt: now,
         lastSeenAt: now,
       });
+      return true;
     } else {
       const sess = existing[0];
       const lastSeen = new Date(sess.lastSeenAt).getTime();
       const elapsed = Math.floor((now.getTime() - lastSeen) / 1000);
       const newDuration = sess.durationSecs + Math.min(elapsed, 1800); // cap at 30min
       const newPageCount = sess.pageCount + 1;
+
+      // Check if session has timed out (treat as new session)
+      const isExpired = (now.getTime() - lastSeen) > SESSION_TIMEOUT_MS;
 
       await db
         .update(analyticsSessions)
@@ -150,9 +230,12 @@ export async function upsertSession(params: {
           userId: params.userId ?? sess.userId,
         })
         .where(eq(analyticsSessions.sessionId, params.sessionId));
+
+      return isExpired;
     }
   } catch (err) {
     console.error("[Analytics] Session upsert error:", err);
+    return false;
   }
 }
 
@@ -160,6 +243,7 @@ export async function upsertSession(params: {
 
 export async function recordPageView(params: {
   sessionId: string;
+  visitorId?: string | null;
   userId?: number | null;
   path: string;
   title?: string;
@@ -168,6 +252,9 @@ export async function recordPageView(params: {
   utmMedium?: string;
   utmCampaign?: string;
   country: string;
+  countryName?: string;
+  city?: string;
+  region?: string;
   deviceType: string;
   browser: string;
   os: string;

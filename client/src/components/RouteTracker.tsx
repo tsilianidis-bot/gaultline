@@ -83,6 +83,22 @@ function getOrCreateSessionId(): string {
   }
 }
 
+// ── Stable visitor ID ─────────────────────────────────────────────────────────
+// Persisted in localStorage so it survives browser restarts (cross-session).
+function getOrCreateVisitorId(): string {
+  try {
+    const key = "fl_vid";
+    let vid = localStorage.getItem(key);
+    if (!vid) {
+      vid = crypto.randomUUID();
+      localStorage.setItem(key, vid);
+    }
+    return vid;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
 // ── Parse UTM params from URL ──────────────────────────────────────────────────
 function getUtmParams() {
   try {
@@ -104,6 +120,7 @@ function sendInternalPageView(path: string, title: string, userId?: number) {
   if (consent === "declined") return;
 
   const sessionId = getOrCreateSessionId();
+  const visitorId = getOrCreateVisitorId();
   const { utmSource, utmMedium, utmCampaign } = getUtmParams();
 
   fetch("/api/analytics/pageview", {
@@ -111,6 +128,7 @@ function sendInternalPageView(path: string, title: string, userId?: number) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       sessionId,
+      visitorId,
       userId,
       path,
       title,

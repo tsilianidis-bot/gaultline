@@ -7,11 +7,12 @@
 import { Router, Request, Response } from "express";
 import {
   parseUserAgent,
-  getCountryFromIp,
+  getGeoFromIp,
   getClientIp,
   recordPageView,
   recordSiteEvent,
   upsertSession,
+  upsertVisitorProfile,
 } from "./analyticsCollector";
 
 const router = Router();
@@ -22,6 +23,7 @@ router.post("/pageview", async (req: Request, res: Response) => {
   try {
     const {
       sessionId,
+      visitorId,
       userId,
       path,
       title,
@@ -32,6 +34,7 @@ router.post("/pageview", async (req: Request, res: Response) => {
       screenWidth,
     } = req.body as {
       sessionId: string;
+      visitorId?: string;
       userId?: number;
       path: string;
       title?: string;
@@ -47,11 +50,25 @@ router.post("/pageview", async (req: Request, res: Response) => {
     const ua = req.headers["user-agent"] ?? "";
     const { browser, os, deviceType } = parseUserAgent(ua);
     const ip = getClientIp(req);
-    const country = await getCountryFromIp(ip);
+    const geo = await getGeoFromIp(ip);
 
-    await Promise.all([
+    const [isNewSession] = await Promise.all([
+      upsertSession({
+        sessionId,
+        userId: userId ?? null,
+        path,
+        country: geo.country,
+        deviceType,
+        browser,
+        os,
+        referrer,
+        utmSource,
+        utmMedium,
+        utmCampaign,
+      }),
       recordPageView({
         sessionId,
+        visitorId: visitorId ?? null,
         userId: userId ?? null,
         path,
         title,
@@ -59,26 +76,35 @@ router.post("/pageview", async (req: Request, res: Response) => {
         utmSource,
         utmMedium,
         utmCampaign,
-        country,
+        country: geo.country,
+        countryName: geo.countryName,
+        city: geo.city,
+        region: geo.region,
         deviceType,
         browser,
         os,
         screenWidth,
       }),
-      upsertSession({
-        sessionId,
-        userId: userId ?? null,
-        path,
-        country,
+    ]);
+
+    // Upsert visitor profile if we have a stable visitorId
+    if (visitorId) {
+      await upsertVisitorProfile({
+        visitorId,
+        country: geo.country,
+        countryName: geo.countryName,
+        city: geo.city,
+        region: geo.region,
         deviceType,
         browser,
         os,
-        referrer,
-        utmSource,
-        utmMedium,
-        utmCampaign,
-      }),
-    ]);
+        referrer: referrer ?? null,
+        utmSource: utmSource ?? null,
+        utmMedium: utmMedium ?? null,
+        utmCampaign: utmCampaign ?? null,
+        isNewSession: !!isNewSession,
+      });
+    }
   } catch (err) {
     console.error("[Analytics] /pageview error:", err);
   }
@@ -101,7 +127,7 @@ router.post("/event", async (req: Request, res: Response) => {
     const ua = req.headers["user-agent"] ?? "";
     const { deviceType } = parseUserAgent(ua);
     const ip = getClientIp(req);
-    const country = await getCountryFromIp(ip);
+    const geo = await getGeoFromIp(ip);
 
     await recordSiteEvent({
       sessionId,
@@ -109,7 +135,7 @@ router.post("/event", async (req: Request, res: Response) => {
       eventName,
       props,
       path,
-      country,
+      country: geo.country,
       deviceType,
     });
   } catch (err) {

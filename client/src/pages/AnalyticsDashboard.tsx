@@ -19,7 +19,8 @@ import {
 import {
   Activity, Users, Eye, MousePointer, Globe, Monitor, Smartphone,
   Tablet, TrendingUp, Clock, ArrowUpRight, BarChart2, RefreshCw,
-  Map, Link2, Zap, Target, AlertCircle,
+  Map, Link2, Zap, Target, AlertCircle, UserCheck, UserPlus, Repeat,
+  MapPin, Building2,
 } from "lucide-react";
 
 // ── Colour palette ────────────────────────────────────────────────────────────
@@ -114,20 +115,24 @@ export default function AnalyticsDashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  const overviewQ   = trpc.analytics.getOverview.useQuery({ days }, { enabled: !!user });
-  const topPagesQ   = trpc.analytics.getTopPages.useQuery({ days, limit: 20 }, { enabled: !!user });
-  const devicesQ    = trpc.analytics.getDevices.useQuery({ days }, { enabled: !!user });
-  const countriesQ  = trpc.analytics.getCountries.useQuery({ days, limit: 20 }, { enabled: !!user });
-  const referrersQ  = trpc.analytics.getReferrers.useQuery({ days, limit: 20 }, { enabled: !!user });
-  const eventsQ     = trpc.analytics.getEvents.useQuery({ days, limit: 30 }, { enabled: !!user });
-  const timeSeriesQ = trpc.analytics.getTimeSeries.useQuery({ days: Math.min(days, 90) }, { enabled: !!user });
-  const sessionsQ   = trpc.analytics.getSessions.useQuery({ limit: 50, offset: 0 }, { enabled: !!user });
-  const campaignsQ  = trpc.analytics.getCampaigns.useQuery({ days }, { enabled: !!user });
+  const overviewQ       = trpc.analytics.getOverview.useQuery({ days }, { enabled: !!user });
+  const topPagesQ       = trpc.analytics.getTopPages.useQuery({ days, limit: 20 }, { enabled: !!user });
+  const devicesQ        = trpc.analytics.getDevices.useQuery({ days }, { enabled: !!user });
+  const countriesQ      = trpc.analytics.getCountries.useQuery({ days, limit: 20 }, { enabled: !!user });
+  const referrersQ      = trpc.analytics.getReferrers.useQuery({ days, limit: 20 }, { enabled: !!user });
+  const eventsQ         = trpc.analytics.getEvents.useQuery({ days, limit: 30 }, { enabled: !!user });
+  const timeSeriesQ     = trpc.analytics.getTimeSeries.useQuery({ days: Math.min(days, 90) }, { enabled: !!user });
+  const sessionsQ       = trpc.analytics.getSessions.useQuery({ limit: 50, offset: 0 }, { enabled: !!user });
+  const campaignsQ      = trpc.analytics.getCampaigns.useQuery({ days }, { enabled: !!user });
+  const visitorStatsQ   = trpc.analytics.getVisitorStats.useQuery({ days }, { enabled: !!user });
+  const visitorProfilesQ = trpc.analytics.getVisitorProfiles.useQuery({ limit: 50, offset: 0 }, { enabled: !!user });
+  const countriesCitiesQ = trpc.analytics.getCountriesWithCities.useQuery({ limit: 20 }, { enabled: !!user });
 
   const refetchAll = useCallback(() => {
     overviewQ.refetch(); topPagesQ.refetch(); devicesQ.refetch();
     countriesQ.refetch(); referrersQ.refetch(); eventsQ.refetch();
     timeSeriesQ.refetch(); sessionsQ.refetch(); campaignsQ.refetch();
+    visitorStatsQ.refetch(); visitorProfilesQ.refetch(); countriesCitiesQ.refetch();
   }, []);
 
   const ov = overviewQ.data;
@@ -224,14 +229,15 @@ export default function AnalyticsDashboard() {
 
         {/* Tabs */}
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="bg-zinc-900 border border-zinc-800 h-9 p-1">
-            <TabsTrigger value="overview"  className="text-xs data-[state=active]:bg-zinc-700">Pages</TabsTrigger>
-            <TabsTrigger value="visitors"  className="text-xs data-[state=active]:bg-zinc-700">Visitors</TabsTrigger>
-            <TabsTrigger value="devices"   className="text-xs data-[state=active]:bg-zinc-700">Devices</TabsTrigger>
-            <TabsTrigger value="geo"       className="text-xs data-[state=active]:bg-zinc-700">Geography</TabsTrigger>
-            <TabsTrigger value="sources"   className="text-xs data-[state=active]:bg-zinc-700">Sources</TabsTrigger>
-            <TabsTrigger value="events"    className="text-xs data-[state=active]:bg-zinc-700">Feature Usage</TabsTrigger>
-            <TabsTrigger value="campaigns" className="text-xs data-[state=active]:bg-zinc-700">Campaigns</TabsTrigger>
+          <TabsList className="bg-zinc-900 border border-zinc-800 h-9 p-1 flex-wrap gap-y-1">
+            <TabsTrigger value="overview"    className="text-xs data-[state=active]:bg-zinc-700">Pages</TabsTrigger>
+            <TabsTrigger value="visitors"    className="text-xs data-[state=active]:bg-zinc-700">Sessions</TabsTrigger>
+            <TabsTrigger value="intelligence" className="text-xs data-[state=active]:bg-cyan-800 data-[state=active]:text-cyan-200">Visitor Intel</TabsTrigger>
+            <TabsTrigger value="devices"     className="text-xs data-[state=active]:bg-zinc-700">Devices</TabsTrigger>
+            <TabsTrigger value="geo"         className="text-xs data-[state=active]:bg-zinc-700">Geography</TabsTrigger>
+            <TabsTrigger value="sources"     className="text-xs data-[state=active]:bg-zinc-700">Sources</TabsTrigger>
+            <TabsTrigger value="events"      className="text-xs data-[state=active]:bg-zinc-700">Feature Usage</TabsTrigger>
+            <TabsTrigger value="campaigns"   className="text-xs data-[state=active]:bg-zinc-700">Campaigns</TabsTrigger>
           </TabsList>
 
           {/* ── Top Pages ── */}
@@ -335,6 +341,186 @@ export default function AnalyticsDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* ── Visitor Intelligence ── */}
+          <TabsContent value="intelligence">
+            <div className="space-y-4">
+              {/* KPI row */}
+              {visitorStatsQ.data && (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <StatCard icon={Users}     label="Total Unique"    value={visitorStatsQ.data.totalUniqueVisitors.toLocaleString()} color={CYAN} sub="all-time visitors" />
+                  <StatCard icon={UserPlus}  label="New Visitors"    value={visitorStatsQ.data.newVisitors.toLocaleString()} color={GREEN} sub={`last ${days}d`} />
+                  <StatCard icon={Repeat}    label="Returning"       value={visitorStatsQ.data.returningVisitors.toLocaleString()} color={GOLD} sub={`last ${days}d`} />
+                  <StatCard icon={UserCheck} label="Converted"       value={visitorStatsQ.data.converted.toLocaleString()} color={PURPLE} sub="signed up" />
+                  <StatCard icon={TrendingUp} label="Avg Visits"     value={visitorStatsQ.data.avgVisitsPerVisitor} color={CYAN} sub="per visitor" />
+                  <StatCard icon={Activity}  label="Active in Period" value={visitorStatsQ.data.activeInPeriod.toLocaleString()} color={GREEN} sub={`last ${days}d`} />
+                </div>
+              )}
+
+              {/* New vs Returning donut + Countries with cities */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* New vs Returning */}
+                <Card className="bg-zinc-900/60 border-zinc-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-semibold tracking-wider text-zinc-400 flex items-center gap-2">
+                      <UserPlus size={14} className="text-cyan-400" /> NEW VS RETURNING
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {!visitorStatsQ.data ? (
+                      <EmptyState message="No visitor data yet." />
+                    ) : (
+                      <>
+                        <ResponsiveContainer width="100%" height={200}>
+                          <PieChart>
+                            <Pie
+                              data={[
+                                { name: "New", value: visitorStatsQ.data.newVisitors },
+                                { name: "Returning", value: visitorStatsQ.data.returningVisitors },
+                              ]}
+                              cx="50%" cy="50%" outerRadius={80} dataKey="value"
+                              label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              labelLine={false}>
+                              <Cell fill={GREEN} />
+                              <Cell fill={GOLD} />
+                            </Pie>
+                            <Tooltip contentStyle={{ background: "#18181b", border: "1px solid #3f3f46", fontSize: 12 }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="flex justify-around mt-2 text-sm">
+                          <div className="text-center">
+                            <p className="text-2xl font-bold" style={{ color: GREEN }}>{visitorStatsQ.data.newVisitors.toLocaleString()}</p>
+                            <p className="text-xs text-zinc-500">New</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold" style={{ color: GOLD }}>{visitorStatsQ.data.returningVisitors.toLocaleString()}</p>
+                            <p className="text-xs text-zinc-500">Returning</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold" style={{ color: PURPLE }}>{visitorStatsQ.data.converted.toLocaleString()}</p>
+                            <p className="text-xs text-zinc-500">Converted</p>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Countries with city drill-down */}
+                <Card className="bg-zinc-900/60 border-zinc-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-semibold tracking-wider text-zinc-400 flex items-center gap-2">
+                      <MapPin size={14} className="text-cyan-400" /> TOP COUNTRIES (VISITOR PROFILES)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="max-h-72 overflow-y-auto">
+                    {!countriesCitiesQ.data?.countries?.length ? (
+                      <EmptyState message="No geo data yet. Visitors need to arrive after publishing." />
+                    ) : (
+                      <div className="space-y-1">
+                        {countriesCitiesQ.data.countries.map((c, i) => {
+                          const total = countriesCitiesQ.data!.countries.reduce((s, r) => s + Number(r.visitors), 0);
+                          const pct = total > 0 ? ((Number(c.visitors) / total) * 100).toFixed(1) : "0";
+                          const citiesForCountry = countriesCitiesQ.data!.cities
+                            .filter(ci => ci.country === c.country)
+                            .slice(0, 3);
+                          return (
+                            <div key={i} className="py-1.5 border-b border-zinc-800/50 last:border-0">
+                              <div className="flex items-center gap-3">
+                                <span className="text-lg w-8">{countryFlag(c.country)}</span>
+                                <span className="text-zinc-200 text-sm flex-1 font-medium">{c.countryName || c.country || "Unknown"}</span>
+                                <div className="w-20 bg-zinc-800 rounded-full h-1.5">
+                                  <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, background: CYAN }} />
+                                </div>
+                                <span className="text-cyan-400 font-bold text-sm w-8 text-right">{Number(c.visitors)}</span>
+                                <span className="text-zinc-500 text-xs w-10 text-right">{pct}%</span>
+                              </div>
+                              {citiesForCountry.length > 0 && (
+                                <div className="ml-11 mt-1 flex flex-wrap gap-1">
+                                  {citiesForCountry.map((ci, j) => (
+                                    <span key={j} className="text-xs text-zinc-500 bg-zinc-800/60 px-2 py-0.5 rounded-full">
+                                      <Building2 size={9} className="inline mr-1" />{ci.city || "—"}{ci.region ? `, ${ci.region}` : ""} ({Number(ci.visitors)})
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Visitor profiles table */}
+              <Card className="bg-zinc-900/60 border-zinc-800">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold tracking-wider text-zinc-300 flex items-center gap-2">
+                    <Users size={16} className="text-cyan-400" /> VISITOR PROFILES — WHO CAME & HOW MANY TIMES
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {!visitorProfilesQ.data?.visitors?.length ? (
+                    <EmptyState message="No visitor profiles yet. Profiles are built from the stable visitor ID stored in each browser." />
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-zinc-800">
+                          <TableHead className="text-zinc-500 text-xs">Location</TableHead>
+                          <TableHead className="text-zinc-500 text-xs text-center">Visits</TableHead>
+                          <TableHead className="text-zinc-500 text-xs text-center">Pages</TableHead>
+                          <TableHead className="text-zinc-500 text-xs">Device</TableHead>
+                          <TableHead className="text-zinc-500 text-xs">Browser / OS</TableHead>
+                          <TableHead className="text-zinc-500 text-xs">First Source</TableHead>
+                          <TableHead className="text-zinc-500 text-xs">First Seen</TableHead>
+                          <TableHead className="text-zinc-500 text-xs">Last Seen</TableHead>
+                          <TableHead className="text-zinc-500 text-xs text-center">Converted</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {visitorProfilesQ.data.visitors.map((v) => (
+                          <TableRow key={v.id} className="border-zinc-800/50 hover:bg-zinc-800/30 text-xs">
+                            <TableCell>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-base">{countryFlag(v.country)}</span>
+                                <div>
+                                  <p className="text-zinc-200 font-medium">{v.city || v.countryName || v.country || "—"}</p>
+                                  {v.city && <p className="text-zinc-500 text-xs">{v.countryName || v.country}</p>}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="text-cyan-400 font-bold text-sm">{v.visitCount}</span>
+                            </TableCell>
+                            <TableCell className="text-center text-zinc-300">{v.totalPages}</TableCell>
+                            <TableCell className="text-zinc-400 capitalize">{v.deviceType ?? "—"}</TableCell>
+                            <TableCell className="text-zinc-400">{v.browser ?? "—"} / {v.os ?? "—"}</TableCell>
+                            <TableCell className="text-zinc-500 max-w-[120px] truncate">
+                              {v.firstUtmSource ? (
+                                <Badge variant="outline" className="text-xs border-green-800 text-green-400">{v.firstUtmSource}</Badge>
+                              ) : v.firstReferrer ? (
+                                (() => { try { return new URL(v.firstReferrer).hostname; } catch { return "Direct"; } })()
+                              ) : "Direct"}
+                            </TableCell>
+                            <TableCell className="text-zinc-500 whitespace-nowrap">{new Date(v.firstSeenAt).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-zinc-400 whitespace-nowrap">{new Date(v.lastSeenAt).toLocaleDateString()}</TableCell>
+                            <TableCell className="text-center">
+                              {v.converted ? (
+                                <Badge variant="outline" className="text-xs border-green-800 text-green-400">Yes</Badge>
+                              ) : (
+                                <span className="text-zinc-600">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* ── Devices ── */}

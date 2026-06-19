@@ -755,3 +755,52 @@ export const outlookHistory = mysqlTable("outlookHistory", {
 }));
 export type OutlookHistory = typeof outlookHistory.$inferSelect;
 export type InsertOutlookHistory = typeof outlookHistory.$inferInsert;
+
+// ── Visitor Profiles ─────────────────────────────────────────────────────────
+/**
+ * One row per anonymous visitor (identified by a stable localStorage UUID).
+ * Aggregates cross-session behaviour: visit count, geo, device, first-touch UTM.
+ * Updated on every page view via INSERT … ON DUPLICATE KEY UPDATE.
+ */
+export const visitorProfiles = mysqlTable("visitorProfiles", {
+  id:             int("id").autoincrement().primaryKey(),
+  /** Stable UUID stored in localStorage — survives browser restarts */
+  visitorId:      varchar("visitorId", { length: 64 }).notNull().unique(),
+  /** Number of distinct sessions this visitor has had */
+  visitCount:     int("visitCount").default(1).notNull(),
+  /** Cumulative page views across all sessions */
+  totalPages:     int("totalPages").default(1).notNull(),
+  /** Most recent country code */
+  country:        varchar("country", { length: 4 }),
+  /** Full country name e.g. United States */
+  countryName:    varchar("countryName", { length: 80 }),
+  /** Most recent city */
+  city:           varchar("city", { length: 80 }),
+  /** Most recent region / state */
+  region:         varchar("region", { length: 80 }),
+  /** Most recent device type */
+  deviceType:     varchar("deviceType", { length: 16 }),
+  /** Most recent browser */
+  browser:        varchar("browser", { length: 32 }),
+  /** Most recent OS */
+  os:             varchar("os", { length: 32 }),
+  /** First-touch referrer URL */
+  firstReferrer:  varchar("firstReferrer", { length: 1024 }),
+  /** First-touch UTM source */
+  firstUtmSource: varchar("firstUtmSource", { length: 128 }),
+  /** First-touch UTM medium */
+  firstUtmMedium: varchar("firstUtmMedium", { length: 128 }),
+  /** First-touch UTM campaign */
+  firstUtmCampaign: varchar("firstUtmCampaign", { length: 128 }),
+  /** Whether this visitor has signed up / converted */
+  converted:      int("converted").default(0).notNull(),
+  convertedAt:    timestamp("convertedAt"),
+  firstSeenAt:    timestamp("firstSeenAt").defaultNow().notNull(),
+  lastSeenAt:     timestamp("lastSeenAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  visitorIdIdx:   index("visitorProfiles_visitorId_idx").on(t.visitorId),
+  countryIdx:     index("visitorProfiles_country_idx").on(t.country),
+  lastSeenIdx:    index("visitorProfiles_lastSeenAt_idx").on(t.lastSeenAt),
+}));
+export type VisitorProfile = typeof visitorProfiles.$inferSelect;
+export type InsertVisitorProfile = typeof visitorProfiles.$inferInsert;

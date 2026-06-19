@@ -8,7 +8,7 @@ import { TRPCError } from "@trpc/server";
 import { router } from "../_core/trpc";
 import { protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { pageViews, analyticsSessions, siteEvents } from "../../drizzle/schema";
+import { pageViews, analyticsSessions, siteEvents, visitorProfiles } from "../../drizzle/schema";
 import { sql, gte, desc, count, isNotNull } from "drizzle-orm";
 
 export const analyticsRouter = router({
@@ -163,6 +163,100 @@ export const analyticsRouter = router({
       return db.select().from(analyticsSessions)
         .orderBy(desc(analyticsSessions.startedAt))
         .limit(input.limit).offset(input.offset);
+    }),
+
+  // Country + city breakdown from visitorProfiles (richer than pageViews)
+  getCountriesWithCities: protectedProcedure
+    .input(z.object({ limit: z.number().default(20) }))
+    .query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const countries = await db.select({
+        country: visitorProfiles.country,
+        countryName: visitorProfiles.countryName,
+        visitors: sql<number>`COUNT(*)`,
+        totalVisits: sql<number>`SUM(visitCount)`,
+      })
+        .from(visitorProfiles)
+        .groupBy(visitorProfiles.country, visitorProfiles.countryName)
+        .orderBy(desc(sql`COUNT(*)`)).limit(input.limit);
+
+      const cities = await db.select({
+        country: visitorProfiles.country,
+        city: visitorProfiles.city,
+        region: visitorProfiles.region,
+        visitors: sql<number>`COUNT(*)`,
+      })
+        .from(visitorProfiles)
+        .groupBy(visitorProfiles.country, visitorProfiles.city, visitorProfiles.region)
+        .orderBy(desc(sql`COUNT(*)`)).limit(50);
+
+      return { countries, cities };
+    }),
+
+  // Visitor stats: new vs returning, total unique visitors
+  getVisitorStats: protectedProcedure
+    .input(z.object({ days: z.number().min(1).max(365).default(30) }))
+    .query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const since = new Date(Date.now() - input.days * 86400000);
+
+      const [totalRow] = await db.select({ total: count() }).from(visitorProfiles);
+      const [activeRow] = await db.select({ active: count() }).from(visitorProfiles)
+        .where(gte(visitorProfiles.lastSeenAt, since));
+      const [newRow] = await db.select({ newVisitors: count() }).from(visitorProfiles)
+        .where(gte(visitorProfiles.firstSeenAt, since));
+      const [convertedRow] = await db.select({ converted: sql<number>`SUM(converted)` }).from(visitorProfiles);
+
+      const total = Number(totalRow.total);
+      const active = Number(activeRow.active);
+      const newVisitors = Number(newRow.newVisitors);
+      const returning = active - newVisitors;
+      const converted = Number(convertedRow.converted) || 0;
+
+      // Avg visits per visitor
+      const [avgRow] = await db.select({ avg: sql<number>`AVG(visitCount)` }).from(visitorProfiles);
+      const avgVisits = Math.round((Number(avgRow.avg) || 1) * 10) / 10;
+
+      return {
+        totalUniqueVisitors: total,
+        activeInPeriod: active,
+        newVisitors,
+        returningVisitors: Math.max(0, returning),
+        converted,
+        avgVisitsPerVisitor: avgVisits,
+        days: input.days,
+      };
+    }),
+
+  // Paginated visitor profiles list
+  getVisitorProfiles: protectedProcedure
+    .input(z.object({
+      limit: z.number().min(1).max(100).default(50),
+      offset: z.number().default(0),
+      country: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const conditions = input.country
+        ? [sql`country = ${input.country}`]
+        : [];
+
+      const rows = await db.select().from(visitorProfiles)
+        .where(conditions.length ? conditions[0] : undefined)
+        .orderBy(desc(visitorProfiles.lastSeenAt))
+        .limit(input.limit).offset(input.offset);
+
+      const [totalRow] = await db.select({ total: count() }).from(visitorProfiles)
+        .where(conditions.length ? conditions[0] : undefined);
+
+      return { visitors: rows, total: Number(totalRow.total) };
     }),
 
   // UTM campaign performance

@@ -15,10 +15,11 @@
   ],
   "git_remote": {
     "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663562889431/ku53W5dbP75KrrkLcmMoUG",
-    "access_key_id": "ASIAZV3A2ECZC2CUFAPW",
-    "secret_access_key": "6mV38ZeCcoA7O7GuvKjd07XxA7tYFb21g/PKRsqG",
-    "session_token": "IQoJb3JpZ2luX2VjEGkaCXVzLWVhc3QtMSJGMEQCID/zhdGyOJIbCG+pp/l79yE+UZYNUr2GIPiS+mC+IJHHAiBTFaKSGkL7B6Qn316+kRGr4mLJmoDiOTxtOjHcZ3JUZir2AwgxEAQaDDY2NTM4NjA5ODg2NiIMPRmmSh10CUOvKcbQKtMDOMpTUMvFgi2Z6QZ5IosYOCC9adzU9aTj1MZTpusdHTg5MLEXZaB7Hj5/3zA6nif3tv+nQfHyxX3B63BhpByG6uv9IqVHvpuVf7huL6XVwpIBCuvaaEsgH/HzYiucPICqEwYi5RFyXiPa+Q60y3c/cszNA5BeMrN2Ad6mHlSt5nZlta2ri3EklP4kD8ME3NXe0dtw/lbUqoEx/Vi7sPAqKhg+3KQkvXYegfhpviDQff9Wr6vSOBVkPA44I/NhUe1+k4BXU2LIMBhKpiy/w3RCObW0YdeEqTu53ULw/9/UGU+7RTFiypmBSn88t07jTS8ATiD0u/8PZllxGnjths6/yjI56/xonuQlDhzOp4qOSe5vazKJDr0y2UiiUr4iKiVF96QTyn/vi1S7RuwL3o9OC6PFaPKyWhGFRKm5AWKtpShMKXKnEdwdU/fseKCWRuA65EeMPUiK7rEbvjm/krDJWB/5JqA1zEVnskaNQy29Rl+wZpgwQ/zIlf5/06sQygOyYNzUBMm51THYf5IHJIjssjL88I45Xz/dik1NnI+Awwq80Wtiqww3PD2weGuLBbM8+PZAP9vNWx3CfOmSCvxR3cSLLa89O6vVp8QxbcQeEIFgE4wwhoK20QY6ngHN6KNBnHPlxXT62x3WKa+7S6fq9cgggXhA11pFjj64wmcE9KLudo0wVfMoXn/3f6YiJf7+KflxXRqnKt2ekmfKE0/H+NHv3EqgYcWNpBeOxSr3qNqwxlvE+TvAoUIvzn7yQfabbo6LLLc7cBkY3FulrhyyYtkR8FxUmScnGfKYJNLBDjhxjvIl/hTYPvr9cWnOa8cq2oMabqb+dOrEoQ==",
-    "expiration": "2026-06-14T04:10:46.000Z"
+    "access_key_id": "ASIAZV3A2ECZAAA4YKD5",
+    "secret_access_key": "HZqvvhBddiK2L6LTZ1vqassNQUwHlTphfM3Q+O3Y",
+    "session_token": "IQoJb3JpZ2luX2VjEOv//////////wEaCXVzLWVhc3QtMSJHMEUCIE4269czAEiVCj2Kc5gjFrVmj1J9nmbBwlzYM5n0QnzTAiEAuwFaDQkBxOjhMjvADLnrH2MMLbICW7sSuBgBOJQTKOgq/wMIs///////////ARAEGgw2NjUzODYwOTg4NjYiDFeW5kzu3kF3KbQx2CrTA9TPBtiXZW+IHhLpylRpbFYwp1/YwOXlVqt5kek3KGavijMoCri+7T236we5kTf/tTI5t/u2L2xY0Hcn0u2aCFpWVMxOR92vtRDrNcb+KoeRfQt+taii0uL/cqnJXDaGuxcIDvf7vmB47TORGjiE+zb4W2YhRhqa9uiawPa9Kj2kpRnWfoh4d4/tS63MKp6Jy7khQPOxHt9zZquALkLGIYqr/EzIxTNsMg7KbdNOQHPXaJo8dfJUeo4nIui2JF+f21XnW6MoUXpGhq9LixLTakSlEfxsAELagBHPBZvTK1GQ6E4U3p5X/Cm6+0zDFoK/DA9Fuf1mNngqnifgtOqpYWjWldoQWNY57Mg7uy+OBo0M/rSxVfmj43suk/ET61WmNY69dzfUKuMCLv4p9AvalfmskBGiPlQryYvjtt0SaidqCEhlOfePPUklbv4Jz4y/W0tbyx46b6FZYU/qkOvXtRFKcONPbNeyKx/gFB6x2zLkpB2KrPQz1X+ii+N69yQMOcAlJK8058fCx4Kd1KkYkhwtMAydwApQMT+DAkm6lakcHczBcQtX9v0M2+F1tWo1URYuPbswSqAXIgkQyDJZI8ZUh1l1ZzMMskrJwjPqoFe2QiabMOzK0tEGOp0B3UvvzrMpSFJfaqyTsOamtPgrCKir017EJN+EGYgjnh0kwQs2nRH1axwIABkH66uTaRsxee8P+KRDWEpzCVCB7rer2yO4cmLxR9/z8cOwxNEId8VlY4KRBHeYE7ejm5a6F0YnEKdRtAElii1oKYTrHWSEuUw0ET7u6J2wYNRkte6ci1wllJmo5FWfwGsN+A5awHMGoplp1agAcReRtw==",
+    "expiration": "2026-06-19T14:11:56.000Z",
+    "backend": "GIT_BACKEND_S3"
   },
   "name": "copy-of-faultline",
   "path": "/home/ubuntu/copy-of-faultline",

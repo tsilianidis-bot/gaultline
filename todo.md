@@ -1,5 +1,14 @@
 # FAULTLINE — Project TODO
 
+## Visitor Intelligence System
+- [x] Extend drizzle schema: add visitorProfiles table (visitorId, country, countryName, city, region, ip, deviceType, browser, os, firstReferrer, firstUtmSource, visitCount, totalPages, converted, firstSeenAt, lastSeenAt)
+- [x] Apply visitorProfiles table migration via webdev_execute_sql
+- [x] Update analyticsCollector.ts: add getGeoFromIp() (ip-api.com), upsertVisitorProfile(), full geo fields in recordPageView
+- [x] Update analyticsRoutes.ts: extract geo from IP, accept visitorId, call upsertVisitorProfile
+- [x] Update RouteTracker.tsx: generate/persist stable visitorId in localStorage, send with every pageview
+- [x] Add tRPC procedures: analytics.getVisitorStats, analytics.getVisitorProfiles, analytics.getCountriesWithCities
+- [x] Add "Visitor Intel" tab to AnalyticsDashboard with: KPI row (total unique, new, returning, converted, avg visits, active), new vs returning donut chart, top countries with city drill-down, full visitor profiles table (location, visit count, device, browser/OS, first source, first/last seen, converted)
+
 ## Live Market Data (Polygon.io Integration)
 - [x] Store POLYGON_API_KEY as secure server-side secret via webdev_request_secrets
 - [x] Write vitest to validate POLYGON_API_KEY (polygon.key.test.ts)
