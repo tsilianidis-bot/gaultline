@@ -16,6 +16,7 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackCryptoSignalViewed } from "@/hooks/useAnalytics";
+import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -284,9 +285,7 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#F0F4FF", letterSpacing: "0.05em" }}>
-              {sig.symbol}
-            </span>
+            <TickerChip ticker={sig.symbol} name={sig.name} assetType="crypto" />
             <ActionBadge action={sig.action} strength={sig.strength} actionLabel={sig.actionLabel} />
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.6)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

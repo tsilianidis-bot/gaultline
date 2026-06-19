@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { getLoginUrl } from '@/const';
 import { useAuth } from '@/_core/hooks/useAuth';
+import { TickerChip } from '@/components/TickerActionMenu';
 
 // ── Static demo data (no API calls — pure teaser) ─────────────
 const DEMO_STOCKS = [
@@ -174,7 +175,7 @@ function StockCard({ stock, delay }: { stock: typeof DEMO_STOCKS[0]; delay: numb
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '17px', color: '#F0F4FF', letterSpacing: '0.05em' }}>{stock.ticker}</span>
+            <TickerChip ticker={stock.ticker} name={stock.name} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.6)', background: 'rgba(255,255,255,0.04)', padding: '1px 5px', borderRadius: '2px', letterSpacing: '0.1em' }}>{stock.cap}</span>
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.04em' }}>{stock.name}</div>

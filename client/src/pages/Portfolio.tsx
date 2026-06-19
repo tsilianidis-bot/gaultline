@@ -20,6 +20,7 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import PortfolioIntelligence from "@/components/PortfolioIntelligence";
+import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Types (inferred from tRPC) ────────────────────────────────
 type LivePosition = {
@@ -353,9 +354,7 @@ function PositionCard({ position: p, onEdit, onDelete }: PositionCardProps) {
         {/* Left: ticker + name */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "2px" }}>
-            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "20px", color: "#F0F4FF", letterSpacing: "0.06em" }}>
-              {p.ticker}
-            </span>
+            <TickerChip ticker={p.ticker} name={p.name} assetType={p.assetType === "crypto" ? "crypto" : "stock"} />
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
               color: "#6B7280", letterSpacing: "0.12em",

@@ -20,6 +20,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
+import { TickerChip } from "@/components/TickerActionMenu";
 import {
   BarChart2, RefreshCw, TrendingUp, TrendingDown, Activity,
   Filter, Volume2, Zap, ArrowUpCircle, ArrowDownCircle, Layers,
@@ -312,8 +313,7 @@ function DetailPanel({ stock, rank, tabId, onClose }: { stock: StockPerformer; r
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "12px" }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#374151", letterSpacing: "0.15em", marginBottom: "4px" }}>RANK #{rank} — {tab.label}</div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "22px", color: "#F0F4FF", letterSpacing: "0.04em" }}>{stock.ticker}</div>
-          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", marginTop: "2px" }}>{stock.name}</div>
+          <TickerChip ticker={stock.ticker} name={stock.name} />
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "24px", color }}>

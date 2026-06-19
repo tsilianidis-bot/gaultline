@@ -7,6 +7,7 @@ import { useState, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Plus, Trash2, TrendingUp, TrendingDown, Minus, Star, Search, X } from "lucide-react";
 import { toast } from "sonner";
+import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getSignalColor(signal: string): string {
@@ -70,7 +71,7 @@ function WatchlistItemCard({ id, symbol, name, type, price, changePercent, signa
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-mono font-bold text-white truncate">{symbol}</span>
+          <TickerChip ticker={symbol} assetType={type === "crypto" ? "crypto" : "stock"} />
           <span
             className="text-[8px] font-mono px-1.5 py-0.5 rounded-full"
             style={{ background: "rgba(255,255,255,0.06)", color: "#64748B" }}

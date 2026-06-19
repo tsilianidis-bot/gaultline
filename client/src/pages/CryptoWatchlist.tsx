@@ -10,6 +10,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Style constants ───────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
@@ -113,8 +114,7 @@ function WatchlistRow({
     }}>
       {/* Symbol + name */}
       <div>
-        <div style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '14px', color: '#E2E8F0', letterSpacing: '0.05em' }}>{symbol}</div>
-        <div style={{ fontFamily: SANS, fontSize: '9px', color: '#4B5563', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '72px' }}>{name}</div>
+        <TickerChip ticker={symbol} name={name} assetType="crypto" />
       </div>
 
       {/* Price */}
@@ -257,8 +257,7 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
       <div style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '16px', color: '#E2E8F0', letterSpacing: '0.05em' }}>{symbol}</div>
-            {asset && <div style={{ fontFamily: SANS, fontSize: '9px', color: '#4B5563' }}>{asset.name}</div>}
+            <TickerChip ticker={symbol} name={asset?.name} assetType="crypto" />
           </div>
           <button
             onClick={onRemove}

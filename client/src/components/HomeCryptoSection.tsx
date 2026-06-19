@@ -6,6 +6,7 @@
 import { useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Types (mirrored from server/cryptoEngine.ts) ─────────────
 type CryptoSignalLabel =
@@ -109,10 +110,7 @@ function MiniAssetCard({ asset }: { asset: CryptoAssetIntelligence }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
         <div>
-          <div style={{ fontFamily: RAJDHANI, fontWeight: 700, fontSize: '14px', color: '#E2E8F0', letterSpacing: '0.05em' }}>
-            {asset.symbol}
-          </div>
-          <div style={{ fontFamily: SANS, fontSize: '13px', color: '#64748B' }}>{asset.name}</div>
+          <TickerChip ticker={asset.symbol} name={asset.name} assetType="crypto" />
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontFamily: MONO, fontSize: '11px', color: '#E2E8F0' }}>

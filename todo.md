@@ -1701,8 +1701,10 @@
 - [x] Wire TickerChip into Signals.tsx (StockCard header, TopSignalCard, AsymmetricCard)
 - [x] Wire TickerChip into CryptoSearch.tsx (asset symbol display)
 - [x] Wire TickerChip into SignalOutlookCenter.tsx (opp.symbol, d.symbol, selectedSymbol)
-- [ ] Wire TickerChip into Dashboard.tsx (any ticker mentions)
-- [ ] Wire TickerChip into MarketPreflight.tsx (any ticker mentions)
-- [ ] Wire TickerChip into Watchlist pages (all ticker displays)
-- [ ] Wire TickerChip into news card components
+- [x] Wire TickerChip into Dashboard.tsx — HomeStockIntelSection.tsx (demo stock cards) + HomeCryptoSection.tsx (asset cards)
+- [x] Wire TickerChip into MarketPreflight.tsx — no direct ticker renders (checklist/modal infrastructure only)
+- [x] Wire TickerChip into Watchlist pages — CryptoWatchlist.tsx (row + compare panel), MobileWatchlist.tsx (item card)
+- [x] Wire TickerChip into Portfolio.tsx (position cards)
+- [x] Wire TickerChip into CryptoSignals.tsx (signal card header)
+- [x] Wire TickerChip into StockHeatmap.tsx (detail panel)
 - [x] TypeScript check: 0 errors
