@@ -2329,10 +2329,25 @@ export const appRouter = router({
         }
       }),
 
+    searchTicker: publicProcedure
+      .input(z.object({
+        symbol: z.string().min(1).max(10).trim().transform(s => s.toUpperCase()),
+        assetType: z.enum(['stock', 'crypto']).default('stock'),
+      }))
+      .query(async ({ input }) => {
+        try {
+          const { getTickerSocialData } = await import('./socialIntelligence');
+          return getTickerSocialData(input.symbol, input.assetType);
+        } catch (err) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Ticker social search failed', cause: err });
+        }
+      }),
+
     clearCache: protectedProcedure
       .mutation(async () => {
-        const { clearSocialIntelligenceCache } = await import('./socialIntelligence');
+        const { clearSocialIntelligenceCache, clearTickerSocialCache } = await import('./socialIntelligence');
         clearSocialIntelligenceCache();
+        clearTickerSocialCache();
         return { cleared: true };
       }),
   }),

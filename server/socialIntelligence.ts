@@ -496,3 +496,218 @@ export function clearSocialIntelligenceCache(): void {
   cachedData = null;
   cacheTime = 0;
 }
+
+// ── Ticker-Specific Social Search ────────────────────────────
+
+export interface StockTwitsMessage {
+  id: number;
+  body: string;
+  createdAt: string;
+  sentiment: "Bullish" | "Bearish" | null;
+  username: string;
+  name: string;
+  avatarUrl: string | null;
+  likes: number;
+  followers: number;
+  isVerified: boolean;
+}
+
+export interface StockTwitsData {
+  symbol: string;
+  watchlistCount: number;
+  messages: StockTwitsMessage[];
+  bullishCount: number;
+  bearishCount: number;
+  neutralCount: number;
+  sentimentScore: number; // -1 to +1
+  sentimentLabel: "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH";
+  fetchedAt: number;
+}
+
+export interface TickerNewsArticle {
+  id: string;
+  title: string;
+  description: string;
+  publishedUtc: string;
+  articleUrl: string;
+  imageUrl: string | null;
+  publisher: string;
+  tickers: string[];
+  sentiment: "positive" | "neutral" | "negative" | "unknown";
+  sentimentReasoning: string;
+}
+
+export interface TickerSocialData {
+  symbol: string;
+  assetType: "stock" | "crypto";
+  stocktwits: StockTwitsData | null;
+  news: TickerNewsArticle[];
+  overallSentiment: "STRONGLY BULLISH" | "BULLISH" | "NEUTRAL" | "BEARISH" | "STRONGLY BEARISH";
+  overallSentimentScore: number;
+  fetchedAt: number;
+}
+
+// Per-ticker cache
+const tickerSocialCache = new Map<string, { data: TickerSocialData; time: number }>();
+const TICKER_CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes
+
+/** Map crypto symbols to StockTwits format (BTC → BTC.X, ETH → ETH.X) */
+function toStockTwitsSymbol(symbol: string, assetType: "stock" | "crypto"): string {
+  const s = symbol.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (assetType === "crypto") {
+    // StockTwits uses BTC.X, ETH.X, etc.
+    return `${s}.X`;
+  }
+  return s;
+}
+
+async function fetchStockTwitsData(
+  symbol: string,
+  assetType: "stock" | "crypto"
+): Promise<StockTwitsData | null> {
+  const stSymbol = toStockTwitsSymbol(symbol, assetType);
+  try {
+    const url = `https://api.stocktwits.com/api/2/streams/symbol/${stSymbol}.json?limit=30`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) {
+      log.warn(`[SocialIntel] StockTwits ${stSymbol} HTTP ${res.status}`);
+      return null;
+    }
+    const data = await res.json();
+    if (data?.response?.status !== 200) return null;
+
+    const rawMessages: any[] = data.messages ?? [];
+    const symInfo = data.symbol ?? {};
+
+    const messages: StockTwitsMessage[] = rawMessages.map((m: any) => ({
+      id: m.id,
+      body: m.body ?? "",
+      createdAt: m.created_at ?? "",
+      sentiment: m.entities?.sentiment?.basic ?? null,
+      username: m.user?.username ?? "",
+      name: m.user?.name ?? "",
+      avatarUrl: m.user?.avatar_url_ssl ?? m.user?.avatar_url ?? null,
+      likes: m.likes?.total ?? 0,
+      followers: m.user?.followers ?? 0,
+      isVerified: m.user?.official === true,
+    }));
+
+    let bullishCount = 0, bearishCount = 0, neutralCount = 0;
+    for (const msg of messages) {
+      if (msg.sentiment === "Bullish") bullishCount++;
+      else if (msg.sentiment === "Bearish") bearishCount++;
+      else neutralCount++;
+    }
+
+    const tagged = bullishCount + bearishCount;
+    const sentimentScore = tagged > 0 ? (bullishCount - bearishCount) / tagged : 0;
+
+    return {
+      symbol: stSymbol,
+      watchlistCount: symInfo.watchlist_count ?? 0,
+      messages,
+      bullishCount,
+      bearishCount,
+      neutralCount,
+      sentimentScore: Math.round(sentimentScore * 100) / 100,
+      sentimentLabel: sentimentToLabel(sentimentScore),
+      fetchedAt: Date.now(),
+    };
+  } catch (err) {
+    log.warn(`[SocialIntel] StockTwits fetch failed for ${stSymbol}: ${(err as Error).message}`);
+    return null;
+  }
+}
+
+async function fetchTickerNews(symbol: string): Promise<TickerNewsArticle[]> {
+  const articles = await fetchPolygonNews(symbol.toUpperCase(), 20);
+  return articles.map((item) => {
+    const primaryTicker = item.tickers?.[0] ?? null;
+    const insight = item.insights?.find((i) => i.ticker === symbol.toUpperCase())
+      ?? item.insights?.[0];
+    const sentiment = insight
+      ? insightSentimentToDirection(insight.sentiment)
+      : "unknown";
+    return {
+      id: item.id,
+      title: item.title,
+      description: item.description ?? "",
+      publishedUtc: item.published_utc,
+      articleUrl: item.article_url,
+      imageUrl: item.image_url ?? null,
+      publisher: item.publisher.name,
+      tickers: item.tickers ?? [],
+      sentiment,
+      sentimentReasoning: insight?.sentiment_reasoning ?? "",
+    };
+  });
+}
+
+function computeOverallSentiment(
+  stocktwits: StockTwitsData | null,
+  news: TickerNewsArticle[]
+): { score: number; label: StockTwitsData["sentimentLabel"] } {
+  let totalScore = 0;
+  let weights = 0;
+
+  if (stocktwits && (stocktwits.bullishCount + stocktwits.bearishCount) > 0) {
+    totalScore += stocktwits.sentimentScore * 0.5;
+    weights += 0.5;
+  }
+
+  if (news.length > 0) {
+    let pos = 0, neg = 0;
+    for (const n of news) {
+      if (n.sentiment === "positive") pos++;
+      else if (n.sentiment === "negative") neg++;
+    }
+    const newsScore = (pos + neg) > 0 ? (pos - neg) / (pos + neg) : 0;
+    totalScore += newsScore * 0.5;
+    weights += 0.5;
+  }
+
+  const score = weights > 0 ? totalScore / weights : 0;
+  return { score: Math.round(score * 100) / 100, label: sentimentToLabel(score) };
+}
+
+export async function getTickerSocialData(
+  symbol: string,
+  assetType: "stock" | "crypto"
+): Promise<TickerSocialData> {
+  const cacheKey = `${symbol.toUpperCase()}_${assetType}`;
+  const cached = tickerSocialCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < TICKER_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  log.info(`[SocialIntel] Fetching ticker social data for ${symbol} (${assetType})`);
+
+  const [stocktwits, news] = await Promise.all([
+    fetchStockTwitsData(symbol, assetType),
+    fetchTickerNews(symbol),
+  ]);
+
+  const { score, label } = computeOverallSentiment(stocktwits, news);
+
+  const result: TickerSocialData = {
+    symbol: symbol.toUpperCase(),
+    assetType,
+    stocktwits,
+    news,
+    overallSentiment: label,
+    overallSentimentScore: score,
+    fetchedAt: Date.now(),
+  };
+
+  tickerSocialCache.set(cacheKey, { data: result, time: Date.now() });
+  return result;
+}
+
+export function clearTickerSocialCache(symbol?: string): void {
+  if (symbol) {
+    tickerSocialCache.delete(`${symbol.toUpperCase()}_stock`);
+    tickerSocialCache.delete(`${symbol.toUpperCase()}_crypto`);
+  } else {
+    tickerSocialCache.clear();
+  }
+}

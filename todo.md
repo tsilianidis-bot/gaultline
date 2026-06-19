@@ -1595,3 +1595,16 @@
 - [x] Wire computeHotSectorPicksFromPressure in parallel with computeRecommendedMoves in runTradePreflightSimulation
 - [x] Build Hot Sector Picks CollapsiblePanel in SituationRoom.tsx: sector header (name, label, score/100), reason, ticker cards with action badge, price, ENTRY LOW/HIGH/STOP/T1/T2 grid, R:R + MOM + SCORE row, rationale
 - [x] TypeScript: 0 errors | 553/553 tests passing | Save checkpoint
+
+## Social Intelligence Upgrade — Ticker/Coin Search + Multi-Source
+- [x] Audit current socialIntelligence.ts server file and SocialIntelligence.tsx client page
+- [x] Build StockTwits proxy: getStockTwitsData(symbol) — messages, sentiment badges, watchlist count, bull/bear ratio (public API, no auth)
+- [x] Build News proxy: getTickerNews(symbol) — Polygon.io /v2/reference/news?ticker={symbol} with AI sentiment per article
+- [x] Add getTickerSocialData(symbol, assetType) aggregator to socialIntelligence.ts — returns { stocktwits, news, overallSentiment, overallSentimentScore }
+- [x] Add clearTickerSocialCache() to socialIntelligence.ts
+- [x] Add social.searchTicker tRPC procedure in routers.ts: accepts { symbol, assetType } — returns TickerSocialData
+- [x] Add StockTwits types (StockTwitsMessage, StockTwitsData, TickerNewsArticle, TickerSocialData) to SocialIntelligence.tsx
+- [x] Add StockTwitsCard component: avatar, username, name, VERIFIED badge, BULL/BEAR sentiment badge, body, timestamp, likes
+- [x] Add TickerSearchPanel component: stock/crypto toggle, search input with quick-access chips (NVDA/AAPL/TSLA/META/BTC/ETH), overall sentiment header (symbol, watchlist count, bull/bear ratio bar), source tabs (StockTwits | News), StockTwits feed, News feed
+- [x] Add "Ticker Search" tab as first/default tab in SocialIntelligence main tabs
+- [x] TypeScript: 0 errors | 553/553 tests passing | Save checkpoint

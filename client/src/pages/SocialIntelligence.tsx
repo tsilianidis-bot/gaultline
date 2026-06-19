@@ -4,7 +4,7 @@
    and social buzz monitoring powered by Polygon.io News API
    and Yahoo Finance trending/screener data.
    ============================================================ */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
 import { useSEO } from "@/hooks/useSEO";
@@ -12,6 +12,7 @@ import {
   TrendingUp, TrendingDown, Minus, Activity, BarChart2,
   RefreshCw, ExternalLink, Clock, Zap, Radio, MessageSquare,
   AlertTriangle, CheckCircle, Eye, Newspaper, Hash, Target,
+  Search, Users, ThumbsUp, ThumbsDown, BookOpen,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -73,6 +74,55 @@ interface NarrativeCluster {
   articleCount: number;
   dominantSentiment: NarrativeSentiment;
   keywords: string[];
+}
+
+// ── StockTwits types (mirrored from server) ─────────────────
+interface StockTwitsMessage {
+  id: number;
+  body: string;
+  createdAt: string;
+  sentiment: "Bullish" | "Bearish" | null;
+  username: string;
+  name: string;
+  avatarUrl: string | null;
+  likes: number;
+  followers: number;
+  isVerified: boolean;
+}
+
+interface StockTwitsData {
+  symbol: string;
+  watchlistCount: number;
+  messages: StockTwitsMessage[];
+  bullishCount: number;
+  bearishCount: number;
+  neutralCount: number;
+  sentimentScore: number;
+  sentimentLabel: SentimentLabel;
+  fetchedAt: number;
+}
+
+interface TickerNewsArticle {
+  id: string;
+  title: string;
+  description: string;
+  publishedUtc: string;
+  articleUrl: string;
+  imageUrl: string | null;
+  publisher: string;
+  tickers: string[];
+  sentiment: ArticleSentiment;
+  sentimentReasoning: string;
+}
+
+interface TickerSocialData {
+  symbol: string;
+  assetType: "stock" | "crypto";
+  stocktwits: StockTwitsData | null;
+  news: TickerNewsArticle[];
+  overallSentiment: SentimentLabel;
+  overallSentimentScore: number;
+  fetchedAt: number;
 }
 
 // ── Color helpers ─────────────────────────────────────────────
@@ -460,13 +510,328 @@ function NarrativeCard({ cluster }: { cluster: NarrativeCluster }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────
+// ── StockTwits Message Card ───────────────────────────────────
+function StockTwitsCard({ msg }: { msg: StockTwitsMessage }) {
+  const sentColor = msg.sentiment === "Bullish" ? "#00FF88" : msg.sentiment === "Bearish" ? "#FF2D55" : "#FF9500";
+  const sentBg = msg.sentiment === "Bullish" ? "rgba(0,255,136,0.1)" : msg.sentiment === "Bearish" ? "rgba(255,45,85,0.1)" : "rgba(255,149,0,0.1)";
+  return (
+    <div style={{
+      padding: "12px 16px", borderBottom: "1px solid var(--fl-border)",
+      display: "flex", gap: 12, alignItems: "flex-start",
+    }}>
+      {/* Avatar */}
+      <div style={{
+        width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
+        background: "rgba(0,212,255,0.15)", border: "1px solid rgba(0,212,255,0.2)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        overflow: "hidden",
+      }}>
+        {msg.avatarUrl ? (
+          <img src={msg.avatarUrl} alt={msg.username} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <span style={{ fontSize: 14, color: "#00D4FF", fontWeight: 700 }}>{msg.username.charAt(0).toUpperCase()}</span>
+        )}
+      </div>
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "var(--fl-text-primary)" }}>{msg.name || msg.username}</span>
+          <span style={{ fontSize: 11, color: "var(--fl-text-muted)" }}>@{msg.username}</span>
+          {msg.isVerified && <span style={{ fontSize: 9, background: "rgba(0,212,255,0.15)", color: "#00D4FF", padding: "1px 5px", borderRadius: 3 }}>VERIFIED</span>}
+          {msg.sentiment && (
+            <span style={{ fontSize: 10, fontWeight: 700, background: sentBg, color: sentColor, padding: "2px 7px", borderRadius: 3, letterSpacing: "0.05em" }}>
+              {msg.sentiment === "Bullish" ? "▲ BULL" : "▼ BEAR"}
+            </span>
+          )}
+          <span style={{ fontSize: 10, color: "var(--fl-text-dim)", marginLeft: "auto" }}>{timeAgo(msg.createdAt)}</span>
+        </div>
+        <p style={{ fontSize: 13, color: "var(--fl-text-secondary)", lineHeight: 1.5, margin: 0, wordBreak: "break-word" }}>{msg.body}</p>
+        {msg.likes > 0 && (
+          <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 4 }}>
+            <ThumbsUp size={11} color="var(--fl-text-muted)" />
+            <span style={{ fontSize: 11, color: "var(--fl-text-muted)" }}>{msg.likes}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Ticker Search Panel ──────────────────────────────────────────
+function TickerSearchPanel() {
+  const [inputValue, setInputValue] = useState("");
+  const [searchSymbol, setSearchSymbol] = useState("");
+  const [assetType, setAssetType] = useState<"stock" | "crypto">("stock");
+  const [activeSource, setActiveSource] = useState<"stocktwits" | "news">("stocktwits");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const { data, isLoading, error } = trpc.social.searchTicker.useQuery(
+    { symbol: searchSymbol, assetType },
+    { enabled: searchSymbol.length > 0, staleTime: 3 * 60 * 1000 }
+  );
+
+  function handleSearch() {
+    const sym = inputValue.trim().toUpperCase();
+    if (sym) setSearchSymbol(sym);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") handleSearch();
+  }
+
+  const st = data?.stocktwits;
+  const tagged = st ? st.bullishCount + st.bearishCount : 0;
+  const bullPct = tagged > 0 ? Math.round((st!.bullishCount / tagged) * 100) : 0;
+  const bearPct = tagged > 0 ? 100 - bullPct : 0;
+
+  return (
+    <div>
+      {/* Search Bar */}
+      <div style={{
+        display: "flex", gap: 8, marginBottom: 20, alignItems: "center", flexWrap: "wrap",
+      }}>
+        {/* Stock / Crypto Toggle */}
+        <div style={{ display: "flex", background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 6, overflow: "hidden" }}>
+          {(["stock", "crypto"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setAssetType(t)}
+              style={{
+                padding: "7px 14px", border: "none", cursor: "pointer",
+                background: assetType === t ? "rgba(0,212,255,0.15)" : "transparent",
+                color: assetType === t ? "#00D4FF" : "var(--fl-text-muted)",
+                fontSize: 12, fontWeight: assetType === t ? 700 : 400,
+                transition: "all 0.15s",
+              }}
+            >
+              {t === "stock" ? "📈 Stock" : "₿ Crypto"}
+            </button>
+          ))}
+        </div>
+        {/* Input */}
+        <div style={{ display: "flex", flex: 1, minWidth: 200, gap: 0 }}>
+          <input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value.toUpperCase())}
+            onKeyDown={handleKeyDown}
+            placeholder={assetType === "stock" ? "Enter ticker (e.g. NVDA, AAPL, TSLA)" : "Enter symbol (e.g. BTC, ETH, SOL)"}
+            style={{
+              flex: 1, padding: "8px 14px",
+              background: "var(--fl-surface)", border: "1px solid var(--fl-border)",
+              borderRight: "none", borderRadius: "6px 0 0 6px",
+              color: "var(--fl-text-primary)", fontSize: 13,
+              outline: "none", fontFamily: "monospace",
+            }}
+          />
+          <button
+            onClick={handleSearch}
+            disabled={!inputValue.trim()}
+            style={{
+              padding: "8px 16px", borderRadius: "0 6px 6px 0",
+              background: inputValue.trim() ? "rgba(0,212,255,0.2)" : "rgba(255,255,255,0.05)",
+              border: "1px solid var(--fl-border)",
+              color: inputValue.trim() ? "#00D4FF" : "var(--fl-text-muted)",
+              cursor: inputValue.trim() ? "pointer" : "not-allowed",
+              display: "flex", alignItems: "center", gap: 6, fontSize: 12,
+            }}
+          >
+            <Search size={13} />
+            Search
+          </button>
+        </div>
+      </div>
+
+      {/* Empty state */}
+      {!searchSymbol && (
+        <div style={{ padding: 40, textAlign: "center" }}>
+          <Search size={32} color="var(--fl-text-muted)" style={{ margin: "0 auto 12px" }} />
+          <p style={{ fontSize: 14, color: "var(--fl-text-muted)", margin: 0 }}>Search any stock ticker or crypto symbol</p>
+          <p style={{ fontSize: 12, color: "var(--fl-text-dim)", marginTop: 6 }}>e.g. NVDA, AAPL, TSLA, BTC, ETH, SOL</p>
+          <div style={{ marginTop: 16, display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            {["NVDA", "AAPL", "TSLA", "META", "BTC", "ETH"].map((s) => (
+              <button
+                key={s}
+                onClick={() => { setInputValue(s); setAssetType(s === "BTC" || s === "ETH" ? "crypto" : "stock"); setSearchSymbol(s); }}
+                style={{
+                  padding: "5px 12px", borderRadius: 4,
+                  background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)",
+                  color: "#00D4FF", fontSize: 12, cursor: "pointer", fontFamily: "monospace",
+                }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Loading */}
+      {searchSymbol && isLoading && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: 20 }}>
+          <RefreshCw size={14} color="#00D4FF" style={{ animation: "fl-spin 1s linear infinite" }} />
+          <span style={{ fontSize: 13, color: "var(--fl-text-secondary)" }}>Fetching social data for {searchSymbol}…</span>
+        </div>
+      )}
+
+      {/* Error */}
+      {searchSymbol && error && (
+        <div style={{ padding: 16, borderRadius: 8, background: "rgba(255,45,85,0.1)", border: "1px solid rgba(255,45,85,0.3)" }}>
+          <AlertTriangle size={14} color="#FF2D55" style={{ display: "inline", marginRight: 6 }} />
+          <span style={{ fontSize: 13, color: "#FF2D55" }}>Failed to load data for {searchSymbol}. The symbol may not be supported.</span>
+        </div>
+      )}
+
+      {/* Results */}
+      {data && !isLoading && (
+        <div>
+          {/* Overall Sentiment Header */}
+          <div style={{
+            padding: "14px 18px", marginBottom: 16,
+            background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8,
+            display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+          }}>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "monospace", color: "var(--fl-text-primary)" }}>{data.symbol}</div>
+              <div style={{ fontSize: 11, color: "var(--fl-text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>{data.assetType}</div>
+            </div>
+            <div style={{ flex: 1 }} />
+            <div style={{ textAlign: "right" }}>
+              <div style={{
+                fontSize: 14, fontWeight: 700,
+                color: sentimentColor(data.overallSentiment),
+              }}>{data.overallSentiment}</div>
+              <div style={{ fontSize: 11, color: "var(--fl-text-muted)" }}>Overall Sentiment</div>
+            </div>
+            {st && (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--fl-text-primary)" }}>{st.watchlistCount.toLocaleString()}</div>
+                <div style={{ fontSize: 11, color: "var(--fl-text-muted)", display: "flex", alignItems: "center", gap: 3 }}><Users size={10} /> StockTwits Watchlist</div>
+              </div>
+            )}
+            {st && tagged > 0 && (
+              <div style={{ minWidth: 140 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+                  <span style={{ fontSize: 10, color: "#00FF88", fontWeight: 700 }}>▲ {bullPct}% Bull</span>
+                  <span style={{ fontSize: 10, color: "#FF2D55", fontWeight: 700 }}>{bearPct}% Bear ▼</span>
+                </div>
+                <div style={{ height: 6, borderRadius: 3, background: "rgba(255,45,85,0.3)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${bullPct}%`, background: "#00FF88", borderRadius: 3, transition: "width 0.4s" }} />
+                </div>
+                <div style={{ fontSize: 10, color: "var(--fl-text-muted)", marginTop: 3, textAlign: "center" }}>{tagged} tagged posts</div>
+              </div>
+            )}
+          </div>
+
+          {/* Source Tabs */}
+          <div style={{
+            display: "flex", gap: 4, marginBottom: 16,
+            background: "var(--fl-surface)", border: "1px solid var(--fl-border)",
+            borderRadius: 8, padding: 4,
+          }}>
+            <button
+              onClick={() => setActiveSource("stocktwits")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "7px 14px", borderRadius: 5, border: "none",
+                background: activeSource === "stocktwits" ? "rgba(0,212,255,0.15)" : "transparent",
+                color: activeSource === "stocktwits" ? "#00D4FF" : "var(--fl-text-muted)",
+                fontSize: 12, fontWeight: activeSource === "stocktwits" ? 700 : 400,
+                cursor: "pointer", transition: "all 0.15s",
+              }}
+            >
+              <MessageSquare size={13} />
+              StockTwits
+              {st && <span style={{ fontSize: 10, background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 10 }}>{st.messages.length}</span>}
+            </button>
+            <button
+              onClick={() => setActiveSource("news")}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "7px 14px", borderRadius: 5, border: "none",
+                background: activeSource === "news" ? "rgba(0,212,255,0.15)" : "transparent",
+                color: activeSource === "news" ? "#00D4FF" : "var(--fl-text-muted)",
+                fontSize: 12, fontWeight: activeSource === "news" ? 700 : 400,
+                cursor: "pointer", transition: "all 0.15s",
+              }}
+            >
+              <Newspaper size={13} />
+              News
+              {data.news && <span style={{ fontSize: 10, background: "rgba(255,255,255,0.08)", padding: "1px 5px", borderRadius: 10 }}>{data.news.length}</span>}
+            </button>
+          </div>
+
+          {/* StockTwits Feed */}
+          {activeSource === "stocktwits" && (
+            <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, overflow: "hidden" }}>
+              {st && st.messages.length > 0 ? (
+                st.messages.map((msg) => <StockTwitsCard key={msg.id} msg={msg} />)
+              ) : (
+                <div style={{ padding: 40, textAlign: "center", color: "var(--fl-text-muted)", fontSize: 13 }}>
+                  {st ? `No recent StockTwits posts for ${data.symbol}.` : `StockTwits data unavailable for ${data.symbol}.`}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* News Feed */}
+          {activeSource === "news" && (
+            <div style={{ background: "var(--fl-surface)", border: "1px solid var(--fl-border)", borderRadius: 8, overflow: "hidden" }}>
+              {data.news.length > 0 ? (
+                data.news.map((article) => (
+                  <div key={article.id} style={{ padding: "12px 16px", borderBottom: "1px solid var(--fl-border)" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 10, color: "var(--fl-text-muted)" }}>{article.publisher}</span>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 3,
+                            background: article.sentiment === "positive" ? "rgba(0,255,136,0.1)" : article.sentiment === "negative" ? "rgba(255,45,85,0.1)" : "rgba(255,149,0,0.1)",
+                            color: article.sentiment === "positive" ? "#00FF88" : article.sentiment === "negative" ? "#FF2D55" : "#FF9500",
+                          }}>
+                            {article.sentiment === "positive" ? "▲ BULLISH" : article.sentiment === "negative" ? "▼ BEARISH" : "— NEUTRAL"}
+                          </span>
+                          <span style={{ fontSize: 10, color: "var(--fl-text-dim)", marginLeft: "auto" }}>{timeAgo(article.publishedUtc)}</span>
+                        </div>
+                        <a
+                          href={article.articleUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: 13, fontWeight: 600, color: "var(--fl-text-primary)", textDecoration: "none", lineHeight: 1.4, display: "block", marginBottom: 4 }}
+                        >
+                          {article.title}
+                          <ExternalLink size={11} style={{ display: "inline", marginLeft: 4, opacity: 0.5 }} />
+                        </a>
+                        {article.description && (
+                          <p style={{ fontSize: 12, color: "var(--fl-text-muted)", margin: 0, lineHeight: 1.5 }}>{article.description.slice(0, 200)}{article.description.length > 200 ? "…" : ""}</p>
+                        )}
+                        {article.sentimentReasoning && (
+                          <p style={{ fontSize: 11, color: "var(--fl-text-dim)", margin: "6px 0 0", fontStyle: "italic" }}>{article.sentimentReasoning}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: 40, textAlign: "center", color: "var(--fl-text-muted)", fontSize: 13 }}>
+                  No news articles found for {data.symbol}.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SocialIntelligence() {
   useSEO({
     title: "Social Intelligence | FAULTLINE",
     description: "Real-time market narrative tracking, sentiment analysis, and social buzz monitoring.",
   });
 
-  const [activeTab, setActiveTab] = useState<"trending" | "sentiment" | "news" | "narratives" | "active">("trending");
+  const [activeTab, setActiveTab] = useState<"trending" | "sentiment" | "news" | "narratives" | "active" | "search">("search");
   const [newsFilter, setNewsFilter] = useState<"all" | "positive" | "negative" | "neutral">("all");
 
   const { data, isLoading, error, refetch, isFetching } = trpc.social.getIntelligence.useQuery(undefined, {
@@ -481,12 +846,14 @@ export default function SocialIntelligence() {
   }, [data?.latestNews, newsFilter]);
 
   const tabs = [
+    { id: "search" as const, label: "Ticker Search", icon: <Search size={13} />, count: undefined },
     { id: "trending" as const, label: "Trending", icon: <TrendingUp size={13} />, count: data?.trendingTickers?.length },
     { id: "sentiment" as const, label: "Sentiment", icon: <Activity size={13} />, count: data?.sentimentLeaderboard?.length },
     { id: "news" as const, label: "News Feed", icon: <Newspaper size={13} />, count: data?.latestNews?.length },
     { id: "narratives" as const, label: "Narratives", icon: <Hash size={13} />, count: data?.narrativeClusters?.length },
     { id: "active" as const, label: "Most Active", icon: <BarChart2 size={13} />, count: data?.mostActive?.length },
   ];
+  const defaultTab = "search";
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--fl-void)", color: "var(--fl-text-primary)" }}>
@@ -608,6 +975,11 @@ export default function SocialIntelligence() {
               }} />
             ))}
           </div>
+        )}
+
+        {/* ── TICKER SEARCH TAB ── */}
+        {activeTab === "search" && (
+          <TickerSearchPanel />
         )}
 
         {/* ── TRENDING TAB ── */}
