@@ -118,12 +118,14 @@
       // Enhanced measurement: SPA-friendly config
       // send_page_view: false — we fire page_view manually via RouteTracker
       // so we don't get duplicate hits on initial load
+      var isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       gtag('config', 'G-YLJ9EQZK7P', {
         send_page_view: false,
         cookie_flags: 'SameSite=None;Secure',
         allow_google_signals: true,
         allow_ad_personalization_signals: false,
-        restricted_data_processing: false
+        restricted_data_processing: false,
+        debug_mode: isDev
       });
       // Fire the initial page_view immediately (before React hydrates)
       gtag('event', 'page_view', {

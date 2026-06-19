@@ -66,6 +66,7 @@ const OwnerSimulation  = lazy(() => import("./pages/OwnerSimulation"));
 const PublicSharedReport = lazy(() => import("./pages/PublicSharedReport"));
 const SignalOutlookCenter = lazy(() => import("./pages/SignalOutlookCenter"));
 const SocialIntelligence = lazy(() => import("./pages/SocialIntelligence"));
+const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -176,6 +177,14 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <ContactUs />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Stripe checkout success page — standalone, no AppLayout */}
+      <Route path="/checkout/success">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <CheckoutSuccess />
           </Suspense>
         </ErrorBoundary>
       </Route>

@@ -44,10 +44,30 @@ export const billingRouter = router({
           customer_name: ctx.user.name ?? "",
           plan_id: input.planId,
         },
-        success_url: `${input.origin}/app/account?payment=success`,
+        success_url: `${input.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=${input.planId}`,
         cancel_url: `${input.origin}/app/account?payment=cancelled`,
       });
       return { url: session.url };
+    }),
+
+  verifyCheckoutSession: publicProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(input.sessionId, {
+          expand: ['line_items'],
+        });
+        return {
+          status: session.status,
+          paymentStatus: session.payment_status,
+          amountTotal: session.amount_total,
+          currency: session.currency,
+          planId: session.metadata?.plan_id ?? null,
+          customerEmail: session.customer_email ?? session.metadata?.customer_email ?? null,
+        };
+      } catch {
+        return null;
+      }
     }),
 
   createPortalSession: protectedProcedure

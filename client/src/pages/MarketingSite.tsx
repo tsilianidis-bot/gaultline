@@ -3,6 +3,14 @@ import { PRICING_PLANS } from "../../../shared/tiers";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
+import {
+  trackStartFreeClicked,
+  trackDemoStarted,
+  trackSignupStarted,
+  trackSignupCompleted,
+  trackPricingViewed,
+  trackStripeCheckoutStarted,
+} from "@/hooks/useAnalytics";
 const PLATFORM_URL = "/app";
 
 // ── Asset URLs ────────────────────────────────────────────────
@@ -145,13 +153,13 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
 
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
-            <button onClick={onRequestAccess} className="text-[11px] font-mono tracking-widest text-[#FFD700] hover:text-white transition-colors px-4 py-2 border border-[#FFD700]/30 hover:border-[#FFD700]/60 rounded">
+            <button onClick={() => { trackDemoStarted("nav"); onRequestAccess(); }} className="text-[11px] font-mono tracking-widest text-[#FFD700] hover:text-white transition-colors px-4 py-2 border border-[#FFD700]/30 hover:border-[#FFD700]/60 rounded">
               MOVE FIRST →
             </button>
-            <a href={getLoginUrl()} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded">
+            <a href={getLoginUrl()} onClick={() => trackSignupStarted("nav")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded">
               MEMBER LOGIN
             </a>
-            <a href={PLATFORM_URL} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold">
+            <a href={PLATFORM_URL} onClick={() => trackStartFreeClicked("homepage_nav")} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold">
               EXPLORE FREE →
             </a>
           </div>
@@ -212,7 +220,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
                 </svg>
               </a>
               <button
-                onClick={() => { onRequestAccess(); closeMenu(); }}
+                onClick={() => { trackDemoStarted("homepage_or_nav"); onRequestAccess(); closeMenu(); }}
                 className="flex items-center justify-between w-full px-5 py-4 border border-[#FFD700]/40 rounded-xl active:bg-[#FFD700]/10 transition-colors"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
@@ -285,7 +293,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
             {/* Member login — bottom of menu */}
             <a
               href={getLoginUrl()}
-              onClick={closeMenu}
+              onClick={() => { trackSignupStarted("nav"); closeMenu(); }}
               className="flex items-center justify-center gap-2 w-full px-5 py-3.5 border border-white/15 rounded-xl active:bg-white/5 transition-colors"
               style={{ WebkitTapHighlightColor: "transparent" }}
             >
@@ -392,6 +400,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4">
           <a
             href={PLATFORM_URL}
+            onClick={() => trackStartFreeClicked("homepage_hero")}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#00D4FF] hover:bg-[#00D4FF]/90 text-[#050608] font-mono font-black text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
             style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px" }}
           >
@@ -401,7 +410,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
             </svg>
           </a>
           <button
-            onClick={onRequestAccess}
+            onClick={() => { trackDemoStarted("homepage_or_nav"); onRequestAccess(); }}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 border border-[#FFD700]/50 hover:border-[#FFD700] text-[#FFD700] font-mono font-bold text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
             style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px" }}
           >
@@ -1381,6 +1390,21 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   // Scarcity: founding slots remaining (static for now, can be made dynamic)
   const foundingSlots = 47;
 
+  // Fire pricing_viewed once when the section scrolls into view
+  const pricingRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = pricingRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        trackPricingViewed("marketing_site");
+        obs.disconnect();
+      }
+    }, { threshold: 0.2 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   type Tier = {
     name: string;
     tagline: string;
@@ -1525,7 +1549,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   ];
 
   return (
-    <section id="access" className="py-24 bg-[#050608] relative overflow-hidden">
+    <section id="access" ref={pricingRef} className="py-24 bg-[#050608] relative overflow-hidden">
       {/* Ambient glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,rgba(0,212,255,0.03)_0%,transparent_70%)]" />
       <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -1978,7 +2002,10 @@ function FoundingAccessForm
   const [error, setError] = useState("");
 
   const mutation = trpc.user.requestFoundingAccess.useMutation({
-    onSuccess: () => setSubmitted(true),
+    onSuccess: () => {
+      setSubmitted(true);
+      trackSignupCompleted("email");
+    },
     onError: (err) => setError(err.message || "Something went wrong. Please email jt@getfaultline.live"),
   });
 
@@ -1986,6 +2013,7 @@ function FoundingAccessForm
     e.preventDefault();
     setError("");
     if (!name.trim() || !email.trim()) return;
+    trackSignupStarted("landing_page");
     mutation.mutate({ name: name.trim(), email: email.trim(), message: message.trim() });
   };
 

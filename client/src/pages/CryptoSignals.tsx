@@ -15,6 +15,7 @@ import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
+import { trackCryptoSignalViewed } from "@/hooks/useAnalytics";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -219,6 +220,7 @@ function RSIBar({ value, label }: { value: number; label: string }) {
 function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regimeScore: number }) {
   const [expanded, setExpanded] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const signalViewFired = useRef(false);
 
   // Lazy-load coin info only when the INFO panel is opened
   const { data: coinInfo, isFetching: infoLoading } = trpc.crypto.getCoinInfo.useQuery(
@@ -238,7 +240,14 @@ function CryptoSignalCard({ sig, regimeScore }: { sig: CryptoSignalResult; regim
 
   return (
     <div
-      onClick={() => setExpanded(e => !e)}
+      onClick={() => {
+        const next = !expanded;
+        setExpanded(next);
+        if (next && !signalViewFired.current) {
+          signalViewFired.current = true;
+          trackCryptoSignalViewed(sig.symbol, 'daily');
+        }
+      }}
       style={{
         background: "rgba(8,10,14,0.9)",
         border: `1px solid ${c.border}`,

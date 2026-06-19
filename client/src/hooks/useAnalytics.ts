@@ -8,18 +8,17 @@
  *  - Feature events: watchlist, signal_search, preflight_launch
  *  - Scroll depth tracking
  *  - Outbound click tracking
+ *  - FAULTLINE key events (start_free_clicked, demo_started,
+ *    signup_started, signup_completed, pricing_viewed,
+ *    stripe_checkout_started, purchase,
+ *    stock_signal_viewed, crypto_signal_viewed, situation_room_used)
  * ============================================================
  */
+import { PRICING_PLANS } from "../../../shared/tiers";
 
 const GA_ID = "G-YLJ9EQZK7P";
 
 // ── Type-safe gtag wrapper ────────────────────────────────────
-declare global {
-  interface Window {
-    gtag: (...args: unknown[]) => void;
-    dataLayer: unknown[];
-  }
-}
 
 function gtag(...args: unknown[]) {
   if (typeof window === "undefined") return;
@@ -206,5 +205,83 @@ export function trackEvent(
   params: Record<string, unknown> = {}
 ) {
   gtag("event", eventName, { ...params, send_to: GA_ID });
-}import { PRICING_PLANS } from "../../../shared/tiers";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FAULTLINE KEY EVENTS (mark these as key events in GA4 Admin)
+// ═══════════════════════════════════════════════════════════════
+
+/** 1. Homepage hero CTA clicked */
+export function trackStartFreeClicked(location: "homepage_hero" | "homepage_nav" | "homepage_section" = "homepage_hero") {
+  gtag("event", "start_free_clicked", { location, send_to: GA_ID });
+}
+
+/** 2. Demo CTA clicked */
+export function trackDemoStarted(location: "homepage_or_nav" | "homepage_hero" | "nav" | "section" = "homepage_or_nav") {
+  gtag("event", "demo_started", { location, send_to: GA_ID });
+}
+
+/** 3. Signup started — user clicks login/signup CTA before OAuth redirect */
+export function trackSignupStarted(source: "landing_page" | "premium_gate" | "nav" | "app" = "landing_page") {
+  gtag("event", "signup_started", { source, send_to: GA_ID });
+}
+
+/** 4. Signup completed — user authenticated for the first time (createdAt within 60s) */
+export function trackSignupCompleted(method: "oauth" | "email" = "oauth") {
+  gtag("event", "signup_completed", { method, send_to: GA_ID });
+}
+
+/** 5. Pricing section viewed */
+export function trackPricingViewed(page: "pricing" | "marketing_site" = "pricing") {
+  gtag("event", "pricing_viewed", { page, send_to: GA_ID });
+}
+
+/** 6. Stripe checkout button clicked (before redirect) */
+export function trackStripeCheckoutStarted(opts: { plan: string; price: number; currency?: string }) {
+  gtag("event", "stripe_checkout_started", {
+    plan: opts.plan,
+    price: opts.price,
+    currency: opts.currency ?? "USD",
+    send_to: GA_ID,
+  });
+}
+
+/** 7. Purchase confirmed — fired on /checkout/success after Stripe confirms */
+export function trackPurchaseConfirmed(opts: { transactionId: string; value: number; currency?: string; plan: string }) {
+  gtag("event", "purchase", {
+    transaction_id: opts.transactionId,
+    value: opts.value,
+    currency: opts.currency ?? "USD",
+    plan: opts.plan,
+    send_to: GA_ID,
+  });
+}
+
+/** 8. Stock signal card expanded/viewed */
+export function trackStockSignalViewed(ticker: string, timeframe: string = "daily") {
+  gtag("event", "stock_signal_viewed", {
+    ticker: ticker.toUpperCase(),
+    timeframe,
+    send_to: GA_ID,
+  });
+}
+
+/** 9. Crypto signal card expanded/viewed */
+export function trackCryptoSignalViewed(symbol: string, timeframe: string = "daily") {
+  gtag("event", "crypto_signal_viewed", {
+    symbol: symbol.toUpperCase(),
+    timeframe,
+    send_to: GA_ID,
+  });
+}
+
+/** 10. Situation Room analysis run */
+export function trackSituationRoomUsed(opts: { assetType: "stock" | "crypto" | "etf" | "other"; tickerOrSymbol: string; timeframe: string }) {
+  gtag("event", "situation_room_used", {
+    asset_type: opts.assetType,
+    ticker_or_symbol: opts.tickerOrSymbol.toUpperCase(),
+    timeframe: opts.timeframe,
+    send_to: GA_ID,
+  });
+}
 

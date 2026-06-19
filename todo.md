@@ -1,5 +1,22 @@
 # FAULTLINE — Project TODO
 
+## GA4 Event Tracking
+- [x] Create client/src/lib/analytics.ts — trackEvent(name, params) helper with gtag safety check + dev debug_mode
+- [x] Add debug_mode: true to GA4 gtag config in index.html (dev only via import.meta.env.DEV)
+- [x] Track start_free_clicked on homepage hero CTA (location: homepage_hero)
+- [x] Track demo_started on demo CTA (location: homepage_or_nav)
+- [x] Track signup_started on signup initiation (source: landing_page)
+- [x] Track signup_completed on OAuth callback success (method: oauth_or_email)
+- [x] Track pricing_viewed on pricing page mount
+- [x] Track stripe_checkout_started on Stripe checkout button click (plan, price, currency: USD)
+- [x] Build /checkout/success page that reads Stripe session_id from URL and fires purchase event (transaction_id, value, currency: USD, plan)
+- [x] Update Stripe checkout success_url to redirect to /checkout/success?session_id={CHECKOUT_SESSION_ID}&plan=...)
+- [x] Track stock_signal_viewed on signal card expand/view (ticker, timeframe)
+- [x] Track crypto_signal_viewed on crypto card expand/view (symbol, timeframe)
+- [x] Track situation_room_used on Situation Room analysis run (asset_type, ticker_or_symbol, timeframe)
+- [x] TypeScript check: 0 errors
+- [x] Save checkpoint
+
 ## Visitor Intelligence System
 - [x] Extend drizzle schema: add visitorProfiles table (visitorId, country, countryName, city, region, ip, deviceType, browser, os, firstReferrer, firstUtmSource, visitCount, totalPages, converted, firstSeenAt, lastSeenAt)
 - [x] Apply visitorProfiles table migration via webdev_execute_sql

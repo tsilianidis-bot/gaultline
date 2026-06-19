@@ -22,6 +22,7 @@ import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
+import { trackStockSignalViewed } from "@/hooks/useAnalytics";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -315,6 +316,9 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
   const [expanded, setExpanded] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
 
+  // Fire GA4 event the first time a card is expanded
+  const signalViewFired = useRef(false);
+
   // Lazy-load stock info only when the INFO panel is opened
   const { data: stockInfo, isFetching: infoLoading } = trpc.signals.getStockInfo.useQuery(
     { ticker: stock.ticker },
@@ -339,7 +343,14 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
 
   return (
     <div
-      onClick={() => setExpanded(e => !e)}
+      onClick={() => {
+        const next = !expanded;
+        setExpanded(next);
+        if (next && !signalViewFired.current) {
+          signalViewFired.current = true;
+          trackStockSignalViewed(stock.ticker, 'daily');
+        }
+      }}
       style={{
         background: 'rgba(8,10,14,0.9)',
         border: `1px solid ${actionColor}${actionBorderOpacity}`,

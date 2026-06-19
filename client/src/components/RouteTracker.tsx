@@ -16,6 +16,7 @@ import {
   trackPageView,
   trackScrollDepth,
   resetScrollMilestones,
+  trackSignupCompleted,
 } from "@/hooks/useAnalytics";
 import { getConsentChoice } from "@/components/CookieConsent";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -149,9 +150,23 @@ export default function RouteTracker() {
   const [location] = useLocation();
   const prevLocation = useRef<string | null>(null);
   const sessionFired = useRef(false);
+  const signupFired = useRef(false);
 
   const { user } = useAuth();
   const userId = (user as any)?.id as number | undefined;
+
+  // Detect first-time OAuth signup: createdAt within 60 seconds of now
+  useEffect(() => {
+    if (signupFired.current) return;
+    if (!user) return;
+    const createdAt = (user as any)?.createdAt;
+    if (!createdAt) return;
+    const ageMs = Date.now() - new Date(createdAt).getTime();
+    if (ageMs < 60_000) {
+      signupFired.current = true;
+      trackSignupCompleted("oauth");
+    }
+  }, [user]);
 
   // Fire page_view on every route change
   useEffect(() => {

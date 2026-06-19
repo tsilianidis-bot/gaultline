@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import PageHeader from "@/components/PageHeader";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
-import { trackSituationRoomUse } from "@/hooks/useAnalytics";
+import { trackSituationRoomUse, trackSituationRoomUsed } from "@/hooks/useAnalytics";
 import {
   CheckCircle, XCircle, AlertTriangle, Target, Zap,
   TrendingUp, TrendingDown, Activity, Shield, BarChart2,
@@ -428,6 +428,13 @@ export default function SituationRoom() {
     } else if (isCryptoMove) {
       resolvedTicker = cryptoSymbol;
     }
+    // GA4 key event: situation_room_used
+    const assetType = isCryptoMove ? "crypto" : (isTickerMove && resolvedTicker ? "stock" : "other");
+    trackSituationRoomUsed({
+      assetType,
+      tickerOrSymbol: resolvedTicker ?? selectedMove,
+      timeframe: selectedTimeframe,
+    });
     simulate.mutate({
       moveType: selectedMove,
       timeframe: selectedTimeframe,

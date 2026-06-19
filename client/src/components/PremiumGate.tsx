@@ -3,7 +3,7 @@ import { getLoginUrl } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { trackUpgradeClick } from "@/hooks/useAnalytics";
+import { trackUpgradeClick, trackStripeCheckoutStarted } from "@/hooks/useAnalytics";
 import {
   tierMeetsRequirement,
   GATE_REQUIRED_TIER,
@@ -232,6 +232,19 @@ export function PremiumGateFull({
     },
     onMutate: (vars) => {
       trackUpgradeClick(vars.planId, 'premium_gate');
+      const planPrices: Record<string, number> = {
+        core: PRICING_PLANS.core.amountCents / 100,
+        core_annual: (PRICING_PLANS.core_annual?.amountCents ?? 0) / 100,
+        premium: PRICING_PLANS.premium.amountCents / 100,
+        premium_annual: (PRICING_PLANS.premium_annual?.amountCents ?? 0) / 100,
+        founding: PRICING_PLANS.founding.amountCents / 100,
+        lifetime: (PRICING_PLANS.lifetime?.amountCents ?? 0) / 100,
+      };
+      trackStripeCheckoutStarted({
+        plan: vars.planId,
+        price: planPrices[vars.planId] ?? 0,
+        currency: 'USD',
+      });
     },
     onError: (err) => {
       toast.error('Checkout unavailable', { description: err.message });
