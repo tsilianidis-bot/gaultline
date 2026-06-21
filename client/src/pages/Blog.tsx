@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
@@ -258,6 +258,50 @@ export default function Blog() {
       "FAULTLINE Intelligence Briefings: institutional macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
     canonical: "/blog",
   });
+
+  // Inject CollectionPage + Blog JSON-LD structured data for Googlebot
+  useEffect(() => {
+    const id = "faultline-blog-ld";
+    let el = document.getElementById(id) as HTMLScriptElement | null;
+    if (!el) {
+      el = document.createElement("script");
+      el.id = id;
+      el.type = "application/ld+json";
+      document.head.appendChild(el);
+    }
+    el.textContent = JSON.stringify([
+      {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": "FAULTLINE Intelligence Briefings",
+        "description": "Institutional macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
+        "url": "https://getfaultline.live/blog",
+        "publisher": {
+          "@type": "Organization",
+          "name": "FAULTLINE",
+          "url": "https://getfaultline.live",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://getfaultline.live/favicon-32x32.png"
+          }
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Blog",
+        "name": "FAULTLINE Intelligence Briefings",
+        "description": "Macro commentary, market risk analysis, and fault line reports from the FAULTLINE team. Covering Fed policy, equity regimes, systemic risk, crypto intelligence, and platform updates.",
+        "url": "https://getfaultline.live/blog",
+        "author": {
+          "@type": "Organization",
+          "name": "FAULTLINE",
+          "url": "https://getfaultline.live"
+        },
+        "inLanguage": "en-US"
+      }
+    ]);
+    return () => { document.getElementById(id)?.remove(); };
+  }, []);
 
   const [, navigate] = useLocation();
   const { user } = useAuth();

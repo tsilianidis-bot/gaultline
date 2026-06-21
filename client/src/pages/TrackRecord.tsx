@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
@@ -208,7 +208,50 @@ export default function TrackRecord() {
   useSEO({
     title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
     description: "FAULTLINE's historical Pressure Index from 2000 to present. See how the model scored the 2008 financial crisis (82/CRITICAL), COVID crash (72/HIGH RISK), and dot-com bust against actual market outcomes.",
+    canonical: "/track-record",
   });
+
+  // Inject Dataset + WebPage JSON-LD structured data for Googlebot
+  useEffect(() => {
+    const id = "faultline-track-record-ld";
+    let el = document.getElementById(id) as HTMLScriptElement | null;
+    if (!el) {
+      el = document.createElement("script");
+      el.id = id;
+      el.type = "application/ld+json";
+      document.head.appendChild(el);
+    }
+    el.textContent = JSON.stringify([
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "FAULTLINE Track Record — Historical Pressure Index 2000–Present",
+        "description": "25 years of FAULTLINE Pressure Index scores applied to historical FRED macroeconomic data. Retrospective audit of the methodology across the 2000 dot-com bust, 2008 financial crisis, COVID crash, and 2022 rate shock.",
+        "url": "https://getfaultline.live/track-record",
+        "publisher": {
+          "@type": "Organization",
+          "name": "FAULTLINE",
+          "url": "https://getfaultline.live"
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        "name": "FAULTLINE Historical Pressure Index 2000–Present",
+        "description": "Monthly FAULTLINE Pressure Index scores from January 2000 to present, computed from FRED macroeconomic data using the same six-vector engine as the live platform.",
+        "url": "https://getfaultline.live/track-record",
+        "creator": {
+          "@type": "Organization",
+          "name": "FAULTLINE",
+          "url": "https://getfaultline.live"
+        },
+        "temporalCoverage": "2000-01/",
+        "variableMeasured": "Systemic market pressure score (0–100)",
+        "license": "https://getfaultline.live/legal"
+      }
+    ]);
+    return () => { document.getElementById(id)?.remove(); };
+  }, []);
 
   const { data: history, isLoading: histLoading } = trpc.trackRecord.getHistory.useQuery({});
   const { data: stats, isLoading: statsLoading } = trpc.trackRecord.getStats.useQuery();
