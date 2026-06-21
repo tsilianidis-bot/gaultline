@@ -86,6 +86,9 @@ const MobileSignals  = lazy(() => import("./pages/mobile/MobileSignals"));
 const MobileWatchlist = lazy(() => import("./pages/mobile/MobileWatchlist"));
 const MobileRotation = lazy(() => import("./pages/mobile/MobileRotation"));
 const MobileBrief    = lazy(() => import("./pages/mobile/MobileBrief"));
+const MobileCrypto   = lazy(() => import("./pages/mobile/MobileCrypto"));
+const MobileAccount  = lazy(() => import("./pages/mobile/MobileAccount"));
+const MobileUpgrade  = lazy(() => import("./pages/mobile/MobileUpgrade"));
 
 // ── Page loading fallback — minimal, non-jarring ──────────────
 function PageLoader() {
@@ -148,6 +151,9 @@ function Router() {
                   <Route path="/mobile/watchlist" component={MobileWatchlist} />
                   <Route path="/mobile/rotation" component={MobileRotation} />
                   <Route path="/mobile/brief" component={MobileBrief} />
+                  <Route path="/mobile/crypto" component={MobileCrypto} />
+                  <Route path="/mobile/account" component={MobileAccount} />
+                  <Route path="/mobile/upgrade" component={MobileUpgrade} />
                   <Route component={MobilePulse} />
                 </Switch>
               </Suspense>

@@ -1,11 +1,14 @@
 /* ============================================================
    FAULTLINE — Mobile Layout
    Bottom nav shell for the Core PWA experience.
-   5 tabs: Pulse / Signals / Watchlist / Rotation / Brief
+   6 tabs: Pulse / Signals / Crypto / Watchlist / Rotation / Account
    ============================================================ */
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Activity, TrendingUp, Star, RotateCcw, FileText, LogIn, Share, X } from "lucide-react";
+import {
+  Activity, TrendingUp, Star, RotateCcw, LogIn, Share, X,
+  Bitcoin, User,
+} from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -52,13 +55,14 @@ function A2HSBanner() {
   );
 }
 
-// ── Nav items ─────────────────────────────────────────────────
+// ── Nav items (6 tabs) ────────────────────────────────────────
 const NAV_ITEMS = [
   { path: "/mobile",           label: "Pulse",    Icon: Activity },
   { path: "/mobile/signals",   label: "Signals",  Icon: TrendingUp },
-  { path: "/mobile/watchlist", label: "Watchlist",Icon: Star },
+  { path: "/mobile/crypto",    label: "Crypto",   Icon: Bitcoin },
+  { path: "/mobile/watchlist", label: "Watch",    Icon: Star },
   { path: "/mobile/rotation",  label: "Rotation", Icon: RotateCcw },
-  { path: "/mobile/brief",     label: "Brief",    Icon: FileText },
+  { path: "/mobile/account",   label: "Account",  Icon: User },
 ];
 
 // ── Upgrade gate for free-tier users ─────────────────────────
@@ -105,8 +109,10 @@ function CoreGate() {
   if (!hasAccess) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#050608] px-6 text-center">
-        <div className="w-16 h-16 rounded-full border-2 border-[#22D3EE]/30 flex items-center justify-center mb-6"
-          style={{ boxShadow: "0 0 30px rgba(34,211,238,0.1)" }}>
+        <div
+          className="w-16 h-16 rounded-full border-2 border-[#22D3EE]/30 flex items-center justify-center mb-6"
+          style={{ boxShadow: "0 0 30px rgba(34,211,238,0.1)" }}
+        >
           <Activity size={28} className="text-[#22D3EE]" />
         </div>
         <div className="text-[10px] font-mono tracking-[0.3em] text-[#22D3EE]/60 mb-2">CORE ACCESS REQUIRED</div>
@@ -117,11 +123,11 @@ function CoreGate() {
         <p className="text-[#22D3EE] text-sm font-mono font-bold mb-8">{PRICING_PLANS.core.priceLabel}</p>
         <div className="w-full max-w-xs space-y-3">
           <a
-            href="/app/account"
+            href="/mobile/upgrade"
             className="block w-full py-3 text-center font-mono font-bold text-sm tracking-widest rounded-lg"
             style={{ background: "rgba(34,211,238,0.15)", border: "1px solid rgba(34,211,238,0.4)", color: "#22D3EE" }}
           >
-            {PRICING_PLANS.core.priceLabel.toUpperCase().replace("/MO", "")} — {PRICING_PLANS.core.priceLabel.toUpperCase()}
+            VIEW PLANS
           </a>
           <a
             href="/app"
@@ -154,8 +160,11 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
   const tier = tierQuery.data?.tier ?? "free";
   const hasAccess = !!user && (tier === "core" || tier === "premium" || tier === "founding");
 
-  // Show gate if no access
-  const gateContent = !loading && !tierQuery.isLoading && !hasAccess;
+  // Account tab is always accessible (sign-in prompt shown inside)
+  const isAccountTab = location === "/mobile/account" || location === "/mobile/upgrade";
+
+  // Show gate if no access (except on account/upgrade pages)
+  const gateContent = !loading && !tierQuery.isLoading && !hasAccess && !isAccountTab;
 
   return (
     <div
@@ -199,7 +208,7 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
         {gateContent ? <CoreGate /> : children}
       </div>
 
-      {/* Bottom nav */}
+      {/* Bottom nav — 6 tabs */}
       <div
         className="flex-shrink-0 flex items-stretch"
         style={{
@@ -216,7 +225,7 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
           return (
             <Link key={path} href={path} className="flex-1">
               <div
-                className="flex flex-col items-center justify-center py-2.5 gap-1 transition-all duration-200"
+                className="flex flex-col items-center justify-center py-2 gap-0.5 transition-all duration-200"
                 style={{ opacity: isActive ? 1 : 0.45 }}
               >
                 <div
@@ -226,7 +235,7 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
                     filter: isActive ? "drop-shadow(0 0 6px rgba(0,212,255,0.6))" : "none",
                   }}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+                  <Icon size={18} strokeWidth={isActive ? 2 : 1.5} />
                   {isActive && (
                     <div
                       className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
@@ -235,7 +244,7 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
                   )}
                 </div>
                 <span
-                  className="text-[9px] font-mono tracking-widest"
+                  className="text-[8px] font-mono tracking-wider"
                   style={{ color: isActive ? "#00D4FF" : "#64748B" }}
                 >
                   {label.toUpperCase()}

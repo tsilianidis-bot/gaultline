@@ -1,4 +1,4 @@
-import { boolean, decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 
 /**
@@ -222,6 +222,42 @@ export const mobileWatchlist = mysqlTable("mobileWatchlist", {
 }));
 export type MobileWatchlistItem = typeof mobileWatchlist.$inferSelect;
 export type InsertMobileWatchlistItem = typeof mobileWatchlist.$inferInsert;
+
+// ── Mobile Usage Limits ────────────────────────────────────
+/**
+ * Tracks daily/monthly mobile feature usage per user.
+ * One row per (userId, usageDate) — upserted on each feature use.
+ * Used to enforce free-tier limits on mobile:
+ *   - 10 stock signals/day
+ *   - 5 crypto signals/day
+ *   - 1 Signal Outlook/day
+ *   - 3 Situation Room simulations/month
+ */
+export const mobileUsage = mysqlTable("mobileUsage", {
+  id:                  int("id").autoincrement().primaryKey(),
+  userId:              int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Calendar date YYYY-MM-DD for daily counters */
+  usageDate:           varchar("usageDate", { length: 10 }).notNull(),
+  /** Number of stock signals viewed today (limit: 10 for core, unlimited for pro/founding) */
+  stockSignalsViewed:  int("stockSignalsViewed").default(0).notNull(),
+  /** Number of crypto signals viewed today (limit: 5 for core, unlimited for pro/founding) */
+  cryptoSignalsViewed: int("cryptoSignalsViewed").default(0).notNull(),
+  /** Number of Signal Outlooks run today (limit: 1 for core, unlimited for pro/founding) */
+  signalOutlooksRun:   int("signalOutlooksRun").default(0).notNull(),
+  /** Month YYYY-MM for monthly Situation Room counter */
+  situationRoomMonth:  varchar("situationRoomMonth", { length: 7 }).notNull(),
+  /** Number of Situation Room simulations run this month (limit: 3 for core, unlimited for pro/founding) */
+  situationRoomCount:  int("situationRoomCount").default(0).notNull(),
+  createdAt:           timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:           timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  /** Fast lookup of today's usage for a given user */
+  userDateIdx: index("mobileUsage_userId_usageDate_idx").on(t.userId, t.usageDate),
+  /** Unique constraint: one row per user per day */
+  userDateUniq: index("mobileUsage_userId_usageDate_uniq").on(t.userId, t.usageDate),
+}));
+export type MobileUsage = typeof mobileUsage.$inferSelect;
+export type InsertMobileUsage = typeof mobileUsage.$inferInsert;
 
 // ── Market Awareness Actions ────────────────────────────────
 /**

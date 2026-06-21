@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -928,4 +928,92 @@ export async function incrementSharedReportViewCount(publicShareId: string): Pro
   await db.update(sharedReports)
     .set({ viewCount: sql`${sharedReports.viewCount} + 1` })
     .where(eq(sharedReports.publicShareId, publicShareId));
+}
+
+// ── Mobile Usage Helpers ─────────────────────────────────────────────────────
+
+/** Get today's usage row for a user (or undefined if none exists yet). */
+export async function getMobileUsageToday(userId: number): Promise<typeof mobileUsage.$inferSelect | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const month = today.slice(0, 7); // YYYY-MM
+  const rows = await db.select().from(mobileUsage)
+    .where(and(eq(mobileUsage.userId, userId), eq(mobileUsage.usageDate, today)))
+    .limit(1);
+  if (rows[0]) return rows[0];
+  // Upsert a fresh row for today
+  await db.insert(mobileUsage).values({
+    userId,
+    usageDate: today,
+    situationRoomMonth: month,
+    stockSignalsViewed: 0,
+    cryptoSignalsViewed: 0,
+    signalOutlooksRun: 0,
+    situationRoomCount: 0,
+  }).onDuplicateKeyUpdate({ set: { updatedAt: sql`NOW()` } });
+  const fresh = await db.select().from(mobileUsage)
+    .where(and(eq(mobileUsage.userId, userId), eq(mobileUsage.usageDate, today)))
+    .limit(1);
+  return fresh[0];
+}
+
+/** Increment a daily counter for a user. Returns the new count. */
+export async function incrementMobileUsage(
+  userId: number,
+  field: 'stockSignalsViewed' | 'cryptoSignalsViewed' | 'signalOutlooksRun'
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const month = today.slice(0, 7);
+  await db.insert(mobileUsage).values({
+    userId,
+    usageDate: today,
+    situationRoomMonth: month,
+    stockSignalsViewed: field === 'stockSignalsViewed' ? 1 : 0,
+    cryptoSignalsViewed: field === 'cryptoSignalsViewed' ? 1 : 0,
+    signalOutlooksRun: field === 'signalOutlooksRun' ? 1 : 0,
+    situationRoomCount: 0,
+  }).onDuplicateKeyUpdate({
+    set: { [field]: sql`${mobileUsage[field]} + 1`, updatedAt: sql`NOW()` }
+  });
+  const row = await getMobileUsageToday(userId);
+  return row?.[field] ?? 0;
+}
+
+/** Increment the monthly Situation Room counter. Returns the new count. */
+export async function incrementSituationRoomUsage(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const month = today.slice(0, 7);
+  // Upsert today's row first
+  await db.insert(mobileUsage).values({
+    userId,
+    usageDate: today,
+    situationRoomMonth: month,
+    stockSignalsViewed: 0,
+    cryptoSignalsViewed: 0,
+    signalOutlooksRun: 0,
+    situationRoomCount: 1,
+  }).onDuplicateKeyUpdate({
+    set: {
+      situationRoomCount: sql`${mobileUsage.situationRoomCount} + 1`,
+      updatedAt: sql`NOW()`
+    }
+  });
+  const row = await getMobileUsageToday(userId);
+  return row?.situationRoomCount ?? 0;
+}
+
+/** Get total Situation Room simulations run this month across all days. */
+export async function getSituationRoomMonthlyCount(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const month = new Date().toISOString().slice(0, 7);
+  const rows = await db.select({ total: sql<number>`SUM(${mobileUsage.situationRoomCount})` })
+    .from(mobileUsage)
+    .where(and(eq(mobileUsage.userId, userId), eq(mobileUsage.situationRoomMonth, month)));
+  return Number(rows[0]?.total ?? 0);
 }

@@ -1708,3 +1708,49 @@
 - [x] Wire TickerChip into CryptoSignals.tsx (signal card header)
 - [x] Wire TickerChip into StockHeatmap.tsx (detail panel)
 - [x] TypeScript check: 0 errors
+
+## Mobile PWA Phase 1 — Execution (Jun 21, 2026)
+### Database
+- [x] Create `mobile_usage` table: userId, usageDate (YYYY-MM-DD), stockSignalsViewed, cryptoSignalsViewed, signalOutlooksRun, situationRoomMonth (YYYY-MM), situationRoomCount
+- [x] Run migration SQL via webdev_execute_sql
+### Server Procedures
+- [x] Add `mobileUsage.getUsageSummary` query — returns today's usage counts for current user
+- [x] Add `mobileUsage.logCryptoSignalView / logStockSignalView` mutations — increment specific counters
+- [x] Add `mobileUsage.canUseFeature` query — returns whether a specific action is allowed + remaining count
+### MobileAccount.tsx
+- [x] Show user name, email, avatar initials
+- [x] Show current subscription tier and price label
+- [x] Show usage stats (signals viewed today, outlooks run today, SR simulations this month)
+- [x] Upgrade CTA button (links to /mobile/upgrade)
+- [x] Manage Billing button (Stripe portal)
+- [x] Logout button
+- [x] Add /mobile/account route in App.tsx
+### MobileUpgrade.tsx
+- [x] Show 3 pricing cards: Core ($9.99), Pro ($59), Founding ($49 locked)
+- [x] Each card shows feature list and CTA
+- [x] Stripe checkout on card click
+- [x] Founding urgency messaging
+- [x] Add /mobile/upgrade route in App.tsx
+### MobileCrypto.tsx
+- [x] Show top 5 crypto signals per day (usage-gated at 5/day)
+- [x] Show crypto regime summary
+- [x] Show usage counter (X of 5 used today)
+- [x] Upgrade prompt when limit hit
+- [x] Add /mobile/crypto route in App.tsx
+### MobileLayout.tsx — 6-Tab Navigation
+- [x] Add Crypto tab (between Signals and Watchlist)
+- [x] Add Account tab (at end)
+- [x] Update NAV_ITEMS array to 6 tabs
+### Contextual Upgrade Prompts
+- [x] MobileCrypto.tsx: show "X of 5 crypto signals today" counter + upgrade prompt at limit
+- [x] MobileAccount.tsx: shows usage bars with exhaustion indicators
+- [x] MobileUpgrade.tsx: full pricing cards with feature comparison
+### Service Worker
+- [x] Create client/public/sw.js with offline caching strategy
+- [x] Register service worker in client/src/main.tsx
+- [x] Cache shell (HTML/CSS/JS), manifest, icons with cache-first
+- [x] Network-first strategy for API calls, cache-first for static assets
+### TypeScript & Checkpoint
+- [x] TypeScript check: 0 errors
+- [x] 553 tests passing (33 test files)
+- [x] Save checkpoint

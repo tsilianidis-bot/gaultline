@@ -22,6 +22,7 @@ import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAll
   getXPostQueue, getXPostQueueStats,
   getPressureHistory, getPressureHistoryStats,
   getMobileWatchlist, addMobileWatchlistItem, removeMobileWatchlistItem,
+  getMobileUsageToday, incrementMobileUsage, incrementSituationRoomUsage, getSituationRoomMonthlyCount,
   deleteUser,
   insertPressureRun, getRecentPressureRuns, countPressureRuns,
   getAllFeatureFlags, getFeatureFlag, setFeatureFlag,
@@ -2361,6 +2362,125 @@ export const appRouter = router({
         clearTickerSocialCache();
         return { cleared: true };
       }),
+  }),
+
+  mobileUsage: router({
+    /** Full usage summary for the Account tab and upgrade prompts */
+    getUsageSummary: protectedProcedure.query(async ({ ctx }) => {
+      const row = await getMobileUsageToday(ctx.user.id);
+      const monthlyCount = await getSituationRoomMonthlyCount(ctx.user.id);
+      const tier = ctx.user.accessTier as string;
+      const isPro = tier === 'premium' || tier === 'founding';
+      const isPaid = tier === 'core' || isPro;
+      const limits = {
+        stockSignals:   isPro ? null : (isPaid ? 10 : 3),
+        cryptoSignals:  isPro ? null : (isPaid ? 5  : 2),
+        signalOutlooks: isPro ? null : (isPaid ? 1  : 0),
+        situationRoom:  isPro ? null : (isPaid ? 3  : 0),
+        watchlist:      isPro ? null : 20,
+      };
+      const usage = {
+        stockSignalsViewed:  row?.stockSignalsViewed  ?? 0,
+        cryptoSignalsViewed: row?.cryptoSignalsViewed ?? 0,
+        signalOutlooksRun:   row?.signalOutlooksRun   ?? 0,
+        situationRoomCount:  monthlyCount,
+      };
+      return { usage, limits, tier, isPaid, isPro };
+    }),
+
+    /** Check if a feature is available and return remaining count */
+    canUseFeature: protectedProcedure
+      .input(z.object({
+        feature: z.enum(['stockSignals', 'cryptoSignals', 'signalOutlooks', 'situationRoom']),
+      }))
+      .query(async ({ ctx, input }) => {
+        const tier = ctx.user.accessTier as string;
+        const isPro = tier === 'premium' || tier === 'founding';
+        const isPaid = tier === 'core' || isPro;
+        if (isPro) return { allowed: true, remaining: null, limit: null, upgradeMessage: null };
+        const row = await getMobileUsageToday(ctx.user.id);
+        const monthlyCount = await getSituationRoomMonthlyCount(ctx.user.id);
+        const limits: Record<string, number> = {
+          stockSignals:   isPaid ? 10 : 3,
+          cryptoSignals:  isPaid ? 5  : 2,
+          signalOutlooks: isPaid ? 1  : 0,
+          situationRoom:  isPaid ? 3  : 0,
+        };
+        const used: Record<string, number> = {
+          stockSignals:   row?.stockSignalsViewed  ?? 0,
+          cryptoSignals:  row?.cryptoSignalsViewed ?? 0,
+          signalOutlooks: row?.signalOutlooksRun   ?? 0,
+          situationRoom:  monthlyCount,
+        };
+        const limit = limits[input.feature];
+        const current = used[input.feature];
+        const remaining = Math.max(0, limit - current);
+        const allowed = remaining > 0;
+        const upgradeMessage = allowed ? null
+          : isPaid
+            ? `Daily limit reached. Upgrade to Pro for unlimited ${input.feature === 'situationRoom' ? 'monthly' : 'daily'} access.`
+            : `Upgrade to Core to unlock this feature.`;
+        return { allowed, remaining, limit, upgradeMessage };
+      }),
+
+    /** Log stock signal view and return updated count */
+    logStockSignalView: protectedProcedure.mutation(async ({ ctx }) => {
+      const count = await incrementMobileUsage(ctx.user.id, 'stockSignalsViewed');
+      return { count };
+    }),
+    /** Log crypto signal view and return updated count */
+    logCryptoSignalView: protectedProcedure.mutation(async ({ ctx }) => {
+      const count = await incrementMobileUsage(ctx.user.id, 'cryptoSignalsViewed');
+      return { count };
+    }),
+    /** Log Signal Outlook run and return updated count */
+    logSignalOutlookRun: protectedProcedure.mutation(async ({ ctx }) => {
+      const count = await incrementMobileUsage(ctx.user.id, 'signalOutlooksRun');
+      return { count };
+    }),
+    /** Log Situation Room simulation and return updated monthly count */
+    logSituationRoomRun: protectedProcedure.mutation(async ({ ctx }) => {
+      const count = await incrementSituationRoomUsage(ctx.user.id);
+      return { count };
+    }),
+
+    // Legacy aliases kept for backward compatibility
+    getToday: protectedProcedure.query(async ({ ctx }) => {
+      const row = await getMobileUsageToday(ctx.user.id);
+      const monthlyCount = await getSituationRoomMonthlyCount(ctx.user.id);
+      const tier = ctx.user.accessTier as string;
+      const isPro = tier === 'premium' || tier === 'founding';
+      const isPaid = tier === 'core' || isPro;
+      return {
+        stockSignalsViewed: row?.stockSignalsViewed ?? 0,
+        cryptoSignalsViewed: row?.cryptoSignalsViewed ?? 0,
+        signalOutlooksRun: row?.signalOutlooksRun ?? 0,
+        situationRoomCount: monthlyCount,
+        limits: {
+          stockSignals: isPaid ? (isPro ? null : 10) : 3,
+          cryptoSignals: isPaid ? (isPro ? null : 5) : 2,
+          signalOutlooks: isPaid ? (isPro ? null : 1) : 0,
+          situationRoom: isPaid ? (isPro ? null : 3) : 0,
+        },
+        tier, isPaid, isPro,
+      };
+    }),
+    incrementStockSignals: protectedProcedure.mutation(async ({ ctx }) => {
+      const count = await incrementMobileUsage(ctx.user.id, 'stockSignalsViewed');
+      return { count };
+    }),
+    incrementCryptoSignals: protectedProcedure.mutation(async ({ ctx }) => {
+      const count = await incrementMobileUsage(ctx.user.id, 'cryptoSignalsViewed');
+      return { count };
+    }),
+    incrementSignalOutlooks: protectedProcedure.mutation(async ({ ctx }) => {
+      const count = await incrementMobileUsage(ctx.user.id, 'signalOutlooksRun');
+      return { count };
+    }),
+    incrementSituationRoom: protectedProcedure.mutation(async ({ ctx }) => {
+      const count = await incrementSituationRoomUsage(ctx.user.id);
+      return { count };
+    }),
   }),
 
   contact: router({
