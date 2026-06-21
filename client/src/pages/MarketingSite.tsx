@@ -2212,6 +2212,96 @@ function Footer() {
 }
 
 // ── About / Origin ──────────────────────────────────────────
+function EvergreenHubSection() {
+  const { data: posts, isLoading } = trpc.blog.listEvergreen.useQuery({ limit: 6 });
+
+  const categoryColor = (cat: string) => {
+    const map: Record<string, string> = {
+      "Macro Intelligence": "text-cyan-400",
+      "Market Analysis": "text-amber-400",
+      "Risk Intelligence": "text-red-400",
+      "Crypto Intelligence": "text-purple-400",
+    };
+    return map[cat] ?? "text-slate-400";
+  };
+
+  return (
+    <section className="py-24 px-4 border-t border-white/5">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-end justify-between mb-12">
+          <div>
+            <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-3">INTELLIGENCE LIBRARY</div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+              Macro Analysis & Research
+            </h2>
+            <p className="mt-3 text-[#A8B8CC] text-sm max-w-xl">
+              In-depth frameworks for understanding market pressure, liquidity regimes, and macro risk — built on the same methodology that powers FAULTLINE.
+            </p>
+          </div>
+          <Link
+            href="/blog"
+            className="hidden md:flex items-center gap-2 text-[11px] font-mono tracking-widest text-[#00D4FF] hover:text-white transition-colors border border-[#00D4FF]/20 hover:border-[#00D4FF]/60 px-4 py-2 rounded"
+          >
+            VIEW ALL ANALYSIS
+          </Link>
+        </div>
+
+        {/* Article Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-48 rounded-lg bg-white/5 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {(posts ?? []).map((post) => (
+              <Link
+                key={post.slug}
+                href={`/blog/${post.slug}`}
+                className="group block p-6 rounded-lg border border-white/8 bg-white/[0.02] hover:bg-white/[0.05] hover:border-[#00D4FF]/20 transition-all duration-200"
+              >
+                <div className={`text-[10px] font-mono tracking-widest mb-3 ${categoryColor(post.category ?? '')}`}>
+                  {post.category ?? 'ANALYSIS'}
+                </div>
+                <h3 className="text-white font-semibold text-sm leading-snug mb-3 group-hover:text-[#00D4FF] transition-colors line-clamp-3">
+                  {post.title}
+                </h3>
+                {post.metaDescription && (
+                  <p className="text-[#64748B] text-xs leading-relaxed line-clamp-2 mb-4">
+                    {post.metaDescription}
+                  </p>
+                )}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-[#64748B]">
+                    {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : ''}
+                  </span>
+                  {(post as any).readTimeMinutes && (
+                    <span className="text-[10px] font-mono text-[#64748B]">
+                      {(post as any).readTimeMinutes} MIN READ
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Mobile CTA */}
+        <div className="mt-8 text-center md:hidden">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-2 text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/20 px-6 py-3 rounded hover:bg-[#00D4FF]/5 transition-colors"
+          >
+            VIEW ALL ANALYSIS
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AboutSection() {
   return (
     <section id="about" className="py-24 bg-[#0C0F16] relative overflow-hidden">
@@ -2296,6 +2386,7 @@ export default function MarketingSite() {
       <PricingSection onRequestAccess={scrollToForm} />
       <CoreMobileSection onRequestAccess={scrollToForm} />
       <FoundingAccessForm formRef={formRef} />
+      <EvergreenHubSection />
       <Footer />
     </div>
   );

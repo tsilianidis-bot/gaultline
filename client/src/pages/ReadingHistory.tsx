@@ -12,6 +12,7 @@
  * - All disclaimers present
  */
 import { useState } from "react";
+import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
@@ -584,6 +585,13 @@ export default function ReadingHistory() {
           <p className="text-sm text-muted-foreground leading-relaxed">
             A single reading shows current conditions.{" "}
             <strong className="text-foreground">Timeframe Awareness</strong> helps users understand whether market pressure is temporary, building, or becoming structural.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Looking for the editorial record of past readings?{" "}
+            <Link href="/intel-archive" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2 transition-colors">
+              View the Intelligence Archive
+            </Link>
+            {" "}&mdash; every daily market briefing, searchable by date, regime, and pressure score.
           </p>
         </div>
 
