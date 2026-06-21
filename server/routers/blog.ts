@@ -1,7 +1,10 @@
 /**
  * Blog domain router
  * Handles public blog listing/reading and admin CRUD for posts.
- * Extracted from server/routers.ts for maintainability.
+ * Three content classes:
+ *   - evergreen:     SEO-indexed long-form analysis
+ *   - intel_record:  Daily intelligence archive (noindex,follow)
+ *   - test:          Unpublished test posts
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -10,10 +13,11 @@ import {
   getBlogPosts, getBlogPostBySlug, getBlogPostById,
   createBlogPost, updateBlogPost, deleteBlogPost,
   getBlogCategories, incrementBlogPostViewCount,
+  getEvergreenPosts, getIntelRecords,
 } from "../db";
 
 export const blogRouter = router({
-  // Public: list published posts
+  // Public: list published posts (all classes, for general blog index)
   list: publicProcedure
     .input(z.object({
       limit: z.number().int().min(1).max(50).default(20),
@@ -25,6 +29,36 @@ export const blogRouter = router({
         return await getBlogPosts({ publishedOnly: true, ...input });
       } catch (err) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch posts", cause: err });
+      }
+    }),
+
+  // Public: list only evergreen posts (for homepage hub and SEO-focused pages)
+  listEvergreen: publicProcedure
+    .input(z.object({
+      limit: z.number().int().min(1).max(20).default(6),
+    }))
+    .query(async ({ input }) => {
+      try {
+        return await getEvergreenPosts(input.limit);
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch evergreen posts", cause: err });
+      }
+    }),
+
+  // Public: Intelligence Archive — paginated intel_record posts with filters
+  listIntelArchive: publicProcedure
+    .input(z.object({
+      limit: z.number().int().min(1).max(50).default(30),
+      offset: z.number().int().min(0).default(0),
+      regime: z.string().optional(),
+      dateFrom: z.string().optional(),  // YYYY-MM-DD
+      dateTo: z.string().optional(),    // YYYY-MM-DD
+    }))
+    .query(async ({ input }) => {
+      try {
+        return await getIntelRecords(input);
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch intelligence archive", cause: err });
       }
     }),
 
@@ -55,7 +89,7 @@ export const blogRouter = router({
   adminList: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
     try {
-      return await getBlogPosts({ publishedOnly: false, limit: 100 });
+      return await getBlogPosts({ publishedOnly: false, limit: 200 });
     } catch (err) {
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch posts", cause: err });
     }
@@ -82,6 +116,7 @@ export const blogRouter = router({
       category: z.string().max(80).default("Macro Intelligence"),
       tags: z.string().max(500).optional(),
       published: z.boolean().default(false),
+      contentClass: z.enum(["evergreen", "intel_record", "test"]).default("intel_record"),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
@@ -110,6 +145,7 @@ export const blogRouter = router({
       category: z.string().max(80).optional(),
       tags: z.string().max(500).optional(),
       published: z.boolean().optional(),
+      contentClass: z.enum(["evergreen", "intel_record", "test"]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });

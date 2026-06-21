@@ -2,7 +2,8 @@ import { Link, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEffect } from "react";
 import { Streamdown } from "streamdown";
-import { CalendarDays, Clock, ArrowLeft, Tag, ChevronRight, Eye } from "lucide-react";
+import { CalendarDays, Clock, ArrowLeft, Tag, ChevronRight, Eye, Archive, BookOpen } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 function formatDate(d: Date | string | null | undefined) {
   if (!d) return "";
@@ -25,6 +26,24 @@ function categoryColor(cat: string) {
   return map[cat] ?? "bg-slate-500/10 text-slate-400 border-slate-500/20";
 }
 
+/** Injects or removes a <meta name="robots"> tag */
+function setRobotsMeta(content: string | null) {
+  const existing = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+  if (content === null) {
+    // Restore default (index, follow)
+    if (existing) existing.setAttribute("content", "index, follow");
+    return;
+  }
+  if (existing) {
+    existing.setAttribute("content", content);
+  } else {
+    const el = document.createElement("meta");
+    el.name = "robots";
+    el.content = content;
+    document.head.appendChild(el);
+  }
+}
+
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
 
@@ -35,6 +54,15 @@ export default function BlogPost() {
 
   const incrementView = trpc.blog.incrementViewCount.useMutation();
 
+  // Fetch evergreen posts for Related Posts section (only shown on evergreen posts)
+  const { data: evergreenPosts } = trpc.blog.listEvergreen.useQuery(
+    { limit: 4 },
+    { enabled: post?.contentClass === "evergreen" }
+  );
+
+  // Related posts = other evergreen posts (exclude current)
+  const relatedPosts = evergreenPosts?.filter(p => p.slug !== slug).slice(0, 3) ?? [];
+
   // Fire view count increment once when post loads
   useEffect(() => {
     if (post?.slug) {
@@ -43,71 +71,108 @@ export default function BlogPost() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.slug]);
 
-  // Dynamic SEO — title, description, canonical, OG, Twitter
+  // Dynamic SEO — title, description, canonical, OG, robots, JSON-LD
   useEffect(() => {
-    if (post) {
-      const fullTitle = `${post.title} | FAULTLINE`;
-      const desc = post.subtitle ?? post.title;
-      const canonicalUrl = `https://getfaultline.live/blog/${post.slug}`;
+    if (!post) return;
 
-      document.title = fullTitle;
+    const isEvergreen = post.contentClass === "evergreen";
+    const isIntelRecord = post.contentClass === "intel_record";
 
-      const setMeta = (sel: string, val: string) => {
-        const el = document.querySelector<HTMLMetaElement>(sel);
-        if (el) el.setAttribute("content", val);
-      };
+    // Use metaTitle/metaDescription from DB if available (evergreen articles have these)
+    const seoTitle = (post as any).metaTitle ?? post.title;
+    const seoDesc = (post as any).metaDescription ?? post.subtitle ?? post.title;
+    const fullTitle = `${seoTitle} | FAULTLINE`;
+    const canonicalUrl = `https://getfaultline.live/blog/${post.slug}`;
 
-      setMeta('meta[name="description"]', desc);
-      setMeta('meta[property="og:title"]', fullTitle);
-      setMeta('meta[property="og:description"]', desc);
-      setMeta('meta[property="og:url"]', canonicalUrl);
-      setMeta('meta[name="twitter:title"]', fullTitle);
-      setMeta('meta[name="twitter:description"]', desc);
+    document.title = fullTitle;
 
-      const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-      if (canonical) canonical.setAttribute("href", canonicalUrl);
+    const setMeta = (sel: string, val: string) => {
+      const el = document.querySelector<HTMLMetaElement>(sel);
+      if (el) el.setAttribute("content", val);
+    };
 
-      // Inject BlogPosting JSON-LD structured data
-      const existingLd = document.getElementById('blog-post-ld');
-      if (existingLd) existingLd.remove();
-      const ld = document.createElement('script');
-      ld.id = 'blog-post-ld';
-      ld.type = 'application/ld+json';
-      ld.textContent = JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        "headline": post.title,
-        "description": post.subtitle ?? post.title,
-        "url": canonicalUrl,
-        "datePublished": post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
-        "dateModified": post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
-        "author": {
-          "@type": "Organization",
-          "name": "FAULTLINE",
-          "url": "https://getfaultline.live"
-        },
-        "publisher": {
-          "@type": "Organization",
-          "name": "FAULTLINE",
-          "url": "https://getfaultline.live",
-          "logo": {
-            "@type": "ImageObject",
-            "url": "https://getfaultline.live/favicon-32x32.png"
-          }
-        },
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": canonicalUrl
-        },
-        ...(post.category ? { "articleSection": post.category } : {}),
-        ...(post.tags ? { "keywords": post.tags } : {})
-      });
-      document.head.appendChild(ld);
+    setMeta('meta[name="description"]', seoDesc);
+    setMeta('meta[property="og:title"]', fullTitle);
+    setMeta('meta[property="og:description"]', seoDesc);
+    setMeta('meta[property="og:url"]', canonicalUrl);
+    setMeta('meta[name="twitter:title"]', fullTitle);
+    setMeta('meta[name="twitter:description"]', seoDesc);
+
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (canonical) canonical.setAttribute("href", canonicalUrl);
+
+    // ── Robots directive ────────────────────────────────────────
+    // Evergreen: index, follow (default — Google should index these)
+    // Intel Record: noindex, follow (preserve link equity, skip indexing)
+    // Test: noindex, nofollow
+    if (isEvergreen) {
+      setRobotsMeta("index, follow");
+    } else if (isIntelRecord) {
+      setRobotsMeta("noindex, follow");
+    } else {
+      setRobotsMeta("noindex, nofollow");
     }
+
+    // ── Structured data ─────────────────────────────────────────
+    // Evergreen: full Article JSON-LD with wordCount, keywords, articleSection
+    // Intel Record: minimal BlogPosting (still useful for Google Discover)
+    const existingLd = document.getElementById("blog-post-ld");
+    if (existingLd) existingLd.remove();
+
+    const ld = document.createElement("script");
+    ld.id = "blog-post-ld";
+    ld.type = "application/ld+json";
+
+    const baseSchema = {
+      "@context": "https://schema.org",
+      "@type": isEvergreen ? "Article" : "BlogPosting",
+      "headline": post.title,
+      "description": post.subtitle ?? post.title,
+      "url": canonicalUrl,
+      "datePublished": post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined,
+      "dateModified": post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+      "author": {
+        "@type": "Organization",
+        "name": "FAULTLINE",
+        "url": "https://getfaultline.live",
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "FAULTLINE",
+        "url": "https://getfaultline.live",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://getfaultline.live/favicon-32x32.png",
+        },
+      },
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": canonicalUrl,
+      },
+      ...(post.category ? { "articleSection": post.category } : {}),
+      ...(post.tags ? { "keywords": post.tags } : {}),
+    };
+
+    // Evergreen-only enrichments
+    const evergreenEnrichments = isEvergreen ? {
+      "wordCount": post.content.trim().split(/\s+/).length,
+      "inLanguage": "en-US",
+      "isPartOf": {
+        "@type": "Blog",
+        "@id": "https://getfaultline.live/blog",
+        "name": "FAULTLINE Analysis",
+        "url": "https://getfaultline.live/blog",
+      },
+    } : {};
+
+    ld.textContent = JSON.stringify({ ...baseSchema, ...evergreenEnrichments });
+    document.head.appendChild(ld);
+
     return () => {
       document.title = "FAULTLINE — Market Risk Intelligence Platform";
-      const ld = document.getElementById('blog-post-ld');
-      if (ld) ld.remove();
+      const ldEl = document.getElementById("blog-post-ld");
+      if (ldEl) ldEl.remove();
+      setRobotsMeta(null);
     };
   }, [post]);
 
@@ -121,11 +186,20 @@ export default function BlogPost() {
               FAULT<span className="text-cyan-400">LINE</span>
             </span>
           </Link>
-          <Link href="/blog">
-            <span className="flex items-center gap-1 text-xs text-slate-400 font-['IBM_Plex_Mono'] hover:text-cyan-400 transition-colors cursor-pointer">
-              <ArrowLeft className="w-3 h-3" /> ALL BRIEFINGS
-            </span>
-          </Link>
+          <div className="flex items-center gap-4">
+            {post?.contentClass === "intel_record" && (
+              <Link href="/intel-archive">
+                <span className="flex items-center gap-1 text-xs text-slate-400 font-['IBM_Plex_Mono'] hover:text-amber-400 transition-colors cursor-pointer">
+                  <Archive className="w-3 h-3" /> ARCHIVE
+                </span>
+              </Link>
+            )}
+            <Link href="/blog">
+              <span className="flex items-center gap-1 text-xs text-slate-400 font-['IBM_Plex_Mono'] hover:text-cyan-400 transition-colors cursor-pointer">
+                <ArrowLeft className="w-3 h-3" /> ALL BRIEFINGS
+              </span>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -151,11 +225,29 @@ export default function BlogPost() {
 
         {post && (
           <article>
+            {/* Intel Record banner */}
+            {post.contentClass === "intel_record" && (
+              <div className="flex items-center gap-2 mb-6 px-3 py-2 rounded border border-amber-500/20 bg-amber-500/5 text-xs font-['IBM_Plex_Mono'] text-amber-400/80">
+                <Archive className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>
+                  Historical Intelligence Record — This is a daily briefing from the FAULTLINE archive.{" "}
+                  <Link href="/intel-archive">
+                    <span className="underline hover:text-amber-300 cursor-pointer">Browse all records →</span>
+                  </Link>
+                </span>
+              </div>
+            )}
+
             {/* Meta */}
             <div className="flex flex-wrap items-center gap-3 mb-5">
               <span className={`text-xs px-2 py-0.5 rounded border font-['IBM_Plex_Mono'] ${categoryColor(post.category)}`}>
                 {post.category.toUpperCase()}
               </span>
+              {post.contentClass === "evergreen" && (
+                <Badge className="text-[10px] px-1.5 py-0 font-mono bg-cyan-500/10 text-cyan-400 border-cyan-500/20 border">
+                  ANALYSIS
+                </Badge>
+              )}
               {post.tags && post.tags.split(",").map(tag => tag.trim()).filter(Boolean).map(tag => (
                 <span key={tag} className="flex items-center gap-1 text-xs text-slate-500 font-['IBM_Plex_Mono']">
                   <Tag className="w-3 h-3" />{tag}
@@ -207,8 +299,59 @@ export default function BlogPost() {
               <Streamdown>{post.content}</Streamdown>
             </div>
 
+            {/* ── Related Posts (evergreen only) ─────────────────── */}
+            {post.contentClass === "evergreen" && relatedPosts.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-white/5">
+                <div className="flex items-center gap-2 mb-5">
+                  <BookOpen className="w-4 h-4 text-cyan-400" />
+                  <h2 className="text-sm font-['IBM_Plex_Mono'] text-slate-300 uppercase tracking-widest">
+                    Related Analysis
+                  </h2>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {relatedPosts.map(rp => (
+                    <Link key={rp.id} href={`/blog/${rp.slug}`}>
+                      <div className="group p-4 rounded border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-cyan-500/20 transition-all cursor-pointer">
+                        <p className="text-xs text-cyan-400/60 font-['IBM_Plex_Mono'] mb-1.5">
+                          {rp.category?.toUpperCase()}
+                        </p>
+                        <h3 className="text-sm text-white leading-snug group-hover:text-cyan-400 transition-colors line-clamp-3">
+                          {rp.title}
+                        </h3>
+                        <p className="text-xs text-slate-500 mt-2 font-['IBM_Plex_Mono']">
+                          {formatDate(rp.publishedAt)}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Intel Record archive CTA ─────────────────────── */}
+            {post.contentClass === "intel_record" && (
+              <div className="mt-12 pt-8 border-t border-white/5">
+                <div className="flex items-start gap-4 p-5 rounded border border-amber-500/15 bg-amber-500/[0.03]">
+                  <Archive className="w-5 h-5 text-amber-400/60 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-slate-300 mb-1 font-medium">Intelligence Archive</p>
+                    <p className="text-xs text-slate-500 leading-relaxed mb-3">
+                      This record is part of FAULTLINE's daily intelligence history — a transparent log of how the model
+                      read macro conditions at each date. Browse the full archive to trace regime shifts and pressure
+                      index evolution over time.
+                    </p>
+                    <Link href="/intel-archive">
+                      <span className="text-xs text-amber-400 font-['IBM_Plex_Mono'] hover:underline cursor-pointer flex items-center gap-1">
+                        BROWSE FULL ARCHIVE <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Footer */}
-            <div className="mt-12 pt-8 border-t border-white/5 flex items-center justify-between">
+            <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
               <Link href="/blog">
                 <span className="flex items-center gap-1 text-xs text-slate-400 font-['IBM_Plex_Mono'] hover:text-cyan-400 transition-colors cursor-pointer">
                   <ArrowLeft className="w-3 h-3" /> ALL BRIEFINGS

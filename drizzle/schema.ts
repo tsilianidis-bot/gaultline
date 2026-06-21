@@ -140,11 +140,15 @@ export const blogPosts = mysqlTable("blogPosts", {
   author:      varchar("author", { length: 100 }).default("FAULTLINE").notNull(),
   category:    varchar("category", { length: 80 }).default("Macro Intelligence").notNull(),
   tags:        text("tags"),                        // comma-separated
-  published:   int("published").default(0).notNull(), // 0=draft, 1=published
-  publishedAt: timestamp("publishedAt"),
-  viewCount:   int("viewCount").default(0).notNull(),  // incremented each time the post is opened
-  createdAt:   timestamp("createdAt").defaultNow().notNull(),
-  updatedAt:   timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  published:    int("published").default(0).notNull(), // 0=draft, 1=published
+  publishedAt:  timestamp("publishedAt"),
+  viewCount:    int("viewCount").default(0).notNull(),  // incremented each time the post is opened
+  contentClass: mysqlEnum("contentClass", ["evergreen", "intel_record", "test"]).default("intel_record").notNull(),
+  metaTitle:    varchar("metaTitle", { length: 70 }),
+  metaDescription: varchar("metaDescription", { length: 165 }),
+  readTimeMinutes: int("readTimeMinutes"),
+  createdAt:    timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:    timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type BlogPost = typeof blogPosts.$inferSelect;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "wouter";
 import { PRICING_PLANS } from "../../../shared/tiers";
 import { trpc } from "@/lib/trpc";
 import { getLoginUrl } from "@/const";

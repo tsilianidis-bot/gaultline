@@ -1754,3 +1754,57 @@
 - [x] TypeScript check: 0 errors
 - [x] 553 tests passing (33 test files)
 - [x] Save checkpoint
+
+## Three-Class Blog Architecture (Jun 21, 2026)
+### Phase 1 — DB Cleanup
+- [ ] Export full blogPosts backup to /home/ubuntu/blogposts_backup_pre_cleanup.json
+- [ ] Log pre-state: all 52 published post IDs and their published flag
+- [ ] Execute SQL: unpublish 20 confirmed duplicates + test canonical 1080001
+- [ ] Log post-state: verify exactly 31 posts remain published
+### Phase 2 — Schema Migration
+- [ ] Add contentClass ENUM('evergreen','intel_record','test') column to blogPosts
+- [ ] Classify 6 evergreen posts; classify 2 test posts; all others default to intel_record
+- [ ] Update drizzle/schema.ts to match
+### Phase 3 — Server Updates
+- [ ] Update server/db.ts: add contentClass to getBlogPosts, add getEvergreenPosts and getIntelRecords helpers
+- [ ] Update server/routers.ts blog router: expose contentClass, add intel archive list with filters
+- [ ] Update server/seoRoutes.ts: only evergreen posts in sitemap
+- [ ] Fix server/scheduledBlog.ts: add title-uniqueness guard
+### Phase 4 — Intelligence Archive Page
+- [ ] Create client/src/pages/IntelligenceArchive.tsx with date/regime/score filters
+- [ ] Add /intelligence-archive route in App.tsx
+- [ ] Add link from ReadingHistory page to Intelligence Archive
+### Phase 5 — BlogPost.tsx Updates
+- [ ] Add noindex meta for intel_record posts
+- [ ] Add Article JSON-LD for evergreen posts only
+- [ ] Add Related Posts section (evergreen only)
+- [ ] Add "View Intelligence Archive" footer link on intel_record posts
+### Phase 6 — Blog Index + Homepage
+- [ ] Redesign Blog.tsx: two-section layout (Evergreen Analysis + Intelligence Archive)
+- [ ] Add EvergreenHubSection to MarketingSite.tsx homepage
+### Phase 7 — QA
+- [ ] TypeScript: 0 errors
+- [ ] Tests: all passing
+- [ ] Save checkpoint
+
+## SEO Growth Engine (Jun 21, 2026)
+### Phase 1 — Keyword Research
+- [ ] Identify 100 keyword opportunities across 10 clusters
+- [ ] Score each keyword: intent, difficulty, commercial value, traffic opportunity, priority
+### Phase 2 — Content Cluster Architecture
+- [ ] Build pillar + supporting article map for all 10 clusters
+### Phase 3 — Article Production
+- [ ] Add metaTitle, metaDescription columns to blogPosts schema
+- [ ] Run migration SQL for new columns
+- [ ] Write 20 evergreen articles (1,500–3,000 words each) with FAQ, schema, CTAs, internal links
+### Phase 4 — Publishing
+- [ ] Publish all 20 articles as contentClass=evergreen
+### Phase 5 — Technical Validation
+- [ ] Verify sitemap includes all 20 new articles
+- [ ] Verify canonical tags present on all articles
+- [ ] Verify Article + FAQ structured data valid
+- [ ] Verify internal links resolve
+### Phase 6 — Authority + Reporting
+- [ ] Backlink acquisition plan (Reddit, LinkedIn, Medium, Product Hunt, communities)
+- [ ] Traffic projection dashboard (3/6/12 month estimates)
+- [ ] Checkpoint and deliver full SEO engine report

@@ -9,7 +9,7 @@
  * - SEO landing pages included in sitemap
  */
 import type { Express } from "express";
-import { getBlogPosts } from "./db";
+import { getEvergreenPosts } from "./db";
 
 const BASE_URL = "https://getfaultline.live";
 
@@ -17,6 +17,7 @@ const BASE_URL = "https://getfaultline.live";
 const STATIC_ROUTES = [
   { path: "/",                              changefreq: "weekly",  priority: "1.0" },
   { path: "/blog",                          changefreq: "daily",   priority: "0.9" },
+  { path: "/intel-archive",                  changefreq: "daily",   priority: "0.7" },
   { path: "/track-record",                  changefreq: "weekly",  priority: "0.9" },
   { path: "/pressure-index",                changefreq: "daily",   priority: "0.8" },
   { path: "/signals",                       changefreq: "daily",   priority: "0.8" },
@@ -93,19 +94,20 @@ export function registerSEORoutes(app: Express): void {
       buildUrl(path, today, changefreq, priority)
     );
 
-    // Fetch published blog posts and build /blog/{slug} entries
+    // Fetch ONLY evergreen posts for sitemap — intel_record posts are noindex,follow
+    // and excluded from the sitemap to prevent crawl budget dilution.
     let blogEntries: string[] = [];
     try {
-      const posts = await getBlogPosts({ publishedOnly: true, limit: 500 });
+      const posts = await getEvergreenPosts(20);
       blogEntries = posts.map((post) => {
         const lastmod = post.publishedAt
           ? new Date(post.publishedAt).toISOString().split("T")[0]
           : today;
-        return buildUrl(`/blog/${post.slug}`, lastmod, "weekly", "0.7");
+        return buildUrl(`/blog/${post.slug}`, lastmod, "monthly", "0.8");
       });
     } catch (err) {
       // Non-fatal: sitemap still works without blog posts
-      console.error("[SEO] Failed to fetch blog posts for sitemap:", err);
+      console.error("[SEO] Failed to fetch evergreen posts for sitemap:", err);
     }
 
     const allEntries = [...staticEntries, ...blogEntries].join("\n");

@@ -318,6 +318,18 @@ export default function Blog() {
     ? trpc.blog.adminList.useQuery()
     : trpc.blog.list.useQuery({ limit: 50, category: activeCategory });
 
+  // Evergreen posts for the Analysis Hub section (public, non-admin view)
+  const { data: evergreenPosts = [], isLoading: evergreenLoading } = trpc.blog.listEvergreen.useQuery(
+    { limit: 6 },
+    { enabled: !isAdmin }
+  );
+
+  // Recent intel records for the archive preview section (public, non-admin view)
+  const { data: recentIntelPosts = [], isLoading: intelLoading } = trpc.blog.listIntelArchive.useQuery(
+    { limit: 8 },
+    { enabled: !isAdmin }
+  );
+
   const filteredPosts = useMemo(() => {
     if (!isAdmin || !activeCategory) return posts;
     return posts.filter((p: any) => p.category === activeCategory);
@@ -508,170 +520,300 @@ export default function Blog() {
           </div>
         </div>
 
-        {/* ── Divider ───────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-4 mb-8">
-          <div className="h-px flex-1 bg-white/6" />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#1F2937", letterSpacing: "0.2em" }}>LATEST BRIEFINGS</span>
-          <div className="h-px flex-1 bg-white/6" />
-        </div>
-
-        {/* Category filter */}
-        {categories.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8">
-            <button
-              onClick={() => setActiveCategory(undefined)}
-              className={`px-3 py-1 rounded text-xs font-['IBM_Plex_Mono'] border transition-colors ${
-                !activeCategory
-                  ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-                  : "bg-white/5 text-slate-400 border-white/10 hover:border-white/20"
-              }`}
-            >
-              ALL
-            </button>
-            {categories.map((cat: string) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat === activeCategory ? undefined : cat)}
-                className={`px-3 py-1 rounded text-xs font-['IBM_Plex_Mono'] border transition-colors ${
-                  activeCategory === cat
-                    ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-                    : "bg-white/5 text-slate-400 border-white/10 hover:border-white/20"
-                }`}
-              >
-                {cat.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {isLoading && (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 rounded-lg bg-white/5 animate-pulse" />
-            ))}
-          </div>
-        )}
-
-        {!isLoading && filteredPosts.length === 0 && (
-          <div className="text-center py-24 text-slate-500 font-['IBM_Plex_Mono'] text-sm">
-            {isAdmin
-              ? <span>NO BRIEFINGS YET — <button onClick={() => setShowModal(true)} style={{ color: "#00D4FF", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit" }}>CREATE YOUR FIRST POST →</button></span>
-              : "NO BRIEFINGS PUBLISHED YET"
-            }
-          </div>
-        )}
-
-        {!isLoading && featured && (
+        {/* ═══════════════════════════════════════════════════════════
+             ADMIN VIEW — unchanged full list with edit/delete controls
+           ═══════════════════════════════════════════════════════════ */}
+        {isAdmin && (
           <>
-            {/* Featured post */}
-            <div className="group mb-8 p-6 rounded-lg border border-white/10 bg-white/[0.03] hover:border-cyan-500/30 hover:bg-white/[0.05] transition-all cursor-pointer relative"
-              onClick={() => navigate(blogPostHref(featured.slug))}
-            >
-              {isAdmin && (
-                <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6, zIndex: 2 }} onClick={e => e.stopPropagation()}>
-                  {!featured.published && (
-                    <span style={{ fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: "#F59E0B", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 4, padding: "2px 7px", letterSpacing: "0.1em" }}>DRAFT</span>
-                  )}
-                  <button onClick={() => openEdit(featured)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 5, padding: "4px 8px", cursor: "pointer", color: "#94A3B8" }}>
-                    <Pencil size={13} />
-                  </button>
-                  {confirmDelete === featured.id ? (
-                    <button onClick={() => deleteMut.mutate({ id: featured.id })} style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 5, padding: "4px 8px", cursor: "pointer", color: "#EF4444" }}>
-                      <Check size={13} />
-                    </button>
-                  ) : (
-                    <button onClick={() => setConfirmDelete(featured.id)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 5, padding: "4px 8px", cursor: "pointer", color: "#94A3B8" }}>
-                      <Trash2 size={13} />
-                    </button>
-                  )}
-                </div>
-              )}
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`text-xs px-2 py-0.5 rounded border font-['IBM_Plex_Mono'] ${categoryColor(featured.category)}`}>
-                  {featured.category.toUpperCase()}
-                </span>
-                <span className="text-xs text-slate-500 font-['IBM_Plex_Mono']">FEATURED</span>
-              </div>
-              <h2 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors leading-snug">
-                {featured.title}
-              </h2>
-              {featured.subtitle && (
-                <p className="text-slate-400 text-sm mb-4 leading-relaxed">{featured.subtitle}</p>
-              )}
-              <div className="flex items-center gap-4 text-xs text-slate-500 font-['IBM_Plex_Mono']">
-                <span className="flex items-center gap-1">
-                  <CalendarDays className="w-3 h-3" />
-                  {formatDate(featured.publishedAt)}
-                </span>
-                <span>{featured.author}</span>
-                {(featured.viewCount ?? 0) > 0 && (
-                  <span className="flex items-center gap-1 text-slate-500">
-                    <Eye className="w-3 h-3" />
-                    {(featured.viewCount ?? 0).toLocaleString()}
-                  </span>
-                )}
-                <span className="ml-auto flex items-center gap-1 text-cyan-400 group-hover:gap-2 transition-all">
-                  READ BRIEFING <ChevronRight className="w-3 h-3" />
-                </span>
-              </div>
-            </div>
-
-            {/* Rest of posts grid */}
-            {rest.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {rest.map((post: any) => (
-                  <div
-                    key={post.id}
-                    className="group p-5 rounded-lg border border-white/10 bg-white/[0.02] hover:border-cyan-500/30 hover:bg-white/[0.04] transition-all cursor-pointer h-full relative"
-                    onClick={() => navigate(blogPostHref(post.slug))}
+            {/* Category filter */}
+            {categories.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-8">
+                <button
+                  onClick={() => setActiveCategory(undefined)}
+                  className={`px-3 py-1 rounded text-xs font-['IBM_Plex_Mono'] border transition-colors ${
+                    !activeCategory
+                      ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+                      : "bg-white/5 text-slate-400 border-white/10 hover:border-white/20"
+                  }`}
+                >
+                  ALL
+                </button>
+                {categories.map((cat: string) => (
+                  <button
+                    key={cat}
+                    onClick={() => setActiveCategory(cat === activeCategory ? undefined : cat)}
+                    className={`px-3 py-1 rounded text-xs font-['IBM_Plex_Mono'] border transition-colors ${
+                      activeCategory === cat
+                        ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+                        : "bg-white/5 text-slate-400 border-white/10 hover:border-white/20"
+                    }`}
                   >
-                    {isAdmin && (
-                      <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 5, zIndex: 2 }} onClick={e => e.stopPropagation()}>
-                        {!post.published && (
-                          <span style={{ fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: "#F59E0B", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 4, padding: "2px 6px", letterSpacing: "0.1em" }}>DRAFT</span>
-                        )}
-                        <button onClick={() => openEdit(post)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, padding: "3px 6px", cursor: "pointer", color: "#94A3B8" }}>
-                          <Pencil size={12} />
-                        </button>
-                        {confirmDelete === post.id ? (
-                          <button onClick={() => deleteMut.mutate({ id: post.id })} style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 4, padding: "3px 6px", cursor: "pointer", color: "#EF4444" }}>
-                            <Check size={12} />
-                          </button>
-                        ) : (
-                          <button onClick={() => setConfirmDelete(post.id)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, padding: "3px 6px", cursor: "pointer", color: "#94A3B8" }}>
-                            <Trash2 size={12} />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`text-xs px-2 py-0.5 rounded border font-['IBM_Plex_Mono'] ${categoryColor(post.category)}`}>
-                        {post.category.toUpperCase()}
-                      </span>
-                    </div>
-                    <h3 className="text-base font-semibold text-white mb-1.5 group-hover:text-cyan-400 transition-colors leading-snug">
-                      {post.title}
-                    </h3>
-                    {post.subtitle && (
-                      <p className="text-slate-500 text-xs mb-3 leading-relaxed line-clamp-2">{post.subtitle}</p>
-                    )}
-                    <div className="flex items-center gap-3 text-xs text-slate-500 font-['IBM_Plex_Mono'] mt-auto">
-                      <span className="flex items-center gap-1">
-                        <CalendarDays className="w-3 h-3" />
-                        {formatDate(post.publishedAt)}
-                      </span>
-                      <span>{post.author}</span>
-                      {(post.viewCount ?? 0) > 0 && (
-                        <span className="flex items-center gap-1 ml-auto">
-                          <Eye className="w-3 h-3" />
-                          {(post.viewCount ?? 0).toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    {cat.toUpperCase()}
+                  </button>
                 ))}
               </div>
             )}
+
+            {isLoading && (
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-32 rounded-lg bg-white/5 animate-pulse" />
+                ))}
+              </div>
+            )}
+
+            {!isLoading && filteredPosts.length === 0 && (
+              <div className="text-center py-24 text-slate-500 font-['IBM_Plex_Mono'] text-sm">
+                <span>NO BRIEFINGS YET — <button onClick={() => setShowModal(true)} style={{ color: "#00D4FF", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit" }}>CREATE YOUR FIRST POST →</button></span>
+              </div>
+            )}
+
+            {!isLoading && featured && (
+              <>
+                {/* Featured post */}
+                <div className="group mb-8 p-6 rounded-lg border border-white/10 bg-white/[0.03] hover:border-cyan-500/30 hover:bg-white/[0.05] transition-all cursor-pointer relative"
+                  onClick={() => navigate(blogPostHref(featured.slug))}
+                >
+                  {isAdmin && (
+                    <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 6, zIndex: 2 }} onClick={e => e.stopPropagation()}>
+                      {!featured.published && (
+                        <span style={{ fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: "#F59E0B", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 4, padding: "2px 7px", letterSpacing: "0.1em" }}>DRAFT</span>
+                      )}
+                      <button onClick={() => openEdit(featured)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 5, padding: "4px 8px", cursor: "pointer", color: "#94A3B8" }}>
+                        <Pencil size={13} />
+                      </button>
+                      {confirmDelete === featured.id ? (
+                        <button onClick={() => deleteMut.mutate({ id: featured.id })} style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 5, padding: "4px 8px", cursor: "pointer", color: "#EF4444" }}>
+                          <Check size={13} />
+                        </button>
+                      ) : (
+                        <button onClick={() => setConfirmDelete(featured.id)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 5, padding: "4px 8px", cursor: "pointer", color: "#94A3B8" }}>
+                          <Trash2 size={13} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className={`text-xs px-2 py-0.5 rounded border font-['IBM_Plex_Mono'] ${categoryColor(featured.category)}`}>
+                      {featured.category.toUpperCase()}
+                    </span>
+                    <span className="text-xs text-slate-500 font-['IBM_Plex_Mono']">FEATURED</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors leading-snug">
+                    {featured.title}
+                  </h2>
+                  {featured.subtitle && (
+                    <p className="text-slate-400 text-sm mb-4 leading-relaxed">{featured.subtitle}</p>
+                  )}
+                  <div className="flex items-center gap-4 text-xs text-slate-500 font-['IBM_Plex_Mono']">
+                    <span className="flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3" />
+                      {formatDate(featured.publishedAt)}
+                    </span>
+                    <span>{featured.author}</span>
+                    {(featured.viewCount ?? 0) > 0 && (
+                      <span className="flex items-center gap-1 text-slate-500">
+                        <Eye className="w-3 h-3" />
+                        {(featured.viewCount ?? 0).toLocaleString()}
+                      </span>
+                    )}
+                    <span className="ml-auto flex items-center gap-1 text-cyan-400 group-hover:gap-2 transition-all">
+                      READ BRIEFING <ChevronRight className="w-3 h-3" />
+                    </span>
+                  </div>
+                </div>
+
+                {/* Rest of posts grid */}
+                {rest.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {rest.map((post: any) => (
+                      <div
+                        key={post.id}
+                        className="group p-5 rounded-lg border border-white/10 bg-white/[0.02] hover:border-cyan-500/30 hover:bg-white/[0.04] transition-all cursor-pointer h-full relative"
+                        onClick={() => navigate(blogPostHref(post.slug))}
+                      >
+                        {isAdmin && (
+                          <div style={{ position: "absolute", top: 10, right: 10, display: "flex", gap: 5, zIndex: 2 }} onClick={e => e.stopPropagation()}>
+                            {!post.published && (
+                              <span style={{ fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: "#F59E0B", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 4, padding: "2px 6px", letterSpacing: "0.1em" }}>DRAFT</span>
+                            )}
+                            <button onClick={() => openEdit(post)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, padding: "3px 6px", cursor: "pointer", color: "#94A3B8" }}>
+                              <Pencil size={12} />
+                            </button>
+                            {confirmDelete === post.id ? (
+                              <button onClick={() => deleteMut.mutate({ id: post.id })} style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 4, padding: "3px 6px", cursor: "pointer", color: "#EF4444" }}>
+                                <Check size={12} />
+                              </button>
+                            ) : (
+                              <button onClick={() => setConfirmDelete(post.id)} style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, padding: "3px 6px", cursor: "pointer", color: "#94A3B8" }}>
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-xs px-2 py-0.5 rounded border font-['IBM_Plex_Mono'] ${categoryColor(post.category)}`}>
+                            {post.category.toUpperCase()}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-semibold text-white mb-1.5 group-hover:text-cyan-400 transition-colors leading-snug">
+                          {post.title}
+                        </h3>
+                        {post.subtitle && (
+                          <p className="text-slate-500 text-xs mb-3 leading-relaxed line-clamp-2">{post.subtitle}</p>
+                        )}
+                        <div className="flex items-center gap-3 text-xs text-slate-500 font-['IBM_Plex_Mono'] mt-auto">
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="w-3 h-3" />
+                            {formatDate(post.publishedAt)}
+                          </span>
+                          <span>{post.author}</span>
+                          {(post.viewCount ?? 0) > 0 && (
+                            <span className="flex items-center gap-1 ml-auto">
+                              <Eye className="w-3 h-3" />
+                              {(post.viewCount ?? 0).toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════
+             PUBLIC VIEW — Two-section layout
+             Section A: Evergreen Analysis Hub (indexed, SEO-optimized)
+             Section B: Intelligence Archive preview (noindex posts)
+           ═══════════════════════════════════════════════════════════ */}
+        {!isAdmin && (
+          <>
+            {/* ── Section A: Analysis Hub ───────────────────────────── */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-px flex-1 bg-white/6" />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FF", letterSpacing: "0.2em" }}>ANALYSIS HUB</span>
+              <div className="h-px flex-1 bg-white/6" />
+            </div>
+            <p className="text-xs text-slate-500 font-['IBM_Plex_Mono'] mb-6 max-w-2xl">
+              In-depth research and evergreen analysis — macro cycles, risk frameworks, and investment theses designed to remain relevant beyond the current news cycle.
+            </p>
+
+            {evergreenLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-36 rounded-lg bg-white/5 animate-pulse" />
+                ))}
+              </div>
+            )}
+
+            {!evergreenLoading && evergreenPosts.length === 0 && (
+              <div className="text-center py-12 text-slate-600 font-['IBM_Plex_Mono'] text-xs mb-12">
+                NO ANALYSIS POSTS PUBLISHED YET
+              </div>
+            )}
+
+            {!evergreenLoading && evergreenPosts.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+                {evergreenPosts.map((post: any, idx: number) => (
+                  <Link key={post.id} href={blogPostHref(post.slug)}>
+                    <div className={`group p-5 rounded-lg border bg-white/[0.02] hover:bg-white/[0.05] transition-all cursor-pointer h-full ${
+                      idx === 0
+                        ? "border-cyan-500/25 hover:border-cyan-500/40 md:col-span-2"
+                        : "border-white/8 hover:border-cyan-500/20"
+                    }`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-xs px-2 py-0.5 rounded border font-['IBM_Plex_Mono'] ${categoryColor(post.category)}`}>
+                          {post.category.toUpperCase()}
+                        </span>
+                        <span className="text-[10px] px-1.5 py-0 rounded border font-mono bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
+                          ANALYSIS
+                        </span>
+                      </div>
+                      <h3 className={`font-bold text-white group-hover:text-cyan-400 transition-colors leading-snug mb-1.5 ${
+                        idx === 0 ? "text-xl" : "text-base"
+                      }`}>
+                        {post.title}
+                      </h3>
+                      {post.subtitle && (
+                        <p className="text-slate-400 text-xs mb-3 leading-relaxed line-clamp-2">{post.subtitle}</p>
+                      )}
+                      <div className="flex items-center gap-3 text-xs text-slate-500 font-['IBM_Plex_Mono']">
+                        <span className="flex items-center gap-1">
+                          <CalendarDays className="w-3 h-3" />
+                          {formatDate(post.publishedAt)}
+                        </span>
+                        {(post.viewCount ?? 0) > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            {(post.viewCount ?? 0).toLocaleString()}
+                          </span>
+                        )}
+                        <span className="ml-auto flex items-center gap-1 text-cyan-400 group-hover:gap-2 transition-all">
+                          READ <ChevronRight className="w-3 h-3" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* ── Section B: Intelligence Archive Preview ───────────── */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="h-px flex-1 bg-white/6" />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#F59E0B", letterSpacing: "0.2em" }}>INTELLIGENCE ARCHIVE</span>
+              <div className="h-px flex-1 bg-white/6" />
+            </div>
+            <div className="flex items-start justify-between mb-4">
+              <p className="text-xs text-slate-500 font-['IBM_Plex_Mono'] max-w-xl">
+                Daily macro briefings, pressure index readings, and regime updates — FAULTLINE's transparent record of how the model read conditions at each date.
+              </p>
+              <Link href="/intel-archive">
+                <span className="flex items-center gap-1 text-xs text-amber-400 font-['IBM_Plex_Mono'] hover:underline cursor-pointer whitespace-nowrap ml-4">
+                  VIEW ALL <ChevronRight className="w-3 h-3" />
+                </span>
+              </Link>
+            </div>
+
+            {intelLoading && (
+              <div className="space-y-2 mb-8">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="h-14 rounded bg-white/5 animate-pulse" />
+                ))}
+              </div>
+            )}
+
+            {!intelLoading && recentIntelPosts.length > 0 && (
+              <div className="space-y-2 mb-8">
+                {recentIntelPosts.map((post: any) => (
+                  <Link key={post.id} href={blogPostHref(post.slug)}>
+                    <div className="group flex items-center gap-4 px-4 py-3 rounded border border-white/5 bg-white/[0.01] hover:bg-white/[0.04] hover:border-white/10 transition-all cursor-pointer">
+                      <span className="text-xs text-slate-600 font-['IBM_Plex_Mono'] w-20 flex-shrink-0">
+                        {formatDate(post.publishedAt)}
+                      </span>
+                      <span className={`text-[10px] px-1.5 rounded border font-mono flex-shrink-0 ${categoryColor(post.category)}`}>
+                        {post.category?.includes('Crypto') ? 'CRYPTO' : 'MACRO'}
+                      </span>
+                      <h3 className="text-sm text-slate-400 group-hover:text-slate-200 transition-colors line-clamp-1 flex-1">
+                        {post.title}
+                      </h3>
+                      <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 flex-shrink-0 transition-colors" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-center">
+              <Link href="/intel-archive">
+                <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded border border-amber-500/20 bg-amber-500/5 text-xs text-amber-400 font-['IBM_Plex_Mono'] hover:bg-amber-500/10 hover:border-amber-500/30 transition-all cursor-pointer tracking-widest">
+                  BROWSE FULL INTELLIGENCE ARCHIVE
+                </span>
+              </Link>
+            </div>
           </>
         )}
       </div>

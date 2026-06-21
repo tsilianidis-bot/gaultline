@@ -501,6 +501,10 @@ export async function getBlogPosts(opts: { publishedOnly?: boolean; limit?: numb
     tags: blogPosts.tags,
     published: blogPosts.published,
     publishedAt: blogPosts.publishedAt,
+    contentClass: blogPosts.contentClass,
+    metaTitle: blogPosts.metaTitle,
+    metaDescription: blogPosts.metaDescription,
+    readTimeMinutes: blogPosts.readTimeMinutes,
     createdAt: blogPosts.createdAt,
     updatedAt: blogPosts.updatedAt,
   }).from(blogPosts).$dynamic();
@@ -509,6 +513,74 @@ export async function getBlogPosts(opts: { publishedOnly?: boolean; limit?: numb
   if (publishedOnly) conditions.push(eq(blogPosts.published, 1));
   if (category) conditions.push(eq(blogPosts.category, category));
   if (conditions.length > 0) query = query.where(and(...conditions)) as typeof query;
+
+  return query.orderBy(desc(blogPosts.publishedAt)).limit(limit).offset(offset);
+}
+
+/** Returns only published evergreen posts, ordered by publishedAt desc */
+export async function getEvergreenPosts(limit = 6) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: blogPosts.id,
+    slug: blogPosts.slug,
+    title: blogPosts.title,
+    subtitle: blogPosts.subtitle,
+    author: blogPosts.author,
+    category: blogPosts.category,
+    tags: blogPosts.tags,
+    published: blogPosts.published,
+    publishedAt: blogPosts.publishedAt,
+    contentClass: blogPosts.contentClass,
+    metaTitle: blogPosts.metaTitle,
+    metaDescription: blogPosts.metaDescription,
+    readTimeMinutes: blogPosts.readTimeMinutes,
+    createdAt: blogPosts.createdAt,
+    updatedAt: blogPosts.updatedAt,
+  })
+  .from(blogPosts)
+  .where(and(eq(blogPosts.published, 1), eq(blogPosts.contentClass, 'evergreen')))
+  .orderBy(desc(blogPosts.publishedAt))
+  .limit(limit);
+}
+
+/** Returns published intel_record posts with optional filters for the Intelligence Archive */
+export async function getIntelRecords(opts: {
+  limit?: number;
+  offset?: number;
+  regime?: string;
+  dateFrom?: string;  // YYYY-MM-DD
+  dateTo?: string;    // YYYY-MM-DD
+} = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  const { limit = 30, offset = 0, regime, dateFrom, dateTo } = opts;
+  let query = db.select({
+    id: blogPosts.id,
+    slug: blogPosts.slug,
+    title: blogPosts.title,
+    subtitle: blogPosts.subtitle,
+    author: blogPosts.author,
+    category: blogPosts.category,
+    tags: blogPosts.tags,
+    published: blogPosts.published,
+    publishedAt: blogPosts.publishedAt,
+    contentClass: blogPosts.contentClass,
+    metaTitle: blogPosts.metaTitle,
+    metaDescription: blogPosts.metaDescription,
+    readTimeMinutes: blogPosts.readTimeMinutes,
+    createdAt: blogPosts.createdAt,
+    updatedAt: blogPosts.updatedAt,
+  }).from(blogPosts).$dynamic();
+
+  const conditions = [
+    eq(blogPosts.published, 1),
+    eq(blogPosts.contentClass, 'intel_record'),
+  ];
+  if (regime) conditions.push(sql`LOWER(${blogPosts.category}) LIKE ${`%${regime.toLowerCase()}%`}`);
+  if (dateFrom) conditions.push(sql`DATE(${blogPosts.publishedAt}) >= ${dateFrom}`);
+  if (dateTo) conditions.push(sql`DATE(${blogPosts.publishedAt}) <= ${dateTo}`);
+  query = query.where(and(...conditions)) as typeof query;
 
   return query.orderBy(desc(blogPosts.publishedAt)).limit(limit).offset(offset);
 }
