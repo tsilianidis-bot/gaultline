@@ -41,7 +41,7 @@ const PLANS = [
   },
   {
     id: "premium" as const,
-    name: "Pro",
+    name: "Trader",
     badge: "RECOMMENDED",
     price: PRICING_PLANS.premium.priceLabel,
     color: "#00D4FF",
@@ -72,11 +72,29 @@ const PLANS = [
     glow: "rgba(255,215,0,0.12)",
     icon: <Crown size={18} />,
     features: [
-      "Everything in Pro",
+      "Everything in Trader",
       "Founding Member badge",
-      "Rate locked forever",
+      "Rate locked at $49/mo forever",
       "Early access to new features",
       "Priority support",
+    ],
+    locked: [],
+  },
+  {
+    id: "lifetime" as const,
+    name: "Founding Lifetime",
+    badge: "PAY ONCE — NEVER AGAIN",
+    price: PRICING_PLANS.lifetime.priceLabel,
+    color: "#FFD700",
+    glow: "rgba(255,215,0,0.12)",
+    icon: <Crown size={18} />,
+    features: [
+      "Everything in Trader",
+      "Lifetime access — pay once",
+      "Founding Member badge",
+      "Future feature grandfathering",
+      "Roadmap previews & early beta",
+      "Exclusive founder-only tools",
     ],
     locked: [],
   },
@@ -256,7 +274,8 @@ export default function MobileUpgrade() {
         <div className="flex items-start gap-2">
           <Star size={12} className="text-[#64748B] flex-shrink-0 mt-0.5" />
           <div className="text-[10px] font-mono text-[#64748B] leading-relaxed">
-            Subscriptions are billed monthly and can be cancelled anytime via the billing portal.
+            Core, Trader, and Founding plans are billed monthly and can be cancelled anytime via the billing portal.
+            The Founding Lifetime plan is a one-time payment with no recurring charges.
             Payments are processed securely by Stripe. FAULTLINE is not a registered investment
             adviser. All content is for informational purposes only.
           </div>

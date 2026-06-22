@@ -18,10 +18,10 @@ import { trackPurchaseConfirmed } from "@/hooks/useAnalytics";
 const PLAN_LABELS: Record<string, string> = {
   core: "FAULTLINE Core",
   core_annual: "FAULTLINE Core (Annual)",
-  premium: "FAULTLINE Premium",
-  premium_annual: "FAULTLINE Premium (Annual)",
-  founding: "FAULTLINE Founding Access",
-  lifetime: "FAULTLINE Lifetime",
+  premium: "FAULTLINE Trader",
+  premium_annual: "FAULTLINE Trader (Annual)",
+  founding: "FAULTLINE Founding Member",
+  lifetime: "FAULTLINE Founding Lifetime",
 };
 
 export default function CheckoutSuccess() {

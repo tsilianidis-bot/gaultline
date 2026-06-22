@@ -21,9 +21,10 @@ async function resolveTierFromSession(sessionId: string): Promise<Exclude<Access
   } catch (err: any) {
     console.warn('[Stripe Webhook] Could not fetch line items for session', sessionId, '—', err.message);
   }
-  // Safe fallback — log a warning so this is visible in server logs
-  console.warn('[Stripe Webhook] Could not determine tier from line items — defaulting to premium');
-  return 'premium';
+  // Safe fallback — default to 'core' (lowest paid tier) so we never accidentally
+  // grant premium access to a user who paid for core.
+  console.warn('[Stripe Webhook] Could not determine tier from line items — defaulting to core (safe minimum)');
+  return 'core';
 }
 
 /**
@@ -141,6 +142,43 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         if (user) {
           await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
           console.log(`[Stripe Webhook] User ${user.id} downgraded to free (subscription cancelled)`);
+        }
+        break;
+      }
+
+      case 'customer.subscription.updated': {
+        // Fires on every plan change, upgrade, downgrade, trial conversion, or billing cycle update.
+        // This is the ONLY event that fires when a user changes plans via the Billing Portal.
+        const subscription = event.data.object as any;
+        const customerId = subscription.customer as string;
+        const subscriptionId = subscription.id as string;
+        const status = subscription.status as string;
+
+        const user = await getUserByStripeCustomerId(customerId);
+        if (!user) {
+          console.warn(`[Stripe Webhook] customer.subscription.updated — no user found for customer ${customerId}`);
+          break;
+        }
+
+        if (status === 'active' || status === 'trialing') {
+          // Resolve the new tier from the updated subscription's price
+          const priceId = subscription.items?.data?.[0]?.price?.id as string | undefined;
+          if (priceId) {
+            const plan = getPlanByPriceId(priceId);
+            if (plan && plan.tier !== 'free') {
+              await updateUserStripe(user.id, {
+                accessTier: plan.tier,
+                stripeSubscriptionId: subscriptionId,
+              });
+              console.log(`[Stripe Webhook] User ${user.id} tier updated to ${plan.tier} via subscription update (${subscriptionId})`);
+            } else {
+              console.warn(`[Stripe Webhook] customer.subscription.updated — unknown price ${priceId} for subscription ${subscriptionId}`);
+            }
+          }
+        } else if (status === 'canceled' || status === 'unpaid' || status === 'past_due') {
+          // Subscription entered a degraded state — downgrade to free
+          await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
+          console.log(`[Stripe Webhook] User ${user.id} downgraded to free (subscription ${subscriptionId} status: ${status})`);
         }
         break;
       }

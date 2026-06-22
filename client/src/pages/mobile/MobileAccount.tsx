@@ -23,7 +23,7 @@ function tierColor(tier: string): string {
 
 function tierLabel(tier: string): string {
   if (tier === "founding") return "FOUNDING";
-  if (tier === "premium")  return "PRO";
+  if (tier === "premium")  return "TRADER";
   if (tier === "core")     return "CORE";
   return "FREE";
 }
@@ -176,7 +176,7 @@ export default function MobileAccount() {
         {/* Plan name */}
         <div className="text-[10px] font-mono text-[#64748B]">
           {tier === "founding" && "Founding Member — Rate locked for life"}
-          {tier === "premium"  && `FAULTLINE Pro — ${PRICING_PLANS.premium.priceLabel}`}
+          {tier === "premium"  && `FAULTLINE Trader — ${PRICING_PLANS.premium.priceLabel}`}
           {tier === "core"     && `FAULTLINE Core — ${PRICING_PLANS.core.priceLabel}`}
           {tier === "free"     && "Free tier — limited access"}
         </div>
@@ -231,14 +231,14 @@ export default function MobileAccount() {
           }}
         >
           <div className="text-[10px] font-mono tracking-[0.2em] text-[#00D4FF]/60 mb-1">
-            {isPaid ? "UPGRADE TO PRO" : "UPGRADE TO CORE"}
+            {isPaid ? "UPGRADE TO TRADER" : "UPGRADE TO CORE"}
           </div>
           <div className="text-[13px] font-bold text-white mb-1">
             {isPaid ? "Unlock unlimited access" : "Unlock the full mobile experience"}
           </div>
           <div className="text-[11px] font-mono text-[#00D4FF]">
             {isPaid
-              ? `${PRICING_PLANS.premium.priceLabel} — Full intelligence suite`
+              ? `${PRICING_PLANS.premium.priceLabel} — Full intelligence suite (Trader)`
               : `${PRICING_PLANS.core.priceLabel} — Signals, Crypto, Watchlist`}
           </div>
           <div className="flex items-center justify-center gap-1 mt-2 text-[10px] font-mono text-[#00D4FF]/60">

@@ -72,8 +72,11 @@ export function trackSignup(method: string = "manus_oauth") {
 export function trackUpgradeClick(plan: string, location: string) {
   gtag("event", "begin_checkout", {
     currency: "USD",
-    value: plan === "founding" ? PRICING_PLANS.founding.amountCents / 100 : plan === "premium" ? PRICING_PLANS.premium.amountCents / 100 : PRICING_PLANS.core.amountCents / 100,
-    items: [{ item_id: plan, item_name: `FAULTLINE ${plan}` }],
+    value: plan === "lifetime" ? (PRICING_PLANS.lifetime?.amountCents ?? 29900) / 100
+         : plan === "founding" ? PRICING_PLANS.founding.amountCents / 100
+         : plan === "premium" ? PRICING_PLANS.premium.amountCents / 100
+         : PRICING_PLANS.core.amountCents / 100,
+    items: [{ item_id: plan, item_name: plan === "premium" ? "FAULTLINE Trader" : plan === "lifetime" ? "FAULTLINE Founding Lifetime" : `FAULTLINE ${plan}` }],
     event_category: "conversion",
     event_label: location,
     send_to: GA_ID,

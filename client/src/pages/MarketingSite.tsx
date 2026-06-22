@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { PRICING_PLANS } from "../../../shared/tiers";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { getLoginUrl } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
 import {
@@ -1425,6 +1426,18 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
     glowColor: string;
   };
 
+  const checkoutMutation = trpc.billing.createCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info('Redirecting to checkout…', { description: 'Opening Stripe secure payment page.' });
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (err) => {
+      toast.error('Checkout unavailable', { description: err.message });
+    },
+  });
+
   const tiers: Tier[] = [
     {
       name: "OBSERVER",
@@ -1447,11 +1460,9 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       glowColor: "rgba(100,116,139,0.12)",
     },
     {
-      name: "FAULTLINE CORE",
+      name: "CORE",
       tagline: "Mobile-first market intelligence.",
       price: PRICING_PLANS.core.priceLabel,
-      annualPrice: "$7.99",
-      annualSub: "billed $95.88/year — save 20%",
       priceSub: "/month — cancel anytime",
       desc: "Fast signals, portfolio tracking, and push alerts on the go. Know the pressure reading before you enter any position.",
       features: [
@@ -1466,82 +1477,78 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         "Limited Aftershock alerts",
         "Macro snapshot feed",
       ],
-      cta: "Get Core Access",
-      ctaLink: PLATFORM_URL,
+      cta: "Get Core — $9.99/mo",
+      ctaAction: () => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin }),
       featured: false,
       popularLabel: "MOST POPULAR ENTRY",
       accentColor: "#22D3EE",
       glowColor: "rgba(34,211,238,0.1)",
     },
     {
-      name: "ANALYST",
-      tagline: "Active self-directed investor.",
-      price: "$39",
-      annualPrice: "$32",
-      annualSub: "billed $390/year — save 18%",
+      name: "TRADER",
+      tagline: "Serious trader / portfolio manager.",
+      price: PRICING_PLANS.premium.priceLabel,
       priceSub: "/month — cancel anytime",
-      desc: "Real-time Pressure Index, full Signals, Situation Room pre-trade briefs, and crash analog engine. Move with the intelligence layer, not behind it.",
+      desc: "The full intelligence platform. Every engine, every signal, every edge — fully unlocked. AI Diagnostic, Crypto Intelligence, Aftershock Engine, and full macro suite.",
       features: [
+        "Everything in Core",
         "Real-time Pressure Index™",
-        "Full Signals Engine",
-        "10 watchlist tickers",
-        "Situation Room (5/mo)",
-        "Insider Intelligence",
+        "Full Signals Engine (all tickers)",
         "AI Diagnostic Intelligence™",
         "Full crypto intelligence engine",
-        "Macro regime analysis",
         "Advanced Aftershock Engine™",
+        "Full systemic risk analytics",
+        "Macro regime analysis",
+        "Advanced watchlists & alerts",
         "Historical analog engine",
-        "Full risk scoring system",
       ],
-      cta: "Unlock Analyst",
-      ctaAction: onRequestAccess,
-      featured: false,
-      accentColor: "#00D4FF",
-      glowColor: "rgba(0,212,255,0.12)",
-    },
-    {
-      name: "OPERATOR",
-      tagline: "Serious trader / portfolio manager.",
-      price: "$79",
-      annualPrice: "$66",
-      annualSub: "billed $790/year — save 17%",
-      priceSub: "/month — cancel anytime",
-      desc: "Everything unlimited. The full institutional brief: Situation Room, Market Preflight, Track Record, and API access. Position inside the faultlines with no limits.",
-      features: [
-        "Everything in Analyst",
-        "Unlimited Situation Room",
-        "Market Preflight",
-        "Track Record",
-        "API access",
-        "Priority support",
-        "Unlimited watchlist tickers",
-        "Premium alerts",
-      ],
-      cta: "Unlock Operator",
-      ctaAction: onRequestAccess,
+      cta: "Unlock Trader — $59/mo",
+      ctaAction: () => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin }),
       featured: true,
       accentColor: "#00D4FF",
       glowColor: "rgba(0,212,255,0.15)",
     },
     {
-      name: "FOUNDER",
-      tagline: "Move first. Pay once. Never again.",
+      name: "FOUNDING MEMBER",
+      tagline: "Rate locked for life.",
+      price: PRICING_PLANS.founding.priceLabel,
+      priceSub: "/month — locked forever",
+      desc: "Everything in Trader at $49/mo — locked forever. Never increases. Join the founding cohort before spots close.",
+      features: [
+        "Everything in Trader",
+        "Rate locked at $49/mo forever",
+        "Founding member badge",
+        "Future feature grandfathering",
+        "Roadmap previews & early beta",
+        "Priority feature access",
+        "Exclusive founder-only tools",
+        "Direct feedback channel",
+      ],
+      cta: "Lock In Founding — $49/mo",
+      ctaAction: () => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin }),
+      featured: false,
+      scarcity: true,
+      accentColor: "#FFD700",
+      glowColor: "rgba(255,215,0,0.12)",
+    },
+    {
+      name: "FOUNDING LIFETIME",
+      tagline: "Pay once. Never again.",
       price: PRICING_PLANS.lifetime.priceLabel,
       priceSub: "one-time — lifetime access",
-      desc: "Everything in Operator, forever. The top funds built their own intelligence infrastructure. You’re getting it for $299 — once. Limited founding cohort.",
+      desc: "Everything in Trader, forever. One payment of $299. No monthly charges, no renewals. Limited quantity.",
       features: [
-        "Everything in Operator",
+        "Everything in Trader",
         "Lifetime access — pay once",
-        "Founder badge",
+        "Founding member badge",
         "Future feature grandfathering",
         "Roadmap previews",
         "Priority feature access",
         "Early beta systems",
         "Exclusive founder-only tools",
       ],
-      cta: "Lock In Founder Access",
-      ctaAction: onRequestAccess,
+      cta: "Get Lifetime Access — $299",
+      ctaAction: () => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin }),
       featured: false,
       scarcity: true,
       accentColor: "#FFD700",

@@ -250,9 +250,9 @@ describe('handleStripeWebhook', () => {
 
       await handleStripeWebhook(req, res);
 
-      // Falls back to premium — this is the safe default
+      // Falls back to core — safe minimum so we never accidentally grant premium access
       expect(updateUserStripe).toHaveBeenCalledWith(5, expect.objectContaining({
-        accessTier: 'premium',
+        accessTier: 'core',
       }));
     });
 

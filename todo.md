@@ -1821,3 +1821,24 @@
 - [x] TypeScript: 0 errors
 - [x] Tests: 591/591 passing
 - [x] Checkpoint saved
+
+## Pricing Remediation — Official Structure (Jun 22, 2026)
+### Stripe Price Setup
+- [x] Audit all pricing references across Stripe, env vars, tiers.ts, checkout UI, billing portal, marketing pages
+- [x] Create $299 lifetime Stripe price, archive $1,200 price, set STRIPE_LIFETIME_PRICE_ID env var
+- [x] Create $49/mo founding Stripe price, set STRIPE_FOUNDING_PRICE_ID env var
+### Server Fixes
+- [x] Fix webhook.ts: change fallback tier from premium to core (safe minimum)
+- [x] Add customer.subscription.updated webhook handler (required for Billing Portal plan changes)
+- [x] Fix billing portal return URL from /app/dashboard to /app/account
+### Frontend Updates
+- [x] Update MarketingSite.tsx pricing section: replace ANALYST/$39 and OPERATOR/$79 with CORE, TRADER, FOUNDING MEMBER, FOUNDING LIFETIME — all wired to real Stripe checkout
+- [x] Update PremiumGate.tsx: replace all Operator/$79 ctaPrimary strings with Trader/$59
+- [x] Update CheckoutSuccess.tsx plan labels: Premium→Trader, Founding→Founding Member, Lifetime→Founding Lifetime
+- [x] Update MobileUpgrade.tsx: add lifetime plan card, rename Pro→Trader, update disclaimer
+- [x] Update MobileAccount.tsx: rename PRO→TRADER in tier label and upgrade CTA
+- [x] Fix useAnalytics.ts: correct lifetime price reporting in trackUpgradeClick
+### Verification
+- [x] TypeScript: 0 errors
+- [x] Tests: 594/594 passing (34 test files)
+- [x] Checkpoint saved

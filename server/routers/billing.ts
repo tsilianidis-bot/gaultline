@@ -79,7 +79,7 @@ export const billingRouter = router({
       }
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,
-        return_url: `${input.origin}/app/dashboard`,
+        return_url: `${input.origin}/app/account`,
       });
       return { url: session.url };
     }),
