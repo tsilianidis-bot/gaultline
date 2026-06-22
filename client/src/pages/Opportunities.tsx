@@ -113,7 +113,7 @@ export default function Opportunities() {
   });
 
   const handleTickerClick = (ticker: string, assetType: "stock" | "crypto") => {
-    navigate(`/app/signals/outlook?symbol=${ticker}&assetType=${assetType}`);
+    navigate(`/app/signal-outlook?symbol=${ticker}&type=${assetType}`);
   };
 
   return (
