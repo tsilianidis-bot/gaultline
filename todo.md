@@ -1842,3 +1842,32 @@
 - [x] TypeScript: 0 errors
 - [x] Tests: 594/594 passing (34 test files)
 - [x] Checkpoint saved
+
+## Security-First Analysis & Opportunity Discovery Engine (Jun 22, 2026)
+
+### Phase 1 — Situation Room + Trade Preflight Security-First Enforcement
+- [ ] Situation Room: add mandatory ticker input to ALL move types (add_risk, reduce_risk, rotate, raise_cash, deploy_cash, hold) — ticker becomes primary subject, category becomes secondary context
+- [ ] Trade Preflight: add ticker input to all non-buy/sell-specific moves
+- [ ] tradePreflight.ts: update LLM prompt to always reference specific security when ticker provided for all move types
+
+### Phase 2 — Opportunity Discovery Engine (Server)
+- [ ] Build server/opportunityDiscovery.ts with 8 categories: Top Opportunity Today, Emerging Breakouts, High Conviction Setups, AI Leaders, Crypto Leaders, Macro Beneficiaries, Undervalued Opportunities, High Risk/High Reward
+- [ ] Each opportunity must include: Security, Opportunity Score (0-100), Expected Time Horizon, Catalyst, Risk Level
+- [ ] LLM enrichment for each category with security-specific analysis
+- [ ] 15-minute cache to avoid excessive LLM calls
+- [ ] Add opportunity.getDiscovery tRPC procedure to routers.ts
+
+### Phase 3 — Opportunity Discovery UI
+- [ ] Build client/src/pages/OpportunityDiscovery.tsx — 8-category grid with opportunity cards
+- [ ] Add proactive opportunity panel to Dashboard home screen (top 3 opportunities)
+- [ ] Add /app/opportunities route to App.tsx
+- [ ] Add Opportunities to AppLayout navigation
+
+### Phase 4 — Standardized Security Analysis Output Schema
+- [ ] Ensure all analysis surfaces produce: Opportunity Score, Bull/Bear Score, Support Levels, Resistance Levels, Invalidation Levels, Risk/Reward, Catalysts, Threats, Timeframe-specific Outlook
+
+### Phase 5 — Verification
+- [ ] Write vitest for opportunityDiscovery module
+- [ ] TypeScript: 0 errors
+- [ ] Tests: all passing
+- [ ] Checkpoint saved

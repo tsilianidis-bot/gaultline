@@ -15,6 +15,7 @@ import HomeCryptoSection from "@/components/HomeCryptoSection";
 import WaitlistSection from "@/components/WaitlistSection";
 import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import { CryptoPorchPanel, StockPorchPanel } from "@/components/DashboardSearchPanels";
+import OpportunityDiscoveryPanel from "@/components/OpportunityDiscoveryPanel";
 import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
@@ -1100,6 +1101,9 @@ export default function Dashboard() {
           <StockPorchPanel />
           <CryptoPorchPanel />
         </div>
+
+        {/* Opportunity Discovery Engine — proactive security-specific opportunities */}
+        <OpportunityDiscoveryPanel />
 
         {/* Real-Time Market & Stock Intelligence */}
         <HomeStockIntelSection />

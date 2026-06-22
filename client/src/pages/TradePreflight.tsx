@@ -174,11 +174,11 @@ export default function TradePreflight() {
   });
 
   const handleSimulate = () => {
-    if (!selectedMove) return;
+    if (!selectedMove || !ticker.trim()) return;
     simulate.mutate({
       moveType: selectedMove,
       timeframe: selectedTimeframe,
-      ticker: selectedMove === "buy_specific_asset" && ticker.trim() ? ticker.trim().toUpperCase() : undefined,
+      ticker: ticker.trim().toUpperCase(),
     });
   };
 
@@ -316,23 +316,24 @@ export default function TradePreflight() {
             })}
           </div>
 
-          {/* Ticker input (conditional) */}
-          {selectedMove === "buy_specific_asset" && (
+          {/* Security / Ticker input — required for ALL move types (Security-First Analysis) */}
+          {selectedMove && (
             <div style={{ marginBottom: "14px" }}>
               <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>
-                Ticker Symbol
+                Security / Ticker <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span>
+                <span style={{ color: "rgba(100,116,139,0.4)", fontSize: "9px", marginLeft: "8px" }}>NVDA · PLTR · TSLA · SPY · BTC · ETH · TAO</span>
               </label>
               <input
                 type="text"
                 value={ticker}
-                onChange={e => setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))}
-                placeholder="e.g. NVDA, TSLA, AAPL"
+                onChange={e => { setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, "")); setShowResult(false); simulate.reset(); }}
+                placeholder="Enter a security — NVDA, PLTR, TSLA, SPY, BTC, ETH, TAO…"
                 maxLength={10}
                 style={{
                   width: "100%",
                   padding: "10px 14px",
                   background: "rgba(0,212,255,0.05)",
-                  border: "1px solid rgba(0,212,255,0.25)",
+                  border: ticker.trim() ? "1px solid rgba(0,212,255,0.40)" : "1px solid rgba(255,45,85,0.35)",
                   borderRadius: "4px",
                   color: "#E2E8F0",
                   fontFamily: "'IBM Plex Mono', monospace",
@@ -340,6 +341,7 @@ export default function TradePreflight() {
                   letterSpacing: "0.12em",
                   outline: "none",
                   boxSizing: "border-box",
+                  transition: "border-color 0.15s ease",
                 }}
               />
             </div>
@@ -376,18 +378,18 @@ export default function TradePreflight() {
           {/* Run simulation button */}
           <button
             onClick={handleSimulate}
-            disabled={!selectedMove || isLoading}
+            disabled={!selectedMove || !ticker.trim() || isLoading}
             style={{
               width: "100%",
               padding: "13px",
-              background: selectedMove && !isLoading
+              background: selectedMove && ticker.trim() && !isLoading
                 ? "linear-gradient(135deg, rgba(0,212,255,0.20) 0%, rgba(0,212,255,0.08) 100%)"
                 : "rgba(255,255,255,0.03)",
-              border: selectedMove && !isLoading
+              border: selectedMove && ticker.trim() && !isLoading
                 ? "1px solid rgba(0,212,255,0.50)"
                 : "1px solid rgba(255,255,255,0.06)",
               borderRadius: "4px",
-              cursor: selectedMove && !isLoading ? "pointer" : "not-allowed",
+              cursor: selectedMove && ticker.trim() && !isLoading ? "pointer" : "not-allowed",
               transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
               display: "flex",
               alignItems: "center",

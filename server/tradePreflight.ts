@@ -1526,7 +1526,8 @@ function computeMarketInterpretation(
 
   // Exposure-specific context label
   const expLabel = exposureCategory ? EXPOSURE_LABELS[exposureCategory] : null;
-  const expRef = expLabel ? ` in ${expLabel}` : tickerRef;
+  // Security-first: ticker always takes priority over category label in narrative
+  const expRef = tickerRef ? tickerRef : (expLabel ? ` in ${expLabel}` : "");
   const rotateRef = (rotateFrom && rotateTo) ? ` from ${rotateFrom} into ${rotateTo}` : "";
 
   // Sub-input context strings

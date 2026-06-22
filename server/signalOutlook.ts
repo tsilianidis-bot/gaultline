@@ -1631,3 +1631,254 @@ export function clearOutlookCaches(): void {
   topOppsCache.clear();
   quickOutlookCache.clear();
 }
+
+// ============================================================
+// FAULTLINE — Opportunity Discovery Engine™
+// Proactive 8-category opportunity feed displayed before users search.
+// Each category surfaces 3-5 securities with Opportunity Score,
+// Time Horizon, Catalyst, and Risk Level.
+// ============================================================
+
+export type DiscoveryCategory =
+  | "top_opportunity_today"
+  | "emerging_breakouts"
+  | "high_conviction_setups"
+  | "ai_leaders"
+  | "crypto_leaders"
+  | "macro_beneficiaries"
+  | "undervalued_opportunities"
+  | "high_risk_high_reward";
+
+export interface DiscoveryItem {
+  ticker: string;
+  name: string;
+  assetType: "stock" | "crypto";
+  opportunityScore: number;
+  expectedTimeHorizon: string;
+  catalyst: string;
+  riskLevel: "Low" | "Medium" | "High" | "Extreme";
+  direction: OutlookDirection;
+  rationale: string;
+}
+
+export interface DiscoveryBucket {
+  category: DiscoveryCategory;
+  label: string;
+  description: string;
+  items: DiscoveryItem[];
+  generatedAt: number;
+}
+
+export interface OpportunityDiscoveryResult {
+  buckets: DiscoveryBucket[];
+  pressureIndex: number;
+  regime: string;
+  generatedAt: number;
+}
+
+const DISCOVERY_CATEGORY_META: Record<DiscoveryCategory, { label: string; description: string }> = {
+  top_opportunity_today:    { label: "Top Opportunity Today",      description: "Highest-conviction setup across all assets right now" },
+  emerging_breakouts:       { label: "Emerging Breakouts",         description: "Securities approaching key technical breakout levels" },
+  high_conviction_setups:   { label: "High Conviction Setups",     description: "Strong regime alignment with clear risk/reward" },
+  ai_leaders:               { label: "AI Leaders",                 description: "AI infrastructure and semiconductor plays" },
+  crypto_leaders:           { label: "Crypto Leaders",             description: "Top digital assets by momentum and regime fit" },
+  macro_beneficiaries:      { label: "Macro Beneficiaries",        description: "Assets positioned to benefit from current macro regime" },
+  undervalued_opportunities:{ label: "Undervalued Opportunities",  description: "Setups where price may not reflect fundamental strength" },
+  high_risk_high_reward:    { label: "High Risk / High Reward",    description: "Asymmetric setups with elevated volatility and outsized potential" },
+};
+
+const DISCOVERY_POOLS: Record<DiscoveryCategory, Array<{ symbol: string; name: string; assetType: "stock" | "crypto" }>> = {
+  top_opportunity_today: [
+    { symbol: "NVDA", name: "NVIDIA Corporation",       assetType: "stock" },
+    { symbol: "PLTR", name: "Palantir Technologies",    assetType: "stock" },
+    { symbol: "BTC",  name: "Bitcoin",                  assetType: "crypto" },
+    { symbol: "ETH",  name: "Ethereum",                 assetType: "crypto" },
+    { symbol: "TSLA", name: "Tesla Inc.",               assetType: "stock" },
+    { symbol: "META", name: "Meta Platforms Inc.",      assetType: "stock" },
+    { symbol: "SOL",  name: "Solana",                   assetType: "crypto" },
+    { symbol: "AMD",  name: "Advanced Micro Devices",   assetType: "stock" },
+  ],
+  emerging_breakouts: [
+    { symbol: "IONQ", name: "IonQ Inc.",                assetType: "stock" },
+    { symbol: "RKLB", name: "Rocket Lab USA",           assetType: "stock" },
+    { symbol: "SMCI", name: "Super Micro Computer",     assetType: "stock" },
+    { symbol: "TAO",  name: "Bittensor",                assetType: "crypto" },
+    { symbol: "ARB",  name: "Arbitrum",                 assetType: "crypto" },
+    { symbol: "MSTR", name: "MicroStrategy Inc.",       assetType: "stock" },
+  ],
+  high_conviction_setups: [
+    { symbol: "NVDA", name: "NVIDIA Corporation",       assetType: "stock" },
+    { symbol: "META", name: "Meta Platforms Inc.",      assetType: "stock" },
+    { symbol: "MSFT", name: "Microsoft Corporation",    assetType: "stock" },
+    { symbol: "BTC",  name: "Bitcoin",                  assetType: "crypto" },
+    { symbol: "SPY",  name: "S&P 500 ETF",              assetType: "stock" },
+  ],
+  ai_leaders: [
+    { symbol: "NVDA", name: "NVIDIA Corporation",       assetType: "stock" },
+    { symbol: "PLTR", name: "Palantir Technologies",    assetType: "stock" },
+    { symbol: "AMD",  name: "Advanced Micro Devices",   assetType: "stock" },
+    { symbol: "MSFT", name: "Microsoft Corporation",    assetType: "stock" },
+    { symbol: "SMCI", name: "Super Micro Computer",     assetType: "stock" },
+    { symbol: "IONQ", name: "IonQ Inc.",                assetType: "stock" },
+    { symbol: "TAO",  name: "Bittensor",                assetType: "crypto" },
+  ],
+  crypto_leaders: [
+    { symbol: "BTC",  name: "Bitcoin",                  assetType: "crypto" },
+    { symbol: "ETH",  name: "Ethereum",                 assetType: "crypto" },
+    { symbol: "SOL",  name: "Solana",                   assetType: "crypto" },
+    { symbol: "TAO",  name: "Bittensor",                assetType: "crypto" },
+    { symbol: "AVAX", name: "Avalanche",                assetType: "crypto" },
+    { symbol: "LINK", name: "Chainlink",                assetType: "crypto" },
+  ],
+  macro_beneficiaries: [
+    { symbol: "SPY",  name: "S&P 500 ETF",              assetType: "stock" },
+    { symbol: "QQQ",  name: "Nasdaq 100 ETF",           assetType: "stock" },
+    { symbol: "AAPL", name: "Apple Inc.",               assetType: "stock" },
+    { symbol: "AMZN", name: "Amazon.com Inc.",          assetType: "stock" },
+    { symbol: "MSFT", name: "Microsoft Corporation",    assetType: "stock" },
+    { symbol: "BTC",  name: "Bitcoin",                  assetType: "crypto" },
+  ],
+  undervalued_opportunities: [
+    { symbol: "AMD",  name: "Advanced Micro Devices",   assetType: "stock" },
+    { symbol: "COIN", name: "Coinbase Global Inc.",     assetType: "stock" },
+    { symbol: "RKLB", name: "Rocket Lab USA",           assetType: "stock" },
+    { symbol: "ETH",  name: "Ethereum",                 assetType: "crypto" },
+    { symbol: "AVAX", name: "Avalanche",                assetType: "crypto" },
+    { symbol: "ARB",  name: "Arbitrum",                 assetType: "crypto" },
+  ],
+  high_risk_high_reward: [
+    { symbol: "MSTR", name: "MicroStrategy Inc.",       assetType: "stock" },
+    { symbol: "IONQ", name: "IonQ Inc.",                assetType: "stock" },
+    { symbol: "SMCI", name: "Super Micro Computer",     assetType: "stock" },
+    { symbol: "TAO",  name: "Bittensor",                assetType: "crypto" },
+    { symbol: "ARB",  name: "Arbitrum",                 assetType: "crypto" },
+    { symbol: "RKLB", name: "Rocket Lab USA",           assetType: "stock" },
+  ],
+};
+
+function discoveryTimeHorizon(score: number, assetType: "stock" | "crypto"): string {
+  if (assetType === "crypto") {
+    if (score >= 75) return "1\u20133 days";
+    if (score >= 60) return "3\u20137 days";
+    if (score >= 45) return "1\u20133 weeks";
+    return "2\u20136 weeks";
+  }
+  if (score >= 75) return "1\u20132 weeks";
+  if (score >= 60) return "2\u20134 weeks";
+  if (score >= 45) return "1\u20133 months";
+  return "3\u20136 months";
+}
+
+function discoveryCatalyst(category: DiscoveryCategory, score: number): string {
+  const pools: Record<DiscoveryCategory, string[]> = {
+    top_opportunity_today: [
+      "Regime alignment at peak \u2014 momentum window open",
+      "Macro pressure easing \u2014 risk-on rotation accelerating",
+      "Institutional accumulation signals detected",
+    ],
+    emerging_breakouts: [
+      "Price coiling near key resistance \u2014 breakout imminent",
+      "Volume expansion preceding technical breakout",
+      "Sector rotation catalyst building",
+    ],
+    high_conviction_setups: [
+      "Multiple timeframe confluence \u2014 strong directional bias",
+      "Earnings catalyst approaching with positive setup",
+      "Macro regime fully aligned with bullish thesis",
+    ],
+    ai_leaders: [
+      "AI infrastructure capex cycle accelerating",
+      "Enterprise AI adoption driving revenue beats",
+      "Semiconductor supply constraints easing \u2014 margin expansion",
+    ],
+    crypto_leaders: [
+      "On-chain accumulation by long-term holders",
+      "Institutional inflows via ETF products",
+      "Protocol upgrade or ecosystem expansion catalyst",
+    ],
+    macro_beneficiaries: [
+      "Fed policy pivot supporting risk assets",
+      "Liquidity conditions improving \u2014 risk appetite expanding",
+      "Earnings season tailwind with positive guidance",
+    ],
+    undervalued_opportunities: [
+      "Price-to-growth ratio below sector average",
+      "Sentiment overshoot creating asymmetric entry",
+      "Fundamental catalyst not yet priced in",
+    ],
+    high_risk_high_reward: [
+      "Binary catalyst approaching \u2014 high volatility expected",
+      "Short squeeze potential with elevated short interest",
+      "Speculative momentum building ahead of key event",
+    ],
+  };
+  const pool = pools[category];
+  return pool[Math.floor((score / 100) * pool.length) % pool.length];
+}
+
+const discoveryCache = new LRUCache<string, OpportunityDiscoveryResult>(2, 10 * 60_000);
+
+export async function getOpportunityDiscovery(): Promise<OpportunityDiscoveryResult> {
+  const cached = discoveryCache.get("discovery");
+  if (cached) return cached;
+
+  const pressure = await calculateFaultlinePressure();
+  const p = pressure.overallPressure;
+  const now = Date.now();
+
+  const buckets: DiscoveryBucket[] = (Object.keys(DISCOVERY_POOLS) as DiscoveryCategory[]).map(category => {
+    const pool = DISCOVERY_POOLS[category];
+    const meta = DISCOVERY_CATEGORY_META[category];
+
+    const scored: DiscoveryItem[] = pool.map(item => {
+      const sb = item.assetType === "stock"
+        ? scoreStockFactors(item.symbol, pressure, "swing")
+        : scoreCryptoFactors(item.symbol, pressure, "swing");
+      const score = sb.composite;
+      const direction = scoreToDirection(score);
+      const baseRisk: DiscoveryItem["riskLevel"] = p >= 65 ? "High" : p >= 45 ? "Medium" : "Low";
+      const riskLevel: DiscoveryItem["riskLevel"] =
+        (category === "high_risk_high_reward" || item.assetType === "crypto")
+          ? (score >= 70 ? "High" : "Extreme")
+          : baseRisk;
+
+      return {
+        ticker: item.symbol,
+        name: item.name,
+        assetType: item.assetType,
+        opportunityScore: score,
+        expectedTimeHorizon: discoveryTimeHorizon(score, item.assetType),
+        catalyst: discoveryCatalyst(category, score),
+        riskLevel,
+        direction,
+        rationale: sb.factors.sort((a, b) => b.score - a.score)[0]?.note ?? "Regime-aligned setup",
+      };
+    });
+
+    return {
+      category,
+      label: meta.label,
+      description: meta.description,
+      items: scored.sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 4),
+      generatedAt: now,
+    };
+  });
+
+  const sortedBuckets = buckets.sort((a, b) => {
+    if (a.category === "top_opportunity_today") return -1;
+    if (b.category === "top_opportunity_today") return 1;
+    const avgA = a.items.reduce((s, i) => s + i.opportunityScore, 0) / (a.items.length || 1);
+    const avgB = b.items.reduce((s, i) => s + i.opportunityScore, 0) / (b.items.length || 1);
+    return avgB - avgA;
+  });
+
+  const result: OpportunityDiscoveryResult = {
+    buckets: sortedBuckets,
+    pressureIndex: p,
+    regime: pressure.regime,
+    generatedAt: now,
+  };
+
+  discoveryCache.set("discovery", result);
+  return result;
+}

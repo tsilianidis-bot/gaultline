@@ -80,6 +80,7 @@ const PublicDiagnosticAI   = lazy(() => import("./pages/PublicDiagnosticAI"));
 const NotFound             = lazy(() => import("./pages/NotFound"));
 const IntelligenceArchive  = lazy(() => import("./pages/IntelligenceArchive"));
 const Analysis             = lazy(() => import("./pages/Analysis"));
+const Opportunities        = lazy(() => import("./pages/Opportunities"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -301,6 +302,7 @@ function Router() {
               <Route path="/app/alt-rotation" component={AltRotation} />
               <Route path="/app/trade-preflight" component={TradePreflight} />
               <Route path="/app/situation-room" component={SituationRoom} />
+              <Route path="/app/opportunities" component={Opportunities} />
               <Route path="/app/signal-outlook" component={SignalOutlookCenter} />
               <Route path="/app/social-intelligence" component={SocialIntelligence} />
               <Route path="/app/pre-flight" component={PreFlight} />

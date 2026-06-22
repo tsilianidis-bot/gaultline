@@ -8,6 +8,7 @@ import {
   getFullOutlook,
   getQuickOutlook,
   getTopOpportunities,
+  getOpportunityDiscovery,
   clearOutlookCaches,
   type OutlookTimeframe,
 } from "../signalOutlook";
@@ -79,6 +80,16 @@ export const outlookRouter = router({
         outlook: r.status === "fulfilled" ? r.value : null,
         error: r.status === "rejected" ? String(r.reason) : null,
       }));
+    }),
+
+  /**
+   * Opportunity Discovery Engine — 8-category proactive feed.
+   * Returns categorized buckets with Opportunity Score, Time Horizon, Catalyst, Risk Level.
+   * Cached for 10 minutes.
+   */
+  getOpportunityDiscovery: publicProcedure
+    .query(async () => {
+      return getOpportunityDiscovery();
     }),
 
   /**

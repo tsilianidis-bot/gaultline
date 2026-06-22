@@ -498,11 +498,14 @@ export default function SituationRoom() {
   });
 
   const isCryptoMove = false;
-  const isTickerMove = selectedMove === "buy_specific_asset" || selectedMove === "sell_specific_asset";
+  // Security-first: ticker is required for ALL move types
+  const isTickerMove = selectedMove !== null;
 
   // Validation: check all required fields for the selected move type are filled
   const isReadyToSimulate = (): boolean => {
     if (!selectedMove || !selectedTimeframe) return false;
+    // Security-first: ticker is always required
+    if (!ticker.trim()) return false;
     if (selectedMove === "rotate") return rotateFrom.trim().length > 0 && rotateTo.trim().length > 0;
     if (selectedMove === "raise_cash") return raiseCashReason.trim().length > 0;
     if (selectedMove === "deploy_cash") return deployCashTarget.trim().length > 0;
@@ -517,13 +520,13 @@ export default function SituationRoom() {
     if (!selectedMove || !isReadyToSimulate()) return;
     trackSituationRoomUse(selectedMove, selectedTimeframe);
     let resolvedTicker: string | undefined;
-    if (isTickerMove && ticker.trim()) {
+    if (ticker.trim()) {
       resolvedTicker = ticker.trim().toUpperCase();
     } else if (isCryptoMove) {
       resolvedTicker = cryptoSymbol;
     }
     // GA4 key event: situation_room_used
-    const assetType = isCryptoMove ? "crypto" : (isTickerMove && resolvedTicker ? "stock" : "other");
+    const assetType = isCryptoMove ? "crypto" : (resolvedTicker ? "stock" : "other");
     trackSituationRoomUsed({
       assetType,
       tickerOrSymbol: resolvedTicker ?? selectedMove,
@@ -768,14 +771,29 @@ export default function SituationRoom() {
                   style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", letterSpacing: "0.1em" }}>← Edit</button>
               </div>
 
-              {/* ── Ticker input for BUY / SELL specific asset ── */}
-              {isTickerMove && (
-                <div style={{ marginBottom: "14px" }}>
-                  <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Ticker Symbol <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
-                  <input type="text" value={ticker} onChange={e => setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, ""))} placeholder="e.g. NVDA, TSLA, AAPL, BTC" maxLength={10}
-                    style={{ width: "100%", padding: "10px 14px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "4px", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", letterSpacing: "0.12em", outline: "none", boxSizing: "border-box" }} />
-                </div>
-              )}
+              {/* ── Security / Ticker input — required for ALL move types ── */}
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>
+                  Security / Ticker <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span>
+                  <span style={{ color: "rgba(100,116,139,0.4)", fontSize: "9px", marginLeft: "8px" }}>NVDA · PLTR · TSLA · SPY · BTC · ETH · TAO</span>
+                </label>
+                <input
+                  type="text"
+                  value={ticker}
+                  onChange={e => { setTicker(e.target.value.toUpperCase().replace(/[^A-Z0-9.]/g, "")); setShowResult(false); simulate.reset(); }}
+                  placeholder="Enter a security — NVDA, PLTR, TSLA, SPY, BTC, ETH, TAO…"
+                  maxLength={10}
+                  style={{
+                    width: "100%", padding: "10px 14px",
+                    background: "rgba(0,212,255,0.05)",
+                    border: ticker.trim() ? "1px solid rgba(0,212,255,0.40)" : "1px solid rgba(255,45,85,0.35)",
+                    borderRadius: "4px", color: "#E2E8F0",
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px",
+                    letterSpacing: "0.12em", outline: "none", boxSizing: "border-box",
+                    transition: "border-color 0.15s ease",
+                  }}
+                />
+              </div>
 
               {/* ── ROTATE: From / To selectors ── */}
               {selectedMove === "rotate" && (
