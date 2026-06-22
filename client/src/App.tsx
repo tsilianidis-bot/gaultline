@@ -79,6 +79,7 @@ const PublicAIBubble       = lazy(() => import("./pages/PublicAIBubble"));
 const PublicDiagnosticAI   = lazy(() => import("./pages/PublicDiagnosticAI"));
 const NotFound             = lazy(() => import("./pages/NotFound"));
 const IntelligenceArchive  = lazy(() => import("./pages/IntelligenceArchive"));
+const Analysis             = lazy(() => import("./pages/Analysis"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -122,6 +123,24 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <PublicSharedReport />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+
+      {/* Analysis Hub — Evergreen SEO content hub */}
+      <Route path="/analysis">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Analysis />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+
+      {/* /intelligence → alias for Intelligence Archive */}
+      <Route path="/intelligence">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <IntelligenceArchive />
           </Suspense>
         </ErrorBoundary>
       </Route>

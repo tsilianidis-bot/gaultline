@@ -141,7 +141,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
-            <a href="/blog" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">BRIEFINGS</a>
+            <a href="/analysis" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">ANALYSIS</a>
             <a href="/track-record" className="text-[11px] font-mono tracking-widest transition-colors" style={{ color: '#22C55E', textShadow: '0 0 8px rgba(34,197,94,0.3)' }} onMouseEnter={e => (e.currentTarget.style.color = '#4ADE80')} onMouseLeave={e => (e.currentTarget.style.color = '#22C55E')}>
               TRACK RECORD <span style={{ fontSize: '7px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 4px', borderRadius: '2px', letterSpacing: '0.1em', verticalAlign: 'middle' }}>VERIFIED</span>
             </a>
@@ -273,14 +273,14 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
                 </a>
               ))}
               <a
-                href="/blog"
+                href="/analysis"
                 onClick={closeMenu}
                 className="flex items-center justify-between w-full px-4 py-4 rounded-xl active:bg-white/5 transition-colors"
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div>
-                  <div className="text-[13px] font-mono tracking-widest text-white/85">BRIEFINGS</div>
-                  <div className="text-[10px] font-mono text-white/30 mt-0.5">Market intelligence reports</div>
+                  <div className="text-[13px] font-mono tracking-widest text-white/85">ANALYSIS</div>
+                  <div className="text-[10px] font-mono text-white/30 mt-0.5">Macro research &amp; market analysis</div>
                 </div>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#A8B8CC" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.4">
                   <path d="M2 7h10M8 3l4 4-4 4" />
@@ -2240,7 +2240,7 @@ function EvergreenHubSection() {
             </p>
           </div>
           <Link
-            href="/blog"
+            href="/analysis"
             className="hidden md:flex items-center gap-2 text-[11px] font-mono tracking-widest text-[#00D4FF] hover:text-white transition-colors border border-[#00D4FF]/20 hover:border-[#00D4FF]/60 px-4 py-2 rounded"
           >
             VIEW ALL ANALYSIS
@@ -2291,7 +2291,7 @@ function EvergreenHubSection() {
         {/* Mobile CTA */}
         <div className="mt-8 text-center md:hidden">
           <Link
-            href="/blog"
+            href="/analysis"
             className="inline-flex items-center gap-2 text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/20 px-6 py-3 rounded hover:bg-[#00D4FF]/5 transition-colors"
           >
             VIEW ALL ANALYSIS

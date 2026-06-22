@@ -1808,3 +1808,16 @@
 - [x] Backlink acquisition plan (Reddit, LinkedIn, Medium, Product Hunt, communities)
 - [x] Traffic projection dashboard (3/6/12 month estimates)
 - [x] Checkpoint saved (794707e8) and full SEO engine report delivered
+
+## Dual-Content Architecture Completion (Jun 21, 2026)
+### /analysis page + /intelligence route
+- [x] Create client/src/pages/Analysis.tsx — Evergreen SEO hub with topic cluster filter, featured article, article grid, footer CTAs
+- [x] Add /analysis route to App.tsx (lazy import)
+- [x] Add /intelligence route to App.tsx as alias for IntelligenceArchive
+- [x] Update MarketingSite.tsx desktop nav: BRIEFINGS → ANALYSIS linking to /analysis
+- [x] Update MarketingSite.tsx mobile nav: BRIEFINGS → ANALYSIS linking to /analysis
+- [x] Update MarketingSite.tsx EvergreenHubSection CTAs: /blog → /analysis
+- [x] Add /analysis and /intelligence to seoRoutes.ts STATIC_ROUTES (sitemap)
+- [x] TypeScript: 0 errors
+- [x] Tests: 591/591 passing
+- [x] Checkpoint saved

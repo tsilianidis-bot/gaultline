@@ -17,6 +17,8 @@ const BASE_URL = "https://getfaultline.live";
 const STATIC_ROUTES = [
   { path: "/",                              changefreq: "weekly",  priority: "1.0" },
   { path: "/blog",                          changefreq: "daily",   priority: "0.9" },
+  { path: "/analysis",                       changefreq: "weekly",  priority: "0.9" },
+  { path: "/intelligence",                   changefreq: "daily",   priority: "0.7" },
   { path: "/intel-archive",                  changefreq: "daily",   priority: "0.7" },
   { path: "/track-record",                  changefreq: "weekly",  priority: "0.9" },
   { path: "/pressure-index",                changefreq: "daily",   priority: "0.8" },
