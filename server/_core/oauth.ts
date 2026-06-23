@@ -3,6 +3,7 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { sendEmail, buildWelcomeEmail } from "../email";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -28,6 +29,10 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
+      // Check if this is a brand-new user before upserting
+      const existingUser = await db.getUserByOpenId(userInfo.openId);
+      const isNewUser = !existingUser;
+
       await db.upsertUser({
         openId: userInfo.openId,
         name: userInfo.name || null,
@@ -36,14 +41,24 @@ export function registerOAuthRoutes(app: Express) {
         lastSignedIn: new Date(),
       });
 
+      // Send welcome email on first login (best-effort, non-blocking)
+      if (isNewUser && userInfo.email) {
+        sendEmail(buildWelcomeEmail({
+          name: userInfo.name || "",
+          email: userInfo.email,
+        })).catch((err) => {
+          console.warn('[OAuth] Welcome email failed (non-fatal):', err);
+        });
+      }
+
       // Auto-grant founding tier if this email has an approved founding access request
       if (userInfo.email) {
         try {
-          const existingUser = await db.getUserByEmail(userInfo.email);
-          if (existingUser && existingUser.accessTier === 'free') {
+          const userByEmail = await db.getUserByEmail(userInfo.email);
+          if (userByEmail && userByEmail.accessTier === 'free') {
             const hasApproval = await db.hasApprovedFoundingRequest(userInfo.email);
             if (hasApproval) {
-              await db.updateUserTier(existingUser.id, 'founding');
+              await db.updateUserTier(userByEmail.id, 'founding');
               console.log(`[OAuth] Auto-granted founding tier to ${userInfo.email}`);
             }
           }

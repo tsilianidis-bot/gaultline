@@ -2495,9 +2495,18 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { buildContactEmail, buildContactAutoReply } = await import('./email');
         const ownerEmail = buildContactEmail(input);
-        await sendEmail(ownerEmail);
+        const ownerResult = await sendEmail(ownerEmail);
+        if (!ownerResult.success) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: ownerResult.error ?? 'Failed to send message. Please try again or email us directly at jt@getfaultline.live',
+          });
+        }
+        // Auto-reply is best-effort — don't block the response on failure
         const autoReply = buildContactAutoReply({ name: input.name, email: input.email, subject: input.subject });
-        await sendEmail(autoReply);
+        sendEmail(autoReply).catch((err) => {
+          console.warn('[Contact] Auto-reply failed (non-fatal):', err);
+        });
         return { success: true };
       }),
   }),

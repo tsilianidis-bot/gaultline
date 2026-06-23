@@ -6,16 +6,16 @@
 
 import sgMail from "@sendgrid/mail";
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY ?? "";
-const FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL ?? "jt@getfaultline.live";
-const FROM_NAME = process.env.SENDGRID_FROM_NAME ?? "FAULTLINE";
+const DEFAULT_FROM_EMAIL = "jt@getfaultline.live";
+const DEFAULT_FROM_NAME = "FAULTLINE";
 
-let sgInitialized = false;
+let _initializedKey = "";
 
-function initSendGrid() {
-  if (!sgInitialized && SENDGRID_API_KEY) {
-    sgMail.setApiKey(SENDGRID_API_KEY);
-    sgInitialized = true;
+/** Read env vars lazily so tests can override process.env after module load. */
+function initSendGrid(apiKey: string) {
+  if (_initializedKey !== apiKey) {
+    sgMail.setApiKey(apiKey);
+    _initializedKey = apiKey;
   }
 }
 
@@ -27,17 +27,21 @@ export interface EmailPayload {
 }
 
 export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
-  if (!SENDGRID_API_KEY) {
+  const apiKey = process.env.SENDGRID_API_KEY ?? "";
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL ?? DEFAULT_FROM_EMAIL;
+  const fromName = process.env.SENDGRID_FROM_NAME ?? DEFAULT_FROM_NAME;
+
+  if (!apiKey) {
     console.warn("[Email] SENDGRID_API_KEY not configured — email not sent to:", payload.to);
     return { success: false, error: "Email service not configured. Add SENDGRID_API_KEY in Settings → Secrets." };
   }
 
-  initSendGrid();
+  initSendGrid(apiKey);
 
   try {
     await sgMail.send({
       to: payload.to,
-      from: { email: FROM_EMAIL, name: FROM_NAME },
+      from: { email: fromEmail, name: fromName },
       subject: payload.subject,
       html: payload.html,
       text: payload.text ?? payload.html.replace(/<[^>]+>/g, ""),
@@ -210,6 +214,110 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
   return {
     to: email,
     subject: `We received your message — FAULTLINE`,
+    html,
+  };
+}
+
+// ── Welcome Email Template (first login) ──────────────────────────────────────
+export function buildWelcomeEmail(opts: {
+  name: string;
+  email: string;
+  siteUrl?: string;
+}): EmailPayload {
+  const { name, email, siteUrl = "https://getfaultline.live" } = opts;
+  const displayName = name?.trim() || "there";
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /><style>
+body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
+.container{max-width:560px;margin:0 auto;padding:40px 24px;}
+.logo{font-family:'Rajdhani',Arial,sans-serif;font-size:28px;font-weight:700;letter-spacing:.12em;color:#00D4FF;margin-bottom:32px;}
+.logo span{color:#E2E8F0;}
+.card{background:#0A1520;border:1px solid rgba(0,212,255,.15);border-radius:12px;padding:32px;margin-bottom:24px;}
+.badge{display:inline-block;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.14em;color:#00D4FF;text-transform:uppercase;margin-bottom:20px;}
+h1{font-size:22px;font-weight:700;color:#E2E8F0;margin:0 0 12px;line-height:1.3;}
+p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
+.feature-row{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start;}
+.feature-icon{font-size:16px;margin-top:2px;flex-shrink:0;}
+.feature-text{font-size:13px;color:#CBD5E1;line-height:1.5;}
+.feature-label{font-weight:700;color:#E2E8F0;}
+.cta{display:inline-block;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.4);border-radius:8px;padding:14px 28px;font-size:13px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;color:#00D4FF;text-decoration:none;text-transform:uppercase;font-weight:700;margin-top:8px;}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:24px 0;}
+.footer{font-size:11px;color:rgba(100,116,139,.5);font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+</style></head><body>
+<div class="container">
+<div class="logo">FAULT<span>LINE</span></div>
+<div class="card">
+<div class="badge">&#x2B21; Access Granted</div>
+<h1>Welcome to FAULTLINE, ${displayName}.</h1>
+<p>You're now inside the intelligence terminal. Here's what you have access to:</p>
+<div class="feature-row"><div class="feature-icon">&#x2B21;</div><div class="feature-text"><span class="feature-label">Pressure Index</span> — Real-time systemic market pressure across 8 risk vectors.</div></div>
+<div class="feature-row"><div class="feature-icon">&#x2B21;</div><div class="feature-text"><span class="feature-label">Diagnostic AI</span> — Today, week, month, and year-level market regime interpretation.</div></div>
+<div class="feature-row"><div class="feature-icon">&#x2B21;</div><div class="feature-text"><span class="feature-label">Signals Screener</span> — AI-scored stock signals with RSI, MACD, and regime weighting.</div></div>
+<div class="feature-row"><div class="feature-icon">&#x2B21;</div><div class="feature-text"><span class="feature-label">Crypto Intelligence</span> — Systemic risk, alt rotation, and on-chain signal analysis.</div></div>
+<br/>
+<a href="${siteUrl}/app" class="cta">Enter the Terminal &#x2192;</a>
+</div>
+<div class="card" style="background:rgba(0,0,0,.2);">
+<p style="margin:0;font-size:13px;color:#64748B;">Questions? Reply to this email or visit <a href="${siteUrl}/contact" style="color:#00D4FF;">getfaultline.live/contact</a>.</p>
+</div>
+<hr class="divider"/>
+<div class="footer">FAULTLINE &#x2014; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
+</div></body></html>`;
+  return {
+    to: email,
+    subject: `Welcome to FAULTLINE — Your access is ready`,
+    html,
+  };
+}
+
+// ── Subscription Confirmation Email Template ───────────────────────────────────
+export function buildSubscriptionConfirmationEmail(opts: {
+  name: string;
+  email: string;
+  planName: string;
+  siteUrl?: string;
+}): EmailPayload {
+  const { name, email, planName, siteUrl = "https://getfaultline.live" } = opts;
+  const displayName = name?.trim() || "there";
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /><style>
+body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
+.container{max-width:560px;margin:0 auto;padding:40px 24px;}
+.logo{font-family:'Rajdhani',Arial,sans-serif;font-size:28px;font-weight:700;letter-spacing:.12em;color:#00D4FF;margin-bottom:32px;}
+.logo span{color:#E2E8F0;}
+.card{background:#0A1520;border:1px solid rgba(0,212,255,.15);border-radius:12px;padding:32px;margin-bottom:24px;}
+.badge{display:inline-block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.14em;color:#22C55E;text-transform:uppercase;margin-bottom:20px;}
+h1{font-size:22px;font-weight:700;color:#E2E8F0;margin:0 0 12px;line-height:1.3;}
+p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
+.plan-box{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:16px 20px;margin-bottom:20px;}
+.plan-label{font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.14em;color:#00D4FF;text-transform:uppercase;margin-bottom:4px;}
+.plan-name{font-size:18px;font-weight:700;color:#E2E8F0;}
+.cta{display:inline-block;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.4);border-radius:8px;padding:14px 28px;font-size:13px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;color:#00D4FF;text-decoration:none;text-transform:uppercase;font-weight:700;margin-top:8px;}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:24px 0;}
+.footer{font-size:11px;color:rgba(100,116,139,.5);font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+</style></head><body>
+<div class="container">
+<div class="logo">FAULT<span>LINE</span></div>
+<div class="card">
+<div class="badge">&#x2713; Subscription Active</div>
+<h1>You're in, ${displayName}.</h1>
+<p>Your subscription has been activated. Full intelligence access is now unlocked.</p>
+<div class="plan-box">
+<div class="plan-label">Active Plan</div>
+<div class="plan-name">${planName}</div>
+</div>
+<p>Head back to the terminal to explore everything that's now available to you.</p>
+<a href="${siteUrl}/app" class="cta">Open FAULTLINE &#x2192;</a>
+</div>
+<div class="card" style="background:rgba(0,0,0,.2);">
+<p style="margin:0;font-size:13px;color:#64748B;">Manage your subscription at <a href="${siteUrl}/app/account" style="color:#00D4FF;">Account Settings</a>. Questions? Reply to this email.</p>
+</div>
+<hr class="divider"/>
+<div class="footer">FAULTLINE &#x2014; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
+</div></body></html>`;
+  return {
+    to: email,
+    subject: `Your FAULTLINE ${planName} subscription is active`,
     html,
   };
 }

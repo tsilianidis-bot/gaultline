@@ -475,10 +475,10 @@ export async function updateDashboardMode(
     .where(eq(users.id, userId));
 }
 
-export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number } | null> {
+export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null } | null> {
   const db = await getDb();
   if (!db) return null;
-  const [user] = await db.select({ id: users.id })
+  const [user] = await db.select({ id: users.id, name: users.name, email: users.email })
     .from(users)
     .where(eq(users.stripeCustomerId, customerId))
     .limit(1);

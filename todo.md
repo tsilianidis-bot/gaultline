@@ -1871,3 +1871,12 @@
 - [ ] TypeScript: 0 errors
 - [ ] Tests: all passing
 - [ ] Checkpoint saved
+
+## Email System Critical Fixes (June 23, 2026)
+
+- [x] Add SENDGRID_API_KEY secret via webdev_request_secrets (P0 — emails not sending in production)
+- [x] Fix contact form: surface sendEmail errors to user instead of always returning success (P0)
+- [x] Add welcome email template + trigger on first OAuth login (P1)
+- [x] Add subscription confirmation email in Stripe webhook checkout.session.completed (P1)
+- [x] Remove unused nodemailer dependency from package.json (P3)
+- [ ] Add test coverage for buildContactEmail and buildContactAutoReply templates (P2)

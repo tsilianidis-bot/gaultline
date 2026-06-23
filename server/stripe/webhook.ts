@@ -4,6 +4,7 @@ import { ENV } from '../_core/env';
 import { getPlanByPriceId } from './products';
 import { updateUserStripe, getUserByStripeCustomerId } from '../db';
 import type { AccessTier } from '../../shared/tiers';
+import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
 
 /**
  * Resolve the access tier for a completed checkout session.
@@ -43,6 +44,16 @@ async function resolveTierFromSubscription(subscriptionId: string): Promise<Excl
     console.warn('[Stripe Webhook] Could not fetch subscription', subscriptionId, '—', err.message);
   }
   return null;
+}
+
+/** Map an access tier to a human-readable plan name for emails. */
+function tierToPlanName(tier: string): string {
+  switch (tier) {
+    case 'core': return 'Mobile Plan';
+    case 'premium': return 'Trader Plan';
+    case 'founding': return 'Founding Member';
+    default: return 'FAULTLINE Plan';
+  }
 }
 
 export async function handleStripeWebhook(req: Request, res: Response) {
@@ -98,6 +109,20 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         });
 
         console.log(`[Stripe Webhook] User ${userId} upgraded to ${tier} (session ${session.id})`);
+
+        // Send subscription confirmation email (best-effort, non-blocking)
+        const customerEmail = session.metadata?.customer_email ?? session.customer_email ?? null;
+        const customerName = session.metadata?.customer_name ?? null;
+        if (customerEmail) {
+          sendEmail(buildSubscriptionConfirmationEmail({
+            name: customerName || '',
+            email: customerEmail,
+            planName: tierToPlanName(tier),
+          })).catch((err) => {
+            console.warn('[Stripe Webhook] Subscription confirmation email failed (non-fatal):', err);
+          });
+        }
+
         break;
       }
 
