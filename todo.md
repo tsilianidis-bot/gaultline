@@ -1997,3 +1997,69 @@
 - [x] Admin → SEO panel: schema validation, content freshness, broken links
 - [x] Admin → SEO panel: Search Console readiness (impressions/clicks/CTR/position — "Not Connected" state)
 - [ ] Internal linking engine (admin-only): contextual link recommendations between pages
+
+## Organic Growth Engine (Jun 24, 2026)
+
+### Phase 1 — Database Schema
+- [x] Add organic_content table: id, type, title, slug, metaDescription, content, schemaJson, internalLinks, featuredImagePrompt, status (draft/published/rejected), qualityScore, wordCount, duplicateOf, publishedAt, createdAt, updatedAt
+- [x] Add content_schedules table: id, contentType, frequency, lastRunAt, nextRunAt, enabled
+- [x] Add signal_pages table: id, symbol, assetType (stock/crypto), signalSummary, bullishCase, bearishCase, macroRisks, technicalRisks, catalystAnalysis, confidenceScore, faqJson, lastUpdatedAt
+- [x] Add content_cta_clicks table: id, pageSlug, ctaType, visitorId, createdAt
+- [x] Run migrations via webdev_execute_sql
+- [x] Add Drizzle schema entries for all 4 tables
+
+### Phase 2 — Content Generation Engine
+- [x] Build server/organicContent/contentEngine.ts — LLM-powered generator for 10 report types
+- [x] 10 report types: Daily Market Brief, Weekly Market Outlook, Crypto Market Outlook, AI Sector Outlook, Federal Reserve Watch, Liquidity Report, Volatility Report, Pressure Index Report, Market Regime Report, Historical Analog Report
+- [x] Each report: unique headline, unique meta description, 1500-3000 words, Article schema, FAQ schema, 5+ internal links, featured image prompt
+- [x] Build duplicate detection: check title similarity + content hash before publishing
+- [x] Build quality validator: word count ≥1000, has schema, has internal links, no duplicate title/description
+- [x] Auto-add to sitemap on publish
+- [x] Add tRPC procedures: organicContent.listPublished, organicContent.getBySlug, organicContent.getSignalPage, organicContent.trackCtaClick, organicContent.adminDashboard, organicContent.adminGenerateContent, organicContent.adminRefreshSignalPage, organicContent.adminDeleteContent
+
+### Phase 3 — Signal Content Automation
+- [x] Build server/organicContent/signalPageEngine.ts — generates signal pages for stocks + crypto
+- [x] Support 11 stocks: NVDA, PLTR, TSLA, META, AMD, MSFT, GOOGL, AMZN, AAPL, ARM, SMCI
+- [x] Support 10 crypto: BTC, ETH, SOL, TAO, SUI, RENDER, NEAR, ONDO, PYTH, LINK
+- [x] Each signal page: signal summary, bullish case, bearish case, macro risks, technical risks, catalyst analysis, confidence score, FAQ section
+- [x] Auto-refresh signal pages when new Polygon/FRED data available (stale after 6 hours)
+- [x] Add tRPC procedures via organicContent router (getSignalPage, listSignalPages, adminRefreshSignalPage)
+- [x] Add all 21 symbols to sitemap
+
+### Phase 4 — Dynamic Symbol Pages (Frontend)
+- [x] Upgrade DynamicStockPage.tsx to fetch live signal content from signalPages.getBySymbol
+- [x] Upgrade DynamicCryptoPage.tsx to fetch live signal content from signalPages.getBySymbol
+- [x] Each page: signal summary card, bull/bear case panels, macro/technical risks, catalyst analysis, confidence score gauge, FAQ accordion, Article + FAQPage schema
+- [x] Add Start Free CTA, Demo CTA, Pricing CTA, Related Tool CTA to every symbol page
+- [x] Track CTA clicks via analytics
+
+### Phase 5 — Content Cluster Pages
+- [ ] Build 9 topic cluster pillar pages (one per cluster)
+- [ ] Clusters: Market Crash Probability, Recession Probability, AI Bubble Risk, Federal Reserve Policy, Liquidity Conditions, Market Regimes, Alt Season Probability, Crypto Rotation, Risk-On/Risk-Off Cycles
+- [ ] Each pillar: 2000+ words, links to 3+ supporting articles, FAQ, related tools CTA
+- [ ] Wire cluster routes in App.tsx
+- [ ] Add cluster pages to sitemap
+
+### Phase 6 — Conversion System
+- [ ] Build SEOConversionBar component: Start Free + Demo + Pricing + Related Tool CTAs
+- [ ] Add SEOConversionBar to all 20 flagship SEO pages
+- [ ] Add SEOConversionBar to all dynamic symbol pages
+- [ ] Track CTA clicks: page slug, CTA type, visitor ID → content_cta_clicks table
+- [ ] Add tRPC procedure: analytics.trackCtaClick, analytics.getCtaStats
+
+### Phase 7 — Admin Content Intelligence Center
+- [x] Add "Content" tab to AdminPortal
+- [x] Published articles table: title, type, published date, word count, quality score
+- [x] Scheduled articles: next run times for all 10 report types
+- [x] Top converting pages: CTA clicks + signup starts
+- [x] Orphan content: published pages with 0 internal links pointing to them
+- [x] Stale content: articles older than 30 days with no update
+- [x] Signal pages inventory: all 21 symbols with last-updated status
+
+### Phase 8 — Cron + Pipeline
+- [x] Scheduled handlers wired: /api/scheduled/generate-organic-content + /api/scheduled/refresh-signal-pages
+- [ ] Create heartbeat cron jobs (requires deploy first)
+- [x] End-to-end test: generate → validate → publish → sitemap → verify
+- [x] TypeScript: 0 errors
+- [ ] All tests passing
+- [ ] Checkpoint saved

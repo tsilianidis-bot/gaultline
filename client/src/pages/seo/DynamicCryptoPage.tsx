@@ -5,9 +5,10 @@
  * No separate file needed per asset — this handles all of them.
  * Server-side metadata injection in seoMeta.ts handles title/description/OG.
  */
-import { useParams } from "wouter";
-import { Link } from "wouter";
+import { useParams, Link } from "wouter";
 import { getLoginUrl } from "@/const";
+import { trpc } from "@/lib/trpc";
+import { useCallback } from "react";
 
 interface CryptoData {
   name: string;
@@ -20,6 +21,16 @@ interface CryptoData {
   relatedCrypto: string[];
   relatedStocks: string[];
   faqs: { q: string; a: string }[];
+}
+
+// ── Signal label color ─────────────────────────────────────────────────────
+function signalColor(label: string | null | undefined) {
+  if (!label) return "text-[#A8B8CC]";
+  const l = label.toUpperCase();
+  if (l === "BULLISH") return "text-emerald-400";
+  if (l === "BEARISH") return "text-red-400";
+  if (l === "WATCH") return "text-yellow-400";
+  return "text-[#A8B8CC]";
 }
 
 const CRYPTO_DATA: Record<string, CryptoData> = {
@@ -128,6 +139,18 @@ export default function DynamicCryptoPage() {
   const upper = symbol.toUpperCase();
   const data = getCryptoData(symbol);
 
+  // Live signal data from DB
+  const { data: liveSignal } = trpc.organicContent.getSignalPage.useQuery(
+    { symbol: upper },
+    { retry: false, staleTime: 5 * 60 * 1000 }
+  );
+
+  // CTA click tracker
+  const trackCta = trpc.organicContent.trackCtaClick.useMutation();
+  const handleCtaClick = useCallback((ctaType: "start_free" | "demo" | "pricing" | "related_tool") => {
+    trackCta.mutate({ pageSlug: `/crypto/${symbol}`, ctaType });
+  }, [symbol, trackCta]);
+
   const schemaData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -142,10 +165,10 @@ export default function DynamicCryptoPage() {
       },
       {
         "@type": "FAQPage",
-        "mainEntity": data.faqs.map((faq) => ({
+        "mainEntity": (liveSignal?.faqJson ? JSON.parse(liveSignal.faqJson) : data.faqs).map((faq: { q?: string; a?: string; question?: string; answer?: string }) => ({
           "@type": "Question",
-          "name": faq.q,
-          "acceptedAnswer": { "@type": "Answer", "text": faq.a },
+          "name": faq.q ?? faq.question,
+          "acceptedAnswer": { "@type": "Answer", "text": faq.a ?? faq.answer },
         })),
       },
     ],
@@ -168,7 +191,7 @@ export default function DynamicCryptoPage() {
             <Link href="/crypto-signals" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors hidden sm:block">
               CRYPTO SIGNALS
             </Link>
-            <a href={getLoginUrl()} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-4 py-2 rounded font-bold transition-colors">
+            <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-4 py-2 rounded font-bold transition-colors">
               GET ACCESS →
             </a>
           </div>
@@ -194,6 +217,23 @@ export default function DynamicCryptoPage() {
           <p className="text-lg text-[#A8B8CC] leading-relaxed max-w-2xl">
             Real-time {data.name} ({upper}) signal intelligence. FAULTLINE tracks {upper}'s macro regime fit, liquidity conditions, and systemic risk alignment — updated daily.
           </p>
+          {liveSignal && (
+            <div className="flex items-center gap-4 mt-4">
+              <span className={`text-sm font-mono font-bold ${signalColor(liveSignal.signalLabel)}`}>
+                {liveSignal.signalLabel}
+              </span>
+              {liveSignal.confidenceScore != null && (
+                <span className="text-[11px] font-mono text-[#64748B]">
+                  {liveSignal.confidenceScore}% confidence
+                </span>
+              )}
+              {liveSignal.regime && (
+                <span className="text-[11px] font-mono text-[#64748B]">
+                  Regime: {liveSignal.regime}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Signal CTA */}
@@ -204,9 +244,14 @@ export default function DynamicCryptoPage() {
               <p className="text-white font-semibold mb-1">Access the current {upper} signal</p>
               <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification · Key levels</p>
             </div>
-            <a href={getLoginUrl()} className="shrink-0 text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-5 py-3 rounded font-bold transition-colors whitespace-nowrap">
-              GET SIGNAL →
-            </a>
+            <div className="flex items-center gap-3 flex-wrap">
+              <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-4 py-2.5 rounded transition-colors">
+                SEE PRICING
+              </a>
+              <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="shrink-0 text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-5 py-3 rounded font-bold transition-colors whitespace-nowrap">
+                GET SIGNAL →
+              </a>
+            </div>
           </div>
         </div>
 
@@ -216,17 +261,27 @@ export default function DynamicCryptoPage() {
           <p className="text-[#A8B8CC] leading-relaxed">{data.description}</p>
         </section>
 
+        {/* Live signal summary if available */}
+        {liveSignal?.signalSummary && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Current {upper} Signal Summary</h2>
+            <div className="p-6 rounded-lg border border-[#00D4FF]/20 bg-[#00D4FF]/5">
+              <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.signalSummary}</p>
+            </div>
+          </section>
+        )}
+
         {/* Bull / Bear */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-6">{upper} Bull Case vs Bear Case</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-6 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
               <div className="text-[10px] font-mono tracking-widest text-emerald-400 mb-3">BULL CASE</div>
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">{data.bullCase}</p>
+              <p className="text-[#A8B8CC] text-sm leading-relaxed">{liveSignal?.bullishCase ?? data.bullCase}</p>
             </div>
             <div className="p-6 rounded-lg border border-red-500/20 bg-red-500/5">
               <div className="text-[10px] font-mono tracking-widest text-red-400 mb-3">BEAR CASE</div>
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">{data.bearCase}</p>
+              <p className="text-[#A8B8CC] text-sm leading-relaxed">{liveSignal?.bearishCase ?? data.bearCase}</p>
             </div>
           </div>
         </section>
@@ -275,11 +330,27 @@ export default function DynamicCryptoPage() {
           </div>
         </section>
 
+        {/* Demo CTA */}
+        <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02] mb-12">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-[10px] font-mono tracking-[0.3em] text-[#A8B8CC]/60 mb-1">FAULTLINE DEMO</div>
+              <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} in real-time</p>
+            </div>
+            <a href={getLoginUrl()} onClick={() => handleCtaClick("demo")} className="text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 hover:bg-[#00D4FF]/10 px-5 py-2.5 rounded font-bold transition-colors whitespace-nowrap">
+              VIEW DEMO →
+            </a>
+          </div>
+        </div>
+
         {/* FAQ */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-6">{upper} Frequently Asked Questions</h2>
           <div className="space-y-4">
-            {data.faqs.map((faq, i) => (
+            {(liveSignal?.faqJson
+              ? JSON.parse(liveSignal.faqJson).map((f: { question?: string; answer?: string; q?: string; a?: string }) => ({ q: f.question ?? f.q ?? "", a: f.answer ?? f.a ?? "" }))
+              : data.faqs
+            ).map((faq: { q: string; a: string }, i: number) => (
               <div key={i} className="p-6 rounded-lg border border-white/8 bg-white/[0.02]">
                 <h3 className="text-white font-semibold mb-3">{faq.q}</h3>
                 <p className="text-[#A8B8CC] text-sm leading-relaxed">{faq.a}</p>
@@ -293,18 +364,18 @@ export default function DynamicCryptoPage() {
           <h2 className="text-2xl font-bold text-white mb-6">Related Intelligence</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {data.relatedCrypto.map((sym) => (
-              <Link key={sym} href={`/crypto/${sym}`} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-purple-400/20 transition-all text-center">
+              <Link key={sym} href={`/crypto/${sym}`} onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-purple-400/20 transition-all text-center">
                 <div className="text-[10px] font-mono tracking-widest text-purple-400/60 mb-1">CRYPTO</div>
                 <div className="text-white font-bold group-hover:text-[#00D4FF] transition-colors">{sym.toUpperCase()}</div>
               </Link>
             ))}
             {data.relatedStocks.map((sym) => (
-              <Link key={sym} href={`/stock/${sym}`} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-[#00D4FF]/20 transition-all text-center">
+              <Link key={sym} href={`/stock/${sym}`} onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-[#00D4FF]/20 transition-all text-center">
                 <div className="text-[10px] font-mono tracking-widest text-[#64748B] mb-1">STOCK</div>
                 <div className="text-white font-bold group-hover:text-[#00D4FF] transition-colors">{sym.toUpperCase()}</div>
               </Link>
             ))}
-            <Link href="/crypto-signals" className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-[#00D4FF]/20 transition-all text-center">
+            <Link href="/crypto-signals" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-[#00D4FF]/20 transition-all text-center">
               <div className="text-[10px] font-mono tracking-widest text-[#00D4FF]/60 mb-1">ALL</div>
               <div className="text-white font-bold group-hover:text-[#00D4FF] transition-colors">ALL CRYPTO</div>
             </Link>

@@ -844,3 +844,127 @@ export const visitorProfiles = mysqlTable("visitorProfiles", {
 }));
 export type VisitorProfile = typeof visitorProfiles.$inferSelect;
 export type InsertVisitorProfile = typeof visitorProfiles.$inferInsert;
+
+// ── Organic Content Engine ───────────────────────────────────
+/**
+ * Stores all AI-generated SEO content: daily briefs, weekly reports,
+ * market outlooks, and other auto-published market intelligence articles.
+ * Each row is one publishable content piece with full SEO metadata.
+ */
+export const organicContent = mysqlTable("organicContent", {
+  id:                   int("id").autoincrement().primaryKey(),
+  /** Content type: daily_market_brief | weekly_market_outlook | crypto_market_outlook | ai_sector_outlook | federal_reserve_watch | liquidity_report | volatility_report | pressure_index_report | market_regime_report | historical_analog_report */
+  contentType:          varchar("contentType", { length: 60 }).notNull(),
+  /** URL-safe slug for the article */
+  slug:                 varchar("slug", { length: 220 }).notNull().unique(),
+  /** SEO-optimized headline (max 65 chars) */
+  title:                varchar("title", { length: 300 }).notNull(),
+  /** Meta description (max 160 chars) */
+  metaDescription:      varchar("metaDescription", { length: 200 }).notNull(),
+  /** Full article body in Markdown */
+  content:              text("content").notNull(),
+  /** JSON-LD schema markup (Article + FAQPage) */
+  schemaJson:           text("schemaJson"),
+  /** JSON array of internal link objects { text, href } */
+  internalLinksJson:    text("internalLinksJson"),
+  /** AI-generated image prompt for featured image */
+  featuredImagePrompt:  text("featuredImagePrompt"),
+  /** draft | published | rejected */
+  status:               mysqlEnum("status", ["draft", "published", "rejected"]).default("draft").notNull(),
+  /** Quality score 0-100 from content validator */
+  qualityScore:         int("qualityScore"),
+  /** Word count of the content */
+  wordCount:            int("wordCount"),
+  /** ID of the content this duplicates (if rejected for duplicate) */
+  duplicateOf:          int("duplicateOf"),
+  /** Rejection reason if status=rejected */
+  rejectionReason:      varchar("rejectionReason", { length: 200 }),
+  /** FAULTLINE pressure score at time of generation */
+  pressureScore:        int("pressureScore"),
+  /** Market regime label at time of generation */
+  regime:               varchar("regime", { length: 80 }),
+  publishedAt:          timestamp("publishedAt"),
+  createdAt:            timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:            timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  slugIdx:        index("organicContent_slug_idx").on(t.slug),
+  typeStatusIdx:  index("organicContent_type_status_idx").on(t.contentType, t.status),
+  publishedAtIdx: index("organicContent_publishedAt_idx").on(t.publishedAt),
+}));
+export type OrganicContent = typeof organicContent.$inferSelect;
+export type InsertOrganicContent = typeof organicContent.$inferInsert;
+
+// ── Signal Pages Cache ───────────────────────────────────────
+/**
+ * Stores AI-generated signal page content for each tracked stock/crypto symbol.
+ * Auto-refreshed every 6 hours when new market data is available.
+ * Powers the dynamic /stock/:symbol and /crypto/:symbol pages.
+ */
+export const signalPages = mysqlTable("signalPages", {
+  id:               int("id").autoincrement().primaryKey(),
+  /** Ticker symbol e.g. NVDA, BTC */
+  symbol:           varchar("symbol", { length: 20 }).notNull().unique(),
+  /** stock | crypto */
+  assetType:        mysqlEnum("assetType", ["stock", "crypto"]).notNull(),
+  /** Full company/asset name */
+  name:             varchar("name", { length: 128 }),
+  /** 2-3 sentence signal summary */
+  signalSummary:    text("signalSummary"),
+  /** Bullish case analysis */
+  bullishCase:      text("bullishCase"),
+  /** Bearish case analysis */
+  bearishCase:      text("bearishCase"),
+  /** Macro risk factors */
+  macroRisks:       text("macroRisks"),
+  /** Technical risk factors */
+  technicalRisks:   text("technicalRisks"),
+  /** Catalyst analysis */
+  catalystAnalysis: text("catalystAnalysis"),
+  /** Confidence score 0-100 */
+  confidenceScore:  int("confidenceScore"),
+  /** JSON array of FAQ objects { question, answer } */
+  faqJson:          text("faqJson"),
+  /** Current signal label: BUY | SELL | HOLD | WATCH */
+  signalLabel:      varchar("signalLabel", { length: 20 }),
+  /** Current price at time of last update */
+  lastPrice:        decimal("lastPrice", { precision: 14, scale: 4 }),
+  /** Daily change % at time of last update */
+  dailyChangePct:   decimal("dailyChangePct", { precision: 8, scale: 4 }),
+  /** FAULTLINE pressure score at time of generation */
+  pressureScore:    int("pressureScore"),
+  /** Regime label at time of generation */
+  regime:           varchar("regime", { length: 80 }),
+  lastUpdatedAt:    timestamp("lastUpdatedAt").defaultNow().notNull(),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  symbolIdx:   index("signalPages_symbol_idx").on(t.symbol),
+  assetTypeIdx: index("signalPages_assetType_idx").on(t.assetType),
+}));
+export type SignalPage = typeof signalPages.$inferSelect;
+export type InsertSignalPage = typeof signalPages.$inferInsert;
+
+// ── Content CTA Clicks ───────────────────────────────────────
+/**
+ * Tracks CTA button clicks on SEO landing pages and signal pages.
+ * Used to measure conversion funnel performance by page and CTA type.
+ */
+export const contentCtaClicks = mysqlTable("contentCtaClicks", {
+  id:         int("id").autoincrement().primaryKey(),
+  /** URL path of the page where the click occurred */
+  pageSlug:   varchar("pageSlug", { length: 300 }).notNull(),
+  /** start_free | demo | pricing | related_tool */
+  ctaType:    mysqlEnum("ctaType", ["start_free", "demo", "pricing", "related_tool"]).notNull(),
+  /** Anonymous visitor ID from localStorage */
+  visitorId:  varchar("visitorId", { length: 64 }),
+  /** Authenticated user ID if logged in */
+  userId:     int("userId"),
+  country:    varchar("country", { length: 4 }),
+  deviceType: varchar("deviceType", { length: 16 }),
+  createdAt:  timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  pageSlugIdx: index("contentCtaClicks_pageSlug_idx").on(t.pageSlug),
+  ctaTypeIdx:  index("contentCtaClicks_ctaType_idx").on(t.ctaType),
+  createdAtIdx: index("contentCtaClicks_createdAt_idx").on(t.createdAt),
+}));
+export type ContentCtaClick = typeof contentCtaClicks.$inferSelect;
+export type InsertContentCtaClick = typeof contentCtaClicks.$inferInsert;

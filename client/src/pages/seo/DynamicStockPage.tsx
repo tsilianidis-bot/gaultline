@@ -2,15 +2,16 @@
  * DynamicStockPage — /stock/:symbol
  *
  * Auto-generates a full SEO landing page for any stock symbol.
- * No separate file needed per symbol — this handles all of them.
+ * Pulls live signal data from the database when available.
+ * Falls back to curated static content for high-priority symbols.
  * Server-side metadata injection in seoMeta.ts handles title/description/OG.
  */
-import { useParams } from "wouter";
-import { Link } from "wouter";
+import { useParams, Link } from "wouter";
 import { getLoginUrl } from "@/const";
+import { trpc } from "@/lib/trpc";
+import { useCallback } from "react";
 
 // ── Per-symbol enrichment data ─────────────────────────────────────────────
-// Add richer data for high-priority symbols; all others get auto-generated content.
 interface SymbolData {
   name: string;
   sector: string;
@@ -115,14 +116,120 @@ const SYMBOL_DATA: Record<string, SymbolData> = {
       { q: "How does FAULTLINE track AMD?", a: "FAULTLINE monitors AMD's momentum score, AI chip exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
     ],
   },
+  msft: {
+    name: "Microsoft Corporation",
+    sector: "AI / Cloud / Software",
+    description: "Microsoft (MSFT) is the world's largest software company and a dominant AI platform through its OpenAI partnership, Azure cloud, and Copilot AI integration across its product suite. Azure's AI services are growing rapidly.",
+    bullCase: "Azure AI services growing at 30%+ annually. Copilot monetization across Office 365, GitHub, and enterprise products creates durable recurring revenue. OpenAI partnership provides AI model access.",
+    bearCase: "OpenAI partnership costs are substantial. Azure growth deceleration risk. Regulatory scrutiny of AI partnerships. Valuation premium requires sustained execution.",
+    keyLevels: "Key support: $380–$400 (200-day MA zone), $350 (structural support). Key resistance: $450–$470 (all-time high zone).",
+    riskFactors: ["Azure growth deceleration", "OpenAI partnership costs", "Regulatory scrutiny", "AI competition from Google/Amazon", "Valuation compression"],
+    relatedSymbols: ["nvda", "meta", "googl", "amzn"],
+    relatedCrypto: [],
+    faqs: [
+      { q: "Is MSFT a good AI investment?", a: "MSFT is one of the most diversified AI plays — Azure cloud, OpenAI partnership, and Copilot integration across enterprise software create multiple AI revenue streams." },
+      { q: "How does MSFT compare to other AI stocks?", a: "MSFT offers AI exposure with lower volatility than pure-play AI stocks like NVDA or PLTR. Its enterprise moat and cash flow provide downside protection." },
+      { q: "What is MSFT's Azure AI growth rate?", a: "Azure AI services have been growing at 30%+ annually. FAULTLINE tracks MSFT's AI revenue trajectory as a key indicator of enterprise AI adoption." },
+      { q: "What are MSFT's key risks?", a: "Key risks include Azure growth deceleration, OpenAI partnership costs, regulatory scrutiny of AI monopoly concerns, and competition from Google Cloud and AWS." },
+      { q: "How does FAULTLINE track MSFT?", a: "FAULTLINE monitors MSFT's momentum score, AI cloud exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
+    ],
+  },
+  googl: {
+    name: "Alphabet Inc.",
+    sector: "AI / Search / Cloud",
+    description: "Alphabet (GOOGL) operates Google Search, YouTube, Google Cloud, and is a leading AI research organization through DeepMind and Google Brain. Gemini AI models compete directly with OpenAI's GPT series.",
+    bullCase: "Google Search maintains dominant market position. Gemini AI integration across Search, Cloud, and Workspace drives monetization. YouTube advertising resilient. Google Cloud AI services accelerating.",
+    bearCase: "AI-powered search disruption threatens Google's core search revenue model. OpenAI/Microsoft competition intensifying. Regulatory antitrust actions globally.",
+    keyLevels: "Key support: $150–$160 (200-day MA), $140 (structural support). Key resistance: $200–$210 (all-time high zone).",
+    riskFactors: ["Search disruption from AI", "Antitrust regulatory risk", "OpenAI/Microsoft competition", "YouTube ad spend sensitivity", "Cloud growth deceleration"],
+    relatedSymbols: ["msft", "meta", "nvda", "amzn"],
+    relatedCrypto: [],
+    faqs: [
+      { q: "Is GOOGL threatened by AI?", a: "GOOGL faces a dual dynamic: AI threatens its core search revenue while also creating new opportunities through Google Cloud AI services and Gemini. FAULTLINE tracks both the threat and opportunity dimensions." },
+      { q: "How does GOOGL perform in different market regimes?", a: "GOOGL is less volatile than pure-play AI stocks due to its diversified revenue base. In risk-off environments, its advertising revenue sensitivity creates moderate headwinds." },
+      { q: "What is GOOGL's AI strategy?", a: "GOOGL's AI strategy centers on Gemini model integration across Search, Cloud, and Workspace, plus DeepMind research for breakthrough AI capabilities." },
+      { q: "What are GOOGL's key risks?", a: "Key risks include AI-powered search disruption, antitrust regulatory actions, OpenAI/Microsoft competition in enterprise AI, and advertising revenue cyclicality." },
+      { q: "How does FAULTLINE track GOOGL?", a: "FAULTLINE monitors GOOGL's momentum score, AI exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
+    ],
+  },
+  amzn: {
+    name: "Amazon.com Inc.",
+    sector: "AI / Cloud / E-Commerce",
+    description: "Amazon (AMZN) operates the world's largest e-commerce platform and AWS cloud infrastructure. AWS is a leading AI infrastructure provider through Bedrock AI services, Trainium chips, and enterprise AI solutions.",
+    bullCase: "AWS AI services growing rapidly. Amazon's custom Trainium chips reduce NVDA dependency. Advertising business growing at 20%+. Retail margins expanding through AI-driven efficiency.",
+    bearCase: "AWS growth deceleration risk. E-commerce margin pressure. Custom chip development costs. Regulatory scrutiny of marketplace practices.",
+    keyLevels: "Key support: $175–$185 (200-day MA), $160 (structural support). Key resistance: $220–$230 (all-time high zone).",
+    riskFactors: ["AWS growth deceleration", "E-commerce margin pressure", "Regulatory risk", "Custom chip development costs", "Macro consumer spending sensitivity"],
+    relatedSymbols: ["msft", "googl", "nvda"],
+    relatedCrypto: [],
+    faqs: [
+      { q: "Is AMZN a good AI investment?", a: "AMZN offers AI exposure through AWS Bedrock and custom Trainium chips, combined with e-commerce and advertising diversification. Less pure-play AI than NVDA but more defensively positioned." },
+      { q: "How does AWS compare to Azure and Google Cloud?", a: "AWS is the largest cloud provider by market share. Azure is growing faster in AI due to OpenAI partnership. Google Cloud is gaining in AI research workloads. FAULTLINE tracks all three." },
+      { q: "What drives AMZN's stock price?", a: "AMZN is driven by AWS growth, advertising revenue, retail margins, and AI infrastructure investment. FAULTLINE tracks all four dimensions in its AMZN signal analysis." },
+      { q: "What are AMZN's key risks?", a: "Key risks include AWS growth deceleration, e-commerce margin pressure, regulatory antitrust actions, and macro consumer spending sensitivity." },
+      { q: "How does FAULTLINE track AMZN?", a: "FAULTLINE monitors AMZN's momentum score, cloud AI exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
+    ],
+  },
+  aapl: {
+    name: "Apple Inc.",
+    sector: "AI / Consumer Technology",
+    description: "Apple (AAPL) is the world's most valuable company, operating iPhone, Mac, iPad, and Services businesses. Apple Intelligence AI integration across its device ecosystem positions it as an AI hardware and services platform.",
+    bullCase: "Apple Intelligence driving iPhone upgrade cycle. Services revenue growing at 15%+ annually. Installed base of 2B+ devices creates AI monetization opportunity. Strong cash flow and buybacks.",
+    bearCase: "iPhone growth maturation. China market risk. AI feature differentiation vs Android. Services regulatory pressure. Valuation premium requires sustained execution.",
+    keyLevels: "Key support: $185–$195 (200-day MA), $170 (structural support). Key resistance: $230–$240 (all-time high zone).",
+    riskFactors: ["iPhone growth maturation", "China market risk", "AI differentiation challenge", "Services regulatory pressure", "Macro consumer spending sensitivity"],
+    relatedSymbols: ["msft", "googl", "meta"],
+    relatedCrypto: [],
+    faqs: [
+      { q: "Is AAPL a good AI stock?", a: "AAPL's AI story centers on Apple Intelligence integration driving device upgrade cycles and Services monetization. It's a lower-risk AI play compared to pure-play AI stocks." },
+      { q: "How does AAPL perform in market downturns?", a: "AAPL is one of the most defensive large-cap tech stocks due to its strong brand, cash flow, and buyback program. It typically outperforms in risk-off environments relative to high-beta AI stocks." },
+      { q: "What is Apple Intelligence?", a: "Apple Intelligence is Apple's AI platform integrating on-device AI processing, Siri improvements, and ChatGPT integration across iPhone, Mac, and iPad. FAULTLINE tracks its adoption impact on upgrade cycles." },
+      { q: "What are AAPL's key risks?", a: "Key risks include iPhone growth maturation, China market exposure, AI feature differentiation challenges vs Android, and Services regulatory pressure in the EU." },
+      { q: "How does FAULTLINE track AAPL?", a: "FAULTLINE monitors AAPL's momentum score, consumer tech exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
+    ],
+  },
+  arm: {
+    name: "Arm Holdings",
+    sector: "AI Semiconductors / IP",
+    description: "Arm Holdings (ARM) licenses CPU and GPU IP to virtually every semiconductor company. Arm's architecture powers 99% of smartphones and is rapidly expanding into AI data center chips through its Neoverse platform.",
+    bullCase: "AI data center expansion driving Arm architecture adoption. Royalty model creates high-margin recurring revenue. Custom chip trend (Apple, Amazon, Google) all use Arm. AI PC and edge AI expansion.",
+    bearCase: "Extreme valuation multiples. Revenue concentration in smartphone market. RISC-V open-source alternative gaining traction. Softbank overhang.",
+    keyLevels: "Key support: $100–$110 (200-day MA), $90 (structural support). Key resistance: $160–$180 (all-time high zone).",
+    riskFactors: ["Extreme valuation", "Smartphone market concentration", "RISC-V competition", "Softbank overhang", "Royalty rate pressure"],
+    relatedSymbols: ["nvda", "amd", "msft"],
+    relatedCrypto: [],
+    faqs: [
+      { q: "What does Arm Holdings do?", a: "Arm licenses CPU and GPU intellectual property to semiconductor companies. Its architecture powers virtually all smartphones and is expanding into AI data center chips." },
+      { q: "Is ARM a good AI investment?", a: "ARM benefits from the AI chip buildout as its architecture is used in custom AI chips by Apple, Amazon, and Google. However, its extreme valuation creates significant downside risk." },
+      { q: "What is RISC-V and how does it threaten ARM?", a: "RISC-V is an open-source CPU instruction set architecture that could reduce dependency on ARM licenses. FAULTLINE tracks RISC-V adoption as a key risk factor for ARM's royalty revenue." },
+      { q: "How does ARM perform in different market regimes?", a: "ARM is a high-beta semiconductor stock that amplifies AI sentiment moves. In bull regimes, it outperforms. In risk-off environments, its extreme valuation creates sharp drawdowns." },
+      { q: "How does FAULTLINE track ARM?", a: "FAULTLINE monitors ARM's momentum score, AI chip exposure, macro regime fit, and systemic pressure alignment. Signals are updated daily." },
+    ],
+  },
+  smci: {
+    name: "Super Micro Computer",
+    sector: "AI Server Infrastructure",
+    description: "Super Micro Computer (SMCI) manufactures AI server systems and rack-scale solutions. SMCI is a key beneficiary of AI data center buildout, supplying complete server systems to hyperscalers and enterprises deploying NVDA GPUs.",
+    bullCase: "AI data center buildout driving SMCI server demand. Direct NVDA GPU integration creates supply chain advantage. Liquid cooling expertise for next-gen AI chips.",
+    bearCase: "Accounting irregularities and audit concerns. Extreme valuation. Revenue concentration in AI server market. Margin pressure from competition.",
+    keyLevels: "Key support: $30–$35 (major support zone), $25 (structural floor). Key resistance: $60–$70 (recovery zone). SMCI is highly volatile.",
+    riskFactors: ["Accounting/audit risk", "Revenue concentration", "Margin pressure", "Competition from Dell/HPE", "AI capex cycle risk"],
+    relatedSymbols: ["nvda", "amd", "arm"],
+    relatedCrypto: [],
+    faqs: [
+      { q: "What does SMCI do?", a: "SMCI manufactures complete AI server systems, including rack-scale solutions for hyperscalers deploying NVDA GPUs. It's a key infrastructure play in the AI data center buildout." },
+      { q: "What happened with SMCI's accounting issues?", a: "SMCI faced accounting irregularities and auditor changes that created significant uncertainty. FAULTLINE tracks SMCI's accounting risk as a key factor in its risk score." },
+      { q: "Is SMCI a good AI infrastructure play?", a: "SMCI offers direct AI data center exposure but with higher risk than NVDA due to accounting concerns, margin pressure, and competition. FAULTLINE's risk score reflects this elevated risk profile." },
+      { q: "How does SMCI perform in different market regimes?", a: "SMCI is one of the most volatile AI infrastructure stocks. In bull regimes, it can outperform significantly. In risk-off environments, its high beta and specific risks create sharp drawdowns." },
+      { q: "How does FAULTLINE track SMCI?", a: "FAULTLINE monitors SMCI's momentum score, AI infrastructure exposure, accounting risk, and systemic pressure alignment. Signals are updated daily." },
+    ],
+  },
 };
 
-// ── Generic data generator for unknown symbols ─────────────────────────────
 function getSymbolData(symbol: string): SymbolData {
-  const upper = symbol.toUpperCase();
   const existing = SYMBOL_DATA[symbol.toLowerCase()];
   if (existing) return existing;
-
+  const upper = symbol.toUpperCase();
   return {
     name: `${upper} Stock`,
     sector: "Equity",
@@ -143,11 +250,33 @@ function getSymbolData(symbol: string): SymbolData {
   };
 }
 
+// ── Signal label color ─────────────────────────────────────────────────────
+function signalColor(label: string | null | undefined) {
+  if (!label) return "text-[#A8B8CC]";
+  const l = label.toUpperCase();
+  if (l === "BULLISH") return "text-emerald-400";
+  if (l === "BEARISH") return "text-red-400";
+  if (l === "WATCH") return "text-yellow-400";
+  return "text-[#A8B8CC]";
+}
+
 export default function DynamicStockPage() {
   const params = useParams<{ symbol: string }>();
   const symbol = (params.symbol ?? "").toLowerCase();
   const upper = symbol.toUpperCase();
   const data = getSymbolData(symbol);
+
+  // Live signal data from DB
+  const { data: liveSignal } = trpc.organicContent.getSignalPage.useQuery(
+    { symbol: upper },
+    { retry: false, staleTime: 5 * 60 * 1000 }
+  );
+
+  // CTA click tracker
+  const trackCta = trpc.organicContent.trackCtaClick.useMutation();
+  const handleCtaClick = useCallback((ctaType: "start_free" | "demo" | "pricing" | "related_tool") => {
+    trackCta.mutate({ pageSlug: `/stock/${symbol}`, ctaType });
+  }, [symbol, trackCta]);
 
   const schemaData = {
     "@context": "https://schema.org",
@@ -163,18 +292,24 @@ export default function DynamicStockPage() {
       },
       {
         "@type": "FAQPage",
-        "mainEntity": data.faqs.map((faq) => ({
+        "mainEntity": (liveSignal?.faqJson ? JSON.parse(liveSignal.faqJson) : data.faqs).map((faq: { q?: string; a?: string; question?: string; answer?: string }) => ({
           "@type": "Question",
-          "name": faq.q,
-          "acceptedAnswer": { "@type": "Answer", "text": faq.a },
+          "name": faq.q ?? faq.question,
+          "acceptedAnswer": { "@type": "Answer", "text": faq.a ?? faq.answer },
         })),
       },
     ],
   };
 
+  const displayFaqs: { q: string; a: string }[] = liveSignal?.faqJson
+    ? JSON.parse(liveSignal.faqJson).map((f: { question?: string; answer?: string; q?: string; a?: string }) => ({
+        q: f.question ?? f.q ?? "",
+        a: f.answer ?? f.a ?? "",
+      }))
+    : data.faqs;
+
   return (
     <div className="min-h-screen bg-[#050608] text-white">
-      {/* Schema markup */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
@@ -190,7 +325,7 @@ export default function DynamicStockPage() {
             <Link href="/signals" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors hidden sm:block">
               ALL SIGNALS
             </Link>
-            <a href={getLoginUrl()} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-4 py-2 rounded font-bold transition-colors">
+            <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-4 py-2 rounded font-bold transition-colors">
               GET ACCESS →
             </a>
           </div>
@@ -216,19 +351,41 @@ export default function DynamicStockPage() {
           <p className="text-lg text-[#A8B8CC] leading-relaxed max-w-2xl">
             Real-time {data.name} signal intelligence. FAULTLINE tracks {upper}'s macro regime fit, momentum score, and systemic risk alignment — updated daily.
           </p>
+          {liveSignal && (
+            <div className="flex items-center gap-4 mt-4">
+              <span className={`text-sm font-mono font-bold ${signalColor(liveSignal.signalLabel)}`}>
+                {liveSignal.signalLabel}
+              </span>
+              {liveSignal.confidenceScore != null && (
+                <span className="text-[11px] font-mono text-[#64748B]">
+                  {liveSignal.confidenceScore}% confidence
+                </span>
+              )}
+              {liveSignal.regime && (
+                <span className="text-[11px] font-mono text-[#64748B]">
+                  Regime: {liveSignal.regime}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Signal CTA */}
+        {/* Live Signal CTA */}
         <div className="p-6 rounded-xl border border-[#00D4FF]/20 bg-[#00D4FF]/5 mb-12">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">LIVE SIGNAL</div>
               <p className="text-white font-semibold mb-1">Access the current {upper} signal</p>
               <p className="text-[#A8B8CC] text-sm">Macro regime fit · Momentum score · Risk classification · Key levels</p>
             </div>
-            <a href={getLoginUrl()} className="shrink-0 text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-5 py-3 rounded font-bold transition-colors whitespace-nowrap">
-              GET SIGNAL →
-            </a>
+            <div className="flex items-center gap-3 flex-wrap">
+              <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-4 py-2.5 rounded transition-colors">
+                SEE PRICING
+              </a>
+              <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="shrink-0 text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-5 py-3 rounded font-bold transition-colors whitespace-nowrap">
+                GET SIGNAL →
+              </a>
+            </div>
           </div>
         </div>
 
@@ -238,20 +395,46 @@ export default function DynamicStockPage() {
           <p className="text-[#A8B8CC] leading-relaxed">{data.description}</p>
         </section>
 
+        {/* Live signal summary if available */}
+        {liveSignal?.signalSummary && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-white mb-4">Current {upper} Signal Summary</h2>
+            <div className="p-6 rounded-lg border border-[#00D4FF]/20 bg-[#00D4FF]/5">
+              <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.signalSummary}</p>
+            </div>
+          </section>
+        )}
+
         {/* Bull / Bear */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-6">{upper} Bull Case vs Bear Case</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-6 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
               <div className="text-[10px] font-mono tracking-widest text-emerald-400 mb-3">BULL CASE</div>
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">{data.bullCase}</p>
+              <p className="text-[#A8B8CC] text-sm leading-relaxed">{liveSignal?.bullishCase ?? data.bullCase}</p>
             </div>
             <div className="p-6 rounded-lg border border-red-500/20 bg-red-500/5">
               <div className="text-[10px] font-mono tracking-widest text-red-400 mb-3">BEAR CASE</div>
-              <p className="text-[#A8B8CC] text-sm leading-relaxed">{data.bearCase}</p>
+              <p className="text-[#A8B8CC] text-sm leading-relaxed">{liveSignal?.bearishCase ?? data.bearCase}</p>
             </div>
           </div>
         </section>
+
+        {/* Macro Risks */}
+        {liveSignal?.macroRisks && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-white mb-4">{upper} Macro Risk Analysis</h2>
+            <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.macroRisks}</p>
+          </section>
+        )}
+
+        {/* Catalyst Analysis */}
+        {liveSignal?.catalystAnalysis && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-bold text-white mb-4">{upper} Catalyst Analysis</h2>
+            <p className="text-[#A8B8CC] leading-relaxed">{liveSignal.catalystAnalysis}</p>
+          </section>
+        )}
 
         {/* Key Levels */}
         <section className="mb-12">
@@ -282,26 +465,39 @@ export default function DynamicStockPage() {
             In bull regimes with low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments — characterized by credit spread widening, VIX regime elevation, and liquidity tightening — {upper} faces headwinds that FAULTLINE's Pressure Index™ detects in advance.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-            <Link href="/market-regime-tracker" className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-cyan-400/30 transition-all">
+            <Link href="/market-regime-tracker" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-cyan-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-cyan-400 mb-2">REGIME</div>
               <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Market Regime Tracker</div>
             </Link>
-            <Link href="/market-crash-probability-2026" className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-red-400/30 transition-all">
+            <Link href="/market-crash-probability-2026" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-red-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-red-400 mb-2">CRASH RISK</div>
               <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Crash Probability 2026</div>
             </Link>
-            <Link href="/volatility-dashboard" className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-yellow-400/30 transition-all">
+            <Link href="/volatility-dashboard" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-yellow-400/30 transition-all">
               <div className="text-[10px] font-mono tracking-widest text-yellow-400 mb-2">VOLATILITY</div>
               <div className="text-white text-sm font-semibold group-hover:text-[#00D4FF] transition-colors">Volatility Dashboard</div>
             </Link>
           </div>
         </section>
 
+        {/* Demo CTA */}
+        <div className="p-6 rounded-xl border border-white/10 bg-white/[0.02] mb-12">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div className="text-[10px] font-mono tracking-[0.3em] text-[#A8B8CC]/60 mb-1">FAULTLINE DEMO</div>
+              <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} in real-time</p>
+            </div>
+            <a href={getLoginUrl()} onClick={() => handleCtaClick("demo")} className="text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 hover:bg-[#00D4FF]/10 px-5 py-2.5 rounded font-bold transition-colors whitespace-nowrap">
+              VIEW DEMO →
+            </a>
+          </div>
+        </div>
+
         {/* FAQ */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold text-white mb-6">{upper} Frequently Asked Questions</h2>
           <div className="space-y-4">
-            {data.faqs.map((faq, i) => (
+            {displayFaqs.map((faq, i) => (
               <div key={i} className="p-6 rounded-lg border border-white/8 bg-white/[0.02]">
                 <h3 className="text-white font-semibold mb-3">{faq.q}</h3>
                 <p className="text-[#A8B8CC] text-sm leading-relaxed">{faq.a}</p>
@@ -315,18 +511,18 @@ export default function DynamicStockPage() {
           <h2 className="text-2xl font-bold text-white mb-6">Related Intelligence</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {data.relatedSymbols.map((sym) => (
-              <Link key={sym} href={`/stock/${sym}`} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-[#00D4FF]/20 transition-all text-center">
+              <Link key={sym} href={`/stock/${sym}`} onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-[#00D4FF]/20 transition-all text-center">
                 <div className="text-[10px] font-mono tracking-widest text-[#64748B] mb-1">STOCK</div>
                 <div className="text-white font-bold group-hover:text-[#00D4FF] transition-colors">{sym.toUpperCase()}</div>
               </Link>
             ))}
             {data.relatedCrypto.map((sym) => (
-              <Link key={sym} href={`/crypto/${sym}`} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-purple-400/20 transition-all text-center">
+              <Link key={sym} href={`/crypto/${sym}`} onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-purple-400/20 transition-all text-center">
                 <div className="text-[10px] font-mono tracking-widest text-purple-400/60 mb-1">CRYPTO</div>
                 <div className="text-white font-bold group-hover:text-[#00D4FF] transition-colors">{sym.toUpperCase()}</div>
               </Link>
             ))}
-            <Link href="/signals" className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-[#00D4FF]/20 transition-all text-center">
+            <Link href="/signals" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-[#00D4FF]/20 transition-all text-center">
               <div className="text-[10px] font-mono tracking-widest text-[#00D4FF]/60 mb-1">ALL</div>
               <div className="text-white font-bold group-hover:text-[#00D4FF] transition-colors">ALL SIGNALS</div>
             </Link>
@@ -340,9 +536,14 @@ export default function DynamicStockPage() {
           <p className="text-[#A8B8CC] text-sm mb-6 max-w-md mx-auto">
             Access real-time {upper} signals, macro regime classification, and systemic risk scores. Updated daily by FAULTLINE's intelligence engine.
           </p>
-          <a href={getLoginUrl()} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">
-            START FREE ACCESS →
-          </a>
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">
+              START FREE ACCESS →
+            </a>
+            <a href="/pricing" onClick={() => handleCtaClick("pricing")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#A8B8CC] border border-white/20 hover:border-[#00D4FF]/40 px-6 py-4 rounded transition-colors">
+              SEE PRICING
+            </a>
+          </div>
           <p className="text-[#64748B] text-xs mt-3 font-mono">No credit card required</p>
         </section>
       </main>

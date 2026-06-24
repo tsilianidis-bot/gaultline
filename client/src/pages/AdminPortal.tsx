@@ -1098,9 +1098,233 @@ function SEOTab() {
   );
 }
 
-// ── Main Portal ───────────────────────────────────────────────────────────────
+// ── Tab: Content Intelligence ──────────────────────────────────────────────
 
-type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine" | "seo";
+function ContentTab() {
+  const [activeSection, setActiveSection] = useState<"published" | "scheduled" | "generate" | "analytics">("published");
+  const [generating, setGenerating] = useState(false);
+  const [genResult, setGenResult] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState("daily_market_brief");
+
+  const { data: published, refetch: refetchPublished } = trpc.organicContent.listPublished.useQuery(
+    { limit: 50 },
+    { staleTime: 30000 }
+  );
+  const { data: dashboard, refetch: refetchDashboard } = trpc.organicContent.adminDashboard.useQuery(
+    undefined,
+    { staleTime: 30000 }
+  );
+
+  const generateMut = trpc.organicContent.adminGenerateContent.useMutation({
+    onSuccess: (data: { ok: boolean; id?: number; slug?: string; error?: string; skipped?: boolean }) => {
+      if (data.ok && data.slug) {
+        setGenResult(`✓ Generated: /intelligence/${data.slug}`);
+      } else if (data.skipped) {
+        setGenResult(`✓ Skipped (duplicate content detected)`);
+      } else {
+        setGenResult(`✗ Generation failed: ${data.error ?? "unknown error"}`);
+      }
+      setGenerating(false);
+      refetchPublished();
+      refetchDashboard();
+    },
+    onError: (err: { message: string }) => {
+      setGenResult(`✗ Error: ${err.message}`);
+      setGenerating(false);
+    },
+  });
+
+  const CONTENT_TYPES = [
+    { value: "daily_market_brief",    label: "Daily Market Brief" },
+    { value: "weekly_market_outlook", label: "Weekly Market Outlook" },
+    { value: "crypto_market_outlook", label: "Crypto Market Outlook" },
+    { value: "ai_sector_outlook",     label: "AI Sector Outlook" },
+    { value: "federal_reserve_watch", label: "Federal Reserve Watch" },
+    { value: "liquidity_report",      label: "Liquidity Report" },
+    { value: "volatility_report",     label: "Volatility Report" },
+    { value: "pressure_index_report", label: "Pressure Index Report" },
+    { value: "market_regime_report",  label: "Market Regime Report" },
+    { value: "historical_analog",     label: "Historical Analog Report" },
+  ];
+
+  const SECTION_TABS = [
+    { id: "published" as const,  label: "Published" },
+    { id: "scheduled" as const,  label: "Scheduled" },
+    { id: "generate" as const,   label: "Generate" },
+    { id: "analytics" as const,  label: "CTA Analytics" },
+  ];
+
+  return (
+    <div style={{ padding: "24px 0" }}>
+      <SectionHeader title="Content Intelligence" sub="Organic growth engine — admin only" />
+
+      {/* KPI row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "24px" }}>
+        {[
+          { label: "Published",  value: dashboard?.summary.published ?? 0,   color: "rgba(0,212,255,0.9)" },
+          { label: "Signal Pages", value: dashboard?.summary.signalPagesGenerated ?? 0, color: "rgba(251,191,36,0.9)" },
+          { label: "CTA Clicks", value: dashboard?.summary.totalCtaClicks ?? 0, color: "rgba(16,185,129,0.9)" },
+          { label: "Top Page",   value: dashboard?.topCtaPages?.[0]?.pageSlug ?? "—",  color: "rgba(168,139,250,0.9)" },
+        ].map((kpi, i) => (
+          <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "16px" }}>
+            <div style={{ fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em", marginBottom: "6px" }}>{kpi.label.toUpperCase()}</div>
+            <div style={{ fontSize: "22px", fontWeight: 700, color: kpi.color, fontFamily: "'Rajdhani',sans-serif" }}>{kpi.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Sub-tabs */}
+      <div style={{ display: "flex", gap: "4px", marginBottom: "20px", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "0" }}>
+        {SECTION_TABS.map(t => (
+          <button key={t.id} onClick={() => setActiveSection(t.id)}
+            style={{ padding: "8px 16px", fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", letterSpacing: "0.1em", background: "none", border: "none", cursor: "pointer",
+              borderBottom: activeSection === t.id ? "2px solid rgba(0,212,255,0.7)" : "2px solid transparent",
+              color: activeSection === t.id ? "rgba(0,212,255,0.9)" : "rgba(100,116,139,0.5)",
+              marginBottom: "-1px" }}>
+            {t.label.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {/* Published */}
+      {activeSection === "published" && (
+        <div>
+          {!published || published.items.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono',monospace", fontSize: "12px" }}>
+              No published content yet. Use the Generate tab to create your first article.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {published.items.map((item) => (
+                <div key={item.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.9)", marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+                    <div style={{ display: "flex", gap: "12px", fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", color: "rgba(100,116,139,0.6)" }}>
+                      <span>{item.contentType.replace(/_/g, " ").toUpperCase()}</span>
+                      <span>{item.wordCount ?? 0} words</span>
+                      <span>{timeAgo(item.publishedAt)}</span>
+                    </div>
+                  </div>
+                  <a href={`/blog/${item.slug}`} target="_blank" rel="noreferrer"
+                    style={{ fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", color: "rgba(0,212,255,0.7)", textDecoration: "none", whiteSpace: "nowrap" }}>
+                    VIEW →
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Scheduled */}
+      {activeSection === "scheduled" && (
+        <div>
+          {!dashboard?.recentContent || dashboard.recentContent.filter(c => c.status === "draft").length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono',monospace", fontSize: "12px" }}>
+              No scheduled content. The automated engine publishes daily at 06:00 UTC.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {dashboard.recentContent.filter(c => c.status === "draft").map((item) => (
+                <div key={item.id} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.9)", marginBottom: "4px" }}>{item.contentType.replace(/_/g, " ").toUpperCase()}</div>
+                    <div style={{ fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", color: "rgba(100,116,139,0.6)" }}>
+                      Created: {timeAgo(item.createdAt)}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: "10px", fontFamily: "'IBM Plex Mono',monospace", padding: "3px 8px", borderRadius: "4px",
+                    background: item.status === "draft" ? "rgba(251,191,36,0.1)" : "rgba(0,212,255,0.1)",
+                    color: item.status === "draft" ? "rgba(251,191,36,0.9)" : "rgba(0,212,255,0.9)" }}>
+                    {item.status.toUpperCase()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Generate */}
+      {activeSection === "generate" && (
+        <div style={{ maxWidth: "560px" }}>
+          <SectionHeader title="Manual Generation" sub="Trigger immediate content generation for any type" />
+          <div style={{ marginBottom: "16px" }}>
+            <label style={{ display: "block", fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em", marginBottom: "8px" }}>CONTENT TYPE</label>
+            <select value={selectedType} onChange={e => setSelectedType(e.target.value)}
+              style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", padding: "10px 12px", color: "rgba(255,255,255,0.9)", fontSize: "13px", fontFamily: "'IBM Plex Mono',monospace" }}>
+              {CONTENT_TYPES.map(ct => <option key={ct.value} value={ct.value} style={{ background: "#0a0b0e" }}>{ct.label}</option>)}
+            </select>
+          </div>
+          <button
+            onClick={() => { setGenerating(true); setGenResult(null); generateMut.mutate({ contentType: selectedType as "daily_market_brief" | "weekly_market_outlook" | "crypto_market_outlook" | "ai_sector_outlook" | "federal_reserve_watch" | "liquidity_report" | "volatility_report" | "pressure_index_report" | "market_regime_report" | "historical_analog_report" }); }}
+            disabled={generating}
+            style={{ padding: "12px 24px", background: generating ? "rgba(0,212,255,0.3)" : "rgba(0,212,255,0.9)", color: "#050608", border: "none", borderRadius: "6px", fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, letterSpacing: "0.1em", cursor: generating ? "not-allowed" : "pointer" }}>
+            {generating ? "GENERATING..." : "GENERATE NOW"}
+          </button>
+          {genResult && (
+            <div style={{ marginTop: "16px", padding: "12px 16px", background: genResult.startsWith("✓") ? "rgba(16,185,129,0.08)" : "rgba(255,45,85,0.08)", border: `1px solid ${genResult.startsWith("✓") ? "rgba(16,185,129,0.2)" : "rgba(255,45,85,0.2)"}`, borderRadius: "6px", fontSize: "12px", fontFamily: "'IBM Plex Mono',monospace", color: genResult.startsWith("✓") ? "rgba(16,185,129,0.9)" : "rgba(255,45,85,0.9)" }}>
+              {genResult}
+            </div>
+          )}
+          <div style={{ marginTop: "24px", padding: "16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px" }}>
+            <div style={{ fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em", marginBottom: "8px" }}>AUTOMATED SCHEDULE</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {[
+                { time: "06:00 UTC daily",   type: "Daily Market Brief" },
+                { time: "07:00 UTC daily",   type: "Daily Crypto Brief" },
+                { time: "08:00 UTC Mon",     type: "Weekly Market Outlook" },
+                { time: "08:30 UTC Mon",     type: "Weekly AI Sector Outlook" },
+                { time: "09:00 UTC Mon",     type: "Federal Reserve Watch" },
+              ].map((s, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontFamily: "'IBM Plex Mono',monospace", color: "rgba(168,168,168,0.7)" }}>
+                  <span style={{ color: "rgba(0,212,255,0.6)" }}>{s.time}</span>
+                  <span>{s.type}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CTA Analytics */}
+      {activeSection === "analytics" && (
+        <div>
+          <SectionHeader title="CTA Click Analytics" sub="Conversion tracking across all SEO pages" />
+          {!dashboard?.topCtaPages || dashboard.topCtaPages.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px", color: "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono',monospace", fontSize: "12px" }}>
+              No CTA clicks recorded yet. Data populates as visitors interact with SEO pages.
+            </div>
+          ) : (
+            <div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
+                {dashboard.topCtaPages.map((row) => (
+                  <div key={row.pageSlug} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>{row.pageSlug}</div>
+                    <div style={{ fontSize: "20px", fontWeight: 700, color: "rgba(0,212,255,0.9)", fontFamily: "'Rajdhani',sans-serif" }}>{row.total}</div>
+                  </div>
+                ))}
+              </div>
+              <SectionHeader title="By CTA Type" sub="" />
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {dashboard.ctaStats.map((row) => (
+                  <div key={row.ctaType} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.9)", fontFamily: "'IBM Plex Mono',monospace" }}>{row.ctaType}</div>
+                    <div style={{ fontSize: "20px", fontWeight: 700, color: "rgba(16,185,129,0.9)", fontFamily: "'Rajdhani',sans-serif" }}>{row.total}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main Portal ─────────────────────────────────────────────────────────────────
+
+type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine" | "seo" | "content";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "overview", label: "Overview",       icon: "◈" },
@@ -1110,6 +1334,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "health",   label: "Platform Health", icon: "◌" },
   { id: "engine",   label: "Engine & Flags",  icon: "⚙" },
   { id: "seo",      label: "SEO",             icon: "◐" },
+  { id: "content",  label: "Content",         icon: "✦" },
 ];
 
 export default function AdminPortal() {
@@ -1195,6 +1420,7 @@ export default function AdminPortal() {
       {activeTab === "health"   && <HealthTab />}
       {activeTab === "engine"   && <EngineTab />}
       {activeTab === "seo"      && <SEOTab />}
+      {activeTab === "content"   && <ContentTab />}
     </div>
   );
 }
