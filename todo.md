@@ -1880,3 +1880,101 @@
 - [x] Add subscription confirmation email in Stripe webhook checkout.session.completed (P1)
 - [x] Remove unused nodemailer dependency from package.json (P3)
 - [ ] Add test coverage for buildContactEmail and buildContactAutoReply templates (P2)
+
+## SEO Expansion Project (Jun 24, 2026)
+
+### Phase 1 — Keyword Research & Opportunity Report
+- [ ] Research and compile 500 keywords across 16 topic clusters
+- [ ] Group by: Informational, Commercial, High Intent, Low Competition, High Volume
+- [ ] Score each keyword: search volume, difficulty, commercial value, priority
+- [ ] Produce keyword opportunity report with estimated traffic/signup/revenue potential
+
+### Phase 2 — 18 Static SEO Landing Pages
+- [ ] /ai-stock-signals — AI Stock Signals landing page (1,500–3,000 words, FAQ, schema, CTAs)
+- [ ] /crypto-signals-intelligence — Crypto Signals landing page
+- [ ] /market-crash-indicator — Market Crash Indicator landing page
+- [ ] /recession-probability — Recession Probability landing page
+- [ ] /federal-reserve-tracker — Federal Reserve Tracker landing page
+- [ ] /liquidity-monitor — Liquidity Monitor landing page
+- [ ] /volatility-dashboard — Volatility Dashboard landing page
+- [ ] /alt-season-indicator — Alt Season Indicator landing page
+- [ ] /bitcoin-risk-dashboard — Bitcoin Risk Dashboard landing page
+- [ ] /ethereum-risk-dashboard — Ethereum Risk Dashboard landing page
+- [ ] /stock/nvda — NVDA Analysis landing page
+- [ ] /stock/pltr — PLTR Analysis landing page
+- [ ] /stock/tsla — TSLA Analysis landing page
+- [ ] /stock/meta — META Analysis landing page
+- [ ] /crypto/tao — TAO Analysis landing page
+- [ ] /crypto/sol — SOL Analysis landing page
+- [ ] /crypto/eth — ETH Analysis landing page
+- [ ] /crypto/btc — BTC Analysis landing page
+- [ ] Register all 18 routes in App.tsx
+- [ ] Add all 18 pages to sitemap.xml
+- [ ] Add PAGE_SEO entries for all 18 pages in useSEO.ts
+
+### Phase 3 — Dynamic Stock/Crypto SEO Pages
+- [ ] Build dynamic /stock/:symbol page with live data (signal, bull/bear case, risk score, key levels, news, regime)
+- [ ] Build dynamic /crypto/:symbol page with live data
+- [ ] Register /stock/:symbol and /crypto/:symbol routes in App.tsx
+- [ ] Add dynamic URL generation to sitemap.xml for tracked symbols
+- [ ] Ensure pages are indexable (no auth required, proper canonical/meta)
+
+### Phase 4 — Daily Content Engine
+- [ ] Build automated daily market brief page (auto-published, SEO-optimized)
+- [ ] Build automated daily crypto brief page
+- [ ] Build automated weekly risk report page
+- [ ] Build automated weekly altcoin report page
+- [ ] Build automated weekly AI market report page
+- [ ] Add all content engine pages to sitemap.xml
+- [ ] Wire content engine to existing blog auto-publisher cron
+
+### Phase 5 — Internal Linking System
+- [ ] Build automated internal linking between homepage, signals, pressure index, situation room, stock pages, crypto pages, blog articles
+- [ ] Ensure every page has at least 5 internal links
+- [ ] Add related pages/articles section to all landing pages
+
+### Phase 6 — SEO Dashboard (Admin)
+- [ ] Add SEO dashboard tab to admin analytics area
+- [ ] Track: indexed pages count, Google Search Console impressions/clicks/CTR (via stored data)
+- [ ] Track: organic signups, organic conversions
+- [ ] Show: top performing SEO pages, keyword rankings table
+- [ ] Show: content calendar (published/scheduled SEO pages)
+
+### Phase 7 — Verification
+- [ ] TypeScript: 0 errors
+- [ ] Tests: all passing
+- [ ] All new pages in sitemap.xml
+- [ ] Checkpoint saved
+
+## SEO Expansion — 20 Flagship Pages (Jun 2026)
+
+### Already Built (need route wiring + sitemap)
+- [x] AI Bubble Monitor → /ai-bubble-risk-tracker (PublicAIBubble.tsx)
+- [x] Market Risk Dashboard → /stock-market-risk-dashboard (PublicStockMarketRisk.tsx)
+- [x] Crypto Signals Dashboard → /crypto-signals (PublicCryptoSignals.tsx)
+- [x] Stock Signals Dashboard → /signals (PublicSignals.tsx)
+- [x] Federal Reserve Tracker → /federal-reserve-tracker (seo/FederalReserveTracker.tsx)
+- [x] Liquidity Monitor → /liquidity-monitor (seo/LiquidityMonitor.tsx)
+- [x] Volatility Dashboard → /volatility-dashboard (seo/VolatilityDashboard.tsx)
+- [x] Recession Probability → /recession-probability (seo/RecessionProbability.tsx)
+
+### To Build
+- [ ] Market Crash Probability 2026 → /market-crash-probability-2026
+- [ ] Alt Season Probability → /alt-season-indicator
+- [ ] Bitcoin Risk Dashboard → /bitcoin-risk-dashboard
+- [ ] Ethereum Risk Dashboard → /ethereum-risk-dashboard
+- [ ] NVDA Signal Page → /stock/nvda
+- [ ] PLTR Signal Page → /stock/pltr
+- [ ] TAO Signal Page → /crypto/tao
+- [ ] TSLA Signal Page → /stock/tsla
+- [ ] META Signal Page → /stock/meta
+- [ ] AMD Signal Page → /stock/amd
+- [ ] AI Stocks Dashboard → /ai-stocks-dashboard
+- [ ] Market Regime Tracker → /market-regime-tracker
+
+### Infrastructure
+- [ ] Wire all new routes in App.tsx
+- [ ] Add PAGE_SEO entries for all new pages in useSEO.ts
+- [ ] Update sitemap with priority 1.0 for all 20 flagship pages
+- [ ] Ensure all pages have Article + FAQPage schema markup
+- [ ] Internal linking: each page links to at least 5 other pages

@@ -70,6 +70,26 @@ const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
 
 // ── Public SEO landing pages (no auth required, crawlable) ────────
 const PublicSignals        = lazy(() => import("./pages/PublicSignals"));
+// ── SEO Expansion — 20 Flagship Pages ────────────────────────────
+const MarketCrashProbability2026 = lazy(() => import("./pages/seo/MarketCrashProbability2026"));
+const AltSeasonIndicator   = lazy(() => import("./pages/seo/AltSeasonIndicator"));
+const BitcoinRiskDashboard = lazy(() => import("./pages/seo/BitcoinRiskDashboard"));
+const EthereumRiskDashboard = lazy(() => import("./pages/seo/EthereumRiskDashboard"));
+const NVDASignal           = lazy(() => import("./pages/seo/NVDASignal"));
+const PLTRSignal           = lazy(() => import("./pages/seo/PLTRSignal"));
+const TAOSignal            = lazy(() => import("./pages/seo/TAOSignal"));
+const TSLASignal           = lazy(() => import("./pages/seo/TSLASignal"));
+const METASignal           = lazy(() => import("./pages/seo/METASignal"));
+const AMDSignal            = lazy(() => import("./pages/seo/AMDSignal"));
+const AIStocksDashboard    = lazy(() => import("./pages/seo/AIStocksDashboard"));
+const MarketRegimeTracker  = lazy(() => import("./pages/seo/MarketRegimeTracker"));
+const MarketCrashIndicator = lazy(() => import("./pages/seo/MarketCrashIndicator"));
+const RecessionProbability = lazy(() => import("./pages/seo/RecessionProbability"));
+const FederalReserveTracker = lazy(() => import("./pages/seo/FederalReserveTracker"));
+const LiquidityMonitor     = lazy(() => import("./pages/seo/LiquidityMonitor"));
+const VolatilityDashboard  = lazy(() => import("./pages/seo/VolatilityDashboard"));
+const AIStockSignals       = lazy(() => import("./pages/seo/AIStockSignals"));
+const CryptoSignalsIntelligence = lazy(() => import("./pages/seo/CryptoSignalsIntelligence"));
 const PublicCryptoSignals  = lazy(() => import("./pages/PublicCryptoSignals"));
 const PublicStockMarketRisk = lazy(() => import("./pages/PublicStockMarketRisk"));
 const PublicCryptoMarketRisk = lazy(() => import("./pages/PublicCryptoMarketRisk"));
@@ -259,6 +279,64 @@ function Router() {
       </Route>
       <Route path="/diagnostic-ai">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><PublicDiagnosticAI /></Suspense></ErrorBoundary>
+      </Route>
+      {/* SEO Expansion — 20 Flagship Pages */}
+      <Route path="/market-crash-probability-2026">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><MarketCrashProbability2026 /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/market-crash-indicator">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><MarketCrashIndicator /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/recession-probability">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><RecessionProbability /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/alt-season-indicator">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><AltSeasonIndicator /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/bitcoin-risk-dashboard">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><BitcoinRiskDashboard /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/ethereum-risk-dashboard">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><EthereumRiskDashboard /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/nvda">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><NVDASignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/pltr">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><PLTRSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/tsla">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><TSLASignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/meta">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><METASignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/amd">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><AMDSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/crypto/tao">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><TAOSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/federal-reserve-tracker">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><FederalReserveTracker /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/liquidity-monitor">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LiquidityMonitor /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/volatility-dashboard">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><VolatilityDashboard /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/ai-stocks-dashboard">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><AIStocksDashboard /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/ai-stock-signals">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><AIStockSignals /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/crypto-signals-intelligence">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><CryptoSignalsIntelligence /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/market-regime-tracker">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><MarketRegimeTracker /></Suspense></ErrorBoundary>
       </Route>
       {/* Marketing site at root — standalone, no AppLayout */}
       <Route path="/">
