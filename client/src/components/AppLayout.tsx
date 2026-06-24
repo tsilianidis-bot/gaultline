@@ -57,6 +57,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "crypto",           label: "Crypto",             shortLabel: "Crypto",      icon: Bitcoin,   path: "/app/crypto-search" },
       { id: "crypto-signals",   label: "Crypto Signals",     shortLabel: "Crypto Sig",  icon: BarChart3, path: "/app/crypto-signals" },
       { id: "crypto-watchlist", label: "Crypto Watchlist",   shortLabel: "Crypto Watch",icon: Bookmark,  path: "/app/crypto-watchlist" },
+      { id: "alt-rotation",    label: "Sector Rotation",     shortLabel: "Rotation",   icon: RotateCcw, path: "/app/alt-rotation" },
     ],
   },
   {
@@ -78,7 +79,6 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "charts",       label: "Charts",              shortLabel: "Charts",     icon: BarChart2, path: "/app/charts" },
       { id: "scenarios",    label: "Scenarios",           shortLabel: "Scenarios",  icon: TrendingUp,path: "/app/scenarios" },
       { id: "simulate",     label: "Pressure Simulator",  shortLabel: "Simulator",  icon: Zap,       path: "/app/simulate" },
-      { id: "alt-rotation", label: "Sector Rotation",     shortLabel: "Rotation",   icon: RotateCcw, path: "/app/alt-rotation" },
       { id: "aftershock",   label: "Aftershock Engine",   shortLabel: "Aftershock", icon: Waves,     path: "/app/aftershock" },
     ],
   },

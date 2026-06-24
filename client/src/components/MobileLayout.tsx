@@ -60,8 +60,8 @@ const NAV_ITEMS = [
   { path: "/mobile",           label: "Pulse",    Icon: Activity },
   { path: "/mobile/signals",   label: "Signals",  Icon: TrendingUp },
   { path: "/mobile/crypto",    label: "Crypto",   Icon: Bitcoin },
-  { path: "/mobile/watchlist", label: "Watch",    Icon: Star },
   { path: "/mobile/rotation",  label: "Rotation", Icon: RotateCcw },
+  { path: "/mobile/watchlist", label: "Watch",    Icon: Star },
   { path: "/mobile/account",   label: "Account",  Icon: User },
 ];
 

@@ -6,7 +6,7 @@
 
 import sgMail from "@sendgrid/mail";
 
-const DEFAULT_FROM_EMAIL = "jt@getfaultline.live";
+const DEFAULT_FROM_EMAIL = "faultlineadminjt@gmail.com";
 const DEFAULT_FROM_NAME = "FAULTLINE";
 
 let _initializedKey = "";
@@ -174,7 +174,7 @@ body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,san
 <div class="footer">FAULTLINE — Macroeconomic Risk Intelligence<br/>Submitted via Contact Us form at getfaultline.live</div>
 </div></body></html>`;
   return {
-    to: "jt@getfaultline.live",
+    to: "faultlineadminjt@gmail.com",
     subject: `[FAULTLINE Contact] ${category}: ${subject}`,
     html,
   };
