@@ -93,7 +93,7 @@ export default function CheckoutSuccess() {
               <h1 className="text-xl font-bold text-white mb-2">Verification Failed</h1>
               <p className="text-[#A8B8CC] text-sm leading-relaxed">
                 We couldn't verify your payment. If you were charged, please{" "}
-                <a href="mailto:jt@getfaultline.live" className="text-[#00D4FF] hover:underline">contact support</a>.
+                <a href="mailto:tsilianidis@gmail.com" className="text-[#00D4FF] hover:underline">contact support</a>.
               </p>
             </div>
             <button

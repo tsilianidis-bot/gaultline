@@ -193,25 +193,33 @@ export async function classifyTicker(
     additionalProperties: false,
   };
 
-  const response = await invokeLLM({
-    messages: [
-      { role: "system", content: buildSystemPrompt(regime) },
-      { role: "user", content: userPrompt },
-    ],
-    response_format: {
-      type: "json_schema",
-      json_schema: {
-        name: "faultline_classification",
-        strict: true,
-        schema,
+    let parsed: ClassificationResult | null = null;
+  try {
+    const response = await invokeLLM({
+      messages: [
+        { role: "system", content: buildSystemPrompt(regime) },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "faultline_classification",
+          strict: true,
+          schema,
+        },
       },
-    },
-  });
-
-  const raw = response.choices?.[0]?.message?.content;
-  if (!raw) throw new Error("LLM returned empty response");
-
-  const parsed = JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw)) as ClassificationResult;
+    });
+    const raw = response.choices?.[0]?.message?.content;
+    if (raw) {
+      parsed = JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw)) as ClassificationResult;
+    }
+  } catch {
+    // LLM failed — fall through to deterministic fallback below
+  }
+  if (!parsed) {
+    // Deterministic fallback: classify based on price momentum and regime
+    return buildDeterministicClassification(profile, regime);
+  }
 
   // Validate and sanitize
   const result: ClassificationResult = {
@@ -235,6 +243,70 @@ export async function classifyTicker(
 
   classCache.set(cacheKey, { result, fetchedAt: Date.now(), regimeLabel: regime.label });
   return result;
+}
+
+// ── Deterministic fallback classifier (used when LLM is unavailable) ────────
+function buildDeterministicClassification(
+  profile: TickerProfile,
+  regime: RegimeContext
+): ClassificationResult {
+  const regimeLabel = regime.label.toUpperCase();
+  const changePercent = profile.changePercent;
+  const sparklineTrend = profile.sparkline.length >= 2
+    ? profile.sparkline[profile.sparkline.length - 1] - profile.sparkline[0]
+    : 0;
+
+  // Determine primary signal deterministically
+  let primarySignal: FaultlineSignal = "Neutral / Watch";
+  const signals: FaultlineSignal[] = [];
+
+  if (changePercent > 3 || sparklineTrend > 5) {
+    primarySignal = "Momentum Breakout";
+    signals.push("Momentum Breakout");
+  } else if (changePercent < -3 || sparklineTrend < -5) {
+    primarySignal = "Macro Vulnerable";
+    signals.push("Macro Vulnerable");
+  } else if (regimeLabel.includes("RECESSION") || regimeLabel.includes("DETERIORATION")) {
+    primarySignal = "Recession Defensive";
+    signals.push("Recession Defensive");
+  } else if (regimeLabel.includes("INFLATION")) {
+    primarySignal = "Rate Sensitive";
+    signals.push("Rate Sensitive");
+  } else if (regimeLabel.includes("LIQUIDITY") || regimeLabel.includes("CREDIT")) {
+    primarySignal = "Liquidity Sensitive";
+    signals.push("Liquidity Sensitive");
+  } else {
+    primarySignal = "Neutral / Watch";
+    signals.push("Neutral / Watch");
+  }
+
+  const momentumScore = Math.min(100, Math.max(0, 50 + changePercent * 5));
+  const regimeFit = regime.score > 7 ? 3 : regime.score > 5 ? 5 : 7;
+
+  return {
+    ticker: profile.ticker,
+    signals,
+    primarySignal,
+    bullishFactors: [
+      `${changePercent > 0 ? "Positive" : "Negative"} daily momentum at ${changePercent > 0 ? "+" : ""}${changePercent.toFixed(2)}%`,
+      `Price action: $${profile.low.toFixed(2)} – $${profile.high.toFixed(2)} range`,
+    ],
+    bearishFactors: [
+      `Current macro regime: ${regime.label} (${regime.score.toFixed(1)}/10)`,
+      `Elevated systemic pressure may limit upside`,
+    ],
+    whyThisSignal: `Deterministic classification based on price momentum and macro regime. AI analysis temporarily unavailable — signal based on quantitative factors only.`,
+    regimeFit,
+    regimeFitLabel: regimeFit >= 7 ? "Strong Fit" : regimeFit >= 5 ? "Moderate Fit" : "Poor Fit",
+    aiExposure: profile.sector?.toLowerCase().includes("tech") ? "High" : "None",
+    debtRisk: "None",
+    recessionSensitivity: regimeLabel.includes("RECESSION") ? "High" : "Medium",
+    liquidityRisk: "None",
+    momentumScore,
+    volatilityLabel: Math.abs(changePercent) > 5 ? "Very High" : Math.abs(changePercent) > 3 ? "High" : "Moderate",
+    macroSensitivity: `${profile.ticker} sensitivity to macro regime is moderate. AI analysis temporarily unavailable.`,
+    cached: false,
+  };
 }
 
 function buildUserPrompt(profile: TickerProfile, regime: RegimeContext): string {

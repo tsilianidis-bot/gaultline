@@ -2014,7 +2014,7 @@ function FoundingAccessForm
       setSubmitted(true);
       trackSignupCompleted("email");
     },
-    onError: (err) => setError(err.message || "Something went wrong. Please email jt@getfaultline.live"),
+    onError: (err) => setError(err.message || "Something went wrong. Please email tsilianidis@gmail.com"),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -2105,8 +2105,8 @@ function FoundingAccessForm
             </button>
             <p className="text-center text-[#4B5563] text-[10px] font-mono">
               Or email us directly at{" "}
-              <a href="mailto:jt@getfaultline.live" className="text-[#00D4FF]/60 hover:text-[#00D4FF]">
-                jt@getfaultline.live
+              <a href="mailto:tsilianidis@gmail.com" className="text-[#00D4FF]/60 hover:text-[#00D4FF]">
+                tsilianidis@gmail.com
               </a>
             </p>
           </form>
@@ -2187,7 +2187,7 @@ function Footer() {
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
               <li><a href="/methodology" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Methodology</a></li>
               <li><a href="/contact" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Contact Us</a></li>
-              <li><a href="mailto:jt@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">jt@getfaultline.live</a></li>
+              <li><a href="mailto:tsilianidis@gmail.com" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">tsilianidis@gmail.com</a></li>
             </ul>
           </div>
         </div>
@@ -2209,7 +2209,7 @@ function Footer() {
               <span className="opacity-30">·</span>
               <a href="/contact" className="hover:text-[#00D4FF] transition-colors">Contact Us</a>
               <span className="opacity-30">·</span>
-              <a href="mailto:jt@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">jt@getfaultline.live</a>
+              <a href="mailto:tsilianidis@gmail.com" className="hover:text-[#00D4FF] transition-colors">tsilianidis@gmail.com</a>
             </span>
           </div>
         </div>

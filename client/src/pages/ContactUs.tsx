@@ -38,7 +38,7 @@ export default function ContactUs() {
     },
     onError: (err) => {
       toast.error("Failed to send message", {
-        description: err.message || "Please try again or email us directly at jt@getfaultline.live",
+        description: err.message || "Please try again or email us directly at tsilianidis@gmail.com",
       });
     },
   });
@@ -102,8 +102,8 @@ export default function ContactUs() {
               </div>
               <h3 className="text-sm font-semibold text-slate-200 mb-1">Email</h3>
               <p className="text-xs text-slate-500 mb-2">Direct line to the team</p>
-              <a href="mailto:jt@getfaultline.live" className="text-cyan-400 text-sm font-mono hover:underline">
-                jt@getfaultline.live
+              <a href="mailto:tsilianidis@gmail.com" className="text-cyan-400 text-sm font-mono hover:underline">
+                tsilianidis@gmail.com
               </a>
             </div>
 

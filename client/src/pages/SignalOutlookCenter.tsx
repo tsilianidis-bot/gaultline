@@ -395,18 +395,43 @@ function FullOutlookView({
   }
 
   if (error || !data) {
+    const errMsg = error?.message ?? "";
+    const isNotFound = errMsg.includes("NOT_FOUND") || errMsg.includes("not found") || errMsg.includes("not supported");
+    const isRateLimit = errMsg.includes("rate limit") || errMsg.includes("429") || errMsg.includes("too many");
+    const isTimeout = errMsg.includes("timeout") || errMsg.includes("TIMEOUT") || errMsg.includes("timed out");
+    const isMarketData = errMsg.includes("market data") || errMsg.includes("price data") || errMsg.includes("Polygon") || errMsg.includes("CoinGecko");
+    const displayMsg = isNotFound
+      ? `Asset not supported: ${symbol} — check the symbol and try again`
+      : isRateLimit
+      ? `Rate limit reached — please wait a moment and retry`
+      : isTimeout
+      ? `AI analysis timeout — market data available but AI is temporarily slow`
+      : isMarketData
+      ? `Market data unavailable for ${symbol} — provider may be temporarily down`
+      : `Signal computation failed for ${symbol} — please retry`;
     return (
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
         <AlertTriangle size={32} color="#FF9500" style={{ marginBottom: "12px" }} />
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF9500" }}>
-          Unable to compute outlook for {symbol}
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF9500", marginBottom: "8px" }}>
+          {displayMsg}
         </div>
-        <button onClick={onBack} style={{
-          marginTop: "16px",
-          fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",
-          color: "#64B5F6", background: "transparent", border: "1px solid rgba(100,181,246,0.3)",
-          borderRadius: "4px", padding: "6px 12px", cursor: "pointer",
-        }}>← Back</button>
+        {errMsg && (
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(255,149,0,0.5)", marginBottom: "12px", maxWidth: "320px", margin: "0 auto 12px" }}>
+            {errMsg.slice(0, 120)}
+          </div>
+        )}
+        <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginTop: "16px" }}>
+          <button onClick={() => refetch()} style={{
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",
+            color: "#00FF88", background: "transparent", border: "1px solid rgba(0,255,136,0.3)",
+            borderRadius: "4px", padding: "6px 12px", cursor: "pointer",
+          }}>↻ Retry</button>
+          <button onClick={onBack} style={{
+            fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px",
+            color: "#64B5F6", background: "transparent", border: "1px solid rgba(100,181,246,0.3)",
+            borderRadius: "4px", padding: "6px 12px", cursor: "pointer",
+          }}>← Back</button>
+        </div>
       </div>
     );
   }

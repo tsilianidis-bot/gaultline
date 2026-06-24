@@ -326,6 +326,27 @@ function ActionCard({
   );
 }
 
+// ── Error display ───────────────────────────────────────────
+function CryptoErrorDisplay({ errMsg, onRetry }: { errMsg: string; onRetry: () => void }) {
+  const isRateLimit = errMsg.includes("rate limit") || errMsg.includes("429") || errMsg.includes("too many");
+  const isTimeout = errMsg.includes("timeout") || errMsg.includes("TIMEOUT");
+  const isMarketData = errMsg.includes("CoinGecko") || errMsg.includes("market data");
+  const displayMsg = isRateLimit
+    ? "Rate limit reached — CoinGecko API is temporarily throttled. Please wait and retry."
+    : isTimeout
+    ? "AI analysis timeout — market data is available but AI is temporarily slow."
+    : isMarketData
+    ? "Market data unavailable — CoinGecko API may be temporarily down."
+    : "Crypto signal data temporarily unavailable — please retry.";
+  return (
+    <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center">
+      <p className="text-red-400 text-sm font-mono">{displayMsg}</p>
+      {errMsg && <p className="text-red-400/50 text-xs font-mono mt-1">{errMsg.slice(0, 100)}</p>}
+      <button onClick={onRetry} className="mt-3 text-xs text-red-300 underline">Retry</button>
+    </div>
+  );
+}
+
 // ── Skeleton ──────────────────────────────────────────────────
 
 function Skeleton({ className = "" }: { className?: string }) {
@@ -441,10 +462,7 @@ function CryptoIntelligenceInner() {
               ))}
             </div>
           ) : error ? (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center">
-              <p className="text-red-400 text-sm font-mono">Signal data temporarily unavailable</p>
-              <button onClick={() => refetch()} className="mt-3 text-xs text-red-300 underline">Retry</button>
-            </div>
+            <CryptoErrorDisplay errMsg={error?.message ?? ""} onRetry={() => refetch()} />
           ) : data ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {data.signals.map(asset => (

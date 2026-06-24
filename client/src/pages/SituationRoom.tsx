@@ -950,11 +950,32 @@ export default function SituationRoom() {
                 )}
               </button>
 
-              {simulate.isError && (
-                <div style={{ marginTop: "10px", padding: "10px 12px", background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "4px" }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF2D55" }}>Analysis failed. Please try again.</span>
-                </div>
-              )}
+              {simulate.isError && (() => {
+                const errMsg = simulate.error?.message ?? "";
+                const isNotFound = errMsg.includes("NOT_FOUND") || errMsg.includes("not found");
+                const isRateLimit = errMsg.includes("rate limit") || errMsg.includes("429") || errMsg.includes("too many");
+                const isTimeout = errMsg.includes("timeout") || errMsg.includes("TIMEOUT");
+                const isForbidden = errMsg.includes("FORBIDDEN") || errMsg.includes("membership");
+                const displayMsg = isForbidden
+                  ? "This feature requires a Core membership or higher"
+                  : isNotFound
+                  ? "Asset not supported — check the ticker symbol"
+                  : isRateLimit
+                  ? "Rate limit reached — please wait a moment and retry"
+                  : isTimeout
+                  ? "AI analysis timeout — please retry"
+                  : "Analysis failed — please retry";
+                return (
+                  <div style={{ marginTop: "10px", padding: "10px 12px", background: "rgba(255,45,85,0.08)", border: "1px solid rgba(255,45,85,0.25)", borderRadius: "4px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#FF2D55" }}>{displayMsg}</span>
+                    {errMsg && !isForbidden && (
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(255,45,85,0.5)", marginTop: "4px" }}>
+                        {errMsg.slice(0, 100)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
