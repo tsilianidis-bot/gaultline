@@ -91,6 +91,8 @@ const VolatilityDashboard  = lazy(() => import("./pages/seo/VolatilityDashboard"
 const AIStockSignals       = lazy(() => import("./pages/seo/AIStockSignals"));
 const CryptoSignalsIntelligence = lazy(() => import("./pages/seo/CryptoSignalsIntelligence"));
 const PublicCryptoSignals  = lazy(() => import("./pages/PublicCryptoSignals"));
+const DynamicStockPage     = lazy(() => import("./pages/seo/DynamicStockPage"));
+const DynamicCryptoPage    = lazy(() => import("./pages/seo/DynamicCryptoPage"));
 const PublicStockMarketRisk = lazy(() => import("./pages/PublicStockMarketRisk"));
 const PublicCryptoMarketRisk = lazy(() => import("./pages/PublicCryptoMarketRisk"));
 const PublicSituationRoom  = lazy(() => import("./pages/PublicSituationRoom"));
@@ -316,6 +318,13 @@ function Router() {
       </Route>
       <Route path="/crypto/tao">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><TAOSignal /></Suspense></ErrorBoundary>
+      </Route>
+      {/* Dynamic stock/crypto pages — auto-generate for any symbol */}
+      <Route path="/stock/:symbol">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><DynamicStockPage /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/crypto/:symbol">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><DynamicCryptoPage /></Suspense></ErrorBoundary>
       </Route>
       <Route path="/federal-reserve-tracker">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><FederalReserveTracker /></Suspense></ErrorBoundary>

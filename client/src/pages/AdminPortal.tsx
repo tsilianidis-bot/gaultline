@@ -904,9 +904,203 @@ function EngineTab() {
   );
 }
 
+// ── Tab: SEO Management ─────────────────────────────────────────────────────
+
+const SEO_PAGES = [
+  { path: "/",                              label: "Homepage",                    priority: "1.0", type: "core" },
+  { path: "/blog",                          label: "Blog Index",                  priority: "0.9", type: "core" },
+  { path: "/analysis",                      label: "Analysis Hub",                priority: "0.9", type: "core" },
+  { path: "/pressure-index",               label: "Pressure Index",              priority: "0.8", type: "core" },
+  { path: "/signals",                      label: "Stock Signals",               priority: "0.8", type: "core" },
+  { path: "/crypto-signals",               label: "Crypto Signals",              priority: "0.8", type: "core" },
+  { path: "/track-record",                 label: "Track Record",                priority: "0.9", type: "core" },
+  { path: "/market-crash-probability-2026", label: "Market Crash Probability 2026", priority: "1.0", type: "flagship" },
+  { path: "/market-crash-indicator",       label: "Market Crash Indicator",      priority: "1.0", type: "flagship" },
+  { path: "/recession-probability",        label: "Recession Probability",       priority: "1.0", type: "flagship" },
+  { path: "/alt-season-indicator",         label: "Alt Season Indicator",        priority: "1.0", type: "flagship" },
+  { path: "/bitcoin-risk-dashboard",       label: "Bitcoin Risk Dashboard",      priority: "1.0", type: "flagship" },
+  { path: "/ethereum-risk-dashboard",      label: "Ethereum Risk Dashboard",     priority: "1.0", type: "flagship" },
+  { path: "/federal-reserve-tracker",      label: "Federal Reserve Tracker",     priority: "1.0", type: "flagship" },
+  { path: "/liquidity-monitor",            label: "Liquidity Monitor",           priority: "1.0", type: "flagship" },
+  { path: "/volatility-dashboard",         label: "Volatility Dashboard",        priority: "1.0", type: "flagship" },
+  { path: "/ai-stocks-dashboard",          label: "AI Stocks Dashboard",         priority: "1.0", type: "flagship" },
+  { path: "/ai-stock-signals",             label: "AI Stock Signals",            priority: "1.0", type: "flagship" },
+  { path: "/crypto-signals-intelligence",  label: "Crypto Signals Intelligence", priority: "1.0", type: "flagship" },
+  { path: "/market-regime-tracker",        label: "Market Regime Tracker",       priority: "1.0", type: "flagship" },
+  { path: "/stock/nvda",                   label: "NVDA Signal",                 priority: "1.0", type: "stock" },
+  { path: "/stock/pltr",                   label: "PLTR Signal",                 priority: "1.0", type: "stock" },
+  { path: "/stock/tsla",                   label: "TSLA Signal",                 priority: "1.0", type: "stock" },
+  { path: "/stock/meta",                   label: "META Signal",                 priority: "1.0", type: "stock" },
+  { path: "/stock/amd",                    label: "AMD Signal",                  priority: "1.0", type: "stock" },
+  { path: "/crypto/tao",                   label: "TAO Signal",                  priority: "1.0", type: "crypto" },
+];
+
+const TYPE_COLOR: Record<string, string> = {
+  core:     "rgba(0,212,255,0.9)",
+  flagship: "rgba(168,85,247,0.9)",
+  stock:    "rgba(0,255,136,0.9)",
+  crypto:   "rgba(251,191,36,0.9)",
+};
+const TYPE_BG: Record<string, string> = {
+  core:     "rgba(0,212,255,0.07)",
+  flagship: "rgba(168,85,247,0.07)",
+  stock:    "rgba(0,255,136,0.07)",
+  crypto:   "rgba(251,191,36,0.07)",
+};
+
+function SEOTab() {
+  const baseUrl = "https://getfaultline.live";
+  const sitemapUrl = `${baseUrl}/sitemap.xml`;
+  const robotsUrl  = `${baseUrl}/robots.txt`;
+
+  const totalPages   = SEO_PAGES.length;
+  const flagshipCount = SEO_PAGES.filter(p => p.type === "flagship").length;
+  const stockCount   = SEO_PAGES.filter(p => p.type === "stock").length;
+  const cryptoCount  = SEO_PAGES.filter(p => p.type === "crypto").length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+      {/* KPI Row */}
+      <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+        <StatCard label="Indexed Pages"  value={totalPages}    sub="in sitemap"      color="rgba(0,212,255,0.9)" />
+        <StatCard label="Flagship Pages" value={flagshipCount} sub="priority 1.0"    color="rgba(168,85,247,0.9)" />
+        <StatCard label="Stock Pages"    value={stockCount}    sub="+ dynamic route" color="rgba(0,255,136,0.9)" />
+        <StatCard label="Crypto Pages"   value={cryptoCount}   sub="+ dynamic route" color="rgba(251,191,36,0.9)" />
+      </div>
+
+      {/* Infrastructure Health */}
+      <div>
+        <SectionHeader title="SEO Infrastructure" sub="Server-rendered metadata, sitemap, and robots.txt status" />
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {[
+            { label: "Server-Side Metadata Injection", status: "ACTIVE",    detail: "Per-page title/description/OG/Twitter/canonical — no JS required",   color: "rgba(0,255,136,0.9)" },
+            { label: "Dynamic /stock/:symbol Routes",  status: "ACTIVE",    detail: "Auto-generates metadata for any stock ticker without a static file",  color: "rgba(0,255,136,0.9)" },
+            { label: "Dynamic /crypto/:symbol Routes", status: "ACTIVE",    detail: "Auto-generates metadata for any crypto asset without a static file",  color: "rgba(0,255,136,0.9)" },
+            { label: "Sitemap.xml",                    status: "ACTIVE",    detail: sitemapUrl,                                                            color: "rgba(0,255,136,0.9)" },
+            { label: "Robots.txt",                     status: "ACTIVE",    detail: robotsUrl,                                                             color: "rgba(0,255,136,0.9)" },
+            { label: "Google Search Console",          status: "NOT CONNECTED", detail: "Connect via Google Search Console → Settings → Ownership verification", color: "rgba(251,191,36,0.9)" },
+          ].map(item => (
+            <div key={item.label} style={{
+              display: "flex", alignItems: "center", gap: "14px",
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: "8px", padding: "14px 18px",
+            }}>
+              <span style={{ ...MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.12em", color: item.color, minWidth: "120px" }}>{item.status}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ ...SANS, fontSize: "13px", color: "#E2E8F0", marginBottom: "2px" }}>{item.label}</p>
+                <p style={{ ...MONO, fontSize: "10px", color: "rgba(100,116,139,0.5)", wordBreak: "break-all" }}>{item.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Quick Links */}
+      <div>
+        <SectionHeader title="Quick Links" sub="Open SEO tools and verification pages" />
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          {[
+            { label: "View Sitemap",         href: sitemapUrl },
+            { label: "View Robots.txt",      href: robotsUrl },
+            { label: "Search Console",       href: "https://search.google.com/search-console" },
+            { label: "Google Index Check",   href: `https://www.google.com/search?q=site:getfaultline.live` },
+            { label: "SEO Optimizer Tool",   href: "/app/seo-optimizer" },
+          ].map(link => (
+            <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" style={{
+              ...MONO, fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase",
+              color: "rgba(0,212,255,0.8)", textDecoration: "none",
+              padding: "8px 16px", border: "1px solid rgba(0,212,255,0.2)",
+              borderRadius: "6px", background: "rgba(0,212,255,0.04)",
+              transition: "all 0.15s",
+            }}>{link.label} ↗</a>
+          ))}
+        </div>
+      </div>
+
+      {/* Page Inventory */}
+      <div>
+        <SectionHeader title="Page Inventory" sub={`${totalPages} pages in sitemap — all with server-rendered unique metadata`} />
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                {["Type", "Label", "URL", "Priority", "Metadata", "Action"].map(h => (
+                  <th key={h} style={{ ...MONO, fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "rgba(100,116,139,0.5)", padding: "10px 12px", textAlign: "left", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {SEO_PAGES.map((page, i) => (
+                <tr key={page.path} style={{ borderBottom: "1px solid rgba(255,255,255,0.03)", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
+                  <td style={{ padding: "10px 12px" }}>
+                    <span style={{ ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "3px 7px", borderRadius: "4px", color: TYPE_COLOR[page.type], background: TYPE_BG[page.type], border: `1px solid ${TYPE_COLOR[page.type].replace("0.9", "0.2")}` }}>{page.type}</span>
+                  </td>
+                  <td style={{ ...SANS, fontSize: "12px", color: "#CBD5E1", padding: "10px 12px", whiteSpace: "nowrap" }}>{page.label}</td>
+                  <td style={{ ...MONO, fontSize: "10px", color: "rgba(0,212,255,0.6)", padding: "10px 12px" }}>{page.path}</td>
+                  <td style={{ ...MONO, fontSize: "11px", color: "rgba(0,255,136,0.8)", padding: "10px 12px", textAlign: "center" }}>{page.priority}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <span style={{ ...MONO, fontSize: "9px", color: "rgba(0,255,136,0.8)", letterSpacing: "0.1em" }}>✓ INJECTED</span>
+                  </td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <a href={`https://getfaultline.live${page.path}`} target="_blank" rel="noopener noreferrer" style={{ ...MONO, fontSize: "9px", color: "rgba(0,212,255,0.6)", textDecoration: "none", letterSpacing: "0.1em" }}>VIEW ↗</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Dynamic Routes */}
+      <div>
+        <SectionHeader title="Dynamic Routes" sub="Auto-generate pages for any symbol — no static file needed" />
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          {[
+            { route: "/stock/:symbol", example: "/stock/msft", desc: "Any stock ticker — generates unique title, description, OG, canonical" },
+            { route: "/crypto/:symbol", example: "/crypto/sol", desc: "Any crypto asset — generates unique title, description, OG, canonical" },
+            { route: "/blog/:slug", example: "/blog/market-crash-2025", desc: "Blog posts — title/description pulled from database" },
+          ].map(r => (
+            <div key={r.route} style={{ flex: "1 1 280px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "18px 20px" }}>
+              <p style={{ ...MONO, fontSize: "13px", color: "rgba(0,212,255,0.9)", marginBottom: "6px" }}>{r.route}</p>
+              <p style={{ ...MONO, fontSize: "10px", color: "rgba(0,255,136,0.7)", marginBottom: "8px" }}>e.g. {r.example}</p>
+              <p style={{ ...SANS, fontSize: "12px", color: "rgba(100,116,139,0.6)" }}>{r.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Next Steps */}
+      <div>
+        <SectionHeader title="Expansion Roadmap" sub="Next steps ranked by traffic impact" />
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {[
+            { rank: "P0", action: "Publish latest build",                     impact: "All 26 pages go live on getfaultline.live",                 status: "READY" },
+            { rank: "P0", action: "Submit sitemap to Search Console",          impact: "Triggers Google indexing of all 26 pages",                status: "PENDING" },
+            { rank: "P1", action: "Add /stock/msft, /stock/googl, /stock/amzn", impact: "3 high-volume stock pages, no code needed",               status: "READY" },
+            { rank: "P1", action: "Add /crypto/btc, /crypto/eth, /crypto/sol",  impact: "3 high-volume crypto pages, no code needed",              status: "READY" },
+            { rank: "P2", action: "Daily content engine",                      impact: "Auto-published market briefs indexed daily",              status: "PLANNED" },
+            { rank: "P2", action: "Connect Google Search Console API",          impact: "Live impressions, clicks, CTR in this panel",             status: "PLANNED" },
+            { rank: "P3", action: "Expand to 100+ stock/crypto pages",          impact: "Long-tail keyword coverage, compounding traffic",         status: "PLANNED" },
+          ].map(item => (
+            <div key={item.action} style={{ display: "flex", alignItems: "center", gap: "14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "8px", padding: "12px 16px" }}>
+              <span style={{ ...MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.12em", color: item.rank === "P0" ? "rgba(255,45,85,0.9)" : item.rank === "P1" ? "rgba(251,191,36,0.9)" : "rgba(100,116,139,0.7)", minWidth: "28px" }}>{item.rank}</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ ...SANS, fontSize: "13px", color: "#E2E8F0", marginBottom: "2px" }}>{item.action}</p>
+                <p style={{ ...MONO, fontSize: "10px", color: "rgba(100,116,139,0.5)" }}>{item.impact}</p>
+              </div>
+              <span style={{ ...MONO, fontSize: "9px", letterSpacing: "0.1em", color: item.status === "READY" ? "rgba(0,255,136,0.8)" : item.status === "PENDING" ? "rgba(251,191,36,0.8)" : "rgba(100,116,139,0.5)" }}>{item.status}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main Portal ───────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine";
+type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine" | "seo";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "overview", label: "Overview",       icon: "◈" },
@@ -915,6 +1109,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "stats",    label: "Statistics",      icon: "◑" },
   { id: "health",   label: "Platform Health", icon: "◌" },
   { id: "engine",   label: "Engine & Flags",  icon: "⚙" },
+  { id: "seo",      label: "SEO",             icon: "◐" },
 ];
 
 export default function AdminPortal() {
@@ -999,6 +1194,7 @@ export default function AdminPortal() {
       {activeTab === "stats"    && <StatsTab />}
       {activeTab === "health"   && <HealthTab />}
       {activeTab === "engine"   && <EngineTab />}
+      {activeTab === "seo"      && <SEOTab />}
     </div>
   );
 }

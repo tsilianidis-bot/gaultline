@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
+import { injectPageMeta } from "../seoMeta";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -39,7 +40,10 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx?v=${nanoid()}"`
       );
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      // Inject per-page metadata so crawlers get unique titles/descriptions
+      // without requiring JavaScript execution
+      const pageWithMeta = injectPageMeta(page, url);
+      res.status(200).set({ "Content-Type": "text/html" }).end(pageWithMeta);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
@@ -61,7 +65,18 @@ export function serveStatic(app: Express) {
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  // Inject per-page metadata server-side so every public SEO page returns
+  // unique title/description/OG/Twitter/canonical without JavaScript execution
+  app.use("*", (req, res) => {
+    const indexPath = path.resolve(distPath, "index.html");
+    fs.readFile(indexPath, "utf-8", (err, html) => {
+      if (err) {
+        res.status(500).send("Internal Server Error");
+        return;
+      }
+      const htmlWithMeta = injectPageMeta(html, req.originalUrl);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(htmlWithMeta);
+    });
   });
 }

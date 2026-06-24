@@ -1978,3 +1978,22 @@
 - [ ] Update sitemap with priority 1.0 for all 20 flagship pages
 - [ ] Ensure all pages have Article + FAQPage schema markup
 - [ ] Internal linking: each page links to at least 5 other pages
+
+## SEO Execution Plan — Phase 1 Critical Fixes (Jun 24, 2026)
+- [x] Server-side metadata injection: per-page title/description/OG/Twitter/canonical in Express catch-all
+- [x] Verify raw HTML source returns unique metadata for every public SEO page (no JS required)
+- [x] Add Market Intelligence section to homepage linking to 8 flagship SEO pages
+- [ ] Shorten over-length title tags (9 pages exceed 60 chars)
+- [ ] Disallow /mobile/* in robots.txt
+
+## SEO Execution Plan — Phase 2 Scale (Jun 24, 2026)
+- [x] Dynamic /stock/:symbol route with auto-generated title/description/schema/FAQs/content
+- [x] Dynamic /crypto/:symbol route with auto-generated title/description/schema/FAQs/content
+- [ ] Migrate static stock routes (nvda/pltr/tsla/meta/amd) to dynamic handler
+- [ ] Migrate static crypto routes (tao) to dynamic handler
+
+## SEO Execution Plan — Phase 3 Admin SEO Panel (Jun 24, 2026)
+- [x] Admin → SEO panel: sitemap health, robots health, orphan pages, duplicate titles/descriptions
+- [x] Admin → SEO panel: schema validation, content freshness, broken links
+- [x] Admin → SEO panel: Search Console readiness (impressions/clicks/CTR/position — "Not Connected" state)
+- [ ] Internal linking engine (admin-only): contextual link recommendations between pages

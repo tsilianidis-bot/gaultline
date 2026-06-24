@@ -2218,6 +2218,106 @@ function Footer() {
   );
 }
 
+// ── Market Intelligence Hub — SEO internal linking ──────────
+function MarketIntelligenceSection() {
+  const cards = [
+    {
+      label: "CRASH RISK",
+      title: "Market Crash Probability 2026",
+      desc: "Real-time crash probability tracking credit spreads, VIX regime, and AI concentration risk.",
+      href: "/market-crash-probability-2026",
+      color: "text-red-400",
+      border: "hover:border-red-400/30",
+    },
+    {
+      label: "RECESSION",
+      title: "Recession Probability Indicator",
+      desc: "Live US recession probability using yield curve, leading indicators, and Fed policy signals.",
+      href: "/recession-probability",
+      color: "text-amber-400",
+      border: "hover:border-amber-400/30",
+    },
+    {
+      label: "REGIME",
+      title: "Market Regime Tracker",
+      desc: "Classify current conditions as Bull, Bear, Crash, or Recovery in real time.",
+      href: "/market-regime-tracker",
+      color: "text-cyan-400",
+      border: "hover:border-cyan-400/30",
+    },
+    {
+      label: "CRYPTO CYCLE",
+      title: "Alt Season Indicator",
+      desc: "Track alt season probability via Bitcoin dominance, altcoin momentum, and liquidity rotation.",
+      href: "/alt-season-indicator",
+      color: "text-purple-400",
+      border: "hover:border-purple-400/30",
+    },
+    {
+      label: "BITCOIN",
+      title: "Bitcoin Risk Dashboard",
+      desc: "Real-time BTC macro regime, on-chain signals, and systemic risk score.",
+      href: "/bitcoin-risk-dashboard",
+      color: "text-orange-400",
+      border: "hover:border-orange-400/30",
+    },
+    {
+      label: "FEDERAL RESERVE",
+      title: "Federal Reserve Tracker",
+      desc: "Fed funds rate, balance sheet, forward guidance, and market impact in one dashboard.",
+      href: "/federal-reserve-tracker",
+      color: "text-blue-400",
+      border: "hover:border-blue-400/30",
+    },
+    {
+      label: "AI BUBBLE",
+      title: "AI Bubble Monitor",
+      desc: "Track AI sector concentration, valuation multiples, and systemic exposure across the AI complex.",
+      href: "/ai-bubble-risk-tracker",
+      color: "text-emerald-400",
+      border: "hover:border-emerald-400/30",
+    },
+    {
+      label: "VOLATILITY",
+      title: "Volatility Dashboard",
+      desc: "VIX regime, implied volatility, term structure, and volatility risk premium in real time.",
+      href: "/volatility-dashboard",
+      color: "text-yellow-400",
+      border: "hover:border-yellow-400/30",
+    },
+  ];
+  return (
+    <section className="py-24 px-4 border-t border-white/5 bg-[#050608]">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-12">
+          <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-3">MARKET INTELLIGENCE</div>
+          <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+            Real-Time Risk Dashboards
+          </h2>
+          <p className="mt-3 text-[#A8B8CC] text-sm max-w-xl">
+            Live macro risk intelligence across crash probability, recession indicators, crypto cycles, and Federal Reserve policy — updated daily.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {cards.map((card) => (
+            <Link
+              key={card.href}
+              href={card.href}
+              className={`group block p-5 rounded-lg border border-white/8 bg-white/[0.02] hover:bg-white/[0.04] ${card.border} transition-all duration-200`}
+            >
+              <div className={`text-[10px] font-mono tracking-widest mb-3 ${card.color}`}>{card.label}</div>
+              <h3 className="text-white font-semibold text-sm leading-snug mb-2 group-hover:text-[#00D4FF] transition-colors">
+                {card.title}
+              </h3>
+              <p className="text-[#64748B] text-xs leading-relaxed">{card.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── About / Origin ──────────────────────────────────────────
 function EvergreenHubSection() {
   const { data: posts, isLoading } = trpc.blog.listEvergreen.useQuery({ limit: 6 });
@@ -2393,6 +2493,7 @@ export default function MarketingSite() {
       <PricingSection onRequestAccess={scrollToForm} />
       <CoreMobileSection onRequestAccess={scrollToForm} />
       <FoundingAccessForm formRef={formRef} />
+      <MarketIntelligenceSection />
       <EvergreenHubSection />
       <Footer />
     </div>
