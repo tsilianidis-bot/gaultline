@@ -115,18 +115,20 @@ export default function AnalyticsDashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  const overviewQ       = trpc.analytics.getOverview.useQuery({ days }, { enabled: !!user });
-  const topPagesQ       = trpc.analytics.getTopPages.useQuery({ days, limit: 20 }, { enabled: !!user });
-  const devicesQ        = trpc.analytics.getDevices.useQuery({ days }, { enabled: !!user });
-  const countriesQ      = trpc.analytics.getCountries.useQuery({ days, limit: 20 }, { enabled: !!user });
-  const referrersQ      = trpc.analytics.getReferrers.useQuery({ days, limit: 20 }, { enabled: !!user });
-  const eventsQ         = trpc.analytics.getEvents.useQuery({ days, limit: 30 }, { enabled: !!user });
-  const timeSeriesQ     = trpc.analytics.getTimeSeries.useQuery({ days: Math.min(days, 90) }, { enabled: !!user });
-  const sessionsQ       = trpc.analytics.getSessions.useQuery({ limit: 50, offset: 0 }, { enabled: !!user });
-  const campaignsQ      = trpc.analytics.getCampaigns.useQuery({ days }, { enabled: !!user });
-  const visitorStatsQ   = trpc.analytics.getVisitorStats.useQuery({ days }, { enabled: !!user });
-  const visitorProfilesQ = trpc.analytics.getVisitorProfiles.useQuery({ limit: 50, offset: 0 }, { enabled: !!user });
-  const countriesCitiesQ = trpc.analytics.getCountriesWithCities.useQuery({ limit: 20 }, { enabled: !!user });
+  // Analytics data is not real-time — 5 min staleTime prevents unnecessary refetches on tab focus
+  const CACHE = { enabled: !!user, staleTime: 5 * 60 * 1000 } as const;
+  const overviewQ        = trpc.analytics.getOverview.useQuery({ days }, CACHE);
+  const topPagesQ        = trpc.analytics.getTopPages.useQuery({ days, limit: 20 }, CACHE);
+  const devicesQ         = trpc.analytics.getDevices.useQuery({ days }, CACHE);
+  const countriesQ       = trpc.analytics.getCountries.useQuery({ days, limit: 20 }, CACHE);
+  const referrersQ       = trpc.analytics.getReferrers.useQuery({ days, limit: 20 }, CACHE);
+  const eventsQ          = trpc.analytics.getEvents.useQuery({ days, limit: 30 }, CACHE);
+  const timeSeriesQ      = trpc.analytics.getTimeSeries.useQuery({ days: Math.min(days, 90) }, CACHE);
+  const sessionsQ        = trpc.analytics.getSessions.useQuery({ limit: 50, offset: 0 }, CACHE);
+  const campaignsQ       = trpc.analytics.getCampaigns.useQuery({ days }, CACHE);
+  const visitorStatsQ    = trpc.analytics.getVisitorStats.useQuery({ days }, CACHE);
+  const visitorProfilesQ = trpc.analytics.getVisitorProfiles.useQuery({ limit: 50, offset: 0 }, CACHE);
+  const countriesCitiesQ = trpc.analytics.getCountriesWithCities.useQuery({ limit: 20 }, CACHE);
 
   const refetchAll = useCallback(() => {
     overviewQ.refetch(); topPagesQ.refetch(); devicesQ.refetch();

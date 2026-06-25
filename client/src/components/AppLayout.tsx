@@ -37,26 +37,30 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
+    // COMMAND: The 5-step institutional workflow — learn → assess → trade → decide → review
     label: "COMMAND",
     items: [
-      { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight", icon: Shield,         path: "/app/pre-flight" },
-      { id: "opportunities",  label: "Opportunities",        shortLabel: "Opps",       icon: Sparkles,       path: "/app/opportunities" },
-      { id: "situation-room", label: "Situation Room",       shortLabel: "Sit. Room",  icon: Crosshair,      path: "/app/situation-room" },
-      { id: "day-trade",       label: "Day Trade Intelligence", shortLabel: "Day Trade",  icon: Target,         path: "/app/day-trade-intelligence" },
       { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",       icon: LayoutDashboard,path: "/app" },
+      { id: "pre-flight",     label: "Pre-Flight",           shortLabel: "Pre-Flight", icon: Shield,         path: "/app/pre-flight" },
+      { id: "situation-room", label: "Situation Room",       shortLabel: "Sit. Room",  icon: Crosshair,      path: "/app/situation-room" },
+      { id: "opportunities",  label: "Opportunities",        shortLabel: "Opps",       icon: Sparkles,       path: "/app/opportunities" },
       { id: "report",         label: "Daily Briefing",       shortLabel: "Briefing",   icon: FileText,       path: "/app/report" },
+    ],
+  },
+  {
+    // DAY TRADE: Flagship intraday intelligence module — elevated to its own group
+    label: "DAY TRADE",
+    items: [
+      { id: "day-trade",       label: "Day Trade Intelligence", shortLabel: "Day Trade",  icon: Target,         path: "/app/day-trade-intelligence" },
     ],
   },
   {
     label: "MARKETS",
     items: [
       { id: "signals",          label: "Signals",            shortLabel: "Signals",     icon: Radio,     path: "/app/signals" },
-      { id: "signal-outlook",   label: "Signal Outlook",     shortLabel: "Outlook",     icon: Telescope, path: "/app/signal-outlook" },
       { id: "watchlist",        label: "Watchlist",          shortLabel: "Watch",       icon: Bell,      path: "/app/watchlist" },
       { id: "portfolio",        label: "Portfolio",          shortLabel: "Portfolio",   icon: Briefcase, path: "/app/portfolio" },
       { id: "crypto",           label: "Crypto Intelligence",shortLabel: "Crypto Intel",icon: Bitcoin,   path: "/app/crypto-search" },
-      { id: "crypto-signals",   label: "Crypto Signals",     shortLabel: "Crypto Sig",  icon: BarChart3, path: "/app/crypto-signals" },
-      { id: "crypto-watchlist", label: "Crypto Watchlist",   shortLabel: "Crypto Watch",icon: Bookmark,  path: "/app/crypto-watchlist" },
       { id: "alt-rotation",    label: "Sector Rotation",     shortLabel: "Rotation",   icon: RotateCcw, path: "/app/alt-rotation" },
     ],
   },
@@ -73,8 +77,6 @@ const NAV_GROUPS: NavGroup[] = [
     label: "ANALYSIS",
     items: [
       { id: "pressure",     label: "Market Stress",       shortLabel: "Stress",     icon: Gauge,     path: "/app/pressure" },
-      { id: "analogs",      label: "Historical Analogs",  shortLabel: "Analogs",    icon: Clock,     path: "/app/analogs" },
-      { id: "scenarios",    label: "Scenarios",           shortLabel: "Scenarios",  icon: TrendingUp,path: "/app/scenarios" },
       { id: "simulate",     label: "Pressure Simulator",  shortLabel: "Simulator",  icon: Zap,       path: "/app/simulate" },
       { id: "stock-heatmap",label: "Stock Heatmap",       shortLabel: "Heatmap",    icon: BarChart2, path: "/app/stock-heatmap" },
     ],

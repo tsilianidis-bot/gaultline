@@ -3,7 +3,7 @@
    Bloomberg/Trade Ideas style intraday trading terminal
    7 tabs: Overview · Scanner · Stocks · Crypto · Symbol · Active · Watchlist
    ============================================================ */
-import { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -12,7 +12,7 @@ import {
   Target, RefreshCw, Search, Plus, Trash2, AlertTriangle,
   TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
   Activity, Zap, BarChart2, Shield, Clock, Bookmark,
-  CheckCircle, XCircle, AlertCircle, Info,
+  CheckCircle, XCircle, AlertCircle, Info, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -608,6 +608,58 @@ function StockScreenerTab({ onSearch }: { onSearch: (sym: string, type: "stock" 
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ ...MONO_SM, color: "#6B7280" }}>{setups.length} stock setup{setups.length !== 1 ? "s" : ""} · Stocks only</div>
+          {setups.map(s => <SetupCard key={s.symbol} s={s} onSearch={onSearch} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Cap-Size Dedicated Scanner Tab ──────────────────────────────────────────
+// Dedicated scanner for Low / Mid / Large cap stocks with cap-specific criteria
+const CAP_META: Record<"low" | "mid" | "large", { label: string; color: string; desc: string; criteria: string[] }> = {
+  low:   { label: "Low Cap",   color: "#F59E0B", desc: "Micro & small-cap stocks with high asymmetric potential",  criteria: ["Rel. Volume >3x", "Gap >3%", "Float <50M", "Price >$1", "Momentum", "Catalyst"] },
+  mid:   { label: "Mid Cap",   color: "#A855F7", desc: "Mid-cap stocks with institutional participation",          criteria: ["Rel. Volume >2x", "Gap >2%", "VWAP Position", "Sector Strength", "Momentum", "Regime Fit"] },
+  large: { label: "Large Cap", color: "#00D4FF", desc: "Large-cap stocks with high liquidity and tight spreads",   criteria: ["Rel. Volume >1.5x", "Options Flow", "VWAP", "Support/Resistance", "Regime Fit", "Sector Leader"] },
+};
+function CapScannerTab({ cap, onSearch }: { cap: "low" | "mid" | "large"; onSearch: (sym: string, type: "stock" | "crypto") => void }) {
+  const meta = CAP_META[cap];
+  const [direction, setDirection] = useState<"bullish" | "bearish" | "both">("both");
+  const { data, isLoading, error, refetch, isFetching } = trpc.dayTrade.scan.useQuery({
+    assetType: "stock",
+    capBucket: cap,
+    direction,
+    riskProfile: cap === "low" ? "aggressive" : cap === "mid" ? "balanced" : "conservative",
+    maxResults: 15,
+  }, { staleTime: 5 * 60 * 1000, refetchInterval: 10 * 60 * 1000 });
+  const setups = (data ?? []) as unknown as AnySetup[];
+  const rgb = cap === "low" ? "245,158,11" : cap === "mid" ? "168,85,247" : "0,212,255";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {DISCLAIMER}
+      <div style={{ ...CARD, display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+        <div style={{ ...MONO_SM, color: meta.color, fontWeight: 600, letterSpacing: "0.1em" }}>{meta.label.toUpperCase()} SCANNER</div>
+        <div style={{ ...MONO_SM, color: "#6B7280", fontSize: "9px", flex: 1 }}>{meta.desc}</div>
+        <FilterSelect label="Direction" value={direction} options={[["both", "Both"], ["bullish", "Bullish"], ["bearish", "Bearish"]]} onChange={v => setDirection(v as typeof direction)} />
+        <button onClick={() => refetch()} disabled={isFetching} style={{ padding: "6px 14px", background: `rgba(${rgb},0.08)`, border: `1px solid rgba(${rgb},0.25)`, borderRadius: "4px", color: meta.color, ...MONO_SM, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}>
+          <RefreshCw size={11} style={{ animation: isFetching ? "spin 1s linear infinite" : "none" }} />Refresh
+        </button>
+      </div>
+      <div style={{ ...CARD, background: `rgba(${rgb},0.03)` }}>
+        <div style={{ ...LABEL, marginBottom: "8px" }}>{meta.label} Screening Criteria</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {meta.criteria.map(c => (<span key={c} style={{ ...MONO_SM, fontSize: "9px", background: `rgba(${rgb},0.08)`, color: meta.color, border: `1px solid rgba(${rgb},0.15)`, borderRadius: "3px", padding: "2px 6px" }}>{c}</span>))}
+        </div>
+      </div>
+      {isLoading ? (
+        <LoadingState label={`Scanning ${meta.label} stocks...`} />
+      ) : error ? (
+        <ErrorState message={error.message} onRetry={() => refetch()} />
+      ) : setups.length === 0 ? (
+        <EmptyState icon={<Layers size={32} style={{ color: "#6B7280" }} />} title={`No ${meta.label} Setups`} message={`No high-quality ${meta.label.toLowerCase()} setups found. Market conditions may not support intraday trading right now.`} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ ...MONO_SM, color: "#6B7280" }}>{setups.length} {meta.label.toLowerCase()} setup{setups.length !== 1 ? "s" : ""}</div>
           {setups.map(s => <SetupCard key={s.symbol} s={s} onSearch={onSearch} />)}
         </div>
       )}
@@ -1221,6 +1273,9 @@ const TABS = [
   { id: "overview",  label: "Overview",       icon: <Target size={13} /> },
   { id: "scanner",   label: "Market Scanner", icon: <Activity size={13} /> },
   { id: "stocks",    label: "Stock Screener", icon: <BarChart2 size={13} /> },
+  { id: "lowcap",    label: "Low Cap",         icon: <Layers size={13} /> },
+  { id: "midcap",    label: "Mid Cap",         icon: <Layers size={13} /> },
+  { id: "largecap",  label: "Large Cap",       icon: <Layers size={13} /> },
   { id: "crypto",    label: "Crypto Screener",icon: <Zap size={13} /> },
   { id: "symbol",    label: "Symbol Search",  icon: <Search size={13} /> },
   { id: "active",    label: "Active Setups",  icon: <CheckCircle size={13} /> },
@@ -1327,7 +1382,7 @@ export default function DayTradeIntelligence() {
           </div>
         </div>
 
-        {/* Tab bar */}
+        {/* Tab bar — horizontally scrollable on mobile */}
         <div style={{
           display: "flex",
           gap: "2px",
@@ -1337,7 +1392,10 @@ export default function DayTradeIntelligence() {
           borderRadius: "6px",
           padding: "4px",
           overflowX: "auto",
-        }}>
+          scrollbarWidth: "none",          /* Firefox */
+          WebkitOverflowScrolling: "touch", /* iOS momentum scroll */
+          scrollSnapType: "x mandatory",
+        } as React.CSSProperties}>
           {TABS.map(tab => (
             <button
               key={tab.id}
@@ -1370,6 +1428,9 @@ export default function DayTradeIntelligence() {
         {activeTab === "overview"  && <OverviewTab />}
         {activeTab === "scanner"   && <ScannerTab onSearch={handleSearch} />}
         {activeTab === "stocks"    && <StockScreenerTab onSearch={handleSearch} />}
+        {activeTab === "lowcap"    && <CapScannerTab cap="low"   onSearch={handleSearch} />}
+        {activeTab === "midcap"    && <CapScannerTab cap="mid"   onSearch={handleSearch} />}
+        {activeTab === "largecap"  && <CapScannerTab cap="large" onSearch={handleSearch} />}
         {activeTab === "crypto"    && <CryptoScreenerTab onSearch={handleSearch} />}
         {activeTab === "symbol"    && <SymbolSearchTabWithEvent />}
         {activeTab === "active"    && <ActiveSetupsTab onSearch={handleSearch} />}

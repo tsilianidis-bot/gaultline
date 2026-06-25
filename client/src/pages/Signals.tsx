@@ -17,7 +17,7 @@ import {
   type SignalStock, type FaultlineSignal, type ScreeningCategory, type SignalFilters,
 } from '@/lib/signalsData';
 import { LineChart, Line, ResponsiveContainer, Tooltip as RTooltip } from 'recharts';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
@@ -1154,6 +1154,29 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
   );
 }
 
+// ── Signals Module Sub-Nav ──────────────────────────────────────────────────
+const SIGNALS_SUB_TABS = [
+  { id: 'signals',       label: 'Stock Signals',   icon: '⚡', path: '/app/signals' },
+  { id: 'crypto-signals',label: 'Crypto Signals',  icon: '₿', path: '/app/crypto-signals' },
+  { id: 'signal-outlook',label: 'Signal Outlook',  icon: '◎', path: '/app/signal-outlook' },
+];
+function SignalsSubNav() {
+  const [location, navigate] = useLocation();
+  const active = SIGNALS_SUB_TABS.find(t => location === t.path || location.startsWith(t.path + '/'))?.id ?? 'signals';
+  return (
+    <div style={{ display: 'flex', gap: '4px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(4,6,10,0.98)', marginBottom: '0' }}>
+      {SIGNALS_SUB_TABS.map(tab => {
+        const isActive = active === tab.id;
+        return (
+          <button key={tab.id} onClick={() => navigate(tab.path)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', cursor: 'pointer', border: 'none', background: 'transparent', borderBottom: isActive ? '2px solid #00D4FF' : '2px solid transparent', color: isActive ? '#00D4FF' : '#4B5563', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'color 0.15s ease', marginBottom: '-1px', whiteSpace: 'nowrap' }}>
+            {tab.icon} {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Main Signals Page ─────────────────────────────────────────
 function SignalsInner() {
   useSEO(PAGE_SEO.signals);
@@ -1394,6 +1417,9 @@ function SignalsInner() {
           </div>
         }
       />
+
+      {/* ── Signals Module Sub-Nav: navigate between Stocks, Crypto, Signal Outlook ── */}
+      <SignalsSubNav />
 
       {/* ── View Switcher Tab Bar ────────────────────────── */}
       <div style={{

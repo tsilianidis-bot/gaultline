@@ -7,18 +7,22 @@ import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves, Clock, GitBranch } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useLocation } from "wouter";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
+// All stress-related analysis lives under one roof — no need to navigate away
 const STRESS_TABS = [
-  { id: 'pressure',  label: 'Pressure',   icon: Activity,  path: '/app/pressure' },
-  { id: 'scores',    label: 'Risk Scores', icon: BarChart2, path: '/app/scores' },
-  { id: 'charts',    label: 'Charts',      icon: BarChart2, path: '/app/charts' },
-  { id: 'aftershock',label: 'Aftershock',  icon: Waves,     path: '/app/aftershock-engine' },
+  { id: 'pressure',  label: 'Pressure',       icon: Activity,  path: '/app/pressure' },
+  { id: 'scores',    label: 'Risk Scores',     icon: BarChart2, path: '/app/scores' },
+  { id: 'charts',    label: 'Charts',          icon: BarChart2, path: '/app/charts' },
+  { id: 'aftershock',label: 'Aftershock',      icon: Waves,     path: '/app/aftershock-engine' },
+  { id: 'analogs',   label: 'Analogs',         icon: Clock,     path: '/app/analogs' },
+  { id: 'scenarios', label: 'Scenarios',       icon: GitBranch, path: '/app/scenarios' },
+  { id: 'domain',    label: 'Domain Analysis', icon: Zap,       path: '/app/diagnostic' },
 ];
 function StressTabBar() {
   const [location, navigate] = useLocation();

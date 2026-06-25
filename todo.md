@@ -2081,3 +2081,35 @@
 - [x] NO TRADE logic — never fabricate when data unavailable
 - [x] Live refresh without blocking UI
 - [x] TypeScript check: 0 errors
+
+## FAULTLINE 2.1 — Architecture Evolution
+
+### Navigation Hierarchy
+- [ ] Reorder COMMAND group to enforce user journey: Dashboard → Pre-Flight → Signals → Day Trade → Situation Room → Opportunities → Daily Briefing
+- [ ] Add Historical Analogs + Scenarios to Market Stress sub-nav
+- [ ] Add Crypto Signals + Signal Outlook as sub-nav tabs on Signals page
+- [ ] Move Day Trade Intelligence to its own top-level group "DAY TRADE" to elevate it as flagship
+
+### Day Trade Intelligence — Flagship Elevation
+- [ ] Add dedicated Low Cap Scanner tab (pre-filtered capBucket=low)
+- [ ] Add dedicated Mid Cap Scanner tab (pre-filtered capBucket=mid)
+- [ ] Add dedicated Large Cap Scanner tab (pre-filtered capBucket=large)
+- [ ] Add Risk Management tab with trade parameters
+- [ ] Rename "Scanner" tab to "Market Scanner" for clarity
+
+### Market Stress Consolidation
+- [ ] Add Historical Analogs to Market Stress sub-nav
+- [ ] Add Scenarios to Market Stress sub-nav
+
+### Signals Consolidation
+- [ ] Add Crypto Signals sub-nav tab on Signals page
+- [ ] Add Signal Outlook sub-nav tab on Signals page
+
+### UX Improvements
+- [ ] Add numbered 5-step workflow guide to Dashboard
+- [ ] Add module purpose subtitles to flagship page headers
+- [ ] Improve mobile layout for Day Trade Intelligence
+
+### Performance
+- [ ] Audit and add staleTime to tRPC queries
+- [ ] Verify all pages use React.lazy
