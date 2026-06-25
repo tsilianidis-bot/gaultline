@@ -968,3 +968,21 @@ export const contentCtaClicks = mysqlTable("contentCtaClicks", {
 }));
 export type ContentCtaClick = typeof contentCtaClicks.$inferSelect;
 export type InsertContentCtaClick = typeof contentCtaClicks.$inferInsert;
+
+// ── Day Trade Watchlist ──────────────────────────────────────
+/**
+ * Stores user-saved symbols for Day Trade Intelligence™ watchlist.
+ * When a saved symbol generates a qualifying intraday setup, the user is notified.
+ */
+export const dayTradeWatchlist = mysqlTable("dayTradeWatchlist", {
+  id:        int("id").autoincrement().primaryKey(),
+  userId:    int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  symbol:    varchar("symbol", { length: 20 }).notNull(),
+  assetType: mysqlEnum("assetType", ["stock", "crypto"]).notNull().default("stock"),
+  addedAt:   timestamp("addedAt").defaultNow().notNull(),
+}, (t) => ({
+  userSymbolIdx: uniqueIndex("dayTradeWatchlist_user_symbol_idx").on(t.userId, t.symbol),
+  userIdx:       index("dayTradeWatchlist_userId_idx").on(t.userId),
+}));
+export type DayTradeWatchlistItem = typeof dayTradeWatchlist.$inferSelect;
+export type InsertDayTradeWatchlistItem = typeof dayTradeWatchlist.$inferInsert;

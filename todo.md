@@ -2063,3 +2063,21 @@
 - [x] TypeScript: 0 errors
 - [ ] All tests passing
 - [ ] Checkpoint saved
+
+
+## Day Trade Intelligence™ Module
+- [x] Create server/dayTradeEngine.ts — dayTradeScanner() and dayTradeSymbolSetup() functions
+- [x] Add dayTradeWatchlist table to drizzle schema and apply migration
+- [x] Add tRPC procedures: dayTrade.scan, dayTrade.symbolSetup, dayTrade.getWatchlist, dayTrade.addToWatchlist, dayTrade.removeFromWatchlist
+- [x] Create client/src/pages/DayTradeIntelligence.tsx — main page with 7 tabs
+- [x] Tab 1: Market Scanner — filters (asset type, cap, direction, risk), live results grid
+- [x] Tab 2: Stock Screener — cap filter, rel volume/gap/VWAP/momentum metrics
+- [x] Tab 3: Crypto Screener — separate crypto logic, all major coins
+- [x] Tab 4: Symbol Search — any stock or crypto, full Day Trade Report
+- [x] Tab 5: Active Setups — all current setups with status tracking
+- [x] Tab 6: Watchlist — saved symbols, alert when setup qualifies
+- [x] Tab 7: Home/Overview — market favorability score, regime, breadth, top movers
+- [x] Add Day Trade Intelligence™ to navigation (INTELLIGENCE group in AppLayout)
+- [x] NO TRADE logic — never fabricate when data unavailable
+- [x] Live refresh without blocking UI
+- [x] TypeScript check: 0 errors

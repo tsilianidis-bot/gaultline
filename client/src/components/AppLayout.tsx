@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import { useMemo } from "react";
@@ -42,6 +42,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight", icon: Shield,         path: "/app/pre-flight" },
       { id: "opportunities",  label: "Opportunities",        shortLabel: "Opps",       icon: Sparkles,       path: "/app/opportunities" },
       { id: "situation-room", label: "Situation Room",       shortLabel: "Sit. Room",  icon: Crosshair,      path: "/app/situation-room" },
+      { id: "day-trade",       label: "Day Trade Intelligence", shortLabel: "Day Trade",  icon: Target,         path: "/app/day-trade" },
       { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",       icon: LayoutDashboard,path: "/app" },
       { id: "report",         label: "Daily Briefing",       shortLabel: "Briefing",   icon: FileText,       path: "/app/report" },
     ],
@@ -67,6 +68,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "diagnostic",           label: "AI Market Analysis",  shortLabel: "AI Analysis",icon: Cpu,          path: "/app/diagnostic" },
       { id: "ai-watch",             label: "AI Sector Watch",     shortLabel: "AI Watch",  icon: Brain,         path: "/app/ai-watch" },
       { id: "insider-intelligence", label: "Insider Intelligence",shortLabel: "Insider",   icon: Eye,           path: "/app/insider-intelligence" },
+      { id: "day-trade-intelligence", label: "Day Trade Intelligence", shortLabel: "Day Trade", icon: Target,        path: "/app/day-trade-intelligence" },
       { id: "alerts",               label: "Alerts",              shortLabel: "Alerts",    icon: AlertTriangle, path: "/app/alerts" },
     ],
   },

@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -1088,4 +1088,58 @@ export async function getSituationRoomMonthlyCount(userId: number): Promise<numb
     .from(mobileUsage)
     .where(and(eq(mobileUsage.userId, userId), eq(mobileUsage.situationRoomMonth, month)));
   return Number(rows[0]?.total ?? 0);
+}
+
+// ── Day Trade Watchlist helpers ───────────────────────────────
+
+export async function getDayTradeWatchlist(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(dayTradeWatchlist)
+    .where(eq(dayTradeWatchlist.userId, userId))
+    .orderBy(desc(dayTradeWatchlist.addedAt));
+}
+
+export async function addDayTradeWatchlistItem(
+  data: Omit<InsertDayTradeWatchlistItem, 'id' | 'addedAt'>
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const existing = await db.select({ id: dayTradeWatchlist.id })
+    .from(dayTradeWatchlist)
+    .where(and(
+      eq(dayTradeWatchlist.userId, data.userId),
+      eq(dayTradeWatchlist.symbol, data.symbol.toUpperCase())
+    ))
+    .limit(1);
+  if (existing.length > 0) return existing[0].id;
+  const result = await db.insert(dayTradeWatchlist).values({
+    ...data,
+    symbol: data.symbol.toUpperCase(),
+  });
+  const okPacket = result[0] as unknown as { insertId: number };
+  return okPacket?.insertId ?? null;
+}
+
+export async function removeDayTradeWatchlistItem(userId: number, symbol: string) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.delete(dayTradeWatchlist)
+    .where(and(
+      eq(dayTradeWatchlist.userId, userId),
+      eq(dayTradeWatchlist.symbol, symbol.toUpperCase())
+    ));
+}
+
+export async function isDayTradeWatchlisted(userId: number, symbol: string) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.select({ id: dayTradeWatchlist.id })
+    .from(dayTradeWatchlist)
+    .where(and(
+      eq(dayTradeWatchlist.userId, userId),
+      eq(dayTradeWatchlist.symbol, symbol.toUpperCase())
+    ))
+    .limit(1);
+  return result.length > 0;
 }

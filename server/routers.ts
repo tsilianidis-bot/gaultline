@@ -62,6 +62,8 @@ import {
   buildStockOpportunity, buildCryptoOpportunity,
 } from './ownerSimulation';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
+import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
+import { getDayTradeWatchlist, addDayTradeWatchlistItem, removeDayTradeWatchlistItem, isDayTradeWatchlisted } from './db';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
@@ -2511,6 +2513,64 @@ export const appRouter = router({
         });
         return { success: true };
       }),
+  }),
+
+  // ── Day Trade Intelligence™ ─────────────────────────────────────
+  dayTrade: router({
+    getFavorability: coreProcedure.query(async () => {
+      return await getDayTradeFavorability();
+    }),
+    scan: coreProcedure
+      .input(z.object({
+        assetType: z.enum(["stock", "crypto", "both"]).default("both"),
+        capBucket: z.enum(["low", "mid", "large", "mixed"]).default("mixed"),
+        direction: z.enum(["bullish", "bearish", "both"]).default("both"),
+        riskProfile: z.enum(["aggressive", "balanced", "conservative"]).default("balanced"),
+        maxResults: z.number().min(1).max(30).default(12),
+      }))
+      .query(async ({ input }) => {
+        return await dayTradeScanner(input);
+      }),
+    symbolSetup: coreProcedure
+      .input(z.object({
+        symbol: z.string().min(1).max(20).toUpperCase(),
+        assetType: z.enum(["stock", "crypto"]),
+        direction: z.enum(["bullish", "bearish", "both"]).default("both"),
+      }))
+      .query(async ({ input }) => {
+        return await dayTradeSymbolSetup(input.symbol, input.assetType, input.direction);
+      }),
+    getWatchlist: coreProcedure.query(async ({ ctx }) => {
+      return await getDayTradeWatchlist(ctx.user.id);
+    }),
+    addToWatchlist: coreProcedure
+      .input(z.object({
+        symbol: z.string().min(1).max(20),
+        assetType: z.enum(["stock", "crypto"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await addDayTradeWatchlistItem({
+          userId: ctx.user.id,
+          symbol: input.symbol.toUpperCase(),
+          assetType: input.assetType,
+        });
+        return { id, symbol: input.symbol.toUpperCase() };
+      }),
+    removeFromWatchlist: coreProcedure
+      .input(z.object({ symbol: z.string().min(1).max(20) }))
+      .mutation(async ({ ctx, input }) => {
+        await removeDayTradeWatchlistItem(ctx.user.id, input.symbol.toUpperCase());
+        return { success: true };
+      }),
+    isWatchlisted: coreProcedure
+      .input(z.object({ symbol: z.string().min(1).max(20) }))
+      .query(async ({ ctx, input }) => {
+        return { watchlisted: await isDayTradeWatchlisted(ctx.user.id, input.symbol.toUpperCase()) };
+      }),
+    clearCache: protectedProcedure.mutation(() => {
+      clearDayTradeCache();
+      return { success: true };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;
