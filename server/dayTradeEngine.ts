@@ -41,6 +41,15 @@ export type SetupType =
   | "Breakdown Short"
   | "NO_TRADE";
 
+export interface ExecutionScoreBreakdown {
+  macroCondition: number;      // 0–20
+  technicalStructure: number;  // 0–20
+  liquidityScore: number;      // 0–15
+  volatilityScore: number;     // 0–15
+  momentumScore: number;       // 0–15
+  riskRewardScore: number;     // 0–15
+}
+
 export interface DayTradeSetup {
   symbol: string;
   name: string;
@@ -69,6 +78,8 @@ export interface DayTradeSetup {
   riskRewardRatio: number;             // e.g. 2.5
   riskLevel: "Low" | "Medium" | "High" | "Very High";
   liquidityRating: "Low" | "Medium" | "High";
+  executionScore: number;              // 0–100 composite execution quality score
+  executionGrade: "A" | "B" | "C" | "D" | "F";  // letter grade
 
   // Context
   catalyst: string;
@@ -93,6 +104,17 @@ export interface DayTradeReport extends DayTradeSetup {
   confidenceReasoning: string;
   catalystSummary: string;
   noTradeReason?: string;              // populated when setupType === "NO_TRADE"
+  // Execution Score breakdown
+  executionScoreBreakdown: ExecutionScoreBreakdown;
+  // Why Should I Trade This?
+  bullCase: string;
+  bearCase: string;
+  primaryCatalyst: string;
+  largestRisk: string;
+  mostLikelyPath: string;
+  alternativePath: string;
+  recommendedTimeframe: string;
+  bestStrategy: string;
 }
 
 export interface ScannerInput {
@@ -334,6 +356,109 @@ function expectedHold(setupType: SetupType): number {
   }
 }
 
+/**
+ * Compute Execution Score (0–100) and grade from component factors.
+ * Breakdown:
+ *   macroCondition    (0–20): regime pressure inversion
+ *   technicalStructure (0–20): RSI + setup type quality
+ *   liquidityScore    (0–15): volume + liquidity rating
+ *   volatilityScore   (0–15): ATR-based volatility suitability
+ *   momentumScore     (0–15): relative volume + price change
+ *   riskRewardScore   (0–15): R:R ratio quality
+ */
+function computeExecutionScore(
+  regimePressure: number,
+  rsi: number,
+  setupType: SetupType,
+  relVol: number | null,
+  liquidityRating: DayTradeSetup["liquidityRating"],
+  changePercent: number,
+  rr: number,
+  confidence: number,
+  isNoTrade: boolean
+): { score: number; grade: DayTradeSetup["executionGrade"]; breakdown: ExecutionScoreBreakdown } {
+  if (isNoTrade) {
+    return {
+      score: 0,
+      grade: "F",
+      breakdown: { macroCondition: 0, technicalStructure: 0, liquidityScore: 0, volatilityScore: 0, momentumScore: 0, riskRewardScore: 0 },
+    };
+  }
+
+  // macroCondition: lower pressure = better macro environment for day trading
+  const macroCondition = clamp(Math.round(20 * (1 - regimePressure / 100)), 0, 20);
+
+  // technicalStructure: RSI in ideal range + setup quality
+  let technicalStructure = 0;
+  if (rsi >= 50 && rsi <= 70) technicalStructure += 12;
+  else if (rsi >= 40 && rsi <= 80) technicalStructure += 8;
+  else technicalStructure += 4;
+  if (setupType === "Momentum Breakout" || setupType === "Opening Range Breakout") technicalStructure += 8;
+  else if (setupType === "VWAP Reclaim" || setupType === "Pullback Continuation") technicalStructure += 6;
+  else if (setupType !== "NO_TRADE") technicalStructure += 4;
+  technicalStructure = clamp(technicalStructure, 0, 20);
+
+  // liquidityScore: volume + liquidity rating
+  let liquidityScore = 0;
+  if (liquidityRating === "High") liquidityScore = 15;
+  else if (liquidityRating === "Medium") liquidityScore = 10;
+  else liquidityScore = 5;
+  if (relVol !== null && relVol > 2) liquidityScore = Math.min(15, liquidityScore + 3);
+  liquidityScore = clamp(liquidityScore, 0, 15);
+
+  // volatilityScore: moderate volatility is ideal (not too low, not extreme)
+  const absChange = Math.abs(changePercent);
+  let volatilityScore = 0;
+  if (absChange >= 1.5 && absChange <= 5) volatilityScore = 15;
+  else if (absChange >= 0.5 && absChange <= 8) volatilityScore = 10;
+  else if (absChange > 8) volatilityScore = 5; // extreme volatility = risky
+  else volatilityScore = 3; // too quiet
+  volatilityScore = clamp(volatilityScore, 0, 15);
+
+  // momentumScore: relative volume + price change alignment
+  let momentumScore = 0;
+  if (relVol !== null) {
+    if (relVol > 3) momentumScore += 10;
+    else if (relVol > 2) momentumScore += 7;
+    else if (relVol > 1.5) momentumScore += 5;
+    else momentumScore += 2;
+  } else {
+    momentumScore += 3;
+  }
+  if (absChange > 2) momentumScore += 5;
+  else if (absChange > 1) momentumScore += 3;
+  momentumScore = clamp(momentumScore, 0, 15);
+
+  // riskRewardScore: R:R quality
+  let riskRewardScore = 0;
+  if (rr >= 3) riskRewardScore = 15;
+  else if (rr >= 2.5) riskRewardScore = 12;
+  else if (rr >= 2) riskRewardScore = 9;
+  else if (rr >= 1.5) riskRewardScore = 6;
+  else riskRewardScore = 3;
+  riskRewardScore = clamp(riskRewardScore, 0, 15);
+
+  const score = clamp(
+    macroCondition + technicalStructure + liquidityScore + volatilityScore + momentumScore + riskRewardScore,
+    0, 100
+  );
+
+  // Blend with confidence for final score
+  const blended = clamp(Math.round(score * 0.7 + confidence * 0.3), 0, 100);
+
+  const grade: DayTradeSetup["executionGrade"] =
+    blended >= 80 ? "A" :
+    blended >= 65 ? "B" :
+    blended >= 50 ? "C" :
+    blended >= 35 ? "D" : "F";
+
+  return {
+    score: blended,
+    grade,
+    breakdown: { macroCondition, technicalStructure, liquidityScore, volatilityScore, momentumScore, riskRewardScore },
+  };
+}
+
 // ── LLM Enrichment ────────────────────────────────────────────
 
 interface LLMEnrichment {
@@ -349,6 +474,15 @@ interface LLMEnrichment {
   confidenceReasoning: string;
   catalystSummary: string;
   noTradeReason?: string;
+  // Phase 3.0 additions
+  bullCase: string;
+  bearCase: string;
+  primaryCatalyst: string;
+  largestRisk: string;
+  mostLikelyPath: string;
+  alternativePath: string;
+  recommendedTimeframe: string;
+  bestStrategy: string;
 }
 
 async function enrichWithLLM(
@@ -405,7 +539,15 @@ Return JSON with these exact fields:
   "whatCancelsThisTrade": "1-sentence specific invalidation conditions",
   "confidenceReasoning": "1-sentence explanation of the confidence score",
   "catalystSummary": "brief catalyst summary or 'No catalyst'",
-  "noTradeReason": "if NO_TRADE: explain why in 1 sentence, else null"
+  "noTradeReason": "if NO_TRADE: explain why in 1 sentence, else null",
+  "bullCase": "2-sentence bull case for this trade — what has to go right",
+  "bearCase": "2-sentence bear case — what could go wrong intraday",
+  "primaryCatalyst": "the single most important catalyst driving this setup today",
+  "largestRisk": "the single largest intraday risk factor for this trade",
+  "mostLikelyPath": "2-sentence description of the most probable intraday price path",
+  "alternativePath": "1-sentence alternative scenario if the primary thesis fails",
+  "recommendedTimeframe": "specific intraday timeframe (e.g. '15-min chart, 60-90 min hold')",
+  "bestStrategy": "1-sentence best execution strategy for this setup (entry trigger, position sizing hint)"
 }`;
 
   try {
@@ -434,8 +576,22 @@ Return JSON with these exact fields:
               confidenceReasoning: { type: "string" },
               catalystSummary: { type: "string" },
               noTradeReason: { type: ["string", "null"] },
+              bullCase: { type: "string" },
+              bearCase: { type: "string" },
+              primaryCatalyst: { type: "string" },
+              largestRisk: { type: "string" },
+              mostLikelyPath: { type: "string" },
+              alternativePath: { type: "string" },
+              recommendedTimeframe: { type: "string" },
+              bestStrategy: { type: "string" },
             },
-            required: ["catalyst", "whyToday", "reasonForRecommendation", "regimeImpact", "sectorStrength", "intradayTrend", "marketContext", "whyTradeExists", "whatCancelsThisTrade", "confidenceReasoning", "catalystSummary", "noTradeReason"],
+            required: [
+              "catalyst", "whyToday", "reasonForRecommendation", "regimeImpact", "sectorStrength",
+              "intradayTrend", "marketContext", "whyTradeExists", "whatCancelsThisTrade",
+              "confidenceReasoning", "catalystSummary", "noTradeReason",
+              "bullCase", "bearCase", "primaryCatalyst", "largestRisk",
+              "mostLikelyPath", "alternativePath", "recommendedTimeframe", "bestStrategy",
+            ],
             additionalProperties: false,
           },
         },
@@ -466,6 +622,14 @@ Return JSON with these exact fields:
       confidenceReasoning: `Confidence ${confidence}/100 based on RSI (${rsi}), relative volume, and ${rr}:1 risk/reward.`,
       catalystSummary: "AI analysis unavailable — using deterministic signal.",
       noTradeReason: isNoTrade ? `Confidence ${confidence}/100 is below the ${MIN_CONFIDENCE}/100 minimum threshold for a valid intraday setup.` : undefined,
+      bullCase: `${symbol} shows ${direction} momentum with ${Math.abs(changePercent).toFixed(1)}% move. Volume confirmation and technical setup support continuation toward target.`,
+      bearCase: `If volume fades or market conditions deteriorate, ${symbol} may reverse. Stop level provides defined risk.`,
+      primaryCatalyst: `${setupType} pattern with ${relVol !== null ? relVol.toFixed(1) + "x" : "elevated"} relative volume.`,
+      largestRisk: `Regime pressure at ${regimePressure}/100 — elevated macro risk could override technical setup.`,
+      mostLikelyPath: `${symbol} continues ${direction} momentum toward Target 1. Volume must remain elevated for continuation.`,
+      alternativePath: `If price fails to hold entry zone, expect consolidation or reversal toward stop level.`,
+      recommendedTimeframe: `${expectedHold(setupType)}-minute hold on 5-min or 15-min chart.`,
+      bestStrategy: `Enter on ${direction === "bullish" ? "breakout confirmation above" : "breakdown below"} entry zone with 1/3 position, add on confirmation.`,
     };
   }
 }
@@ -488,13 +652,13 @@ async function buildStockSetup(
   regime: string,
   regimePressure: number
 ): Promise<DayTradeSetup | null> {
+  if (!price || price <= 0) return null;
+
   // Fetch daily bars for ATR + RSI
   let bars: Array<{ close: number; high: number; low: number; open: number; volume: number; timestamp: number }> = [];
   try {
     const apiKey = process.env.POLYGON_API_KEY ?? "";
-    if (apiKey) {
-      bars = await fetchDailyBars(apiKey, ticker, 20);
-    }
+    if (apiKey) bars = await fetchDailyBars(apiKey, ticker, 20);
   } catch { /* non-fatal */ }
 
   const closes = bars.map(b => b.close);
@@ -524,6 +688,11 @@ async function buildStockSetup(
     confidence, regime, regimePressure, levels.rr, isNoTrade
   );
 
+  const { score: executionScore, grade: executionGrade } = computeExecutionScore(
+    regimePressure, rsi, isNoTrade ? "NO_TRADE" : setupType, relVol, liquidity,
+    changePercent, levels.rr, confidence, isNoTrade
+  );
+
   return {
     symbol: ticker,
     name,
@@ -548,6 +717,8 @@ async function buildStockSetup(
     riskRewardRatio: levels.rr,
     riskLevel,
     liquidityRating: liquidity,
+    executionScore,
+    executionGrade,
     catalyst: enrichment.catalyst,
     whyToday: enrichment.whyToday,
     reasonForRecommendation: enrichment.reasonForRecommendation,
@@ -605,6 +776,11 @@ async function buildCryptoSetup(
     confidence, regime, regimePressure, levels.rr, isNoTrade
   );
 
+  const { score: executionScore, grade: executionGrade } = computeExecutionScore(
+    regimePressure, rsi, isNoTrade ? "NO_TRADE" : setupType, relVol, liquidity,
+    changePercent, levels.rr, confidence, isNoTrade
+  );
+
   return {
     symbol: coin.symbol.toUpperCase(),
     name: coin.name,
@@ -629,6 +805,8 @@ async function buildCryptoSetup(
     riskRewardRatio: levels.rr,
     riskLevel,
     liquidityRating: liquidity,
+    executionScore,
+    executionGrade,
     catalyst: enrichment.catalyst,
     whyToday: enrichment.whyToday,
     reasonForRecommendation: enrichment.reasonForRecommendation,
@@ -741,8 +919,8 @@ export async function dayTradeScanner(input: ScannerInput): Promise<DayTradeSetu
     }
   }
 
-  // Sort by confidence descending
-  results.sort((a, b) => b.confidence - a.confidence);
+  // Sort by executionScore descending (Phase 3.0: use execution score for ranking)
+  results.sort((a, b) => b.executionScore - a.executionScore);
   const final = results.slice(0, input.maxResults);
   scanCache.set(cacheKey, final);
   return final;
@@ -774,6 +952,11 @@ export async function dayTradeSymbolSetup(
     regimePressure = pressure.overallPressure;
   } catch { /* non-fatal */ }
 
+  const emptyBreakdown: ExecutionScoreBreakdown = {
+    macroCondition: 0, technicalStructure: 0, liquidityScore: 0,
+    volatilityScore: 0, momentumScore: 0, riskRewardScore: 0,
+  };
+
   if (assetType === "crypto") {
     // ── Crypto report ──
     const coin = await getCoinMarketData(symbol);
@@ -802,6 +985,8 @@ export async function dayTradeSymbolSetup(
         riskRewardRatio: 0,
         riskLevel: "Very High",
         liquidityRating: "Low",
+        executionScore: 0,
+        executionGrade: "F",
         catalyst: "N/A",
         whyToday: "N/A",
         reasonForRecommendation: "N/A",
@@ -818,6 +1003,15 @@ export async function dayTradeSymbolSetup(
         confidenceReasoning: "N/A",
         catalystSummary: "N/A",
         noTradeReason: "Live market data unavailable. Unable to generate a reliable intraday setup.",
+        executionScoreBreakdown: emptyBreakdown,
+        bullCase: "N/A",
+        bearCase: "N/A",
+        primaryCatalyst: "N/A",
+        largestRisk: "N/A",
+        mostLikelyPath: "N/A",
+        alternativePath: "N/A",
+        recommendedTimeframe: "N/A",
+        bestStrategy: "N/A",
         generatedAt: Date.now(),
       };
       return noTradeReport;
@@ -839,6 +1033,12 @@ export async function dayTradeSymbolSetup(
       setup.setupType === "NO_TRADE"
     );
 
+    const { breakdown: executionScoreBreakdown } = computeExecutionScore(
+      regimePressure, rsi, setup.setupType, setup.relativeVolume, setup.liquidityRating,
+      coin.priceChangePercent24h, setup.riskRewardRatio, setup.confidence,
+      setup.setupType === "NO_TRADE"
+    );
+
     const report: DayTradeReport = {
       ...setup,
       intradayTrend: enrichment.intradayTrend,
@@ -852,6 +1052,15 @@ export async function dayTradeSymbolSetup(
       confidenceReasoning: enrichment.confidenceReasoning,
       catalystSummary: enrichment.catalystSummary,
       noTradeReason: enrichment.noTradeReason ?? undefined,
+      executionScoreBreakdown,
+      bullCase: enrichment.bullCase,
+      bearCase: enrichment.bearCase,
+      primaryCatalyst: enrichment.primaryCatalyst,
+      largestRisk: enrichment.largestRisk,
+      mostLikelyPath: enrichment.mostLikelyPath,
+      alternativePath: enrichment.alternativePath,
+      recommendedTimeframe: enrichment.recommendedTimeframe,
+      bestStrategy: enrichment.bestStrategy,
     };
 
     reportCache.set(cacheKey, report);
@@ -885,6 +1094,8 @@ export async function dayTradeSymbolSetup(
       riskRewardRatio: 0,
       riskLevel: "Very High",
       liquidityRating: "Low",
+      executionScore: 0,
+      executionGrade: "F",
       catalyst: "N/A",
       whyToday: "N/A",
       reasonForRecommendation: "N/A",
@@ -901,6 +1112,15 @@ export async function dayTradeSymbolSetup(
       confidenceReasoning: "N/A",
       catalystSummary: "N/A",
       noTradeReason: "Live market data unavailable. Unable to generate a reliable intraday setup.",
+      executionScoreBreakdown: emptyBreakdown,
+      bullCase: "N/A",
+      bearCase: "N/A",
+      primaryCatalyst: "N/A",
+      largestRisk: "N/A",
+      mostLikelyPath: "N/A",
+      alternativePath: "N/A",
+      recommendedTimeframe: "N/A",
+      bestStrategy: "N/A",
       generatedAt: Date.now(),
     };
     return noTradeReport;
@@ -939,6 +1159,12 @@ export async function dayTradeSymbolSetup(
     setup.setupType === "NO_TRADE"
   );
 
+  const { breakdown: executionScoreBreakdown } = computeExecutionScore(
+    regimePressure, rsi, setup.setupType, setup.relativeVolume, setup.liquidityRating,
+    changePercent, setup.riskRewardRatio, setup.confidence,
+    setup.setupType === "NO_TRADE"
+  );
+
   const report: DayTradeReport = {
     ...setup,
     intradayTrend: enrichment.intradayTrend,
@@ -952,6 +1178,15 @@ export async function dayTradeSymbolSetup(
     confidenceReasoning: enrichment.confidenceReasoning,
     catalystSummary: enrichment.catalystSummary,
     noTradeReason: enrichment.noTradeReason ?? undefined,
+    executionScoreBreakdown,
+    bullCase: enrichment.bullCase,
+    bearCase: enrichment.bearCase,
+    primaryCatalyst: enrichment.primaryCatalyst,
+    largestRisk: enrichment.largestRisk,
+    mostLikelyPath: enrichment.mostLikelyPath,
+    alternativePath: enrichment.alternativePath,
+    recommendedTimeframe: enrichment.recommendedTimeframe,
+    bestStrategy: enrichment.bestStrategy,
   };
 
   reportCache.set(cacheKey, report);

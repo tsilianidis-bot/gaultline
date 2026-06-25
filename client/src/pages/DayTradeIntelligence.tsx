@@ -15,6 +15,7 @@ import {
   CheckCircle, XCircle, AlertCircle, Info, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
+import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 
 // ── Types (mirrors server dayTradeEngine.ts) ─────────────────
 type DayTradeSetup = {
@@ -41,6 +42,8 @@ type DayTradeSetup = {
   riskRewardRatio: number;
   riskLevel: "Low" | "Medium" | "High" | "Very High";
   liquidityRating: "Low" | "Medium" | "High";
+  executionScore: number;
+  executionGrade: "A" | "B" | "C" | "D" | "F";
   catalyst: string;
   whyToday: string;
   reasonForRecommendation: string;
@@ -59,6 +62,22 @@ type DayTradeSetup = {
   confidenceReasoning?: string;
   catalystSummary?: string;
   noTradeReason?: string;
+  executionScoreBreakdown?: {
+    macroCondition: number;
+    technicalStructure: number;
+    liquidityScore: number;
+    volatilityScore: number;
+    momentumScore: number;
+    riskRewardScore: number;
+  };
+  bullCase?: string;
+  bearCase?: string;
+  primaryCatalyst?: string;
+  largestRisk?: string;
+  mostLikelyPath?: string;
+  alternativePath?: string;
+  recommendedTimeframe?: string;
+  bestStrategy?: string;
 };
 
 type NoTradeResult = {
@@ -209,6 +228,25 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
               <div style={{ ...MONO_SM, fontWeight: 700, color: confColor(ds.confidence) }}>{ds.confidence}</div>
             </div>
           )}
+          {ds && (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "28px",
+              height: "28px",
+              borderRadius: "4px",
+              background: ds.executionGrade === "A" ? "rgba(0,255,136,0.15)" : ds.executionGrade === "B" ? "rgba(0,212,255,0.12)" : ds.executionGrade === "C" ? "rgba(255,215,0,0.12)" : ds.executionGrade === "D" ? "rgba(255,149,0,0.12)" : "rgba(255,107,107,0.12)",
+              border: `1px solid ${ds.executionGrade === "A" ? "rgba(0,255,136,0.4)" : ds.executionGrade === "B" ? "rgba(0,212,255,0.35)" : ds.executionGrade === "C" ? "rgba(255,215,0,0.35)" : ds.executionGrade === "D" ? "rgba(255,149,0,0.35)" : "rgba(255,107,107,0.35)"}`,
+            }}>
+              <span style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                fontWeight: 800,
+                fontSize: "14px",
+                color: ds.executionGrade === "A" ? "#00FF88" : ds.executionGrade === "B" ? "#00D4FF" : ds.executionGrade === "C" ? "#FFD700" : ds.executionGrade === "D" ? "#FF9500" : "#FF6B6B",
+              }}>{ds.executionGrade}</span>
+            </div>
+          )}
           {expanded ? <ChevronUp size={14} style={{ color: "#6B7280" }} /> : <ChevronDown size={14} style={{ color: "#6B7280" }} />}
         </div>
       </div>
@@ -269,6 +307,42 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
               </div>
             </div>
           ) : null}
+          {ds && ds.executionScore > 0 && (
+            <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+                <div style={{ ...LABEL, marginBottom: 0 }}>Execution Score</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{
+                    fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "18px",
+                    color: ds.executionGrade === "A" ? "#00FF88" : ds.executionGrade === "B" ? "#00D4FF" : ds.executionGrade === "C" ? "#FFD700" : ds.executionGrade === "D" ? "#FF9500" : "#FF6B6B",
+                  }}>{ds.executionGrade}</div>
+                  <div style={{ ...MONO_SM, color: "#94A3B8" }}>{ds.executionScore}/100</div>
+                </div>
+              </div>
+              {ds.executionScoreBreakdown && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "6px" }}>
+                  {([
+                    ["Macro", ds.executionScoreBreakdown.macroCondition, 20],
+                    ["Technical", ds.executionScoreBreakdown.technicalStructure, 20],
+                    ["Liquidity", ds.executionScoreBreakdown.liquidityScore, 15],
+                    ["Volatility", ds.executionScoreBreakdown.volatilityScore, 15],
+                    ["Momentum", ds.executionScoreBreakdown.momentumScore, 15],
+                    ["R/R", ds.executionScoreBreakdown.riskRewardScore, 15],
+                  ] as [string, number, number][]).map(([label, val, max]) => (
+                    <div key={label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ ...MONO_SM, fontSize: "9px", color: "#6B7280" }}>{label}</span>
+                        <span style={{ ...MONO_SM, fontSize: "9px", color: "#94A3B8" }}>{val}/{max}</span>
+                      </div>
+                      <div style={{ height: "3px", background: "rgba(255,255,255,0.08)", borderRadius: "2px", overflow: "hidden" }}>
+                        <div style={{ height: "100%", width: `${(val / max) * 100}%`, background: val / max >= 0.7 ? "#00FF88" : val / max >= 0.4 ? "#FFD700" : "#FF6B6B", borderRadius: "2px", transition: "width 0.3s" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           {ds && (
             <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
               {(ds.catalystSummary ?? ds.catalyst) && (
@@ -419,8 +493,9 @@ function OverviewTab() {
         </div>
       )}
 
-      <div style={{ ...MONO_SM, color: "#374151", textAlign: "center" }}>
-        Generated {new Date(f.generatedAt).toLocaleTimeString()} · Refreshes every 10 min
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", flexWrap: "wrap" }}>
+        <DataFreshnessBadge source="Market Favorability" generatedAt={f.generatedAt} isRefreshing={isFetching} thresholds={[5, 15, 60]} />
+        <span style={{ ...MONO_SM, fontSize: "10px", color: "#374151" }}>Refreshes every 10 min</span>
       </div>
     </div>
   );
@@ -1562,22 +1637,82 @@ function SymbolSearchTabWithEvent() {
         <ErrorState message="Live market data unavailable. Unable to generate a reliable intraday setup." onRetry={() => refetch()} />
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <div style={{ ...MONO_SM, color: "#6B7280" }}>
-            Day Trade Intelligence Report · {submitted.symbol} · {new Date(setup.generatedAt).toLocaleTimeString()}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <span style={{ ...MONO_SM, color: "#6B7280" }}>Day Trade Intelligence Report · {submitted.symbol}</span>
+            <DataFreshnessBadge source="DTI" generatedAt={setup.generatedAt} thresholds={[3, 10, 30]} />
           </div>
           <SetupCard s={setup} />
           {!isNoTrade(setup as unknown as AnySetup) && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-              <div style={CARD}>
-                <div style={{ ...LABEL, marginBottom: "8px" }}>Intraday Trend</div>
-                <div style={{ ...VALUE, color: dirColor(setup.direction) }}>{setup.intradayTrend}</div>
-                <div style={{ ...MONO_SM, color: "#94A3B8", marginTop: "6px", lineHeight: 1.5 }}>{setup.marketContext}</div>
+            <>
+              {/* Intraday trend + sector */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div style={CARD}>
+                  <div style={{ ...LABEL, marginBottom: "8px" }}>Intraday Trend</div>
+                  <div style={{ ...VALUE, color: dirColor(setup.direction) }}>{setup.intradayTrend}</div>
+                  <div style={{ ...MONO_SM, color: "#94A3B8", marginTop: "6px", lineHeight: 1.5 }}>{setup.marketContext}</div>
+                </div>
+                <div style={CARD}>
+                  <div style={{ ...LABEL, marginBottom: "8px" }}>Sector Strength</div>
+                  <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{setup.sectorStrength}</div>
+                </div>
               </div>
-              <div style={CARD}>
-                <div style={{ ...LABEL, marginBottom: "8px" }}>Sector Strength</div>
-                <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{setup.sectorStrength}</div>
-              </div>
-            </div>
+
+              {/* Bull / Bear Case side-by-side */}
+              {(setup.bullCase || setup.bearCase) && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div style={{ ...CARD, borderColor: "rgba(0,255,136,0.2)" }}>
+                    <div style={{ ...LABEL, marginBottom: "8px", color: "#00FF88" }}>Bull Case</div>
+                    <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{setup.bullCase}</div>
+                  </div>
+                  <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)" }}>
+                    <div style={{ ...LABEL, marginBottom: "8px", color: "#FF6B6B" }}>Bear Case</div>
+                    <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{setup.bearCase}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Most Likely Path + Alternative Path */}
+              {(setup.mostLikelyPath || setup.alternativePath) && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div style={CARD}>
+                    <div style={{ ...LABEL, marginBottom: "8px" }}>Most Likely Path</div>
+                    <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{setup.mostLikelyPath}</div>
+                  </div>
+                  <div style={CARD}>
+                    <div style={{ ...LABEL, marginBottom: "8px" }}>Alternative Path</div>
+                    <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{setup.alternativePath}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Recommended Timeframe + Best Strategy */}
+              {(setup.recommendedTimeframe || setup.bestStrategy) && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div style={CARD}>
+                    <div style={{ ...LABEL, marginBottom: "8px" }}>Recommended Timeframe</div>
+                    <div style={{ ...MONO_SM, color: "#00D4FF", lineHeight: 1.5 }}>{setup.recommendedTimeframe}</div>
+                  </div>
+                  <div style={CARD}>
+                    <div style={{ ...LABEL, marginBottom: "8px" }}>Best Strategy</div>
+                    <div style={{ ...MONO_SM, color: "#FFD700", lineHeight: 1.5 }}>{setup.bestStrategy}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Primary Catalyst + Largest Risk */}
+              {(setup.primaryCatalyst || setup.largestRisk) && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div style={CARD}>
+                    <div style={{ ...LABEL, marginBottom: "8px" }}>Primary Catalyst</div>
+                    <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{setup.primaryCatalyst}</div>
+                  </div>
+                  <div style={{ ...CARD, borderColor: "rgba(255,149,0,0.2)" }}>
+                    <div style={{ ...LABEL, marginBottom: "8px", color: "#FF9500" }}>Largest Risk</div>
+                    <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.5 }}>{setup.largestRisk}</div>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

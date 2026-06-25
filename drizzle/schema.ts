@@ -986,3 +986,58 @@ export const dayTradeWatchlist = mysqlTable("dayTradeWatchlist", {
 }));
 export type DayTradeWatchlistItem = typeof dayTradeWatchlist.$inferSelect;
 export type InsertDayTradeWatchlistItem = typeof dayTradeWatchlist.$inferInsert;
+
+// ── Trade Journal (Performance Tracking) ─────────────────────
+/**
+ * User-logged trade entries for performance tracking.
+ * Each row represents one completed or in-progress trade.
+ * Linked to DTI setups via setupId for correlation analysis.
+ */
+export const tradeJournal = mysqlTable("tradeJournal", {
+  id:           int("id").autoincrement().primaryKey(),
+  userId:       int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Ticker symbol e.g. NVDA, BTC */
+  symbol:       varchar("symbol", { length: 20 }).notNull(),
+  /** Stock or crypto */
+  assetType:    mysqlEnum("assetType", ["stock", "crypto"]).notNull().default("stock"),
+  /** Long or Short */
+  direction:    mysqlEnum("direction", ["long", "short"]).notNull().default("long"),
+  /** Entry price per share/unit */
+  entryPrice:   decimal("entryPrice", { precision: 18, scale: 6 }).notNull(),
+  /** Exit price per share/unit — null if still open */
+  exitPrice:    decimal("exitPrice", { precision: 18, scale: 6 }),
+  /** Number of shares/units */
+  quantity:     decimal("quantity", { precision: 18, scale: 8 }).notNull(),
+  /** Stop loss price */
+  stopLoss:     decimal("stopLoss", { precision: 18, scale: 6 }),
+  /** Target price */
+  target:       decimal("target", { precision: 18, scale: 6 }),
+  /** Realized P&L in USD — null if still open */
+  realizedPnl:  decimal("realizedPnl", { precision: 18, scale: 4 }),
+  /** P&L as percentage */
+  pnlPercent:   decimal("pnlPercent", { precision: 8, scale: 4 }),
+  /** Trade outcome: win, loss, breakeven, open */
+  outcome:      mysqlEnum("outcome", ["win", "loss", "breakeven", "open"]).default("open").notNull(),
+  /** Optional setup grade from DTI (A+, A, B, C, D, F) */
+  setupGrade:   varchar("setupGrade", { length: 4 }),
+  /** Optional execution score from DTI (0-100) */
+  executionScore: int("executionScore"),
+  /** User notes about the trade */
+  notes:        text("notes"),
+  /** Tags for filtering e.g. "earnings,momentum,breakout" */
+  tags:         varchar("tags", { length: 300 }),
+  /** Whether the user followed the DTI setup recommendation */
+  followedSetup: int("followedSetup").default(0).notNull(), // 0=no, 1=yes
+  /** Entry timestamp */
+  enteredAt:    timestamp("enteredAt").notNull(),
+  /** Exit timestamp — null if still open */
+  exitedAt:     timestamp("exitedAt"),
+  createdAt:    timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:    timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  userIdIdx:       index("tradeJournal_userId_idx").on(t.userId),
+  userSymbolIdx:   index("tradeJournal_userId_symbol_idx").on(t.userId, t.symbol),
+  userEnteredIdx:  index("tradeJournal_userId_enteredAt_idx").on(t.userId, t.enteredAt),
+}));
+export type TradeJournalEntry = typeof tradeJournal.$inferSelect;
+export type InsertTradeJournalEntry = typeof tradeJournal.$inferInsert;

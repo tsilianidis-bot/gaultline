@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -1142,4 +1142,73 @@ export async function isDayTradeWatchlisted(userId: number, symbol: string) {
     ))
     .limit(1);
   return result.length > 0;
+}
+
+// ── Trade Journal helpers ─────────────────────────────────────
+
+export async function getTradeJournalEntries(userId: number, limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tradeJournal)
+    .where(eq(tradeJournal.userId, userId))
+    .orderBy(desc(tradeJournal.enteredAt))
+    .limit(limit);
+}
+
+export async function insertTradeJournalEntry(
+  data: Omit<InsertTradeJournalEntry, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.insert(tradeJournal).values(data);
+  const okPacket = result[0] as unknown as { insertId: number };
+  return okPacket?.insertId ?? 0;
+}
+
+export async function updateTradeJournalEntry(
+  id: number,
+  userId: number,
+  updates: Partial<Omit<InsertTradeJournalEntry, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.update(tradeJournal)
+    .set(updates)
+    .where(and(eq(tradeJournal.id, id), eq(tradeJournal.userId, userId)));
+}
+
+export async function deleteTradeJournalEntry(id: number, userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  await db.delete(tradeJournal)
+    .where(and(eq(tradeJournal.id, id), eq(tradeJournal.userId, userId)));
+}
+
+export async function getTradeJournalStats(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select({
+    total:      count(),
+    wins:       sql<number>`SUM(CASE WHEN ${tradeJournal.outcome} = 'win' THEN 1 ELSE 0 END)`,
+    losses:     sql<number>`SUM(CASE WHEN ${tradeJournal.outcome} = 'loss' THEN 1 ELSE 0 END)`,
+    totalPnl:   sql<string>`SUM(CAST(${tradeJournal.realizedPnl} AS DECIMAL(18,4)))`,
+    avgPnlPct:  sql<string>`AVG(CAST(${tradeJournal.pnlPercent} AS DECIMAL(8,4)))`,
+  }).from(tradeJournal)
+    .where(and(
+      eq(tradeJournal.userId, userId),
+      sql`${tradeJournal.outcome} != 'open'`
+    ));
+  const r = rows[0];
+  if (!r) return null;
+  const wins = Number(r.wins ?? 0);
+  const losses = Number(r.losses ?? 0);
+  const total = Number(r.total ?? 0);
+  return {
+    total,
+    wins,
+    losses,
+    winRate: total > 0 ? Math.round((wins / (wins + losses || 1)) * 100) : 0,
+    totalPnl: parseFloat(r.totalPnl ?? '0'),
+    avgPnlPct: parseFloat(r.avgPnlPct ?? '0'),
+  };
 }

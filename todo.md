@@ -2113,3 +2113,49 @@
 ### Performance
 - [x] Audit and add staleTime to tRPC queries
 - [x] Verify all pages use React.lazy
+
+## FAULTLINE Phase 3.0 — Intelligence Upgrade
+
+### Execution Score Engine (dayTradeEngine.ts)
+- [x] Add executionScore (0–100) and executionGrade (A+/A/B/C/D/F) to DayTradeSetup interface
+- [x] Add bullCase, bearCase, mostLikelyPath, strategyType fields to DayTradeSetup
+- [x] Update LLM prompt to generate all new fields
+- [x] Update DayTradeIntelligence.tsx to display executionGrade badge on SetupCard
+- [x] Update DayTradeIntelligence.tsx to display execution score breakdown in expanded detail
+- [x] Update SymbolSearchTabWithEvent to show bull/bear case, most likely path, strategy
+
+### Universal Symbol Intelligence Page
+- [x] Create client/src/pages/UniversalSymbolIntelligence.tsx — multi-tab deep-dive page
+- [x] Tab 1: Overview — LLM-generated multi-dimensional analysis
+- [x] Tab 2: Technical — price levels, momentum, volume, trend
+- [x] Tab 3: Macro — regime fit, sector alignment, macro sensitivity
+- [x] Tab 4: Risk — downside scenarios, invalidation levels
+- [x] Add /app/symbol-intelligence route to App.tsx
+- [x] Add Symbol Intelligence to AppLayout COMMAND nav group
+
+### Trust Layer — Data Freshness Badges
+- [x] Create DataFreshnessBadge component (LIVE/CACHED/STALE/DEMO states)
+- [x] Add freshness badges to DayTradeIntelligence OverviewTab
+- [x] Add freshness badges to SymbolSearchTabWithEvent report header
+- [x] Add freshness badge to UniversalSymbolIntelligence overview footer
+
+### Universal Command Search (⌘K)
+- [x] Create CommandSearch.tsx — keyboard-accessible global search palette
+- [x] Supports page navigation, symbol search, and quick actions
+- [x] ⌘K / Ctrl+K keyboard shortcut to open from anywhere
+- [x] Search button in AppLayout header
+- [x] CommandSearch mounted in AppLayout
+
+### Trade Journal — Performance Tracking
+- [x] Add tradeJournal table to drizzle/schema.ts
+- [x] Apply migration via webdev_execute_sql
+- [x] Add DB helpers: getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntry, deleteTradeJournalEntry, getTradeJournalStats
+- [x] Add tRPC procedures: tradeJournal.list, tradeJournal.stats, tradeJournal.add, tradeJournal.update, tradeJournal.delete
+- [x] Create client/src/pages/TradeJournal.tsx — full CRUD UI with stats dashboard
+- [x] Stats row: total trades, win rate, total P&L, avg P&L %
+- [x] Trade rows with expandable detail (stop, target, notes, tags)
+- [x] Add/Edit dialog with all fields including DTI setup grade and execution score
+- [x] Filter by outcome, asset type, symbol search
+- [x] Add Trade Journal to AppLayout DAY TRADE nav group
+- [x] Add /app/trade-journal route to App.tsx
+- [x] TypeScript: 0 errors

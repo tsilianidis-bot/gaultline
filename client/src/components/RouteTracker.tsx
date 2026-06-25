@@ -58,6 +58,10 @@ const PAGE_TITLES: Record<string, string> = {
   "/app/seo-optimizer": "FAULTLINE — SEO Optimizer",
   "/app/stock-heatmap": "FAULTLINE — Stock Heatmap",
   "/app/analytics": "FAULTLINE — Site Analytics",
+  "/app/symbol-intelligence": "FAULTLINE — Symbol Intelligence",
+  "/app/trade-journal": "FAULTLINE — Trade Journal",
+  "/app/day-trade-intelligence": "FAULTLINE — Day Trade Intelligence",
+  "/app/opportunities": "FAULTLINE — Opportunities",
 };
 
 function getPageTitle(path: string): string {

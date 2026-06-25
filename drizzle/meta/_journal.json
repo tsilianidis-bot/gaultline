@@ -218,6 +218,13 @@
       "when": 1782403121456,
       "tag": "0030_lively_bloodstorm",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1782416806664,
+      "tag": "0031_harsh_living_tribunal",
+      "breakpoints": true
     }
   ]
 }

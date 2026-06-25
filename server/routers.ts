@@ -64,6 +64,7 @@ import {
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
 import { getDayTradeWatchlist, addDayTradeWatchlistItem, removeDayTradeWatchlistItem, isDayTradeWatchlisted } from './db';
+import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntry, deleteTradeJournalEntry, getTradeJournalStats } from './db';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
@@ -2571,6 +2572,108 @@ export const appRouter = router({
       clearDayTradeCache();
       return { success: true };
     }),
+  }),
+
+  // ── Trade Journal (Performance Tracking) ────────────────────────────────
+  tradeJournal: router({
+    // Get all journal entries for the current user
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await getTradeJournalEntries(ctx.user.id, 200);
+    }),
+
+    // Get performance stats summary
+    stats: protectedProcedure.query(async ({ ctx }) => {
+      return await getTradeJournalStats(ctx.user.id);
+    }),
+
+    // Log a new trade entry
+    add: protectedProcedure
+      .input(z.object({
+        symbol:        z.string().min(1).max(20).toUpperCase(),
+        assetType:     z.enum(['stock', 'crypto']).default('stock'),
+        direction:     z.enum(['long', 'short']).default('long'),
+        entryPrice:    z.number().positive(),
+        exitPrice:     z.number().positive().optional(),
+        quantity:      z.number().positive(),
+        stopLoss:      z.number().positive().optional(),
+        target:        z.number().positive().optional(),
+        realizedPnl:   z.number().optional(),
+        pnlPercent:    z.number().optional(),
+        outcome:       z.enum(['win', 'loss', 'breakeven', 'open']).default('open'),
+        setupGrade:    z.string().max(4).optional(),
+        executionScore: z.number().min(0).max(100).optional(),
+        notes:         z.string().max(2000).optional(),
+        tags:          z.string().max(300).optional(),
+        followedSetup: z.boolean().default(false),
+        enteredAt:     z.string().datetime(),
+        exitedAt:      z.string().datetime().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const id = await insertTradeJournalEntry({
+          userId:        ctx.user.id,
+          symbol:        input.symbol,
+          assetType:     input.assetType,
+          direction:     input.direction,
+          entryPrice:    String(input.entryPrice),
+          exitPrice:     input.exitPrice != null ? String(input.exitPrice) : null,
+          quantity:      String(input.quantity),
+          stopLoss:      input.stopLoss != null ? String(input.stopLoss) : null,
+          target:        input.target != null ? String(input.target) : null,
+          realizedPnl:   input.realizedPnl != null ? String(input.realizedPnl) : null,
+          pnlPercent:    input.pnlPercent != null ? String(input.pnlPercent) : null,
+          outcome:       input.outcome,
+          setupGrade:    input.setupGrade ?? null,
+          executionScore: input.executionScore ?? null,
+          notes:         input.notes ?? null,
+          tags:          input.tags ?? null,
+          followedSetup: input.followedSetup ? 1 : 0,
+          enteredAt:     new Date(input.enteredAt),
+          exitedAt:      input.exitedAt ? new Date(input.exitedAt) : null,
+        });
+        return { id };
+      }),
+
+    // Update / close an existing entry
+    update: protectedProcedure
+      .input(z.object({
+        id:            z.number(),
+        exitPrice:     z.number().positive().optional(),
+        quantity:      z.number().positive().optional(),
+        stopLoss:      z.number().positive().optional(),
+        target:        z.number().positive().optional(),
+        realizedPnl:   z.number().optional(),
+        pnlPercent:    z.number().optional(),
+        outcome:       z.enum(['win', 'loss', 'breakeven', 'open']).optional(),
+        setupGrade:    z.string().max(4).optional(),
+        executionScore: z.number().min(0).max(100).optional(),
+        notes:         z.string().max(2000).optional(),
+        tags:          z.string().max(300).optional(),
+        followedSetup: z.boolean().optional(),
+        exitedAt:      z.string().datetime().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { id, followedSetup, exitPrice, quantity, stopLoss, target, realizedPnl, pnlPercent, exitedAt, ...rest } = input;
+        await updateTradeJournalEntry(id, ctx.user.id, {
+          ...rest,
+          ...(exitPrice != null && { exitPrice: String(exitPrice) }),
+          ...(quantity != null && { quantity: String(quantity) }),
+          ...(stopLoss != null && { stopLoss: String(stopLoss) }),
+          ...(target != null && { target: String(target) }),
+          ...(realizedPnl != null && { realizedPnl: String(realizedPnl) }),
+          ...(pnlPercent != null && { pnlPercent: String(pnlPercent) }),
+          ...(followedSetup != null && { followedSetup: followedSetup ? 1 : 0 }),
+          ...(exitedAt != null && { exitedAt: new Date(exitedAt) }),
+        });
+        return { success: true };
+      }),
+
+    // Delete a journal entry
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        await deleteTradeJournalEntry(input.id, ctx.user.id);
+        return { success: true };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

@@ -13,6 +13,7 @@ import {
   User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
+import CommandSearch, { useCommandSearch } from "@/components/CommandSearch";
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -44,6 +45,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "pre-flight",     label: "Pre-Flight",           shortLabel: "Pre-Flight", icon: Shield,         path: "/app/pre-flight" },
       { id: "situation-room", label: "Situation Room",       shortLabel: "Sit. Room",  icon: Crosshair,      path: "/app/situation-room" },
       { id: "opportunities",  label: "Opportunities",        shortLabel: "Opps",       icon: Sparkles,       path: "/app/opportunities" },
+      { id: "symbol-intel",   label: "Symbol Intelligence",  shortLabel: "Symbol Intel",icon: Telescope,      path: "/app/symbol-intelligence" },
       { id: "report",         label: "Daily Briefing",       shortLabel: "Briefing",   icon: FileText,       path: "/app/report" },
     ],
   },
@@ -52,6 +54,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "DAY TRADE",
     items: [
       { id: "day-trade",       label: "Day Trade Intelligence", shortLabel: "Day Trade",  icon: Target,         path: "/app/day-trade-intelligence" },
+      { id: "trade-journal",   label: "Trade Journal",          shortLabel: "Journal",    icon: BookOpen,       path: "/app/trade-journal" },
     ],
   },
   {
@@ -125,6 +128,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { user: authUser, logout } = useAuth();
   const isAdmin = authUser?.role === "admin";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { isOpen: cmdOpen, open: openCmd, close: closeCmd } = useCommandSearch();
 
   // Count breached watchlist items for badge
   const breachCount = useMemo(() => {
@@ -274,6 +278,27 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 {isLoading ? 'LOADING' : isRefreshing ? 'UPDATING' : isLive ? 'LIVE' : 'SIM'}
               </span>
             </div>
+            {/* ── Cmd+K search button ── */}
+            <button
+              onClick={openCmd}
+              title="Search pages & symbols (⌘K)"
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '4px 10px',
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,212,255,0.3)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
+            >
+              <Search size={11} style={{ color: '#6B7280' }} />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#6B7280', letterSpacing: '0.08em' }}>Search</span>
+              <kbd style={{ padding: '1px 4px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>⌘K</kbd>
+            </button>
+
             {isLive && !isLoading && (
               <button
                 onClick={forceRefresh}
@@ -745,6 +770,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           to   { transform: translateY(0);    opacity: 1; }
         }
       `}</style>
+
+      {/* ── Universal Command Search (Cmd+K) ── */}
+      <CommandSearch isOpen={cmdOpen} onClose={closeCmd} />
     </div>
   );
 }
