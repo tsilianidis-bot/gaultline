@@ -724,7 +724,24 @@ export default function Dashboard() {
         {dashMode === "signals" && <SignalsMode />}
         {dashMode === "intelligence" && <IntelligenceMode />}
 
-        {/* Legacy content — always visible below modes ─────────── */}
+        {/* ── Quick Actions bar ──────────────────────────────────── */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
+          {([
+            { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00D4FF' },
+            { label: 'Situation Room',  path: '/app/situation-room',          color: '#FF9500' },
+            { label: 'Day Trade',       path: '/app/day-trade-intelligence',  color: '#00FF88' },
+            { label: 'Signal Outlook',  path: '/app/signal-outlook',          color: '#C084FC' },
+            { label: 'Market Stress',   path: '/app/pressure',                color: '#FF2D55' },
+          ] as { label: string; path: string; color: string }[]).map(action => (
+            <a key={action.path} href={action.path} style={{ display: 'flex', alignItems: 'center', padding: '7px 12px', background: `${action.color}0D`, border: `1px solid ${action.color}30`, borderRadius: '4px', color: action.color, fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', textDecoration: 'none', transition: 'all 0.15s ease', whiteSpace: 'nowrap' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = `${action.color}1A`; (e.currentTarget as HTMLAnchorElement).style.borderColor = `${action.color}55`; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = `${action.color}0D`; (e.currentTarget as HTMLAnchorElement).style.borderColor = `${action.color}30`; }}
+            >
+              {action.label}
+            </a>
+          ))}
+        </div>
+        {/* Legacy content — always visible below modes ───────── */}
         {/* Data Integrity panel */}
         <DataIntegrity />
 

@@ -10,6 +10,31 @@ import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useSEO } from "@/hooks/useSEO";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { PremiumBlurOverlay } from "@/components/PremiumGate";
+import { useLocation } from "wouter";
+import { Brain, Rss } from "lucide-react";
+
+// ── AI Intelligence sub-nav ──────────────────────────────────────────────
+const AI_TABS = [
+  { id: 'diagnostic', label: 'AI Market Analysis', icon: Brain, path: '/app/diagnostic' },
+  { id: 'ai-watch',   label: 'AI Watch Feed',      icon: Rss,   path: '/app/ai-watch' },
+];
+function AITabBar() {
+  const [location, navigate] = useLocation();
+  const active = AI_TABS.find(t => location === t.path || location.startsWith(t.path + '/'))?.id ?? 'diagnostic';
+  return (
+    <div style={{ display: 'flex', gap: '4px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      {AI_TABS.map(tab => {
+        const Icon = tab.icon;
+        const isActive = active === tab.id;
+        return (
+          <button key={tab.id} onClick={() => navigate(tab.path)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', cursor: 'pointer', border: 'none', background: 'transparent', borderBottom: isActive ? '2px solid #C084FC' : '2px solid transparent', color: isActive ? '#C084FC' : '#4B5563', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'color 0.15s ease', marginBottom: '-1px' }}>
+            <Icon size={12} />{tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── Types (mirrored from server) ─────────────────────────────
 
@@ -239,6 +264,7 @@ export default function DiagnosticAI() {
           </div>
         }
       />
+      <AITabBar />
       <div style={{ padding: "24px 20px 60px" }}>
 
       {/* ── Timeframe Tabs ── */}

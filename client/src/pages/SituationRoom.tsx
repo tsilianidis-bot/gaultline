@@ -483,10 +483,10 @@ export default function SituationRoom() {
   const [holdConcern, setHoldConcern] = useState<string>("");
   const [open, setOpen] = useState<Record<string, boolean>>({
     greenLights: true, threatBoard: true, actionBias: true, invalidation: false, watchNext: false,
-    verdict: true, outcomeSimulator: true, entryQuality: true, positionSizing: true,
-    historicalAnalogs: true, thesisStressTest: true,
-    recMoves: true, recStocks: true, recCrypto: true, recAlts: false, recSectors: true, recPortfolio: true, recFaultline: true,
-    hotSectorPicks: true,
+    verdict: true, outcomeSimulator: false, entryQuality: false, positionSizing: false,
+    historicalAnalogs: false, thesisStressTest: false,
+    recMoves: true, recStocks: false, recCrypto: false, recAlts: false, recSectors: false, recPortfolio: false, recFaultline: true,
+    hotSectorPicks: false,
   });
   const resultRef = useRef<HTMLDivElement>(null);
 

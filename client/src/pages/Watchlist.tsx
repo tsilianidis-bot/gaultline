@@ -10,8 +10,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Plus, Trash2, Bell, BellOff, Edit3, Check, X,
   ChevronDown, ChevronUp, AlertTriangle, TrendingUp,
-  TrendingDown, Minus, BookOpen, Zap, Info,
+  TrendingDown, Minus, BookOpen, Zap, Info, Bitcoin, Target,
 } from 'lucide-react';
+import { useLocation } from 'wouter';
 import { useEngine } from '@/contexts/EngineContext';
 import { getRiskColor } from '@/components/RiskBadge';
 import { LineChart, Line, ResponsiveContainer, ReferenceLine, Tooltip } from 'recharts';
@@ -23,6 +24,14 @@ import {
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+
+// ── Watchlist tab type ─────────────────────────────────────────
+type WatchlistTab = 'macro' | 'crypto' | 'daytrade';
+const WATCHLIST_TABS: { id: WatchlistTab; label: string; icon: React.ElementType; desc: string }[] = [
+  { id: 'macro',    label: 'Macro Alerts',  icon: Bell,    desc: 'FRED indicators & pressure scores' },
+  { id: 'crypto',   label: 'Crypto',        icon: Bitcoin, desc: 'Saved crypto tokens with signals' },
+  { id: 'daytrade', label: 'Day Trade',     icon: Target,  desc: 'Day trade setups & watchlist' },
+];
 
 // ── Helpers ───────────────────────────────────────────────────
 function seededRand(seed: number) {
@@ -575,6 +584,38 @@ function SummaryBar({ items, liveValues }: { items: WatchlistItem[]; liveValues:
 }
 
 // ── Main Watchlist page ───────────────────────────────────────
+// ── Tab navigation bar component ─────────────────────────────
+function WatchlistTabBar({ active, onChange }: { active: WatchlistTab; onChange: (t: WatchlistTab) => void }) {
+  return (
+    <div style={{ display: 'flex', gap: '4px', padding: '0 16px', marginBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      {WATCHLIST_TABS.map(tab => {
+        const Icon = tab.icon;
+        const isActive = active === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onChange(tab.id)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              padding: '10px 14px', cursor: 'pointer', border: 'none',
+              background: 'transparent',
+              borderBottom: isActive ? '2px solid #00D4FF' : '2px solid transparent',
+              color: isActive ? '#00D4FF' : '#4B5563',
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              transition: 'color 0.15s ease',
+              marginBottom: '-1px',
+            }}
+          >
+            <Icon size={12} />
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Watchlist() {
   useSEO(PAGE_SEO.watchlist);
   const { indicators, output } = useEngine();
@@ -647,10 +688,13 @@ export default function Watchlist() {
     setItems(prev => prev.filter(i => i.id !== id));
   }, []);
 
+  const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState<WatchlistTab>('macro');
+
   return (
     <div style={{ background: '#050608', minHeight: '100vh', padding: '0 0 80px' }}>
       {/* Edit/Add modal */}
-      {editingItem !== undefined && (
+      {editingItem !== undefined && activeTab === 'macro' && (
         <EditModal
           item={editingItem}
           onSave={handleSave}
@@ -692,7 +736,35 @@ export default function Watchlist() {
         }
       />
 
-      {/* Content */}
+      {/* Tab navigation */}
+      <WatchlistTabBar active={activeTab} onChange={setActiveTab} />
+
+      {/* Crypto tab — redirect to Crypto Watchlist page */}
+      {activeTab === 'crypto' && (
+        <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+          <div style={{ width: '56px', height: '56px', background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <Bitcoin size={24} style={{ color: '#FF9500' }} />
+          </div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#94A3B8', marginBottom: '8px' }}>Crypto Watchlist</div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#4B5563', marginBottom: '20px', maxWidth: '280px', margin: '0 auto 20px' }}>Track crypto tokens with live signals, risk levels, and momentum analysis.</div>
+          <button onClick={() => navigate('/app/crypto-watchlist')} style={{ padding: '10px 20px', background: 'rgba(255,149,0,0.1)', border: '1px solid rgba(255,149,0,0.3)', borderRadius: '5px', color: '#FF9500', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Open Crypto Watchlist →</button>
+        </div>
+      )}
+
+      {/* Day Trade tab — redirect to Day Trade Intelligence page */}
+      {activeTab === 'daytrade' && (
+        <div style={{ padding: '40px 16px', textAlign: 'center' }}>
+          <div style={{ width: '56px', height: '56px', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <Target size={24} style={{ color: '#00D4FF' }} />
+          </div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#94A3B8', marginBottom: '8px' }}>Day Trade Watchlist</div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#4B5563', marginBottom: '20px', maxWidth: '280px', margin: '0 auto 20px' }}>Save symbols for intraday setups. Managed inside Day Trade Intelligence™.</div>
+          <button onClick={() => navigate('/app/day-trade-intelligence')} style={{ padding: '10px 20px', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)', borderRadius: '5px', color: '#00D4FF', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>Open Day Trade Intelligence →</button>
+        </div>
+      )}
+
+      {/* Macro Alerts tab */}
+      {activeTab === 'macro' && (
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
 
         {/* Summary bar */}
@@ -816,6 +888,7 @@ export default function Watchlist() {
           </span>
         </div>
       </div>
+      )}
     </div>
   );
 }

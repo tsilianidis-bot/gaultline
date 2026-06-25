@@ -7,10 +7,36 @@ import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import { useLocation } from "wouter";
+
+// ── Market Stress sub-nav tabs ──────────────────────────────────
+const STRESS_TABS = [
+  { id: 'pressure',  label: 'Pressure',   icon: Activity,  path: '/app/pressure' },
+  { id: 'scores',    label: 'Risk Scores', icon: BarChart2, path: '/app/scores' },
+  { id: 'charts',    label: 'Charts',      icon: BarChart2, path: '/app/charts' },
+  { id: 'aftershock',label: 'Aftershock',  icon: Waves,     path: '/app/aftershock-engine' },
+];
+function StressTabBar() {
+  const [location, navigate] = useLocation();
+  const active = STRESS_TABS.find(t => location === t.path || location.startsWith(t.path + '/'))?.id ?? 'pressure';
+  return (
+    <div style={{ display: 'flex', gap: '4px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0' }}>
+      {STRESS_TABS.map(tab => {
+        const Icon = tab.icon;
+        const isActive = active === tab.id;
+        return (
+          <button key={tab.id} onClick={() => navigate(tab.path)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', cursor: 'pointer', border: 'none', background: 'transparent', borderBottom: isActive ? '2px solid #00D4FF' : '2px solid transparent', color: isActive ? '#00D4FF' : '#4B5563', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'color 0.15s ease', marginBottom: '-1px' }}>
+            <Icon size={12} />{tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── Types (mirror server output) ─────────────────────────────
 type PressureLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
@@ -893,6 +919,7 @@ export default function Pressure() {
           badgeColor={data.dataSource === 'live' ? 'green' : 'amber'}
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
+        <StressTabBar />
         <div style={{ padding: "24px" }}>
 
         {/* ── Page header ──────────────────────────────────── */}
