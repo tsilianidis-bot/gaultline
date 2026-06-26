@@ -2537,7 +2537,24 @@ export const appRouter = router({
         maxResults: z.number().min(1).max(30).default(12),
       }))
       .query(async ({ input }) => {
-        return await dayTradeScanner(input);
+        try {
+          const results = await dayTradeScanner(input);
+          const sanitizeNumbers = (v: unknown): unknown => {
+            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
+            if (v === null || v === undefined) return v;
+            if (Array.isArray(v)) return v.map(sanitizeNumbers);
+            if (typeof v === 'object') {
+              return Object.fromEntries(
+                Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
+              );
+            }
+            return v;
+          };
+          return sanitizeNumbers(results) as typeof results;
+        } catch (err) {
+          console.error('[dayTrade.scan] Error:', err);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Scanner failed. Please try again.' });
+        }
       }),
     symbolSetup: coreProcedure
       .input(z.object({
@@ -2546,7 +2563,29 @@ export const appRouter = router({
         direction: z.enum(["bullish", "bearish", "both"]).default("both"),
       }))
       .query(async ({ input }) => {
-        return await dayTradeSymbolSetup(input.symbol, input.assetType, input.direction);
+        try {
+          const result = await dayTradeSymbolSetup(input.symbol, input.assetType, input.direction);
+          // Sanitize all numeric fields to prevent NaN/Infinity from causing SuperJSON
+          // "Unable to transform response from server" errors on the client
+          const sanitizeNumbers = (v: unknown): unknown => {
+            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
+            if (v === null || v === undefined) return v;
+            if (Array.isArray(v)) return v.map(sanitizeNumbers);
+            if (typeof v === 'object') {
+              return Object.fromEntries(
+                Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
+              );
+            }
+            return v;
+          };
+          return sanitizeNumbers(result) as typeof result;
+        } catch (err) {
+          console.error('[symbolSetup] Error for', input.symbol, err);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Unable to generate analysis for ${input.symbol}. Live market data may be unavailable or the symbol may be invalid.`,
+          });
+        }
       }),
     getWatchlist: coreProcedure.query(async ({ ctx }) => {
       return await getDayTradeWatchlist(ctx.user.id);
