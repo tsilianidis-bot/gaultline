@@ -3,6 +3,7 @@
 // server/routers/outlook.ts
 // ============================================================
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import {
   getFullOutlook,
@@ -15,6 +16,22 @@ import {
 
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
+
+/**
+ * Recursively replace NaN and Infinity with 0 so SuperJSON never throws
+ * "Unable to transform response from server" on the client.
+ */
+function sanitizeNumbers(v: unknown): unknown {
+  if (typeof v === "number") return isFinite(v) && !isNaN(v) ? v : 0;
+  if (v === null || v === undefined) return v;
+  if (Array.isArray(v)) return v.map(sanitizeNumbers);
+  if (typeof v === "object") {
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
+    );
+  }
+  return v;
+}
 
 export const outlookRouter = router({
   /**
@@ -29,7 +46,17 @@ export const outlookRouter = router({
       timeframe: timeframeSchema,
     }))
     .query(async ({ input }) => {
-      return getFullOutlook(input.symbol, input.assetType, input.timeframe as OutlookTimeframe);
+      try {
+        const result = await getFullOutlook(input.symbol, input.assetType, input.timeframe as OutlookTimeframe);
+        return sanitizeNumbers(result) as typeof result;
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        console.error("[outlook.getOutlook] Error for", input.symbol, err);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Unable to generate outlook for ${input.symbol}. Live market data may be temporarily unavailable.`,
+        });
+      }
     }),
 
   /**
@@ -43,7 +70,17 @@ export const outlookRouter = router({
       assetType: assetTypeSchema,
     }))
     .query(async ({ input }) => {
-      return getQuickOutlook(input.symbol, input.assetType);
+      try {
+        const result = await getQuickOutlook(input.symbol, input.assetType);
+        return sanitizeNumbers(result) as typeof result;
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        console.error("[outlook.getQuickOutlook] Error for", input.symbol, err);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Quick outlook unavailable for ${input.symbol}.`,
+        });
+      }
     }),
 
   /**
@@ -53,7 +90,13 @@ export const outlookRouter = router({
    */
   getTopOpportunities: publicProcedure
     .query(async () => {
-      return getTopOpportunities();
+      try {
+        const result = await getTopOpportunities();
+        return sanitizeNumbers(result) as typeof result;
+      } catch (err) {
+        console.error("[outlook.getTopOpportunities] Error:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Top opportunities unavailable." });
+      }
     }),
 
   /**
@@ -77,7 +120,7 @@ export const outlookRouter = router({
       return results.map((r, i) => ({
         symbol: input.items[i].symbol.toUpperCase(),
         assetType: input.items[i].assetType,
-        outlook: r.status === "fulfilled" ? r.value : null,
+        outlook: r.status === "fulfilled" ? sanitizeNumbers(r.value) : null,
         error: r.status === "rejected" ? String(r.reason) : null,
       }));
     }),
@@ -89,7 +132,13 @@ export const outlookRouter = router({
    */
   getOpportunityDiscovery: publicProcedure
     .query(async () => {
-      return getOpportunityDiscovery();
+      try {
+        const result = await getOpportunityDiscovery();
+        return sanitizeNumbers(result) as typeof result;
+      } catch (err) {
+        console.error("[outlook.getOpportunityDiscovery] Error:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Opportunity discovery unavailable." });
+      }
     }),
 
   /**
@@ -98,7 +147,7 @@ export const outlookRouter = router({
   clearCaches: protectedProcedure
     .mutation(async ({ ctx }) => {
       if (ctx.user.role !== "admin") {
-        throw new Error("Admin only");
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });
       }
       clearOutlookCaches();
       return { success: true };

@@ -766,7 +766,14 @@ export const appRouter = router({
             btcDominance: globalStats?.btcDominance ?? 55,
             regime: { label: pressure.regime, score: pressure.overallPressure },
           });
-          return result;
+          const sanitizeNumbers = (v: unknown): unknown => {
+            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
+            if (v === null || v === undefined) return v;
+            if (Array.isArray(v)) return v.map(sanitizeNumbers);
+            if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)]));
+            return v;
+          };
+          return sanitizeNumbers(result) as typeof result;
         } catch (err) {
           if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto signal computation failed", cause: err });
@@ -790,7 +797,14 @@ export const appRouter = router({
           const results = computeCryptoSignals(
             markets.map(m => ({ market: m, btcDominance, regime }))
           );
-          return {
+          const sanitizeNums = (v: unknown): unknown => {
+            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
+            if (v === null || v === undefined) return v;
+            if (Array.isArray(v)) return v.map(sanitizeNums);
+            if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNums(val)]));
+            return v;
+          };
+          const screenerResult = {
             signals: results,
             regime,
             btcDominance,
@@ -798,6 +812,7 @@ export const appRouter = router({
             marketCapChange24h: globalStats?.marketCapChangePercent24h ?? 0,
             computedAt: Date.now(),
           };
+          return sanitizeNums(screenerResult) as typeof screenerResult;
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Crypto screener failed", cause: err });
         }
@@ -1234,8 +1249,20 @@ export const appRouter = router({
 
   altRotation: router({
     getData: coreProcedure.query(async () => {
-      const apiKey = process.env.COINGECKO_API_KEY;
-      return computeAltRotation(apiKey);
+      try {
+        const apiKey = process.env.COINGECKO_API_KEY;
+        const result = await computeAltRotation(apiKey);
+        const sanitize = (v: unknown): unknown => {
+          if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
+          if (v === null || v === undefined) return v;
+          if (Array.isArray(v)) return v.map(sanitize);
+          if (typeof v === 'object') return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitize(val)]));
+          return v;
+        };
+        return sanitize(result) as typeof result;
+      } catch (err) {
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Alt rotation data unavailable.' });
+      }
     }),
     clearCache: protectedProcedure.mutation(() => {
       clearAltRotationCache();
