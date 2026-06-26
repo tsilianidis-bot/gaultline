@@ -2562,7 +2562,19 @@ export const appRouter = router({
   // ── Day Trade Intelligence™ ─────────────────────────────────────
   dayTrade: router({
     getFavorability: coreProcedure.query(async () => {
-      return await getDayTradeFavorability();
+      const result = await getDayTradeFavorability();
+      const sanitizeNumbers = (v: unknown): unknown => {
+        if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
+        if (v === null || v === undefined) return v;
+        if (Array.isArray(v)) return v.map(sanitizeNumbers);
+        if (typeof v === 'object') {
+          return Object.fromEntries(
+            Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
+          );
+        }
+        return v;
+      };
+      return sanitizeNumbers(result) as typeof result;
     }),
     scan: coreProcedure
       .input(z.object({
