@@ -61,6 +61,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/app/symbol-intelligence": "FAULTLINE — Symbol Intelligence",
   "/app/trade-journal": "FAULTLINE — Trade Journal",
   "/app/glossary": "FAULTLINE Method™ Glossary",
+  "/app/admin/chat-inbox": "Chat Inbox | Admin",
   "/app/day-trade-intelligence": "FAULTLINE — Day Trade Intelligence",
   "/app/opportunities": "FAULTLINE — Opportunities",
 };

@@ -13,6 +13,7 @@ import AppLayout from "./components/AppLayout";
 import IntroScreen from "./components/IntroScreen";
 import FREDDebugConsole from "./components/FREDDebugConsole";
 import CookieConsent from './components/CookieConsent';
+import ChatbotWidget from './components/ChatbotWidget';
 import RouteTracker from './components/RouteTracker';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
@@ -107,6 +108,7 @@ const Analysis             = lazy(() => import("./pages/Analysis"));
 const Opportunities        = lazy(() => import("./pages/Opportunities"));
 const UniversalSymbolIntelligence = lazy(() => import("./pages/UniversalSymbolIntelligence"));
 const Glossary = lazy(() => import("./pages/Glossary"));
+const ChatInbox = lazy(() => import("./pages/admin/ChatInbox"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -388,6 +390,9 @@ function Router() {
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
               <Route path="/app/admin/blog" component={AdminBlog} />
+              <Route path="/app/admin/chat-inbox">
+                <ErrorBoundary><Suspense fallback={<PageLoader />}><ChatInbox /></Suspense></ErrorBoundary>
+              </Route>
               <Route path="/app/x-posts" component={XPostGenerator} />
               <Route path="/app/x-post-queue" component={XPostQueue} />
               <Route path="/app/alt-rotation" component={AltRotation} />
@@ -485,6 +490,9 @@ function App() {
 
             {/* GDPR Cookie Consent Banner */}
             <CookieConsent />
+
+            {/* AI Market Intelligence Concierge — floating chatbot on all pages */}
+            <ChatbotWidget />
 
           </TooltipProvider>
         </EngineProvider>

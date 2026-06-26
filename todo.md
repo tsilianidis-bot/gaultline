@@ -2193,3 +2193,62 @@
 ### QA
 - [x] TypeScript: 0 errors
 - [x] Checkpoint saved
+
+## FAULTLINE AI Market Intelligence Concierge
+
+### Phase 1 — Database
+- [ ] Add chatbot_sessions table to drizzle/schema.ts
+- [ ] Add chatbot_messages table to drizzle/schema.ts
+- [ ] Add chatbot_leads table to drizzle/schema.ts
+- [ ] Generate migration SQL (pnpm drizzle-kit generate)
+- [ ] Apply migration via webdev_execute_sql
+
+### Phase 2 — Backend
+- [ ] Create server/chatbotEngine.ts — LLM system prompt, intent detection (pricing/signup/security/plan), lead scoring (0-100)
+- [ ] Add chatbot DB helpers to server/db.ts
+- [ ] Add tRPC procedures: chatbot.startSession, chatbot.sendMessage, chatbot.captureLead
+- [ ] Add admin tRPC procedures: chatbot.admin.getSessions, chatbot.admin.getSession, chatbot.admin.markReviewed, chatbot.admin.addNote, chatbot.admin.exportCsv
+
+### Phase 3 — Public Chatbot Widget
+- [ ] Create client/src/components/ChatbotWidget.tsx — floating bottom-right chat bubble
+- [ ] LLM-powered responses via tRPC
+- [ ] Lead capture flow (ask for email on pricing/signup intent)
+- [ ] Disclaimer: "FAULTLINE provides market intelligence and risk analysis, not personalized financial advice."
+- [ ] Analytics events: chatbot_opened, chatbot_message_sent, chatbot_signup_clicked, chatbot_pricing_clicked, chatbot_upgrade_clicked, chatbot_lead_captured
+- [ ] Mount ChatbotWidget in App.tsx on all public routes
+
+### Phase 4 — Admin Chat Inbox
+- [ ] Create client/src/pages/admin/ChatInbox.tsx at /admin/chat-inbox
+- [ ] Show all conversations: visitor ID, email, page URL, timestamp, transcript, bot responses
+- [ ] Show: signup intent, pricing intent, security mentioned, plan interest, lead score, conversion status
+- [ ] Filters: New leads, Asked about pricing, Asked about stock/crypto, High intent, Converted, Needs follow-up
+- [ ] Admin actions: Mark reviewed, Add note, Export CSV, Copy email, Link to user account
+- [ ] Add /admin/chat-inbox route to App.tsx (admin-only)
+- [ ] Add Chat Inbox to admin nav in AppLayout
+
+### Phase 5 — QA
+- [ ] Write vitest tests for chatbotEngine.ts (intent detection, lead scoring)
+- [ ] TypeScript: 0 errors
+- [ ] Tests: all passing
+- [ ] Checkpoint saved
+
+## FAULTLINE AI Market Intelligence Concierge — Completed
+
+- [x] DB: chatbot_sessions table (visitorId, email, pageUrl, leadScore, signupIntent, pricingIntent, securitiesMentioned, planInterest, conversionStatus, reviewed, adminNote, messageCount, userId)
+- [x] DB: chatbot_messages table (sessionId, role, content, intent)
+- [x] DB: chatbot_leads table (sessionId, visitorId, email, interest, planInterest, leadScore)
+- [x] Migration applied via webdev_execute_sql
+- [x] server/chatbotEngine.ts — LLM system prompt, detectIntent(), aggregateLeadScore(), generateBotResponse()
+- [x] DB helpers in server/db.ts — full CRUD for chatbot sessions, messages, leads
+- [x] tRPC procedures: chatbot.startSession, chatbot.sendMessage, chatbot.captureLead
+- [x] tRPC admin procedures: chatbot.admin.getSessions, chatbot.admin.getSession, chatbot.admin.markReviewed, chatbot.admin.addNote, chatbot.admin.getStats, chatbot.admin.getLeads
+- [x] ChatbotWidget.tsx — floating bottom-right chat, typing indicator, lead capture form, disclaimer
+- [x] ChatbotWidget mounted in App.tsx (all pages)
+- [x] Analytics events: chatbot_opened, chatbot_message_sent, chatbot_signup_clicked, chatbot_pricing_clicked, chatbot_upgrade_clicked, chatbot_lead_captured
+- [x] Admin ChatInbox page (/app/admin/chat-inbox) — stats, filter tabs, search, session rows, transcript, notes, CSV export
+- [x] Chat Inbox added to ADMIN_NAV_ITEMS in AppLayout.tsx
+- [x] Route /app/admin/chat-inbox registered in App.tsx
+- [x] RouteTracker updated with chat-inbox title
+- [x] 20 vitest tests for chatbotEngine (all passing)
+- [x] TypeScript: 0 errors
+- [x] Full suite: 621/622 passing (1 pre-existing SendGrid 401)

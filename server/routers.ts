@@ -67,6 +67,12 @@ import { getDayTradeWatchlist, addDayTradeWatchlistItem, removeDayTradeWatchlist
 import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntry, deleteTradeJournalEntry, getTradeJournalStats } from './db';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { computeSOB } from './sobEngine';
+import { generateBotResponse, detectIntent, aggregateLeadScore } from './chatbotEngine';
+import {
+  createChatbotSession, updateChatbotSession, addChatbotMessage, getChatbotMessages,
+  createChatbotLead, getChatbotSessions, getChatbotSessionWithMessages,
+  markChatbotSessionReviewed, addChatbotAdminNote, getChatbotLeads, getChatbotStats,
+} from './db';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
 import { xPostQueue, users } from '../drizzle/schema';
@@ -2675,6 +2681,161 @@ export const appRouter = router({
         await deleteTradeJournalEntry(input.id, ctx.user.id);
         return { success: true };
       }),
+  }),
+
+  // ── Chatbot Concierge ─────────────────────────────────────────────
+  chatbot: router({
+    // Start or resume a session
+    startSession: publicProcedure
+      .input(z.object({
+        visitorId: z.string().max(64),
+        pageUrl:   z.string().max(512).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const sessionId = await createChatbotSession({
+          visitorId: input.visitorId,
+          pageUrl:   input.pageUrl,
+        });
+        return { sessionId };
+      }),
+
+    // Send a message and get a bot response
+    sendMessage: publicProcedure
+      .input(z.object({
+        sessionId: z.number().int().positive(),
+        visitorId: z.string().max(64),
+        message:   z.string().min(1).max(2000),
+      }))
+      .mutation(async ({ input }) => {
+        // Fetch conversation history
+        const history = await getChatbotMessages(input.sessionId);
+        const chatHistory = history.map(m => ({ role: m.role as 'user' | 'bot', content: m.content }));
+
+        // Detect intent
+        const analysis = detectIntent(input.message);
+
+        // Store user message
+        await addChatbotMessage({
+          sessionId: input.sessionId,
+          role: 'user',
+          content: input.message,
+          intent: analysis.intent,
+        });
+
+        // Generate bot response
+        const botResponse = await generateBotResponse(chatHistory, input.message);
+
+        // Store bot message
+        await addChatbotMessage({
+          sessionId: input.sessionId,
+          role: 'bot',
+          content: botResponse,
+          intent: analysis.intent,
+        });
+
+        // Recompute aggregate lead score from all messages
+        const allHistory = await getChatbotMessages(input.sessionId);
+        const allUserMessages = allHistory.filter(m => m.role === 'user');
+        const allAnalyses = allUserMessages.map(m => detectIntent(m.content));
+        const leadScore = aggregateLeadScore(allAnalyses);
+        const securitiesMentioned = Array.from(
+          new Set(allAnalyses.flatMap(a => a.securitiesMentioned))
+        ).join(',');
+        const planInterest = allAnalyses.find(a => a.planInterest)?.planInterest ?? null;
+        const signupIntent = allAnalyses.some(a => a.signupIntent) ? 1 : 0;
+        const pricingIntent = allAnalyses.some(a => a.pricingIntent) ? 1 : 0;
+
+        await updateChatbotSession(input.sessionId, {
+          leadScore,
+          securitiesMentioned: securitiesMentioned || undefined,
+          planInterest: planInterest ?? undefined,
+          signupIntent,
+          pricingIntent,
+        });
+
+        // Ask for email if high intent and not yet captured
+        const askForEmail = leadScore >= 50 && (analysis.pricingIntent || analysis.signupIntent || analysis.intent === 'upgrade');
+
+        return {
+          response: botResponse,
+          intent: analysis.intent,
+          leadScore,
+          askForEmail,
+          securitiesMentioned: analysis.securitiesMentioned,
+        };
+      }),
+
+    // Capture lead email
+    captureLead: publicProcedure
+      .input(z.object({
+        sessionId:   z.number().int().positive(),
+        visitorId:   z.string().max(64),
+        email:       z.string().email().max(320),
+        interest:    z.string().max(500).optional(),
+        planInterest: z.string().max(32).optional(),
+        leadScore:   z.number().int().min(0).max(100).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createChatbotLead({
+          sessionId:    input.sessionId,
+          visitorId:    input.visitorId,
+          email:        input.email,
+          interest:     input.interest,
+          planInterest: input.planInterest,
+          leadScore:    input.leadScore ?? 0,
+        });
+        return { success: true };
+      }),
+
+    // ── Admin procedures ──────────────────────────────────────────────
+    admin: router({
+      getSessions: protectedProcedure
+        .input(z.object({
+          filter: z.enum(['all', 'new_leads', 'pricing', 'security', 'high_intent', 'converted', 'needs_review']).default('all'),
+          limit:  z.number().int().min(1).max(200).default(50),
+          offset: z.number().int().min(0).default(0),
+        }))
+        .query(async ({ ctx, input }) => {
+          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+          return getChatbotSessions(input);
+        }),
+
+      getSession: protectedProcedure
+        .input(z.object({ sessionId: z.number().int().positive() }))
+        .query(async ({ ctx, input }) => {
+          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+          return getChatbotSessionWithMessages(input.sessionId);
+        }),
+
+      markReviewed: protectedProcedure
+        .input(z.object({ sessionId: z.number().int().positive(), reviewed: z.boolean() }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+          await markChatbotSessionReviewed(input.sessionId, input.reviewed);
+          return { success: true };
+        }),
+
+      addNote: protectedProcedure
+        .input(z.object({ sessionId: z.number().int().positive(), note: z.string().max(2000) }))
+        .mutation(async ({ ctx, input }) => {
+          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+          await addChatbotAdminNote(input.sessionId, input.note);
+          return { success: true };
+        }),
+
+      getStats: protectedProcedure
+        .query(async ({ ctx }) => {
+          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+          return getChatbotStats();
+        }),
+
+      getLeads: protectedProcedure
+        .input(z.object({ limit: z.number().int().min(1).max(500).default(100) }))
+        .query(async ({ ctx, input }) => {
+          if (ctx.user.role !== 'admin') throw new TRPCError({ code: 'FORBIDDEN' });
+          return getChatbotLeads(input.limit);
+        }),
+    }),
   }),
 
   // ── S.O.B.™ — Signals of Breakdown ────────────────────────────────

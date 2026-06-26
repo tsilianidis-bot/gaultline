@@ -1041,3 +1041,82 @@ export const tradeJournal = mysqlTable("tradeJournal", {
 }));
 export type TradeJournalEntry = typeof tradeJournal.$inferSelect;
 export type InsertTradeJournalEntry = typeof tradeJournal.$inferInsert;
+
+
+// ── Chatbot Sessions ──────────────────────────────────────────────────────────
+/**
+ * One row per chat session. A session starts when the widget is opened.
+ * Sessions are anonymous by default; email is captured via lead flow.
+ */
+export const chatbotSessions = mysqlTable("chatbot_sessions", {
+  id:           int("id").autoincrement().primaryKey(),
+  /** Stable visitor ID from localStorage (same as analytics visitorId) */
+  visitorId:    varchar("visitorId", { length: 64 }).notNull(),
+  /** URL of the page where the chat was opened */
+  pageUrl:      varchar("pageUrl", { length: 512 }),
+  /** Captured email (from lead flow) */
+  email:        varchar("email", { length: 320 }),
+  /** Linked user account ID if the visitor later signed up */
+  userId:       int("userId"),
+  /** Computed lead score 0–100 */
+  leadScore:    int("leadScore").default(0).notNull(),
+  /** Whether the visitor expressed signup intent */
+  signupIntent: tinyint("signupIntent").default(0).notNull(),
+  /** Whether the visitor asked about pricing */
+  pricingIntent: tinyint("pricingIntent").default(0).notNull(),
+  /** Comma-separated securities mentioned (e.g. "NVDA,BTC") */
+  securitiesMentioned: varchar("securitiesMentioned", { length: 512 }),
+  /** Plan the visitor expressed interest in: free/core/premium/founding */
+  planInterest: varchar("planInterest", { length: 32 }),
+  /** Conversion status */
+  conversionStatus: mysqlEnum("conversionStatus", ["none", "lead", "signup", "paid"]).default("none").notNull(),
+  /** Admin review flag */
+  reviewed:     tinyint("reviewed").default(0).notNull(),
+  /** Admin note */
+  adminNote:    text("adminNote"),
+  /** Total messages in session */
+  messageCount: int("messageCount").default(0).notNull(),
+  createdAt:    timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:    timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  visitorIdx:   index("chatbot_sessions_visitor_idx").on(t.visitorId),
+  createdIdx:   index("chatbot_sessions_created_idx").on(t.createdAt),
+  leadScoreIdx: index("chatbot_sessions_lead_score_idx").on(t.leadScore),
+  statusIdx:    index("chatbot_sessions_status_idx").on(t.conversionStatus),
+}));
+export type ChatbotSession = typeof chatbotSessions.$inferSelect;
+export type InsertChatbotSession = typeof chatbotSessions.$inferInsert;
+
+// ── Chatbot Messages ──────────────────────────────────────────────────────────
+export const chatbotMessages = mysqlTable("chatbot_messages", {
+  id:        int("id").autoincrement().primaryKey(),
+  sessionId: int("sessionId").notNull(),
+  /** "user" or "bot" */
+  role:      mysqlEnum("role", ["user", "bot"]).notNull(),
+  content:   text("content").notNull(),
+  /** Detected intent for this message */
+  intent:    varchar("intent", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  sessionIdx: index("chatbot_messages_session_idx").on(t.sessionId),
+}));
+export type ChatbotMessage = typeof chatbotMessages.$inferSelect;
+export type InsertChatbotMessage = typeof chatbotMessages.$inferInsert;
+
+// ── Chatbot Leads ─────────────────────────────────────────────────────────────
+export const chatbotLeads = mysqlTable("chatbot_leads", {
+  id:        int("id").autoincrement().primaryKey(),
+  sessionId: int("sessionId").notNull(),
+  visitorId: varchar("visitorId", { length: 64 }).notNull(),
+  email:     varchar("email", { length: 320 }).notNull(),
+  /** What the visitor said they were interested in */
+  interest:  text("interest"),
+  leadScore: int("leadScore").default(0).notNull(),
+  planInterest: varchar("planInterest", { length: 32 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  sessionIdx: index("chatbot_leads_session_idx").on(t.sessionId),
+  emailIdx:   index("chatbot_leads_email_idx").on(t.email),
+}));
+export type ChatbotLead = typeof chatbotLeads.$inferSelect;
+export type InsertChatbotLead = typeof chatbotLeads.$inferInsert;

@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -1210,5 +1210,135 @@ export async function getTradeJournalStats(userId: number) {
     winRate: total > 0 ? Math.round((wins / (wins + losses || 1)) * 100) : 0,
     totalPnl: parseFloat(r.totalPnl ?? '0'),
     avgPnlPct: parseFloat(r.avgPnlPct ?? '0'),
+  };
+}
+
+// ── Chatbot DB Helpers ────────────────────────────────────────────────────────
+
+export async function createChatbotSession(data: InsertChatbotSession): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(chatbotSessions).values(data);
+  return (result as any).insertId as number;
+}
+
+export async function updateChatbotSession(
+  sessionId: number,
+  data: Partial<InsertChatbotSession>,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(chatbotSessions).set(data).where(eq(chatbotSessions.id, sessionId));
+}
+
+export async function addChatbotMessage(data: InsertChatbotMessage): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(chatbotMessages).values(data);
+  // Increment message count on session
+  await db
+    .update(chatbotSessions)
+    .set({ messageCount: sql`${chatbotSessions.messageCount} + 1` })
+    .where(eq(chatbotSessions.id, data.sessionId));
+  return (result as any).insertId as number;
+}
+
+export async function getChatbotMessages(sessionId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(chatbotMessages)
+    .where(eq(chatbotMessages.sessionId, sessionId))
+    .orderBy(chatbotMessages.createdAt);
+}
+
+export async function createChatbotLead(data: InsertChatbotLead): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [result] = await db.insert(chatbotLeads).values(data);
+  // Update session email and conversion status
+  await db
+    .update(chatbotSessions)
+    .set({ email: data.email, conversionStatus: "lead", planInterest: data.planInterest ?? undefined })
+    .where(eq(chatbotSessions.id, data.sessionId));
+  return (result as any).insertId as number;
+}
+
+export async function getChatbotSessions(opts: {
+  filter?: "new_leads" | "pricing" | "security" | "high_intent" | "converted" | "needs_review" | "all";
+  limit?: number;
+  offset?: number;
+}) {
+  const db = await getDb();
+  if (!db) return { sessions: [], total: 0 };
+
+  const { filter = "all", limit = 50, offset = 0 } = opts;
+
+  let query = db.select().from(chatbotSessions);
+
+  // Apply filter conditions
+  if (filter === "new_leads") {
+    query = query.where(and(eq(chatbotSessions.conversionStatus, "lead"), eq(chatbotSessions.reviewed, 0))) as typeof query;
+  } else if (filter === "pricing") {
+    query = query.where(eq(chatbotSessions.pricingIntent, 1)) as typeof query;
+  } else if (filter === "security") {
+    query = query.where(sql`${chatbotSessions.securitiesMentioned} IS NOT NULL AND ${chatbotSessions.securitiesMentioned} != ''`) as typeof query;
+  } else if (filter === "high_intent") {
+    query = query.where(sql`${chatbotSessions.leadScore} >= 50`) as typeof query;
+  } else if (filter === "converted") {
+    query = query.where(or(eq(chatbotSessions.conversionStatus, "signup"), eq(chatbotSessions.conversionStatus, "paid"))) as typeof query;
+  } else if (filter === "needs_review") {
+    query = query.where(and(eq(chatbotSessions.reviewed, 0), sql`${chatbotSessions.leadScore} >= 30`)) as typeof query;
+  }
+
+  const sessions = await query.orderBy(desc(chatbotSessions.createdAt)).limit(limit).offset(offset);
+  const [countResult] = await db.select({ total: count() }).from(chatbotSessions);
+  return { sessions, total: countResult?.total ?? 0 };
+}
+
+export async function getChatbotSessionWithMessages(sessionId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [session] = await db.select().from(chatbotSessions).where(eq(chatbotSessions.id, sessionId));
+  if (!session) return null;
+  const messages = await getChatbotMessages(sessionId);
+  return { session, messages };
+}
+
+export async function markChatbotSessionReviewed(sessionId: number, reviewed: boolean): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(chatbotSessions).set({ reviewed: reviewed ? 1 : 0 }).where(eq(chatbotSessions.id, sessionId));
+}
+
+export async function addChatbotAdminNote(sessionId: number, note: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(chatbotSessions).set({ adminNote: note }).where(eq(chatbotSessions.id, sessionId));
+}
+
+export async function getChatbotLeads(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatbotLeads).orderBy(desc(chatbotLeads.createdAt)).limit(limit);
+}
+
+export async function getChatbotStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, leads: 0, highIntent: 0, converted: 0, avgLeadScore: 0 };
+  const [stats] = await db.select({
+    total: count(),
+    avgLeadScore: sql<number>`AVG(${chatbotSessions.leadScore})`,
+  }).from(chatbotSessions);
+  const [leads] = await db.select({ c: count() }).from(chatbotSessions).where(eq(chatbotSessions.conversionStatus, "lead"));
+  const [highIntent] = await db.select({ c: count() }).from(chatbotSessions).where(sql`${chatbotSessions.leadScore} >= 50`);
+  const [converted] = await db.select({ c: count() }).from(chatbotSessions).where(or(eq(chatbotSessions.conversionStatus, "signup"), eq(chatbotSessions.conversionStatus, "paid")));
+  return {
+    total: stats?.total ?? 0,
+    leads: leads?.c ?? 0,
+    highIntent: highIntent?.c ?? 0,
+    converted: converted?.c ?? 0,
+    avgLeadScore: Math.round(Number(stats?.avgLeadScore ?? 0)),
   };
 }

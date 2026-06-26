@@ -20,7 +20,13 @@ export type FaultlineEvent =
   | "purchase"
   | "stock_signal_viewed"
   | "crypto_signal_viewed"
-  | "situation_room_used";
+  | "situation_room_used"
+  | "chatbot_opened"
+  | "chatbot_message_sent"
+  | "chatbot_signup_clicked"
+  | "chatbot_pricing_clicked"
+  | "chatbot_upgrade_clicked"
+  | "chatbot_lead_captured";
 
 /** Generic param map — GA4 accepts any string/number/boolean values */
 export type EventParams = Record<string, string | number | boolean | undefined>;
