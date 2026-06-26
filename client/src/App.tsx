@@ -109,6 +109,8 @@ const Opportunities        = lazy(() => import("./pages/Opportunities"));
 const UniversalSymbolIntelligence = lazy(() => import("./pages/UniversalSymbolIntelligence"));
 const Glossary = lazy(() => import("./pages/Glossary"));
 const ChatInbox = lazy(() => import("./pages/admin/ChatInbox"));
+const CryptoHub = lazy(() => import("./pages/CryptoHub"));
+const DecisionEngine = lazy(() => import("./pages/DecisionEngine"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -379,7 +381,7 @@ function Router() {
               <Route path="/app/report" component={DailyReport} />
               <Route path="/app/watchlist" component={Watchlist} />
               <Route path="/app/signals" component={Signals} />
-              <Route path="/app/crypto" component={CryptoIntelligence} />
+              <Route path="/app/crypto" component={CryptoHub} />
               <Route path="/app/crypto-search" component={CryptoSearch} />
               <Route path="/app/crypto-watchlist" component={CryptoWatchlist} />
               <Route path="/app/guide" component={Guide} />
@@ -396,6 +398,7 @@ function Router() {
               <Route path="/app/x-posts" component={XPostGenerator} />
               <Route path="/app/x-post-queue" component={XPostQueue} />
               <Route path="/app/alt-rotation" component={AltRotation} />
+              <Route path="/app/decision-engine" component={DecisionEngine} />
               <Route path="/app/trade-preflight" component={TradePreflight} />
               <Route path="/app/situation-room" component={SituationRoom} />
               <Route path="/app/opportunities" component={Opportunities} />

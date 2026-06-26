@@ -730,7 +730,7 @@ export default function Dashboard() {
         <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
           {([
             { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00D4FF' },
-            { label: 'Situation Room',  path: '/app/situation-room',          color: '#FF9500' },
+            { label: 'Decision Engine', path: '/app/decision-engine',          color: '#FF9500' },
             { label: 'Day Trade',       path: '/app/day-trade-intelligence',  color: '#00FF88' },
             { label: 'Signal Outlook',  path: '/app/signal-outlook',          color: '#C084FC' },
             { label: 'Market Stress',   path: '/app/pressure',                color: '#FF2D55' },
@@ -778,19 +778,19 @@ export default function Dashboard() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFAA00', boxShadow: '0 0 8px #FFAA00', animation: 'blink-alert 2s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#FFAA00', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Situation Room</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#FFAA00', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Decision Engine</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,170,0,0.55)', border: '1px solid rgba(255,170,0,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 2 — DECISION ENGINE</span>
               </div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#94A3B8', lineHeight: 1.55, maxWidth: '500px' }}>
                 Simulate your next move. Move Favorability Score, Final Verdict, Green Lights, Threat Board, Historical Analogs, Position Sizing, and Thesis Stress Test.
               </div>
             </div>
-            <a href="/app/situation-room" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(255,170,0,0.10)', border: '1px solid rgba(255,170,0,0.45)', borderRadius: '4px', color: '#FFAA00', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(255,170,0,0.08)' }}
+            <a href="/app/decision-engine" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(255,170,0,0.10)', border: '1px solid rgba(255,170,0,0.45)', borderRadius: '4px', color: '#FFAA00', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(255,170,0,0.08)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,170,0,0.18)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,170,0,0.7)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,170,0,0.10)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,170,0,0.45)'; }}
             >
               <span style={{ fontSize: '14px' }}>⊕</span>
-              ENTER SITUATION ROOM
+              OPEN DECISION ENGINE
             </a>
           </div>
         </div>

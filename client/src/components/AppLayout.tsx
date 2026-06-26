@@ -39,62 +39,46 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    // COMMAND: The 5-step institutional workflow — learn → assess → trade → decide → review
-    label: "COMMAND",
-    items: [
-      { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",       icon: LayoutDashboard,path: "/app" },
-      { id: "pre-flight",     label: "Pre-Flight",           shortLabel: "Pre-Flight", icon: Shield,         path: "/app/pre-flight" },
-      { id: "situation-room", label: "Situation Room",       shortLabel: "Sit. Room",  icon: Crosshair,      path: "/app/situation-room" },
-      { id: "opportunities",  label: "Opportunities",        shortLabel: "Opps",       icon: Sparkles,       path: "/app/opportunities" },
-      { id: "symbol-intel",   label: "Symbol Intelligence",  shortLabel: "Symbol Intel",icon: Telescope,      path: "/app/symbol-intelligence" },
-      { id: "report",         label: "Daily Briefing",       shortLabel: "Briefing",   icon: FileText,       path: "/app/report" },
-    ],
-  },
-  {
-    // DAY TRADE: Flagship intraday intelligence module — elevated to its own group
-    label: "DAY TRADE",
-    items: [
-      { id: "day-trade",       label: "Day Trade Intelligence", shortLabel: "Day Trade",  icon: Target,         path: "/app/day-trade-intelligence" },
-      { id: "trade-journal",   label: "Trade Journal",          shortLabel: "Journal",    icon: BookOpen,       path: "/app/trade-journal" },
-    ],
-  },
-  {
-    label: "MARKETS",
-    items: [
-      { id: "signals",          label: "Signals",            shortLabel: "Signals",     icon: Radio,     path: "/app/signals" },
-      { id: "watchlist",        label: "Watchlist",          shortLabel: "Watch",       icon: Bell,      path: "/app/watchlist" },
-      { id: "portfolio",        label: "Portfolio",          shortLabel: "Portfolio",   icon: Briefcase, path: "/app/portfolio" },
-      { id: "crypto",           label: "Crypto Intelligence",shortLabel: "Crypto Intel",icon: Bitcoin,   path: "/app/crypto-search" },
-      { id: "alt-rotation",    label: "Sector Rotation",     shortLabel: "Rotation",   icon: RotateCcw, path: "/app/alt-rotation" },
-    ],
-  },
-  {
+    // INTELLIGENCE: Observe — situational awareness and proactive discovery
     label: "INTELLIGENCE",
     items: [
-      { id: "social-intelligence",  label: "Social Intelligence", shortLabel: "Social",    icon: MessageSquare, path: "/app/social-intelligence" },
-      { id: "diagnostic",           label: "AI Market Analysis",  shortLabel: "AI Analysis",icon: Cpu,          path: "/app/diagnostic" },
-      { id: "insider-intelligence", label: "Insider Intelligence",shortLabel: "Insider",   icon: Eye,           path: "/app/insider-intelligence" },
-      { id: "alerts",               label: "Alerts",              shortLabel: "Alerts",    icon: AlertTriangle, path: "/app/alerts" },
+      { id: "dashboard",      label: "Dashboard",           shortLabel: "Dash",        icon: LayoutDashboard, path: "/app" },
+      { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
+      { id: "opportunities",  label: "Opportunities",       shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
+      { id: "signals",        label: "Signals",             shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
+      { id: "crypto",         label: "Crypto Hub",          shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
     ],
   },
   {
+    // ANALYSIS: Analyze + Decide — deep intelligence and decision support
     label: "ANALYSIS",
     items: [
-      { id: "pressure",     label: "Market Stress",       shortLabel: "Stress",     icon: Gauge,     path: "/app/pressure" },
-      { id: "simulate",     label: "Pressure Simulator",  shortLabel: "Simulator",  icon: Zap,       path: "/app/simulate" },
-      { id: "stock-heatmap",label: "Stock Heatmap",       shortLabel: "Heatmap",    icon: BarChart2, path: "/app/stock-heatmap" },
+      { id: "symbol-intel",    label: "Symbol Intelligence", shortLabel: "Symbol Intel", icon: Telescope,     path: "/app/symbol-intelligence" },
+      { id: "decision-engine", label: "Decision Engine",     shortLabel: "Decide",       icon: Crosshair,     path: "/app/decision-engine" },
+      { id: "diagnostic",      label: "AI Diagnostic",       shortLabel: "Diagnostic",   icon: Cpu,           path: "/app/diagnostic" },
+      { id: "pressure",        label: "Market Stress",       shortLabel: "Stress",       icon: Gauge,         path: "/app/pressure" },
+      { id: "signal-outlook",  label: "Signal Outlook",      shortLabel: "Outlook",      icon: Eye,           path: "/app/signal-outlook" },
+      { id: "day-trade",       label: "Day Trade Intel",     shortLabel: "Day Trade",    icon: Target,        path: "/app/day-trade-intelligence" },
     ],
   },
   {
-    label: "ACCOUNT",
+    // PORTFOLIO: Monitor — track, manage, and review positions
+    label: "PORTFOLIO",
     items: [
-      { id: "account",          label: "Account",       shortLabel: "Account",   icon: User,      path: "/app/account" },
-      { id: "track-record",     label: "Track Record",  shortLabel: "Track Rec", icon: Trophy,    path: "/app/track-record" },
-      { id: "reading-history",  label: "Reading History",shortLabel: "Readings", icon: History,   path: "/app/reading-history" },
-      { id: "sim-portfolio",    label: "$10K → $1M",    shortLabel: "$10K→$1M",  icon: TrendingUp,path: "/app/sim-portfolio" },
-      { id: "blog",             label: "Blog",          shortLabel: "Blog",      icon: Newspaper, path: "/app/blog" },
-      { id: "guide",            label: "Guide",         shortLabel: "Guide",     icon: BookOpen,  path: "/app/guide" },
-      { id: "glossary",          label: "Method Glossary",shortLabel: "Glossary",  icon: BookOpen,  path: "/app/glossary" },
+      { id: "portfolio",     label: "Portfolio",       shortLabel: "Portfolio",  icon: Briefcase,  path: "/app/portfolio" },
+      { id: "watchlist",     label: "Watchlist",       shortLabel: "Watch",      icon: Bell,       path: "/app/watchlist" },
+      { id: "alt-rotation",  label: "Sector Rotation", shortLabel: "Rotation",   icon: RotateCcw,  path: "/app/alt-rotation" },
+      { id: "trade-journal", label: "Trade Journal",   shortLabel: "Journal",    icon: BookOpen,   path: "/app/trade-journal" },
+    ],
+  },
+  {
+    // LEARN: Context, education, and account management
+    label: "LEARN",
+    items: [
+      { id: "report",       label: "Daily Briefing", shortLabel: "Briefing",  icon: FileText,   path: "/app/report" },
+      { id: "track-record", label: "Track Record",   shortLabel: "Track Rec", icon: Trophy,     path: "/app/track-record" },
+      { id: "guide",        label: "Guide",          shortLabel: "Guide",     icon: BookOpen,   path: "/app/guide" },
+      { id: "account",      label: "Account",        shortLabel: "Account",   icon: User,       path: "/app/account" },
     ],
   },
 ];
@@ -117,7 +101,8 @@ const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
 // Mobile primary tabs (bottom bar — 5 most important)
 // Market Stress replaces Blog as a primary tab
-const MOBILE_PRIMARY_IDS = ["pre-flight", "situation-room", "dashboard", "signals", "watchlist"];
+// Mobile primary tabs: Today (Dashboard), Signals, Portfolio, Search (Symbol Intel), Account
+const MOBILE_PRIMARY_IDS = ["dashboard", "signals", "portfolio", "symbol-intel", "account"];
 const MOBILE_PRIMARY = ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id));
 
 interface AppLayoutProps {

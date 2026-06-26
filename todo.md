@@ -2246,3 +2246,112 @@
 - [x] 20 vitest tests for chatbotEngine (all passing)
 - [x] TypeScript: 0 errors
 - [x] Full suite: 621/622 passing (1 pre-existing SendGrid 401)
+
+
+---
+
+## PROJECT BLACK — Phase 2: Steve Jobs Product Experience
+
+### P0 — Navigation Redesign (4 groups, 16 items)
+- [ ] Redesign AppLayout NAV_GROUPS to 4 groups: INTELLIGENCE, ANALYSIS, PORTFOLIO, LEARN
+- [ ] INTELLIGENCE group: Dashboard, Pre-Flight, Opportunities, Signals, Crypto (5 items)
+- [ ] ANALYSIS group: Symbol Intel, Decision Engine, AI Diagnostic, Market Stress (4 items)
+- [ ] PORTFOLIO group: Portfolio, Watchlist, Day Trade, Sector Rotation (4 items)
+- [ ] LEARN group: Daily Briefing, Track Record, Guide, Account (4 items)
+- [ ] Add Signal Outlook Center to ANALYSIS nav group (currently hidden)
+- [ ] Reduce mobile primary tabs to 5: Today, Signals, Portfolio, Search, Account
+- [ ] Update all internal navigation links to match new structure
+
+### P0 — Universal Intelligence Bar
+- [ ] Create client/src/components/UniversalIntelligenceBar.tsx — persistent top-bar command center
+- [ ] Natural language input: "Should I buy NVDA?", "Analyze Bitcoin", "What changed overnight?", "Find today's best day trade"
+- [ ] AI orchestration tRPC procedure: intelligence.query (natural language → structured response with source attribution)
+- [ ] Intent routing: parse query → route to correct engine (Situation Room, Diagnostic AI, Signal Outlook, Opportunities, Portfolio, Crypto Intel)
+- [ ] Mount UniversalIntelligenceBar in AppLayout header on all authenticated pages
+- [ ] Context awareness: pass current page and user portfolio context to AI
+- [ ] Recent queries history (localStorage)
+
+### P0 — Dashboard: 3-Second Test Layout
+- [ ] Redesign Dashboard into 4 zones: Today's Verdict, What Changed, Analyze (search + opportunities), Portfolio
+- [ ] Zone 1 — Today's Verdict: large regime label, Pressure Index score, one-sentence AI verdict, color-coded (green/amber/red), no scrolling required
+- [ ] Zone 2 — What Changed: 3 cards showing biggest signal change, biggest pressure domain change, top opportunity update since last session
+- [ ] Zone 3 — Analyze: Universal Intelligence Bar + top 3 opportunities with direct Symbol Intel links
+- [ ] Zone 4 — Portfolio: compact P&L summary + triggered watchlist alerts (or upgrade prompt for free users)
+- [ ] Replace raw domain scores with decision-first language: "Today's Environment", "Market Character", "Risk Level", "Recommended Positioning", "Confidence"
+- [ ] Dashboard must pass 3-second test: Current Market Risk, Today's Regime, Best Opportunity, Biggest Threat, Recommended Action — all visible without scrolling
+
+### P0 — Decision Engine (merge Situation Room + Trade Preflight)
+- [ ] Create client/src/pages/DecisionEngine.tsx at /app/decision-engine
+- [ ] Enforce Security → Action → Timeframe → Analysis workflow for ALL move types
+- [ ] Security input: universal ticker search (stocks, ETFs, crypto)
+- [ ] Action: Buy / Add / Reduce / Exit / Hold / Hedge
+- [ ] Timeframe: Day Trade / 1–5 Sessions / 1–3 Months / 6–12 Months / Long Term
+- [ ] Wire to existing Situation Room + Trade Preflight backend engines (no backend changes)
+- [ ] Add /app/decision-engine route to App.tsx
+- [ ] Redirect /app/situation-room and /app/trade-preflight to /app/decision-engine
+- [ ] Add Decision Engine to ANALYSIS nav group
+
+### P0 — Crypto Hub (unify 3 pages)
+- [ ] Create client/src/pages/CryptoHub.tsx at /app/crypto
+- [ ] Tabs: Search/Analysis, Signals, Watchlist
+- [ ] Wire to existing CryptoIntelligence, CryptoSignals, CryptoWatchlist backends (no backend changes)
+- [ ] Add /app/crypto route to App.tsx
+- [ ] Redirect /app/crypto-search, /app/crypto-signals, /app/crypto-watchlist to /app/crypto
+- [ ] Add Crypto Hub to INTELLIGENCE nav group
+
+### P1 — Opportunity Discovery: 17 Categories + Full Card Data
+- [ ] Expand getOpportunityDiscovery in signalOutlook.ts to 17 categories: Highest Conviction Today, Emerging Leaders, Institutional Accumulation, Early Momentum Before Breakout, High Short Squeeze Potential, AI Leaders, Crypto Leaders, Oversold Reversal Candidates, Macro Winners, Relative Strength Leaders, Volume Expansion, Earnings Momentum, Sector Rotation Winners, Unusual Options Activity, Small Cap Movers, Mid Cap Leaders, High Risk/High Reward
+- [ ] Expand each opportunity card to include: Opportunity Score, Confidence, Catalysts, Risk Level, Suggested Timeframe, Why FAULTLINE likes it, What invalidates it, Entry zone, Support, Resistance, Profit targets
+- [ ] Update Opportunities.tsx to render full card data
+- [ ] Update OpportunityDiscoveryPanel.tsx on Dashboard to show expanded card preview
+
+### P1 — Feature Gates: Blurred Preview (replace lock icons)
+- [ ] Update PremiumGate component to show blurred content preview with overlay instead of lock icon + feature list
+- [ ] Overlay copy: "Unlock to see today's analysis" with specific context
+- [ ] Add contextual upgrade prompts: specific to what the user tried to access, not generic
+
+### P1 — Narrative Loading States
+- [ ] Replace all LLM-powered spinners with narrative loading messages
+- [ ] Signal Outlook: "Analyzing [ticker] across 47 macro indicators..."
+- [ ] Diagnostic AI: "Building 4-timeframe regime analysis..."
+- [ ] Opportunity Discovery: "Scanning 2,400 securities for today's best setups..."
+- [ ] Decision Engine: "Running portfolio stress simulation for [ticker] [action]..."
+- [ ] Day Trade Intelligence: "Identifying intraday setups with highest execution scores..."
+
+### P1 — Remove Low-Value Pages
+- [ ] Remove /app/charts route (redirect to Symbol Intelligence)
+- [ ] Remove /app/ai-watch route (redirect to Signals)
+- [ ] Remove /app/scenarios route (redirect to Decision Engine)
+- [ ] Remove /app/scores route (redirect to Market Stress)
+- [ ] Remove /app/component-showcase route
+
+### P1 — Surface Hidden Features
+- [ ] Add Signal Outlook Center to ANALYSIS nav group (currently not in sidebar)
+- [ ] Add Aftershock Engine as a panel/tab within Market Stress page
+- [ ] Add Historical Analogs as a tab within AI Diagnostic page
+
+### P2 — Mobile Redesign
+- [ ] Redesign mobile to 5 primary tabs: Today, Signals, Portfolio, Search, Account
+- [ ] Today tab: 3-second test layout — regime, pressure score, top opportunity, biggest threat, recommended action
+- [ ] Search tab: universal ticker search → mobile-optimized Symbol Intelligence
+- [ ] Add Morning Brief mode: 60-second auto-summary of regime, top 3 opportunities, portfolio alerts, key risk
+- [ ] Add Pre-Flight streak counter to mobile Today tab
+- [ ] One-thumb navigation: all primary actions reachable with right thumb
+
+### P2 — Conversion Improvements
+- [ ] Redesign homepage hero: "Know what to risk—and when to step aside." as primary headline
+- [ ] Add live "Today's Market Verdict" widget to homepage (visible without login)
+- [ ] Replace feature-list pricing with outcome-first copy
+- [ ] Add pre-checkout summary page before Stripe checkout
+
+### P2 — AI Concierge Improvements
+- [ ] Add page context to chatbot: chatbot knows what page user is on
+- [ ] Add portfolio context to chatbot for authenticated users
+- [ ] Add regime context to chatbot: always knows current market regime
+- [ ] Chatbot enforces Security → Action → Timeframe workflow for any analysis request
+
+### QA
+- [ ] TypeScript: 0 errors
+- [ ] Tests: all passing
+- [ ] Final audit: every page passes 3-second test, every workflow follows Observe→Analyze→Decide→Monitor
+- [ ] Checkpoint saved
