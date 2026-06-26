@@ -93,6 +93,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "sim-portfolio",    label: "$10K → $1M",    shortLabel: "$10K→$1M",  icon: TrendingUp,path: "/app/sim-portfolio" },
       { id: "blog",             label: "Blog",          shortLabel: "Blog",      icon: Newspaper, path: "/app/blog" },
       { id: "guide",            label: "Guide",         shortLabel: "Guide",     icon: BookOpen,  path: "/app/guide" },
+      { id: "glossary",          label: "Method Glossary",shortLabel: "Glossary",  icon: BookOpen,  path: "/app/glossary" },
     ],
   },
 ];

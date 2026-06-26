@@ -384,7 +384,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" />
             <div className="absolute w-3 h-3 rounded-full bg-[#00FF88]/20 animate-ping" />
           </div>
-          <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">PLATFORM LIVE — PRESSURE MONITORING ACTIVE</span>
+          <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">MARKET NAVIGATION SYSTEM — LIVE</span>
         </div>
 
         {/* Headline */}
@@ -395,7 +395,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
 
         {/* Sub */}
         <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-8 leading-relaxed">
-          FAULTLINE maps the stress fractures forming beneath the market — before they become headlines. Position inside the faultlines while others are still reacting to the surface.
+          Markets move through changing conditions. FAULTLINE continuously monitors multiple dimensions of market stress — translating complex signals into clear, actionable awareness so you can understand what is changing, why it matters, and what deserves attention next.
         </p>
 
         {/* CTAs — mobile-first, safe-area aware */}
@@ -427,7 +427,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
 
         {/* Clarity tags — below CTAs on mobile so they don’t push buttons down */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-          {["Pre-Quake Positioning", "Pressure Before Headlines", "Faultline Detection", "Regime Shifts Early", "Move Inside the Lines"].map((item, i) => (
+          {["Understand. Adapt. Navigate.", "Regime Shift Detection", "S.O.B.™ Signals of Breakdown", "Changing Tide Early Warning", "The FAULTLINE Method™"].map((item, i) => (
             <span key={i} className="text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/60 border border-[#00D4FF]/15 px-2.5 py-1 rounded-full bg-[#00D4FF]/5">{item}</span>
           ))}
         </div>

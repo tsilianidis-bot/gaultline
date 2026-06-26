@@ -106,6 +106,7 @@ const IntelligenceArchive  = lazy(() => import("./pages/IntelligenceArchive"));
 const Analysis             = lazy(() => import("./pages/Analysis"));
 const Opportunities        = lazy(() => import("./pages/Opportunities"));
 const UniversalSymbolIntelligence = lazy(() => import("./pages/UniversalSymbolIntelligence"));
+const Glossary = lazy(() => import("./pages/Glossary"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -400,6 +401,7 @@ function Router() {
               <Route path="/app/day-trade-intelligence" component={DayTradeIntelligence} />
               <Route path="/app/trade-journal" component={TradeJournal} />
               <Route path="/app/symbol-intelligence" component={UniversalSymbolIntelligence} />
+              <Route path="/app/glossary" component={Glossary} />
               <Route path="/app/account" component={UserAccount} />
               <Route path="/app/blog/:slug" component={BlogPost} />
               <Route path="/app/blog" component={Blog} />

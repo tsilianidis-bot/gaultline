@@ -12,6 +12,7 @@ import { ShareReportButton } from "@/components/ShareReportButton";
 import { PremiumBlurOverlay } from "@/components/PremiumGate";
 import { useLocation } from "wouter";
 import { Brain, Rss } from "lucide-react";
+import FaultlineTerm from "@/components/FaultlineTerm";
 
 // ── AI Intelligence sub-nav ──────────────────────────────────────────────
 const AI_TABS = [
@@ -352,7 +353,7 @@ export default function DiagnosticAI() {
             {/* Pressure Index */}
             <div className="intel-module" style={{ padding: "16px 18px", textAlign: "center" }}>
               <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#64748B", letterSpacing: "0.15em", marginBottom: 6 }}>
-                PRESSURE INDEX
+                <FaultlineTerm id="pressure-index" />
               </div>
               <div style={{
                 fontSize: 36,
@@ -370,7 +371,7 @@ export default function DiagnosticAI() {
             {/* Regime */}
             <div className="intel-module" style={{ padding: "16px 18px", textAlign: "center" }}>
               <div style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", color: "#64748B", letterSpacing: "0.15em", marginBottom: 6 }}>
-                EQUITY REGIME
+                <FaultlineTerm id="regime" />
               </div>
               <div style={{ fontSize: 11, fontFamily: "'Orbitron', monospace", fontWeight: 700, color: "#F1F5F9", lineHeight: 1.3 }}>
                 {report.regimeLabel}

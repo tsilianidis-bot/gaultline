@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
+import FaultlineTerm from "@/components/FaultlineTerm";
 
 // ── Types (mirrors server dayTradeEngine.ts) ─────────────────
 type DayTradeSetup = {
@@ -310,7 +311,7 @@ function SetupCard({ s, onSearch }: { s: AnySetup; onSearch?: (sym: string, type
           {ds && ds.executionScore > 0 && (
             <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-                <div style={{ ...LABEL, marginBottom: 0 }}>Execution Score</div>
+                <div style={{ ...LABEL, marginBottom: 0 }}><FaultlineTerm id="execution-score">Execution Score</FaultlineTerm></div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                   <div style={{
                     fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "18px",

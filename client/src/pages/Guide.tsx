@@ -104,14 +104,17 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            FAULTLINE is a <span className="text-cyan-400">macroeconomic risk intelligence terminal</span> designed to give investors, traders, and analysts a real-time view of systemic stress across the global financial system. It synthesises live economic data from the Federal Reserve (FRED), live market prices from Yahoo Finance and Polygon.io, and AI-powered analysis to surface the signals that matter before they become headlines.
+                    FAULTLINE is a <span className="text-cyan-400">Market Navigation System</span> that keeps investors informed through continuous updates on changing market conditions. Markets move through changing regimes — FAULTLINE helps you understand what is changing, why it matters, and what deserves attention next.
+          </p>
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono mt-3">
+            Rather than relying on headlines or emotions, FAULTLINE continuously monitors multiple dimensions of the market — macro, technical, sentiment, and liquidity — and translates complex information into clear, actionable awareness. The platform is built on one principle: <span className="text-cyan-400 font-bold">Understand. Adapt. Navigate.</span>
           </p>
         </Panel>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
             { icon: Database, label: "Live FRED Data", desc: "10+ Federal Reserve economic series updated in real-time: yields, spreads, inflation, unemployment, SOFR, and more." },
             { icon: Cpu, label: "AI Regime Engine", desc: "A proprietary macro regime classifier that continuously evaluates systemic risk across 6 stress domains and assigns a 0–10 pressure score." },
-            { icon: Target, label: "Signal Intelligence", desc: "Every stock in the screener and every ticker you search is classified with FAULTLINE signal labels, regime fit, and a full AI briefing." },
+            { icon: Target, label: "S.O.B.™ Framework", desc: "Signals of Breakdown — FAULTLINE's proprietary framework measuring the accumulation of market stress across 6 independent pillars. Not a crash prediction system. A structured awareness tool." },
           ].map(({ icon: Icon, label, desc }) => (
             <Panel key={label} accentColor="rgba(0,212,255,0.2)">
               <Icon className="w-4 h-4 text-cyan-400 mb-2" />

@@ -26,6 +26,8 @@ import SignalsMode from "@/components/dashboard/SignalsMode";
 import IntelligenceMode from "@/components/dashboard/IntelligenceMode";
 import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/MarketPreflight";
 import PreflightGate from "@/components/PreflightGate";
+import SOBPanel from "@/components/SOBPanel";
+import FaultlineTerm from "@/components/FaultlineTerm";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663562889431/oAHJBBc62GHpVJwTBFZPAm/faultline-hero-bg-5aiJwmUWM5RkwbakA3ZsnX.webp";
@@ -851,6 +853,14 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* S.O.B.™ Panel */}
+        <div style={{ marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 120ms both' }}>
+          <SOBPanel
+            regime={regime?.label}
+            pressureIndex={overall ? Math.round(overall.score * 10) : 30}
+          />
         </div>
 
         {/* Bull vs Crash */}

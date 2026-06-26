@@ -15,6 +15,7 @@ import {
   RefreshCw, ChevronDown, ChevronUp, Minus, Eye, Crosshair,
   DollarSign, History, FlaskConical, ArrowRight,
 } from "lucide-react";
+import FaultlineTerm from "@/components/FaultlineTerm";
 
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
@@ -621,7 +622,7 @@ export default function SituationRoom() {
 
             {/* Pressure index */}
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Pressure</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em" }}><FaultlineTerm id="pressure-index">Pressure</FaultlineTerm></span>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "26px", color: pColor, textShadow: `0 0 16px ${pColor}70`, lineHeight: 1 }}>{pressureScore}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)" }}>/100</span>
             </div>

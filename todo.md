@@ -2159,3 +2159,37 @@
 - [x] Add Trade Journal to AppLayout DAY TRADE nav group
 - [x] Add /app/trade-journal route to App.tsx
 - [x] TypeScript: 0 errors
+
+## FAULTLINE Method™ Platform Integration
+
+### Shared Framework
+- [x] Create shared/faultlineGlossary.ts — all proprietary terms with definition, why it matters, what triggered it, what to watch next
+- [x] Create client/src/components/FaultlineTerm.tsx — inline clickable term with popover tooltip (definition, why it matters, triggered by, watch next)
+- [x] Create client/src/components/SOBPanel.tsx — S.O.B.™ Signals of Breakdown panel (level, trend, drivers, confidence, explanation, what changed, what to watch next)
+- [x] Create server/sobEngine.ts — compute S.O.B. score from existing pressure/regime data
+
+### S.O.B.™ Integration
+- [x] Add S.O.B. tRPC procedure: sob.getSOB (uses existing FRED + regime data)
+- [x] Wire SOBPanel into Dashboard page (below regime section)
+- [x] Wire SOBPanel into Pressure page (as a dedicated section)
+
+### Platform Language Updates
+- [x] Update Dashboard.tsx hero/regime section: replace any certainty language with "Understand. Adapt. Navigate."
+- [x] Update AppLayout.tsx tagline/subtitle if present
+- [x] Update MarketingSite.tsx hero copy to reflect Market Navigation System positioning
+- [x] Update Guide.tsx to include FAULTLINE Method™ section and glossary reference
+
+### Intelligent Tooltips
+- [x] Wrap proprietary terms in Signals.tsx with FaultlineTerm component
+- [x] Wrap proprietary terms in DayTradeIntelligence.tsx with FaultlineTerm component
+- [x] Wrap proprietary terms in DiagnosticAI.tsx with FaultlineTerm component
+- [x] Wrap proprietary terms in Pressure.tsx with FaultlineTerm component
+
+### Glossary Page
+- [x] Create client/src/pages/Glossary.tsx — searchable glossary of all FAULTLINE Method™ terms
+- [x] Add Glossary route to App.tsx
+- [x] Add Glossary to AppLayout nav (ACCOUNT group)
+
+### QA
+- [x] TypeScript: 0 errors
+- [x] Checkpoint saved

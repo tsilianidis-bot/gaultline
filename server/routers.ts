@@ -66,6 +66,7 @@ import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDay
 import { getDayTradeWatchlist, addDayTradeWatchlistItem, removeDayTradeWatchlistItem, isDayTradeWatchlisted } from './db';
 import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntry, deleteTradeJournalEntry, getTradeJournalStats } from './db';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
+import { computeSOB } from './sobEngine';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
 import { xPostQueue, users } from '../drizzle/schema';
@@ -2673,6 +2674,29 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         await deleteTradeJournalEntry(input.id, ctx.user.id);
         return { success: true };
+      }),
+  }),
+
+  // ── S.O.B.™ — Signals of Breakdown ────────────────────────────────
+  sob: router({
+    getSOB: publicProcedure
+      .input(z.object({
+        regime:        z.string().optional(),
+        pressureIndex: z.number().optional(),
+        yieldSpread:   z.number().nullable().optional(),
+        fedFundsRate:  z.number().nullable().optional(),
+        vix:           z.number().nullable().optional(),
+        creditSpread:  z.number().nullable().optional(),
+      }))
+      .query(({ input }) => {
+        return computeSOB({
+          regime:        input.regime,
+          pressureIndex: input.pressureIndex,
+          yieldSpread:   input.yieldSpread ?? null,
+          fedFundsRate:  input.fedFundsRate ?? null,
+          vix:           input.vix ?? null,
+          creditSpread:  input.creditSpread ?? null,
+        });
       }),
   }),
 });

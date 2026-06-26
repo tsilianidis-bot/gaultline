@@ -26,6 +26,7 @@ import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackStockSignalViewed } from "@/hooks/useAnalytics";
 import { TickerChip } from "@/components/TickerActionMenu";
+import FaultlineTerm from "@/components/FaultlineTerm";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -1502,7 +1503,7 @@ function SignalsInner() {
             }}>{regimeCtx.description}</p>
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <div style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', marginBottom: '2px' }}>REGIME SCORE</div>
+            <div style={{ fontSize: '12px', color: 'rgba(100,116,139,0.75)', marginBottom: '2px' }}><FaultlineTerm id="regime-score" /></div>
             <div style={{
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700, fontSize: '22px',

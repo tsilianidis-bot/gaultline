@@ -4,6 +4,7 @@
    corner brackets, Framer Motion animations.
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
+import SOBPanel from "@/components/SOBPanel";
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
@@ -1208,6 +1209,14 @@ export default function Pressure() {
                         </div>
           </motion.div>
         </div>
+        {/* S.O.B.™ Panel */}
+        <div style={{ marginBottom: '24px' }}>
+          <SOBPanel
+            regime={data.regime}
+            pressureIndex={data.overallPressure}
+          />
+        </div>
+
         <DisclaimerBanner />
         </div>{/* /padding div */}
       </div>
