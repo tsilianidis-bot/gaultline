@@ -345,10 +345,10 @@ export async function generateBotResponse(
 
       return trimmed;
     }
-    return "I'm having trouble responding right now. Please try again in a moment, or email us at tsilianidis@gmail.com.";
+    return "I'm having trouble responding right now. Please try again in a moment, or email us at jt@getfaultline.live.";
   } catch (err) {
     console.error("[ChatbotEngine] LLM error:", err);
-    return "I'm experiencing a temporary issue. Please try again shortly, or reach us at tsilianidis@gmail.com.";
+    return "I'm experiencing a temporary issue. Please try again shortly, or reach us at jt@getfaultline.live.";
   }
 }
 

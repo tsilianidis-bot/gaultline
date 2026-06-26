@@ -2511,7 +2511,7 @@ export const appRouter = router({
         if (!ownerResult.success) {
           throw new TRPCError({
             code: 'INTERNAL_SERVER_ERROR',
-            message: ownerResult.error ?? 'Failed to send message. Please try again or email us directly at tsilianidis@gmail.com',
+            message: ownerResult.error ?? 'Failed to send message. Please try again or email us directly at jt@getfaultline.live',
           });
         }
         // Auto-reply is best-effort — don't block the response on failure
