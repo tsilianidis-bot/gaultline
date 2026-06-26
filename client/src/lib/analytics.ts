@@ -26,7 +26,8 @@ export type FaultlineEvent =
   | "chatbot_signup_clicked"
   | "chatbot_pricing_clicked"
   | "chatbot_upgrade_clicked"
-  | "chatbot_lead_captured";
+  | "chatbot_lead_captured"
+  | "receptionist_call_clicked";
 
 /** Generic param map — GA4 accepts any string/number/boolean values */
 export type EventParams = Record<string, string | number | boolean | undefined>;

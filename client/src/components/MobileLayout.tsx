@@ -13,6 +13,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { PRICING_PLANS } from "../../../shared/tiers";
+import AIReceptionistLink from "@/components/AIReceptionistLink";
 
 // ── iOS Add-to-Home-Screen banner ─────────────────────────────
 function iOSSafari(): boolean {
@@ -136,6 +137,7 @@ function CoreGate() {
           >
             BACK TO FULL PLATFORM
           </a>
+          <AIReceptionistLink variant="tap-to-call" location="mobile_upgrade_gate" label="Call FAULTLINE AI" className="w-full" />
         </div>
       </div>
     );

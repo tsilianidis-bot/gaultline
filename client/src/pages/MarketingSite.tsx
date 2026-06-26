@@ -13,6 +13,7 @@ import {
   trackPricingViewed,
   trackStripeCheckoutStarted,
 } from "@/hooks/useAnalytics";
+import AIReceptionistLink from "@/components/AIReceptionistLink";
 const PLATFORM_URL = "/app";
 
 // ── Asset URLs ────────────────────────────────────────────────
@@ -418,6 +419,12 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
           >
             MOVE BEFORE THE QUAKE →
           </button>
+          <AIReceptionistLink
+            variant="tap-to-call"
+            location="homepage_hero"
+            label="Talk to AI Receptionist"
+            className="w-full sm:w-auto px-8 py-4 text-sm tracking-widest rounded-xl"
+          />
         </div>
 
         {/* No-login reassurance */}
@@ -1736,6 +1743,14 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         <p className="text-center text-[#64748B] text-xs font-mono mt-8 tracking-widest">
           INSTITUTIONAL-GRADE MACRO INTELLIGENCE · ALL PLANS CANCEL ANYTIME · FOUNDING PRICING LOCKS AT SIGNUP
         </p>
+
+        {/* AI Receptionist callout */}
+        <div className="mt-10 mx-auto max-w-xl rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-6 py-5 text-center">
+          <p className="text-[#A8B8CC] font-mono text-xs tracking-widest mb-1">NOT SURE WHICH PLAN FITS?</p>
+          <p className="text-white/70 text-sm mb-4">Call our AI Receptionist for help choosing the right FAULTLINE plan.</p>
+          <AIReceptionistLink variant="tap-to-call" location="pricing_section" label="Call AI Receptionist" className="max-w-xs mx-auto" />
+          <p className="mt-3 text-[10px] font-mono text-[#4B5563] tracking-wider">FAULTLINE provides market intelligence and risk analysis, not personalized financial advice.</p>
+        </div>
       </div>
     </section>
   );

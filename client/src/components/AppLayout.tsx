@@ -13,6 +13,7 @@ import {
   User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
+import AIReceptionistLink from "@/components/AIReceptionistLink";
 import CommandSearch, { useCommandSearch } from "@/components/CommandSearch";
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
@@ -280,6 +281,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 {isLoading ? 'LOADING' : isRefreshing ? 'UPDATING' : isLive ? 'LIVE' : 'SIM'}
               </span>
             </div>
+            {/* ── AI Receptionist phone ── */}
+            <AIReceptionistLink variant="button" location="header" />
+
             {/* ── Cmd+K search button ── */}
             <button
               onClick={openCmd}

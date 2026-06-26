@@ -4,6 +4,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { trackUpgradeClick, trackStripeCheckoutStarted } from "@/hooks/useAnalytics";
+import AIReceptionistLink from "@/components/AIReceptionistLink";
 import {
   tierMeetsRequirement,
   GATE_REQUIRED_TIER,
@@ -481,8 +482,14 @@ export function PremiumGateFull({
             )}
           </div>
 
+          {/* AI Receptionist nudge */}
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <p className="text-white/30 text-[10px] font-mono tracking-wider">Questions before upgrading?</p>
+            <AIReceptionistLink variant="inline" location="feature_gate" label="Call the AI Receptionist" />
+          </div>
+
           {/* Footer note */}
-          <p className="text-white/20 text-[10px] mt-8 font-mono tracking-widest">
+          <p className="text-white/20 text-[10px] mt-6 font-mono tracking-widest">
             FAULTLINE — INSTITUTIONAL MARKET INTELLIGENCE PLATFORM
           </p>
         </div>
