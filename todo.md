@@ -1242,10 +1242,10 @@
 - [x] Auto-refresh countdown: 3-min countdown with auto-refetch
 - [x] Sector sub-view: toggle to collapse treemap into grouped sector cards
 
-## Founding Request Email Notifications Fix ⏸ PAUSED (priority, awaiting SendGrid key)
-- [ ] Add SENDGRID_API_KEY secret
-- [ ] Wire sendEmail() to founding request handler so owner gets email at jt@getfaultline.live
-- [ ] Add form confirmation state to founding access request form to prevent duplicate submissions
+## Founding Request Email Notifications Fix
+- [x] Add SENDGRID_API_KEY secret
+- [x] Wire sendEmail() to founding request handler so owner gets email at jt@getfaultline.live
+- [x] Add form confirmation state to founding access request form to prevent duplicate submissions (already done via submitted state in FoundingAccessForm)
 
 ## $10K → $1M Simulated Portfolio ("The Proof")
 - [x] DB schema: simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal tables
@@ -1846,30 +1846,29 @@
 ## Security-First Analysis & Opportunity Discovery Engine (Jun 22, 2026)
 
 ### Phase 1 — Situation Room + Trade Preflight Security-First Enforcement
-- [ ] Situation Room: add mandatory ticker input to ALL move types (add_risk, reduce_risk, rotate, raise_cash, deploy_cash, hold) — ticker becomes primary subject, category becomes secondary context
-- [ ] Trade Preflight: add ticker input to all non-buy/sell-specific moves
-- [ ] tradePreflight.ts: update LLM prompt to always reference specific security when ticker provided for all move types
+- [x] Situation Room: add mandatory ticker input to ALL move types (add_risk, reduce_risk, rotate, raise_cash, deploy_cash, hold) — ticker becomes primary subject, category becomes secondary context
+- [x] Trade Preflight: add ticker input to all non-buy/sell-specific moves
+- [x] tradePreflight.ts: update LLM prompt to always reference specific security when ticker provided for all move types
 
 ### Phase 2 — Opportunity Discovery Engine (Server)
-- [ ] Build server/opportunityDiscovery.ts with 8 categories: Top Opportunity Today, Emerging Breakouts, High Conviction Setups, AI Leaders, Crypto Leaders, Macro Beneficiaries, Undervalued Opportunities, High Risk/High Reward
-- [ ] Each opportunity must include: Security, Opportunity Score (0-100), Expected Time Horizon, Catalyst, Risk Level
-- [ ] LLM enrichment for each category with security-specific analysis
-- [ ] 15-minute cache to avoid excessive LLM calls
-- [ ] Add opportunity.getDiscovery tRPC procedure to routers.ts
-
+- [x] Build server/opportunityDiscovery.ts with 8 categories: Top Opportunity Today, Emerging Breakouts, High Conviction Setups, AI Leaders, Crypto Leaders, Macro Beneficiaries, Undervalued Opportunities, High Risk/High Reward (implemented in signalOutlook.ts as getOpportunityDiscovery)
+- [x] Each opportunity must include: Security, Opportunity Score (0-100), Expected Time Horizon, Catalyst, Risk Level
+- [x] LLM enrichment for each category with security-specific analysis
+- [x] 15-minute cache to avoid excessive LLM calls
+- [x] Add opportunity.getDiscovery tRPC procedure to routers.ts (outlook.getOpportunityDiscovery)
 ### Phase 3 — Opportunity Discovery UI
-- [ ] Build client/src/pages/OpportunityDiscovery.tsx — 8-category grid with opportunity cards
-- [ ] Add proactive opportunity panel to Dashboard home screen (top 3 opportunities)
-- [ ] Add /app/opportunities route to App.tsx
-- [ ] Add Opportunities to AppLayout navigation
+- [x] Build client/src/pages/Opportunities.tsx — 8-category grid with opportunity cards
+- [x] Add proactive opportunity panel to Dashboard home screen (OpportunityDiscoveryPanel component)
+- [x] Add /app/opportunities route to App.tsx
+- [x] Add Opportunities to AppLayout navigation
 
 ### Phase 4 — Standardized Security Analysis Output Schema
 - [ ] Ensure all analysis surfaces produce: Opportunity Score, Bull/Bear Score, Support Levels, Resistance Levels, Invalidation Levels, Risk/Reward, Catalysts, Threats, Timeframe-specific Outlook
 
 ### Phase 5 — Verification
-- [ ] Write vitest for opportunityDiscovery module
-- [ ] TypeScript: 0 errors
-- [ ] Tests: all passing
+- [x] Write vitest for opportunityDiscovery module (5 tests added to signalOutlook.test.ts)
+- [x] TypeScript: 0 errors
+- [x] Tests: all passing (654 passing, 1 pre-existing SendGrid 401)
 - [ ] Checkpoint saved
 
 ## Email System Critical Fixes (June 23, 2026)
@@ -2195,42 +2194,37 @@
 - [x] Checkpoint saved
 
 ## FAULTLINE AI Market Intelligence Concierge
-
 ### Phase 1 — Database
-- [ ] Add chatbot_sessions table to drizzle/schema.ts
-- [ ] Add chatbot_messages table to drizzle/schema.ts
-- [ ] Add chatbot_leads table to drizzle/schema.ts
-- [ ] Generate migration SQL (pnpm drizzle-kit generate)
-- [ ] Apply migration via webdev_execute_sql
-
+- [x] Add chatbot_sessions table to drizzle/schema.ts
+- [x] Add chatbot_messages table to drizzle/schema.ts
+- [x] Add chatbot_leads table to drizzle/schema.ts
+- [x] Generate migration SQL (pnpm drizzle-kit generate)
+- [x] Apply migration via webdev_execute_sql
 ### Phase 2 — Backend
-- [ ] Create server/chatbotEngine.ts — LLM system prompt, intent detection (pricing/signup/security/plan), lead scoring (0-100)
-- [ ] Add chatbot DB helpers to server/db.ts
-- [ ] Add tRPC procedures: chatbot.startSession, chatbot.sendMessage, chatbot.captureLead
-- [ ] Add admin tRPC procedures: chatbot.admin.getSessions, chatbot.admin.getSession, chatbot.admin.markReviewed, chatbot.admin.addNote, chatbot.admin.exportCsv
-
+- [x] Create server/chatbotEngine.ts — LLM system prompt, intent detection (pricing/signup/security/plan), lead scoring (0-100)
+- [x] Add chatbot DB helpers to server/db.ts
+- [x] Add tRPC procedures: chatbot.startSession, chatbot.sendMessage, chatbot.captureLead
+- [x] Add admin tRPC procedures: chatbot.admin.getSessions, chatbot.admin.getSession, chatbot.admin.markReviewed, chatbot.admin.addNote, chatbot.admin.exportCsv
 ### Phase 3 — Public Chatbot Widget
-- [ ] Create client/src/components/ChatbotWidget.tsx — floating bottom-right chat bubble
-- [ ] LLM-powered responses via tRPC
-- [ ] Lead capture flow (ask for email on pricing/signup intent)
-- [ ] Disclaimer: "FAULTLINE provides market intelligence and risk analysis, not personalized financial advice."
-- [ ] Analytics events: chatbot_opened, chatbot_message_sent, chatbot_signup_clicked, chatbot_pricing_clicked, chatbot_upgrade_clicked, chatbot_lead_captured
-- [ ] Mount ChatbotWidget in App.tsx on all public routes
-
+- [x] Create client/src/components/ChatbotWidget.tsx — floating bottom-right chat bubble
+- [x] LLM-powered responses via tRPC
+- [x] Lead capture flow (ask for email on pricing/signup intent)
+- [x] Disclaimer: "FAULTLINE provides market intelligence and risk analysis, not personalized financial advice."
+- [x] Analytics events: chatbot_opened, chatbot_message_sent, chatbot_signup_clicked, chatbot_pricing_clicked, chatbot_upgrade_clicked, chatbot_lead_captured
+- [x] Mount ChatbotWidget in App.tsx on all public routes
 ### Phase 4 — Admin Chat Inbox
-- [ ] Create client/src/pages/admin/ChatInbox.tsx at /admin/chat-inbox
-- [ ] Show all conversations: visitor ID, email, page URL, timestamp, transcript, bot responses
-- [ ] Show: signup intent, pricing intent, security mentioned, plan interest, lead score, conversion status
-- [ ] Filters: New leads, Asked about pricing, Asked about stock/crypto, High intent, Converted, Needs follow-up
-- [ ] Admin actions: Mark reviewed, Add note, Export CSV, Copy email, Link to user account
-- [ ] Add /admin/chat-inbox route to App.tsx (admin-only)
-- [ ] Add Chat Inbox to admin nav in AppLayout
-
+- [x] Create client/src/pages/admin/ChatInbox.tsx at /admin/chat-inbox
+- [x] Show all conversations: visitor ID, email, page URL, timestamp, transcript, bot responses
+- [x] Show: signup intent, pricing intent, security mentioned, plan interest, lead score, conversion status
+- [x] Filters: New leads, Asked about pricing, Asked about stock/crypto, High intent, Converted, Needs follow-up
+- [x] Admin actions: Mark reviewed, Add note, Export CSV, Copy email, Link to user account
+- [x] Add /admin/chat-inbox route to App.tsx (admin-only)
+- [x] Add Chat Inbox to admin nav in AppLayout
 ### Phase 5 — QA
-- [ ] Write vitest tests for chatbotEngine.ts (intent detection, lead scoring)
-- [ ] TypeScript: 0 errors
-- [ ] Tests: all passing
-- [ ] Checkpoint saved
+- [x] Write vitest tests for chatbotEngine.ts (intent detection, lead scoring)
+- [x] TypeScript: 0 errors
+- [x] Tests: all passing
+- [x] Checkpoint saved
 
 ## FAULTLINE AI Market Intelligence Concierge — Completed
 

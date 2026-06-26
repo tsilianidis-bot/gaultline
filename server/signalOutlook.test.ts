@@ -7,6 +7,7 @@ import {
   getFullOutlook,
   getQuickOutlook,
   getTopOpportunities,
+  getOpportunityDiscovery,
   clearOutlookCaches,
 } from "./signalOutlook";
 
@@ -299,5 +300,69 @@ describe("Signal Outlook Center — scoring engine", () => {
     const result = await getFullOutlook("NVDA", "stock", "swing");
     // Mocked pressure is 45
     expect(result.environment.pressureIndex).toBe(45);
+  });
+
+  it("getOpportunityDiscovery returns 8 buckets with valid structure", async () => {
+    const result = await getOpportunityDiscovery();
+
+    expect(result).toBeDefined();
+    expect(result.buckets).toHaveLength(8);
+    expect(result.pressureIndex).toBeGreaterThanOrEqual(0);
+    expect(result.pressureIndex).toBeLessThanOrEqual(100);
+    expect(result.regime).toBeTruthy();
+    expect(result.generatedAt).toBeGreaterThan(0);
+  });
+
+  it("getOpportunityDiscovery buckets have valid items", async () => {
+    const result = await getOpportunityDiscovery();
+    const VALID_CATEGORIES = [
+      "top_opportunity_today",
+      "emerging_breakouts",
+      "high_conviction_setups",
+      "ai_leaders",
+      "crypto_leaders",
+      "macro_beneficiaries",
+      "undervalued_opportunities",
+      "high_risk_high_reward",
+    ];
+    for (const bucket of result.buckets) {
+      expect(VALID_CATEGORIES).toContain(bucket.category);
+      expect(bucket.label).toBeTruthy();
+      expect(bucket.description).toBeTruthy();
+      expect(Array.isArray(bucket.items)).toBe(true);
+      expect(bucket.items.length).toBeGreaterThan(0);
+      expect(bucket.items.length).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it("getOpportunityDiscovery items have required fields", async () => {
+    const result = await getOpportunityDiscovery();
+    for (const bucket of result.buckets) {
+      for (const item of bucket.items) {
+        expect(item.ticker).toBeTruthy();
+        expect(item.name).toBeTruthy();
+        expect(["stock", "crypto"]).toContain(item.assetType);
+        expect(item.opportunityScore).toBeGreaterThanOrEqual(0);
+        expect(item.opportunityScore).toBeLessThanOrEqual(100);
+        expect(item.expectedTimeHorizon).toBeTruthy();
+        expect(item.catalyst).toBeTruthy();
+        expect(["Low", "Medium", "High", "Extreme"]).toContain(item.riskLevel);
+        expect(["Bullish", "Bearish", "Neutral", "Avoid"]).toContain(item.direction);
+        expect(item.rationale).toBeTruthy();
+      }
+    }
+  });
+
+  it("getOpportunityDiscovery caches result on second call", async () => {
+    clearOutlookCaches();
+    const first = await getOpportunityDiscovery();
+    const second = await getOpportunityDiscovery();
+    // Same generatedAt timestamp means it came from cache
+    expect(first.generatedAt).toBe(second.generatedAt);
+  });
+
+  it("getOpportunityDiscovery top_opportunity_today bucket is first", async () => {
+    const result = await getOpportunityDiscovery();
+    expect(result.buckets[0].category).toBe("top_opportunity_today");
   });
 });

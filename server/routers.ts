@@ -51,7 +51,7 @@ import { protectedProcedure, coreProcedure } from "./_core/trpc";
 import { stripe } from './stripe/client';
 import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
-import { sendEmail, buildApprovalEmail } from './email';
+import { sendEmail, buildApprovalEmail, buildFoundingRequestNotification } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
 import { runTradePreflightSimulation, type MoveType, type SimulatorTimeframe, type ExposureCategory, type RaiseCashReason, type DeployCashTarget, type PositionSizeType, type ExitType, type HoldConcern } from './tradePreflight';
 import { getPreFlightData } from './preFlight';
@@ -1053,7 +1053,7 @@ export const appRouter = router({
           });
           // Return success silently even on duplicate — don't reveal whether the email exists
           if (result.duplicate) return { success: true, id: null };
-          // Notify the owner of the new founding access request
+          // Notify the owner of the new founding access request (in-app notification)
           await notifyOwner({
             title: "New Founding Access Request",
             content: [
@@ -1062,6 +1062,15 @@ export const appRouter = router({
               input.message ? `**Message:** ${input.message}` : null,
             ].filter(Boolean).join("\n"),
           }).catch(() => { /* non-fatal — don't block the response */ });
+          // Also send email notification to owner via SendGrid (non-blocking)
+          sendEmail(buildFoundingRequestNotification({
+            name: input.name ?? null,
+            email: input.email,
+            message: input.message ?? null,
+            requestId: result.id ?? null,
+          })).catch((err) => {
+            console.warn("[Founding Request] Email notification failed:", err);
+          });
           return { success: true, id: result.id };
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to submit request", cause: err });

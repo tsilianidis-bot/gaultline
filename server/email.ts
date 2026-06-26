@@ -321,3 +321,52 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
     html,
   };
 }
+
+// ── Founding Request Owner Notification Email Template ─────────────────────────
+export function buildFoundingRequestNotification(opts: {
+  name: string | null;
+  email: string;
+  message: string | null;
+  requestId: number | null;
+  siteUrl?: string;
+}): EmailPayload {
+  const { name, email, message, requestId, siteUrl = "https://getfaultline.live" } = opts;
+  const displayName = name?.trim() || "Anonymous";
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /><style>
+body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
+.container{max-width:560px;margin:0 auto;padding:40px 24px;}
+.logo{font-family:'Rajdhani',Arial,sans-serif;font-size:28px;font-weight:700;letter-spacing:.12em;color:#00D4FF;margin-bottom:32px;}
+.logo span{color:#E2E8F0;}
+.card{background:#0A1520;border:1px solid rgba(0,212,255,.15);border-radius:12px;padding:32px;margin-bottom:24px;}
+.badge{display:inline-block;background:rgba(255,165,0,.1);border:1px solid rgba(255,165,0,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFA500;text-transform:uppercase;margin-bottom:20px;}
+h1{font-size:22px;font-weight:700;color:#E2E8F0;margin:0 0 12px;line-height:1.3;}
+p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
+.field-row{margin-bottom:16px;}
+.field-label{font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:.2em;color:#00D4FF;text-transform:uppercase;margin-bottom:4px;}
+.field-value{font-size:14px;color:#E2E8F0;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);border-radius:6px;padding:10px 14px;font-family:'IBM Plex Mono',monospace;}
+.message-box{font-size:13px;color:#94A3B8;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:14px;line-height:1.7;white-space:pre-wrap;}
+.cta{display:inline-block;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.4);border-radius:8px;padding:12px 24px;font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;color:#00D4FF;text-decoration:none;text-transform:uppercase;font-weight:700;margin-top:8px;}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:24px 0;}
+.footer{font-size:11px;color:rgba(100,116,139,.5);font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+</style></head><body>
+<div class="container">
+<div class="logo">FAULT<span>LINE</span></div>
+<div class="card">
+<div class="badge">New Founding Request</div>
+<h1>New founding access request received.</h1>
+<div class="field-row"><div class="field-label">Name</div><div class="field-value">${displayName}</div></div>
+<div class="field-row"><div class="field-label">Email</div><div class="field-value">${email}</div></div>
+${message ? `<div class="field-row"><div class="field-label">Message</div><div class="message-box">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div></div>` : ''}
+${requestId ? `<div class="field-row"><div class="field-label">Request ID</div><div class="field-value">#${requestId}</div></div>` : ''}
+<a href="${siteUrl}/app/admin" class="cta">Review in Admin Dashboard</a>
+</div>
+<hr class="divider"/>
+<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a></div>
+</div></body></html>`;
+  return {
+    to: "jt@getfaultline.live",
+    subject: `[FAULTLINE] New Founding Access Request — ${displayName} (${email})`,
+    html,
+  };
+}
