@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
+import NarrativeLoader from "@/components/NarrativeLoader";
 import {
   TrendingUp, TrendingDown, Minus, Zap, Star, Target, Cpu,
   Bitcoin, Globe, BarChart2, Flame, ChevronRight, RefreshCw,
@@ -199,12 +200,7 @@ export default function Opportunities() {
 
       {/* Content */}
       <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-        {isLoading && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "60px 0", color: "rgba(255,255,255,0.3)" }}>
-            <RefreshCw size={24} style={{ animation: "spin 1s linear infinite" }} />
-            <span style={{ fontSize: "13px", letterSpacing: "0.1em" }}>SCANNING MARKET OPPORTUNITIES…</span>
-          </div>
-        )}
+        {isLoading && <NarrativeLoader variant="opportunity-discovery" />}
 
         {error && (
           <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "24px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "8px", color: "#F87171" }}>

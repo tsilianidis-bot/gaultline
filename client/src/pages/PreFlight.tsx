@@ -28,6 +28,7 @@ import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { Link } from "wouter";
+import NarrativeLoader from "@/components/NarrativeLoader";
 import {
   AlertTriangle, CheckCircle, XCircle, ChevronRight,
   Activity, Shield, TrendingDown, TrendingUp, Zap,
@@ -514,17 +515,7 @@ export default function PreFlight() {
         )}
 
         {/* ── Loading state ── */}
-        {isLoading && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} style={{ padding: "20px", background: "rgba(8,10,14,0.95)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px" }}>
-                <Skeleton h="12px" w="60%" mb="16px" />
-                <Skeleton h="60px" mb="12px" />
-                <Skeleton h="10px" w="80%" />
-              </div>
-            ))}
-          </div>
-        )}
+        {isLoading && <NarrativeLoader variant="preflight" />}
 
         {/* ── Main content ── */}
         {data && !isLoading && (

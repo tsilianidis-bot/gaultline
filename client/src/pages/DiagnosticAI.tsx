@@ -12,6 +12,7 @@ import { ShareReportButton } from "@/components/ShareReportButton";
 import { PremiumBlurOverlay } from "@/components/PremiumGate";
 import { useLocation } from "wouter";
 import { Brain, Rss } from "lucide-react";
+import NarrativeLoader from "@/components/NarrativeLoader";
 import FaultlineTerm from "@/components/FaultlineTerm";
 
 // ── AI Intelligence sub-nav ──────────────────────────────────────────────
@@ -185,19 +186,7 @@ function ActionBiasBadge({ bias }: { bias: ActionBias }) {
 }
 
 function DiagnosticSkeleton() {
-  return (
-    <div style={{ animation: "ambient-float 3s ease-in-out infinite" }}>
-      {[...Array(6)].map((_, i) => (
-        <div key={i} style={{
-          height: 60,
-          background: "rgba(255,255,255,0.04)",
-          borderRadius: 8,
-          marginBottom: 8,
-          animation: `pulse-gold 1.5s ease-in-out ${i * 0.1}s infinite`,
-        }} />
-      ))}
-    </div>
-  );
+  return <NarrativeLoader variant="diagnostic" />;
 }
 
 // ── Main DiagnosticAI Page ────────────────────────────────────

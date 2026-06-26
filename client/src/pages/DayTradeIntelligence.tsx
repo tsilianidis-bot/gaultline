@@ -8,6 +8,7 @@ import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import NarrativeLoader from "@/components/NarrativeLoader";
 import {
   Target, RefreshCw, Search, Plus, Trash2, AlertTriangle,
   TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
@@ -1272,15 +1273,8 @@ function FilterSelect({ label, value, options, onChange }: {
   );
 }
 
-function LoadingState({ label }: { label: string }) {
-  return (
-    <div style={{ textAlign: "center", padding: "48px 24px" }}>
-      <div style={{ display: "inline-flex", alignItems: "center", gap: "10px" }}>
-        <RefreshCw size={16} style={{ color: "#00D4FF", animation: "spin 1s linear infinite" }} />
-        <span style={{ ...MONO_SM, color: "#6B7280" }}>{label}</span>
-      </div>
-    </div>
-  );
+function LoadingState({ label: _label }: { label: string }) {
+  return <NarrativeLoader variant="day-trade" />;
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {

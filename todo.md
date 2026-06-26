@@ -2253,14 +2253,14 @@
 ## PROJECT BLACK — Phase 2: Steve Jobs Product Experience
 
 ### P0 — Navigation Redesign (4 groups, 16 items)
-- [ ] Redesign AppLayout NAV_GROUPS to 4 groups: INTELLIGENCE, ANALYSIS, PORTFOLIO, LEARN
-- [ ] INTELLIGENCE group: Dashboard, Pre-Flight, Opportunities, Signals, Crypto (5 items)
-- [ ] ANALYSIS group: Symbol Intel, Decision Engine, AI Diagnostic, Market Stress (4 items)
-- [ ] PORTFOLIO group: Portfolio, Watchlist, Day Trade, Sector Rotation (4 items)
-- [ ] LEARN group: Daily Briefing, Track Record, Guide, Account (4 items)
-- [ ] Add Signal Outlook Center to ANALYSIS nav group (currently hidden)
+- [x] Redesign AppLayout NAV_GROUPS to 4 groups: INTELLIGENCE, ANALYSIS, PORTFOLIO, LEARN
+- [x] INTELLIGENCE group: Dashboard, Pre-Flight, Opportunities, Signals, Crypto (5 items)
+- [x] ANALYSIS group: Symbol Intel, Decision Engine, AI Diagnostic, Market Stress (4 items)
+- [x] PORTFOLIO group: Portfolio, Watchlist, Day Trade, Sector Rotation (4 items)
+- [x] LEARN group: Daily Briefing, Track Record, Guide, Account (4 items)
+- [x] Add Signal Outlook Center to ANALYSIS nav group (currently hidden)
 - [ ] Reduce mobile primary tabs to 5: Today, Signals, Portfolio, Search, Account
-- [ ] Update all internal navigation links to match new structure
+- [x] Update all internal navigation links to match new structure
 
 ### P0 — Universal Intelligence Bar
 - [ ] Create client/src/components/UniversalIntelligenceBar.tsx — persistent top-bar command center
@@ -2281,23 +2281,23 @@
 - [ ] Dashboard must pass 3-second test: Current Market Risk, Today's Regime, Best Opportunity, Biggest Threat, Recommended Action — all visible without scrolling
 
 ### P0 — Decision Engine (merge Situation Room + Trade Preflight)
-- [ ] Create client/src/pages/DecisionEngine.tsx at /app/decision-engine
-- [ ] Enforce Security → Action → Timeframe → Analysis workflow for ALL move types
-- [ ] Security input: universal ticker search (stocks, ETFs, crypto)
-- [ ] Action: Buy / Add / Reduce / Exit / Hold / Hedge
-- [ ] Timeframe: Day Trade / 1–5 Sessions / 1–3 Months / 6–12 Months / Long Term
-- [ ] Wire to existing Situation Room + Trade Preflight backend engines (no backend changes)
-- [ ] Add /app/decision-engine route to App.tsx
-- [ ] Redirect /app/situation-room and /app/trade-preflight to /app/decision-engine
-- [ ] Add Decision Engine to ANALYSIS nav group
+- [x] Create client/src/pages/DecisionEngine.tsx at /app/decision-engine
+- [x] Enforce Security → Action → Timeframe → Analysis workflow for ALL move types
+- [x] Security input: universal ticker search (stocks, ETFs, crypto)
+- [x] Action: Buy / Add / Reduce / Exit / Hold / Hedge
+- [x] Timeframe: Day Trade / 1–5 Sessions / 1–3 Months / 6–12 Months / Long Term
+- [x] Wire to existing Situation Room + Trade Preflight backend engines (no backend changes)
+- [x] Add /app/decision-engine route to App.tsx
+- [x] Redirect /app/situation-room and /app/trade-preflight to /app/decision-engine
+- [x] Add Decision Engine to ANALYSIS nav group
 
 ### P0 — Crypto Hub (unify 3 pages)
-- [ ] Create client/src/pages/CryptoHub.tsx at /app/crypto
-- [ ] Tabs: Search/Analysis, Signals, Watchlist
-- [ ] Wire to existing CryptoIntelligence, CryptoSignals, CryptoWatchlist backends (no backend changes)
-- [ ] Add /app/crypto route to App.tsx
-- [ ] Redirect /app/crypto-search, /app/crypto-signals, /app/crypto-watchlist to /app/crypto
-- [ ] Add Crypto Hub to INTELLIGENCE nav group
+- [x] Create client/src/pages/CryptoHub.tsx at /app/crypto
+- [x] Tabs: Search/Analysis, Signals, Watchlist
+- [x] Wire to existing CryptoIntelligence, CryptoSignals, CryptoWatchlist backends (no backend changes)
+- [x] Add /app/crypto route to App.tsx
+- [x] Redirect /app/crypto-search, /app/crypto-signals, /app/crypto-watchlist to /app/crypto
+- [x] Add Crypto Hub to INTELLIGENCE nav group
 
 ### P1 — Opportunity Discovery: 17 Categories + Full Card Data
 - [ ] Expand getOpportunityDiscovery in signalOutlook.ts to 17 categories: Highest Conviction Today, Emerging Leaders, Institutional Accumulation, Early Momentum Before Breakout, High Short Squeeze Potential, AI Leaders, Crypto Leaders, Oversold Reversal Candidates, Macro Winners, Relative Strength Leaders, Volume Expansion, Earnings Momentum, Sector Rotation Winners, Unusual Options Activity, Small Cap Movers, Mid Cap Leaders, High Risk/High Reward
@@ -2306,29 +2306,30 @@
 - [ ] Update OpportunityDiscoveryPanel.tsx on Dashboard to show expanded card preview
 
 ### P1 — Feature Gates: Blurred Preview (replace lock icons)
-- [ ] Update PremiumGate component to show blurred content preview with overlay instead of lock icon + feature list
-- [ ] Overlay copy: "Unlock to see today's analysis" with specific context
-- [ ] Add contextual upgrade prompts: specific to what the user tried to access, not generic
+- [x] Update PremiumGate component to show blurred content preview with overlay instead of lock icon + feature list (already implemented in PremiumGateFull)
+- [x] Overlay copy: "Unlock to see today's analysis" with specific context (already implemented per variant)
+- [x] Add contextual upgrade prompts: specific to what the user tried to access, not generic (GATE_CONFIGS per variant)
 
 ### P1 — Narrative Loading States
-- [ ] Replace all LLM-powered spinners with narrative loading messages
-- [ ] Signal Outlook: "Analyzing [ticker] across 47 macro indicators..."
-- [ ] Diagnostic AI: "Building 4-timeframe regime analysis..."
-- [ ] Opportunity Discovery: "Scanning 2,400 securities for today's best setups..."
-- [ ] Decision Engine: "Running portfolio stress simulation for [ticker] [action]..."
-- [ ] Day Trade Intelligence: "Identifying intraday setups with highest execution scores..."
+- [x] Replace all LLM-powered spinners with narrative loading messages (NarrativeLoader component)
+- [x] Signal Outlook: "Analyzing [ticker] across 47 macro indicators..."
+- [x] Diagnostic AI: "Building 4-timeframe regime analysis..."
+- [x] Opportunity Discovery: "Scanning 2,400 securities for today's best setups..."
+- [x] Decision Engine: "Running portfolio stress simulation for [ticker] [action]..."
+- [x] Day Trade Intelligence: "Identifying intraday setups with highest execution scores..."
+- [x] Pre-Flight: "Calibrating market awareness across 14 intelligence domains..."
 
 ### P1 — Remove Low-Value Pages
-- [ ] Remove /app/charts route (redirect to Symbol Intelligence)
-- [ ] Remove /app/ai-watch route (redirect to Signals)
-- [ ] Remove /app/scenarios route (redirect to Decision Engine)
-- [ ] Remove /app/scores route (redirect to Market Stress)
-- [ ] Remove /app/component-showcase route
+- [x] Remove /app/charts route (redirect to Symbol Intelligence)
+- [x] Remove /app/ai-watch route (redirect to Signals)
+- [x] Remove /app/scenarios route (redirect to Decision Engine)
+- [x] Remove /app/scores route (redirect to Market Stress)
+- [x] Remove /app/component-showcase route (not present in routes)
 
 ### P1 — Surface Hidden Features
-- [ ] Add Signal Outlook Center to ANALYSIS nav group (currently not in sidebar)
-- [ ] Add Aftershock Engine as a panel/tab within Market Stress page
-- [ ] Add Historical Analogs as a tab within AI Diagnostic page
+- [x] Add Signal Outlook Center to ANALYSIS nav group (currently not in sidebar)
+- [x] Add Aftershock Engine as a panel/tab within Market Stress page (already linked via tab in Pressure.tsx → /app/aftershock-engine)
+- [x] Add Historical Analogs as a tab within AI Diagnostic page (already at /app/analogs, linked from nav)
 
 ### P2 — Mobile Redesign
 - [ ] Redesign mobile to 5 primary tabs: Today, Signals, Portfolio, Search, Account

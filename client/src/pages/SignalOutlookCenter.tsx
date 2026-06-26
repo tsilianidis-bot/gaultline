@@ -18,6 +18,7 @@ import {
   Activity, Zap, BarChart2, Brain, CheckCircle, XCircle,
   ArrowRight, Bitcoin, DollarSign, Eye, Layers, Clock,
 } from "lucide-react";
+import NarrativeLoader from "@/components/NarrativeLoader";
 
 // ── Types (mirrored from server) ─────────────────────────────
 type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | "Avoid";
@@ -383,15 +384,7 @@ function FullOutlookView({
   );
 
   if (isLoading) {
-    return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "300px", gap: "12px" }}>
-        <RefreshCw size={24} color="#00D4FF" style={{ animation: "spin 1s linear infinite" }} />
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#4B5563" }}>
-          Computing outlook for {symbol}...
-        </span>
-        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
+    return <NarrativeLoader variant="signal-outlook" symbol={symbol} />;
   }
 
   if (error || !data) {

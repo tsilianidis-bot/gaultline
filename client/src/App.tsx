@@ -5,7 +5,7 @@
 import { useState, useCallback, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { EngineProvider } from "./contexts/EngineContext";
@@ -371,10 +371,11 @@ function Router() {
             <Switch>
               <Route path="/app/pressure" component={Pressure} />
               <Route path="/app" component={Dashboard} />
-              <Route path="/app/scores" component={Scores} />
-              <Route path="/app/charts" component={Charts} />
-              <Route path="/app/ai-watch" component={AIWatch} />
-              <Route path="/app/scenarios" component={Scenarios} />
+              {/* P1 — Deprecated routes redirect to new destinations */}
+              <Route path="/app/scores"><Redirect to="/app/pressure" /></Route>
+              <Route path="/app/charts"><Redirect to="/app/symbol-intelligence" /></Route>
+              <Route path="/app/ai-watch"><Redirect to="/app/signals" /></Route>
+              <Route path="/app/scenarios"><Redirect to="/app/decision-engine" /></Route>
               <Route path="/app/alerts" component={Alerts} />
               <Route path="/app/analogs" component={HistoricalAnalogs} />
               <Route path="/app/simulate" component={SimulatePressure} />
@@ -382,13 +383,13 @@ function Router() {
               <Route path="/app/watchlist" component={Watchlist} />
               <Route path="/app/signals" component={Signals} />
               <Route path="/app/crypto" component={CryptoHub} />
-              <Route path="/app/crypto-search" component={CryptoSearch} />
-              <Route path="/app/crypto-watchlist" component={CryptoWatchlist} />
+              <Route path="/app/crypto-search"><Redirect to="/app/crypto" /></Route>
+              <Route path="/app/crypto-watchlist"><Redirect to="/app/crypto" /></Route>
               <Route path="/app/guide" component={Guide} />
               <Route path="/app/diagnostic" component={DiagnosticAI} />
               <Route path="/app/portfolio" component={Portfolio} />
               <Route path="/app/aftershock" component={AftershockEngine} />
-              <Route path="/app/crypto-signals" component={CryptoSignals} />
+              <Route path="/app/crypto-signals"><Redirect to="/app/crypto" /></Route>
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
               <Route path="/app/admin/blog" component={AdminBlog} />
@@ -399,8 +400,8 @@ function Router() {
               <Route path="/app/x-post-queue" component={XPostQueue} />
               <Route path="/app/alt-rotation" component={AltRotation} />
               <Route path="/app/decision-engine" component={DecisionEngine} />
-              <Route path="/app/trade-preflight" component={TradePreflight} />
-              <Route path="/app/situation-room" component={SituationRoom} />
+              <Route path="/app/trade-preflight"><Redirect to="/app/decision-engine" /></Route>
+              <Route path="/app/situation-room"><Redirect to="/app/decision-engine" /></Route>
               <Route path="/app/opportunities" component={Opportunities} />
               <Route path="/app/signal-outlook" component={SignalOutlookCenter} />
               <Route path="/app/social-intelligence" component={SocialIntelligence} />
