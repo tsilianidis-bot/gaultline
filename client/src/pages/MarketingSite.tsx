@@ -2104,9 +2104,13 @@ function FoundingAccessForm
               {mutation.isPending ? "SUBMITTING..." : "REQUEST FOUNDING ACCESS"}
             </button>
             <p className="text-center text-[#4B5563] text-[10px] font-mono">
-              Or email us directly at{" "}
+              Or reach us at{" "}
               <a href="mailto:tsilianidis@gmail.com" className="text-[#00D4FF]/60 hover:text-[#00D4FF]">
                 tsilianidis@gmail.com
+              </a>
+              {" "}or{" "}
+              <a href="tel:+14407457384" className="text-[#00D4FF]/60 hover:text-[#00D4FF]">
+                +1 (440) 745-7384
               </a>
             </p>
           </form>
@@ -2188,6 +2192,7 @@ function Footer() {
               <li><a href="/methodology" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Methodology</a></li>
               <li><a href="/contact" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Contact Us</a></li>
               <li><a href="mailto:tsilianidis@gmail.com" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">tsilianidis@gmail.com</a></li>
+              <li><a href="tel:+14407457384" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">+1 (440) 745-7384</a></li>
             </ul>
           </div>
         </div>
@@ -2210,6 +2215,8 @@ function Footer() {
               <a href="/contact" className="hover:text-[#00D4FF] transition-colors">Contact Us</a>
               <span className="opacity-30">·</span>
               <a href="mailto:tsilianidis@gmail.com" className="hover:text-[#00D4FF] transition-colors">tsilianidis@gmail.com</a>
+              <span className="opacity-30">·</span>
+              <a href="tel:+14407457384" className="hover:text-[#00D4FF] transition-colors">+1 (440) 745-7384</a>
             </span>
           </div>
         </div>

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, MessageSquare, Send, CheckCircle2, ArrowLeft, MapPin } from "lucide-react";
+import { Mail, MessageSquare, Send, CheckCircle2, ArrowLeft, MapPin, Phone } from "lucide-react";
 import { Link } from "wouter";
 
 const CATEGORIES = [
@@ -104,6 +104,17 @@ export default function ContactUs() {
               <p className="text-xs text-slate-500 mb-2">Direct line to the team</p>
               <a href="mailto:tsilianidis@gmail.com" className="text-cyan-400 text-sm font-mono hover:underline">
                 tsilianidis@gmail.com
+              </a>
+            </div>
+
+            <div className="bg-[#0A1520] border border-white/5 rounded-xl p-6">
+              <div className="w-10 h-10 rounded-lg bg-violet-400/10 border border-violet-400/20 flex items-center justify-center mb-4">
+                <Phone className="w-5 h-5 text-violet-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-slate-200 mb-1">Phone</h3>
+              <p className="text-xs text-slate-500 mb-2">Direct line</p>
+              <a href="tel:+14407457384" className="text-violet-400 text-sm font-mono hover:underline">
+                +1 (440) 745-7384
               </a>
             </div>
 
