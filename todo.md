@@ -2299,11 +2299,11 @@
 - [x] Redirect /app/crypto-search, /app/crypto-signals, /app/crypto-watchlist to /app/crypto
 - [x] Add Crypto Hub to INTELLIGENCE nav group
 
-### P1 — Opportunity Discovery: 17 Categories + Full Card Data
-- [ ] Expand getOpportunityDiscovery in signalOutlook.ts to 17 categories: Highest Conviction Today, Emerging Leaders, Institutional Accumulation, Early Momentum Before Breakout, High Short Squeeze Potential, AI Leaders, Crypto Leaders, Oversold Reversal Candidates, Macro Winners, Relative Strength Leaders, Volume Expansion, Earnings Momentum, Sector Rotation Winners, Unusual Options Activity, Small Cap Movers, Mid Cap Leaders, High Risk/High Reward
-- [ ] Expand each opportunity card to include: Opportunity Score, Confidence, Catalysts, Risk Level, Suggested Timeframe, Why FAULTLINE likes it, What invalidates it, Entry zone, Support, Resistance, Profit targets
+### P1 — Opportunity Discovery: 26 Categories + Full Card Data
+- [x] Expand getOpportunityDiscovery in signalOutlook.ts to 26 categories (top_opportunity_today, emerging_breakouts, high_conviction_setups, ai_leaders, crypto_leaders, macro_beneficiaries, undervalued_opportunities, high_risk_high_reward, defense_geopolitical, energy_transition, biotech_healthcare, fintech_payments, infrastructure_industrials, consumer_discretionary, dividend_income, small_cap_growth, defi_web3, commodities_real_assets, volatility_plays, short_squeeze_candidates, earnings_momentum, technical_reversals, institutional_accumulation, etf_flows, global_macro, space_deep_tech)
+- [x] Update OpportunityDiscoveryPanel.tsx on Dashboard to handle all 26 categories dynamically with icons and accents
+- [ ] Expand each opportunity card to include: full Bull/Bear/Invalidation/Why FAULTLINE likes it sections
 - [ ] Update Opportunities.tsx to render full card data
-- [ ] Update OpportunityDiscoveryPanel.tsx on Dashboard to show expanded card preview
 
 ### P1 — Feature Gates: Blurred Preview (replace lock icons)
 - [x] Update PremiumGate component to show blurred content preview with overlay instead of lock icon + feature list (already implemented in PremiumGateFull)
@@ -2351,8 +2351,23 @@
 - [ ] Add regime context to chatbot: always knows current market regime
 - [ ] Chatbot enforces Security → Action → Timeframe workflow for any analysis request
 
+### P0 — Dashboard: Today's Answer Verdict Banner
+- [x] Add 'Today's Answer' verdict banner between stat grid and main content (TAKE RISK / STAY SELECTIVE / REDUCE EXPOSURE / STEP ASIDE based on live score + regime)
+
+### P1 — Signal Cards: Institutional Analysis Sections
+- [x] Add Bull Case / Bear Case / Invalidation Level / Why FAULTLINE Likes It 2×2 grid to StockCard expanded view
+- [x] Bull case: regime alignment + SMA signal + volume confirmation narrative
+- [x] Bear case: stop-loss failure + macro sensitivity narrative
+- [x] Invalidation: ATR×1.5 stop-loss price with volume confirmation
+- [x] Why FAULTLINE Likes It: regime score + R:R ratio + conviction strength
+
+### P1 — TickerContext Component
+- [x] Create client/src/components/TickerContext.tsx — live price bar for any ticker
+- [x] Wire TickerContext to UniversalSymbolIntelligence (after search card)
+- [x] Wire TickerContext to CryptoSignals (after quick chips)
+
 ### QA
-- [ ] TypeScript: 0 errors
-- [ ] Tests: all passing
+- [x] TypeScript: 0 errors
+- [x] Tests: 654/655 passing (1 pre-existing SendGrid API key failure unrelated to Phase 3)
 - [ ] Final audit: every page passes 3-second test, every workflow follows Observe→Analyze→Decide→Monitor
 - [ ] Checkpoint saved

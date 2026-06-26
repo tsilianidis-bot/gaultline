@@ -7,6 +7,7 @@ import React, { useState, useCallback, useRef } from "react";
 import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { TickerContext } from "@/components/TickerContext";
 import {
   Telescope, Search, TrendingUp, TrendingDown, Activity,
   Shield, Radio, Target, Brain, RefreshCw, AlertTriangle,
@@ -666,6 +667,13 @@ export default function UniversalSymbolIntelligence() {
             ))}
           </div>
         </div>
+
+        {/* TickerContext — live price, change, volume, sector, regime */}
+        {submitted && (
+          <div style={{ marginBottom: "16px" }}>
+            <TickerContext ticker={submitted.symbol} />
+          </div>
+        )}
 
         {/* Results area */}
         {!submitted ? (

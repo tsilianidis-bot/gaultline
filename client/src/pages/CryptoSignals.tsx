@@ -17,6 +17,7 @@ import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackCryptoSignalViewed } from "@/hooks/useAnalytics";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { TickerContext } from "@/components/TickerContext";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -744,6 +745,13 @@ function CryptoQuickSearch() {
           >{sym}</button>
         ))}
       </div>
+
+      {/* TickerContext — live price bar when a symbol is submitted */}
+      {submitted && (
+        <div style={{ marginTop: "10px" }}>
+          <TickerContext ticker={submitted} compact />
+        </div>
+      )}
 
       {/* Result */}
       {error && (

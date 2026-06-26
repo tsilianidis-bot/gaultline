@@ -306,7 +306,7 @@ describe("Signal Outlook Center — scoring engine", () => {
     const result = await getOpportunityDiscovery();
 
     expect(result).toBeDefined();
-    expect(result.buckets).toHaveLength(8);
+    expect(result.buckets).toHaveLength(26);
     expect(result.pressureIndex).toBeGreaterThanOrEqual(0);
     expect(result.pressureIndex).toBeLessThanOrEqual(100);
     expect(result.regime).toBeTruthy();
@@ -324,6 +324,24 @@ describe("Signal Outlook Center — scoring engine", () => {
       "macro_beneficiaries",
       "undervalued_opportunities",
       "high_risk_high_reward",
+      "defense_geopolitical",
+      "energy_transition",
+      "biotech_healthcare",
+      "fintech_payments",
+      "infrastructure_industrials",
+      "consumer_discretionary",
+      "dividend_income",
+      "small_cap_growth",
+      "defi_web3",
+      "commodities_real_assets",
+      "volatility_plays",
+      "short_squeeze_candidates",
+      "earnings_momentum",
+      "technical_reversals",
+      "institutional_accumulation",
+      "etf_flows",
+      "global_macro",
+      "space_deep_tech",
     ];
     for (const bucket of result.buckets) {
       expect(VALID_CATEGORIES).toContain(bucket.category);

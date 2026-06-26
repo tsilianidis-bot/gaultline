@@ -1647,7 +1647,25 @@ export type DiscoveryCategory =
   | "crypto_leaders"
   | "macro_beneficiaries"
   | "undervalued_opportunities"
-  | "high_risk_high_reward";
+  | "high_risk_high_reward"
+  | "defense_geopolitical"
+  | "energy_transition"
+  | "biotech_healthcare"
+  | "fintech_payments"
+  | "infrastructure_industrials"
+  | "consumer_discretionary"
+  | "dividend_income"
+  | "small_cap_growth"
+  | "defi_web3"
+  | "commodities_real_assets"
+  | "volatility_plays"
+  | "short_squeeze_candidates"
+  | "earnings_momentum"
+  | "technical_reversals"
+  | "institutional_accumulation"
+  | "etf_flows"
+  | "global_macro"
+  | "space_deep_tech";
 
 export interface DiscoveryItem {
   ticker: string;
@@ -1677,14 +1695,32 @@ export interface OpportunityDiscoveryResult {
 }
 
 const DISCOVERY_CATEGORY_META: Record<DiscoveryCategory, { label: string; description: string }> = {
-  top_opportunity_today:    { label: "Top Opportunity Today",      description: "Highest-conviction setup across all assets right now" },
-  emerging_breakouts:       { label: "Emerging Breakouts",         description: "Securities approaching key technical breakout levels" },
-  high_conviction_setups:   { label: "High Conviction Setups",     description: "Strong regime alignment with clear risk/reward" },
-  ai_leaders:               { label: "AI Leaders",                 description: "AI infrastructure and semiconductor plays" },
-  crypto_leaders:           { label: "Crypto Leaders",             description: "Top digital assets by momentum and regime fit" },
-  macro_beneficiaries:      { label: "Macro Beneficiaries",        description: "Assets positioned to benefit from current macro regime" },
-  undervalued_opportunities:{ label: "Undervalued Opportunities",  description: "Setups where price may not reflect fundamental strength" },
-  high_risk_high_reward:    { label: "High Risk / High Reward",    description: "Asymmetric setups with elevated volatility and outsized potential" },
+  top_opportunity_today:      { label: "Top Opportunity Today",       description: "Highest-conviction setup across all assets right now" },
+  emerging_breakouts:         { label: "Emerging Breakouts",          description: "Securities approaching key technical breakout levels" },
+  high_conviction_setups:     { label: "High Conviction Setups",      description: "Strong regime alignment with clear risk/reward" },
+  ai_leaders:                 { label: "AI Leaders",                  description: "AI infrastructure and semiconductor plays" },
+  crypto_leaders:             { label: "Crypto Leaders",              description: "Top digital assets by momentum and regime fit" },
+  macro_beneficiaries:        { label: "Macro Beneficiaries",         description: "Assets positioned to benefit from current macro regime" },
+  undervalued_opportunities:  { label: "Undervalued Opportunities",   description: "Setups where price may not reflect fundamental strength" },
+  high_risk_high_reward:      { label: "High Risk / High Reward",     description: "Asymmetric setups with elevated volatility and outsized potential" },
+  defense_geopolitical:       { label: "Defense & Geopolitical",      description: "Defense contractors and geopolitical risk beneficiaries" },
+  energy_transition:          { label: "Energy Transition",           description: "Clean energy, nuclear, and fossil fuel transition plays" },
+  biotech_healthcare:         { label: "Biotech & Healthcare",        description: "Biotech catalysts, FDA events, and healthcare sector plays" },
+  fintech_payments:           { label: "Fintech & Payments",          description: "Digital payments, banking disruption, and financial technology" },
+  infrastructure_industrials: { label: "Infrastructure & Industrials",description: "Government spending beneficiaries and industrial cycle plays" },
+  consumer_discretionary:     { label: "Consumer Discretionary",     description: "Consumer spending trends and retail/leisure sector plays" },
+  dividend_income:            { label: "Dividend & Income",           description: "High-yield dividend payers with stable cash flows" },
+  small_cap_growth:           { label: "Small Cap Growth",            description: "High-growth small caps with outsized return potential" },
+  defi_web3:                  { label: "DeFi & Web3",                 description: "Decentralized finance protocols and Web3 infrastructure" },
+  commodities_real_assets:    { label: "Commodities & Real Assets",   description: "Gold, silver, oil, and hard asset inflation hedges" },
+  volatility_plays:           { label: "Volatility Plays",            description: "VIX-related instruments and volatility regime trades" },
+  short_squeeze_candidates:   { label: "Short Squeeze Candidates",    description: "High short interest with potential for rapid short covering" },
+  earnings_momentum:          { label: "Earnings Momentum",           description: "Companies with strong earnings beats and upward revisions" },
+  technical_reversals:        { label: "Technical Reversals",         description: "Oversold setups approaching key support with reversal signals" },
+  institutional_accumulation: { label: "Institutional Accumulation",  description: "Unusual volume and dark pool activity suggesting institutional buying" },
+  etf_flows:                  { label: "ETF Flow Leaders",            description: "ETFs with strongest inflows and sector rotation momentum" },
+  global_macro:               { label: "Global Macro",                description: "International markets and cross-asset macro regime plays" },
+  space_deep_tech:            { label: "Space & Deep Tech",           description: "Space exploration, quantum computing, and frontier technology" },
 };
 
 const DISCOVERY_POOLS: Record<DiscoveryCategory, Array<{ symbol: string; name: string; assetType: "stock" | "crypto" }>> = {
@@ -1754,6 +1790,131 @@ const DISCOVERY_POOLS: Record<DiscoveryCategory, Array<{ symbol: string; name: s
     { symbol: "ARB",  name: "Arbitrum",                 assetType: "crypto" },
     { symbol: "RKLB", name: "Rocket Lab USA",           assetType: "stock" },
   ],
+  defense_geopolitical: [
+    { symbol: "LMT",  name: "Lockheed Martin",          assetType: "stock" },
+    { symbol: "RTX",  name: "RTX Corporation",          assetType: "stock" },
+    { symbol: "NOC",  name: "Northrop Grumman",         assetType: "stock" },
+    { symbol: "PLTR", name: "Palantir Technologies",    assetType: "stock" },
+    { symbol: "GD",   name: "General Dynamics",         assetType: "stock" },
+  ],
+  energy_transition: [
+    { symbol: "ENPH", name: "Enphase Energy",           assetType: "stock" },
+    { symbol: "FSLR", name: "First Solar Inc.",         assetType: "stock" },
+    { symbol: "CEG",  name: "Constellation Energy",     assetType: "stock" },
+    { symbol: "NEE",  name: "NextEra Energy",           assetType: "stock" },
+    { symbol: "XOM",  name: "ExxonMobil Corp.",         assetType: "stock" },
+  ],
+  biotech_healthcare: [
+    { symbol: "MRNA", name: "Moderna Inc.",             assetType: "stock" },
+    { symbol: "NVAX", name: "Novavax Inc.",             assetType: "stock" },
+    { symbol: "BIIB", name: "Biogen Inc.",              assetType: "stock" },
+    { symbol: "GILD", name: "Gilead Sciences",          assetType: "stock" },
+    { symbol: "REGN", name: "Regeneron Pharmaceuticals",assetType: "stock" },
+  ],
+  fintech_payments: [
+    { symbol: "SQ",   name: "Block Inc.",               assetType: "stock" },
+    { symbol: "PYPL", name: "PayPal Holdings",          assetType: "stock" },
+    { symbol: "COIN", name: "Coinbase Global",          assetType: "stock" },
+    { symbol: "V",    name: "Visa Inc.",                assetType: "stock" },
+    { symbol: "SOFI", name: "SoFi Technologies",        assetType: "stock" },
+  ],
+  infrastructure_industrials: [
+    { symbol: "CAT",  name: "Caterpillar Inc.",         assetType: "stock" },
+    { symbol: "DE",   name: "Deere & Company",          assetType: "stock" },
+    { symbol: "URI",  name: "United Rentals",           assetType: "stock" },
+    { symbol: "PWR",  name: "Quanta Services",          assetType: "stock" },
+    { symbol: "VMC",  name: "Vulcan Materials",         assetType: "stock" },
+  ],
+  consumer_discretionary: [
+    { symbol: "AMZN", name: "Amazon.com Inc.",          assetType: "stock" },
+    { symbol: "TSLA", name: "Tesla Inc.",               assetType: "stock" },
+    { symbol: "NKE",  name: "Nike Inc.",                assetType: "stock" },
+    { symbol: "SBUX", name: "Starbucks Corp.",          assetType: "stock" },
+    { symbol: "MCD",  name: "McDonald's Corp.",         assetType: "stock" },
+  ],
+  dividend_income: [
+    { symbol: "JNJ",  name: "Johnson & Johnson",        assetType: "stock" },
+    { symbol: "KO",   name: "Coca-Cola Co.",            assetType: "stock" },
+    { symbol: "PG",   name: "Procter & Gamble",         assetType: "stock" },
+    { symbol: "VZ",   name: "Verizon Communications",   assetType: "stock" },
+    { symbol: "T",    name: "AT&T Inc.",                assetType: "stock" },
+  ],
+  small_cap_growth: [
+    { symbol: "RKLB", name: "Rocket Lab USA",           assetType: "stock" },
+    { symbol: "IONQ", name: "IonQ Inc.",                assetType: "stock" },
+    { symbol: "LUNR", name: "Intuitive Machines",       assetType: "stock" },
+    { symbol: "ACHR", name: "Archer Aviation",          assetType: "stock" },
+    { symbol: "JOBY", name: "Joby Aviation",            assetType: "stock" },
+  ],
+  defi_web3: [
+    { symbol: "ETH",  name: "Ethereum",                 assetType: "crypto" },
+    { symbol: "SOL",  name: "Solana",                   assetType: "crypto" },
+    { symbol: "LINK", name: "Chainlink",                assetType: "crypto" },
+    { symbol: "UNI",  name: "Uniswap",                  assetType: "crypto" },
+    { symbol: "AAVE", name: "Aave",                     assetType: "crypto" },
+  ],
+  commodities_real_assets: [
+    { symbol: "GLD",  name: "SPDR Gold Shares",         assetType: "stock" },
+    { symbol: "SLV",  name: "iShares Silver Trust",     assetType: "stock" },
+    { symbol: "USO",  name: "United States Oil Fund",   assetType: "stock" },
+    { symbol: "WEAT", name: "Teucrium Wheat Fund",      assetType: "stock" },
+    { symbol: "PDBC", name: "Invesco Commodity ETF",    assetType: "stock" },
+  ],
+  volatility_plays: [
+    { symbol: "UVXY", name: "ProShares Ultra VIX",      assetType: "stock" },
+    { symbol: "VXX",  name: "iPath VIX Short-Term",     assetType: "stock" },
+    { symbol: "SVXY", name: "ProShares Short VIX",      assetType: "stock" },
+    { symbol: "VIXY", name: "ProShares VIX Short-Term", assetType: "stock" },
+  ],
+  short_squeeze_candidates: [
+    { symbol: "GME",  name: "GameStop Corp.",           assetType: "stock" },
+    { symbol: "AMC",  name: "AMC Entertainment",        assetType: "stock" },
+    { symbol: "BBBY", name: "Beyond Inc.",              assetType: "stock" },
+    { symbol: "MSTR", name: "MicroStrategy Inc.",       assetType: "stock" },
+    { symbol: "SMCI", name: "Super Micro Computer",     assetType: "stock" },
+  ],
+  earnings_momentum: [
+    { symbol: "NVDA", name: "NVIDIA Corporation",       assetType: "stock" },
+    { symbol: "META", name: "Meta Platforms Inc.",      assetType: "stock" },
+    { symbol: "MSFT", name: "Microsoft Corporation",    assetType: "stock" },
+    { symbol: "AAPL", name: "Apple Inc.",               assetType: "stock" },
+    { symbol: "AMZN", name: "Amazon.com Inc.",          assetType: "stock" },
+  ],
+  technical_reversals: [
+    { symbol: "INTC", name: "Intel Corporation",        assetType: "stock" },
+    { symbol: "BABA", name: "Alibaba Group",            assetType: "stock" },
+    { symbol: "NIO",  name: "NIO Inc.",                 assetType: "stock" },
+    { symbol: "PYPL", name: "PayPal Holdings",          assetType: "stock" },
+    { symbol: "DOGE", name: "Dogecoin",                 assetType: "crypto" },
+  ],
+  institutional_accumulation: [
+    { symbol: "NVDA", name: "NVIDIA Corporation",       assetType: "stock" },
+    { symbol: "PLTR", name: "Palantir Technologies",    assetType: "stock" },
+    { symbol: "BTC",  name: "Bitcoin",                  assetType: "crypto" },
+    { symbol: "MSFT", name: "Microsoft Corporation",    assetType: "stock" },
+    { symbol: "AAPL", name: "Apple Inc.",               assetType: "stock" },
+  ],
+  etf_flows: [
+    { symbol: "SPY",  name: "S&P 500 ETF",              assetType: "stock" },
+    { symbol: "QQQ",  name: "Nasdaq 100 ETF",           assetType: "stock" },
+    { symbol: "IWM",  name: "Russell 2000 ETF",         assetType: "stock" },
+    { symbol: "XLK",  name: "Technology Select ETF",    assetType: "stock" },
+    { symbol: "ARKK", name: "ARK Innovation ETF",       assetType: "stock" },
+  ],
+  global_macro: [
+    { symbol: "EEM",  name: "Emerging Markets ETF",     assetType: "stock" },
+    { symbol: "FXI",  name: "China Large-Cap ETF",      assetType: "stock" },
+    { symbol: "EWJ",  name: "Japan ETF",                assetType: "stock" },
+    { symbol: "EWZ",  name: "Brazil ETF",               assetType: "stock" },
+    { symbol: "DXY",  name: "US Dollar Index",          assetType: "stock" },
+  ],
+  space_deep_tech: [
+    { symbol: "RKLB", name: "Rocket Lab USA",           assetType: "stock" },
+    { symbol: "SPCE", name: "Virgin Galactic",          assetType: "stock" },
+    { symbol: "LUNR", name: "Intuitive Machines",       assetType: "stock" },
+    { symbol: "IONQ", name: "IonQ Inc.",                assetType: "stock" },
+    { symbol: "RGTI", name: "Rigetti Computing",        assetType: "stock" },
+  ],
 };
 
 function discoveryTimeHorizon(score: number, assetType: "stock" | "crypto"): string {
@@ -1810,6 +1971,96 @@ function discoveryCatalyst(category: DiscoveryCategory, score: number): string {
       "Binary catalyst approaching \u2014 high volatility expected",
       "Short squeeze potential with elevated short interest",
       "Speculative momentum building ahead of key event",
+    ],
+    defense_geopolitical: [
+      "Geopolitical escalation driving defense budget expansion",
+      "Government contract awards accelerating revenue growth",
+      "NATO spending commitments boosting defense sector",
+    ],
+    energy_transition: [
+      "IRA incentives driving clean energy capex surge",
+      "Nuclear renaissance gaining policy and investor support",
+      "Grid modernization spending accelerating sector tailwinds",
+    ],
+    biotech_healthcare: [
+      "FDA catalyst approaching \u2014 binary event setup",
+      "Phase 3 trial readout with positive interim data",
+      "Aging demographics driving healthcare sector demand",
+    ],
+    fintech_payments: [
+      "Digital payment volume growth outpacing traditional banking",
+      "Crypto integration expanding addressable market",
+      "Interest rate environment improving fintech margins",
+    ],
+    infrastructure_industrials: [
+      "Infrastructure bill spending flowing into sector",
+      "Reshoring trend driving domestic industrial demand",
+      "Backlog growth signaling multi-year revenue visibility",
+    ],
+    consumer_discretionary: [
+      "Consumer spending resilience defying recession fears",
+      "Travel and leisure demand recovering above expectations",
+      "Wage growth supporting discretionary spending power",
+    ],
+    dividend_income: [
+      "Dividend growth streak intact with strong free cash flow",
+      "Yield premium attractive relative to bond alternatives",
+      "Defensive positioning as recession risk increases",
+    ],
+    small_cap_growth: [
+      "Small cap rotation catalyst \u2014 rate cut expectations rising",
+      "Insider buying cluster signaling management confidence",
+      "Niche market leadership with high growth runway",
+    ],
+    defi_web3: [
+      "DeFi TVL expanding \u2014 protocol revenue accelerating",
+      "Layer 2 adoption driving transaction volume growth",
+      "Institutional DeFi integration expanding user base",
+    ],
+    commodities_real_assets: [
+      "Inflation hedge demand rising as CPI remains elevated",
+      "Supply constraints supporting commodity price floor",
+      "Dollar weakness amplifying commodity return potential",
+    ],
+    volatility_plays: [
+      "VIX compression creating asymmetric long volatility setup",
+      "Event risk calendar dense \u2014 volatility premium elevated",
+      "Macro uncertainty supporting volatility regime",
+    ],
+    short_squeeze_candidates: [
+      "Short interest above 20% with rising borrow cost",
+      "Retail momentum building against institutional short thesis",
+      "Positive catalyst could force rapid short covering",
+    ],
+    earnings_momentum: [
+      "Earnings beat streak with upward guidance revisions",
+      "Analyst estimate upgrades accelerating into earnings",
+      "Revenue growth reaccelerating above consensus",
+    ],
+    technical_reversals: [
+      "RSI oversold with bullish divergence forming",
+      "Price at key multi-year support with volume confirmation",
+      "Sentiment extreme creating contrarian entry opportunity",
+    ],
+    institutional_accumulation: [
+      "Dark pool prints above average \u2014 institutional buying detected",
+      "13F filings show new large position initiations",
+      "Block trade activity suggesting smart money accumulation",
+    ],
+    etf_flows: [
+      "Sector ETF inflows at 52-week high \u2014 rotation confirmed",
+      "Options flow on ETF suggesting directional conviction",
+      "Passive fund rebalancing creating systematic buying pressure",
+    ],
+    global_macro: [
+      "Emerging market recovery gaining momentum",
+      "Currency regime shift creating cross-asset opportunity",
+      "Central bank divergence driving international flows",
+    ],
+    space_deep_tech: [
+      "Commercial space launch backlog growing rapidly",
+      "Quantum computing milestone driving sector re-rating",
+      "Government contract awards validating technology roadmap",
     ],
   };
   const pool = pools[category];

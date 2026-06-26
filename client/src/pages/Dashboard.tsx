@@ -15,7 +15,7 @@ import HomeCryptoSection from "@/components/HomeCryptoSection";
 import WaitlistSection from "@/components/WaitlistSection";
 import HomeStockIntelSection from "@/components/HomeStockIntelSection";
 import { CryptoPorchPanel, StockPorchPanel } from "@/components/DashboardSearchPanels";
-import OpportunityDiscoveryPanel from "@/components/OpportunityDiscoveryPanel";
+import { OpportunityDiscoveryPanel } from "@/components/OpportunityDiscoveryPanel";
 import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
@@ -715,6 +715,54 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* ── TODAY'S ANSWER — 3-second verdict banner ───────────────────── */}
+      {(() => {
+        const score = overall.score;
+        const riskLevel = overall.riskLevel;
+        let verdict: string;
+        let verdictColor: string;
+        let verdictSub: string;
+        if (riskLevel === 'low' || score <= 3.5) {
+          verdict = 'TAKE RISK';
+          verdictColor = '#00FF88';
+          verdictSub = 'Regime supports risk-on positioning — momentum window open';
+        } else if (riskLevel === 'moderate' || score <= 5.5) {
+          verdict = 'STAY SELECTIVE';
+          verdictColor = '#00D4FF';
+          verdictSub = 'Mixed signals — favor high-conviction setups with tight stops';
+        } else if (riskLevel === 'elevated' || score <= 7.5) {
+          verdict = 'REDUCE EXPOSURE';
+          verdictColor = '#FF9500';
+          verdictSub = 'Systemic pressure elevated — reduce size, tighten stops';
+        } else {
+          verdict = 'STEP ASIDE';
+          verdictColor = '#FF2D55';
+          verdictSub = 'Crisis-level risk detected — capital preservation is the trade';
+        }
+        return (
+          <div style={{
+            position: 'relative', zIndex: 2,
+            margin: '0',
+            padding: '14px 20px',
+            background: `linear-gradient(90deg, ${verdictColor}12 0%, transparent 60%)`,
+            borderBottom: `1px solid ${verdictColor}20`,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: verdictColor, boxShadow: `0 0 10px ${verdictColor}`, animation: 'pulse 2s ease-in-out infinite' }} />
+              <div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '2px' }}>TODAY'S ANSWER</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '22px', color: verdictColor, letterSpacing: '0.08em', lineHeight: 1, textShadow: `0 0 20px ${verdictColor}60` }}>{verdict}</div>
+              </div>
+            </div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.5, maxWidth: '380px', textAlign: 'right' }}>
+              {verdictSub}
+            </div>
+          </div>
+        );
+      })()}
 
             {/* ── Main content ────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>

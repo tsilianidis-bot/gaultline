@@ -836,6 +836,69 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             }}>{stock.bias.toUpperCase()}</span>
           </div>
 
+          {/* Bull / Bear / Invalidation / Why FAULTLINE Likes It */}
+          {tradingSignal && (
+            <div style={{
+              marginBottom: '10px',
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px',
+            }}>
+              {/* Bull Case */}
+              <div style={{
+                padding: '8px 10px',
+                background: 'rgba(0,255,136,0.04)',
+                border: '1px solid rgba(0,255,136,0.12)',
+                borderRadius: '3px',
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,255,136,0.6)', marginBottom: '4px' }}>▲ BULL CASE</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(200,220,200,0.85)', lineHeight: 1.5 }}>
+                  {tradingSignal.action === 'BUY' || tradingSignal.action === 'HOLD'
+                    ? `${stock.name} shows ${tradingSignal.technicals.smaSignal === 'Golden Cross' ? 'golden cross formation' : 'positive momentum'} with regime alignment at ${tradingSignal.regimeAlignmentScore}. ${tradingSignal.technicals.volumeSignal === 'Surge' ? 'Volume surge confirms institutional interest.' : 'Momentum supports continuation.'}`
+                    : `Counter-trend bounce from $${tradingSignal.priceLevels.support.toFixed(2)} support. RSI ${tradingSignal.technicals.rsiEstimate.toFixed(0)} approaching oversold territory.`
+                  }
+                </div>
+              </div>
+              {/* Bear Case */}
+              <div style={{
+                padding: '8px 10px',
+                background: 'rgba(255,45,85,0.04)',
+                border: '1px solid rgba(255,45,85,0.12)',
+                borderRadius: '3px',
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(255,45,85,0.6)', marginBottom: '4px' }}>▼ BEAR CASE</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(220,200,200,0.85)', lineHeight: 1.5 }}>
+                  {tradingSignal.action === 'SELL'
+                    ? `${stock.name} faces ${tradingSignal.technicals.smaSignal === 'Death Cross' ? 'death cross breakdown' : 'distribution pressure'} with resistance at $${tradingSignal.priceLevels.resistance.toFixed(2)}. Macro headwinds amplify downside risk.`
+                    : `Failure to hold $${tradingSignal.priceLevels.stopLoss.toFixed(2)} stop invalidates setup. ${stock.recessionSensitivity === 'High' ? 'High recession sensitivity adds macro risk.' : 'Broader market weakness could drag price lower.'}`
+                  }
+                </div>
+              </div>
+              {/* Invalidation Level */}
+              <div style={{
+                padding: '8px 10px',
+                background: 'rgba(255,153,0,0.04)',
+                border: '1px solid rgba(255,153,0,0.12)',
+                borderRadius: '3px',
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(255,153,0,0.6)', marginBottom: '4px' }}>⊘ INVALIDATION</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(220,210,190,0.85)', lineHeight: 1.5 }}>
+                  Close below <span style={{ color: '#FF9500', fontWeight: 700 }}>${tradingSignal.priceLevels.stopLoss.toFixed(2)}</span> (ATR ×1.5) invalidates thesis. Volume must remain {tradingSignal.technicals.volumeSignal === 'Low' ? 'above average' : 'elevated'} to confirm.
+                </div>
+              </div>
+              {/* Why FAULTLINE Likes It */}
+              <div style={{
+                padding: '8px 10px',
+                background: 'rgba(0,212,255,0.04)',
+                border: '1px solid rgba(0,212,255,0.12)',
+                borderRadius: '3px',
+              }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '4px' }}>◈ WHY FAULTLINE LIKES IT</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(190,210,220,0.85)', lineHeight: 1.5 }}>
+                  Regime score <span style={{ color: '#00D4FF', fontWeight: 700 }}>{tradingSignal.regimeAlignmentScore}</span> · R:R <span style={{ color: tradingSignal.priceLevels.riskReward >= 2 ? '#22C55E' : '#FFD700', fontWeight: 700 }}>{tradingSignal.priceLevels.riskReward}:1</span> · {tradingSignal.strength.toUpperCase()} conviction. {stock.aiExposure === 'High' ? 'AI sector tailwind.' : stock.aiExposure === 'Medium' ? 'Moderate AI exposure.' : 'Sector fundamentals intact.'}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* All signals */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {stock.signals.map(sig => <SignalTag key={sig} signal={sig} />)}
