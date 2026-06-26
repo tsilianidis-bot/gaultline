@@ -975,6 +975,35 @@ function HowItWorksSection() {
 // ── Proof / Track Record Section ──────────────────────────────
 // ── Promo Video Section ──────────────────────────────────────
 function PromoVideoSection() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showControls, setShowControls] = useState(false);
+
+  // Mobile autoplay: use IntersectionObserver to trigger play when in viewport.
+  // If autoplay is blocked (e.g. iOS low-power mode), show native controls so user can tap.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const tryPlay = () => {
+      video.play().catch(() => {
+        setShowControls(true);
+      });
+    };
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          tryPlay();
+        } else {
+          video.pause();
+        }
+      },
+      { threshold: 0.25 }
+    );
+    obs.observe(video);
+    // Also try immediately in case already in viewport
+    tryPlay();
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <section className="py-24 bg-[#050608] relative overflow-hidden">
       {/* Background glow */}
@@ -1011,11 +1040,14 @@ function PromoVideoSection() {
 
             {/* Video */}
             <video
+              ref={videoRef}
               src="/manus-storage/faultline_tiktok_promo_ad78cf98.mp4"
               autoPlay
               muted
               loop
               playsInline
+              preload="auto"
+              controls={showControls}
               style={{ width: "100%", display: "block", aspectRatio: "9/16", objectFit: "cover" }}
             />
 
