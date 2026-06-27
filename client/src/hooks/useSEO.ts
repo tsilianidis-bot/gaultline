@@ -242,9 +242,9 @@ export const PAGE_SEO = {
   },
   // 52 chars ✓
   situationRoom: {
-    title: "FAULTLINE Situation Room — Trade Preflight Simulator",
+    title: "Decision Engine — Should I Make This Trade?",
     description:
-      "Stress-test your next market move against regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and sector signals. Enter the FAULTLINE Situation Room.",
+      "Stress-test your next market move against regime pressure, crash risk, liquidity, credit stress, volatility, AI speculation, and sector signals. Get an institutional MARKET VERDICT before you risk capital.",
     canonical: "/app/situation-room",
   },
   insiderIntelligence: {

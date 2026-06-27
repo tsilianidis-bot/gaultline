@@ -157,7 +157,7 @@ export default function AnalyticsDashboard() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-cyan-400 animate-pulse text-sm tracking-widest">LOADING ANALYTICS...</div>
+        <div className="text-cyan-400 text-sm tracking-widest">LOADING ANALYTICS...</div>
       </div>
     );
   }

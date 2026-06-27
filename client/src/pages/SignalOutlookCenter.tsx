@@ -9,6 +9,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import PageHeader from "@/components/PageHeader";
 import { TickerChip } from "@/components/TickerActionMenu";
 import { useSEO } from "@/hooks/useSEO";
@@ -1331,6 +1332,37 @@ function FullOutlookView({
   );
 }
 
+// ── Inline upgrade prompt (free/core tier only) ───────────────────
+function SignalOutlookUpgradePrompt() {
+  const { user } = useAuth();
+  const tierQuery = trpc.user.getAccessTier.useQuery(undefined, { enabled: !!user, retry: false });
+  const tier = tierQuery.data?.tier ?? "free";
+  if (!user || tier === "premium" || tier === "founding") return null;
+  return (
+    <a
+      href="/app/account"
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '12px 16px', margin: '16px 0',
+        borderRadius: '6px',
+        background: 'rgba(192,132,252,0.04)',
+        border: '1px solid rgba(192,132,252,0.15)',
+        textDecoration: 'none', transition: 'background 0.15s ease', cursor: 'pointer',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(192,132,252,0.08)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(192,132,252,0.04)'; }}
+    >
+      <div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(192,132,252,0.6)', marginBottom: '3px' }}>UNLOCK TRADER</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#A8B8CC' }}>
+          12-month outlook · Historical analogs · Institutional conviction score · Advanced AI diagnostics
+        </div>
+      </div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: '#C084FC', flexShrink: 0, marginLeft: '12px' }}>UPGRADE →</div>
+    </a>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────
 export default function SignalOutlookCenter() {
   useSEO({
@@ -1615,6 +1647,9 @@ export default function SignalOutlookCenter() {
             ))}
           </div>
         )}
+
+        {/* ── Inline upgrade prompt ────────────────────────────────── */}
+        <SignalOutlookUpgradePrompt />
 
       </div>
     </div>

@@ -21,7 +21,7 @@ import { trpc } from "@/lib/trpc";
 
 interface Props {
   symbol: string;
-  assetType: "stock" | "crypto";
+  assetType?: "stock" | "crypto";
   className?: string;
 }
 
@@ -71,7 +71,7 @@ function fmtMktCap(n: number | null | undefined): string {
   return `$${n.toFixed(0)}`;
 }
 
-export function UniversalTickerHeader({ symbol, assetType, className = "" }: Props) {
+export function UniversalTickerHeader({ symbol, assetType = "stock", className = "" }: Props) {
   const { data, isLoading, isError } = trpc.outlook.getSecurityContext.useQuery(
     { symbol, assetType },
     { enabled: !!symbol, staleTime: 60_000, refetchInterval: 60_000 }

@@ -390,35 +390,47 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-5 leading-[1.05]">
-          Move before the quake.<br />
-          <span className="text-[#00D4FF]">Not after it.</span>
+          Know what to risk.<br />
+          <span className="text-[#00D4FF]">Know when to step aside.</span>
         </h1>
 
         {/* Sub */}
         <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-8 leading-relaxed">
-          Markets move through changing conditions. FAULTLINE continuously monitors multiple dimensions of market stress — translating complex signals into clear, actionable awareness so you can understand what is changing, why it matters, and what deserves attention next.
+          FAULTLINE delivers institutional-grade market intelligence in real time — live verdicts, opportunity scores, risk regimes, and actionable signals so you always know whether to press or protect.
         </p>
 
-        {/* CTAs — mobile-first, safe-area aware */}
+        {/* Live intelligence strip */}
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
+          {[
+            { label: "LIVE VERDICT", value: "STAY SELECTIVE", color: "#FFD700" },
+            { label: "OPP SCORE", value: "62 / 100", color: "#00D4FF" },
+            { label: "RISK REGIME", value: "ELEVATED", color: "#FF9500" },
+            { label: "SIGNALS ACTIVE", value: "247", color: "#00FF88" },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="flex flex-col items-center px-4 py-2 rounded-lg"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              <span className="text-[9px] font-mono tracking-[0.2em] text-white/40 mb-0.5">{item.label}</span>
+              <span className="text-[13px] font-mono font-bold" style={{ color: item.color }}>{item.value}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Single primary CTA */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4">
           <a
             href={PLATFORM_URL}
             onClick={() => trackStartFreeClicked("homepage_hero")}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-[#00D4FF] hover:bg-[#00D4FF]/90 text-[#050608] font-mono font-black text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
-            style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px" }}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-[#00D4FF] hover:bg-[#00BBEE] text-[#050608] font-mono font-black text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97] shadow-lg"
+            style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px", boxShadow: "0 0 32px rgba(0,212,255,0.25)" }}
           >
-            ENTER FREE PREVIEW
+            START FREE
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#050608" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 7h10M8 3l4 4-4 4" />
             </svg>
           </a>
-          <button
-            onClick={() => { trackDemoStarted("homepage_or_nav"); onRequestAccess(); }}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 border border-[#FFD700]/50 hover:border-[#FFD700] text-[#FFD700] font-mono font-bold text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
-            style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px" }}
-          >
-            MOVE BEFORE THE QUAKE →
-          </button>
           <AIReceptionistLink
             variant="tap-to-call"
             location="homepage_hero"

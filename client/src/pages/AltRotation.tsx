@@ -345,10 +345,10 @@ function AltRotationInner() {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="text-xs font-mono tracking-widest text-amber-400 animate-pulse">
+          <div className="text-xs font-mono tracking-widest text-amber-400">
             INITIALIZING ALT ROTATION ENGINE™
           </div>
-          <div className="text-xs font-mono text-zinc-600 animate-pulse">
+          <div className="text-xs font-mono text-zinc-600">
             FETCHING LIVE MARKET STRUCTURE DATA...
           </div>
           <div className="flex gap-1 justify-center mt-4">

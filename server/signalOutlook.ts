@@ -391,15 +391,41 @@ function scoreStockFactors(
   // Timeframe adjustment — day trade amplifies momentum; longer timeframes smooth noise
   const tfMultiplier = timeframe === "day" ? 1.1 : timeframe === "short" ? 1.0 : timeframe === "swing" ? 0.9 : 0.8;
 
+  // ── 6 New Proprietary Signals ──────────────────────────────────────────
+
+  // Signal 9: Early Accumulation (low breadth stress + low credit stress = accumulation phase)
+  const earlyAccumScore = clamp(100 - (getVec("market_breadth") * 0.4 + getVec("credit_contagion") * 0.6));
+
+  // Signal 10: Momentum Beginning (pressure declining from elevated = momentum inflection)
+  const momentumBeginScore = clamp(p > 40 && p < 65 ? 100 - p * 0.8 : p <= 40 ? 80 : 30);
+
+  // Signal 11: Institutional Accumulation (low liquidity stress + low volatility = institutional window)
+  const instAccumScore = clamp(100 - (getVec("liquidity_stress") * 0.5 + getVec("volatility_regime") * 0.5));
+
+  // Signal 12: Volatility Compression (very low vol = coil before breakout)
+  const volCompressionScore = clamp(getVec("volatility_regime") < 35 ? 85 : getVec("volatility_regime") < 50 ? 65 : 40);
+
+  // Signal 13: News Catalyst Probability (macro sensitivity + AI bubble = catalyst-rich environment)
+  const newsCatalystScore = clamp(100 - (getVec("macro_sensitivity") * 0.4 + getVec("ai_bubble") * 0.3 + p * 0.3));
+
+  // Signal 14: Technical Breakout (trend + breadth + low vol = breakout conditions)
+  const technicalBreakoutScore = clamp((trendScore * 0.4 + breadthScore * 0.3 + volatilityScore * 0.3) * tfMultiplier);
+
   const factors: OutlookScoreFactor[] = [
-    { name: "Trend",            score: clamp(trendScore * tfMultiplier),    weight: 0.20, label: scoreToLabel(trendScore),    note: `Macro pressure at ${p}/100 — ${p > 60 ? "bearish trend conditions" : p > 40 ? "mixed trend" : "favorable trend environment"}` },
-    { name: "Relative Strength",score: clamp(breadthScore * tfMultiplier),  weight: 0.15, label: scoreToLabel(breadthScore),  note: `Market breadth score ${getVec("market_breadth")}/100 — ${getVec("market_breadth") > 60 ? "narrow leadership" : "broad participation"}` },
-    { name: "Volume",           score: clamp(volumeScore * tfMultiplier),   weight: 0.10, label: scoreToLabel(volumeScore),   note: `Volatility regime ${getVec("volatility_regime")}/100 — ${getVec("volatility_regime") > 60 ? "elevated volatility" : "normal volume conditions"}` },
-    { name: "Volatility",       score: clamp(volatilityScore * tfMultiplier),weight: 0.10, label: scoreToLabel(volatilityScore), note: `${getVec("volatility_regime") > 70 ? "High volatility — entry risk elevated" : getVec("volatility_regime") > 40 ? "Moderate volatility" : "Low volatility — favorable for entries"}` },
-    { name: "Sector Strength",  score: clamp(sectorScore * tfMultiplier),   weight: 0.15, label: scoreToLabel(sectorScore),   note: isAITech ? `AI bubble score ${aiBubbleVec}/100 — ${aiBubbleVec > 70 ? "extreme AI concentration risk" : "manageable AI exposure"}` : "Sector macro sensitivity analysis" },
-    { name: "Market Breadth",   score: clamp(breadthDirectScore * tfMultiplier), weight: 0.10, label: scoreToLabel(breadthDirectScore), note: "Participation across market cap spectrum" },
-    { name: "Regime Alignment", score: clamp(regimeScore * tfMultiplier),   weight: 0.10, label: scoreToLabel(regimeScore),   note: `Current regime: ${pressure.regime} — ${p > 60 ? "unfavorable for new longs" : "supportive of risk-taking"}` },
-    { name: "Market Structure", score: clamp(structureScore * tfMultiplier),weight: 0.10, label: scoreToLabel(structureScore), note: `Credit ${creditVec}/100, Liquidity ${liquidityVec}/100 — ${creditVec > 60 || liquidityVec > 60 ? "structural stress present" : "stable foundation"}` },
+    { name: "Trend",                      score: clamp(trendScore * tfMultiplier),          weight: 0.12, label: scoreToLabel(trendScore),          note: `Macro pressure at ${p}/100 — ${p > 60 ? "bearish trend conditions" : p > 40 ? "mixed trend" : "favorable trend environment"}` },
+    { name: "Relative Strength",          score: clamp(breadthScore * tfMultiplier),        weight: 0.10, label: scoreToLabel(breadthScore),        note: `Market breadth score ${getVec("market_breadth")}/100 — ${getVec("market_breadth") > 60 ? "narrow leadership" : "broad participation"}` },
+    { name: "Volume Expansion",           score: clamp(volumeScore * tfMultiplier),         weight: 0.08, label: scoreToLabel(volumeScore),         note: `Volatility regime ${getVec("volatility_regime")}/100 — ${getVec("volatility_regime") > 60 ? "elevated volatility" : "normal volume conditions"}` },
+    { name: "Volatility",                 score: clamp(volatilityScore * tfMultiplier),     weight: 0.08, label: scoreToLabel(volatilityScore),     note: `${getVec("volatility_regime") > 70 ? "High volatility — entry risk elevated" : getVec("volatility_regime") > 40 ? "Moderate volatility" : "Low volatility — favorable for entries"}` },
+    { name: "Sector Strength",            score: clamp(sectorScore * tfMultiplier),         weight: 0.10, label: scoreToLabel(sectorScore),         note: isAITech ? `AI bubble score ${aiBubbleVec}/100 — ${aiBubbleVec > 70 ? "extreme AI concentration risk" : "manageable AI exposure"}` : "Sector macro sensitivity analysis" },
+    { name: "Market Breadth",             score: clamp(breadthDirectScore * tfMultiplier),  weight: 0.08, label: scoreToLabel(breadthDirectScore),  note: "Participation across market cap spectrum" },
+    { name: "Regime Alignment",           score: clamp(regimeScore * tfMultiplier),         weight: 0.08, label: scoreToLabel(regimeScore),         note: `Current regime: ${pressure.regime} — ${p > 60 ? "unfavorable for new longs" : "supportive of risk-taking"}` },
+    { name: "Market Structure",           score: clamp(structureScore * tfMultiplier),      weight: 0.08, label: scoreToLabel(structureScore),      note: `Credit ${creditVec}/100, Liquidity ${liquidityVec}/100 — ${creditVec > 60 || liquidityVec > 60 ? "structural stress present" : "stable foundation"}` },
+    { name: "Early Accumulation",         score: clamp(earlyAccumScore * tfMultiplier),     weight: 0.06, label: scoreToLabel(earlyAccumScore),     note: `${earlyAccumScore > 65 ? "Accumulation phase detected — smart money positioning" : earlyAccumScore > 40 ? "Mixed accumulation signals" : "Distribution phase — institutional selling"}` },
+    { name: "Momentum Beginning",         score: clamp(momentumBeginScore * tfMultiplier),  weight: 0.06, label: scoreToLabel(momentumBeginScore),  note: `${momentumBeginScore > 65 ? "Early momentum inflection — trend change underway" : momentumBeginScore > 40 ? "Momentum building" : "No momentum signal"}` },
+    { name: "Institutional Accumulation", score: clamp(instAccumScore * tfMultiplier),      weight: 0.06, label: scoreToLabel(instAccumScore),      note: `${instAccumScore > 65 ? "Institutional window open — low stress environment" : instAccumScore > 40 ? "Moderate institutional activity" : "Institutional caution — stress elevated"}` },
+    { name: "Volatility Compression",     score: clamp(volCompressionScore * tfMultiplier), weight: 0.04, label: scoreToLabel(volCompressionScore), note: `${volCompressionScore > 70 ? "Volatility coil — breakout imminent" : volCompressionScore > 50 ? "Moderate compression" : "No compression signal"}` },
+    { name: "News Catalyst Probability",  score: clamp(newsCatalystScore * tfMultiplier),   weight: 0.04, label: scoreToLabel(newsCatalystScore),   note: `${newsCatalystScore > 65 ? "High catalyst probability — macro + AI events converging" : newsCatalystScore > 40 ? "Moderate catalyst environment" : "Low catalyst probability"}` },
+    { name: "Technical Breakout",         score: clamp(technicalBreakoutScore),             weight: 0.02, label: scoreToLabel(technicalBreakoutScore), note: `${technicalBreakoutScore > 70 ? "Breakout conditions present — trend + breadth + vol aligned" : technicalBreakoutScore > 50 ? "Partial breakout setup" : "No breakout signal"}` },
   ];
 
   const composite = clamp(Math.round(

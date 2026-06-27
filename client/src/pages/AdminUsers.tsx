@@ -70,7 +70,7 @@ export default function AdminUsers() {
   if (loading || (!user)) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-[var(--color-electric)] font-mono text-sm animate-pulse">
+        <div className="text-[var(--color-electric)] font-mono text-sm">
           AUTHENTICATING…
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function AdminUsers() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-8 text-center">
-              <div className="text-[var(--color-electric)] font-mono text-sm animate-pulse">
+              <div className="text-[var(--color-electric)] font-mono text-sm">
                 LOADING USER REGISTRY…
               </div>
             </div>

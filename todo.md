@@ -2434,3 +2434,53 @@
 - [ ] Complete implementation report with before/after screenshots
 - [ ] List of every modified file
 - [ ] Phase 4 recommendations document
+
+## PROJECT BLACK — Phase 4: The FAULTLINE Experience (Steve Jobs Design Pass)
+
+### Pre-change backup
+- [x] Save FAULTLINE v2.8 pre-Phase 4 backup checkpoint (1cbc4606) — DO NOT MODIFY
+
+### 1. Decision Engine Redesign
+- [x] Redesign SituationRoom output: MARKET VERDICT (BUY/WAIT/REDUCE/EXIT/HOLD) large institutional label
+- [x] Add Confidence %, Opportunity Score, Risk Score to verdict header
+- [x] Add WHY section: institutional explanation
+- [x] Add BULL CASE / BEAR CASE side-by-side with probabilities
+- [x] Add ACTION PLAN: exact trader action
+- [x] Add KEY LEVELS: Support, Resistance, Entry Zone, Stop, Targets, R:R
+- [x] Add TIMEFRAME: expected duration
+- [x] Map APPROVED/HIGH_CONVICTION → BUY, CAUTION → HOLD, WAIT → WAIT, DEFENSIVE → REDUCE/EXIT in UI
+
+### 2. Homepage Redesign
+- [x] Primary headline: "Know what to risk. Know when to step aside."
+- [x] Add live intelligence strip: LIVE VERDICT / OPP SCORE / RISK REGIME / SIGNALS ACTIVE
+- [x] Single primary CTA: "START FREE" with glow effect
+- [x] Premium feel: Bloomberg/Apple/institutional aesthetic
+
+### 3. Dashboard "Today's Market" Redesign
+- [x] 10-card intelligence strip: TODAY'S VERDICT, HIGHEST CONVICTION OPP, HIGHEST RISK, BEST SECTOR, BEST CRYPTO, LARGEST ROTATION, MOST DANGEROUS ASSET, MOST UNDERVALUED, MOST OVEREXTENDED, TOP CATALYST
+- [x] All 10 cards above the fold, each clickable to relevant analysis page
+
+### 4. Opportunity Discovery Engine Upgrade
+- [x] Expanded scoreStockFactors from 8 to 14 proprietary signals (early accumulation, momentum beginning, sector rotation, institutional accumulation, volume expansion, volatility compression, AI leadership, crypto rotation, liquidity inflows, macro alignment, news catalyst probability, short squeeze, relative strength acceleration, technical breakout)
+- [x] Each opportunity shows: Opportunity Score, Conviction, Time Horizon, Catalyst, Why FAULTLINE Likes It, Bull/Bear/Invalidation
+
+### 5. Premium Feel Pass
+- [x] Removed scanline-sweep animations from .data-stream and .regime-label (replaced with static premium gradient lines)
+- [x] Removed animate-pulse from text elements in AltRotation, AnalyticsDashboard, AdminUsers
+- [x] All remaining animations are functional (loading spinners, skeleton loaders, live status dots)
+
+### 6. Mobile Redesign
+- [x] MobilePulse redesigned: TODAY'S ANSWER (TAKE RISK / STEP ASIDE / STAY SELECTIVE / REDUCE EXPOSURE) above the fold
+- [x] Risk Score, Regime, Bull Probability, Crash Risk all visible without scrolling
+
+### 7. Conversion Pass
+- [x] Natural upgrade prompt on Dashboard (after intelligence strip, before mode selector)
+- [x] Natural upgrade prompt on SignalOutlookCenter (after top opportunities section)
+- [x] Prompts show only to free/core tier users, hidden for premium/founding
+
+### 8. Final Steve Jobs Audit
+- [x] Every page answers one clear question (audited all PAGE_SEO titles)
+- [x] 5-second test: Dashboard, Decision Engine, Signal Outlook, Homepage, Mobile Pulse all pass
+- [x] Updated Decision Engine SEO title to 'Decision Engine — Should I Make This Trade?'
+- [x] TypeScript: 0 errors
+- [x] Save final Phase 4 checkpoint

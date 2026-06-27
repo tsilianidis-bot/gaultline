@@ -20,6 +20,7 @@ import Onboarding from "@/components/Onboarding";
 import ShareCard from "@/components/ShareCard";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
 import PulseMode from "@/components/dashboard/PulseMode";
 import SignalsMode from "@/components/dashboard/SignalsMode";
@@ -29,6 +30,42 @@ import PreflightGate from "@/components/PreflightGate";
 import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 type DashboardMode = "pulse" | "signals" | "intelligence";
+
+// ── Inline upgrade prompt (free-tier only) ────────────────────
+function DashboardUpgradePrompt() {
+  const { user } = useAuth();
+  const tierQuery = trpc.user.getAccessTier.useQuery(undefined, { enabled: !!user, retry: false });
+  const tier = tierQuery.data?.tier ?? "free";
+  if (!user || tier === "premium" || tier === "founding") return null;
+  return (
+    <a
+      href="/app/account"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '10px 14px',
+        marginBottom: '12px',
+        borderRadius: '6px',
+        background: 'rgba(0,212,255,0.04)',
+        border: '1px solid rgba(0,212,255,0.15)',
+        textDecoration: 'none',
+        transition: 'background 0.15s ease',
+        cursor: 'pointer',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.08)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.04)'; }}
+    >
+      <div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(0,212,255,0.5)', marginBottom: '2px' }}>UNLOCK TRADER</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#A8B8CC' }}>
+          {tier === 'core' ? '26 opportunity categories · Institutional signals · Historical analogs' : 'Full signal engine · 26 opportunity categories · Decision Engine · Institutional AI'}
+        </div>
+      </div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: '#00D4FF', flexShrink: 0, marginLeft: '12px' }}>UPGRADE →</div>
+    </a>
+  );
+}
 
 const HERO_BG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663562889431/oAHJBBc62GHpVJwTBFZPAm/faultline-hero-bg-5aiJwmUWM5RkwbakA3ZsnX.webp";
 
@@ -776,14 +813,21 @@ export default function Dashboard() {
 
         const cards = [
           {
-            label: 'HIGHEST CONVICTION',
-            value: overall.riskLevel === 'low' ? 'RISK-ON' : overall.riskLevel === 'moderate' ? 'SELECTIVE' : 'DEFENSIVE',
-            sub: overall.riskLevel === 'low' ? 'Momentum + macro aligned' : overall.riskLevel === 'moderate' ? 'High-conviction setups only' : 'Capital preservation mode',
+            label: "TODAY'S VERDICT",
+            value: overall.riskLevel === 'low' ? 'TAKE RISK' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE',
+            sub: overall.riskLevel === 'low' ? 'Conditions favor risk-taking' : overall.riskLevel === 'moderate' ? 'High-conviction setups only' : overall.riskLevel === 'elevated' ? 'Trim and protect' : 'Capital preservation mode',
+            color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55',
+            href: '/app/pre-flight',
+          },
+          {
+            label: 'HIGHEST CONVICTION OPP',
+            value: overall.riskLevel === 'low' ? 'BREAKOUTS' : overall.riskLevel === 'moderate' ? 'REVERSALS' : 'HEDGES',
+            sub: overall.riskLevel === 'low' ? 'Momentum + macro aligned' : overall.riskLevel === 'moderate' ? 'Oversold bounces forming' : 'Inverse ETFs + puts',
             color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#00D4FF' : '#FF9500',
             href: '/app/signals',
           },
           {
-            label: 'BIGGEST THREAT',
+            label: 'HIGHEST RISK',
             value: topDomain?.label?.split(' ').slice(0, 2).join(' ') ?? '—',
             sub: `Score: ${topDomain?.score?.toFixed(1) ?? '—'}/10 · ${topDomain?.riskLevel ?? '—'} risk`,
             color: '#FF2D55',
@@ -797,6 +841,13 @@ export default function Dashboard() {
             href: '/app/signal-outlook',
           },
           {
+            label: 'BEST CRYPTO',
+            value: overall.riskLevel === 'low' ? 'BTC / ETH' : overall.riskLevel === 'moderate' ? 'BTC ONLY' : 'AVOID',
+            sub: overall.riskLevel === 'low' ? 'Risk-on crypto rotation active' : overall.riskLevel === 'moderate' ? 'Bitcoin as digital gold' : 'Crypto risk elevated',
+            color: overall.riskLevel === 'low' ? '#F7931A' : overall.riskLevel === 'moderate' ? '#F7931A' : '#FF9500',
+            href: '/app/crypto',
+          },
+          {
             label: 'LARGEST ROTATION',
             value: biggestShift ? `${biggestShift.label.split(' ')[0]} ${biggestShift.delta > 0 ? '↑' : '↓'}` : '—',
             sub: biggestShift ? `Δ${biggestShift.delta >= 0 ? '+' : ''}${biggestShift.delta.toFixed(2)} vs baseline` : 'No major shifts',
@@ -804,31 +855,31 @@ export default function Dashboard() {
             href: '/app/pressure',
           },
           {
-            label: 'BULL PROBABILITY',
-            value: `${bullProb}%`,
-            sub: bullProb >= 60 ? 'Favorable conditions' : bullProb >= 40 ? 'Neutral positioning' : 'Risk-off environment',
-            color: bullProb >= 60 ? '#00FF88' : bullProb >= 40 ? '#00D4FF' : '#FF9500',
-            href: '/app/pre-flight',
-          },
-          {
-            label: 'GREATEST OPPORTUNITY',
-            value: overall.riskLevel === 'low' ? 'BREAKOUTS' : overall.riskLevel === 'moderate' ? 'REVERSALS' : 'HEDGES',
-            sub: overall.riskLevel === 'low' ? 'Momentum setups active' : overall.riskLevel === 'moderate' ? 'Oversold bounces forming' : 'Inverse ETFs + puts',
-            color: '#C084FC',
-            href: '/app/signal-outlook',
-          },
-          {
-            label: 'BIGGEST RISK',
-            value: `${crashProb}%`,
-            sub: crashProb >= 30 ? 'Crash probability elevated' : crashProb >= 15 ? 'Tail risk present' : 'Crash risk contained',
-            color: crashProb >= 30 ? '#FF2D55' : crashProb >= 15 ? '#FF9500' : '#00FF88',
+            label: 'MOST DANGEROUS ASSET',
+            value: overall.riskLevel === 'critical' ? 'LEVERAGED ETFs' : overall.riskLevel === 'elevated' ? 'SMALL CAPS' : overall.riskLevel === 'moderate' ? 'MEMECOINS' : 'NONE',
+            sub: overall.riskLevel === 'critical' ? 'Avoid 2x/3x exposure' : overall.riskLevel === 'elevated' ? 'High beta underperforming' : overall.riskLevel === 'moderate' ? 'Speculative risk elevated' : 'Risk environment benign',
+            color: '#FF2D55',
             href: '/app/pressure',
           },
           {
-            label: 'HISTORICAL ANALOG',
-            value: topAnalog?.era?.split(' ').slice(0, 2).join(' ') ?? '—',
-            sub: topAnalog ? `${topAnalog.similarity}% similarity · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'No analog match',
+            label: 'MOST UNDERVALUED',
+            value: overall.riskLevel === 'low' ? 'SMALL CAPS' : overall.riskLevel === 'moderate' ? 'VALUE' : 'TREASURIES',
+            sub: overall.riskLevel === 'low' ? 'IWM lagging SPX — catch-up trade' : overall.riskLevel === 'moderate' ? 'Value vs growth spread widening' : 'Flight to safety premium',
             color: '#00D4FF',
+            href: '/app/signals',
+          },
+          {
+            label: 'MOST OVEREXTENDED',
+            value: overall.riskLevel === 'low' ? 'AI SEMIS' : overall.riskLevel === 'moderate' ? 'MEGA CAP' : 'NONE',
+            sub: overall.riskLevel === 'low' ? 'NVDA/AMD stretched vs fundamentals' : overall.riskLevel === 'moderate' ? 'MAG7 concentration risk' : 'No obvious overextension',
+            color: '#FF9500',
+            href: '/app/signals',
+          },
+          {
+            label: 'TOP CATALYST',
+            value: topAnalog?.era?.split(' ').slice(0, 2).join(' ') ?? 'FED POLICY',
+            sub: topAnalog ? `${topAnalog.similarity}% analog match · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'Watch FOMC + CPI',
+            color: '#C084FC',
             href: '/app/pre-flight',
           },
         ];
@@ -836,7 +887,7 @@ export default function Dashboard() {
         return (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(5, 1fr)',
             borderBottom: '1px solid rgba(255,255,255,0.05)',
           }}>
             {cards.map((card, i) => (
@@ -867,6 +918,8 @@ export default function Dashboard() {
 
             {/* ── Main content ────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
+        {/* ── Inline upgrade prompt (free/core tier only) ────────── */}
+        <DashboardUpgradePrompt />
         {/* ── 3-Mode Intelligence Selector ─────────────────────── */}
         <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
 
