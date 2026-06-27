@@ -12,9 +12,8 @@
  */
 import { z } from "zod";
 import { router, publicProcedure } from "../_core/trpc";
-import { calculateFaultlinePressure } from "../pressure/engine";
+import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { getQuickOutlook } from "../signalOutlook";
-import { getDiagnosticReport } from "../diagnosticAI";
 import { invokeLLM } from "../_core/llm";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -145,19 +144,18 @@ async function orchestrateAnswer(
   const assetType = rawAssetType ?? contextAssetType;
   const queryType = classifyQueryType(query, ticker);
 
-  // 2. Fetch live market data in parallel
-  const [pressure, quickOutlook, diagnostic] = await Promise.allSettled([
-    calculateFaultlinePressure(),
+  // 2. Fetch live market data via FMOS pipeline
+  const [fmosResult, quickOutlook] = await Promise.allSettled([
+    runFMOSPipelineFast({ symbol: ticker ?? undefined }),
     ticker ? getQuickOutlook(ticker, assetType ?? "stock") : Promise.resolve(null),
-    getDiagnosticReport("week"),
   ]);
 
-  const pressureData = pressure.status === "fulfilled" ? pressure.value : null;
+  const fmos = fmosResult.status === "fulfilled" ? fmosResult.value : null;
+  const pressureData = fmos?.pressure ?? null;
   const outlookData = quickOutlook.status === "fulfilled" ? quickOutlook.value : null;
-  const diagnosticData = diagnostic.status === "fulfilled" ? diagnostic.value : null;
 
   // 3. Build context for LLM
-  const regimeLabel = pressureData?.regime ?? diagnosticData?.regimeLabel ?? "UNCERTAIN";
+  const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
   const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
   const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
 
@@ -183,7 +181,7 @@ Your tone: Confident. Measured. Institutional. Never sensational. Never generic.
 Always explain both the opportunity AND the risk.
 
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
-${diagnosticData ? `Action Bias: ${diagnosticData.actionBias}\nKey Risk Drivers: ${diagnosticData.keyRiskDrivers?.join(", ") ?? "none"}` : ""}
+${fmos ? `Action Bias: ${fmos.decision.actionBias}\nDecision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%` : ""}
 ${outlookSummary}`;
 
   const userPrompt = `${conversationContext}

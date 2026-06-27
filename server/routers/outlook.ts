@@ -14,6 +14,7 @@ import {
   type OutlookTimeframe,
 } from "../signalOutlook";
 import { calculateFaultlinePressure } from "../pressure/engine";
+import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { invokeLLM } from "../_core/llm";
 import { getQuote } from "../yahooProxy";
 
@@ -231,22 +232,30 @@ export const outlookRouter = router({
   getTodaysStory: publicProcedure
     .query(async () => {
       try {
-        const pressure = await calculateFaultlinePressure();
-        const topOpp = await getTopOpportunities();
+        const [fmosResult, topOpp] = await Promise.allSettled([
+          runFMOSPipelineFast(),
+          getTopOpportunities(),
+        ]);
+        const fmos = fmosResult.status === "fulfilled" ? fmosResult.value : null;
+        const pressure = fmos?.pressure ?? await calculateFaultlinePressure();
+        const topOppData = topOpp.status === "fulfilled" ? topOpp.value : { stocks: [], crypto: [] };
 
-        const topStocks = topOpp.stocks.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
-        const topCrypto = topOpp.crypto.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
+        const topStocks = topOppData.stocks.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
+        const topCrypto = topOppData.crypto.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
         const topVectors = pressure.vectors.slice(0, 5).map(v => `${v.label}: ${v.score}/100 (${v.driver})`).join("; ");
 
         const prompt = `You are FAULTLINE, an institutional-grade market intelligence system. Write today's market story in exactly 5 sections. Be specific, data-driven, and institutional in tone. Use the live data below.
 
 LIVE FAULTLINE DATA:
 - Overall Pressure Index: ${pressure.overallPressure}/100
-- Market Regime: ${pressure.regime} (${pressure.level})
+- Market Regime: ${fmos?.regime?.currentRegime ?? pressure.regime} (${pressure.level})
 - Top Risk Vectors: ${topVectors}
 - Top Stock Opportunities: ${topStocks || "None identified"}
 - Top Crypto Opportunities: ${topCrypto || "None identified"}
-- Historical Analog: ${pressure.topAnalog.label} (${pressure.topAnalog.similarity}% similarity)
+- Historical Analog: ${fmos?.topAnalog?.label ?? pressure.topAnalog.label} (${fmos?.topAnalog?.similarity ?? pressure.topAnalog.similarity}% similarity)
+- Bull Probability: ${fmos?.probability?.bull ?? 50}%
+- Bear Probability: ${fmos?.probability?.bear ?? 30}%
+- Transition Risk: ${fmos?.transition?.transitionProbability ?? 0}%
 - Data Source: ${pressure.dataSource}
 
 Write exactly this JSON structure:

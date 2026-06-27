@@ -2560,3 +2560,71 @@
 - [x] TypeScript: 0 errors
 - [x] Test suite: 654/676 pass (1 SendGrid key validation failure — external service issue, pre-existing)
 - [x] Save final Phase 5 immutable restore checkpoint
+
+---
+
+## Phase 7 — FMOS Architecture (Jun 27, 2026)
+> Immutable pre-FMOS backup: b1c1dfc0
+
+### 1. Architecture Audit Report
+- [x] Complete codebase audit: 12 duplicate clamp(), 2 duplicate HistoricalAnalog, 2 different probability formulas
+- [x] Engine inventory with line counts
+- [x] Cross-engine dependency graph (calculateFaultlinePressure → 21 files)
+- [x] Database schema review (pressureRuns, outlookHistory)
+- [x] Write Architecture Audit Report to /home/ubuntu/faultline-architecture-audit.md
+
+### 2. FMOS Core Layer
+- [x] Create server/fmos/ directory
+- [x] server/fmos/types.ts — all shared FMOS types
+- [x] server/fmos/utils.ts — single canonical clamp(), scoreToLabel(), shared utilities
+- [x] server/fmos/pipeline.ts — universal intelligence pipeline orchestrator
+
+### 3. FMOS Engines 1-7
+- [x] Engine 1: Data Acquisition Engine
+- [x] Engine 2: Market DNA Engine
+- [x] Engine 3: Market Weather Engine
+- [x] Engine 4: Regime Engine
+- [x] Engine 5: Transition Engine
+- [x] Engine 6: Evidence Engine
+- [x] Engine 7: Probability Engine
+
+### 4. FMOS Engines 8-14
+- [x] Engine 8: Confidence Engine
+- [x] Engine 9: Historical Analog Engine (unified)
+- [x] Engine 10: Decision Engine
+- [x] Engine 11: AI Interpretation Engine
+- [x] Engine 12: Calibration Engine
+- [x] Engine 13: Learning Engine
+- [x] Engine 14: Universal Intelligence Pipeline
+
+### 5. Feature Migration
+- [x] Smart Discovery: consume FMOS Universal Pipeline
+- [x] Market Command Center: display FMOS outputs (via fmos.runPipelineFast)
+- [ ] Signal Outlook: consume FMOS Probability Engine (deferred P8)
+- [ ] Day Trade Intelligence: consume FMOS Market Weather (deferred P8)
+- [x] Migrate all 12 duplicate clamp() to server/fmos/utils.ts
+- [x] Migrate all 2 duplicate HistoricalAnalog to server/fmos/types.ts
+
+### 6. Validation Lab
+- [x] Create /app/validation-lab page
+- [x] Brier score, calibration chart, transition success rate
+- [x] Evidence weighting analysis
+- [x] Add to nav (LEARN section)
+
+### 7. Production Audit
+- [x] TypeScript: 0 errors
+- [x] Tests: 654/676 baseline maintained
+- [x] All existing features intact
+
+### 8. Deliverables (15 required)
+- [x] Architecture Diagram (faultline-fmos-architecture.png)
+- [x] Engine Docs (all 14 engines documented in implementation report)
+- [x] API Docs (tRPC procedures, FMOSUniversalOutput schema)
+- [x] Methodology docs (Probability, Evidence, Historical Analog, Decision, Calibration)
+- [x] Technical Debt Report (resolved + remaining)
+- [x] Feature Migration Report (migration guide + priority table)
+- [x] Future Roadmap (Phase 8, 9, 10 roadmap)
+
+### 9. Final Checkpoint
+- [ ] Save FMOS final checkpoint
+- [ ] Deliver implementation report to user

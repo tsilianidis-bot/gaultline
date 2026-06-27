@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle, Command, ScanSearch,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle, Command, ScanSearch, FlaskConical,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import AIReceptionistLink from "@/components/AIReceptionistLink";
@@ -80,8 +80,9 @@ const NAV_GROUPS: NavGroup[] = [
     label: "LEARN",
     items: [
       { id: "report",       label: "Daily Briefing", shortLabel: "Briefing",  icon: FileText,   path: "/app/report" },
-      { id: "track-record", label: "Track Record",   shortLabel: "Track Rec", icon: Trophy,     path: "/app/track-record" },
-      { id: "guide",        label: "Guide",          shortLabel: "Guide",     icon: BookOpen,   path: "/app/guide" },
+      { id: "track-record",  label: "Track Record",   shortLabel: "Track Rec", icon: Trophy,        path: "/app/track-record" },
+      { id: "validation-lab", label: "Validation Lab", shortLabel: "Val. Lab",  icon: FlaskConical,  path: "/app/validation-lab" },
+      { id: "guide",          label: "Guide",          shortLabel: "Guide",     icon: BookOpen,      path: "/app/guide" },
       { id: "account",      label: "Account",        shortLabel: "Account",   icon: User,       path: "/app/account" },
     ],
   },
