@@ -19,6 +19,7 @@ import {
   ArrowRight, Bitcoin, DollarSign, Eye, Layers, Clock,
 } from "lucide-react";
 import NarrativeLoader from "@/components/NarrativeLoader";
+import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 
 // ── Types (mirrored from server) ─────────────────────────────
 type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | "Avoid";
@@ -1508,6 +1509,14 @@ export default function SignalOutlookCenter() {
             padding: "16px",
             marginBottom: "20px",
           }}>
+            {/* Security Context Bar */}
+            <div style={{ marginBottom: 12 }}>
+              <UniversalTickerHeader
+                symbol={selectedSymbol}
+                assetType={selectedAssetType}
+              />
+            </div>
+
             {/* Report header: symbol + timeframe selector + clear */}
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "14px", flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>

@@ -16,6 +16,7 @@ import {
   DollarSign, History, FlaskConical, ArrowRight,
 } from "lucide-react";
 import FaultlineTerm from "@/components/FaultlineTerm";
+import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
@@ -1009,6 +1010,16 @@ export default function SituationRoom() {
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", letterSpacing: "0.1em" }}>NEW SIMULATION</span>
               </button>
             </div>
+
+            {/* ═══ SECURITY CONTEXT BAR ═══ */}
+            {result.ticker && (
+              <div style={{ marginBottom: 10 }}>
+                <UniversalTickerHeader
+                  symbol={result.ticker}
+                  assetType={isCryptoMove ? "crypto" : "stock"}
+                />
+              </div>
+            )}
 
             {/* ═══ NEW: DECISION VERDICT BANNER ═══ */}
             {result.verdict && (() => {

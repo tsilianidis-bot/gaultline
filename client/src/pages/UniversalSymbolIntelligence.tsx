@@ -8,6 +8,7 @@ import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { TickerContext } from "@/components/TickerContext";
+import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 import {
   Telescope, Search, TrendingUp, TrendingDown, Activity,
   Shield, Radio, Target, Brain, RefreshCw, AlertTriangle,
@@ -456,43 +457,87 @@ function RiskAnalysisTab({ report }: { report: DayTradeReport }) {
 
 // ── AI Analysis Tab ───────────────────────────────────────────
 function AIAnalysisTab({ report }: { report: DayTradeReport }) {
+  const isNoTrade = report.setupType === "NO_TRADE";
+  const verdictColor = isNoTrade ? '#6B7280' : report.direction === 'bullish' ? '#00FF88' : '#FF6B6B';
+  const verdictLabel = isNoTrade ? 'NO TRADE' : report.direction === 'bullish' ? 'BULLISH SETUP' : 'BEARISH SETUP';
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      {report.catalystSummary && (
-        <div style={CARD}>
-          <div style={LABEL}>Catalyst Summary</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.catalystSummary}</div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+
+      {/* ── 1. VERDICT ─────────────────────────────────────────── */}
+      <div style={{ ...CARD, background: `${verdictColor}08`, borderColor: `${verdictColor}30` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '4px' }}>FAULTLINE VERDICT</div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: '22px', color: verdictColor, letterSpacing: '0.06em', textShadow: `0 0 20px ${verdictColor}50` }}>{verdictLabel}</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.7)', marginTop: '3px' }}>
+              {report.setupType} · {report.executionGrade} grade · {report.confidence}/100 confidence
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>R:R RATIO</div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color: report.riskRewardRatio >= 2 ? '#00FF88' : '#FF9500' }}>{report.riskRewardRatio.toFixed(1)}:1</div>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* ── 2. WHY ────────────────────────────────────────────── */}
       {report.whyTradeExists && (
         <div style={CARD}>
-          <div style={LABEL}>Why This Opportunity Exists</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '6px' }}>WHY THIS OPPORTUNITY EXISTS</div>
           <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.whyTradeExists}</div>
         </div>
       )}
+
+      {/* ── 3. WHAT TO WATCH ─────────────────────────────────── */}
       {report.mostLikelyPath && (
         <div style={CARD}>
-          <div style={LABEL}>AI Price Path Analysis</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(192,132,252,0.6)', marginBottom: '6px' }}>WHAT TO WATCH — AI PRICE PATH</div>
           <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.mostLikelyPath}</div>
           {report.alternativePath && (
             <div style={{ ...MONO_SM, color: "#6B7280", lineHeight: 1.6, marginTop: "8px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-              Alternative: {report.alternativePath}
+              <span style={{ color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', fontSize: '9px' }}>ALTERNATIVE PATH: </span>{report.alternativePath}
             </div>
           )}
         </div>
       )}
-      {report.bestStrategy && (
-        <div style={{ ...CARD, borderColor: "rgba(255,215,0,0.2)" }}>
-          <div style={{ ...LABEL, color: "#FFD700", marginBottom: "8px" }}>AI Recommended Strategy</div>
-          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.bestStrategy}</div>
-        </div>
-      )}
-      {report.recommendedTimeframe && (
+
+      {/* ── 4. CATALYSTS ───────────────────────────────────────── */}
+      {report.catalystSummary && (
         <div style={CARD}>
-          <div style={LABEL}>Recommended Timeframe</div>
-          <div style={{ ...MONO_SM, color: "#00D4FF", lineHeight: 1.5 }}>{report.recommendedTimeframe}</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,255,136,0.6)', marginBottom: '6px' }}>CATALYSTS</div>
+          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.catalystSummary}</div>
         </div>
       )}
+
+      {/* ── 5. ACTION PLAN ─────────────────────────────────────── */}
+      {report.bestStrategy && (
+        <div style={{ ...CARD, borderColor: "rgba(255,215,0,0.2)", background: "rgba(255,215,0,0.03)" }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(255,215,0,0.7)', marginBottom: '6px' }}>ACTION PLAN</div>
+          <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>{report.bestStrategy}</div>
+          {report.recommendedTimeframe && (
+            <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.1em' }}>TIMEFRAME:</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#00D4FF', fontWeight: 700 }}>{report.recommendedTimeframe}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 6. CONFIDENCE ──────────────────────────────────────── */}
+      <div style={{ ...CARD, background: 'rgba(0,212,255,0.03)', borderColor: 'rgba(0,212,255,0.15)' }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: 'rgba(0,212,255,0.6)', marginBottom: '8px' }}>CONFIDENCE BREAKDOWN</div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+          <div style={{ flex: 1, height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${report.confidence}%`, background: report.confidence >= 70 ? '#00FF88' : report.confidence >= 50 ? '#00D4FF' : '#FF9500', borderRadius: '2px', transition: 'width 0.5s ease' }} />
+          </div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: report.confidence >= 70 ? '#00FF88' : report.confidence >= 50 ? '#00D4FF' : '#FF9500', minWidth: '40px', textAlign: 'right' }}>{report.confidence}%</div>
+        </div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.5)' }}>
+          {report.confidence >= 70 ? 'High conviction — setup quality meets institutional threshold' : report.confidence >= 50 ? 'Moderate conviction — proceed with reduced size' : 'Low conviction — wait for better entry or skip'}
+        </div>
+      </div>
+
       <div style={{ ...CARD, background: "rgba(255,170,0,0.04)", borderColor: "rgba(255,170,0,0.15)" }}>
         <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
           <AlertTriangle size={12} style={{ color: "#FFAA00", marginTop: "2px", flexShrink: 0 }} />
@@ -668,10 +713,13 @@ export default function UniversalSymbolIntelligence() {
           </div>
         </div>
 
-        {/* TickerContext — live price, change, volume, sector, regime */}
+        {/* UniversalTickerHeader — live price, change, volume, sector, regime, opportunity score */}
         {submitted && (
           <div style={{ marginBottom: "16px" }}>
-            <TickerContext ticker={submitted.symbol} />
+            <UniversalTickerHeader
+              symbol={submitted.symbol}
+              assetType={submitted.assetType === "crypto" ? "crypto" : "stock"}
+            />
           </div>
         )}
 

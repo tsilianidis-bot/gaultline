@@ -18,6 +18,7 @@ import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackCryptoSignalViewed } from "@/hooks/useAnalytics";
 import { TickerChip } from "@/components/TickerActionMenu";
 import { TickerContext } from "@/components/TickerContext";
+import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -746,10 +747,13 @@ function CryptoQuickSearch() {
         ))}
       </div>
 
-      {/* TickerContext — live price bar when a symbol is submitted */}
+      {/* UniversalTickerHeader — live price, change, volume, opportunity score */}
       {submitted && (
         <div style={{ marginTop: "10px" }}>
-          <TickerContext ticker={submitted} compact />
+          <UniversalTickerHeader
+            symbol={submitted}
+            assetType="crypto"
+          />
         </div>
       )}
 

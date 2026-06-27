@@ -764,6 +764,107 @@ export default function Dashboard() {
         );
       })()}
 
+      {/* ── TODAY'S INTELLIGENCE STRIP — 8 above-the-fold cards ─────── */}
+      {(() => {
+        const topDomain = topThreat;
+        const bestDomain = topStabilizer;
+        const biggestShift = changedDomains[0];
+        const topAnalog = analogs[0];
+        const riskScore = overall.score;
+        const bullProb = probability.bullProbability;
+        const crashProb = probability.crashProbability;
+
+        const cards = [
+          {
+            label: 'HIGHEST CONVICTION',
+            value: overall.riskLevel === 'low' ? 'RISK-ON' : overall.riskLevel === 'moderate' ? 'SELECTIVE' : 'DEFENSIVE',
+            sub: overall.riskLevel === 'low' ? 'Momentum + macro aligned' : overall.riskLevel === 'moderate' ? 'High-conviction setups only' : 'Capital preservation mode',
+            color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#00D4FF' : '#FF9500',
+            href: '/app/signals',
+          },
+          {
+            label: 'BIGGEST THREAT',
+            value: topDomain?.label?.split(' ').slice(0, 2).join(' ') ?? '—',
+            sub: `Score: ${topDomain?.score?.toFixed(1) ?? '—'}/10 · ${topDomain?.riskLevel ?? '—'} risk`,
+            color: '#FF2D55',
+            href: '/app/pressure',
+          },
+          {
+            label: 'BEST SECTOR',
+            value: bestDomain?.label?.split(' ').slice(0, 2).join(' ') ?? '—',
+            sub: `Score: ${bestDomain?.score?.toFixed(1) ?? '—'}/10 · lowest pressure`,
+            color: '#00FF88',
+            href: '/app/signal-outlook',
+          },
+          {
+            label: 'LARGEST ROTATION',
+            value: biggestShift ? `${biggestShift.label.split(' ')[0]} ${biggestShift.delta > 0 ? '↑' : '↓'}` : '—',
+            sub: biggestShift ? `Δ${biggestShift.delta >= 0 ? '+' : ''}${biggestShift.delta.toFixed(2)} vs baseline` : 'No major shifts',
+            color: biggestShift ? (biggestShift.delta > 0 ? '#FF9500' : '#00FF88') : '#94A3B8',
+            href: '/app/pressure',
+          },
+          {
+            label: 'BULL PROBABILITY',
+            value: `${bullProb}%`,
+            sub: bullProb >= 60 ? 'Favorable conditions' : bullProb >= 40 ? 'Neutral positioning' : 'Risk-off environment',
+            color: bullProb >= 60 ? '#00FF88' : bullProb >= 40 ? '#00D4FF' : '#FF9500',
+            href: '/app/pre-flight',
+          },
+          {
+            label: 'GREATEST OPPORTUNITY',
+            value: overall.riskLevel === 'low' ? 'BREAKOUTS' : overall.riskLevel === 'moderate' ? 'REVERSALS' : 'HEDGES',
+            sub: overall.riskLevel === 'low' ? 'Momentum setups active' : overall.riskLevel === 'moderate' ? 'Oversold bounces forming' : 'Inverse ETFs + puts',
+            color: '#C084FC',
+            href: '/app/signal-outlook',
+          },
+          {
+            label: 'BIGGEST RISK',
+            value: `${crashProb}%`,
+            sub: crashProb >= 30 ? 'Crash probability elevated' : crashProb >= 15 ? 'Tail risk present' : 'Crash risk contained',
+            color: crashProb >= 30 ? '#FF2D55' : crashProb >= 15 ? '#FF9500' : '#00FF88',
+            href: '/app/pressure',
+          },
+          {
+            label: 'HISTORICAL ANALOG',
+            value: topAnalog?.era?.split(' ').slice(0, 2).join(' ') ?? '—',
+            sub: topAnalog ? `${topAnalog.similarity}% similarity · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'No analog match',
+            color: '#00D4FF',
+            href: '/app/pre-flight',
+          },
+        ];
+
+        return (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            borderBottom: '1px solid rgba(255,255,255,0.05)',
+          }}>
+            {cards.map((card, i) => (
+              <a
+                key={card.label}
+                href={card.href}
+                style={{
+                  display: 'block',
+                  padding: '10px 12px',
+                  borderRight: i % 4 < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  background: i % 2 === 0 ? 'rgba(255,255,255,0.008)' : 'transparent',
+                  textDecoration: 'none',
+                  transition: 'background 0.15s ease',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = `${card.color}08`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = i % 2 === 0 ? 'rgba(255,255,255,0.008)' : 'transparent'; }}
+              >
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', letterSpacing: '0.15em', color: 'rgba(100,116,139,0.55)', marginBottom: '4px' }}>{card.label}</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: card.color, lineHeight: 1, marginBottom: '3px', textShadow: `0 0 12px ${card.color}50` }}>{card.value}</div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(148,163,184,0.5)', lineHeight: 1.4 }}>{card.sub}</div>
+              </a>
+            ))}
+          </div>
+        );
+      })()}
+
             {/* ── Main content ────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
         {/* ── 3-Mode Intelligence Selector ─────────────────────── */}

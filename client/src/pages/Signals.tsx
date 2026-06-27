@@ -899,6 +899,131 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             </div>
           )}
 
+          {/* ── Institutional Signal Data (Phase 3.5) ─────────────────────── */}
+          {(stock.opportunityScore !== undefined || stock.entryZone || stock.support || stock.catalysts?.length) && (
+            <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '8px' }}>INSTITUTIONAL SIGNAL DATA</div>
+
+              {/* Row 1: Opportunity Score + R:R + Confidence + Macro Alignment */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
+                {stock.opportunityScore !== undefined && (
+                  <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '3px' }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>OPP SCORE</div>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: stock.opportunityScore >= 80 ? '#00FF88' : stock.opportunityScore >= 60 ? '#00D4FF' : '#FF9500', lineHeight: 1 }}>{stock.opportunityScore}</div>
+                  </div>
+                )}
+                {stock.riskReward && (
+                  <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '3px' }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>R:R RATIO</div>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#00FF88', lineHeight: 1 }}>{stock.riskReward}</div>
+                  </div>
+                )}
+                {stock.confidence !== undefined && (
+                  <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(192,132,252,0.04)', border: '1px solid rgba(192,132,252,0.1)', borderRadius: '3px' }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(192,132,252,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>CONFIDENCE</div>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#C084FC', lineHeight: 1 }}>{stock.confidence}%</div>
+                  </div>
+                )}
+                {stock.macroAlignment && (
+                  <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '3px' }}>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>MACRO</div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: stock.macroAlignment === 'Strong' ? '#00FF88' : stock.macroAlignment === 'Moderate' ? '#00D4FF' : stock.macroAlignment === 'Weak' ? '#FF9500' : '#FF2D55', fontWeight: 700, lineHeight: 1.2 }}>{stock.macroAlignment.toUpperCase()}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Row 2: Entry Zone + Support + Resistance + Stop Loss */}
+              {(stock.entryZone || stock.support || stock.resistance || stock.stopLoss) && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
+                  {stock.entryZone && (
+                    <div style={{ padding: '5px 7px', background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.1)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>ENTRY ZONE</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.entryZone}</div>
+                    </div>
+                  )}
+                  {stock.support && (
+                    <div style={{ padding: '5px 7px', background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.08)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>SUPPORT</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.support}</div>
+                    </div>
+                  )}
+                  {stock.resistance && (
+                    <div style={{ padding: '5px 7px', background: 'rgba(255,45,85,0.03)', border: '1px solid rgba(255,45,85,0.08)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(255,45,85,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>RESISTANCE</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.resistance}</div>
+                    </div>
+                  )}
+                  {stock.stopLoss && (
+                    <div style={{ padding: '5px 7px', background: 'rgba(255,45,85,0.04)', border: '1px solid rgba(255,45,85,0.12)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>STOP LOSS</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,45,85,0.8)', fontWeight: 700, lineHeight: 1.3 }}>{stock.stopLoss}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Row 3: Profit Targets */}
+              {stock.profitTargets && stock.profitTargets.length > 0 && (
+                <div style={{ marginBottom: '6px', padding: '6px 8px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '3px' }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.1em', marginBottom: '4px' }}>PROFIT TARGETS</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {stock.profitTargets.map((t, i) => (
+                      <span key={t} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#00FF88', fontWeight: 700, padding: '2px 6px', background: 'rgba(0,255,136,0.08)', borderRadius: '2px', border: '1px solid rgba(0,255,136,0.2)' }}>
+                        T{i + 1}: {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Row 4: Catalysts + Threats */}
+              {(stock.catalysts?.length || stock.threats?.length) && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+                  {stock.catalysts && stock.catalysts.length > 0 && (
+                    <div style={{ padding: '6px 8px', background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.08)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.1em', marginBottom: '4px' }}>CATALYSTS</div>
+                      {stock.catalysts.map(c => (
+                        <div key={c} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.5 }}>· {c}</div>
+                      ))}
+                    </div>
+                  )}
+                  {stock.threats && stock.threats.length > 0 && (
+                    <div style={{ padding: '6px 8px', background: 'rgba(255,45,85,0.03)', border: '1px solid rgba(255,45,85,0.08)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(255,45,85,0.5)', letterSpacing: '0.1em', marginBottom: '4px' }}>THREATS</div>
+                      {stock.threats.map(t => (
+                        <div key={t} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.5 }}>· {t}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Row 5: Historical Analog + Institutional Flow + Expected Holding Period */}
+              {(stock.historicalAnalog || stock.institutionalFlow || stock.expectedHoldingPeriod) && (
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '6px' }}>
+                  {stock.historicalAnalog && (
+                    <div style={{ padding: '5px 8px', background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.1)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>HISTORICAL ANALOG</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)' }}>{stock.historicalAnalog}</div>
+                    </div>
+                  )}
+                  {stock.institutionalFlow && (
+                    <div style={{ padding: '5px 8px', background: 'rgba(192,132,252,0.04)', border: '1px solid rgba(192,132,252,0.1)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(192,132,252,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>INST FLOW</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', fontWeight: 700, color: stock.institutionalFlow === 'Accumulating' ? '#00FF88' : stock.institutionalFlow === 'Distributing' ? '#FF2D55' : '#94A3B8' }}>{stock.institutionalFlow.toUpperCase()}</div>
+                    </div>
+                  )}
+                  {stock.expectedHoldingPeriod && (
+                    <div style={{ padding: '5px 8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '3px' }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(100,116,139,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>HOLD PERIOD</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)' }}>{stock.expectedHoldingPeriod}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* All signals */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
             {stock.signals.map(sig => <SignalTag key={sig} signal={sig} />)}

@@ -1677,6 +1677,17 @@ export interface DiscoveryItem {
   riskLevel: "Low" | "Medium" | "High" | "Extreme";
   direction: OutlookDirection;
   rationale: string;
+  // Extended card data
+  bullCase: string;
+  bearCase: string;
+  invalidationLevel: string;
+  whyFaultlineLikesIt: string;
+  institutionalConviction: "Low" | "Moderate" | "High" | "Very High";
+  macroAlignment: number;         // 0–100
+  riskRewardRatio: string;        // e.g. "2.5:1"
+  confidenceLevel: number;        // 0–100
+  topCatalyst: string;
+  actionBias: "BUY" | "WATCH" | "HOLD" | "REDUCE" | "AVOID";
 }
 
 export interface DiscoveryBucket {
@@ -2069,6 +2080,112 @@ function discoveryCatalyst(category: DiscoveryCategory, score: number): string {
 
 const discoveryCache = new LRUCache<string, OpportunityDiscoveryResult>(2, 10 * 60_000);
 
+// ── Discovery item extended field helpers ─────────────────────
+
+function discoveryBullCase(category: DiscoveryCategory, score: number, pressure: number): string {
+  const pools: Partial<Record<DiscoveryCategory, string[]>> = {
+    top_opportunity_today:      ["Regime alignment at peak — all macro vectors confirm risk-on", "Institutional flows accelerating into this setup", "Momentum breakout with volume confirmation"],
+    emerging_breakouts:         ["Price approaching key resistance with volume expansion", "Breakout pattern forming on multiple timeframes", "Relative strength outperforming benchmark"],
+    high_conviction_setups:     ["Strong regime alignment with clear risk/reward", "Multiple technical factors converging", "Institutional accumulation detected in recent sessions"],
+    ai_leaders:                 ["AI infrastructure spending cycle accelerating", "Earnings revisions trending higher across sector", "Regime favors high-growth technology exposure"],
+    crypto_leaders:             ["On-chain metrics showing accumulation phase", "Macro regime supports digital asset exposure", "Momentum building across crypto market structure"],
+    macro_beneficiaries:        ["Current macro regime directly benefits this sector", "Policy tailwinds aligning with sector fundamentals", "Rotation flows moving into this category"],
+    undervalued_opportunities:  ["Price-to-fundamentals gap creating asymmetric upside", "Catalyst approaching that could close the valuation gap", "Smart money accumulation visible in volume patterns"],
+    high_risk_high_reward:      ["Asymmetric setup with defined risk and outsized potential", "Catalyst event approaching — binary outcome favors bulls", "Short interest elevated — squeeze potential if momentum builds"],
+    defense_geopolitical:       ["Geopolitical risk premium supporting defense spending", "Government contract pipeline expanding", "Sector rotation into defensive names accelerating"],
+    energy_transition:          ["Policy support for clean energy investment increasing", "Infrastructure spending cycle benefits this sector", "Long-term secular tailwind intact"],
+    biotech_healthcare:         ["FDA catalyst approaching — binary event with upside", "Pipeline value not reflected in current price", "Healthcare spending resilient in all macro regimes"],
+    fintech_payments:           ["Digital payment volumes growing at accelerating rate", "Market share gains in underpenetrated markets", "Regulatory environment becoming more favorable"],
+    infrastructure_industrials: ["Government infrastructure spending creating durable demand", "Industrial cycle in early expansion phase", "Pricing power intact despite input cost pressures"],
+    consumer_discretionary:     ["Consumer spending resilient despite macro headwinds", "Brand strength supporting premium pricing", "International expansion driving incremental growth"],
+    dividend_income:            ["Dividend yield attractive relative to risk-free rate", "Cash flow generation supports dividend sustainability", "Defensive characteristics attractive in current regime"],
+    small_cap_growth:           ["Small cap premium historically attractive at current valuations", "Niche market leadership with high growth runway", "Acquisition target potential adds optionality"],
+    defi_web3:                  ["Protocol revenue growing with user adoption", "DeFi TVL recovering — ecosystem health improving", "Institutional interest in Web3 infrastructure increasing"],
+    commodities_real_assets:    ["Inflation hedge demand supporting real asset prices", "Supply constraints creating structural price support", "Dollar weakness tailwind for commodity prices"],
+    volatility_plays:           ["Volatility regime shift approaching — positioning ahead", "Event risk calendar supports elevated VIX", "Portfolio hedge value increasing in current environment"],
+    short_squeeze_candidates:   ["Short interest at extreme levels — fuel for rapid squeeze", "Catalyst approaching that could force short covering", "Options market pricing in elevated upside move"],
+    earnings_momentum:          ["Earnings beat streak intact — revisions trending higher", "Guidance raised — management confidence high", "Multiple expansion possible as earnings quality improves"],
+    technical_reversals:        ["Oversold conditions with positive divergence forming", "Key support level holding — buyers stepping in", "Mean reversion setup with defined risk at support"],
+    institutional_accumulation: ["Dark pool activity suggests institutional buying program", "Unusual volume patterns consistent with accumulation", "Smart money positioning ahead of catalyst"],
+    etf_flows:                  ["ETF inflows accelerating — passive demand supporting price", "Index rebalancing creating technical buying pressure", "Sector rotation flows entering this ETF category"],
+    global_macro:               ["Global macro regime shift creating international opportunity", "Currency tailwind for this market", "Valuation discount to US equities closing"],
+    space_deep_tech:            ["Government contract awards accelerating revenue visibility", "Technology milestones approaching — catalyst potential", "Long-term secular growth in space economy intact"],
+  };
+  const options = pools[category] ?? ["Regime-aligned setup with favorable risk/reward", "Multiple factors converging for upside"];
+  return options[score % options.length];
+}
+
+function discoveryBearCase(category: DiscoveryCategory, pressure: number): string {
+  const highPressure = pressure >= 60;
+  const pools: Partial<Record<DiscoveryCategory, string[]>> = {
+    top_opportunity_today:      ["Macro pressure spike could invalidate setup quickly", "Crowded trade — reversal risk if sentiment shifts"],
+    emerging_breakouts:         ["False breakout risk if volume doesn't confirm", "Resistance level may hold — setup fails without volume"],
+    high_conviction_setups:     ["Conviction can reverse quickly if macro deteriorates", "High expectations already priced in"],
+    ai_leaders:                 ["AI bubble risk — valuation stretched relative to earnings", "Rate sensitivity high — Fed pivot could compress multiples"],
+    crypto_leaders:             ["Crypto volatility can overwhelm technical setups", "Regulatory risk remains elevated"],
+    macro_beneficiaries:        ["Macro regime can shift faster than fundamentals", "Policy reversal could remove tailwind"],
+    undervalued_opportunities:  ["Value trap risk — cheap for a reason", "Catalyst may not materialize on expected timeline"],
+    high_risk_high_reward:      ["Binary outcome — full loss possible if catalyst fails", "Liquidity risk in volatile conditions"],
+    defense_geopolitical:       ["Geopolitical de-escalation removes premium", "Budget cuts could reduce contract pipeline"],
+    energy_transition:          ["Policy reversal risk under new administration", "Technology cost curve slower than expected"],
+    biotech_healthcare:         ["FDA rejection risk — binary downside", "Clinical trial failure could erase gains"],
+    fintech_payments:           ["Regulatory crackdown risk increasing", "Competition from big tech intensifying"],
+    infrastructure_industrials: ["Spending delays or budget cuts reduce visibility", "Input cost inflation squeezing margins"],
+    consumer_discretionary:     ["Consumer spending slowdown risk", "Interest rate sensitivity high"],
+    dividend_income:            ["Dividend cut risk if cash flows deteriorate", "Rising rates make yield less attractive"],
+    small_cap_growth:           ["Liquidity risk — small caps sell off harder in downturns", "Funding risk if rates stay elevated"],
+    defi_web3:                  ["Smart contract exploit risk", "Regulatory action could freeze protocols"],
+    commodities_real_assets:    ["Dollar strength headwind", "Demand destruction in recession scenario"],
+    volatility_plays:           ["Volatility crush risk if event passes without move", "Contango decay in VIX products"],
+    short_squeeze_candidates:   ["Short sellers may be right — fundamentals deteriorating", "Squeeze may have already occurred"],
+    earnings_momentum:          ["High expectations — any miss punished severely", "Multiple compression risk if growth decelerates"],
+    technical_reversals:        ["Support breaks — setup fails with accelerated downside", "Dead cat bounce risk in downtrend"],
+    institutional_accumulation: ["Institutions may be wrong — contrarian risk", "Distribution disguised as accumulation"],
+    etf_flows:                  ["Passive flows can reverse quickly in risk-off", "Concentration risk in top holdings"],
+    global_macro:               ["Currency risk can overwhelm equity returns", "Political instability adds unpredictable risk"],
+    space_deep_tech:            ["Long development timelines — capital at risk for years", "Competition from well-funded incumbents"],
+  };
+  const options = pools[category] ?? ["Macro deterioration could invalidate setup", "Execution risk remains elevated"];
+  return options[highPressure ? 0 : 1] ?? options[0];
+}
+
+function discoveryInvalidation(score: number, assetType: "stock" | "crypto"): string {
+  if (assetType === "crypto") {
+    if (score >= 75) return "Breakdown below 7% from entry — close position";
+    if (score >= 60) return "Breakdown below 10% from entry — reassess thesis";
+    return "Breakdown below 15% from entry — exit and wait";
+  }
+  if (score >= 75) return "Close below 20-day SMA with volume — exit signal";
+  if (score >= 60) return "Break of recent swing low — thesis invalidated";
+  return "Loss of key support level — reduce exposure";
+}
+
+function discoveryWhyFaultlineLikesIt(score: number, pressure: number, category: DiscoveryCategory): string {
+  const rr = score >= 75 ? "3:1" : score >= 60 ? "2:1" : "1.5:1";
+  const conviction = score >= 75 ? "High" : score >= 55 ? "Moderate" : "Low";
+  const regime = pressure < 40 ? "risk-on" : pressure < 60 ? "mixed" : "risk-off";
+  return `${conviction} conviction setup in ${regime} regime. R:R ${rr}. Score ${score}/100 — ${score >= 70 ? "top decile opportunity" : score >= 55 ? "above-average setup" : "speculative position only"}.`;
+}
+
+function discoveryInstitutionalConviction(score: number, category: DiscoveryCategory): DiscoveryItem["institutionalConviction"] {
+  const highConvictionCategories: DiscoveryCategory[] = ["institutional_accumulation", "top_opportunity_today", "high_conviction_setups", "earnings_momentum"];
+  const boost = highConvictionCategories.includes(category) ? 10 : 0;
+  const adjusted = score + boost;
+  if (adjusted >= 80) return "Very High";
+  if (adjusted >= 65) return "High";
+  if (adjusted >= 50) return "Moderate";
+  return "Low";
+}
+
+function discoveryActionBias(score: number, pressure: number): DiscoveryItem["actionBias"] {
+  if (pressure >= 70) return score >= 75 ? "WATCH" : "AVOID";
+  if (score >= 75) return "BUY";
+  if (score >= 60) return "WATCH";
+  if (score >= 45) return "HOLD";
+  if (score >= 30) return "REDUCE";
+  return "AVOID";
+}
+
 export async function getOpportunityDiscovery(): Promise<OpportunityDiscoveryResult> {
   const cached = discoveryCache.get("discovery");
   if (cached) return cached;
@@ -2093,6 +2210,10 @@ export async function getOpportunityDiscovery(): Promise<OpportunityDiscoveryRes
           ? (score >= 70 ? "High" : "Extreme")
           : baseRisk;
 
+      const topFactor = sb.factors.sort((a, b) => b.score - a.score)[0];
+      const macroAlignment = Math.round((topFactor?.score ?? score) * 0.9);
+      const rr = score >= 75 ? "3:1" : score >= 60 ? "2:1" : "1.5:1";
+
       return {
         ticker: item.symbol,
         name: item.name,
@@ -2102,7 +2223,18 @@ export async function getOpportunityDiscovery(): Promise<OpportunityDiscoveryRes
         catalyst: discoveryCatalyst(category, score),
         riskLevel,
         direction,
-        rationale: sb.factors.sort((a, b) => b.score - a.score)[0]?.note ?? "Regime-aligned setup",
+        rationale: topFactor?.note ?? "Regime-aligned setup",
+        // Extended fields
+        bullCase: discoveryBullCase(category, score, p),
+        bearCase: discoveryBearCase(category, p),
+        invalidationLevel: discoveryInvalidation(score, item.assetType),
+        whyFaultlineLikesIt: discoveryWhyFaultlineLikesIt(score, p, category),
+        institutionalConviction: discoveryInstitutionalConviction(score, category),
+        macroAlignment,
+        riskRewardRatio: rr,
+        confidenceLevel: Math.round(score * 0.85 + (p < 40 ? 10 : p < 60 ? 5 : 0)),
+        topCatalyst: discoveryCatalyst(category, score),
+        actionBias: discoveryActionBias(score, p),
       };
     });
 

@@ -13,6 +13,7 @@ import {
   clearOutlookCaches,
   type OutlookTimeframe,
 } from "../signalOutlook";
+import { getQuote } from "../yahooProxy";
 
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
@@ -138,6 +139,84 @@ export const outlookRouter = router({
       } catch (err) {
         console.error("[outlook.getOpportunityDiscovery] Error:", err);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Opportunity discovery unavailable." });
+      }
+    }),
+
+  /**
+   * Security Context — unified live data bar for any ticker.
+   * Returns price, change, volume, market cap, sector, regime alignment, opportunity score.
+   * Used by UniversalTickerHeader on every analysis page.
+   */
+  getSecurityContext: publicProcedure
+    .input(z.object({
+      symbol: z.string().min(1).max(20).toUpperCase(),
+      assetType: assetTypeSchema,
+    }))
+    .query(async ({ input }) => {
+      try {
+        const [quote, quickOutlook] = await Promise.allSettled([
+          getQuote(input.symbol),
+          getQuickOutlook(input.symbol, input.assetType),
+        ]);
+
+        const q = quote.status === "fulfilled" ? quote.value : null;
+        const o = quickOutlook.status === "fulfilled" ? quickOutlook.value : null;
+
+        // Fetch sector/industry from Polygon reference
+        const apiKey = process.env.POLYGON_API_KEY ?? "";
+        let sector: string | null = null;
+        let industry: string | null = null;
+        let marketCap: number | null = null;
+        if (input.assetType === "stock" && apiKey) {
+          try {
+            const refRes = await fetch(
+              `https://api.polygon.io/v3/reference/tickers/${input.symbol}?apiKey=${apiKey}`,
+              { signal: AbortSignal.timeout(5000) }
+            );
+            if (refRes.ok) {
+              const refData = await refRes.json() as { results?: { sic_description?: string; sector?: string; industry?: string; market_cap?: number } };
+              const r = refData.results ?? {};
+              sector = r.sector ?? null;
+              industry = r.sic_description ?? r.industry ?? null;
+              marketCap = r.market_cap ?? null;
+            }
+          } catch { /* ignore */ }
+        }
+
+        return sanitizeNumbers({
+          symbol: input.symbol,
+          assetType: input.assetType,
+          price: q?.price ?? null,
+          change: q?.change ?? null,
+          changePercent: q?.changePercent ?? null,
+          volume: q?.volume ?? null,
+          marketState: q?.marketState ?? "UNKNOWN",
+          sector,
+          industry,
+          marketCap,
+          opportunityScore: o?.outlookScore ?? null,
+          direction: o?.direction ?? null,
+          riskLevel: o?.riskLevel ?? null,
+          confidence: o?.confidence ?? null,
+        }) as {
+          symbol: string;
+          assetType: "stock" | "crypto";
+          price: number | null;
+          change: number | null;
+          changePercent: number | null;
+          volume: number | null;
+          marketState: string;
+          sector: string | null;
+          industry: string | null;
+          marketCap: number | null;
+          opportunityScore: number | null;
+          direction: string | null;
+          riskLevel: string | null;
+          confidence: number | null;
+        };
+      } catch (err) {
+        console.error("[outlook.getSecurityContext] Error for", input.symbol, err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Security context unavailable for ${input.symbol}.` });
       }
     }),
 

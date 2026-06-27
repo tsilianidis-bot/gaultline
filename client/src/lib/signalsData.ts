@@ -333,6 +333,21 @@ export interface SignalStock {
   bearCase: string;
   invalidationLevel: string;
   whyAppearing: string;
+  // Institutional signal fields (Phase 3.5)
+  opportunityScore?: number;       // 0-100 composite opportunity score
+  entryZone?: string;              // e.g. "$185-$192 accumulation zone"
+  support?: string;                // key support level
+  resistance?: string;             // key resistance level
+  profitTargets?: string[];        // ordered profit targets
+  stopLoss?: string;               // stop-loss level
+  riskReward?: string;             // e.g. "3.2:1"
+  confidence?: number;             // 0-100 conviction score
+  macroAlignment?: 'Strong' | 'Moderate' | 'Weak' | 'Against';
+  institutionalFlow?: 'Accumulating' | 'Distributing' | 'Neutral' | 'Mixed';
+  catalysts?: string[];            // upcoming catalysts
+  threats?: string[];              // key threats
+  historicalAnalog?: string;       // e.g. "NVDA 2023 breakout"
+  expectedHoldingPeriod?: string;  // e.g. "2-4 weeks"
   // API integration hooks
   apiSources: {
     quote: string;
@@ -377,6 +392,16 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     bearCase: 'Valuation excess, China export restrictions, capex cycle peak',
     invalidationLevel: 'Close below $780 (200-day MA)',
     whyAppearing: 'Breaking out on 2x avg volume with AI earnings acceleration',
+    opportunityScore: 92, entryZone: '$840–$875 accumulation zone',
+    support: '$820 (50-day MA)', resistance: '$950 (all-time high zone)',
+    profitTargets: ['$920', '$975', '$1,050'],
+    stopLoss: '$798 (ATR×1.5 below 50-day)',
+    riskReward: '3.4:1', confidence: 88,
+    macroAlignment: 'Strong', institutionalFlow: 'Accumulating',
+    catalysts: ['Q3 earnings beat', 'Blackwell GPU ramp', 'Sovereign AI contracts'],
+    threats: ['China export ban expansion', 'AMD MI300X market share', 'Valuation multiple compression'],
+    historicalAnalog: 'NVDA 2023 AI breakout (+240% in 8 months)',
+    expectedHoldingPeriod: '3–6 weeks',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/NVDA/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=NVDA', shortInterest: 'polygon.io/v2/reference/financials/NVDA', sparkline: 'twelvedata.com/time_series?symbol=NVDA&interval=1h&outputsize=20' },
   },
   {
@@ -394,6 +419,15 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     bearCase: 'Cloud growth deceleration, antitrust risk, valuation',
     invalidationLevel: 'Close below $380 (key support)',
     whyAppearing: 'Consistent earnings beats with AI revenue acceleration',
+    opportunityScore: 78, entryZone: '$405–$420 range',
+    support: '$395 (100-day MA)', resistance: '$440 (52-week high)',
+    profitTargets: ['$435', '$455', '$480'],
+    stopLoss: '$388 (ATR×1.5)', riskReward: '2.8:1', confidence: 76,
+    macroAlignment: 'Strong', institutionalFlow: 'Accumulating',
+    catalysts: ['Azure AI revenue acceleration', 'Copilot enterprise adoption', 'OpenAI partnership upside'],
+    threats: ['Cloud capex overhang', 'Antitrust scrutiny', 'Enterprise budget tightening'],
+    historicalAnalog: 'MSFT 2019 cloud re-rating (+85% in 12 months)',
+    expectedHoldingPeriod: '4–8 weeks',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/MSFT/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=MSFT', shortInterest: 'polygon.io/v2/reference/financials/MSFT', sparkline: 'twelvedata.com/time_series?symbol=MSFT&interval=1h&outputsize=20' },
   },
   {
@@ -411,6 +445,15 @@ export const SIGNAL_STOCKS: SignalStock[] = [
     bearCase: 'China revenue risk, iPhone saturation, regulatory pressure',
     invalidationLevel: 'Close below $200 (prior breakout level)',
     whyAppearing: 'AI supercycle catalyst with services margin expansion',
+    opportunityScore: 71, entryZone: '$215–$225 range',
+    support: '$208 (50-day MA)', resistance: '$235 (all-time high)',
+    profitTargets: ['$230', '$245', '$260'],
+    stopLoss: '$203 (ATR×1.5)', riskReward: '2.5:1', confidence: 70,
+    macroAlignment: 'Moderate', institutionalFlow: 'Neutral',
+    catalysts: ['iPhone 16 AI features launch', 'Services margin expansion', 'India market growth'],
+    threats: ['China regulatory crackdown', 'EU DMA compliance costs', 'Slowing upgrade cycle'],
+    historicalAnalog: 'AAPL 2020 services re-rating (+120% in 18 months)',
+    expectedHoldingPeriod: '6–12 weeks',
     apiSources: { quote: 'polygon.io/v2/aggs/ticker/AAPL/prev', fundamentals: 'finnhub.io/api/v1/stock/metric?symbol=AAPL', shortInterest: 'polygon.io/v2/reference/financials/AAPL', sparkline: 'twelvedata.com/time_series?symbol=AAPL&interval=1h&outputsize=20' },
   },
 

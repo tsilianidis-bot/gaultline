@@ -127,6 +127,17 @@ interface DiscoveryItem {
   assetType: string;
   direction: string;
   rationale: string;
+  // Extended fields
+  bullCase?: string;
+  bearCase?: string;
+  invalidationLevel?: string;
+  whyFaultlineLikesIt?: string;
+  institutionalConviction?: string;
+  macroAlignment?: number;
+  riskRewardRatio?: string;
+  confidenceLevel?: number;
+  topCatalyst?: string;
+  actionBias?: string;
 }
 
 interface DiscoveryBucket {
@@ -136,7 +147,7 @@ interface DiscoveryBucket {
   items: DiscoveryItem[];
 }
 
-function BucketCard({ bucket, onNavigate }: { bucket: DiscoveryBucket; onNavigate: (ticker: string, type: string) => void }) {
+function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBucket; onNavigate: (ticker: string, type: string) => void; onWatchlist: (ticker: string, name: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const accent = getCategoryAccent(bucket.category);
   const icon = getCategoryIcon(bucket.category);
@@ -205,40 +216,143 @@ function BucketCard({ bucket, onNavigate }: { bucket: DiscoveryBucket; onNavigat
         </div>
       )}
 
-      {/* Expanded: all items */}
+      {/* Expanded: all items with full card data */}
       {expanded && (
         <div style={{ borderTop: `1px solid ${accent}12` }}>
           {bucket.items.map((item, idx) => (
             <div
               key={item.ticker}
               style={{
-                padding: "8px 12px",
-                display: "flex", alignItems: "center", gap: "8px",
+                padding: "10px 12px",
                 borderBottom: idx < bucket.items.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                cursor: "pointer",
-                transition: "background 0.15s ease",
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-              onClick={e => { e.stopPropagation(); onNavigate(item.ticker, item.assetType); }}
             >
-              <ScoreRing score={item.opportunityScore} size={30} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: "#F0F4FF" }}>{item.ticker}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "90px" }}>{item.name}</span>
+              {/* Row 1: ticker + score + action bias + navigate */}
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", marginBottom: "8px" }}
+                onClick={e => { e.stopPropagation(); onNavigate(item.ticker, item.assetType); }}
+              >
+                <ScoreRing score={item.opportunityScore} size={32} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#F0F4FF" }}>{item.ticker}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80px" }}>{item.name}</span>
+                    {item.actionBias && (
+                      <span style={{
+                        fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em",
+                        color: item.actionBias === "BUY" ? "#22C55E" : item.actionBias === "WATCH" ? "#FFD700" : item.actionBias === "AVOID" ? "#FF2D55" : "#94A3B8",
+                        background: item.actionBias === "BUY" ? "rgba(34,197,94,0.1)" : item.actionBias === "WATCH" ? "rgba(255,215,0,0.1)" : item.actionBias === "AVOID" ? "rgba(255,45,85,0.1)" : "rgba(148,163,184,0.1)",
+                        padding: "1px 5px", borderRadius: "2px",
+                      }}>{item.actionBias}</span>
+                    )}
+                  </div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.55)", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.catalyst}
+                  </div>
                 </div>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.55)", marginTop: "1px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {item.catalyst}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px", flexShrink: 0 }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: RISK_COLORS[item.riskLevel] ?? "#94A3B8", background: `${RISK_COLORS[item.riskLevel] ?? "#94A3B8"}15`, padding: "1px 5px", borderRadius: "2px" }}>
+                    {item.riskLevel.toUpperCase()}
+                  </span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.45)" }}>{item.expectedTimeHorizon}</span>
                 </div>
+                <ChevronRight size={11} style={{ color: `${accent}80`, flexShrink: 0 }} />
               </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "2px", flexShrink: 0 }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: RISK_COLORS[item.riskLevel] ?? "#94A3B8", background: `${RISK_COLORS[item.riskLevel] ?? "#94A3B8"}15`, padding: "1px 5px", borderRadius: "2px" }}>
-                  {item.riskLevel.toUpperCase()}
-                </span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.45)" }}>{item.expectedTimeHorizon}</span>
+
+              {/* Row 2: Key metrics bar */}
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
+                {item.riskRewardRatio && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>R:R</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#22C55E" }}>{item.riskRewardRatio}</span>
+                  </div>
+                )}
+                {item.macroAlignment != null && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>MACRO ALIGN</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: item.macroAlignment >= 65 ? "#22C55E" : item.macroAlignment >= 45 ? "#FFD700" : "#FF9500" }}>{item.macroAlignment}/100</span>
+                  </div>
+                )}
+                {item.institutionalConviction && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>INST. CONVICTION</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: item.institutionalConviction === "Very High" || item.institutionalConviction === "High" ? "#22C55E" : item.institutionalConviction === "Moderate" ? "#FFD700" : "#94A3B8" }}>{item.institutionalConviction}</span>
+                  </div>
+                )}
+                {item.confidenceLevel != null && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em" }}>CONFIDENCE</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: "#B0C4D8" }}>{item.confidenceLevel}%</span>
+                  </div>
+                )}
               </div>
-              <ChevronRight size={11} style={{ color: `${accent}80`, flexShrink: 0 }} />
+
+              {/* Row 3: Bull / Bear cases */}
+              {(item.bullCase || item.bearCase) && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px", marginBottom: "6px" }}>
+                  {item.bullCase && (
+                    <div style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.12)", borderRadius: "3px", padding: "6px 8px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(34,197,94,0.6)", letterSpacing: "0.1em", marginBottom: "3px" }}>BULL CASE</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.4 }}>{item.bullCase}</div>
+                    </div>
+                  )}
+                  {item.bearCase && (
+                    <div style={{ background: "rgba(255,45,85,0.05)", border: "1px solid rgba(255,45,85,0.12)", borderRadius: "3px", padding: "6px 8px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,45,85,0.6)", letterSpacing: "0.1em", marginBottom: "3px" }}>BEAR CASE</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", lineHeight: 1.4 }}>{item.bearCase}</div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Row 4: Invalidation + Why FAULTLINE Likes It */}
+              {item.invalidationLevel && (
+                <div style={{ background: "rgba(255,149,0,0.05)", border: "1px solid rgba(255,149,0,0.12)", borderRadius: "3px", padding: "5px 8px", marginBottom: "4px" }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,149,0,0.6)", letterSpacing: "0.1em" }}>INVALIDATION: </span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)" }}>{item.invalidationLevel}</span>
+                </div>
+              )}
+              {item.whyFaultlineLikesIt && (
+                <div style={{ background: `${accent}08`, border: `1px solid ${accent}18`, borderRadius: "3px", padding: "5px 8px", marginBottom: "8px" }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: `${accent}80`, letterSpacing: "0.1em" }}>WHY FAULTLINE LIKES IT: </span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)" }}>{item.whyFaultlineLikesIt}</span>
+                </div>
+              )}
+
+              {/* Row 5: Action buttons */}
+              <div style={{ display: "flex", gap: "6px", marginTop: "4px" }}>
+                <button
+                  onClick={e => { e.stopPropagation(); onNavigate(item.ticker, item.assetType); }}
+                  style={{
+                    flex: 1, padding: "5px 8px", borderRadius: "3px", cursor: "pointer",
+                    background: `${accent}15`, border: `1px solid ${accent}30`,
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", fontWeight: 700,
+                    color: accent, letterSpacing: "0.1em",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${accent}25`; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = `${accent}15`; }}
+                >
+                  ANALYZE →
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    onWatchlist(item.ticker, item.name);
+                  }}
+                  style={{
+                    padding: "5px 10px", borderRadius: "3px", cursor: "pointer",
+                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+                    fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
+                    color: "rgba(148,163,184,0.6)", letterSpacing: "0.08em",
+                    transition: "all 0.15s ease",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.2)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.9)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.1)"; (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.6)"; }}
+                >
+                  + WATCHLIST
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -264,6 +378,17 @@ export function OpportunityDiscoveryPanel() {
   function handleRefresh() {
     setRefreshKey(k => k + 1);
     refetch();
+  }
+
+  function handleWatchlist(ticker: string, name: string) {
+    // Show a brief toast-style notification
+    const el = document.createElement("div");
+    el.textContent = `${ticker} added to watchlist`;
+    el.style.cssText = "position:fixed;bottom:24px;right:24px;z-index:9999;background:#0A0F1A;border:1px solid rgba(0,212,255,0.3);color:rgba(0,212,255,0.9);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:8px 14px;border-radius:4px;box-shadow:0 4px 24px rgba(0,0,0,0.5);";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+    // Navigate to watchlist or signal outlook
+    navigate(`/app/signal-outlook?symbol=${ticker}&type=stock`);
   }
 
   return (
@@ -334,7 +459,7 @@ export function OpportunityDiscoveryPanel() {
           {/* 2-column grid for all buckets */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "6px" }}>
             {data.buckets.map((bucket: DiscoveryBucket) => (
-              <BucketCard key={bucket.category} bucket={bucket} onNavigate={handleNavigate} />
+              <BucketCard key={bucket.category} bucket={bucket} onNavigate={handleNavigate} onWatchlist={handleWatchlist} />
             ))}
           </div>
         </>

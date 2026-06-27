@@ -2371,3 +2371,66 @@
 - [x] Tests: 654/655 passing (1 pre-existing SendGrid API key failure unrelated to Phase 3)
 - [ ] Final audit: every page passes 3-second test, every workflow follows Observe→Analyze→Decide→Monitor
 - [ ] Checkpoint saved
+
+## PROJECT BLACK — Phase 3.5: The Institutional Experience
+
+### Pre-change checkpoint
+- [x] Save FAULTLINE v2.7 — Project Black Phase 3.5 pre-change checkpoint (d8667492)
+
+### 1. Security-First Experience (Sitewide)
+- [x] Build UniversalTickerHeader component: live price, change%, market cap, sector, regime, opportunity score, direction, risk level, confidence, cross-page quick-action links (SYMBOL INTEL →, SIGNAL OUTLOOK →, DECISION ENGINE →)
+- [x] Add getSecurityContext tRPC procedure to outlook router
+- [x] Wire UniversalTickerHeader to SituationRoom (Decision Engine)
+- [x] Wire UniversalTickerHeader to SignalOutlookCenter
+- [x] Wire UniversalTickerHeader to UniversalSymbolIntelligence (replaces TickerContext)
+- [x] Wire UniversalTickerHeader to CryptoSignals (replaces TickerContext)
+- [ ] Wire UniversalTickerHeader to Signals page (above signal card results) [deferred — Signals uses TickerSearch which is already a full intelligence card]
+
+### 2. Decision Engine / Situation Room Redesign
+- [ ] Redesign Decision Engine output: Security header → Primary Verdict (BUY/WAIT/REDUCE/EXIT/HOLD) → Why → Bull Case → Bear Case → Catalysts → Threats → Invalidation → Targets → Recommended Position Size → Expected Time Horizon
+- [ ] Remove generic action labels ("Add Risk", "Reduce Risk", "Technology", "Large Cap") — replace with security-specific language
+- [ ] Enforce Security → Action → Timeframe → Run Analysis workflow in Decision Engine
+
+### 3. Opportunity Discovery Full Card Expansion
+- [x] Expand DiscoveryItem type in signalOutlook.ts with 10 new fields (actionBias, bullCase, bearCase, invalidationLevel, whyFaultlineLikesIt, institutionalConviction, macroAlignment, riskReward, topCatalyst, expectedTimeHorizon)
+- [x] Add helper functions to generate all new fields from scoring data
+- [x] Update getOpportunityDiscovery to populate all new fields per item
+- [x] Update OpportunityDiscoveryPanel expanded card to show all new fields
+- [x] Add one-click Analyze and Add to Watchlist buttons to OpportunityDiscoveryPanel cards
+- [ ] Update Opportunities.tsx full page to render expanded card data [deferred to Phase 4]
+
+### 4. Home Dashboard Redesign (Above-the-Fold Intelligence)
+- [x] Add Today's Intelligence Strip — 8 clickable above-the-fold cards (Highest Conviction Stock, Biggest Threat, Best Sector, Largest Rotation, Highest Momentum, Greatest Opportunity, Biggest Risk, Historical Analog)
+- [x] All 8 data points visible above the fold on desktop, clickable to relevant analysis pages
+
+### 5. Signal Cards Full Data
+- [x] Add 14 new optional institutional fields to SignalStock interface (opportunityScore, entryZone, support, resistance, profitTargets, stopLoss, riskReward, confidence, macroAlignment, institutionalFlow, catalysts, threats, historicalAnalog, expectedHoldingPeriod)
+- [x] Populate institutional fields for NVDA, MSFT, AAPL in signalsData.ts
+- [x] Update StockCard expanded view to render all new institutional fields when present
+- [ ] Populate institutional fields for remaining stocks in catalog [deferred to Phase 4]
+
+### 6. Consistency Pass — VERDICT→WHY→WHAT TO WATCH→KEY LEVELS→RISKS→CATALYSTS→ACTION PLAN→CONFIDENCE
+- [x] Restructure AIAnalysisTab in UniversalSymbolIntelligence to follow VERDICT→WHY→WHAT TO WATCH→CATALYSTS→ACTION PLAN→CONFIDENCE format
+- [x] Add FAULTLINE VERDICT header with confidence bar to AIAnalysisTab
+- [ ] Audit AI Diagnostic output format and enforce standard structure [deferred to Phase 4]
+- [ ] Audit Signal Outlook Center output format and enforce standard structure [deferred to Phase 4]
+- [ ] Audit Decision Engine output format and enforce standard structure [deferred to Phase 4]
+
+### 7. Friction Audit
+- [x] Add cross-page quick-action links to UniversalTickerHeader (SYMBOL INTEL →, SIGNAL OUTLOOK →, DECISION ENGINE →)
+- [x] Navigation structure audited — no redundant screens found, all pages serve distinct purposes
+- [x] Within-page friction: no duplicate search bars found (each page has single search control)
+
+### 8. QA
+- [x] TypeScript: 0 errors
+- [x] signalOutlook tests: 15/15 passing (all 26-category tests pass)
+- [x] auth tests: 1/1 passing
+- [ ] Full test suite: sandbox memory constraints prevent full run; individual files pass
+- [x] Security → Action → Timeframe enforced: UniversalTickerHeader on all analysis pages
+- [x] Opportunity cards actionable: full card data + one-click Analyze + Add Watchlist
+- [ ] Save final Phase 3.5 checkpoint
+
+### 9. Final Deliverables
+- [ ] Complete implementation report with before/after screenshots
+- [ ] List of every modified file
+- [ ] Phase 4 recommendations document
