@@ -3,10 +3,10 @@
    Aggregates all intelligence for any stock or crypto symbol:
    Situation Room preflight + Signal Outlook + Day Trade setup + AI Analysis
    ============================================================ */
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { TickerContext } from "@/components/TickerContext";
 import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 import {
@@ -552,12 +552,44 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
 
 // ── Main Page ─────────────────────────────────────────────────
 export default function UniversalSymbolIntelligence() {
-  const [query, setQuery] = useState("");
-  const [assetType, setAssetType] = useState<AssetType>("stock");
-  const [submitted, setSubmitted] = useState<{ symbol: string; assetType: AssetType } | null>(null);
+  const searchStr = useSearch();
+  const urlParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+  const urlSymbol = urlParams.get("symbol")?.toUpperCase() ?? null;
+  const urlType = (urlParams.get("type") === "crypto" ? "crypto" : "stock") as AssetType;
+  const urlAutorun = urlParams.get("autorun") === "1";
+
+  const [query, setQuery] = useState(urlSymbol ?? "");
+  const [assetType, setAssetType] = useState<AssetType>(urlSymbol ? urlType : "stock");
+  const [submitted, setSubmitted] = useState<{ symbol: string; assetType: AssetType } | null>(
+    urlSymbol && urlAutorun ? { symbol: urlSymbol, assetType: urlType } : null
+  );
   const [activeTab, setActiveTab] = useState("overview");
   const inputRef = useRef<HTMLInputElement>(null);
   const [, navigate] = useLocation();
+
+  // Auto-execute when URL params change (Smart Discovery dispatch)
+  useEffect(() => {
+    if (urlSymbol && urlAutorun) {
+      setQuery(urlSymbol);
+      setAssetType(urlType);
+      setSubmitted({ symbol: urlSymbol, assetType: urlType });
+      setActiveTab("overview");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlSymbol, urlType, urlAutorun]);
+
+  // Also listen for si-search events (legacy cross-page dispatch)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { symbol: string; assetType: "stock" | "crypto" };
+      setQuery(detail.symbol);
+      setAssetType(detail.assetType as AssetType);
+      setSubmitted({ symbol: detail.symbol, assetType: detail.assetType as AssetType });
+      setActiveTab("overview");
+    };
+    window.addEventListener("si-search", handler);
+    return () => window.removeEventListener("si-search", handler);
+  }, []);
 
   const { data, isLoading, error, refetch, isFetching } = trpc.dayTrade.symbolSetup.useQuery(
     { symbol: submitted?.symbol ?? "", assetType: submitted?.assetType ?? "stock", direction: "both" },

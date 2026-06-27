@@ -3,9 +3,10 @@
    Bloomberg/Trade Ideas style intraday trading terminal
    7 tabs: Overview · Scanner · Stocks · Crypto · Symbol · Active · Watchlist
    ============================================================ */
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
+import { useSearch } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import NarrativeLoader from "@/components/NarrativeLoader";
@@ -1356,8 +1357,23 @@ const TABS = [
 export default function DayTradeIntelligence() {
   const { user, loading: authLoading } = useAuth();
   void authLoading; // used below
-  const [activeTab, setActiveTab] = useState("overview");
+  const searchStr = useSearch();
+  const urlParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+  const urlSymbol = urlParams.get("symbol")?.toUpperCase() ?? null;
+  const urlType = (urlParams.get("type") === "crypto" ? "crypto" : "stock") as "stock" | "crypto";
+  const urlAutorun = urlParams.get("autorun") === "1";
+
+  const [activeTab, setActiveTab] = useState(urlSymbol && urlAutorun ? "symbol" : "overview");
   const [, navigate] = useState<string>("");
+
+  // Auto-dispatch when navigated from Smart Discovery
+  useEffect(() => {
+    if (urlSymbol && urlAutorun) {
+      setActiveTab("symbol");
+      window.dispatchEvent(new CustomEvent("dt-search", { detail: { symbol: urlSymbol, assetType: urlType } }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlSymbol, urlType, urlAutorun]);
 
   const handleSearch = useCallback((sym: string, type: "stock" | "crypto") => {
     setActiveTab("symbol");

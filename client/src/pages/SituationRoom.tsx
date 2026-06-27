@@ -3,7 +3,8 @@
    Market command center. Stress-test your next move before
    risking capital. Now with 8 new intelligence panels.
    ============================================================ */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import PageHeader from "@/components/PageHeader";
@@ -469,11 +470,19 @@ export default function SituationRoom() {
   useSEO(PAGE_SEO.situationRoom);
   const { output } = useEngine();
 
-  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
-  const [selectedMove, setSelectedMove] = useState<MoveType | null>(null);
+  // URL param auto-execution (Smart Discovery dispatch)
+  const searchStr = useSearch();
+  const urlParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
+  const urlSymbol = urlParams.get("symbol")?.toUpperCase() ?? null;
+  const urlType = urlParams.get("type") ?? "stock";
+  const urlMove = (urlParams.get("move") ?? "buy_specific_asset") as MoveType;
+  const urlAutorun = urlParams.get("autorun") === "1";
+
+  const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(urlSymbol && urlAutorun ? 3 : 1);
+  const [selectedMove, setSelectedMove] = useState<MoveType | null>(urlSymbol && urlAutorun ? urlMove : null);
   const [selectedExposure, setSelectedExposure] = useState<ExposureCategory | null>(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState<SimulatorTimeframe>("today");
-  const [ticker, setTicker] = useState("");
+  const [ticker, setTicker] = useState(urlSymbol ?? "");
   const [cryptoSymbol, setCryptoSymbol] = useState<string>("BTC");
   const [showResult, setShowResult] = useState(false);
   // Decision tree sub-inputs
@@ -481,9 +490,9 @@ export default function SituationRoom() {
   const [rotateTo, setRotateTo] = useState<string>("");
   const [raiseCashReason, setRaiseCashReason] = useState<string>("");
   const [deployCashTarget, setDeployCashTarget] = useState<string>("");
-  const [positionSize, setPositionSize] = useState<string>("");
-  const [exitType, setExitType] = useState<string>("");
-  const [holdConcern, setHoldConcern] = useState<string>("");
+  const [positionSize, setPositionSize] = useState<string>(urlAutorun ? "normal" : "");
+  const [exitType, setExitType] = useState<string>(urlAutorun && urlMove === "sell_specific_asset" ? "full" : "");
+  const [holdConcern, setHoldConcern] = useState<string>(urlAutorun && urlMove === "hold" ? "general review" : "");
   const [open, setOpen] = useState<Record<string, boolean>>({
     greenLights: true, threatBoard: true, actionBias: true, invalidation: false, watchNext: false,
     verdict: true, outcomeSimulator: false, entryQuality: false, positionSizing: false,
@@ -492,6 +501,7 @@ export default function SituationRoom() {
     hotSectorPicks: false,
   });
   const resultRef = useRef<HTMLDivElement>(null);
+  const autorunFiredRef = useRef(false);
 
   const simulate = trpc.trade.simulate.useMutation({
     onSuccess: () => {
@@ -549,6 +559,26 @@ export default function SituationRoom() {
       holdConcern: selectedMove === "hold" ? holdConcern : undefined,
     });
   };
+
+  // Auto-fire when dispatched from Smart Discovery with autorun=1
+  useEffect(() => {
+    if (urlAutorun && urlSymbol && !autorunFiredRef.current && selectedMove) {
+      autorunFiredRef.current = true;
+      // Small delay to let React settle state
+      const t = setTimeout(() => {
+        simulate.mutate({
+          moveType: urlMove,
+          timeframe: "today",
+          ticker: urlSymbol,
+          positionSizeType: urlMove === "buy_specific_asset" ? "normal" : undefined,
+          exitType: urlMove === "sell_specific_asset" ? "full" : undefined,
+          holdConcern: urlMove === "hold" ? "general review" : undefined,
+        });
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlAutorun, urlSymbol, urlMove, selectedMove]);
 
   const handleMoveSelect = (move: MoveType) => {
     setSelectedMove(move);
