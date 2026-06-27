@@ -170,8 +170,8 @@ describe("Signal Outlook Center — scoring engine", () => {
     // Trade readiness must be valid
     expect(["Cleared", "Caution", "Defensive"]).toContain(result.tradeReadiness);
 
-    // Must have 8 scoring factors
-    expect(result.scoreBreakdown.factors).toHaveLength(8);
+    // Must have at least 8 scoring factors (expanded to 14 in Phase 4)
+    expect(result.scoreBreakdown.factors.length).toBeGreaterThanOrEqual(8);
 
     // All factor weights must sum to ~1.0
     const totalWeight = result.scoreBreakdown.factors.reduce((sum, f) => sum + f.weight, 0);

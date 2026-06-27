@@ -111,6 +111,9 @@ const Glossary = lazy(() => import("./pages/Glossary"));
 const ChatInbox = lazy(() => import("./pages/admin/ChatInbox"));
 const CryptoHub = lazy(() => import("./pages/CryptoHub"));
 const DecisionEngine = lazy(() => import("./pages/DecisionEngine"));
+const MarketCommandCenter = lazy(() => import("./pages/MarketCommandCenter"));
+const TodaysStory = lazy(() => import("./pages/TodaysStory"));
+const SmartDiscovery = lazy(() => import("./pages/SmartDiscovery"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -370,6 +373,9 @@ function Router() {
           <Suspense fallback={<PageLoader />}>
             <Switch>
               <Route path="/app/pressure" component={Pressure} />
+              <Route path="/app/command" component={MarketCommandCenter} />
+              <Route path="/app/todays-story" component={TodaysStory} />
+              <Route path="/app/discover" component={SmartDiscovery} />
               <Route path="/app" component={Dashboard} />
               {/* P1 — Deprecated routes redirect to new destinations */}
               <Route path="/app/scores"><Redirect to="/app/pressure" /></Route>

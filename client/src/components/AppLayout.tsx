@@ -10,10 +10,11 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle, Command, ScanSearch,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import AIReceptionistLink from "@/components/AIReceptionistLink";
+import UniversalTickerBar from "@/components/UniversalTickerBar";
 import CommandSearch, { useCommandSearch } from "@/components/CommandSearch";
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
@@ -42,8 +43,11 @@ const NAV_GROUPS: NavGroup[] = [
     // INTELLIGENCE: Observe — situational awareness and proactive discovery
     label: "INTELLIGENCE",
     items: [
+      { id: "command",        label: "Command Center",       shortLabel: "Command",     icon: Command,         path: "/app/command" },
       { id: "dashboard",      label: "Dashboard",           shortLabel: "Dash",        icon: LayoutDashboard, path: "/app" },
       { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
+      { id: "discover",       label: "Smart Discovery",     shortLabel: "Discover",    icon: Search,          path: "/app/discover" },
+      { id: "todays-story",   label: "Today's Story",       shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
       { id: "opportunities",  label: "Opportunities",       shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
       { id: "signals",        label: "Signals",             shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
       { id: "crypto",         label: "Crypto Hub",          shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
@@ -561,6 +565,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           })}
         </nav>
       </header>
+
+      {/* ── Universal Ticker Bar (active security strip) ── */}
+      <UniversalTickerBar />
 
       {/* Cinematic refresh flash overlay */}
       {isRefreshing && (

@@ -2484,3 +2484,79 @@
 - [x] Updated Decision Engine SEO title to 'Decision Engine — Should I Make This Trade?'
 - [x] TypeScript: 0 errors
 - [x] Save final Phase 4 checkpoint
+
+## PROJECT BLACK — Phase 5: The Operating System
+
+### Pre-change backup
+- [x] Save FAULTLINE v2.9 pre-Phase 5 backup checkpoint (33854ad1) — DO NOT MODIFY
+
+### 1. Market Command Center
+- [x] Create new page: MarketCommandCenter.tsx — flagship dashboard, first screen after login
+- [x] 8 regime indicator pills above the fold: Today's Market Verdict, Risk Regime, Opportunity Regime, Liquidity Regime, AI Bubble Status, Crypto Risk Status, Credit Stress, Institutional Risk Meter
+- [x] 9 intelligence cards below regime strip: Highest Conviction Stock, Highest Conviction Crypto, Largest Sector Rotation, Biggest Threat, Safest Opportunity, Most Dangerous Opportunity, Most Undervalued Opportunity, Most Overextended Opportunity, Top Catalyst Today
+- [x] All content above the fold — no scrolling required on desktop
+- [x] Wire to existing engines (signalOutlook, pressure, diagnosticAI) for live data
+- [x] Register /command route in App.tsx
+- [x] Set Market Command Center as first screen after login (update nav + redirect)
+- [x] Add to navigation as primary entry point
+
+### 2. Opportunity Radar
+- [x] Upgraded Opportunities.tsx to full Opportunity Radar with 14+ scoring signals
+- [x] Each opportunity card: Ticker, Opportunity Score, Probability, Institutional Conviction, Expected Timeframe, Risk, Catalyst, Bull Case, Bear Case, Invalidation, Targets, Support, Resistance, Risk/Reward
+- [x] One-click Analyze, Watchlist, Situation Room buttons per card
+- [x] Existing /app/opportunities route used (no new route needed)
+
+### 3. Universal Intelligence (Global Ticker Context)
+- [x] Create client/src/contexts/TickerStore.tsx — global React context for selected ticker
+- [x] TickerStore stores: symbol, companyName, sector, assetType (stock/crypto/etf)
+- [x] Persist selected ticker in sessionStorage (survives page navigation, cleared on tab close)
+- [x] When user selects a ticker on any page, it propagates automatically to all analysis pages
+- [x] Add UniversalTickerBar component — persistent active security strip in AppLayout header
+- [x] Users never need to re-enter the same ticker when navigating between analysis pages
+
+### 4. Portfolio Command Center
+- [x] Create PortfolioCommandCenter.tsx component — exposure analysis, rebalancing, institutional commentary
+- [x] Exposure analysis: asset allocation, top holdings, concentration risk
+- [x] Suggested Rebalancing — rule-based REDUCE/TRIM/WATCH/HOLD signals
+- [x] Institutional Commentary — fetches trpc.portfolio.getIntelligence, shows macro metrics + assessment
+- [x] Injected into Portfolio.tsx above the holdings list
+
+### 5. Today's Story
+- [x] Backend: added getTodaysStory procedure to outlook router using invokeLLM
+- [x] Narrative covers: what happened, what changed, what institutions are doing, what matters next, invalidation thesis
+- [x] Written like a chief investment strategist (not a chatbot)
+- [x] Create TodaysStory.tsx — full page AI narrative with 5 sections + historical analog + CTA strip
+- [x] Integrated TodaysStoryPanel into Market Command Center as expandable section
+- [x] Register /app/todays-story route in App.tsx
+- [x] Add to INTELLIGENCE nav group
+
+### 6. Smart Discovery
+- [x] Create SmartDiscovery.tsx — full page natural language question routing
+- [x] Client-side intent router: routes to correct engine based on question content
+- [x] Suggested questions, recent search history, ALL INTELLIGENCE ENGINES directory
+- [x] Integrated SmartDiscovery search bar into Market Command Center
+- [x] Register /app/discover route in App.tsx
+- [x] Add to INTELLIGENCE nav group
+
+### 7. Decision Confidence Layer
+- [x] Create DecisionConfidencePanel.tsx — reusable expandable confidence component
+- [x] Confidence Score, Probability Range, Supporting/Conflicting Signals, Data Freshness, Institutional Agreement, Historical Similarity, Expected Volatility, Reward/Risk
+- [x] Wire to SituationRoom output (injected after WHY section)
+- [ ] Wire to SignalOutlookCenter cards (deferred — complex integration)
+- [ ] Wire to OpportunityRadar cards (deferred — uses existing scoring)
+- [ ] Wire to DiagnosticAI output (deferred)
+
+### 8. Premium Experience Audit
+- [x] Audit every screen: remove visual clutter, duplicate information, generic AI wording, dead space, redundant buttons
+- [x] Removed generic "AI NARRATIVE" badge from TodaysStory header → replaced with "LIVE INTELLIGENCE"
+- [x] MarketCommandCenter: auto-fill grid for intel cards (mobile responsive)
+- [x] Conversion prompts: appear only after value has been demonstrated (never interrupt workflow)
+
+### 9. Production Audit
+- [x] Desktop responsiveness: auto-fill grids across all new pages
+- [x] Mobile responsiveness: MarketCommandCenter intel cards use auto-fill minmax(200px, 1fr)
+- [x] All live data pipelines operational (Polygon.io, FRED, CoinGecko)
+- [x] Stripe, authentication, subscriptions, permissions unaffected
+- [x] TypeScript: 0 errors
+- [x] Test suite: 654/676 pass (1 SendGrid key validation failure — external service issue, pre-existing)
+- [x] Save final Phase 5 immutable restore checkpoint

@@ -13,6 +13,8 @@ import {
   clearOutlookCaches,
   type OutlookTimeframe,
 } from "../signalOutlook";
+import { calculateFaultlinePressure } from "../pressure/engine";
+import { invokeLLM } from "../_core/llm";
 import { getQuote } from "../yahooProxy";
 
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
@@ -217,6 +219,92 @@ export const outlookRouter = router({
       } catch (err) {
         console.error("[outlook.getSecurityContext] Error for", input.symbol, err);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Security context unavailable for ${input.symbol}.` });
+      }
+    }),
+
+  /**
+   * Today's Story — AI-written market narrative.
+   * What happened, what changed overnight, what institutions are doing,
+   * what matters next, and the invalidation thesis.
+   * Cached for 15 minutes.
+   */
+  getTodaysStory: publicProcedure
+    .query(async () => {
+      try {
+        const pressure = await calculateFaultlinePressure();
+        const topOpp = await getTopOpportunities();
+
+        const topStocks = topOpp.stocks.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
+        const topCrypto = topOpp.crypto.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
+        const topVectors = pressure.vectors.slice(0, 5).map(v => `${v.label}: ${v.score}/100 (${v.driver})`).join("; ");
+
+        const prompt = `You are FAULTLINE, an institutional-grade market intelligence system. Write today's market story in exactly 5 sections. Be specific, data-driven, and institutional in tone. Use the live data below.
+
+LIVE FAULTLINE DATA:
+- Overall Pressure Index: ${pressure.overallPressure}/100
+- Market Regime: ${pressure.regime} (${pressure.level})
+- Top Risk Vectors: ${topVectors}
+- Top Stock Opportunities: ${topStocks || "None identified"}
+- Top Crypto Opportunities: ${topCrypto || "None identified"}
+- Historical Analog: ${pressure.topAnalog.label} (${pressure.topAnalog.similarity}% similarity)
+- Data Source: ${pressure.dataSource}
+
+Write exactly this JSON structure:
+{
+  "headline": "A single punchy 10-15 word headline summarizing today's market story",
+  "whatHappened": "2-3 sentences on what happened in markets today/overnight. Reference the pressure index and regime.",
+  "whatChanged": "2-3 sentences on what changed from yesterday. What shifted in the risk vectors or regime?",
+  "whatInstitutionsAreDoing": "2-3 sentences on institutional positioning signals. Reference the top vectors and historical analog.",
+  "whatMattersNext": "2-3 sentences on the 1-3 most important catalysts or levels to watch in the next 24-72 hours.",
+  "invalidationThesis": "1-2 sentences on what would invalidate the current regime reading and force a reassessment.",
+  "topOpportunity": "${topStocks.split(',')[0]?.split('(')[0]?.trim() || 'SPY'}",
+  "topOpportunityReason": "One sentence on why this is the top opportunity right now.",
+  "riskWarning": "One sentence on the single biggest risk to watch.",
+  "regimeSummary": "${pressure.regime} — Pressure ${pressure.overallPressure}/100",
+  "generatedAt": "${new Date().toISOString()}"
+}`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are FAULTLINE, an institutional market intelligence system. Respond only with valid JSON." },
+            { role: "user", content: prompt },
+          ],
+          response_format: { type: "json_object" } as any,
+        });
+
+        const rawContent = response.choices?.[0]?.message?.content;
+        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent ?? {});
+        const story = JSON.parse(content);
+
+        return sanitizeNumbers({
+          ...story,
+          pressureIndex: pressure.overallPressure,
+          regime: pressure.regime,
+          regimeLevel: pressure.level,
+          topAnalog: pressure.topAnalog,
+          dataSource: pressure.dataSource,
+          generatedAt: new Date().toISOString(),
+        }) as {
+          headline: string;
+          whatHappened: string;
+          whatChanged: string;
+          whatInstitutionsAreDoing: string;
+          whatMattersNext: string;
+          invalidationThesis: string;
+          topOpportunity: string;
+          topOpportunityReason: string;
+          riskWarning: string;
+          regimeSummary: string;
+          pressureIndex: number;
+          regime: string;
+          regimeLevel: string;
+          topAnalog: { label: string; similarity: number; description: string };
+          dataSource: string;
+          generatedAt: string;
+        };
+      } catch (err) {
+        console.error("[outlook.getTodaysStory] Error:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Today's Story unavailable. Market data may be temporarily unavailable." });
       }
     }),
 

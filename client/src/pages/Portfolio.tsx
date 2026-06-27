@@ -20,6 +20,7 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import PortfolioIntelligence from "@/components/PortfolioIntelligence";
+import PortfolioCommandCenter from "@/components/PortfolioCommandCenter";
 import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Types (inferred from tRPC) ────────────────────────────────
@@ -828,6 +829,12 @@ function PortfolioInner() {
             </button>
           </div>
         </div>
+
+        {/* ── Portfolio Command Center™ ──────────────────────────── */}
+        <PortfolioCommandCenter
+          positions={positions as any}
+          totalValue={summary?.totalValue ?? null}
+        />
 
         {/* ── Portfolio Intelligence™ ─────────────────────────────── */}
         <PortfolioIntelligence />

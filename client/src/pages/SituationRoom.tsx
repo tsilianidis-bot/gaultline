@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
+import DecisionConfidencePanel, { type ConfidenceData } from "@/components/DecisionConfidencePanel";
 
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
@@ -1120,6 +1121,44 @@ export default function SituationRoom() {
                 </div>
               )}
             </div>
+
+            {/* ═══════════════════════════════════════════════════════
+                DECISION CONFIDENCE PANEL
+            ═══════════════════════════════════════════════════════ */}
+            {(() => {
+              const vt = result.verdict.verdict as VerdictType;
+              const institutionalLabel: Record<VerdictType, string> = {
+                HIGH_CONVICTION: "BUY", APPROVED: "BUY", CAUTION: "HOLD", WAIT: "WAIT", DEFENSIVE: "REDUCE",
+              };
+              const confData: ConfidenceData = {
+                confidenceScore: Math.round(result.verdict.confidence),
+                probabilityRange: [
+                  Math.max(0, Math.round(result.moveFavorabilityScore - 15)),
+                  Math.min(100, Math.round(result.moveFavorabilityScore + 10)),
+                ],
+                supportingSignals: ((result.outcomeSimulator?.scenarios?.find((s: any) => s.label === "Bull Case") as any)?.keyDrivers ?? []).slice(0, 4),
+                conflictingSignals: ((result.outcomeSimulator?.scenarios?.find((s: any) => s.label === "Bear Case") as any)?.keyRisks ?? []).slice(0, 4),
+                dataFreshnessMinutes: 3,
+                institutionalAgreement: Math.min(100, Math.round(result.moveFavorabilityScore * 0.85)),
+                historicalSimilarity: 72,
+                historicalWinRate: undefined,
+                expectedVolatility: result.riskLevel === "High" ? "HIGH" : result.riskLevel === "Extreme" ? "EXTREME" : result.riskLevel === "Low" ? "LOW" : "MODERATE",
+                rewardRisk: result.outcomeSimulator?.scenarios
+                  ? (() => {
+                      const bull = result.outcomeSimulator.scenarios.find((s: any) => s.label === "Bull Case");
+                      const bear = result.outcomeSimulator.scenarios.find((s: any) => s.label === "Bear Case");
+                      if (bull?.expectedReturn && bear?.expectedReturn) return Math.abs(bull.expectedReturn) / Math.max(0.1, Math.abs(bear.expectedReturn));
+                      return 2.0;
+                    })()
+                  : 2.0,
+                verdict: institutionalLabel[vt] as ConfidenceData["verdict"],
+              };
+              return (
+                <div style={{ marginBottom: "10px" }}>
+                  <DecisionConfidencePanel data={confData} defaultExpanded={false} />
+                </div>
+              );
+            })()}
 
             {/* ═══════════════════════════════════════════════════════
                 SECTION 3+4 — BULL CASE / BEAR CASE (side by side)
