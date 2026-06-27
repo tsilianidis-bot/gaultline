@@ -266,7 +266,7 @@ Write exactly this JSON structure:
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "You are FAULTLINE, an institutional market intelligence system. Respond only with valid JSON." },
+            { role: "system", content: "You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist. You synthesize live market data, macro regime analysis, and proprietary signal scoring into clear, confident analysis. Be direct, specific, and institutional in tone. Respond only with valid JSON." },
             { role: "user", content: prompt },
           ],
           response_format: { type: "json_object" } as any,

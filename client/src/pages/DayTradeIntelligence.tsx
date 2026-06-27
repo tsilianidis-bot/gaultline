@@ -96,16 +96,17 @@ type NoTradeResult = {
 type AnySetup = DayTradeSetup | NoTradeResult;
 
 type MarketFavorability = {
-  score: number;
-  label: string;
+  overallScore: number;
+  bullishOpportunities: number;
+  bearishOpportunities: number;
+  highConfidenceSetups: number;
   regime: string;
   regimePressure: number;
   volatilityLevel: string;
   marketBreadth: string;
-  bullishCount: number;
-  bearishCount: number;
-  highConfCount: number;
-  topMovers: Array<{ symbol: string; changePercent: number; volume: number }>;
+  sectorLeadership: string;
+  topMovers: Array<{ symbol: string; name: string; changePercent: number; assetType: string }>;
+  topRelativeVolume: Array<{ symbol: string; name: string; relVol: number; assetType: string }>;
   aiSummary: string;
   generatedAt: number;
 };
@@ -124,7 +125,7 @@ const riskColor = (r: string) =>
 const dirColor = (d: string) =>
   d === "bullish" ? "#00FF88" : d === "bearish" ? "#FF6B6B" : "#6B7280";
 const isNoTrade = (s: AnySetup): s is NoTradeResult =>
-  isNoTrade(s as unknown as AnySetup) || s.setupType === "NO_TRADE";
+  s.setupType === "NO_TRADE";
 const fmtHold = (mins: number) =>
   mins < 60 ? `${mins} min` : `${(mins / 60).toFixed(1)}h`;
 const DirIcon = ({ d }: { d: string }) =>
@@ -415,6 +416,7 @@ function OverviewTab() {
   if (!fav) return <ErrorState message="Market data unavailable." onRetry={() => refetch()} />;
 
   const f = fav as unknown as MarketFavorability;
+  const favLabel = f.overallScore >= 70 ? "FAVORABLE" : f.overallScore >= 45 ? "NEUTRAL" : "UNFAVORABLE";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -425,11 +427,11 @@ function OverviewTab() {
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#6B7280", letterSpacing: "0.15em", marginBottom: "8px" }}>
           TODAY'S DAY TRADE FAVORABILITY
         </div>
-        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "72px", fontWeight: 700, color: scoreColor(f.score), lineHeight: 1, marginBottom: "4px" }}>
-          {f.score}
+        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "72px", fontWeight: 700, color: scoreColor(f.overallScore), lineHeight: 1, marginBottom: "4px" }}>
+          {f.overallScore}
         </div>
-        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "20px", color: scoreColor(f.score), letterSpacing: "0.1em", marginBottom: "16px" }}>
-          {f.label}
+        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "20px", color: scoreColor(f.overallScore), letterSpacing: "0.1em", marginBottom: "16px" }}>
+          {favLabel}
         </div>
         <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6, maxWidth: "640px", margin: "0 auto" }}>
           {f.aiSummary}
@@ -463,9 +465,9 @@ function OverviewTab() {
           { label: "Regime Pressure", value: `${f.regimePressure}/100`, color: f.regimePressure > 65 ? "#FF6B6B" : "#FFD700" },
           { label: "Volatility", value: f.volatilityLevel, color: "#F0F4FF" },
           { label: "Market Breadth", value: f.marketBreadth, color: "#F0F4FF" },
-          { label: "Bullish Setups", value: String(f.bullishCount), color: "#00FF88" },
-          { label: "Bearish Setups", value: String(f.bearishCount), color: "#FF6B6B" },
-          { label: "High-Confidence", value: String(f.highConfCount), color: "#FFD700" },
+          { label: "Bullish Setups", value: String(f.bullishOpportunities), color: "#00FF88" },
+          { label: "Bearish Setups", value: String(f.bearishOpportunities), color: "#FF6B6B" },
+          { label: "High-Confidence", value: String(f.highConfidenceSetups), color: "#FFD700" },
         ].map(m => (
           <div key={m.label} style={CARD}>
             <div style={LABEL}>{m.label}</div>
@@ -1279,62 +1281,90 @@ function LoadingState({ label: _label }: { label: string }) {
 }
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  const friendly = message.includes("UNAUTHORIZED") || message.includes("FORBIDDEN")
-    ? "Core subscription required to access Day Trade Intelligence™."
-    : message.includes("timeout") || message.includes("TIMEOUT")
-    ? "AI analysis timeout. Please retry."
-    : message.includes("rate") || message.includes("429")
-    ? "Rate limit reached. Please wait a moment and retry."
-    : message.includes("market data") || message.includes("data unavailable")
-    ? "Live market data unavailable. Unable to generate a reliable intraday setup."
-    : message;
+  const isAuth = message.includes("UNAUTHORIZED") || message.includes("FORBIDDEN");
+  const isDataFail = message.includes("market data") || message.includes("data unavailable") || message.includes("transform") || message.includes("Unable to");
+
+  if (isAuth) {
+    return (
+      <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)", background: "rgba(255,107,107,0.04)", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "32px", textAlign: "center" }}>
+        <AlertCircle size={24} style={{ color: "#FF6B6B" }} />
+        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF6B6B" }}>SUBSCRIPTION REQUIRED</div>
+        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6, maxWidth: "400px" }}>Core subscription required to access Day Trade Intelligence™.</div>
+      </div>
+    );
+  }
 
   return (
-    <div style={{
-      ...CARD,
-      borderColor: "rgba(255,107,107,0.2)",
-      background: "rgba(255,107,107,0.04)",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: "12px",
-      padding: "32px",
-      textAlign: "center",
-    }}>
-      <AlertCircle size={24} style={{ color: "#FF6B6B" }} />
-      <div style={{ ...MONO_SM, color: "#FF6B6B", lineHeight: 1.6 }}>{friendly}</div>
-      <button
-        onClick={onRetry}
-        style={{
-          padding: "6px 16px",
-          background: "rgba(255,107,107,0.08)",
-          border: "1px solid rgba(255,107,107,0.25)",
-          borderRadius: "4px",
-          color: "#FF6B6B",
-          ...MONO_SM,
-          cursor: "pointer",
-        }}
-      >
-        Retry
-      </button>
+    <div style={{ ...CARD, borderColor: "rgba(255,165,0,0.2)", background: "rgba(255,165,0,0.04)", display: "flex", flexDirection: "column", gap: "16px", padding: "32px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <AlertCircle size={20} style={{ color: "#FFA500", flexShrink: 0 }} />
+        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#FFA500" }}>
+          {isDataFail ? "LIVE DAY TRADE INTELLIGENCE TEMPORARILY UNAVAILABLE" : "INTELLIGENCE ENGINE UNAVAILABLE"}
+        </div>
+      </div>
+      <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>
+        {isDataFail
+          ? "Live market data pipelines are temporarily offline. FAULTLINE requires real-time data to generate reliable intraday setups — no analysis will be shown until data is restored."
+          : "The intelligence engine encountered an issue. This is typically resolved within seconds."}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ ...MONO_SM, color: "#6B7280", fontSize: "10px" }}>AUTOMATIC RETRY ACTIVE — checking every 60 seconds</div>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <button
+            onClick={onRetry}
+            style={{ padding: "6px 16px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "4px", color: "#00D4FF", ...MONO_SM, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+          >
+            <RefreshCw size={11} /> Retry Now
+          </button>
+        </div>
+      </div>
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+        <div style={{ ...MONO_SM, color: "#6B7280", marginBottom: "8px" }}>SECTORS WORTH MONITORING WHILE DATA RESTORES</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {["Technology (XLK)", "Semiconductors (SOXX)", "Financials (XLF)", "Energy (XLE)", "Bitcoin (BTC)", "Ethereum (ETH)"].map(s => (
+            <span key={s} style={{ padding: "3px 10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "3px", ...MONO_SM, color: "#94A3B8", fontSize: "10px" }}>{s}</span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-function EmptyState({ icon, title, message }: { icon: React.ReactNode; title: string; message: string }) {
+function EmptyState({ icon: _icon, title, message }: { icon: React.ReactNode; title: string; message: string }) {
+  const isNoTrades = title.toLowerCase().includes("no") || message.toLowerCase().includes("no");
   return (
-    <div style={{
-      ...CARD,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: "12px",
-      padding: "48px 24px",
-      textAlign: "center",
-    }}>
-      {icon}
-      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "16px", color: "#94A3B8" }}>{title}</div>
-      <div style={{ ...MONO_SM, color: "#6B7280", maxWidth: "400px", lineHeight: 1.6 }}>{message}</div>
+    <div style={{ ...CARD, display: "flex", flexDirection: "column", gap: "16px", padding: "32px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <Target size={18} style={{ color: "#6B7280", flexShrink: 0 }} />
+        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#94A3B8" }}>
+          {isNoTrades ? "NO HIGH-CONVICTION SETUPS IDENTIFIED" : title}
+        </div>
+      </div>
+      <div style={{ ...MONO_SM, color: "#6B7280", lineHeight: 1.6 }}>
+        {isNoTrades
+          ? "No high-conviction day trades currently meet FAULTLINE requirements. Current market conditions do not present a clear intraday edge that justifies the risk."
+          : message}
+      </div>
+      {isNoTrades && (
+        <>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+            <div style={{ ...MONO_SM, color: "#6B7280", marginBottom: "8px" }}>WATCHLIST CANDIDATES FOR NEXT OPPORTUNITY</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {["NVDA", "AAPL", "TSLA", "MSFT", "BTC", "ETH", "AMD", "META"].map(s => (
+                <span key={s} style={{ padding: "3px 10px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: "3px", ...MONO_SM, color: "#00D4FF", fontSize: "10px" }}>{s}</span>
+              ))}
+            </div>
+          </div>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+            <div style={{ ...MONO_SM, color: "#6B7280", marginBottom: "8px" }}>SECTORS WORTH MONITORING</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+              {["Technology (XLK)", "Semiconductors (SOXX)", "Financials (XLF)", "Energy (XLE)"].map(s => (
+                <span key={s} style={{ padding: "3px 10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "3px", ...MONO_SM, color: "#94A3B8", fontSize: "10px" }}>{s}</span>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
