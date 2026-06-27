@@ -7,6 +7,7 @@
 // Five core questions answered for every asset.
 // ============================================================
 import { useState, useCallback, useMemo, useEffect } from "react";
+import { useIsMobile } from "@/hooks/useMobile";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -432,6 +433,7 @@ function FullOutlookView({
   }
 
   const d = data;
+  const isMobile = useIsMobile();
   const dirColor = directionColor(d.direction);
   const rkColor = riskColor(d.riskLevel);
   const rdColor = readinessColor(d.tradeReadiness);
@@ -466,6 +468,56 @@ function FullOutlookView({
             <RefreshCw size={12} color="#4B5563" />
           </button>
         </div>
+      </div>
+
+      {/* ── BOTTOM LINE (Executive Summary) ── */}
+      <div style={{
+        padding: "14px 16px",
+        background: `${dirColor}08`,
+        border: `1px solid ${dirColor}25`,
+        borderRadius: "10px",
+        marginBottom: "10px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px", flexWrap: "wrap", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em" }}>BOTTOM LINE</span>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "20px", color: dirColor, letterSpacing: "0.06em" }}>
+              {d.direction.toUpperCase()}
+            </span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: rkColor, background: `${rkColor}10`, border: `1px solid ${rkColor}20`, borderRadius: "3px", padding: "2px 7px" }}>
+              {d.riskLevel.toUpperCase()} RISK
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,255,255,0.3)" }}>Confidence:</span>
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: scoreColor(d.confidence) }}>{d.confidence}%</span>
+          </div>
+        </div>
+        <div style={{ padding: "9px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "5px", borderLeft: `3px solid ${dirColor}`, marginBottom: "8px" }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,255,255,0.3)", marginBottom: "3px", letterSpacing: "0.1em" }}>PRIMARY DRIVER</div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#E8EDF5", lineHeight: 1.5 }}>
+            {d.diagnosticIntegration.primaryDriver}
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
+          <div style={{ padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "5px" }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(255,255,255,0.3)", marginBottom: "3px", letterSpacing: "0.08em" }}>PORTFOLIO IMPLICATION</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{d.diagnosticIntegration.portfolioImplication}</div>
+          </div>
+          <div style={{ padding: "8px 10px", background: "rgba(255,149,0,0.04)", border: "1px solid rgba(255,149,0,0.12)", borderRadius: "5px" }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FF9500", marginBottom: "3px", letterSpacing: "0.08em" }}>SENSITIVE TRIGGER</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{d.diagnosticIntegration.sensitiveTrigger}</div>
+          </div>
+        </div>
+        {d.diagnosticIntegration.historicalAnalog && d.diagnosticIntegration.historicalAnalog !== "No clear analog" && (
+          <div style={{ display: "flex", gap: "8px", alignItems: "flex-start", padding: "8px 10px", background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.12)", borderRadius: "5px" }}>
+            <Clock size={10} style={{ color: "#A78BFA", marginTop: "2px", flexShrink: 0 }} />
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#A78BFA", marginBottom: "2px", letterSpacing: "0.08em" }}>HISTORICAL ANALOG</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{d.diagnosticIntegration.historicalAnalog}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── OUTLOOK CARD ── */}
@@ -832,7 +884,7 @@ function FullOutlookView({
         badge="AI INTERPRETATION"
         badgeColor="#A78BFA"
       >
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
           <div style={{
             background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)",
             borderRadius: "6px", padding: "10px 12px",
@@ -1047,7 +1099,7 @@ function FullOutlookView({
         badgeColor="#A78BFA"
         collapsible
       >
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
           <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "6px", padding: "10px 12px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00FF88", marginBottom: "6px" }}>BULL CASE</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>{d.diagnosticIntegration.bullCase}</div>
@@ -1091,7 +1143,7 @@ function FullOutlookView({
         icon={<Shield size={14} color="#00D4FF" />}
         collapsible
       >
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
           {d.preflightImpact.supportReasons.length > 0 && (
             <div style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "6px", padding: "10px 12px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "4px", marginBottom: "6px" }}>

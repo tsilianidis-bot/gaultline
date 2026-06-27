@@ -15,6 +15,7 @@ import { router, publicProcedure } from "../_core/trpc";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { getQuickOutlook } from "../signalOutlook";
 import { invokeLLM } from "../_core/llm";
+import { resolveIntent } from "../intentResolver";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -71,30 +72,7 @@ export interface ConversationMessage {
   timestamp: number;
 }
 
-// ── Intent classifier ─────────────────────────────────────────
-
-const CRYPTO_TICKERS = new Set([
-  "BTC","ETH","SOL","BNB","XRP","DOGE","LINK","TAO","ONDO","ADA",
-  "AVAX","DOT","MATIC","ATOM","LTC","UNI","AAVE","COMP","MKR","SNX",
-  "NEAR","FTM","ALGO","HBAR","ICP","VET","EOS","TRX","XLM","ETC",
-]);
-
-function extractTicker(query: string): { ticker: string | null; assetType: "stock" | "crypto" | null } {
-  const SKIP = new Set(["I","A","IS","IN","IT","AT","TO","DO","BE","MY","OR","VS","AI","US","UK","EU","IF","OR","AND","THE","FOR","NOW","BUY","SELL","HOLD","WAIT","RISK"]);
-  const matches = query.match(/\b([A-Z]{1,6})\b/g);
-  const ticker = matches?.find(t => !SKIP.has(t) && t.length >= 2) ?? null;
-  const assetType = ticker ? (CRYPTO_TICKERS.has(ticker) ? "crypto" : "stock") : null;
-  return { ticker, assetType };
-}
-
-function classifyQueryType(query: string, ticker: string | null): "security" | "macro" | "opportunity" | "portfolio" | "general" {
-  const q = query.toLowerCase();
-  if (ticker) return "security";
-  if (q.includes("opportunit") || q.includes("swing trade") || q.includes("best trade") || q.includes("what to buy")) return "opportunity";
-  if (q.includes("portfolio") || q.includes("position") || q.includes("holding")) return "portfolio";
-  if (q.includes("market") || q.includes("macro") || q.includes("economy") || q.includes("crash") || q.includes("risk") || q.includes("regime")) return "macro";
-  return "general";
-}
+// ── Intent resolution delegated to server/intentResolver.ts ─────────────
 
 // ── Sanitize NaN/Infinity ─────────────────────────────────────
 
@@ -138,11 +116,11 @@ async function orchestrateAnswer(
   contextAssetType: "stock" | "crypto" | null,
 ): Promise<FaultlineAnswer> {
 
-  // 1. Extract intent
-  const { ticker: rawTicker, assetType: rawAssetType } = extractTicker(query.toUpperCase());
-  const ticker = rawTicker ?? contextTicker;
-  const assetType = rawAssetType ?? contextAssetType;
-  const queryType = classifyQueryType(query, ticker);
+  // 1. Resolve intent using the robust IntentResolver
+  const intent = resolveIntent(query, contextTicker, contextAssetType as "stock" | "crypto" | null);
+  const ticker = intent.ticker;
+  const assetType = intent.assetType === "crypto" ? "crypto" : intent.assetType === "stock" ? "stock" : null;
+  const queryType = intent.queryType;
 
   // 2. Fetch live market data via FMOS pipeline
   const [fmosResult, quickOutlook] = await Promise.allSettled([
@@ -172,13 +150,20 @@ Data Status: ${outlookData.dataStatus}
     ? `\nPrevious conversation:\n${conversationHistory.slice(-6).map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n")}\n`
     : "";
 
-  const systemPrompt = `You are FAULTLINE — an elite institutional market intelligence system. You synthesize live market data, macro regime analysis, and proprietary signal scoring into one clear, confident recommendation.
+  const systemPrompt = `You are FAULTLINE — an elite institutional market intelligence system.
+You are a Chief Investment Strategist, NOT a chatbot.
 
-You are NOT a chatbot. You are NOT a search engine. You are a Chief Investment Strategist.
-
-Your tone: Confident. Measured. Institutional. Never sensational. Never generic. Never overly certain.
-
-Always explain both the opportunity AND the risk.
+TONE RULES (strict):
+- Be direct. Lead with the verdict. Never bury the conclusion.
+- executiveSummary: EXACTLY 2 sentences. First sentence = verdict + primary reason. Second sentence = key risk.
+- whyThisVerdict: EXACTLY 3 sentences. Each sentence = one distinct signal/reason.
+- bullCase / bearCase: EXACTLY 2 sentences each.
+- catalysts / threats: EXACTLY 3 items each. One clause per item. No sub-bullets.
+- suggestedAction: ONE sentence. Start with a verb. Include a specific price or condition if possible.
+- invalidation: ONE sentence. Start with "Thesis fails if..."
+- whatChangesThesis: ONE sentence.
+- Never use the word "navigate", "landscape", "nuanced", "holistic", or "multifaceted".
+- Never start a sentence with "It is important to note that".
 
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
 ${fmos ? `Action Bias: ${fmos.decision.actionBias}\nDecision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%` : ""}

@@ -17,7 +17,8 @@ import { useSEO } from "@/hooks/useSEO";
 import {
   ArrowRight, ChevronDown, ChevronUp, ExternalLink,
   TrendingUp, TrendingDown, AlertTriangle,
-  Zap, RefreshCw, Send,
+  Zap, RefreshCw, Send, Activity, BarChart2,
+  GitBranch, Shield, Clock, Target,
 } from "lucide-react";
 
 // ── Design tokens ─────────────────────────────────────────────
@@ -153,51 +154,91 @@ function ExecutionSequence({ currentStep }: { currentStep: number }) {
   );
 }
 
+// ── FMOS Engine Status Mini-Card ──────────────────────────────
+
+function EngineCard({ icon, label, value, color, sub }: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  color: string;
+  sub?: string;
+}) {
+  return (
+    <div style={{
+      padding: "10px 12px",
+      background: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: "6px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "5px",
+      minWidth: 0,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+        <span style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>{icon}</span>
+        <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+      </div>
+      <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
+      {sub && <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.2)", fontSize: "9px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>}
+    </div>
+  );
+}
+
 // ── Full Institutional Answer ─────────────────────────────────
 
 function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; onDeepDive: (path: string) => void }) {
+  const [showExpanded, setShowExpanded] = useState(false);
   const [showDeepDive, setShowDeepDive] = useState(false);
   const vs = verdictStyle(answer.verdictColor);
 
+  // Derive FMOS engine status values from answer fields
+  const regimeStatus = answer.regimeColor === "green" ? "STABLE" : answer.regimeColor === "red" ? "STRESSED" : "TRANSITIONING";
+  const regimeColor = answer.regimeColor === "green" ? "#00FF88" : answer.regimeColor === "red" ? "#FF4444" : "#FFD700";
+  const confidenceColor = answer.confidence >= 70 ? "#00FF88" : answer.confidence >= 45 ? "#FFD700" : "#FF4444";
+  const opportunityColor = answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-      {/* ── Verdict Header ── */}
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+
+      {/* ── BOTTOM LINE card ── */}
       <div style={{
-        padding: "20px 24px",
+        padding: "16px 18px",
         background: vs.background,
         border: `1px solid ${vs.borderColor}`,
         borderRadius: "8px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "12px",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+        {/* Row 1: ticker + verdict + timeframe badge */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "10px" }}>
           {answer.ticker && (
             <div style={{
-              ...MONO,
-              fontSize: "13px",
-              fontWeight: 700,
-              color: "rgba(255,255,255,0.5)",
-              letterSpacing: "0.1em",
-              padding: "2px 8px",
-              background: "rgba(255,255,255,0.06)",
-              borderRadius: "3px",
+              ...MONO, fontSize: "11px", fontWeight: 700,
+              color: "rgba(255,255,255,0.5)", letterSpacing: "0.12em",
+              padding: "2px 8px", background: "rgba(255,255,255,0.06)", borderRadius: "3px",
             }}>
               {answer.ticker}
             </div>
           )}
-          <div style={{
-            ...SANS,
-            fontSize: "28px",
-            fontWeight: 800,
-            color: vs.color,
-            letterSpacing: "0.08em",
-          }}>
+          <div style={{ ...SANS, fontSize: "24px", fontWeight: 800, color: vs.color, letterSpacing: "0.08em" }}>
             {answer.verdict}
           </div>
+          {answer.expectedTimeframe && (
+            <div style={{
+              ...MONO_SM, fontSize: "10px",
+              padding: "2px 7px",
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "3px",
+              color: "rgba(255,255,255,0.45)",
+              display: "flex", alignItems: "center", gap: "4px",
+            }}>
+              <Clock size={9} />
+              {answer.expectedTimeframe}
+            </div>
+          )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px" }}>
+        {/* Row 2: opportunity + confidence bars */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
           {[
             { label: "OPPORTUNITY", value: answer.opportunityScore, color: answer.verdictColor },
             { label: "CONFIDENCE", value: answer.confidence, color: answer.verdictColor },
@@ -210,56 +251,86 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
               <div style={scoreBar(value, color)} />
             </div>
           ))}
-          <div>
-            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}>REGIME</div>
-            <div style={{
-              ...MONO_SM,
-              color: answer.regimeColor === "green" ? "#00FF88" : answer.regimeColor === "red" ? "#FF4444" : "#FFD700",
-              fontSize: "10px",
-              lineHeight: 1.4,
-            }}>
-              {answer.currentRegime}
+        </div>
+
+        {/* Row 3: suggested action */}
+        <div style={{
+          padding: "9px 12px",
+          background: "rgba(0,0,0,0.3)",
+          borderRadius: "5px",
+          borderLeft: `3px solid ${vs.color}`,
+        }}>
+          <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "3px", fontSize: "9px" }}>SUGGESTED ACTION</div>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#E8EDF5", lineHeight: 1.5 }}>
+            {answer.suggestedAction}
+          </div>
+          {answer.positionSizeGuidance && (
+            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginTop: "4px", fontSize: "10px" }}>
+              Position size: {answer.positionSizeGuidance}
             </div>
-          </div>
-          <div>
-            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}>DATA</div>
-            <div style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>{answer.dataFreshness}</div>
-          </div>
+          )}
         </div>
       </div>
 
+      {/* ── FMOS Engine Cards row ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "6px" }}>
+        <EngineCard
+          icon={<Activity size={9} />}
+          label="Regime"
+          value={regimeStatus}
+          color={regimeColor}
+          sub={answer.currentRegime.slice(0, 22)}
+        />
+        <EngineCard
+          icon={<BarChart2 size={9} />}
+          label="Confidence"
+          value={`${answer.confidence}%`}
+          color={confidenceColor}
+          sub={answer.confidenceLabel}
+        />
+        <EngineCard
+          icon={<Target size={9} />}
+          label="Opportunity"
+          value={`${answer.opportunityScore}/100`}
+          color={opportunityColor}
+        />
+        <EngineCard
+          icon={<GitBranch size={9} />}
+          label="Asset"
+          value={(answer.assetType ?? answer.queryType ?? "MACRO").toUpperCase()}
+          color="rgba(255,255,255,0.55)"
+        />
+        <EngineCard
+          icon={<Shield size={9} />}
+          label="Data"
+          value="LIVE"
+          color="#00FF88"
+          sub={answer.dataFreshness.slice(0, 18)}
+        />
+      </div>
+
       {/* ── Executive Summary ── */}
-      <div style={{ padding: "20px 24px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
-        <div style={{ ...MONO_SM, color: ACCENT, marginBottom: "10px", letterSpacing: "0.12em" }}>FAULTLINE ASSESSMENT</div>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "15px", color: "#E8EDF5", lineHeight: 1.7, margin: 0 }}>
+      <div style={{ padding: "16px 18px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+        <div style={{ ...MONO_SM, color: ACCENT, marginBottom: "8px", letterSpacing: "0.12em" }}>FAULTLINE ASSESSMENT</div>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", color: "#E8EDF5", lineHeight: 1.7, margin: 0 }}>
           {answer.executiveSummary}
         </p>
       </div>
 
-      {/* ── Why This Verdict ── */}
-      <div style={{ padding: "20px 24px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
-        <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "10px", letterSpacing: "0.12em" }}>
-          WHY FAULTLINE REACHED THIS CONCLUSION
-        </div>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", color: "#C8D0DC", lineHeight: 1.7, margin: 0 }}>
-          {answer.whyThisVerdict}
-        </p>
-      </div>
-
       {/* ── Bull / Bear ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px" }}>
-        <div style={{ padding: "16px 20px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-            <TrendingUp size={12} style={{ color: "#00FF88" }} />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "10px" }}>
+        <div style={{ padding: "14px 16px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "7px" }}>
+            <TrendingUp size={11} style={{ color: "#00FF88" }} />
             <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>BULL CASE</span>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: 0 }}>
             {answer.bullCase}
           </p>
         </div>
-        <div style={{ padding: "16px 20px", background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.12)", borderRadius: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-            <TrendingDown size={12} style={{ color: "#FF4444" }} />
+        <div style={{ padding: "14px 16px", background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.12)", borderRadius: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "7px" }}>
+            <TrendingDown size={11} style={{ color: "#FF4444" }} />
             <span style={{ ...MONO_SM, color: "#FF4444", letterSpacing: "0.1em" }}>BEAR CASE</span>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: 0 }}>
@@ -268,133 +339,166 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
         </div>
       </div>
 
-      {/* ── Catalysts + Threats ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px" }}>
-        {[
-          { label: "CATALYSTS", items: answer.catalysts, color: "#00FF88", icon: <Zap size={11} /> },
-          { label: "THREATS", items: answer.threats, color: "#FF4444", icon: <AlertTriangle size={11} /> },
-        ].map(({ label, items, color, icon }) => (
-          <div key={label} style={{ padding: "16px 20px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
-              <span style={{ color }}>{icon}</span>
-              <span style={{ ...MONO_SM, color, letterSpacing: "0.1em" }}>{label}</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {items.map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                  <span style={{ ...MONO_SM, color, marginTop: "1px", flexShrink: 0 }}>›</span>
-                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Key Levels (only for security questions) ── */}
-      {(answer.support || answer.resistance || answer.entryZone || answer.stopLevel) && (
-        <div style={{ padding: "16px 20px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
-          <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "12px", letterSpacing: "0.12em" }}>KEY LEVELS</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "12px" }}>
-            {answer.entryZone && (
-              <div>
-                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>ENTRY ZONE</div>
-                <div style={{ ...MONO, fontSize: "13px", color: "#00FF88", fontWeight: 600 }}>{answer.entryZone}</div>
-              </div>
-            )}
-            {answer.support && (
-              <div>
-                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>SUPPORT</div>
-                <div style={{ ...MONO, fontSize: "13px", color: "#00FF88", fontWeight: 600 }}>{answer.support}</div>
-              </div>
-            )}
-            {answer.resistance && (
-              <div>
-                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>RESISTANCE</div>
-                <div style={{ ...MONO, fontSize: "13px", color: "#FF4444", fontWeight: 600 }}>{answer.resistance}</div>
-              </div>
-            )}
-            {answer.stopLevel && (
-              <div>
-                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>STOP</div>
-                <div style={{ ...MONO, fontSize: "13px", color: "#FF4444", fontWeight: 600 }}>{answer.stopLevel}</div>
-              </div>
-            )}
-            {answer.profitTargets.length > 0 && (
-              <div>
-                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>TARGETS</div>
-                <div style={{ ...MONO, fontSize: "12px", color: "#00D4FF", fontWeight: 600 }}>{answer.profitTargets.join(" / ")}</div>
-              </div>
-            )}
-            <div>
-              <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>TIMEFRAME</div>
-              <div style={{ ...MONO, fontSize: "12px", color: "#F0F4FF" }}>{answer.expectedTimeframe}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Action + Invalidation ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px" }}>
-        <div style={{ padding: "16px 20px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.12)", borderRadius: "8px" }}>
-          <div style={{ ...MONO_SM, color: ACCENT, marginBottom: "8px", letterSpacing: "0.1em" }}>SUGGESTED ACTION</div>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#E8EDF5", lineHeight: 1.6, margin: 0 }}>
-            {answer.suggestedAction}
-          </p>
-          {answer.positionSizeGuidance && (
-            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginTop: "8px" }}>
-              Position: {answer.positionSizeGuidance}
-            </div>
-          )}
-        </div>
-        <div style={{ padding: "16px 20px", background: "rgba(255,165,0,0.04)", border: "1px solid rgba(255,165,0,0.12)", borderRadius: "8px" }}>
-          <div style={{ ...MONO_SM, color: "#FFA500", marginBottom: "8px", letterSpacing: "0.1em" }}>INVALIDATION</div>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: 0 }}>
-            {answer.invalidation}
-          </p>
-        </div>
-      </div>
-
-      {/* ── What Changes Thesis ── */}
+      {/* ── Invalidation (always visible) ── */}
       <div style={{
-        padding: "14px 20px",
-        background: SURFACE,
-        border: `1px solid ${BORDER}`,
+        padding: "12px 16px",
+        background: "rgba(255,165,0,0.04)",
+        border: "1px solid rgba(255,165,0,0.12)",
         borderRadius: "8px",
         display: "flex",
         gap: "10px",
         alignItems: "flex-start",
       }}>
-        <RefreshCw size={13} style={{ color: "rgba(255,255,255,0.3)", marginTop: "2px", flexShrink: 0 }} />
+        <AlertTriangle size={12} style={{ color: "#FFA500", marginTop: "2px", flexShrink: 0 }} />
         <div>
-          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginRight: "8px" }}>WHAT CHANGES THE THESIS:</span>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#A0A8B4" }}>{answer.whatChangesThesis}</span>
+          <div style={{ ...MONO_SM, color: "#FFA500", marginBottom: "3px", fontSize: "9px" }}>INVALIDATION CONDITIONS</div>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC" }}>{answer.invalidation}</span>
         </div>
       </div>
 
-      {/* ── Deep Dive Actions (shown AFTER the answer) ── */}
-      <div style={{ padding: "16px 20px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+      {/* ── Collapsible: full analysis ── */}
+      <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
+        <button
+          onClick={() => setShowExpanded(v => !v)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: "12px 16px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.45)", letterSpacing: "0.12em" }}>
+            {showExpanded ? "HIDE FULL ANALYSIS" : "SHOW FULL ANALYSIS"}
+          </span>
+          {showExpanded
+            ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
+            : <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
+          }
+        </button>
+
+        {showExpanded && (
+          <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            {/* Why this verdict */}
+            <div>
+              <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "6px", letterSpacing: "0.1em" }}>WHY THIS VERDICT</div>
+              <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.7, margin: 0 }}>
+                {answer.whyThisVerdict}
+              </p>
+            </div>
+
+            {/* Catalysts + Threats */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "10px" }}>
+              {[
+                { label: "CATALYSTS", items: answer.catalysts, color: "#00FF88", icon: <Zap size={10} /> },
+                { label: "THREATS", items: answer.threats, color: "#FF4444", icon: <AlertTriangle size={10} /> },
+              ].map(({ label, items, color, icon }) => (
+                <div key={label} style={{ padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: `1px solid rgba(255,255,255,0.05)`, borderRadius: "6px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
+                    <span style={{ color }}>{icon}</span>
+                    <span style={{ ...MONO_SM, color, letterSpacing: "0.1em", fontSize: "10px" }}>{label}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                    {items.map((item, i) => (
+                      <div key={i} style={{ display: "flex", gap: "7px", alignItems: "flex-start" }}>
+                        <span style={{ ...MONO_SM, color, marginTop: "1px", flexShrink: 0, fontSize: "10px" }}>›</span>
+                        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Key Levels */}
+            {(answer.support || answer.resistance || answer.entryZone || answer.stopLevel) && (
+              <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "6px" }}>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "10px", letterSpacing: "0.1em", fontSize: "10px" }}>KEY LEVELS</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: "10px" }}>
+                  {answer.entryZone && (
+                    <div>
+                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>ENTRY ZONE</div>
+                      <div style={{ ...MONO, fontSize: "12px", color: "#00FF88", fontWeight: 600 }}>{answer.entryZone}</div>
+                    </div>
+                  )}
+                  {answer.support && (
+                    <div>
+                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>SUPPORT</div>
+                      <div style={{ ...MONO, fontSize: "12px", color: "#00FF88", fontWeight: 600 }}>{answer.support}</div>
+                    </div>
+                  )}
+                  {answer.resistance && (
+                    <div>
+                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>RESISTANCE</div>
+                      <div style={{ ...MONO, fontSize: "12px", color: "#FF4444", fontWeight: 600 }}>{answer.resistance}</div>
+                    </div>
+                  )}
+                  {answer.stopLevel && (
+                    <div>
+                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>STOP</div>
+                      <div style={{ ...MONO, fontSize: "12px", color: "#FF4444", fontWeight: 600 }}>{answer.stopLevel}</div>
+                    </div>
+                  )}
+                  {answer.profitTargets.length > 0 && (
+                    <div>
+                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>TARGETS</div>
+                      <div style={{ ...MONO, fontSize: "11px", color: "#00D4FF", fontWeight: 600 }}>{answer.profitTargets.join(" / ")}</div>
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "2px", fontSize: "9px" }}>TIMEFRAME</div>
+                    <div style={{ ...MONO, fontSize: "11px", color: "#F0F4FF" }}>{answer.expectedTimeframe}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* What changes thesis */}
+            <div style={{
+              padding: "10px 14px",
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.05)",
+              borderRadius: "6px",
+              display: "flex",
+              gap: "8px",
+              alignItems: "flex-start",
+            }}>
+              <RefreshCw size={11} style={{ color: "rgba(255,255,255,0.25)", marginTop: "2px", flexShrink: 0 }} />
+              <div>
+                <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginRight: "8px", fontSize: "9px" }}>WHAT CHANGES THE THESIS:</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4" }}>{answer.whatChangesThesis}</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Deep Dive Actions ── */}
+      <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
         <button
           onClick={() => setShowDeepDive(v => !v)}
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: "12px 16px",
             background: "none",
             border: "none",
             cursor: "pointer",
-            padding: 0,
-            width: "100%",
           }}
         >
-          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em" }}>DEEPER ANALYSIS</span>
+          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em" }}>DEEPER ANALYSIS</span>
           {showDeepDive
             ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
             : <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
           }
         </button>
         {showDeepDive && (
-          <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "6px" }}>
             {answer.deepDiveLinks.map((link, i) => (
               <button
                 key={i}
@@ -403,22 +507,22 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "10px 14px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "6px",
+                  padding: "9px 12px",
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  borderRadius: "5px",
                   cursor: "pointer",
                   textAlign: "left",
                   transition: "background 0.15s ease",
                 }}
                 onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.06)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
               >
                 <div>
-                  <div style={{ ...MONO_SM, color: "#F0F4FF", fontWeight: 600 }}>{link.label}</div>
-                  <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", fontSize: "10px", marginTop: "2px" }}>{link.description}</div>
+                  <div style={{ ...MONO_SM, color: "#F0F4FF", fontWeight: 600, fontSize: "11px" }}>{link.label}</div>
+                  <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "9px", marginTop: "2px" }}>{link.description}</div>
                 </div>
-                <ExternalLink size={12} style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+                <ExternalLink size={11} style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
               </button>
             ))}
           </div>
@@ -435,7 +539,7 @@ function UserBubble({ content }: { content: string }) {
     <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
       <div style={{
         maxWidth: "70%",
-        padding: "12px 16px",
+        padding: "11px 15px",
         background: "rgba(0,212,255,0.08)",
         border: "1px solid rgba(0,212,255,0.18)",
         borderRadius: "12px 12px 2px 12px",
