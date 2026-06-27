@@ -43,14 +43,14 @@ const NAV_GROUPS: NavGroup[] = [
     // INTELLIGENCE: Observe — situational awareness and proactive discovery
     label: "INTELLIGENCE",
     items: [
+      { id: "discover",       label: "Ask FAULTLINE",       shortLabel: "Ask",         icon: Search,          path: "/app/discover" },
       { id: "command",        label: "Command Center",       shortLabel: "Command",     icon: Command,         path: "/app/command" },
-      { id: "dashboard",      label: "Dashboard",           shortLabel: "Dash",        icon: LayoutDashboard, path: "/app" },
-      { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
-      { id: "discover",       label: "Smart Discovery",     shortLabel: "Discover",    icon: Search,          path: "/app/discover" },
       { id: "todays-story",   label: "Today's Story",       shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
       { id: "opportunities",  label: "Opportunities",       shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
       { id: "signals",        label: "Signals",             shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
       { id: "crypto",         label: "Crypto Hub",          shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
+      { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
+      { id: "dashboard",      label: "Dashboard",           shortLabel: "Dash",        icon: LayoutDashboard, path: "/app/dashboard" },
     ],
   },
   {
@@ -106,7 +106,7 @@ const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 // Mobile primary tabs (bottom bar — 5 most important)
 // Market Stress replaces Blog as a primary tab
 // Mobile primary tabs: Today (Dashboard), Signals, Portfolio, Search (Symbol Intel), Account
-const MOBILE_PRIMARY_IDS = ["dashboard", "signals", "portfolio", "symbol-intel", "account"];
+const MOBILE_PRIMARY_IDS = ["discover", "signals", "portfolio", "symbol-intel", "account"];
 const MOBILE_PRIMARY = ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id));
 
 interface AppLayoutProps {

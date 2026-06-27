@@ -376,7 +376,8 @@ function Router() {
               <Route path="/app/command" component={MarketCommandCenter} />
               <Route path="/app/todays-story" component={TodaysStory} />
               <Route path="/app/discover" component={SmartDiscovery} />
-              <Route path="/app" component={Dashboard} />
+              <Route path="/app"><Redirect to="/app/discover" /></Route>
+              <Route path="/app/dashboard" component={Dashboard} />
               {/* P1 — Deprecated routes redirect to new destinations */}
               <Route path="/app/scores"><Redirect to="/app/pressure" /></Route>
               <Route path="/app/charts"><Redirect to="/app/symbol-intelligence" /></Route>

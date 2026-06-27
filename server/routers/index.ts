@@ -9,3 +9,4 @@ export { billingRouter } from "./billing";
 export { adminRouter } from "./admin";
 export { outlookRouter } from "./outlook";
 export { organicContentRouter } from "./organicContent";
+export { smartDiscoveryRouter } from "./smartDiscovery";

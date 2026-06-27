@@ -1,439 +1,868 @@
-/* ============================================================
-   FAULTLINE — Smart Discovery™
-   True dispatcher: Ask → Route → Execute. Zero extra clicks.
-
-   Input → Routing → Engine Execution → Answer
-   ============================================================ */
-import { useState, useRef, useCallback, useEffect } from "react";
+/**
+ * FAULTLINE — Smart Discovery™
+ * The primary interface. One question in. One institutional answer out.
+ *
+ * The FAULTLINE Constitution:
+ *   Verdict before data. Explain WHY. Show opportunity. Show risk.
+ *   Offer deeper analysis only after the answer has already been delivered.
+ */
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
-import {
-  Search, ArrowRight, Sparkles, Telescope, Target, Crosshair,
-  BookOpen, TrendingUp, Shield, Radio, Bitcoin, Briefcase,
-  Zap, ChevronRight, Clock, X, RotateCcw,
-} from "lucide-react";
+import AppLayout from "@/components/AppLayout";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
+import { useTickerStore } from "@/contexts/TickerStore";
 import { useSEO } from "@/hooks/useSEO";
+import {
+  ArrowRight, ChevronDown, ChevronUp, ExternalLink,
+  TrendingUp, TrendingDown, AlertTriangle,
+  Zap, RefreshCw, Send,
+} from "lucide-react";
+
+// ── Design tokens ─────────────────────────────────────────────
+const BG = "#050608";
+const SURFACE = "rgba(10,12,18,0.98)";
+const BORDER = "rgba(255,255,255,0.06)";
+const ACCENT = "#00D4FF";
+const MONO: React.CSSProperties = { fontFamily: "'IBM Plex Mono', monospace" };
+const SANS: React.CSSProperties = { fontFamily: "'Rajdhani', sans-serif" };
+const MONO_SM: React.CSSProperties = { ...MONO, fontSize: "11px", letterSpacing: "0.06em" };
 
 // ── Types ─────────────────────────────────────────────────────
-interface DispatchResult {
-  intent: string;
+
+interface FaultlineAnswer {
+  verdict: string;
+  verdictColor: "green" | "yellow" | "red" | "blue";
+  opportunityScore: number;
   confidence: number;
-  destinationLabel: string;
-  destinationPath: string;
-  ticker?: string;
-  assetType?: "stock" | "crypto";
-  /** Extra URL params to pass to the destination */
-  params?: Record<string, string>;
+  confidenceLabel: string;
+  ticker: string | null;
+  assetType: "stock" | "crypto" | null;
+  queryType: string;
+  currentRegime: string;
+  regimeColor: "green" | "yellow" | "red";
+  dataFreshness: string;
+  executiveSummary: string;
+  whyThisVerdict: string;
+  bullCase: string;
+  bearCase: string;
+  catalysts: string[];
+  threats: string[];
+  support: string | null;
+  resistance: string | null;
+  entryZone: string | null;
+  profitTargets: string[];
+  stopLevel: string | null;
+  invalidation: string;
+  expectedTimeframe: string;
+  suggestedAction: string;
+  positionSizeGuidance: string | null;
+  whatChangesThesis: string;
+  deepDiveLinks: Array<{ label: string; path: string; description: string }>;
 }
 
-// ── Intent routing map ────────────────────────────────────────
-const INTENT_ROUTES: Record<string, { label: string; path: string; icon: React.ReactNode; description: string }> = {
-  "symbol_analysis":    { label: "Symbol Intelligence",    path: "/app/symbol-intelligence",    icon: <Telescope size={14} />,    description: "Full intelligence report for this security" },
-  "day_trade":          { label: "Day Trade Intel",         path: "/app/day-trade-intelligence", icon: <Target size={14} />,       description: "Intraday setup and day trade analysis" },
-  "decision_engine":    { label: "Decision Engine",         path: "/app/decision-engine",        icon: <Crosshair size={14} />,    description: "BUY/HOLD/REDUCE verdict with full context" },
-  "opportunities":      { label: "Opportunity Radar",       path: "/app/opportunities",          icon: <Sparkles size={14} />,     description: "Top-ranked opportunities by score" },
-  "todays_story":       { label: "Today's Story",           path: "/app/todays-story",           icon: <BookOpen size={14} />,     description: "AI-written market narrative for today" },
-  "market_stress":      { label: "Market Stress",           path: "/app/pressure",               icon: <Shield size={14} />,       description: "Macro risk and pressure indicators" },
-  "signals":            { label: "Signals",                 path: "/app/signals",                icon: <Radio size={14} />,        description: "Stock and market signal analysis" },
-  "crypto":             { label: "Crypto Hub",              path: "/app/crypto",                 icon: <Bitcoin size={14} />,      description: "Crypto intelligence and signals" },
-  "portfolio":          { label: "Portfolio",               path: "/app/portfolio",              icon: <Briefcase size={14} />,    description: "Portfolio tracking and guidance" },
-  "sector_rotation":    { label: "Sector Rotation",         path: "/app/alt-rotation",           icon: <RotateCcw size={14} />,    description: "Sector rotation and capital flow analysis" },
-  "command_center":     { label: "Command Center",          path: "/app/command",                icon: <TrendingUp size={14} />,   description: "Full market overview and intelligence" },
-};
+interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+  ticker?: string | null;
+  timestamp: number;
+  answer?: FaultlineAnswer;
+}
 
-// ── Suggested questions ───────────────────────────────────────
-const SUGGESTED_QUESTIONS = [
-  "Should I buy NVDA right now?",
-  "What are institutions buying today?",
-  "Best swing trade setups this week",
-  "Is the market about to crash?",
-  "What's the best crypto opportunity?",
-  "How exposed is my portfolio to macro risk?",
-  "What happened in markets today?",
-  "Is TSLA a buy or sell?",
-  "Where is smart money flowing?",
-  "What sectors are rotating up?",
+// ── Execution sequence steps ──────────────────────────────────
+
+const EXECUTION_STEPS = [
+  "Checking live market data...",
+  "Reading macro regime...",
+  "Scanning institutional positioning...",
+  "Comparing historical analogs...",
+  "Evaluating liquidity conditions...",
+  "Calculating opportunity score...",
+  "Assessing risk vectors...",
+  "Generating institutional recommendation...",
 ];
 
-// ── Known crypto tickers ──────────────────────────────────────
-const CRYPTO_TICKERS = new Set([
-  "BTC","ETH","SOL","BNB","XRP","DOGE","LINK","TAO","ONDO","ADA",
-  "AVAX","DOT","MATIC","ATOM","LTC","UNI","AAVE","COMP","MKR","SNX",
-  "NEAR","FTM","ALGO","HBAR","ICP","VET","EOS","TRX","XLM","ETC",
-]);
+// ── Verdict color helpers ─────────────────────────────────────
 
-// ── Core dispatcher ───────────────────────────────────────────
-function dispatch(query: string): DispatchResult {
-  const q = query.toLowerCase().trim();
-
-  // Extract ticker — 1-5 uppercase letters, not common English words
-  const SKIP = new Set(["I","A","IS","IN","IT","AT","TO","DO","BE","MY","OR","VS","AI","US","UK","EU"]);
-  const tickerMatch = query.match(/\b([A-Z]{1,5})\b/g);
-  const ticker = tickerMatch?.find(t => !SKIP.has(t));
-  const isCrypto = ticker ? CRYPTO_TICKERS.has(ticker) : false;
-  const assetType: "stock" | "crypto" = isCrypto ? "crypto" : "stock";
-
-  // ── Decision Engine: buy/sell/should I/worth it ──
-  if (ticker && (q.includes("buy") || q.includes("sell") || q.includes("should i") || q.includes("worth it") || q.includes("good time"))) {
-    const move = q.includes("sell") ? "sell_specific_asset" : "buy_specific_asset";
-    return {
-      intent: "decision_engine",
-      confidence: 92,
-      ticker,
-      assetType,
-      destinationLabel: "Decision Engine",
-      destinationPath: "/app/decision-engine",
-      params: { symbol: ticker, type: assetType, move, autorun: "1" },
-    };
-  }
-
-  // ── Day Trade: intraday/scalp/day trade ──
-  if (ticker && (q.includes("day trade") || q.includes("intraday") || q.includes("scalp") || q.includes("today") && q.includes("trade"))) {
-    return {
-      intent: "day_trade",
-      confidence: 90,
-      ticker,
-      assetType,
-      destinationLabel: "Day Trade Intel",
-      destinationPath: "/app/day-trade-intelligence",
-      params: { symbol: ticker, type: assetType, autorun: "1" },
-    };
-  }
-
-  // ── Symbol Intelligence: analyze / what is / extended / overvalued ──
-  if (ticker && (q.includes("analyz") || q.includes("what is") || q.includes("extended") || q.includes("overvalued") || q.includes("undervalued") || q.includes("outlook") || q.includes("target"))) {
-    return {
-      intent: "symbol_analysis",
-      confidence: 88,
-      ticker,
-      assetType,
-      destinationLabel: "Symbol Intelligence",
-      destinationPath: "/app/symbol-intelligence",
-      params: { symbol: ticker, type: assetType, autorun: "1" },
-    };
-  }
-
-  // ── Signal Outlook: signal / signals for ──
-  if (ticker && (q.includes("signal") || q.includes("outlook") || q.includes("forecast"))) {
-    return {
-      intent: "signals",
-      confidence: 86,
-      ticker,
-      assetType,
-      destinationLabel: "Signal Outlook",
-      destinationPath: "/app/signal-outlook",
-      params: { symbol: ticker, type: assetType },
-    };
-  }
-
-  // ── Any ticker without a specific action → Symbol Intelligence ──
-  if (ticker) {
-    return {
-      intent: "symbol_analysis",
-      confidence: 85,
-      ticker,
-      assetType,
-      destinationLabel: "Symbol Intelligence",
-      destinationPath: "/app/symbol-intelligence",
-      params: { symbol: ticker, type: assetType, autorun: "1" },
-    };
-  }
-
-  // ── No ticker — route by topic ──
-
-  if (q.includes("crash") || q.includes("recession") || q.includes("dangerous") || q.includes("risk") || q.includes("stress") || q.includes("how bad")) {
-    return { intent: "market_stress", confidence: 88, destinationLabel: "Market Stress", destinationPath: "/app/pressure" };
-  }
-
-  if (q.includes("today") || q.includes("happened") || q.includes("overnight") || q.includes("story") || q.includes("what changed") || q.includes("morning")) {
-    return { intent: "todays_story", confidence: 90, destinationLabel: "Today's Story", destinationPath: "/app/todays-story", params: { autorun: "1" } };
-  }
-
-  if (q.includes("opportunit") || q.includes("swing trade") || q.includes("best trade") || q.includes("what to buy") || q.includes("best setup") || q.includes("find me")) {
-    return { intent: "opportunities", confidence: 87, destinationLabel: "Opportunity Radar", destinationPath: "/app/opportunities" };
-  }
-
-  if (q.includes("institution") || q.includes("smart money") || q.includes("insider") || q.includes("whale") || q.includes("wall street")) {
-    return { intent: "command_center", confidence: 82, destinationLabel: "Command Center", destinationPath: "/app/command" };
-  }
-
-  if (q.includes("crypto") || q.includes("bitcoin") || q.includes("ethereum") || q.includes("btc") || q.includes("eth") || q.includes("defi")) {
-    return { intent: "crypto", confidence: 88, destinationLabel: "Crypto Hub", destinationPath: "/app/crypto" };
-  }
-
-  if (q.includes("sector") || q.includes("rotation") || q.includes("flow") || q.includes("capital")) {
-    return { intent: "sector_rotation", confidence: 85, destinationLabel: "Sector Rotation", destinationPath: "/app/alt-rotation" };
-  }
-
-  if (q.includes("portfolio") || q.includes("position") || q.includes("holding") || q.includes("rebalance")) {
-    return { intent: "portfolio", confidence: 85, destinationLabel: "Portfolio", destinationPath: "/app/portfolio" };
-  }
-
-  if (q.includes("macro") || q.includes("economy") || q.includes("fed") || q.includes("inflation") || q.includes("rates")) {
-    return { intent: "market_stress", confidence: 80, destinationLabel: "Market Stress", destinationPath: "/app/pressure" };
-  }
-
-  // Default: Command Center
-  return { intent: "command_center", confidence: 70, destinationLabel: "Command Center", destinationPath: "/app/command" };
+function verdictStyle(color: string): { color: string; borderColor: string; background: string } {
+  if (color === "green") return { color: "#00FF88", borderColor: "rgba(0,255,136,0.3)", background: "rgba(0,255,136,0.08)" };
+  if (color === "red") return { color: "#FF4444", borderColor: "rgba(255,68,68,0.3)", background: "rgba(255,68,68,0.08)" };
+  if (color === "blue") return { color: "#00D4FF", borderColor: "rgba(0,212,255,0.3)", background: "rgba(0,212,255,0.08)" };
+  return { color: "#FFD700", borderColor: "rgba(255,215,0,0.3)", background: "rgba(255,215,0,0.08)" };
 }
 
-// ── Build destination URL with params ────────────────────────
-function buildUrl(path: string, params?: Record<string, string>): string {
-  if (!params || Object.keys(params).length === 0) return path;
-  const qs = new URLSearchParams(params).toString();
-  return `${path}?${qs}`;
+function scoreBar(value: number, color: string): React.CSSProperties {
+  const c = color === "green" ? "#00FF88" : color === "red" ? "#FF4444" : color === "blue" ? "#00D4FF" : "#FFD700";
+  return {
+    height: "4px",
+    background: `linear-gradient(90deg, ${c} ${value}%, rgba(255,255,255,0.08) ${value}%)`,
+    borderRadius: "2px",
+  };
 }
 
-// ── Main Page ─────────────────────────────────────────────────
+// ── Execution Sequence ────────────────────────────────────────
+
+function ExecutionSequence({ currentStep }: { currentStep: number }) {
+  return (
+    <div style={{
+      padding: "24px",
+      background: "rgba(0,212,255,0.04)",
+      border: "1px solid rgba(0,212,255,0.12)",
+      borderRadius: "8px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "10px",
+    }}>
+      <div style={{ ...MONO_SM, color: ACCENT, marginBottom: "4px", letterSpacing: "0.12em" }}>
+        FAULTLINE INTELLIGENCE SEQUENCE
+      </div>
+      {EXECUTION_STEPS.map((step, i) => (
+        <div key={i} style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+          opacity: i <= currentStep ? 1 : 0.25,
+          transition: "opacity 0.3s ease",
+        }}>
+          <div style={{
+            width: "6px",
+            height: "6px",
+            borderRadius: "50%",
+            background: i < currentStep ? "#00FF88" : i === currentStep ? ACCENT : "rgba(255,255,255,0.2)",
+            flexShrink: 0,
+            transition: "background 0.3s ease",
+            boxShadow: i === currentStep ? `0 0 8px ${ACCENT}` : "none",
+          }} />
+          <span style={{
+            ...MONO_SM,
+            color: i < currentStep ? "#00FF88" : i === currentStep ? "#F0F4FF" : "rgba(255,255,255,0.3)",
+            transition: "color 0.3s ease",
+          }}>
+            {step}
+          </span>
+          {i < currentStep && (
+            <span style={{ ...MONO_SM, color: "#00FF88", marginLeft: "auto" }}>✓</span>
+          )}
+          {i === currentStep && (
+            <span style={{ ...MONO_SM, color: ACCENT, marginLeft: "auto", animation: "fl-pulse 1s infinite" }}>●</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Full Institutional Answer ─────────────────────────────────
+
+function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; onDeepDive: (path: string) => void }) {
+  const [showDeepDive, setShowDeepDive] = useState(false);
+  const vs = verdictStyle(answer.verdictColor);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      {/* ── Verdict Header ── */}
+      <div style={{
+        padding: "20px 24px",
+        background: vs.background,
+        border: `1px solid ${vs.borderColor}`,
+        borderRadius: "8px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+          {answer.ticker && (
+            <div style={{
+              ...MONO,
+              fontSize: "13px",
+              fontWeight: 700,
+              color: "rgba(255,255,255,0.5)",
+              letterSpacing: "0.1em",
+              padding: "2px 8px",
+              background: "rgba(255,255,255,0.06)",
+              borderRadius: "3px",
+            }}>
+              {answer.ticker}
+            </div>
+          )}
+          <div style={{
+            ...SANS,
+            fontSize: "28px",
+            fontWeight: 800,
+            color: vs.color,
+            letterSpacing: "0.08em",
+          }}>
+            {answer.verdict}
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "12px" }}>
+          {[
+            { label: "OPPORTUNITY", value: answer.opportunityScore, color: answer.verdictColor },
+            { label: "CONFIDENCE", value: answer.confidence, color: answer.verdictColor },
+          ].map(({ label, value, color }) => (
+            <div key={label}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)" }}>{label}</span>
+                <span style={{ ...MONO_SM, color: verdictStyle(color).color, fontWeight: 700 }}>{value}</span>
+              </div>
+              <div style={scoreBar(value, color)} />
+            </div>
+          ))}
+          <div>
+            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}>REGIME</div>
+            <div style={{
+              ...MONO_SM,
+              color: answer.regimeColor === "green" ? "#00FF88" : answer.regimeColor === "red" ? "#FF4444" : "#FFD700",
+              fontSize: "10px",
+              lineHeight: 1.4,
+            }}>
+              {answer.currentRegime}
+            </div>
+          </div>
+          <div>
+            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "4px" }}>DATA</div>
+            <div style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>{answer.dataFreshness}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Executive Summary ── */}
+      <div style={{ padding: "20px 24px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+        <div style={{ ...MONO_SM, color: ACCENT, marginBottom: "10px", letterSpacing: "0.12em" }}>FAULTLINE ASSESSMENT</div>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "15px", color: "#E8EDF5", lineHeight: 1.7, margin: 0 }}>
+          {answer.executiveSummary}
+        </p>
+      </div>
+
+      {/* ── Why This Verdict ── */}
+      <div style={{ padding: "20px 24px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+        <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "10px", letterSpacing: "0.12em" }}>
+          WHY FAULTLINE REACHED THIS CONCLUSION
+        </div>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", color: "#C8D0DC", lineHeight: 1.7, margin: 0 }}>
+          {answer.whyThisVerdict}
+        </p>
+      </div>
+
+      {/* ── Bull / Bear ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px" }}>
+        <div style={{ padding: "16px 20px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+            <TrendingUp size={12} style={{ color: "#00FF88" }} />
+            <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>BULL CASE</span>
+          </div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: 0 }}>
+            {answer.bullCase}
+          </p>
+        </div>
+        <div style={{ padding: "16px 20px", background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.12)", borderRadius: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+            <TrendingDown size={12} style={{ color: "#FF4444" }} />
+            <span style={{ ...MONO_SM, color: "#FF4444", letterSpacing: "0.1em" }}>BEAR CASE</span>
+          </div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: 0 }}>
+            {answer.bearCase}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Catalysts + Threats ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px" }}>
+        {[
+          { label: "CATALYSTS", items: answer.catalysts, color: "#00FF88", icon: <Zap size={11} /> },
+          { label: "THREATS", items: answer.threats, color: "#FF4444", icon: <AlertTriangle size={11} /> },
+        ].map(({ label, items, color, icon }) => (
+          <div key={label} style={{ padding: "16px 20px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "10px" }}>
+              <span style={{ color }}>{icon}</span>
+              <span style={{ ...MONO_SM, color, letterSpacing: "0.1em" }}>{label}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {items.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                  <span style={{ ...MONO_SM, color, marginTop: "1px", flexShrink: 0 }}>›</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Key Levels (only for security questions) ── */}
+      {(answer.support || answer.resistance || answer.entryZone || answer.stopLevel) && (
+        <div style={{ padding: "16px 20px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+          <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "12px", letterSpacing: "0.12em" }}>KEY LEVELS</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "12px" }}>
+            {answer.entryZone && (
+              <div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>ENTRY ZONE</div>
+                <div style={{ ...MONO, fontSize: "13px", color: "#00FF88", fontWeight: 600 }}>{answer.entryZone}</div>
+              </div>
+            )}
+            {answer.support && (
+              <div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>SUPPORT</div>
+                <div style={{ ...MONO, fontSize: "13px", color: "#00FF88", fontWeight: 600 }}>{answer.support}</div>
+              </div>
+            )}
+            {answer.resistance && (
+              <div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>RESISTANCE</div>
+                <div style={{ ...MONO, fontSize: "13px", color: "#FF4444", fontWeight: 600 }}>{answer.resistance}</div>
+              </div>
+            )}
+            {answer.stopLevel && (
+              <div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>STOP</div>
+                <div style={{ ...MONO, fontSize: "13px", color: "#FF4444", fontWeight: 600 }}>{answer.stopLevel}</div>
+              </div>
+            )}
+            {answer.profitTargets.length > 0 && (
+              <div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>TARGETS</div>
+                <div style={{ ...MONO, fontSize: "12px", color: "#00D4FF", fontWeight: 600 }}>{answer.profitTargets.join(" / ")}</div>
+              </div>
+            )}
+            <div>
+              <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginBottom: "3px" }}>TIMEFRAME</div>
+              <div style={{ ...MONO, fontSize: "12px", color: "#F0F4FF" }}>{answer.expectedTimeframe}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Action + Invalidation ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "12px" }}>
+        <div style={{ padding: "16px 20px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.12)", borderRadius: "8px" }}>
+          <div style={{ ...MONO_SM, color: ACCENT, marginBottom: "8px", letterSpacing: "0.1em" }}>SUGGESTED ACTION</div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#E8EDF5", lineHeight: 1.6, margin: 0 }}>
+            {answer.suggestedAction}
+          </p>
+          {answer.positionSizeGuidance && (
+            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginTop: "8px" }}>
+              Position: {answer.positionSizeGuidance}
+            </div>
+          )}
+        </div>
+        <div style={{ padding: "16px 20px", background: "rgba(255,165,0,0.04)", border: "1px solid rgba(255,165,0,0.12)", borderRadius: "8px" }}>
+          <div style={{ ...MONO_SM, color: "#FFA500", marginBottom: "8px", letterSpacing: "0.1em" }}>INVALIDATION</div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: 0 }}>
+            {answer.invalidation}
+          </p>
+        </div>
+      </div>
+
+      {/* ── What Changes Thesis ── */}
+      <div style={{
+        padding: "14px 20px",
+        background: SURFACE,
+        border: `1px solid ${BORDER}`,
+        borderRadius: "8px",
+        display: "flex",
+        gap: "10px",
+        alignItems: "flex-start",
+      }}>
+        <RefreshCw size={13} style={{ color: "rgba(255,255,255,0.3)", marginTop: "2px", flexShrink: 0 }} />
+        <div>
+          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", marginRight: "8px" }}>WHAT CHANGES THE THESIS:</span>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#A0A8B4" }}>{answer.whatChangesThesis}</span>
+        </div>
+      </div>
+
+      {/* ── Deep Dive Actions (shown AFTER the answer) ── */}
+      <div style={{ padding: "16px 20px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+        <button
+          onClick={() => setShowDeepDive(v => !v)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 0,
+            width: "100%",
+          }}
+        >
+          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em" }}>DEEPER ANALYSIS</span>
+          {showDeepDive
+            ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
+            : <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
+          }
+        </button>
+        {showDeepDive && (
+          <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+            {answer.deepDiveLinks.map((link, i) => (
+              <button
+                key={i}
+                onClick={() => onDeepDive(link.path)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 14px",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "background 0.15s ease",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.06)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.03)")}
+              >
+                <div>
+                  <div style={{ ...MONO_SM, color: "#F0F4FF", fontWeight: 600 }}>{link.label}</div>
+                  <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", fontSize: "10px", marginTop: "2px" }}>{link.description}</div>
+                </div>
+                <ExternalLink size={12} style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── User Bubble ───────────────────────────────────────────────
+
+function UserBubble({ content }: { content: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "12px" }}>
+      <div style={{
+        maxWidth: "70%",
+        padding: "12px 16px",
+        background: "rgba(0,212,255,0.08)",
+        border: "1px solid rgba(0,212,255,0.18)",
+        borderRadius: "12px 12px 2px 12px",
+        fontFamily: "'Inter', sans-serif",
+        fontSize: "14px",
+        color: "#E8EDF5",
+        lineHeight: 1.6,
+      }}>
+        {content}
+      </div>
+    </div>
+  );
+}
+
+// ── Suggested Questions ───────────────────────────────────────
+
+const SUGGESTED_QUESTIONS = [
+  "Should I buy NVDA right now?",
+  "How dangerous is the market today?",
+  "What are the best swing trades this week?",
+  "Is Bitcoin in a bull or bear cycle?",
+  "What changed overnight in the market?",
+  "What would cause the market to crash?",
+  "Compare NVDA vs AMD",
+  "What are institutions buying right now?",
+];
+
+// ── Main Component ────────────────────────────────────────────
+
 export default function SmartDiscovery() {
   useSEO({
-    title: "Smart Discovery — FAULTLINE",
-    description: "Ask any market question. FAULTLINE routes you to the right intelligence engine and executes instantly.",
+    title: "FAULTLINE — Ask Anything",
+    description: "Ask any market question. FAULTLINE synthesizes live data, macro regime analysis, and institutional signal scoring into one clear recommendation.",
   });
+
+  const { user, loading: authLoading } = useAuth();
+  const [, navigate] = useLocation();
+  const { current: contextTicker, setTicker } = useTickerStore();
 
   const [query, setQuery] = useState("");
-  const [isDispatching, setIsDispatching] = useState(false);
-  const [lastDispatch, setLastDispatch] = useState<{ label: string; ticker?: string } | null>(null);
-  const [history, setHistory] = useState<string[]>(() => {
-    try { return JSON.parse(sessionStorage.getItem("sd-history") ?? "[]"); } catch { return []; }
-  });
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [, navigate] = useLocation();
+  const [conversation, setConversation] = useState<ConversationMessage[]>([]);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionStep, setExecutionStep] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-  // Focus on mount
+  const inputRef = useRef<HTMLInputElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const stepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const askMutation = trpc.smartDiscovery.ask.useMutation();
+
+  // Focus input on mount
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
-  const handleSubmit = useCallback(async (q: string) => {
-    const trimmed = q.trim();
-    if (!trimmed) return;
+  // Scroll to bottom when conversation updates
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversation, isExecuting]);
 
-    setIsDispatching(true);
+  const startExecutionSequence = useCallback(() => {
+    setExecutionStep(0);
+    stepIntervalRef.current = setInterval(() => {
+      setExecutionStep(prev => {
+        if (prev >= EXECUTION_STEPS.length - 1) {
+          if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 600);
+  }, []);
 
-    // Save to history
-    const newHistory = [trimmed, ...history.filter(h => h !== trimmed)].slice(0, 8);
-    setHistory(newHistory);
-    try { sessionStorage.setItem("sd-history", JSON.stringify(newHistory)); } catch { /* ignore */ }
-
-    // Route
-    const result = dispatch(trimmed);
-
-    // Brief visual feedback (80ms) so user sees the dispatch happening
-    await new Promise(r => setTimeout(r, 80));
-
-    // Show brief "dispatching to X" feedback
-    setLastDispatch({ label: result.destinationLabel, ticker: result.ticker });
-
-    // Dispatch cross-page events for pages that listen (DayTradeIntelligence)
-    if (result.ticker) {
-      const detail = { symbol: result.ticker, assetType: result.assetType ?? "stock" };
-      window.dispatchEvent(new CustomEvent("si-search", { detail }));
-      window.dispatchEvent(new CustomEvent("dt-search", { detail }));
-      window.dispatchEvent(new CustomEvent("de-search", { detail: { ...detail, move: result.params?.move, autorun: true } }));
+  const stopExecutionSequence = useCallback(() => {
+    if (stepIntervalRef.current) {
+      clearInterval(stepIntervalRef.current);
+      stepIntervalRef.current = null;
     }
+    setExecutionStep(EXECUTION_STEPS.length - 1);
+  }, []);
 
-    // Navigate immediately with URL params
-    const url = buildUrl(result.destinationPath, result.params);
-    navigate(url);
+  const handleSubmit = useCallback(async (q?: string) => {
+    const question = (q ?? query).trim();
+    if (!question || isExecuting) return;
 
-    setIsDispatching(false);
-  }, [history, navigate]);
+    setQuery("");
+    setError(null);
+    setIsExecuting(true);
+    startExecutionSequence();
+
+    const userMsg: ConversationMessage = {
+      role: "user",
+      content: question,
+      timestamp: Date.now(),
+    };
+    setConversation(prev => [...prev, userMsg]);
+
+    // Build history for context (last 6 messages)
+    const historyForApi = conversation.slice(-6).map(m => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+      ticker: m.ticker ?? null,
+      timestamp: m.timestamp,
+    }));
+
+    try {
+      const answer = await askMutation.mutateAsync({
+        query: question,
+        conversationHistory: historyForApi,
+        contextTicker: contextTicker?.ticker ?? null,
+        contextAssetType: contextTicker?.assetType ?? null,
+      });
+
+      stopExecutionSequence();
+
+      // Update global ticker if answer identified a security
+      if (answer.ticker && answer.assetType) {
+        setTicker(answer.ticker, answer.ticker, answer.assetType as "stock" | "crypto");
+      }
+
+      const assistantMsg: ConversationMessage = {
+        role: "assistant",
+        content: answer.executiveSummary,
+        ticker: answer.ticker,
+        timestamp: Date.now(),
+        answer: answer as FaultlineAnswer,
+      };
+      setConversation(prev => [...prev, assistantMsg]);
+    } catch {
+      stopExecutionSequence();
+      setError("FAULTLINE encountered an error retrieving live market data. Please try again.");
+      setConversation(prev => prev.slice(0, -1));
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [query, isExecuting, conversation, contextTicker, askMutation, startExecutionSequence, stopExecutionSequence, setTicker]);
+
+  const handleDeepDive = useCallback((path: string) => {
+    navigate(path);
+  }, [navigate]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleSubmit();
+    }
+  }, [handleSubmit]);
+
+  if (authLoading) {
+    return (
+      <AppLayout>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+          <div style={{ ...MONO_SM, color: ACCENT }}>LOADING...</div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  const isEmpty = conversation.length === 0 && !isExecuting;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#050608" }}>
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div style={{
-        padding: "24px 16px 20px",
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
-        background: "rgba(6,8,12,0.98)",
-        textAlign: "center",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "6px" }}>
-          <Sparkles size={14} style={{ color: "#00D4FF" }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(0,212,255,0.5)", letterSpacing: "0.2em" }}>SMART DISCOVERY</span>
-        </div>
-        <h1 style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: "clamp(20px, 4vw, 28px)", color: "#E2E8F0", letterSpacing: "0.04em", margin: "0 0 6px" }}>
-          Ask FAULTLINE Anything
-        </h1>
-        <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.6)", margin: 0 }}>
-          Ask a question → FAULTLINE routes and executes the right engine instantly
-        </p>
-      </div>
-
-      {/* ── Search ─────────────────────────────────────────── */}
-      <div style={{ padding: "20px 16px", maxWidth: "680px", margin: "0 auto" }}>
-
-        {/* Dispatch feedback strip */}
-        {lastDispatch && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            padding: "8px 14px", marginBottom: "12px",
-            background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.15)",
-            borderRadius: "5px", animation: "fl-fade-in 0.15s ease-out",
-          }}>
-            <Zap size={11} style={{ color: "#00D4FF", flexShrink: 0 }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(0,212,255,0.7)" }}>
-              Dispatched to {lastDispatch.label}{lastDispatch.ticker ? ` — ${lastDispatch.ticker}` : ""}
-            </span>
-            <button
-              onClick={() => setLastDispatch(null)}
-              style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#6B7280", padding: "2px", display: "flex" }}
-            >
-              <X size={11} />
-            </button>
-          </div>
-        )}
-
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          padding: "12px 16px",
-          background: "rgba(6,8,12,0.95)",
-          border: "1px solid rgba(0,212,255,0.25)",
-          borderRadius: "8px",
-          boxShadow: "0 0 0 1px rgba(0,212,255,0.05)",
-          marginBottom: "16px",
-        }}>
-          <Search size={16} style={{ color: "#00D4FF", flexShrink: 0 }} />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter") handleSubmit(query); }}
-            placeholder="Should I buy NVDA? Best swing trades. What changed overnight?"
-            style={{
-              flex: 1,
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              color: "#F0F4FF",
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "13px",
-              letterSpacing: "0.03em",
-            }}
-          />
-          {query && (
-            <button onClick={() => { setQuery(""); setLastDispatch(null); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#6B7280", padding: "2px", display: "flex" }}>
-              <X size={13} />
-            </button>
-          )}
-          <button
-            onClick={() => handleSubmit(query)}
-            disabled={!query.trim() || isDispatching}
-            style={{
-              display: "flex", alignItems: "center", gap: "5px",
-              padding: "6px 12px", borderRadius: "4px",
-              background: query.trim() ? "rgba(0,212,255,0.15)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${query.trim() ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.08)"}`,
-              color: query.trim() ? "#00D4FF" : "#6B7280",
-              cursor: query.trim() ? "pointer" : "default",
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.1em",
-              transition: "all 0.15s ease", flexShrink: 0,
-            }}
-          >
-            {isDispatching ? (
-              <><RotateCcw size={10} style={{ animation: "fl-spin 0.6s linear infinite" }} /> ROUTING…</>
-            ) : (
-              <>DISCOVER <ArrowRight size={10} /></>
-            )}
-          </button>
-        </div>
-
-        {/* ── Suggested questions ─────────────────────────── */}
-        <div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.4)", letterSpacing: "0.14em", marginBottom: "10px" }}>
-            SUGGESTED QUESTIONS
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            {SUGGESTED_QUESTIONS.map((q, i) => (
-              <button
-                key={i}
-                onClick={() => handleSubmit(q)}
-                style={{
-                  display: "flex", alignItems: "center", gap: "10px",
-                  padding: "10px 14px", borderRadius: "5px",
-                  background: "rgba(6,8,12,0.95)", border: "1px solid rgba(255,255,255,0.06)",
-                  color: "#94A3B8", cursor: "pointer", textAlign: "left",
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px",
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.2)"; (e.currentTarget as HTMLElement).style.color = "#E2E8F0"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; }}
-              >
-                <Search size={11} style={{ color: "rgba(100,116,139,0.4)", flexShrink: 0 }} />
-                {q}
-                <ChevronRight size={10} style={{ marginLeft: "auto", color: "rgba(100,116,139,0.3)", flexShrink: 0 }} />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── History ─────────────────────────────────────── */}
-        {history.length > 0 && (
-          <div style={{ marginTop: "16px" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.4)", letterSpacing: "0.14em", marginBottom: "8px" }}>
-              RECENT SEARCHES
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-              {history.map((h, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSubmit(h)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: "5px",
-                    padding: "4px 10px", borderRadius: "3px",
-                    background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",
-                    color: "rgba(100,116,139,0.6)", cursor: "pointer",
-                    fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px",
-                    transition: "all 0.15s ease",
-                  }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.2)"; (e.currentTarget as HTMLElement).style.color = "#94A3B8"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "rgba(100,116,139,0.6)"; }}
-                >
-                  <Clock size={9} />
-                  {h.length > 40 ? h.slice(0, 40) + "…" : h}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── All engines ─────────────────────────────────── */}
-        <div style={{ marginTop: "24px" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.4)", letterSpacing: "0.14em", marginBottom: "10px" }}>
-            ALL INTELLIGENCE ENGINES
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "8px" }}>
-            {Object.entries(INTENT_ROUTES).map(([key, route]) => (
-              <button
-                key={key}
-                onClick={() => navigate(route.path)}
-                style={{
-                  display: "flex", alignItems: "flex-start", gap: "8px",
-                  padding: "10px 12px", borderRadius: "5px",
-                  background: "rgba(6,8,12,0.95)", border: "1px solid rgba(255,255,255,0.05)",
-                  cursor: "pointer", textAlign: "left",
-                  transition: "all 0.15s ease",
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,212,255,0.2)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.05)"; }}
-              >
-                <span style={{ color: "rgba(100,116,139,0.5)", flexShrink: 0, marginTop: "1px" }}>{route.icon}</span>
-                <div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", marginBottom: "2px" }}>{route.label}</div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", lineHeight: 1.3 }}>{route.description}</div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
+    <AppLayout>
       <style>{`
-        @keyframes fl-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes fl-fade-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fl-pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+        @keyframes fl-fade-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        .fl-answer { animation: fl-fade-in 0.4s ease; }
       `}</style>
-    </div>
+
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "calc(100vh - 56px)",
+        maxWidth: "860px",
+        margin: "0 auto",
+        padding: "0 16px",
+      }}>
+
+        {/* ── Empty / Welcome State ── */}
+        {isEmpty && (
+          <div style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "32px",
+            padding: "40px 0",
+          }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{
+                ...SANS,
+                fontSize: "36px",
+                fontWeight: 800,
+                letterSpacing: "0.12em",
+                color: "#F0F4FF",
+                marginBottom: "8px",
+              }}>
+                FAULT<span style={{ color: ACCENT }}>LINE</span>
+              </div>
+              <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", letterSpacing: "0.2em" }}>
+                INSTITUTIONAL INTELLIGENCE
+              </div>
+            </div>
+
+            <div style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: "16px",
+              color: "rgba(255,255,255,0.5)",
+              textAlign: "center",
+              maxWidth: "480px",
+              lineHeight: 1.7,
+            }}>
+              {user
+                ? "Ask anything. FAULTLINE synthesizes live market data, macro regime analysis, and institutional signal scoring into one clear recommendation."
+                : "Sign in to access FAULTLINE's institutional intelligence. One question. One answer."
+              }
+            </div>
+
+            {user && (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+                gap: "8px",
+                width: "100%",
+                maxWidth: "700px",
+              }}>
+                {SUGGESTED_QUESTIONS.map((q, i) => (
+                  <button
+                    key={i}
+                    onClick={() => void handleSubmit(q)}
+                    style={{
+                      padding: "10px 14px",
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "13px",
+                      color: "rgba(255,255,255,0.55)",
+                      transition: "all 0.15s ease",
+                      lineHeight: 1.4,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = "rgba(0,212,255,0.06)";
+                      e.currentTarget.style.borderColor = "rgba(0,212,255,0.2)";
+                      e.currentTarget.style.color = "#E8EDF5";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
+                      e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+                    }}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Conversation ── */}
+        {!isEmpty && (
+          <div style={{ flex: 1, paddingTop: "24px", paddingBottom: "120px", display: "flex", flexDirection: "column", gap: "20px" }}>
+            {conversation.map((msg, i) => (
+              <div key={i}>
+                {msg.role === "user" ? (
+                  <UserBubble content={msg.content} />
+                ) : msg.answer ? (
+                  <div className="fl-answer">
+                    <InstitutionalAnswer answer={msg.answer} onDeepDive={handleDeepDive} />
+                  </div>
+                ) : null}
+              </div>
+            ))}
+
+            {isExecuting && (
+              <div className="fl-answer">
+                <ExecutionSequence currentStep={executionStep} />
+              </div>
+            )}
+
+            {error && (
+              <div style={{
+                padding: "14px 18px",
+                background: "rgba(255,68,68,0.06)",
+                border: "1px solid rgba(255,68,68,0.2)",
+                borderRadius: "8px",
+                ...MONO_SM,
+                color: "#FF6B6B",
+              }}>
+                {error}
+              </div>
+            )}
+
+            <div ref={bottomRef} />
+          </div>
+        )}
+
+        {/* ── Sticky Input Bar ── */}
+        <div style={{
+          position: "sticky",
+          bottom: 0,
+          padding: "16px 0 24px",
+          background: `linear-gradient(to top, ${BG} 80%, transparent)`,
+        }}>
+          {!user ? (
+            <div style={{ textAlign: "center" }}>
+              <a
+                href={getLoginUrl()}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "12px 28px",
+                  background: "rgba(0,212,255,0.1)",
+                  border: "1px solid rgba(0,212,255,0.3)",
+                  borderRadius: "6px",
+                  color: ACCENT,
+                  ...MONO,
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  letterSpacing: "0.1em",
+                  textDecoration: "none",
+                }}
+              >
+                SIGN IN TO ACCESS FAULTLINE
+                <ArrowRight size={14} />
+              </a>
+            </div>
+          ) : (
+            <div style={{
+              display: "flex",
+              gap: "10px",
+              padding: "12px 16px",
+              background: "rgba(12,15,22,0.98)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "10px",
+              boxShadow: "0 -8px 32px rgba(0,0,0,0.6)",
+            }}>
+              {contextTicker && (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 10px",
+                  background: "rgba(0,212,255,0.08)",
+                  border: "1px solid rgba(0,212,255,0.2)",
+                  borderRadius: "5px",
+                  flexShrink: 0,
+                }}>
+                  <span style={{ ...MONO_SM, color: ACCENT, fontWeight: 700 }}>{contextTicker.ticker}</span>
+                </div>
+              )}
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={
+                  contextTicker
+                    ? `Ask about ${contextTicker.ticker}, or type any question...`
+                    : "Ask anything — Should I buy NVDA? How dangerous is the market? Best swing trades..."
+                }
+                disabled={isExecuting}
+                style={{
+                  flex: 1,
+                  background: "none",
+                  border: "none",
+                  outline: "none",
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: "14px",
+                  color: "#F0F4FF",
+                  caretColor: ACCENT,
+                }}
+              />
+              <button
+                onClick={() => void handleSubmit()}
+                disabled={!query.trim() || isExecuting}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "36px",
+                  height: "36px",
+                  background: query.trim() && !isExecuting ? "rgba(0,212,255,0.15)" : "rgba(255,255,255,0.04)",
+                  border: `1px solid ${query.trim() && !isExecuting ? "rgba(0,212,255,0.35)" : "rgba(255,255,255,0.08)"}`,
+                  borderRadius: "6px",
+                  cursor: query.trim() && !isExecuting ? "pointer" : "not-allowed",
+                  transition: "all 0.15s ease",
+                  flexShrink: 0,
+                }}
+              >
+                <Send size={14} style={{ color: query.trim() && !isExecuting ? ACCENT : "rgba(255,255,255,0.25)" }} />
+              </button>
+            </div>
+          )}
+
+          {conversation.length > 0 && (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "8px", gap: "16px" }}>
+              <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.2)", fontSize: "10px" }}>
+                {conversation.filter(m => m.role === "user").length} question{conversation.filter(m => m.role === "user").length !== 1 ? "s" : ""} in session
+              </span>
+              {contextTicker && (
+                <span style={{ ...MONO_SM, color: "rgba(0,212,255,0.5)", fontSize: "10px" }}>
+                  Context: {contextTicker.ticker}
+                </span>
+              )}
+              <button
+                onClick={() => { setConversation([]); setError(null); }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  ...MONO_SM,
+                  color: "rgba(255,255,255,0.2)",
+                  fontSize: "10px",
+                  padding: 0,
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </AppLayout>
   );
 }
