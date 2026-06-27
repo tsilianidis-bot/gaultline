@@ -2428,7 +2428,7 @@
 - [ ] Full test suite: sandbox memory constraints prevent full run; individual files pass
 - [x] Security → Action → Timeframe enforced: UniversalTickerHeader on all analysis pages
 - [x] Opportunity cards actionable: full card data + one-click Analyze + Add Watchlist
-- [ ] Save final Phase 3.5 checkpoint
+- [x] Save final Phase 3.5 checkpoint (b673742a)
 
 ### 9. Final Deliverables
 - [ ] Complete implementation report with before/after screenshots
