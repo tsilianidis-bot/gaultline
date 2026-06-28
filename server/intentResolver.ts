@@ -34,19 +34,28 @@ const ENGLISH_SKIP = new Set([
   "BUY","SELL","HOLD","WAIT","RISK","TRADE","INVEST","OWN","GET","GO","GIVE","TAKE","MAKE","PUT","SET",
   "SHOULD","COULD","WOULD","WILL","SHALL","MAY","MIGHT","MUST","CAN","NEED","WANT","HAVE","HAS","HAD",
   "ENTER","EXIT","ADD","CUT","REDUCE","INCREASE","OPEN","CLOSE","SHORT","LONG",
+  // Common English verbs that look like tickers
+  "BREAK","BROKE","BROKEN","MOVE","MOVED","MOVING","RUN","RUNS","RISE","RISES","FELL","FALL","FALLS",
+  "THINK","THOUGHT","KNOW","KNEW","FEEL","FELT","LOOK","LOOKS","SEEM","SEEMS","TELL","TOLD","SHOW",
+  "EXPECT","WATCH","PLAY","STAY","KEEP","TURN","PUSH","PULL","HIT","MISS","PASS","FAIL","FIND",
+  "CALL","CALLS","PUTS","PUTS","WORK","WORKS","HELP","HELPS","MEAN","MEANS","COME","CAME","CAME",
   // Prepositions / conjunctions
   "IN","AT","TO","FOR","OF","ON","BY","UP","DOWN","OUT","OFF","OVER","UNDER","INTO","FROM","WITH","WITHOUT",
   "AND","OR","BUT","IF","THEN","ELSE","SO","AS","THAT","THIS","THESE","THOSE","THAN","WHEN","WHERE","HOW","WHY","WHAT",
+  "ABOUT","AFTER","BEFORE","BETWEEN","DURING","SINCE","UNTIL","WHILE","AROUND","AGAINST","BEYOND",
+  // Common adjectives/adverbs that look like tickers
+  "VERY","REALLY","QUITE","PRETTY","MUCH","MANY","SOME","SUCH","SAME","BOTH","EACH","EVERY","ONLY",
+  "LIKE","JUST","BACK","EVEN","STILL","ALSO","WELL","AWAY","AGAIN","THROUGH","ACROSS","ALONG",
   // Financial terms that look like tickers
   "AI","US","UK","EU","FX","EM","DM","PE","EV","YOY","QOQ","MOM","YTD","MTD","IPO","ETF","EPS","FCF","ROE","ROA",
   "GDP","CPI","PPI","PMI","ISM","NFP","ADP","FED","ECB","BOJ","BOE","IMF","BIS","SEC","CFTC",
   "NOW","NEW","OLD","BIG","LOW","HIGH","GOOD","BAD","BEST","NEXT","LAST","FIRST","MOST","LESS","MORE",
-  "DAY","WEEK","MONTH","YEAR","TIME","DATE","RATE","TERM","LONG","SHORT","NEAR","FAR",
-  "CASH","BOND","DEBT","LOAN","FUND","BANK","RATE","YIELD","PRICE","VALUE","COST","GAIN","LOSS",
+  "DAY","WEEK","MONTH","YEAR","TIME","DATE","RATE","TERM","NEAR","FAR",
+  "CASH","BOND","DEBT","LOAN","FUND","BANK","YIELD","PRICE","VALUE","COST","GAIN","LOSS",
   "BULL","BEAR","CRASH","RALLY","DIP","TOP","BOTTOM","PEAK","FLOOR","CEILING","SUPPORT","RESISTANCE",
   "MACRO","MICRO","SECTOR","MARKET","STOCK","CRYPTO","FOREX","GOLD","OIL","GAS","SILVER",
   "SAFE","RISKY","VOLATILE","STABLE","STRONG","WEAK","CHEAP","EXPENSIVE",
-  "TODAY","TOMORROW","WEEK","MONTH","QUARTER","YEAR","DAILY","WEEKLY","MONTHLY",
+  "TODAY","TOMORROW","QUARTER","DAILY","WEEKLY","MONTHLY",
 ]);
 
 // ── Crypto: name → ticker mapping ─────────────────────────────
@@ -506,11 +515,32 @@ export function resolveIntent(
   }
 
   // ── Step 7: Check for remaining uppercase ticker candidates ──
-  // Only use if there's exactly one non-skip candidate (avoid false positives)
+  // Strategy: if multiple candidates, prefer ones that look like real tickers
+  // (all-caps, 2-5 chars, not common English words already filtered)
+  // If only one candidate remains after filtering, use it (medium confidence)
+  // If multiple, try to find the most ticker-like one
+  const knownStockTickers = new Set(Object.values(STOCK_NAME_MAP).map(v => v.ticker));
+  
+  // First pass: check if any candidate is a known stock ticker
+  const stockCandidate = candidateTickers.find(t => knownStockTickers.has(t));
+  if (stockCandidate) {
+    return {
+      ticker: stockCandidate,
+      assetType: "stock",
+      queryType: "security",
+      assetName: stockCandidate,
+      needsClarification: false,
+      clarificationPrompt: null,
+      confidence: "high",
+    };
+  }
+
+  // Second pass: if exactly one candidate, use it (but only if it looks like a ticker)
   if (candidateTickers.length === 1) {
     const t = candidateTickers[0];
     // Don't treat single 2-letter tokens as tickers unless they look intentional
-    if (t.length >= 3 || (t.length === 2 && /^[A-Z]{2}$/.test(t) && !["IS","IN","AT","TO","DO","BE","MY","OR","VS","US","UK","EU","IF","AI"].includes(t))) {
+    const twoLetterSkip = new Set(["IS","IN","AT","TO","DO","BE","MY","OR","VS","US","UK","EU","IF","AI"]);
+    if (t.length >= 3 || (t.length === 2 && !twoLetterSkip.has(t))) {
       return {
         ticker: t,
         assetType: CRYPTO_TICKERS.has(t) ? "crypto" : "stock",
@@ -519,6 +549,25 @@ export function resolveIntent(
         needsClarification: false,
         clarificationPrompt: null,
         confidence: "medium",
+      };
+    }
+  }
+
+  // Third pass: multiple candidates — pick the shortest (most ticker-like) that is 2-5 chars
+  if (candidateTickers.length > 1) {
+    const tickerLike = candidateTickers
+      .filter(t => t.length >= 2 && t.length <= 5)
+      .sort((a, b) => a.length - b.length);
+    if (tickerLike.length > 0) {
+      const t = tickerLike[0];
+      return {
+        ticker: t,
+        assetType: CRYPTO_TICKERS.has(t) ? "crypto" : "stock",
+        queryType: "security",
+        assetName: t,
+        needsClarification: false,
+        clarificationPrompt: null,
+        confidence: "low",
       };
     }
   }

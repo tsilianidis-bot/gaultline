@@ -669,9 +669,28 @@ export default function SmartDiscovery() {
         answer: answer as FaultlineAnswer,
       };
       setConversation(prev => [...prev, assistantMsg]);
-    } catch {
+    } catch (err: unknown) {
       stopExecutionSequence();
-      setError("FAULTLINE encountered an error retrieving live market data. Please try again.");
+      // Provide actionable diagnostic messages instead of the generic catch-all
+      let errorMsg = "FAULTLINE encountered an error. Please try again.";
+      if (err && typeof err === "object") {
+        const e = err as { message?: string; data?: { code?: string; httpStatus?: number } };
+        const code = e.data?.code;
+        const httpStatus = e.data?.httpStatus;
+        const msg = e.message ?? "";
+        if (code === "TOO_MANY_REQUESTS" || httpStatus === 429) {
+          errorMsg = "Rate limit reached. Please wait a moment before trying again.";
+        } else if (code === "UNAUTHORIZED" || httpStatus === 401) {
+          errorMsg = "Session expired. Please refresh the page and log in again.";
+        } else if (code === "TIMEOUT" || httpStatus === 504 || httpStatus === 408) {
+          errorMsg = "Analysis timed out. Market data services may be slow — please try again.";
+        } else if (msg.includes("invalid response") || msg.includes("parse")) {
+          errorMsg = "FAULTLINE analysis engine returned an unexpected response. Please try again.";
+        } else if (msg && msg !== "Unable to transform response from server") {
+          errorMsg = msg;
+        }
+      }
+      setError(errorMsg);
       setConversation(prev => prev.slice(0, -1));
     } finally {
       setIsExecuting(false);

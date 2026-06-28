@@ -42,12 +42,29 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 // Rate limiters
+// IMPORTANT: The handler must return a tRPC-compatible superjson-encoded error response.
+// Using `message: { error: "..." }` returns plain JSON that the tRPC client cannot
+// superjson-deserialize, causing "Unable to transform response from server" errors.
+function makeTrpcRateLimitHandler(msg: string) {
+  return (_req: express.Request, res: express.Response) => {
+    res.status(429).json({
+      error: {
+        json: {
+          message: msg,
+          code: -32029,
+          data: { code: "TOO_MANY_REQUESTS", httpStatus: 429 },
+        },
+      },
+    });
+  };
+}
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 120,            // 120 requests/min per IP — generous for a dashboard app
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many requests, please slow down." },
+  handler: makeTrpcRateLimitHandler("Too many requests. Please slow down."),
   skip: (req) => process.env.NODE_ENV === "development",
 });
 
@@ -56,7 +73,7 @@ const signalsLimiter = rateLimit({
   max: 60,             // 60 req/min for market data endpoints
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Market data rate limit exceeded." },
+  handler: makeTrpcRateLimitHandler("Market data rate limit exceeded. Please wait a moment."),
   skip: (req) => process.env.NODE_ENV === "development",
 });
 

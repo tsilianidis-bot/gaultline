@@ -2700,4 +2700,52 @@
 - [x] Beta Readiness Report (/home/ubuntu/faultline-beta-readiness-report.md)
 - [x] Before/After comparison (documented in report)
 - [x] Remaining Recommendations (3 post-beta items documented)
+- [x] Save checkpoint and deliver (version: f0293df1)
+
+---
+
+## Phase 9 — Symbol Intelligence Critical Bug Fix Sprint
+
+### Root Cause Investigation
+- [ ] Reproduce ETH "Unable to transform response from server" error
+- [ ] Capture exact stack trace and failing field
+- [ ] Trace full pipeline: frontend → tRPC → router → FMOS → data providers → AI → serialization → frontend parser
+- [ ] Identify schema mismatch, null/undefined field, or serialization failure
+
+### Permanent Fix
+- [ ] Fix root cause (no workarounds)
+- [ ] Add strict schema validation before responses are returned
+- [ ] Add actionable diagnostic errors (request ID, symbol, asset type, engine stage, exception)
+- [ ] Ensure no undefined/null serialization failures in any response field
+- [ ] Ensure no invalid JSON in any response field
+
+### Regression Testing (15 symbols)
+- [ ] AAPL — full pipeline pass
+- [ ] NVDA — full pipeline pass
+- [ ] TSLA — full pipeline pass
+- [ ] PLTR — full pipeline pass
+- [ ] BTC — full pipeline pass
+- [ ] ETH — full pipeline pass
+- [ ] SOL — full pipeline pass
+- [ ] TAO — full pipeline pass
+- [ ] ONDO — full pipeline pass
+- [ ] LINK — full pipeline pass
+- [ ] DOGE — full pipeline pass
+- [ ] SPY — full pipeline pass
+- [ ] QQQ — full pipeline pass
+- [ ] IBIT — full pipeline pass
+- [ ] Invalid symbol (FAKEXYZ) — graceful error
+- [ ] Empty input — graceful error
+- [ ] API failure simulation — graceful error
+
+### Automated Test Suite
+- [ ] Write vitest regression tests for all asset classes
+- [ ] Write tests for invalid symbols, empty inputs, API failures, timeouts
+
+### Deliverables
+- [ ] Root Cause Analysis document
+- [ ] Files Modified list
+- [ ] Bug Fix Summary
+- [ ] Regression Test Results
+- [ ] Remaining Risks
 - [ ] Save checkpoint and deliver

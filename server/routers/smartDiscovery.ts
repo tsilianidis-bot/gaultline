@@ -11,6 +11,7 @@
  * Only FAULTLINE exists.
  */
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, publicProcedure } from "../_core/trpc";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { getQuickOutlook } from "../signalOutlook";
@@ -76,9 +77,16 @@ export interface ConversationMessage {
 
 // ── Sanitize NaN/Infinity ─────────────────────────────────────
 
+/**
+ * Recursively sanitize a value so it is safe to serialize via superjson:
+ * - undefined → null (JSON.stringify silently drops undefined, causing superjson metadata mismatch)
+ * - NaN / Infinity → 0
+ * - All nested objects and arrays are recursively sanitized
+ */
 function sanitize(v: unknown): unknown {
+  if (v === undefined) return null;  // ← KEY FIX: undefined becomes null, not dropped
+  if (v === null) return null;
   if (typeof v === "number") return isFinite(v) && !isNaN(v) ? v : 0;
-  if (v === null || v === undefined) return v;
   if (Array.isArray(v)) return v.map(sanitize);
   if (typeof v === "object") {
     return Object.fromEntries(
@@ -252,7 +260,21 @@ Write like a Chief Investment Strategist briefing an institutional client. Be sp
     },
   });
 
-  const raw = JSON.parse(llmResponse.choices[0].message.content as string);
+  // Safely parse LLM JSON — strip markdown fences if present, throw TRPCError on parse failure
+  const rawContent = ((llmResponse.choices[0].message.content as string) ?? "").trim();
+  const jsonContent = rawContent.startsWith("`")
+    ? rawContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()
+    : rawContent;
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(jsonContent);
+  } catch (parseErr) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "FAULTLINE analysis engine returned an invalid response. Please try again.",
+      cause: parseErr,
+    });
+  }
 
   return sanitize({
     ...raw,
