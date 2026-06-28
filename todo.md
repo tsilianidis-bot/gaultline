@@ -2815,3 +2815,23 @@
 - [x] Scroll-triggered fade-in animation (IntersectionObserver)
 - [x] Responsive layout (mobile-first)
 - [x] TypeScript: 0 errors
+
+## V3.0 — Institutional Daily Brief Experience (Jun 28, 2026)
+
+- [x] Database: Add `user_preferences` table (investorType, riskProfile, interests, watchlistTickers, notificationPrefs, onboardingComplete, lastVisitAt, lastVisitSnapshot)
+- [x] Backend: `dailyBrief.getPreferences` — fetch user preferences
+- [x] Backend: `dailyBrief.savePreferences` — upsert user preferences
+- [x] Backend: `dailyBrief.recordVisit` — update lastVisitAt + lastVisitSnapshot
+- [x] Backend: `dailyBrief.getChanges` — compute "Since Your Last Visit" diff from engine snapshots
+- [x] Backend: `dailyBrief.generateBrief` — LLM-powered institutional daily brief (Today's Market, Top Risks, Top Opportunities, Watchlist Intelligence, Today's Events, Engine Status)
+- [x] Frontend: MarketSnapshot widget — live regime, pressure, liquidity, breadth, bull/bear probability above Ask input
+- [x] Frontend: SinceLastVisit widget — shows material market changes since last visit with direction indicators
+- [x] Frontend: Quick Action chips — 8 prompt shortcuts (Full Market Briefing, Top Opportunities, Top Risks, etc.)
+- [x] Frontend: FullMarketBriefingCard — renders full institutional daily brief with follow-up chips
+- [x] Frontend: Full Market Briefing intercept — detects prompt, calls generateBrief, renders FullMarketBriefingCard
+- [x] Frontend: OnboardingFlow component — 5-step modal (Welcome, Investor Type, Risk Profile, Interests, Watchlist)
+- [x] Frontend: First-time onboarding trigger — shows on first visit, never again after completion
+- [x] Frontend: recordVisit on mount — updates lastVisitAt snapshot for change detection
+- [x] Version label updated to INSTITUTIONAL INTELLIGENCE V3.0
+- [x] Tests: 17 dailyBrief unit tests passing (bias mapping, health labels, change detection, watchlist signals)
+- [x] TypeScript: 0 errors

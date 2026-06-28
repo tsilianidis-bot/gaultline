@@ -11,3 +11,4 @@ export { outlookRouter } from "./outlook";
 export { organicContentRouter } from "./organicContent";
 export { smartDiscoveryRouter } from "./smartDiscovery";
 export { fmosRouter } from "./fmos";
+export { dailyBriefRouter } from "./dailyBrief";

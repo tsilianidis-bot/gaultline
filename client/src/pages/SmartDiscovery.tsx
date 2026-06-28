@@ -11,20 +11,22 @@
  *   - Confidence breakdown with reasons
  *   - 13-stage loading sequence
  */
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useTickerStore } from "@/contexts/TickerStore";
 import { useSEO } from "@/hooks/useSEO";
+import { useEngine } from "@/contexts/EngineContext";
 import {
   ArrowRight, ChevronDown, ChevronUp, ExternalLink,
   TrendingUp, TrendingDown, AlertTriangle,
   Zap, RefreshCw, Send, Activity, BarChart2,
   GitBranch, Shield, Clock, Target, BookOpen,
-  CheckCircle, XCircle, Eye,
+  CheckCircle, XCircle, Eye, ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
+import OnboardingFlow from "@/components/OnboardingFlow";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -87,12 +89,47 @@ interface FaultlineAnswer {
   deepDiveLinks: Array<{ label: string; path: string; description: string }>;
 }
 
+// V3.0 Daily Brief answer type
+interface BriefAnswer {
+  todaysMarket: {
+    regime: string;
+    pressureIndex: number;
+    marketHealth: string;
+    institutionalBias: string;
+    confidence: number;
+    marketStatus: string;
+  };
+  topOpportunities: Array<{
+    ticker: string;
+    opportunityScore: number;
+    confidence: number;
+    risk: string;
+    timeHorizon: string;
+    suggestedAction: string;
+    primaryDriver: string;
+  }>;
+  topRisks: string[];
+  watchlistIntelligence: Array<{ ticker: string; signal: string; direction: "positive" | "negative" | "neutral" }>;
+  todaysEvents: Array<{ event: string; category: string; importance: string; whyItMatters: string }>;
+  institutionalInsight: string;
+  engineStatus: {
+    fmosVersion: string;
+    engineHealth: number;
+    dataFreshness: string;
+    liveDataSources: number;
+    averageLatency: string;
+    lastUpdated: string;
+  };
+  generatedAt: number;
+}
+
 interface ConversationMessage {
   role: "user" | "assistant";
   content: string;
   ticker?: string | null;
   timestamp: number;
   answer?: FaultlineAnswer;
+  briefAnswer?: BriefAnswer;
 }
 
 // ── V2.0 Loading sequence (13 stages) ────────────────────────
@@ -1002,6 +1039,333 @@ function UserBubble({ content }: { content: string }) {
 
 // ── Suggested Questions ───────────────────────────────────────
 
+// ── V3.0 Full Market Briefing Renderer ──────────────────────
+function FullMarketBriefingCard({ brief, onAskFollowUp }: { brief: BriefAnswer; onAskFollowUp: (prompt: string) => void }) {
+  const followUps = [
+    "What are the best trades for this regime?",
+    "How should I position my portfolio today?",
+    "What is the biggest risk I should hedge against?",
+    "Which sectors are institutions rotating into?",
+    "What would cause this regime to change?",
+  ];
+
+  const pressureColor = brief.todaysMarket.pressureIndex < 30 ? '#00FF88' : brief.todaysMarket.pressureIndex < 55 ? '#FFD700' : brief.todaysMarket.pressureIndex < 75 ? '#FF9500' : '#FF4444';
+  const biasColor = brief.todaysMarket.institutionalBias.includes('Bull') ? '#00FF88' : brief.todaysMarket.institutionalBias === 'Neutral to Cautious' ? '#FFD700' : brief.todaysMarket.institutionalBias === 'Cautious' ? '#FF9500' : '#FF4444';
+  const statusColor = brief.todaysMarket.marketStatus === 'RISK-ON' ? '#00FF88' : brief.todaysMarket.marketStatus === 'NEUTRAL' ? '#FFD700' : '#FF4444';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', animation: 'fl-fade-in 0.4s ease' }}>
+      {/* Header */}
+      <div style={{ padding: '14px 16px', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.15)', borderRadius: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+          <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: '0.15em', fontSize: '11px' }}>INSTITUTIONAL DAILY BRIEF</span>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{new Date(brief.generatedAt).toLocaleTimeString()}</span>
+        </div>
+        {brief.institutionalInsight && (
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, margin: 0, fontStyle: 'italic' }}>
+            {brief.institutionalInsight}
+          </p>
+        )}
+      </div>
+
+      {/* Today's Market Grid */}
+      <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', overflow: 'hidden' }}>
+        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${BORDER}` }}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', fontSize: '10px' }}>TODAY'S MARKET</span>
+        </div>
+        <div style={{ padding: '12px 14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>REGIME</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF' }}>{brief.todaysMarket.regime}</div></div>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>PRESSURE</div><div style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: pressureColor }}>{brief.todaysMarket.pressureIndex}<span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.3)' }}>/100</span></div></div>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>BIAS</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: biasColor }}>{brief.todaysMarket.institutionalBias}</div></div>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>HEALTH</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF' }}>{brief.todaysMarket.marketHealth}</div></div>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>STATUS</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: statusColor }}>{brief.todaysMarket.marketStatus}</div></div>
+          <div><div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginBottom: '3px' }}>CONFIDENCE</div><div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: brief.todaysMarket.confidence > 65 ? '#00FF88' : '#FFD700' }}>{brief.todaysMarket.confidence}%</div></div>
+        </div>
+      </div>
+
+      {/* Top Risks */}
+      {brief.topRisks.length > 0 && (
+        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${BORDER}` }}>
+            <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', fontSize: '10px' }}>TOP RISKS</span>
+          </div>
+          <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {brief.topRisks.map((risk, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                <span style={{ color: '#FF4444', flexShrink: 0, marginTop: '2px' }}><AlertTriangle size={10} /></span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>{risk}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Top Opportunities */}
+      {brief.topOpportunities.length > 0 && (
+        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${BORDER}` }}>
+            <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', fontSize: '10px' }}>TOP OPPORTUNITIES</span>
+          </div>
+          <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {brief.topOpportunities.map((opp, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '5px' }}>
+                <span style={{ ...MONO, fontSize: '12px', fontWeight: 700, color: '#00FF88', minWidth: '60px' }}>{opp.ticker}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{opp.primaryDriver}</div>
+                  <div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginTop: '2px' }}>{opp.suggestedAction} · {opp.timeHorizon}</div>
+                </div>
+                <div style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: '#00FF88' }}>{opp.opportunityScore}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Watchlist Intelligence */}
+      {brief.watchlistIntelligence.length > 0 && (
+        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${BORDER}` }}>
+            <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', fontSize: '10px' }}>WATCHLIST INTELLIGENCE</span>
+          </div>
+          <div style={{ padding: '10px 14px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {brief.watchlistIntelligence.map((w, i) => (
+              <div key={i} style={{ padding: '6px 10px', background: w.direction === 'positive' ? 'rgba(0,255,136,0.06)' : w.direction === 'negative' ? 'rgba(255,68,68,0.06)' : 'rgba(255,255,255,0.03)', border: `1px solid ${w.direction === 'positive' ? 'rgba(0,255,136,0.15)' : w.direction === 'negative' ? 'rgba(255,68,68,0.15)' : 'rgba(255,255,255,0.06)'}`, borderRadius: '5px' }}>
+                <div style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: w.direction === 'positive' ? '#00FF88' : w.direction === 'negative' ? '#FF4444' : '#FFD700' }}>{w.ticker}</div>
+                <div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.4)', fontSize: '9px', marginTop: '2px' }}>{w.signal}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Today's Events */}
+      {brief.todaysEvents.length > 0 && (
+        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', overflow: 'hidden' }}>
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${BORDER}` }}>
+            <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', fontSize: '10px' }}>TODAY'S KEY EVENTS</span>
+          </div>
+          <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {brief.todaysEvents.map((ev, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                <span style={{ ...MONO_SM, fontSize: '9px', padding: '2px 5px', background: ev.importance === 'high' ? 'rgba(255,68,68,0.1)' : 'rgba(255,215,0,0.1)', color: ev.importance === 'high' ? '#FF4444' : '#FFD700', borderRadius: '3px', flexShrink: 0, marginTop: '1px', letterSpacing: '0.05em' }}>{ev.importance.toUpperCase()}</span>
+                <div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: '#F0F4FF', fontWeight: 600 }}>{ev.event}</div>
+                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.45)', marginTop: '2px', lineHeight: 1.4 }}>{ev.whyItMatters}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Engine Status */}
+      <div style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px' }}>{brief.engineStatus.fmosVersion}</span>
+        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.2)', fontSize: '9px' }}>Health: <span style={{ color: '#00FF88' }}>{brief.engineStatus.engineHealth}%</span></span>
+        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.2)', fontSize: '9px' }}>Sources: {brief.engineStatus.liveDataSources}</span>
+        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.2)', fontSize: '9px' }}>Latency: {brief.engineStatus.averageLatency}</span>
+        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.2)', fontSize: '9px' }}>Data: {brief.engineStatus.dataFreshness}</span>
+      </div>
+
+      {/* Follow-up chips */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        {followUps.map((fu, i) => (
+          <button
+            key={i}
+            onClick={() => onAskFollowUp(fu)}
+            style={{
+              padding: '6px 12px',
+              background: 'rgba(0,212,255,0.05)',
+              border: '1px solid rgba(0,212,255,0.15)',
+              borderRadius: '16px',
+              cursor: 'pointer',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '11px',
+              color: 'rgba(255,255,255,0.55)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,212,255,0.1)'; e.currentTarget.style.color = '#E8EDF5'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,212,255,0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+          >
+            {fu}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── V3.0 Quick Action Chips ─────────────────────────────────
+const QUICK_ACTIONS: Array<{ emoji: string; label: string; prompt: string }> = [
+  { emoji: "📊", label: "Full Market Briefing", prompt: "Full Market Briefing" },
+  { emoji: "🌍", label: "Macro Overview", prompt: "Give me a macro overview of the current market environment" },
+  { emoji: "📈", label: "Market Regime", prompt: "What is the current market regime and what does it mean for investors?" },
+  { emoji: "⚠️", label: "Top Risks Today", prompt: "What are the top risks in the market today?" },
+  { emoji: "🚀", label: "Top Opportunities", prompt: "What are the top investment opportunities right now?" },
+  { emoji: "₿", label: "Crypto Intelligence", prompt: "Give me a comprehensive crypto market intelligence report" },
+  { emoji: "📅", label: "Economic Calendar", prompt: "What are today's most important economic events and catalysts?" },
+  { emoji: "💼", label: "Portfolio Risk Review", prompt: "Review current portfolio risk conditions and what I should watch" },
+  { emoji: "📰", label: "What Changed?", prompt: "What changed in the market since yesterday?" },
+  { emoji: "🔄", label: "Sector Rotation", prompt: "Analyze current sector rotation and where institutional money is flowing" },
+];
+
+// ── V3.0 Market Snapshot Component ───────────────────────────
+function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => void }) {
+  const { output, lastUpdated, isLoading } = useEngine();
+  const { overall, regime, domains, probability } = output;
+
+  const pressureScore = Math.round(overall.score * 10); // 0-100
+  const liquidityDomain = domains.find(d => d.id === 'liquidity');
+  const creditDomain = domains.find(d => d.id === 'credit-stress');
+
+  // Derive institutional bias
+  const bias = useMemo(() => {
+    const p = pressureScore;
+    const r = regime.label.toLowerCase();
+    if (p < 25) return r.includes('expansion') || r.includes('bull') ? 'Strongly Bullish' : 'Moderately Bullish';
+    if (p < 45) return r.includes('expansion') ? 'Moderately Bullish' : 'Neutral to Cautious';
+    if (p < 65) return 'Cautious';
+    if (p < 80) return 'Defensive';
+    return 'Risk-Off';
+  }, [pressureScore, regime.label]);
+
+  const biasColor = bias.includes('Bull') ? '#00FF88' : bias === 'Neutral to Cautious' ? '#FFD700' : bias === 'Cautious' ? '#FF9500' : '#FF4444';
+
+  // Market health
+  const breadth = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
+  const liquidity = liquidityDomain ? Math.max(0, Math.min(100, Math.round((10 - liquidityDomain.score) * 10))) : 50;
+  const health = useMemo(() => {
+    const composite = (100 - pressureScore) * 0.4 + breadth * 0.3 + liquidity * 0.3;
+    if (composite >= 75) return { label: 'HEALTHY', color: '#00FF88' };
+    if (composite >= 55) return { label: 'MODERATE', color: '#FFD700' };
+    if (composite >= 35) return { label: 'STRESSED', color: '#FF9500' };
+    return { label: 'CRITICAL', color: '#FF4444' };
+  }, [pressureScore, breadth, liquidity]);
+
+  const pressureColor = pressureScore < 30 ? '#00FF88' : pressureScore < 55 ? '#FFD700' : pressureScore < 75 ? '#FF9500' : '#FF4444';
+  const freshness = lastUpdated ? `${Math.round((Date.now() - lastUpdated.getTime()) / 60000)}m ago` : 'Loading...';
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: '14px 16px', background: 'rgba(0,212,255,0.03)', border: '1px solid rgba(0,212,255,0.08)', borderRadius: '8px', ...MONO_SM, color: 'rgba(255,255,255,0.3)' }}>
+        Loading market data...
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: 'rgba(0,212,255,0.03)', border: '1px solid rgba(0,212,255,0.1)', borderRadius: '8px', overflow: 'hidden' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(0,212,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: '0.12em', fontSize: '10px' }}>TODAY'S MARKET SNAPSHOT</span>
+        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>Updated {freshness}</span>
+      </div>
+      <div style={{ padding: '12px 14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
+        {/* Regime */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>REGIME</span>
+          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF', lineHeight: 1.3 }}>{regime.label}</span>
+        </div>
+        {/* Pressure Index */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>PRESSURE INDEX</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: pressureColor }}>{pressureScore}</span>
+            <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>/100</span>
+          </div>
+        </div>
+        {/* Institutional Bias */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>INSTITUTIONAL BIAS</span>
+          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: biasColor }}>{bias}</span>
+        </div>
+        {/* Market Health */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>MARKET HEALTH</span>
+          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: health.color }}>{health.label}</span>
+        </div>
+        {/* Bull Probability */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>BULL PROBABILITY</span>
+          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: probability.bullProbability > 55 ? '#00FF88' : probability.bullProbability > 40 ? '#FFD700' : '#FF4444' }}>{probability.bullProbability}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── V3.0 Since Last Visit Component ──────────────────────────
+function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => void }) {
+  const { output } = useEngine();
+  const { overall, regime, domains } = output;
+  const pressureScore = Math.round(overall.score * 10);
+  const liquidityDomain = domains.find(d => d.id === 'liquidity');
+  const creditDomain = domains.find(d => d.id === 'credit-stress');
+
+  const getPreferences = trpc.dailyBrief.getPreferences.useQuery(undefined, { retry: false });
+  const getChanges = trpc.dailyBrief.getChanges.useQuery(
+    {
+      currentSnapshot: {
+        overallPressure: pressureScore,
+        regime: regime.label,
+        liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
+        credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
+        breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
+        aiConcentration: 32,
+        volatility: 40,
+        bullProbability: output.probability.bullProbability,
+        timestamp: Date.now(),
+      },
+    },
+    { enabled: !!getPreferences.data?.lastVisitAt, retry: false }
+  );
+
+  if (!getPreferences.data?.lastVisitAt) return null;
+  if (getChanges.isLoading) return null;
+
+  const { changes, hasChanges } = getChanges.data ?? { changes: [], hasChanges: false };
+  const lastVisitAt = getPreferences.data.lastVisitAt;
+  const timeAgo = lastVisitAt ? (() => {
+    const diff = Date.now() - lastVisitAt;
+    const h = Math.floor(diff / 3600000);
+    const d = Math.floor(diff / 86400000);
+    if (d > 0) return `${d}d ago`;
+    if (h > 0) return `${h}h ago`;
+    return 'recently';
+  })() : '';
+
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', overflow: 'hidden' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', fontSize: '10px' }}>SINCE YOUR LAST VISIT</span>
+        <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.2)', fontSize: '9px' }}>{timeAgo}</span>
+      </div>
+      <div style={{ padding: '10px 14px' }}>
+        {!hasChanges ? (
+          <div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '11px', fontStyle: 'italic' }}>
+            No material market changes since your last visit.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {changes.map((c, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: c.direction === 'up' ? '#FF4444' : c.direction === 'down' ? '#00FF88' : '#FFD700', flexShrink: 0 }}>
+                  {c.direction === 'up' ? <ArrowUp size={10} /> : c.direction === 'down' ? <ArrowDown size={10} /> : <Minus size={10} />}
+                </span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', color: c.significance === 'high' ? '#F0F4FF' : 'rgba(255,255,255,0.55)' }}>
+                  {c.label}{c.delta ? ` ${c.delta}` : ''}
+                </span>
+                {c.significance === 'high' && (
+                  <span style={{ ...MONO_SM, fontSize: '9px', color: '#FF9500', padding: '1px 4px', background: 'rgba(255,149,0,0.1)', borderRadius: '3px', flexShrink: 0 }}>HIGH</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const SUGGESTED_QUESTIONS = [
   "Should I buy NVDA right now?",
   "How dangerous is the market today?",
@@ -1030,6 +1394,19 @@ export default function SmartDiscovery() {
   const [isExecuting, setIsExecuting] = useState(false);
   const [executionStep, setExecutionStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  // Check if onboarding is needed (first-time user)
+  const preferencesQuery = trpc.dailyBrief.getPreferences.useQuery(undefined, {
+    enabled: !!user,
+    retry: false,
+  });
+  useEffect(() => {
+    if (!user || preferencesQuery.isLoading) return;
+    const data = preferencesQuery.data;
+    if (!data || !data.onboardingComplete) {
+      setShowOnboarding(true);
+    }
+  }, [user, preferencesQuery.isLoading, preferencesQuery.data]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -1037,7 +1414,31 @@ export default function SmartDiscovery() {
 
   const askMutation = trpc.smartDiscovery.ask.useMutation();
   const logMutation = trpc.smartDiscovery.logRecommendation.useMutation();
-
+  const recordVisitMutation = trpc.dailyBrief.recordVisit.useMutation();
+  const generateBriefMutation = trpc.dailyBrief.generateBrief.useMutation();
+  const { output: engineOutput } = useEngine();
+  // Record visit on mount (for Since Your Last Visit tracking)
+  useEffect(() => {
+    if (!user) return;
+    const { overall, regime, domains, probability } = engineOutput;
+    const pressureScore = Math.round(overall.score * 10);
+    const liquidityDomain = domains.find(d => d.id === 'liquidity');
+    const creditDomain = domains.find(d => d.id === 'credit-stress');
+    recordVisitMutation.mutate({
+      snapshot: {
+        overallPressure: pressureScore,
+        regime: regime.label,
+        liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
+        credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
+        breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
+        aiConcentration: 32,
+        volatility: 40,
+        bullProbability: probability.bullProbability,
+        timestamp: Date.now(),
+      },
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
   // Focus input on mount
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -1094,6 +1495,37 @@ export default function SmartDiscovery() {
     }));
 
     try {
+      // V3.0: Intercept Full Market Briefing requests
+      const isBriefRequest = question.toLowerCase().includes('full market briefing') || question.toLowerCase() === 'daily brief' || question.toLowerCase() === 'market brief';
+      if (isBriefRequest) {
+        const { overall, regime, domains, probability } = engineOutput;
+        const pressureScore = Math.round(overall.score * 10);
+        const liquidityDomain = domains.find(d => d.id === 'liquidity');
+        const creditDomain = domains.find(d => d.id === 'credit-stress');
+        const briefResult = await generateBriefMutation.mutateAsync({
+          engineSnapshot: {
+            overallPressure: pressureScore,
+            regime: regime.label,
+            liquidity: liquidityDomain ? Math.round((10 - liquidityDomain.score) * 10) : 50,
+            credit: creditDomain ? Math.round(creditDomain.score * 10) : 30,
+            breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
+            aiConcentration: 32,
+            volatility: 40,
+            bullProbability: probability.bullProbability,
+            timestamp: Date.now(),
+          },
+        });
+        stopExecutionSequence();
+        const briefMsg: ConversationMessage = {
+          role: 'assistant',
+          content: 'Institutional Daily Brief generated.',
+          timestamp: Date.now(),
+          briefAnswer: briefResult as BriefAnswer,
+        };
+        setConversation(prev => [...prev, briefMsg]);
+        setIsExecuting(false);
+        return;
+      }
       const answer = await askMutation.mutateAsync({
         query: question,
         conversationHistory: historyForApi,
@@ -1180,6 +1612,10 @@ export default function SmartDiscovery() {
 
   return (
     <>
+      {/* V3.0 First-time onboarding overlay */}
+      {showOnboarding && user && (
+        <OnboardingFlow onComplete={() => setShowOnboarding(false)} />
+      )}
       <style>{`
         @keyframes fl-pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
         @keyframes fl-fade-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
@@ -1218,7 +1654,7 @@ export default function SmartDiscovery() {
                 FAULT<span style={{ color: ACCENT }}>LINE</span>
               </div>
               <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", letterSpacing: "0.2em" }}>
-                INSTITUTIONAL INTELLIGENCE V2.0
+                INSTITUTIONAL INTELLIGENCE V3.0
               </div>
             </div>
 
@@ -1236,6 +1672,51 @@ export default function SmartDiscovery() {
               }
             </div>
 
+            {user && (
+              <div style={{ width: "100%", maxWidth: "700px", display: "flex", flexDirection: "column", gap: "12px" }}>
+                {/* V3.0 Market Snapshot */}
+                <MarketSnapshot onQuickAction={(prompt) => void handleSubmit(prompt)} />
+                {/* V3.0 Since Your Last Visit */}
+                <SinceLastVisit onQuickAction={(prompt) => void handleSubmit(prompt)} />
+                {/* V3.0 Quick Action Chips */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {QUICK_ACTIONS.map((action, i) => (
+                    <button
+                      key={i}
+                      onClick={() => void handleSubmit(action.prompt)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        padding: "7px 12px",
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.07)",
+                        borderRadius: "20px",
+                        cursor: "pointer",
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "12px",
+                        color: "rgba(255,255,255,0.55)",
+                        transition: "all 0.15s ease",
+                        whiteSpace: "nowrap",
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = "rgba(0,212,255,0.07)";
+                        e.currentTarget.style.borderColor = "rgba(0,212,255,0.2)";
+                        e.currentTarget.style.color = "#E8EDF5";
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.07)";
+                        e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+                      }}
+                    >
+                      <span style={{ fontSize: "13px" }}>{action.emoji}</span>
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {user && (
               <div style={{
                 display: "grid",
@@ -1313,6 +1794,10 @@ export default function SmartDiscovery() {
               <div key={i}>
                 {msg.role === "user" ? (
                   <UserBubble content={msg.content} />
+                ) : msg.briefAnswer ? (
+                  <div className="fl-answer">
+                    <FullMarketBriefingCard brief={msg.briefAnswer} onAskFollowUp={(prompt) => void handleSubmit(prompt)} />
+                  </div>
                 ) : msg.answer ? (
                   <div className="fl-answer">
                     <InstitutionalAnswer answer={msg.answer} onDeepDive={handleDeepDive} />

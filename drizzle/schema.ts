@@ -1158,3 +1158,35 @@ export const decisionLedger = mysqlTable("decision_ledger", {
 }));
 export type DecisionLedgerEntry = typeof decisionLedger.$inferSelect;
 export type InsertDecisionLedgerEntry = typeof decisionLedger.$inferInsert;
+
+// ── User Preferences (V3.0 — Institutional Daily Brief) ──────────────────────
+/**
+ * Stores personalization preferences set during onboarding.
+ * One row per user. Created after onboarding completes.
+ */
+export const userPreferences = mysqlTable("user_preferences", {
+  id:                 int("id").autoincrement().primaryKey(),
+  userId:             int("userId").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  /** Whether the user has completed onboarding */
+  onboardingComplete: boolean("onboardingComplete").default(false).notNull(),
+  /** Investor type: long-term, swing, active, crypto, etf, income */
+  investorType:       varchar("investorType", { length: 32 }),
+  /** Risk profile: conservative, balanced, aggressive, very-aggressive */
+  riskProfile:        varchar("riskProfile", { length: 32 }),
+  /** JSON array of interest strings */
+  interests:          text("interests"),
+  /** JSON array of watchlist tickers added during onboarding */
+  watchlistTickers:   text("watchlistTickers"),
+  /** JSON object of notification preferences */
+  notificationPrefs:  text("notificationPrefs"),
+  /** Snapshot of last engine state for "Since Your Last Visit" diff — JSON */
+  lastVisitSnapshot:  text("lastVisitSnapshot"),
+  /** Timestamp of last visit */
+  lastVisitAt:        timestamp("lastVisitAt"),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:          timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  userIdIdx: index("user_preferences_userId_idx").on(t.userId),
+}));
+export type UserPreferences = typeof userPreferences.$inferSelect;
+export type InsertUserPreferences = typeof userPreferences.$inferInsert;
