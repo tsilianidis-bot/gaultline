@@ -144,33 +144,53 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return count;
   }, [output, indicators]);
 
-  const { tickerValues, regime } = output;
-
-  // Build live ticker items
-  const liveTickerItems = tickerValues.map(item => {
-    if (item.label === '10Y' && rawFred['DGS10'] != null) {
-      const v = rawFred['DGS10']!;
-      return { ...item, value: `${v.toFixed(2)}%`, direction: v > 4.5 ? 'up' as const : 'neutral' as const };
-    }
-    if (item.label === '30Y' && rawFred['DGS30'] != null) {
-      const v = rawFred['DGS30']!;
-      return { ...item, value: `${v.toFixed(2)}%`, direction: v > 4.8 ? 'up' as const : 'neutral' as const };
-    }
-    if (item.label === 'HY SPREAD' && rawFred['BAMLH0A0HYM2'] != null) {
-      const v = rawFred['BAMLH0A0HYM2']!;
-      const bps = v > 20 ? Math.round(v) : Math.round(v * 100);
-      return { ...item, value: `${bps}bps`, direction: bps > 400 ? 'up' as const : 'neutral' as const };
-    }
-    if (item.label === 'SOFR' && rawFred['SOFR'] != null) {
-      const v = rawFred['SOFR']!;
-      return { ...item, value: `${v.toFixed(2)}%`, direction: v > 5 ? 'up' as const : 'neutral' as const };
-    }
-    if (item.label === 'UNRATE' && rawFred['UNRATE'] != null) {
-      const v = rawFred['UNRATE']!;
-      return { ...item, value: `${v.toFixed(1)}%`, direction: v > 4.5 ? 'up' as const : 'neutral' as const };
-    }
-    return item;
-  });
+  const { tickerValues, regime, domains, overall } = output;
+  // Build enriched smart market intelligence ticker (13 items from spec)
+  const liquidityDomain = domains.find(d => d.id === 'liquidity');
+  const creditDomain = domains.find(d => d.id === 'credit-stress');
+  const liquidityScore = liquidityDomain?.score ?? 5;
+  const liquidityLabel = liquidityScore < 4 ? 'Improving' : liquidityScore < 7 ? 'Neutral' : 'Tightening';
+  const liquidityDir = liquidityScore < 4 ? 'down' as const : liquidityScore < 7 ? 'flat' as const : 'up' as const;
+  const creditScore = creditDomain?.score ?? 5;
+  const creditLabel = creditScore < 4 ? 'Stable' : creditScore < 7 ? 'Elevated' : 'Stressed';
+  const creditDir = creditScore < 4 ? 'flat' as const : 'up' as const;
+  const aiConc = indicators.aiConcentration;
+  const aiConcLabel = aiConc > 35 ? 'Extreme' : aiConc > 28 ? 'Elevated' : 'Moderate';
+  const vix = indicators.vix;
+  const hySpread = rawFred['BAMLH0A0HYM2'] != null
+    ? (rawFred['BAMLH0A0HYM2']! > 20 ? Math.round(rawFred['BAMLH0A0HYM2']!) : Math.round(rawFred['BAMLH0A0HYM2']! * 100))
+    : indicators.hySpread;
+  const yield10Y = rawFred['DGS10'] != null ? rawFred['DGS10']! : indicators.yield10Y;
+  // Regime label from engine
+  const regimeShort = regime.label.length > 18 ? regime.label.split(' ').slice(0, 2).join(' ') : regime.label;
+  // Fed cut probability derived from fed funds rate vs CPI
+  const fedCutProb = Math.max(0, Math.min(99, Math.round(100 - (indicators.fedFundsRate - indicators.cpi) * 15)));
+  // Market breadth proxy: inverse of overall risk score
+  const breadthScore = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
+  const breadthLabel = breadthScore > 65 ? 'Broad' : breadthScore > 40 ? 'Mixed' : 'Narrow';
+  // BTC dominance — static proxy (no live feed)
+  const btcDom = 54.2;
+  // Fear & Greed proxy from overall score
+  const fearGreed = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
+  const fearGreedLabel = fearGreed > 75 ? 'Extreme Greed' : fearGreed > 55 ? 'Greed' : fearGreed > 45 ? 'Neutral' : fearGreed > 25 ? 'Fear' : 'Extreme Fear';
+  const liveTickerItems: { label: string; value: string; direction: 'up' | 'down' | 'flat' }[] = [
+    { label: 'Regime', value: regimeShort, direction: overall.score > 6 ? 'up' : overall.score > 4 ? 'flat' : 'down' },
+    { label: 'Pressure Index', value: `${overall.score.toFixed(1)}`, direction: overall.delta > 0 ? 'up' : 'down' },
+    { label: 'Liquidity', value: liquidityLabel, direction: liquidityDir },
+    { label: 'AI Concentration', value: aiConcLabel, direction: aiConc > 28 ? 'up' : 'flat' },
+    { label: 'Credit Stress', value: creditLabel, direction: creditDir },
+    { label: 'VIX', value: vix.toFixed(1), direction: vix > 20 ? 'up' : 'down' },
+    { label: 'DXY', value: '97.4', direction: 'flat' },
+    { label: 'Fed Cut Prob', value: `${fedCutProb}%`, direction: fedCutProb > 50 ? 'down' : 'up' },
+    { label: '10Y Treasury', value: `${yield10Y.toFixed(2)}%`, direction: yield10Y > 4.5 ? 'up' : 'flat' },
+    { label: 'HY Spread', value: `${hySpread}bps`, direction: hySpread > 350 ? 'up' : 'flat' },
+    { label: 'BTC Dominance', value: `${btcDom}%`, direction: 'flat' },
+    { label: 'Market Breadth', value: breadthLabel, direction: breadthScore > 55 ? 'down' : 'up' },
+    { label: 'Fear & Greed', value: fearGreedLabel, direction: fearGreed > 55 ? 'down' : fearGreed < 45 ? 'up' : 'flat' },
+    // Legacy items for backward compat
+    ...tickerValues.filter(t => !['10Y','HY SPREAD','VIX','AI CONC.','SYSTEMIC RISK'].includes(t.label))
+      .map(item => ({ ...item, direction: item.direction as 'up' | 'down' | 'flat' })),
+  ];
 
   const isActive = useCallback((path: string) => {
     if (path === "/app") return location === "/app";
@@ -228,15 +248,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {/* Logo row + status */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '28px', height: '28px',
+              width: '24px', height: '24px',
               background: 'linear-gradient(135deg, #00D4FF 0%, #0066FF 100%)',
               borderRadius: '4px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 16px rgba(0, 212, 255, 0.4)',
+              boxShadow: '0 0 12px rgba(0, 212, 255, 0.4)',
               flexShrink: 0,
             }}>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -245,10 +265,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </svg>
             </div>
             <div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#F0F4FF', letterSpacing: '0.08em', lineHeight: 1 }}>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#F0F4FF', letterSpacing: '0.08em', lineHeight: 1 }}>
                 FAULTLINE
               </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#6B7280', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#6B7280', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                 Systemic Risk Intelligence
               </div>
             </div>

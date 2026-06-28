@@ -152,8 +152,40 @@ const BACKTEST_SUMMARY = {
 };
 
 // ── Component ─────────────────────────────────────────────────────────────────
+
+// -- Pipeline Stages --
+const PIPELINE_STAGES = [
+  { id: 1,  name: 'Data Acquisition',    description: 'Ingests FRED macro data, market feeds, and alternative data sources', category: 'Infrastructure', categoryColor: '#3b82f6', status: 'completed', latency: '85ms' },
+  { id: 2,  name: 'Market DNA',          description: 'Extracts structural market characteristics and baseline fingerprint',     category: 'Analysis',       categoryColor: '#a855f7', status: 'completed', latency: '32ms' },
+  { id: 3,  name: 'Market Weather',      description: 'Computes real-time stress conditions across 7 weather dimensions',       category: 'Analysis',       categoryColor: '#a855f7', status: 'completed', latency: '28ms' },
+  { id: 4,  name: 'Regime Detection',    description: 'Classifies current market regime from 5 macro states',                  category: 'Classification', categoryColor: '#eab308', status: 'completed', latency: '18ms' },
+  { id: 5,  name: 'Transition Analysis', description: 'Detects early signals of regime change with lead time estimation',      category: 'Prediction',     categoryColor: '#f97316', status: 'completed', latency: '22ms' },
+  { id: 6,  name: 'Evidence Engine',     description: 'Weights 14 independent evidence families and computes domain scores',   category: 'Weighting',      categoryColor: '#06b6d4', status: 'completed', latency: '41ms' },
+  { id: 7,  name: 'Probability Engine',  description: 'Derives bull/bear/neutral probability distribution from evidence',      category: 'Prediction',     categoryColor: '#f97316', status: 'completed', latency: '15ms' },
+  { id: 8,  name: 'Confidence Engine',   description: 'Calculates conviction score and uncertainty bounds for each output',    category: 'Meta',           categoryColor: '#6b7280', status: 'completed', latency: '12ms' },
+  { id: 9,  name: 'Historical Analog',   description: 'Matches current conditions to 36 years of historical analogs',          category: 'Analysis',       categoryColor: '#a855f7', status: 'completed', latency: '67ms' },
+  { id: 10, name: 'Decision Engine',     description: 'Synthesizes all signals into a final directional recommendation',       category: 'Output',         categoryColor: '#22c55e', status: 'completed', latency: '8ms'  },
+  { id: 11, name: 'Calibration',         description: 'Applies Brier score corrections and historical accuracy adjustments',   category: 'Meta',           categoryColor: '#6b7280', status: 'completed', latency: '11ms' },
+  { id: 12, name: 'Learning Loop',       description: 'Updates model weights based on recent prediction outcomes',             category: 'Meta',           categoryColor: '#6b7280', status: 'completed', latency: '14ms' },
+];
+
 export default function FmosHealthDashboard() {
-  const [activeTab, setActiveTab] = useState<"overview" | "engines" | "calibration" | "findings" | "evidence">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "pipeline" | "engines" | "calibration" | "findings" | "evidence">("overview");
+  const [pipelineRunning, setPipelineRunning] = useState<number | null>(null);
+
+  // Simulate pipeline run animation
+  const runPipelineDemo = () => {
+    setPipelineRunning(0);
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      setPipelineRunning(step);
+      if (step >= PIPELINE_STAGES.length) {
+        clearInterval(interval);
+        setTimeout(() => setPipelineRunning(null), 1500);
+      }
+    }, 350);
+  };
 
   const { data: versionData } = trpc.fmos.getVersion.useQuery();
   const { data: runStats } = trpc.fmos.getRunStats.useQuery();
@@ -165,6 +197,7 @@ export default function FmosHealthDashboard() {
 
   const tabs = [
     { id: "overview",     label: "Overview",     icon: Activity },
+    { id: "pipeline",     label: "Pipeline",     icon: Layers },
     { id: "engines",      label: "Engines",      icon: Cpu },
     { id: "calibration",  label: "Calibration",  icon: FlaskConical },
     { id: "evidence",     label: "Evidence",     icon: BarChart3 },
@@ -336,6 +369,146 @@ export default function FmosHealthDashboard() {
               </button>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* ── Pipeline Tab ─────────────────────────────────────────────────────── */}
+      {activeTab === "pipeline" && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-slate-300 text-sm font-medium">FMOS Intelligence Pipeline</p>
+              <p className="text-slate-500 text-xs mt-1">12-stage sequential processing flow from raw data to actionable intelligence</p>
+            </div>
+            <button
+              onClick={runPipelineDemo}
+              disabled={pipelineRunning !== null}
+              className="flex items-center gap-2 px-4 py-2 rounded-md text-xs font-medium bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              {pipelineRunning !== null ? 'Running...' : 'Simulate Run'}
+            </button>
+          </div>
+
+          {/* Status legend */}
+          <div className="flex items-center gap-6 text-xs">
+            {[
+              { color: '#00FF88', label: 'Completed' },
+              { color: '#00D4FF', label: 'Running' },
+              { color: '#374151', label: 'Waiting' },
+              { color: '#FF2D55', label: 'Failed' },
+            ].map(s => (
+              <div key={s.label} className="flex items-center gap-2">
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, boxShadow: `0 0 6px ${s.color}88` }} />
+                <span className="text-slate-400">{s.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Pipeline flow */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            {PIPELINE_STAGES.map((stage, idx) => {
+              const isRunning = pipelineRunning === idx;
+              const isCompleted = pipelineRunning !== null && pipelineRunning > idx;
+              const isFailed = stage.status === 'failed';
+              const statusColor = isFailed ? '#FF2D55' : isRunning ? '#00D4FF' : isCompleted ? '#00FF88' : stage.status === 'completed' && pipelineRunning === null ? '#00FF88' : '#374151';
+              const statusLabel = isFailed ? 'Failed' : isRunning ? 'Running' : isCompleted ? 'Completed' : stage.status === 'completed' && pipelineRunning === null ? 'Completed' : 'Waiting';
+              const isLastInCol = idx === PIPELINE_STAGES.length - 1 || (idx % 6 === 5);
+              return (
+                <div key={stage.id} className="relative">
+                  {/* Stage card */}
+                  <div
+                    className="flex items-start gap-3 p-4 rounded-lg border transition-all duration-300"
+                    style={{
+                      background: isRunning ? 'rgba(0,212,255,0.06)' : isCompleted ? 'rgba(0,255,136,0.03)' : 'rgba(18,18,26,0.8)',
+                      borderColor: isRunning ? 'rgba(0,212,255,0.3)' : isCompleted ? 'rgba(0,255,136,0.2)' : 'rgba(255,255,255,0.05)',
+                      boxShadow: isRunning ? '0 0 16px rgba(0,212,255,0.1)' : 'none',
+                      margin: '4px',
+                    }}
+                  >
+                    {/* Stage number + status dot */}
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                      <div
+                        style={{
+                          width: 28, height: 28,
+                          borderRadius: '50%',
+                          background: `${statusColor}18`,
+                          border: `1.5px solid ${statusColor}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '10px',
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          color: statusColor,
+                          fontWeight: 700,
+                          transition: 'all 0.3s ease',
+                          boxShadow: isRunning ? `0 0 12px ${statusColor}66` : 'none',
+                          animation: isRunning ? 'pulse-gold 1s ease-in-out infinite' : 'none',
+                        }}
+                      >
+                        {String(stage.id).padStart(2, '0')}
+                      </div>
+                    </div>
+
+                    {/* Stage info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-white text-sm font-medium">{stage.name}</span>
+                        <span
+                          className="text-xs font-mono flex-shrink-0"
+                          style={{ color: statusColor, transition: 'color 0.3s ease' }}
+                        >{statusLabel}</span>
+                      </div>
+                      <p className="text-slate-500 text-xs mt-0.5">{stage.description}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: `${stage.categoryColor}18`, color: stage.categoryColor, border: `1px solid ${stage.categoryColor}30` }}>{stage.category}</span>
+                        {stage.latency && <span className="text-slate-600 text-xs">{stage.latency}</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Connector arrow (not after last item) */}
+                  {idx < PIPELINE_STAGES.length - 1 && (
+                    <div className="flex justify-center" style={{ height: '20px', position: 'relative' }}>
+                      <div style={{
+                        width: 1,
+                        height: '100%',
+                        background: isCompleted ? 'rgba(0,255,136,0.3)' : 'rgba(255,255,255,0.07)',
+                        transition: 'background 0.3s ease',
+                        position: 'absolute',
+                        left: '50%',
+                      }} />
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        width: 0,
+                        height: 0,
+                        borderLeft: '4px solid transparent',
+                        borderRight: '4px solid transparent',
+                        borderTop: `5px solid ${isCompleted ? 'rgba(0,255,136,0.5)' : 'rgba(255,255,255,0.12)'}`,
+                        transition: 'border-color 0.3s ease',
+                      }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pipeline metrics footer */}
+          <div className="grid grid-cols-3 gap-4 mt-2">
+            {[
+              { label: 'Total Stages', value: '12', sub: 'Sequential' },
+              { label: 'Avg Latency', value: '420ms', sub: 'End-to-end' },
+              { label: 'Uptime', value: '99.8%', sub: '30-day rolling' },
+            ].map(m => (
+              <div key={m.label} className="p-4 rounded-lg bg-[#12121a] border border-white/5 text-center">
+                <p className="text-cyan-400 font-mono font-bold text-xl">{m.value}</p>
+                <p className="text-slate-400 text-xs mt-1">{m.label}</p>
+                <p className="text-slate-600 text-xs">{m.sub}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

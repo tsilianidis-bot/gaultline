@@ -498,6 +498,73 @@ function WhyNotSection({ whyNotBuy, whyNotSell }: {
   );
 }
 
+// ── Institutional Insight (V2.1 — Section 7) ────────────────
+
+function InstitutionalInsightCard({ answer }: { answer: FaultlineAnswer }) {
+  const insight = answer.executiveSummary
+    ? answer.executiveSummary.split('. ').slice(0, 2).join('. ') + (answer.executiveSummary.endsWith('.') ? '' : '.')
+    : null;
+  if (!insight) return null;
+  return (
+    <div style={{
+      padding: "12px 16px",
+      background: "rgba(0,212,255,0.03)",
+      border: "1px solid rgba(0,212,255,0.12)",
+      borderRadius: "8px",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+        <Shield size={10} style={{ color: ACCENT }} />
+        <span style={{ ...MONO_SM, color: ACCENT, fontSize: "9px", letterSpacing: "0.14em" }}>INSTITUTIONAL INSIGHT</span>
+      </div>
+      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D4E0", lineHeight: 1.65, margin: 0, fontStyle: "italic" }}>
+        &ldquo;{insight}&rdquo;
+      </p>
+    </div>
+  );
+}
+
+// ── Evidence Transparency (V2.1 — Section 8) ─────────────────
+
+function EvidenceTransparency({ scores }: { scores: EvidenceScore[] }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!scores || scores.length === 0) return null;
+  const usedEvidence = scores
+    .filter(s => !(s.signal === 'neutral' && s.score === 50))
+    .map(s => ({ label: s.category, signal: s.signal, score: s.score }))
+    .sort((a, b) => Math.abs(b.score - 50) - Math.abs(a.score - 50));
+  return (
+    <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
+      <button
+        onClick={() => setExpanded(v => !v)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          width: "100%", padding: "10px 16px", background: "none", border: "none", cursor: "pointer",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <CheckCircle size={10} style={{ color: "rgba(0,255,136,0.6)" }} />
+          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", letterSpacing: "0.12em", fontSize: "10px" }}>EVIDENCE USED ({usedEvidence.length} sources)</span>
+        </div>
+        {expanded
+          ? <ChevronUp size={11} style={{ color: "rgba(255,255,255,0.25)" }} />
+          : <ChevronDown size={11} style={{ color: "rgba(255,255,255,0.25)" }} />
+        }
+      </button>
+      {expanded && (
+        <div style={{ padding: "0 16px 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+          {usedEvidence.map((ev, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "4px 0" }}>
+              <span style={{ fontSize: "9px", color: ev.signal === 'bullish' ? '#00FF88' : ev.signal === 'bearish' ? '#FF4444' : '#888', flexShrink: 0 }}>✓</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#B0B8C4" }}>{ev.label}</span>
+              <span style={{ ...MONO_SM, fontSize: "9px", color: ev.signal === 'bullish' ? '#00FF88' : ev.signal === 'bearish' ? '#FF4444' : '#888', marginLeft: "auto", textTransform: "uppercase" }}>{ev.signal}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── What Changes Our View (V2.0 — Section 11) ────────────────
 
 function WatchCatalysts({ catalysts }: { catalysts: string[] }) {
@@ -721,6 +788,14 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC" }}>{answer.invalidation}</span>
         </div>
       </div>
+
+      {/* ── Institutional Insight (V2.1 — Section 7) ── */}
+      <InstitutionalInsightCard answer={answer} />
+
+      {/* ── Evidence Transparency (V2.1 — Section 8) ── */}
+      {answer.evidenceScores && answer.evidenceScores.length > 0 && (
+        <EvidenceTransparency scores={answer.evidenceScores} />
+      )}
 
       {/* ── What Changes Our View (V2.0 — Section 11) ── */}
       {answer.watchCatalysts && answer.watchCatalysts.length > 0 && (

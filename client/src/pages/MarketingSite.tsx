@@ -506,6 +506,237 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
   );
 }
 
+// ── Why FAULTLINE Exists ─────────────────────────────────────
+function WhyFaultlineExistsSection() {
+  return (
+    <section
+      className="relative py-24 md:py-32 bg-[#050608] overflow-hidden"
+      style={{ borderTop: '1px solid rgba(0,212,255,0.08)', borderBottom: '1px solid rgba(0,212,255,0.08)' }}
+    >
+      {/* Ambient background glow */}
+      <div style={{
+        position: 'absolute', top: '20%', left: '-10%',
+        width: '40%', height: '60%',
+        background: 'radial-gradient(ellipse, rgba(0,212,255,0.04) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '10%', right: '-5%',
+        width: '35%', height: '50%',
+        background: 'radial-gradient(ellipse, rgba(0,102,255,0.04) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
+
+      <div className="relative max-w-5xl mx-auto px-6 md:px-12">
+
+        {/* Section label */}
+        <div className="flex items-center gap-3 mb-8">
+          <div style={{ width: '32px', height: '1px', background: '#00D4FF', opacity: 0.6 }} />
+          <span style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '11px',
+            letterSpacing: '0.22em',
+            color: '#00D4FF',
+            textTransform: 'uppercase',
+            opacity: 0.8,
+          }}>Origin</span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.12)' }} />
+        </div>
+
+        {/* Title */}
+        <h2 style={{
+          fontFamily: "'Rajdhani', sans-serif",
+          fontWeight: 700,
+          fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+          color: '#F0F4FF',
+          letterSpacing: '0.02em',
+          lineHeight: 1.1,
+          marginBottom: '12px',
+        }}>
+          Why FAULTLINE Exists
+        </h2>
+
+        {/* Subtitle */}
+        <p style={{
+          fontFamily: "'IBM Plex Sans', sans-serif",
+          fontSize: 'clamp(1rem, 2vw, 1.25rem)',
+          color: '#94A3B8',
+          lineHeight: 1.6,
+          marginBottom: '48px',
+          maxWidth: '640px',
+        }}>
+          Markets don't move because of one indicator. They move because hundreds of forces interact at once.
+        </p>
+
+        {/* Two-column layout: body left, quote right */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-16 items-start">
+
+          {/* Body text — 3 columns */}
+          <div className="lg:col-span-3" style={{ fontFamily: "'IBM Plex Sans', sans-serif" }}>
+
+            {/* Opening contrast */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '16px',
+              marginBottom: '36px',
+            }}>
+              <div style={{
+                padding: '20px',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                borderRadius: '6px',
+              }}>
+                <div style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#6B7280', fontFamily: "'IBM Plex Mono', monospace", marginBottom: '10px', textTransform: 'uppercase' }}>Most Platforms Ask</div>
+                <div style={{ fontSize: '1.1rem', color: '#94A3B8', lineHeight: 1.5, fontStyle: 'italic' }}>&ldquo;What should I buy?&rdquo;</div>
+              </div>
+              <div style={{
+                padding: '20px',
+                background: 'rgba(0,212,255,0.04)',
+                border: '1px solid rgba(0,212,255,0.18)',
+                borderRadius: '6px',
+                boxShadow: '0 0 20px rgba(0,212,255,0.06)',
+              }}>
+                <div style={{ fontSize: '11px', letterSpacing: '0.15em', color: '#00D4FF', fontFamily: "'IBM Plex Mono', monospace", marginBottom: '10px', textTransform: 'uppercase' }}>FAULTLINE Begins With</div>
+                <div style={{ fontSize: '1.1rem', color: '#F0F4FF', lineHeight: 1.5, fontStyle: 'italic' }}>&ldquo;What is the market actually doing?&rdquo;</div>
+              </div>
+            </div>
+
+            {/* Body paragraphs */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: 1.75 }}>
+                Markets are living systems. They are influenced by liquidity, macroeconomics, institutional positioning, credit markets, volatility, sentiment, earnings, geopolitics, fiscal policy, and countless interconnected forces that continuously evolve together.
+              </p>
+              <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: 1.75 }}>
+                Looking at only one piece of that puzzle creates blind spots.
+              </p>
+              <p style={{ fontSize: '1rem', color: '#CBD5E1', lineHeight: 1.75, fontWeight: 500 }}>
+                That is why FAULTLINE was built.
+              </p>
+              <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: 1.75 }}>
+                At the center of the platform is the{' '}
+                <span style={{ color: '#00D4FF', fontWeight: 600 }}>Faultline Market Operating System (FMOS)</span>
+                {' '}— a proprietary intelligence engine designed to continuously evaluate market conditions, weigh independent evidence, identify regime changes, compare historical analogs, calculate probabilities, and explain not only what it believes, but why.
+              </p>
+              <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: 1.75 }}>
+                Our objective is not to predict every move. Our objective is to improve awareness. Because investors who better understand changing market conditions make better long-term decisions.
+              </p>
+              <p style={{ fontSize: '1rem', color: '#CBD5E1', lineHeight: 1.75 }}>
+                FAULTLINE doesn't replace judgment.{' '}
+                <span style={{ color: '#F0F4FF', fontWeight: 600 }}>It strengthens it.</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Right column: Founder quote + Principles */}
+          <div className="lg:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+            {/* Founder quote card */}
+            <div style={{
+              padding: '28px 24px',
+              background: 'rgba(0,212,255,0.03)',
+              border: '1px solid rgba(0,212,255,0.15)',
+              borderRadius: '8px',
+              position: 'relative',
+              boxShadow: '0 4px 32px rgba(0,212,255,0.06)',
+            }}>
+              {/* Large quote mark */}
+              <div style={{
+                position: 'absolute',
+                top: '12px',
+                left: '20px',
+                fontFamily: 'Georgia, serif',
+                fontSize: '72px',
+                color: 'rgba(0,212,255,0.12)',
+                lineHeight: 1,
+                userSelect: 'none',
+                pointerEvents: 'none',
+              }}>&ldquo;</div>
+              <blockquote style={{
+                fontFamily: "'IBM Plex Sans', sans-serif",
+                fontSize: '0.95rem',
+                color: '#CBD5E1',
+                lineHeight: 1.75,
+                fontStyle: 'italic',
+                paddingTop: '24px',
+                margin: 0,
+              }}>
+                &ldquo;I didn&rsquo;t build FAULTLINE to tell people what to buy or sell. I built it because I believed investors deserved the same level of market awareness that institutional investors use to navigate uncertainty.&rdquo;
+              </blockquote>
+              <div style={{
+                marginTop: '20px',
+                paddingTop: '16px',
+                borderTop: '1px solid rgba(0,212,255,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}>
+                <div style={{
+                  width: '28px', height: '28px',
+                  background: 'linear-gradient(135deg, #00D4FF 0%, #0066FF 100%)',
+                  borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 8 L6 4 L10 9 L14 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#F0F4FF', letterSpacing: '0.08em' }}>Founder, FAULTLINE</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Built on Principles */}
+            <div style={{
+              padding: '24px',
+              background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: '8px',
+            }}>
+              <div style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px',
+                letterSpacing: '0.18em',
+                color: '#6B7280',
+                textTransform: 'uppercase',
+                marginBottom: '16px',
+              }}>Built on Principles</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {[
+                  'Evidence over opinions',
+                  'Probabilities over predictions',
+                  'Awareness over certainty',
+                  'Transparency over black-box AI',
+                  'Risk management before return seeking',
+                ].map((principle, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{
+                      width: '16px', height: '16px',
+                      background: 'rgba(0,212,255,0.12)',
+                      border: '1px solid rgba(0,212,255,0.3)',
+                      borderRadius: '3px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                      marginTop: '2px',
+                    }}>
+                      <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+                        <path d="M1.5 5L4 7.5L8.5 2.5" stroke="#00D4FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                    <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '0.9rem', color: '#94A3B8', lineHeight: 1.5 }}>{principle}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Visual Showcase ──────────────────────────────────────────
 function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   return (
@@ -2545,6 +2776,7 @@ export default function MarketingSite() {
       <StatusTicker />
       <Nav onRequestAccess={scrollToForm} />
       <Hero onRequestAccess={scrollToForm} />
+      <WhyFaultlineExistsSection />
       <ProofSection />
       <AboutSection />
       <VisualShowcaseSection onRequestAccess={scrollToForm} />

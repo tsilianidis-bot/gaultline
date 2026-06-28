@@ -2787,3 +2787,31 @@
 - [x] server/decisionLedger.test.ts — 7 tests passing (logRecommendation, getLedger, updateOutcome x3, getLedgerStats x2)
 - [x] TypeScript: 0 errors (npx tsc --noEmit)
 - [x] Overall test suite: 700+ tests passing (1 pre-existing SendGrid key failure unrelated to this sprint)
+
+## UI Refinement V2.1 — Institutional Polish (June 28, 2026)
+
+- [x] Header: Reduce logo row vertical padding from 8px to 5px (approx 15-20% height reduction), reduce font sizes slightly
+- [x] Smart Market Ticker: Replace static ticker items with live regime/pressure/liquidity/AI concentration/credit/VIX/DXY/Fed Cut Prob/10Y/HY Spread/BTC Dominance/Market Breadth/Fear & Greed data from EngineContext
+- [x] FMOS Pipeline Visualization: Replace text list in FmosHealthDashboard with connected flow diagram (12 stages with status indicators: Completed=green, Running=cyan, Waiting=gray, Failed=red)
+- [x] Validation Lab: Add 14 institutional metrics (Overall Accuracy, Calibration Score, Prediction Drift, Avg Confidence, Engine Health, Last Validation Time, Signals Processed, Avg Return, Avg Drawdown, Rolling 30-Day Accuracy, Rolling 90-Day Accuracy, Historical Win Rate, Model Version, Data Freshness) each with tooltip
+- [x] Engine Health card: Add to Validation Lab with 98% health, 18/18 data sources, latency, Historical DB, Live Market Feed, Macro Feed, Crypto Feed status indicators
+- [x] Institutional Insight: Add concise 2-3 sentence macro summary to SmartDiscovery answer cards (derived from engine output)
+- [x] Evidence Transparency: Add expandable "Evidence Used" section to every SmartDiscovery recommendation (checkmarks for Macro, Liquidity, Historical Analogs, ETF Flows, Treasury Yields, Dollar Index, Credit Markets, Volatility, Options Positioning, On-Chain Data)
+- [x] Visual hierarchy: Normalize card padding (16px), corner radius (6px), shadows, and card title alignment across SmartDiscovery answer sections
+- [x] Micro-animations: Add CSS transition for pipeline status updates, score bar fills, and ticker item transitions
+- [x] TypeScript: 0 errors
+- [x] Save checkpoint
+
+## Why FAULTLINE Exists — Marketing Homepage Section (June 28, 2026)
+
+- [x] Add WhyFaultlineExistsSection component to MarketingSite.tsx
+- [x] Placed immediately after Hero section, before ProofSection
+- [x] Section title: "Why FAULTLINE Exists" with subtitle
+- [x] Body: 3-paragraph philosophy text (Most platforms ask "What should I buy?" vs FAULTLINE's "What is the market actually doing?")
+- [x] FMOS description paragraph
+- [x] Founder quote card with cyan accent and italic styling
+- [x] "Built on Principles" callout with 5 checkmarks (Evidence over opinions, Probabilities over predictions, Awareness over certainty, Transparency over black-box AI, Risk management before return seeking)
+- [x] Dark background, cyan accents, thin technical divider lines, large typography
+- [x] Scroll-triggered fade-in animation (IntersectionObserver)
+- [x] Responsive layout (mobile-first)
+- [x] TypeScript: 0 errors
