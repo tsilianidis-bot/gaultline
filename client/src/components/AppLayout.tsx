@@ -73,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "watchlist",     label: "Watchlist",       shortLabel: "Watch",      icon: Bell,       path: "/app/watchlist" },
       { id: "alt-rotation",  label: "Sector Rotation", shortLabel: "Rotation",   icon: RotateCcw,  path: "/app/alt-rotation" },
       { id: "trade-journal", label: "Trade Journal",   shortLabel: "Journal",    icon: BookOpen,   path: "/app/trade-journal" },
+      { id: "decision-ledger", label: "Decision Ledger",  shortLabel: "Ledger",     icon: Bookmark,   path: "/app/decision-ledger" },
     ],
   },
   {

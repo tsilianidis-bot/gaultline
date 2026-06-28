@@ -1120,3 +1120,41 @@ export const chatbotLeads = mysqlTable("chatbot_leads", {
 }));
 export type ChatbotLead = typeof chatbotLeads.$inferSelect;
 export type InsertChatbotLead = typeof chatbotLeads.$inferInsert;
+
+// ── Decision Ledger ───────────────────────────────────────────────────────────
+/**
+ * Tracks every Ask Intelligence recommendation for the Decision Ledger.
+ * Users can mark outcomes as correct/incorrect to build an accuracy audit trail.
+ */
+export const decisionLedger = mysqlTable("decision_ledger", {
+  id:               int("id").autoincrement().primaryKey(),
+  userId:           int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Ticker symbol e.g. NVDA, BTC — null for macro questions */
+  ticker:           varchar("ticker", { length: 20 }),
+  /** Asset type — null for macro questions */
+  assetType:        mysqlEnum("assetType", ["stock", "crypto"]),
+  /** The recommendation verdict */
+  verdict:          varchar("verdict", { length: 32 }).notNull(),
+  /** Opportunity score 0-100 */
+  opportunityScore: int("opportunityScore").notNull(),
+  /** Confidence score 0-100 */
+  confidence:       int("confidence").notNull(),
+  /** Primary driver sentence */
+  primaryDriver:    text("primaryDriver").notNull(),
+  /** Expected timeframe */
+  expectedTimeframe: varchar("expectedTimeframe", { length: 64 }).notNull(),
+  /** Query type: security, macro, opportunity, portfolio, general */
+  queryType:        varchar("queryType", { length: 32 }).notNull(),
+  /** Outcome: pending, correct, incorrect */
+  outcome:          mysqlEnum("outcome", ["pending", "correct", "incorrect"]).default("pending").notNull(),
+  /** Optional user notes about the outcome */
+  notes:            text("notes"),
+  /** When the outcome was resolved */
+  resolvedAt:       timestamp("resolvedAt"),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  userIdIdx:    index("decision_ledger_userId_idx").on(t.userId),
+  userDateIdx:  index("decision_ledger_userId_date_idx").on(t.userId, t.createdAt),
+}));
+export type DecisionLedgerEntry = typeof decisionLedger.$inferSelect;
+export type InsertDecisionLedgerEntry = typeof decisionLedger.$inferInsert;

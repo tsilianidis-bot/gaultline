@@ -2749,3 +2749,41 @@
 - [ ] Regression Test Results
 - [ ] Remaining Risks
 - [ ] Save checkpoint and deliver
+
+## Ask Intelligence V2.0 (June 28, 2026)
+
+### Bug Fixes
+- [x] Fixed duplicate header bug — removed AppLayout double-wrap from DayTradeIntelligence.tsx and UniversalSymbolIntelligence.tsx (0 TypeScript errors confirmed)
+
+### Backend Enhancements (server/routers/smartDiscovery.ts)
+- [x] Extended LLM response schema with V2.0 fields: primaryDriver, confidenceReasons[], evidenceScores[] (14 categories), bullProbability, bearProbability, bullKeyDrivers[], bearKeyDrivers[], whyNotBuy[], whyNotSell[], watchCatalysts[]
+- [x] Updated LLM system prompt with strict instructions for all 14 Evidence Engine categories
+- [x] Added Decision Ledger backend procedures: logRecommendation, getLedger, updateOutcome, getLedgerStats
+- [x] Added decisionLedger table to drizzle/schema.ts with userId FK, verdict, opportunityScore, confidence, primaryDriver, expectedTimeframe, queryType, outcome, notes, resolvedAt
+- [x] Applied migration via webdev_execute_sql (0033_premium_mockingbird.sql)
+
+### Frontend Redesign (client/src/pages/SmartDiscovery.tsx)
+- [x] Primary Driver sentence card (Section 5) — above the verdict card with Zap icon
+- [x] Evidence Engine grid (Section 6) — 14 categories with signal bars, compact dot summary + expandable full grid
+- [x] Bull/Bear with probabilities (Sections 7-8) — probability distribution bar + bull/bear cards with key drivers
+- [x] Confidence Breakdown — score bar + 3-4 specific reasons
+- [x] Why Not Buy/Sell (Section 10) — shown only for WAIT/HOLD verdicts
+- [x] What Changes Our View (Section 11) — 4-5 numbered catalysts
+- [x] 13-stage loading sequence (upgraded from 8 stages)
+- [x] Decision Ledger shortcut button in welcome state and conversation footer
+- [x] Auto-logs recommendations to Decision Ledger after each Ask query
+
+### Decision Ledger Page (client/src/pages/DecisionLedger.tsx)
+- [x] New page at /app/decision-ledger
+- [x] Stats row: Total, Win Rate, Correct, Incorrect, Pending
+- [x] Accuracy by asset class breakdown
+- [x] Filter tabs: All / Pending / Correct / Incorrect
+- [x] Expandable entry rows with Primary Driver, meta fields, notes textarea
+- [x] Outcome buttons: CORRECT / INCORRECT / RESET
+- [x] Added to AppLayout PORTFOLIO nav group
+- [x] Added lazy-loaded route in App.tsx
+
+### Tests
+- [x] server/decisionLedger.test.ts — 7 tests passing (logRecommendation, getLedger, updateOutcome x3, getLedgerStats x2)
+- [x] TypeScript: 0 errors (npx tsc --noEmit)
+- [x] Overall test suite: 700+ tests passing (1 pre-existing SendGrid key failure unrelated to this sprint)

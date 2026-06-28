@@ -4,7 +4,6 @@
    7 tabs: Overview · Scanner · Stocks · Crypto · Symbol · Active · Watchlist
    ============================================================ */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
 import { useSearch } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -1414,18 +1413,15 @@ export default function DayTradeIntelligence() {
 
   if (authLoading) {
     return (
-      <AppLayout>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-          <LoadingState label="Loading..." />
-        </div>
-      </AppLayout>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <LoadingState label="Loading..." />
+      </div>
     );
   }
 
   if (!user) {
     return (
-      <AppLayout>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "16px" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "16px" }}>
           <Target size={40} style={{ color: "#00D4FF" }} />
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "24px", color: "#F0F4FF" }}>
             Day Trade Intelligence™
@@ -1450,13 +1446,12 @@ export default function DayTradeIntelligence() {
           >
             Sign In
           </a>
-        </div>
-      </AppLayout>
+      </div>
     );
   }
 
   return (
-    <AppLayout>
+    <>
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         select option { background: #0A0C10; color: #F0F4FF; }
@@ -1552,7 +1547,7 @@ export default function DayTradeIntelligence() {
         {activeTab === "active"    && <ActiveSetupsTab onSearch={handleSearch} />}
         {activeTab === "watchlist" && <WatchlistTab onSearch={handleSearch} />}
       </div>
-    </AppLayout>
+    </>
   );
 }
 

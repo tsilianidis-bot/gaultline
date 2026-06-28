@@ -1,14 +1,18 @@
 /**
- * FAULTLINE — Smart Discovery™
+ * FAULTLINE — Ask Intelligence V2.0
  * The primary interface. One question in. One institutional answer out.
  *
- * The FAULTLINE Constitution:
- *   Verdict before data. Explain WHY. Show opportunity. Show risk.
- *   Offer deeper analysis only after the answer has already been delivered.
+ * V2.0 Upgrades:
+ *   - Primary Driver sentence (Section 5)
+ *   - Evidence Engine grid — 14 categories with signal bars (Section 6)
+ *   - Bull/Bear with probabilities and key drivers (Sections 7-8)
+ *   - Why Not Buy/Sell for WAIT/HOLD verdicts (Section 10)
+ *   - What Changes Our View — 4-5 specific catalysts (Section 11)
+ *   - Confidence breakdown with reasons
+ *   - 13-stage loading sequence
  */
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
-import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -18,7 +22,8 @@ import {
   ArrowRight, ChevronDown, ChevronUp, ExternalLink,
   TrendingUp, TrendingDown, AlertTriangle,
   Zap, RefreshCw, Send, Activity, BarChart2,
-  GitBranch, Shield, Clock, Target,
+  GitBranch, Shield, Clock, Target, BookOpen,
+  CheckCircle, XCircle, Eye,
 } from "lucide-react";
 
 // ── Design tokens ─────────────────────────────────────────────
@@ -32,18 +37,37 @@ const MONO_SM: React.CSSProperties = { ...MONO, fontSize: "11px", letterSpacing:
 
 // ── Types ─────────────────────────────────────────────────────
 
+interface EvidenceScore {
+  category: string;
+  score: number;
+  signal: "bullish" | "bearish" | "neutral";
+  explanation: string;
+}
+
 interface FaultlineAnswer {
   verdict: string;
   verdictColor: "green" | "yellow" | "red" | "blue";
   opportunityScore: number;
   confidence: number;
   confidenceLabel: string;
+  confidenceReasons: string[];
   ticker: string | null;
   assetType: "stock" | "crypto" | null;
   queryType: string;
   currentRegime: string;
   regimeColor: "green" | "yellow" | "red";
   dataFreshness: string;
+  // V2.0 fields
+  primaryDriver: string;
+  evidenceScores: EvidenceScore[];
+  bullProbability: number;
+  bullKeyDrivers: string[];
+  bearProbability: number;
+  bearKeyDrivers: string[];
+  whyNotBuy: string[] | null;
+  whyNotSell: string[] | null;
+  watchCatalysts: string[];
+  // Existing fields
   executiveSummary: string;
   whyThisVerdict: string;
   bullCase: string;
@@ -71,17 +95,22 @@ interface ConversationMessage {
   answer?: FaultlineAnswer;
 }
 
-// ── Execution sequence steps ──────────────────────────────────
+// ── V2.0 Loading sequence (13 stages) ────────────────────────
 
 const EXECUTION_STEPS = [
-  "Checking live market data...",
-  "Reading macro regime...",
+  "Initializing FAULTLINE intelligence engine...",
+  "Fetching live market data...",
+  "Reading macro regime conditions...",
   "Scanning institutional positioning...",
+  "Evaluating liquidity environment...",
   "Comparing historical analogs...",
-  "Evaluating liquidity conditions...",
-  "Calculating opportunity score...",
-  "Assessing risk vectors...",
-  "Generating institutional recommendation...",
+  "Running Evidence Engine (14 categories)...",
+  "Calculating bull/bear probability distribution...",
+  "Assessing invalidation conditions...",
+  "Scoring opportunity and conviction...",
+  "Stress-testing the thesis...",
+  "Generating primary driver analysis...",
+  "Compiling institutional recommendation...",
 ];
 
 // ── Verdict color helpers ─────────────────────────────────────
@@ -100,6 +129,18 @@ function scoreBar(value: number, color: string): React.CSSProperties {
     background: `linear-gradient(90deg, ${c} ${value}%, rgba(255,255,255,0.08) ${value}%)`,
     borderRadius: "2px",
   };
+}
+
+function signalColor(signal: string): string {
+  if (signal === "bullish") return "#00FF88";
+  if (signal === "bearish") return "#FF4444";
+  return "#FFD700";
+}
+
+function signalBg(signal: string): string {
+  if (signal === "bullish") return "rgba(0,255,136,0.08)";
+  if (signal === "bearish") return "rgba(255,68,68,0.08)";
+  return "rgba(255,215,0,0.08)";
 }
 
 // ── Execution Sequence ────────────────────────────────────────
@@ -184,6 +225,307 @@ function EngineCard({ icon, label, value, color, sub }: {
   );
 }
 
+// ── Evidence Engine Grid (V2.0) ───────────────────────────────
+
+function EvidenceEngineGrid({ scores }: { scores: EvidenceScore[] }) {
+  const [expanded, setExpanded] = useState(false);
+
+  if (!scores || scores.length === 0) return null;
+
+  const bullish = scores.filter(s => s.signal === "bullish").length;
+  const bearish = scores.filter(s => s.signal === "bearish").length;
+  const neutral = scores.filter(s => s.signal === "neutral").length;
+
+  return (
+    <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
+      {/* Header — always visible */}
+      <button
+        onClick={() => setExpanded(v => !v)}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          width: "100%", padding: "12px 16px", background: "none", border: "none", cursor: "pointer",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: "0.12em" }}>EVIDENCE ENGINE</span>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>{bullish}↑</span>
+            <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "10px" }}>{bearish}↓</span>
+            <span style={{ ...MONO_SM, color: "#FFD700", fontSize: "10px" }}>{neutral}—</span>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "10px" }}>
+            {scores.length} categories
+          </span>
+          {expanded
+            ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
+            : <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.3)" }} />
+          }
+        </div>
+      </button>
+
+      {/* Compact summary bar — always visible */}
+      <div style={{ padding: "0 16px 12px", display: "flex", gap: "4px", flexWrap: "wrap" }}>
+        {scores.map((s, i) => (
+          <div
+            key={i}
+            title={`${s.category}: ${s.signal} (${s.score}/100) — ${s.explanation}`}
+            style={{
+              width: "24px",
+              height: "24px",
+              borderRadius: "3px",
+              background: signalBg(s.signal),
+              border: `1px solid ${signalColor(s.signal)}30`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "default",
+            }}
+          >
+            <div style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              background: signalColor(s.signal),
+              opacity: 0.7 + (s.score / 333),
+            }} />
+          </div>
+        ))}
+      </div>
+
+      {/* Expanded grid */}
+      {expanded && (
+        <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+          {scores.map((s, i) => (
+            <div key={i} style={{
+              padding: "8px 10px",
+              background: signalBg(s.signal),
+              border: `1px solid ${signalColor(s.signal)}20`,
+              borderRadius: "5px",
+              display: "grid",
+              gridTemplateColumns: "140px 1fr 60px",
+              alignItems: "center",
+              gap: "10px",
+            }}>
+              <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.7)", fontSize: "10px", fontWeight: 600 }}>
+                {s.category}
+              </div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.5)", lineHeight: 1.4 }}>
+                {s.explanation}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px", justifyContent: "flex-end" }}>
+                <div style={{
+                  width: "32px",
+                  height: "3px",
+                  background: `linear-gradient(90deg, ${signalColor(s.signal)} ${s.score}%, rgba(255,255,255,0.08) ${s.score}%)`,
+                  borderRadius: "2px",
+                }} />
+                <span style={{ ...MONO_SM, color: signalColor(s.signal), fontSize: "10px", fontWeight: 700 }}>{s.score}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Confidence Breakdown (V2.0) ───────────────────────────────
+
+function ConfidenceBreakdown({ confidence, label, reasons }: {
+  confidence: number;
+  label: string;
+  reasons: string[];
+}) {
+  const color = confidence >= 70 ? "#00FF88" : confidence >= 45 ? "#FFD700" : "#FF4444";
+
+  return (
+    <div style={{
+      padding: "12px 14px",
+      background: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.05)",
+      borderRadius: "6px",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+        <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", letterSpacing: "0.1em", fontSize: "10px" }}>CONFIDENCE BREAKDOWN</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ ...MONO, fontSize: "13px", fontWeight: 700, color }}>{confidence}%</span>
+          <span style={{ ...MONO_SM, color, fontSize: "9px", padding: "1px 5px", background: `${color}15`, borderRadius: "3px" }}>{label}</span>
+        </div>
+      </div>
+      <div style={{ ...scoreBar(confidence, confidence >= 70 ? "green" : confidence >= 45 ? "yellow" : "red"), marginBottom: "8px" }} />
+      {reasons && reasons.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          {reasons.map((r, i) => (
+            <div key={i} style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
+              <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.2)", marginTop: "1px", flexShrink: 0, fontSize: "10px" }}>›</span>
+              <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>{r}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Bull/Bear with Probabilities (V2.0) ──────────────────────
+
+function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
+  const bullPct = answer.bullProbability ?? 50;
+  const bearPct = answer.bearProbability ?? 50;
+  const neutralPct = Math.max(0, 100 - bullPct - bearPct);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      {/* Probability bar */}
+      <div style={{
+        padding: "10px 14px",
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.05)",
+        borderRadius: "6px",
+      }}>
+        <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "8px", fontSize: "9px", letterSpacing: "0.1em" }}>PROBABILITY DISTRIBUTION</div>
+        <div style={{ display: "flex", height: "6px", borderRadius: "3px", overflow: "hidden", gap: "1px" }}>
+          <div style={{ width: `${bullPct}%`, background: "#00FF88", transition: "width 0.5s ease" }} />
+          {neutralPct > 0 && <div style={{ width: `${neutralPct}%`, background: "#FFD700", transition: "width 0.5s ease" }} />}
+          <div style={{ width: `${bearPct}%`, background: "#FF4444", transition: "width 0.5s ease" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "5px" }}>
+          <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>BULL {bullPct}%</span>
+          {neutralPct > 0 && <span style={{ ...MONO_SM, color: "#FFD700", fontSize: "10px" }}>NEUTRAL {neutralPct}%</span>}
+          <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "10px" }}>BEAR {bearPct}%</span>
+        </div>
+      </div>
+
+      {/* Bull / Bear cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "8px" }}>
+        {/* Bull */}
+        <div style={{ padding: "14px 16px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <TrendingUp size={11} style={{ color: "#00FF88" }} />
+              <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>BULL CASE</span>
+            </div>
+            <span style={{ ...MONO, fontSize: "12px", fontWeight: 700, color: "#00FF88" }}>{bullPct}%</span>
+          </div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: "0 0 8px" }}>
+            {answer.bullCase}
+          </p>
+          {answer.bullKeyDrivers && answer.bullKeyDrivers.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+              {answer.bullKeyDrivers.map((d, i) => (
+                <div key={i} style={{ display: "flex", gap: "5px", alignItems: "flex-start" }}>
+                  <span style={{ color: "#00FF88", fontSize: "10px", marginTop: "1px", flexShrink: 0 }}>+</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(0,255,136,0.7)", lineHeight: 1.4 }}>{d}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Bear */}
+        <div style={{ padding: "14px 16px", background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.12)", borderRadius: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "7px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <TrendingDown size={11} style={{ color: "#FF4444" }} />
+              <span style={{ ...MONO_SM, color: "#FF4444", letterSpacing: "0.1em" }}>BEAR CASE</span>
+            </div>
+            <span style={{ ...MONO, fontSize: "12px", fontWeight: 700, color: "#FF4444" }}>{bearPct}%</span>
+          </div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: "0 0 8px" }}>
+            {answer.bearCase}
+          </p>
+          {answer.bearKeyDrivers && answer.bearKeyDrivers.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+              {answer.bearKeyDrivers.map((d, i) => (
+                <div key={i} style={{ display: "flex", gap: "5px", alignItems: "flex-start" }}>
+                  <span style={{ color: "#FF4444", fontSize: "10px", marginTop: "1px", flexShrink: 0 }}>−</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,68,68,0.7)", lineHeight: 1.4 }}>{d}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Why Not Buy/Sell (V2.0 — Section 10) ─────────────────────
+
+function WhyNotSection({ whyNotBuy, whyNotSell }: {
+  whyNotBuy: string[] | null;
+  whyNotSell: string[] | null;
+}) {
+  if (!whyNotBuy && !whyNotSell) return null;
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "8px" }}>
+      {whyNotBuy && whyNotBuy.length > 0 && (
+        <div style={{ padding: "12px 14px", background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.08)", borderRadius: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
+            <XCircle size={10} style={{ color: "#00FF88" }} />
+            <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "9px", letterSpacing: "0.1em" }}>WHY NOT BUY (YET)</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            {whyNotBuy.map((r, i) => (
+              <div key={i} style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
+                <span style={{ ...MONO_SM, color: "rgba(0,255,136,0.4)", marginTop: "1px", flexShrink: 0, fontSize: "10px" }}>›</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{r}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {whyNotSell && whyNotSell.length > 0 && (
+        <div style={{ padding: "12px 14px", background: "rgba(255,68,68,0.03)", border: "1px solid rgba(255,68,68,0.08)", borderRadius: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
+            <XCircle size={10} style={{ color: "#FF4444" }} />
+            <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "9px", letterSpacing: "0.1em" }}>WHY NOT SELL (YET)</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+            {whyNotSell.map((r, i) => (
+              <div key={i} style={{ display: "flex", gap: "6px", alignItems: "flex-start" }}>
+                <span style={{ ...MONO_SM, color: "rgba(255,68,68,0.4)", marginTop: "1px", flexShrink: 0, fontSize: "10px" }}>›</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#A0A8B4", lineHeight: 1.5 }}>{r}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── What Changes Our View (V2.0 — Section 11) ────────────────
+
+function WatchCatalysts({ catalysts }: { catalysts: string[] }) {
+  if (!catalysts || catalysts.length === 0) return null;
+
+  return (
+    <div style={{
+      padding: "12px 16px",
+      background: "rgba(0,212,255,0.03)",
+      border: "1px solid rgba(0,212,255,0.1)",
+      borderRadius: "8px",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+        <Eye size={11} style={{ color: ACCENT }} />
+        <span style={{ ...MONO_SM, color: ACCENT, fontSize: "9px", letterSpacing: "0.12em" }}>WHAT CHANGES OUR VIEW</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+        {catalysts.map((c, i) => (
+          <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+            <span style={{ ...MONO_SM, color: ACCENT, marginTop: "1px", flexShrink: 0, fontSize: "10px", fontWeight: 700 }}>{i + 1}.</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#B0B8C4", lineHeight: 1.5 }}>{c}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Full Institutional Answer ─────────────────────────────────
 
 function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; onDeepDive: (path: string) => void }) {
@@ -197,8 +539,32 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
   const confidenceColor = answer.confidence >= 70 ? "#00FF88" : answer.confidence >= 45 ? "#FFD700" : "#FF4444";
   const opportunityColor = answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
 
+  // Determine if this is a WAIT/HOLD verdict
+  const isWaitHold = ["WAIT", "HOLD", "LOW CONVICTION"].includes(answer.verdict);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+
+      {/* ── PRIMARY DRIVER (V2.0 — Section 5) ── */}
+      {answer.primaryDriver && (
+        <div style={{
+          padding: "10px 14px",
+          background: `${vs.background}`,
+          border: `1px solid ${vs.borderColor}`,
+          borderRadius: "6px",
+          display: "flex",
+          gap: "10px",
+          alignItems: "flex-start",
+        }}>
+          <Zap size={12} style={{ color: vs.color, marginTop: "2px", flexShrink: 0 }} />
+          <div>
+            <div style={{ ...MONO_SM, color: vs.color, marginBottom: "2px", fontSize: "9px", letterSpacing: "0.12em" }}>PRIMARY DRIVER</div>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#E8EDF5", fontWeight: 500, lineHeight: 1.5 }}>
+              {answer.primaryDriver}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ── BOTTOM LINE card ── */}
       <div style={{
@@ -317,27 +683,27 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
         </p>
       </div>
 
-      {/* ── Bull / Bear ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "10px" }}>
-        <div style={{ padding: "14px 16px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "7px" }}>
-            <TrendingUp size={11} style={{ color: "#00FF88" }} />
-            <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>BULL CASE</span>
-          </div>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: 0 }}>
-            {answer.bullCase}
-          </p>
-        </div>
-        <div style={{ padding: "14px 16px", background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.12)", borderRadius: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "7px" }}>
-            <TrendingDown size={11} style={{ color: "#FF4444" }} />
-            <span style={{ ...MONO_SM, color: "#FF4444", letterSpacing: "0.1em" }}>BEAR CASE</span>
-          </div>
-          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: 0 }}>
-            {answer.bearCase}
-          </p>
-        </div>
-      </div>
+      {/* ── Evidence Engine (V2.0 — Section 6) ── */}
+      {answer.evidenceScores && answer.evidenceScores.length > 0 && (
+        <EvidenceEngineGrid scores={answer.evidenceScores} />
+      )}
+
+      {/* ── Bull / Bear with Probabilities (V2.0 — Sections 7-8) ── */}
+      <BullBearSection answer={answer} />
+
+      {/* ── Confidence Breakdown (V2.0) ── */}
+      {answer.confidenceReasons && answer.confidenceReasons.length > 0 && (
+        <ConfidenceBreakdown
+          confidence={answer.confidence}
+          label={answer.confidenceLabel}
+          reasons={answer.confidenceReasons}
+        />
+      )}
+
+      {/* ── Why Not Buy/Sell (V2.0 — Section 10, only for WAIT/HOLD) ── */}
+      {isWaitHold && (
+        <WhyNotSection whyNotBuy={answer.whyNotBuy} whyNotSell={answer.whyNotSell} />
+      )}
 
       {/* ── Invalidation (always visible) ── */}
       <div style={{
@@ -355,6 +721,11 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC" }}>{answer.invalidation}</span>
         </div>
       </div>
+
+      {/* ── What Changes Our View (V2.0 — Section 11) ── */}
+      {answer.watchCatalysts && answer.watchCatalysts.length > 0 && (
+        <WatchCatalysts catalysts={answer.watchCatalysts} />
+      )}
 
       {/* ── Collapsible: full analysis ── */}
       <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
@@ -590,6 +961,7 @@ export default function SmartDiscovery() {
   const stepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const askMutation = trpc.smartDiscovery.ask.useMutation();
+  const logMutation = trpc.smartDiscovery.logRecommendation.useMutation();
 
   // Focus input on mount
   useEffect(() => {
@@ -611,7 +983,7 @@ export default function SmartDiscovery() {
         }
         return prev + 1;
       });
-    }, 600);
+    }, 500);
   }, []);
 
   const stopExecutionSequence = useCallback(() => {
@@ -669,9 +1041,22 @@ export default function SmartDiscovery() {
         answer: answer as FaultlineAnswer,
       };
       setConversation(prev => [...prev, assistantMsg]);
+
+      // Log to Decision Ledger (fire-and-forget, only for logged-in users)
+      if (user && answer.ticker) {
+        logMutation.mutate({
+          ticker: answer.ticker,
+          assetType: answer.assetType as "stock" | "crypto" | null,
+          verdict: answer.verdict,
+          opportunityScore: answer.opportunityScore,
+          confidence: answer.confidence,
+          primaryDriver: answer.primaryDriver ?? "",
+          expectedTimeframe: answer.expectedTimeframe ?? "",
+          queryType: answer.queryType ?? "general",
+        });
+      }
     } catch (err: unknown) {
       stopExecutionSequence();
-      // Provide actionable diagnostic messages instead of the generic catch-all
       let errorMsg = "FAULTLINE encountered an error. Please try again.";
       if (err && typeof err === "object") {
         const e = err as { message?: string; data?: { code?: string; httpStatus?: number } };
@@ -695,7 +1080,7 @@ export default function SmartDiscovery() {
     } finally {
       setIsExecuting(false);
     }
-  }, [query, isExecuting, conversation, contextTicker, askMutation, startExecutionSequence, stopExecutionSequence, setTicker]);
+  }, [query, isExecuting, conversation, contextTicker, askMutation, logMutation, startExecutionSequence, stopExecutionSequence, setTicker, user]);
 
   const handleDeepDive = useCallback((path: string) => {
     navigate(path);
@@ -710,18 +1095,16 @@ export default function SmartDiscovery() {
 
   if (authLoading) {
     return (
-      <AppLayout>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-          <div style={{ ...MONO_SM, color: ACCENT }}>LOADING...</div>
-        </div>
-      </AppLayout>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
+        <div style={{ ...MONO_SM, color: ACCENT }}>LOADING...</div>
+      </div>
     );
   }
 
   const isEmpty = conversation.length === 0 && !isExecuting;
 
   return (
-    <AppLayout>
+    <>
       <style>{`
         @keyframes fl-pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
         @keyframes fl-fade-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
@@ -760,7 +1143,7 @@ export default function SmartDiscovery() {
                 FAULT<span style={{ color: ACCENT }}>LINE</span>
               </div>
               <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", letterSpacing: "0.2em" }}>
-                INSTITUTIONAL INTELLIGENCE
+                INSTITUTIONAL INTELLIGENCE V2.0
               </div>
             </div>
 
@@ -818,6 +1201,32 @@ export default function SmartDiscovery() {
                   </button>
                 ))}
               </div>
+            )}
+
+            {/* Decision Ledger shortcut */}
+            {user && (
+              <button
+                onClick={() => navigate("/app/decision-ledger")}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "8px 16px",
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "5px",
+                  cursor: "pointer",
+                  ...MONO_SM,
+                  color: "rgba(255,255,255,0.3)",
+                  fontSize: "10px",
+                  letterSpacing: "0.1em",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,212,255,0.2)"; e.currentTarget.style.color = ACCENT; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.3)"; }}
+              >
+                <BookOpen size={10} />
+                DECISION LEDGER
+              </button>
             )}
           </div>
         )}
@@ -982,10 +1391,24 @@ export default function SmartDiscovery() {
               >
                 Clear
               </button>
+              <button
+                onClick={() => navigate("/app/decision-ledger")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  ...MONO_SM,
+                  color: "rgba(0,212,255,0.4)",
+                  fontSize: "10px",
+                  padding: 0,
+                }}
+              >
+                Ledger
+              </button>
             </div>
           )}
         </div>
       </div>
-    </AppLayout>
+    </>
   );
 }

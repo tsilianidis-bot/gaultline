@@ -2,31 +2,39 @@
  * FAULTLINE — Smart Discovery™ Backend
  * server/routers/smartDiscovery.ts
  *
- * The FAULTLINE Constitution:
+ * Ask Intelligence V2.0
  *   One Question In → One Institutional Answer Out
- *   Verdict before data. Explain WHY. Show opportunity. Show risk.
- *
- * This router orchestrates all intelligence engines and returns
- * a single unified institutional response. The engines are invisible.
- * Only FAULTLINE exists.
+ *   Evidence first. Opinion second. Explain the WHY.
+ *   Every recommendation answers: What? Why? Evidence? What changes it?
  */
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, publicProcedure } from "../_core/trpc";
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { getQuickOutlook } from "../signalOutlook";
 import { invokeLLM } from "../_core/llm";
 import { resolveIntent } from "../intentResolver";
+import { getDb } from "../db";
+import { decisionLedger, DecisionLedgerEntry } from "../../drizzle/schema";
+import { eq, desc } from "drizzle-orm";
 
 // ── Types ─────────────────────────────────────────────────────
 
+export interface EvidenceScore {
+  category: string;
+  score: number;        // 0–100
+  signal: "bullish" | "bearish" | "neutral";
+  explanation: string;  // one-line
+}
+
 export interface FaultlineAnswer {
   // Core verdict
-  verdict: "STRONG BUY" | "BUY" | "WAIT" | "HOLD" | "REDUCE" | "STRONG REDUCE" | "AVOID" | "MACRO ANSWER";
+  verdict: "STRONG BUY" | "BUY" | "ACCUMULATE" | "WAIT" | "HOLD" | "REDUCE" | "STRONG REDUCE" | "SELL" | "HIGH RISK" | "LOW CONVICTION" | "MACRO ANSWER";
   verdictColor: "green" | "yellow" | "red" | "blue";
   opportunityScore: number;       // 0–100
   confidence: number;             // 0–100
   confidenceLabel: string;        // "HIGH" | "MODERATE" | "LOW"
+  confidenceReasons: string[];    // 3-5 specific reasons for the confidence level
 
   // Context
   ticker: string | null;
@@ -36,13 +44,33 @@ export interface FaultlineAnswer {
   regimeColor: "green" | "yellow" | "red";
   dataFreshness: string;
 
+  // Primary Driver (Section 5)
+  primaryDriver: string;          // One sentence — the single most important factor
+
   // The answer
-  executiveSummary: string;       // 2-3 sentences — the strategist's opening statement
+  executiveSummary: string;       // 2 sentences — the strategist's opening statement
   whyThisVerdict: string;         // The reasoning chain
+
+  // Bull / Bear with probabilities (Sections 7-8)
   bullCase: string;
+  bullProbability: number;        // 0–100
+  bullKeyDrivers: string[];       // 2-3 items
   bearCase: string;
+  bearProbability: number;        // 0–100
+  bearKeyDrivers: string[];       // 2-3 items
+
   catalysts: string[];
   threats: string[];
+
+  // Evidence Engine (Section 6) — 14 categories
+  evidenceScores: EvidenceScore[];
+
+  // Why Not Buy/Sell (Section 10) — populated when verdict is WAIT/HOLD
+  whyNotBuy: string[] | null;
+  whyNotSell: string[] | null;
+
+  // What Changes Our View (Section 11)
+  watchCatalysts: string[];       // 4-6 specific catalysts that would change the recommendation
 
   // Levels (null for macro questions)
   support: string | null;
@@ -109,6 +137,7 @@ function buildDeepDiveLinks(ticker: string | null, assetType: "stock" | "crypto"
   }
   links.push({ label: "Opportunity Radar", path: "/app/opportunities", description: "Top-ranked opportunities by conviction score" });
   links.push({ label: "Market Stress", path: "/app/pressure", description: "Macro risk and pressure indicators" });
+  links.push({ label: "Decision Ledger", path: "/app/decision-ledger", description: "Track recommendation history and accuracy" });
   if (queryType === "portfolio") {
     links.push({ label: "Portfolio Command", path: "/app/portfolio", description: "Portfolio tracking and institutional guidance" });
   }
@@ -145,6 +174,12 @@ async function orchestrateAnswer(
   const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
   const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
 
+  // Extract FMOS evidence families for context
+  const evidenceFamilies = fmos?.evidence?.families ?? [];
+  const evidenceContext = evidenceFamilies.length > 0
+    ? `\nEvidence Families:\n${evidenceFamilies.map(f => `  ${f.label}: ${f.signal} (strength: ${f.strength}/100)`).join("\n")}`
+    : "";
+
   const outlookSummary = outlookData ? `
 Symbol: ${ticker}
 Direction: ${outlookData.direction}
@@ -161,54 +196,84 @@ Data Status: ${outlookData.dataStatus}
   const systemPrompt = `You are FAULTLINE — an elite institutional market intelligence system.
 You are a Chief Investment Strategist, NOT a chatbot.
 
-TONE RULES (strict):
-- Be direct. Lead with the verdict. Never bury the conclusion.
-- executiveSummary: EXACTLY 2 sentences. First sentence = verdict + primary reason. Second sentence = key risk.
-- whyThisVerdict: EXACTLY 3 sentences. Each sentence = one distinct signal/reason.
+WRITING STYLE (strict):
+- Evidence first. Opinion second.
+- Lead with the verdict. Never bury the conclusion.
+- Write like a CIO briefing an institutional investment committee.
+- Never use: "navigate", "landscape", "nuanced", "holistic", "multifaceted", "could", "may", "possibly", "potentially"
+- Never start with "It is important to note that"
+- Use declarative statements: "Liquidity supports risk assets." not "Liquidity may support risk assets."
+
+FIELD RULES:
+- primaryDriver: ONE sentence. The single most important factor driving the recommendation.
+- executiveSummary: EXACTLY 2 sentences. First = verdict + primary reason. Second = key risk.
+- whyThisVerdict: EXACTLY 3 sentences. Each sentence = one distinct signal.
 - bullCase / bearCase: EXACTLY 2 sentences each.
-- catalysts / threats: EXACTLY 3 items each. One clause per item. No sub-bullets.
-- suggestedAction: ONE sentence. Start with a verb. Include a specific price or condition if possible.
-- invalidation: ONE sentence. Start with "Thesis fails if..."
-- whatChangesThesis: ONE sentence.
-- Never use the word "navigate", "landscape", "nuanced", "holistic", or "multifaceted".
-- Never start a sentence with "It is important to note that".
+- bullKeyDrivers / bearKeyDrivers: EXACTLY 3 items each. One clause per item.
+- catalysts / threats: EXACTLY 3 items each.
+- confidenceReasons: EXACTLY 3-4 items explaining WHY the confidence is at this level.
+- evidenceScores: EXACTLY 14 items covering all required categories. Each score 0-100, one-line explanation.
+- whyNotBuy: If verdict is WAIT/HOLD, provide 3 specific reasons why BUY was rejected. Otherwise null.
+- whyNotSell: If verdict is WAIT/HOLD, provide 3 specific reasons why SELL was rejected. Otherwise null.
+- watchCatalysts: EXACTLY 4-5 specific events/data points that would change the recommendation.
+- invalidation: ONE sentence starting with "Thesis fails if..."
+- suggestedAction: ONE sentence starting with a verb.
+- Dynamic invalidation only — never hardcode prices. Use conditions like "breaks below moving average", "ETF outflows exceed threshold", "credit spreads widen beyond X bps".
 
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
-${fmos ? `Action Bias: ${fmos.decision.actionBias}\nDecision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%` : ""}
+${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
+${evidenceContext}
 ${outlookSummary}`;
 
   const userPrompt = `${conversationContext}
 User question: "${query}"
 ${ticker ? `Security in focus: ${ticker} (${assetType})` : ""}
 
-Respond with a JSON object matching this exact schema:
+Respond with a JSON object matching this exact schema. Every field is required.
+
+The 14 evidenceScores categories MUST be exactly:
+"Macro Environment", "Liquidity", "Momentum", "Volatility", "Market Breadth",
+"Institutional Positioning", "Historical Analog", "Sentiment", "ETF Flows",
+"Dollar Index", "Treasury Yields", "Credit Markets", "Stablecoin Growth", "On-chain Activity"
+
+For non-crypto assets, set "Stablecoin Growth" and "On-chain Activity" to neutral with score 50 and note "Not applicable for this asset class."
+
+JSON schema:
 {
-  "verdict": "STRONG BUY" | "BUY" | "WAIT" | "HOLD" | "REDUCE" | "STRONG REDUCE" | "AVOID" | "MACRO ANSWER",
+  "verdict": "STRONG BUY" | "BUY" | "ACCUMULATE" | "WAIT" | "HOLD" | "REDUCE" | "STRONG REDUCE" | "SELL" | "HIGH RISK" | "LOW CONVICTION" | "MACRO ANSWER",
   "verdictColor": "green" | "yellow" | "red" | "blue",
   "opportunityScore": number (0-100),
   "confidence": number (0-100),
   "confidenceLabel": "HIGH" | "MODERATE" | "LOW",
+  "confidenceReasons": string[] (3-4 specific reasons for this confidence level),
   "currentRegime": string (one sentence describing the current market regime),
   "dataFreshness": string (e.g. "Live — updated 2 min ago"),
-  "executiveSummary": string (2-3 sentences — the strategist's opening statement, written like a CIO briefing a portfolio manager),
-  "whyThisVerdict": string (the reasoning chain — what signals, what regime context, what institutional behavior supports this verdict),
-  "bullCase": string (the strongest argument FOR this security/thesis),
-  "bearCase": string (the strongest argument AGAINST — be honest),
-  "catalysts": string[] (3-5 specific near-term catalysts),
-  "threats": string[] (3-5 specific near-term threats),
-  "support": string | null (key support level, null for macro questions),
-  "resistance": string | null (key resistance level, null for macro questions),
-  "entryZone": string | null (ideal entry zone, null for macro questions),
-  "profitTargets": string[] (1-3 specific price targets, empty for macro),
-  "stopLevel": string | null (stop loss level, null for macro questions),
-  "invalidation": string (what specific development would invalidate this thesis),
-  "expectedTimeframe": string (e.g. "2-4 weeks", "1-3 months"),
-  "suggestedAction": string (one clear, specific action sentence),
-  "positionSizeGuidance": string | null (e.g. "2-3% of portfolio" or null if not applicable),
-  "whatChangesThesis": string (what specific data, event, or price action would change this recommendation)
-}
-
-Write like a Chief Investment Strategist briefing an institutional client. Be specific. Be direct. Explain the WHY. Never be vague.`;
+  "primaryDriver": string (one sentence — the single most important factor),
+  "executiveSummary": string (2 sentences — CIO briefing style),
+  "whyThisVerdict": string (3 sentences, each a distinct signal),
+  "bullCase": string (2 sentences — strongest argument FOR),
+  "bullProbability": number (0-100),
+  "bullKeyDrivers": string[] (exactly 3 items),
+  "bearCase": string (2 sentences — strongest argument AGAINST),
+  "bearProbability": number (0-100),
+  "bearKeyDrivers": string[] (exactly 3 items),
+  "catalysts": string[] (exactly 3 near-term catalysts),
+  "threats": string[] (exactly 3 near-term threats),
+  "evidenceScores": Array of { "category": string, "score": number (0-100), "signal": "bullish"|"bearish"|"neutral", "explanation": string (one line) },
+  "whyNotBuy": string[] | null (3 reasons BUY was rejected if WAIT/HOLD, else null),
+  "whyNotSell": string[] | null (3 reasons SELL was rejected if WAIT/HOLD, else null),
+  "watchCatalysts": string[] (4-5 specific events that would change the recommendation),
+  "support": string | null,
+  "resistance": string | null,
+  "entryZone": string | null,
+  "profitTargets": string[],
+  "stopLevel": string | null,
+  "invalidation": string (dynamic condition, starts with "Thesis fails if..."),
+  "expectedTimeframe": string,
+  "suggestedAction": string (one sentence starting with a verb),
+  "positionSizeGuidance": string | null,
+  "whatChangesThesis": string
+}`;
 
   const llmResponse = await invokeLLM({
     messages: [
@@ -218,7 +283,7 @@ Write like a Chief Investment Strategist briefing an institutional client. Be sp
     response_format: {
       type: "json_schema",
       json_schema: {
-        name: "faultline_answer",
+        name: "faultline_answer_v2",
         strict: true,
         schema: {
           type: "object",
@@ -228,14 +293,37 @@ Write like a Chief Investment Strategist briefing an institutional client. Be sp
             opportunityScore: { type: "number" },
             confidence: { type: "number" },
             confidenceLabel: { type: "string" },
+            confidenceReasons: { type: "array", items: { type: "string" } },
             currentRegime: { type: "string" },
             dataFreshness: { type: "string" },
+            primaryDriver: { type: "string" },
             executiveSummary: { type: "string" },
             whyThisVerdict: { type: "string" },
             bullCase: { type: "string" },
+            bullProbability: { type: "number" },
+            bullKeyDrivers: { type: "array", items: { type: "string" } },
             bearCase: { type: "string" },
+            bearProbability: { type: "number" },
+            bearKeyDrivers: { type: "array", items: { type: "string" } },
             catalysts: { type: "array", items: { type: "string" } },
             threats: { type: "array", items: { type: "string" } },
+            evidenceScores: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  category: { type: "string" },
+                  score: { type: "number" },
+                  signal: { type: "string" },
+                  explanation: { type: "string" },
+                },
+                required: ["category", "score", "signal", "explanation"],
+                additionalProperties: false,
+              },
+            },
+            whyNotBuy: { type: ["array", "null"], items: { type: "string" } },
+            whyNotSell: { type: ["array", "null"], items: { type: "string" } },
+            watchCatalysts: { type: "array", items: { type: "string" } },
             support: { type: ["string", "null"] },
             resistance: { type: ["string", "null"] },
             entryZone: { type: ["string", "null"] },
@@ -249,8 +337,12 @@ Write like a Chief Investment Strategist briefing an institutional client. Be sp
           },
           required: [
             "verdict","verdictColor","opportunityScore","confidence","confidenceLabel",
-            "currentRegime","dataFreshness","executiveSummary","whyThisVerdict",
-            "bullCase","bearCase","catalysts","threats",
+            "confidenceReasons","currentRegime","dataFreshness","primaryDriver",
+            "executiveSummary","whyThisVerdict",
+            "bullCase","bullProbability","bullKeyDrivers",
+            "bearCase","bearProbability","bearKeyDrivers",
+            "catalysts","threats","evidenceScores",
+            "whyNotBuy","whyNotSell","watchCatalysts",
             "support","resistance","entryZone","profitTargets","stopLevel",
             "invalidation","expectedTimeframe","suggestedAction","positionSizeGuidance","whatChangesThesis"
           ],
@@ -314,4 +406,130 @@ export const smartDiscoveryRouter = router({
       );
       return answer;
     }),
+
+  /**
+   * Log a recommendation to the Decision Ledger.
+   * Called automatically after each Ask response.
+   */
+  logRecommendation: protectedProcedure
+    .input(z.object({
+      ticker: z.string().nullable(),
+      assetType: z.enum(["stock", "crypto"]).nullable(),
+      verdict: z.string(),
+      opportunityScore: z.number(),
+      confidence: z.number(),
+      primaryDriver: z.string(),
+      expectedTimeframe: z.string(),
+      queryType: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: true };
+      await db.insert(decisionLedger).values({
+        userId: ctx.user.id,
+        ticker: input.ticker,
+        assetType: input.assetType,
+        verdict: input.verdict,
+        opportunityScore: input.opportunityScore,
+        confidence: input.confidence,
+        primaryDriver: input.primaryDriver,
+        expectedTimeframe: input.expectedTimeframe,
+        queryType: input.queryType,
+        outcome: "pending",
+      });
+      return { success: true };
+    }),
+
+  /**
+   * Get Decision Ledger entries for the current user.
+   */
+  getLedger: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(200).default(50) }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const entries = await db
+        .select()
+        .from(decisionLedger)
+        .where(eq(decisionLedger.userId, ctx.user.id))
+        .orderBy(desc(decisionLedger.createdAt))
+        .limit(input.limit);
+      return entries;
+    }),
+
+  /**
+   * Update the outcome of a Decision Ledger entry.
+   */
+  updateOutcome: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      outcome: z.enum(["correct", "incorrect", "pending"]),
+      notes: z.string().max(500).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { success: true };
+      await db
+        .update(decisionLedger)
+        .set({
+          outcome: input.outcome,
+          notes: input.notes ?? null,
+          resolvedAt: new Date(),
+        })
+        .where(eq(decisionLedger.id, input.id));
+      return { success: true };
+    }),
+
+  /**
+   * Get Decision Ledger stats (win rate, accuracy by asset class, etc.)
+   */
+  getLedgerStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { total: 0, resolved: 0, pending: 0, correct: 0, incorrect: 0, winRate: null, byAsset: [], byVerdict: [] };
+    const entries = await db
+      .select()
+      .from(decisionLedger)
+      .where(eq(decisionLedger.userId, ctx.user.id));
+
+    const resolved = entries.filter((e: DecisionLedgerEntry) => e.outcome !== "pending");
+    const correct = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "correct");
+    const winRate = resolved.length > 0 ? Math.round((correct.length / resolved.length) * 100) : null;
+
+    // Accuracy by asset class
+    const byAsset: Record<string, { correct: number; total: number }> = {};
+    for (const e of resolved) {
+      const key = e.assetType ?? "macro";
+      if (!byAsset[key]) byAsset[key] = { correct: 0, total: 0 };
+      byAsset[key].total++;
+      if (e.outcome === "correct") byAsset[key].correct++;
+    }
+
+    // Accuracy by verdict
+    const byVerdict: Record<string, { correct: number; total: number }> = {};
+    for (const e of resolved) {
+      const key = e.verdict;
+      if (!byVerdict[key]) byVerdict[key] = { correct: 0, total: 0 };
+      byVerdict[key].total++;
+      if (e.outcome === "correct") byVerdict[key].correct++;
+    }
+
+    return {
+      total: entries.length,
+      resolved: resolved.length,
+      pending: entries.filter((e: DecisionLedgerEntry) => e.outcome === "pending").length,
+      correct: correct.length,
+      incorrect: resolved.filter((e: DecisionLedgerEntry) => e.outcome === "incorrect").length,
+      winRate,
+      byAsset: Object.entries(byAsset).map(([asset, stats]) => ({
+        asset,
+        accuracy: Math.round((stats.correct / stats.total) * 100),
+        total: stats.total,
+      })),
+      byVerdict: Object.entries(byVerdict).map(([verdict, stats]) => ({
+        verdict,
+        accuracy: Math.round((stats.correct / stats.total) * 100),
+        total: stats.total,
+      })),
+    };
+  }),
 });

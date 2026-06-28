@@ -4,7 +4,6 @@
    Situation Room preflight + Signal Outlook + Day Trade setup + AI Analysis
    ============================================================ */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import AppLayout from "@/components/AppLayout";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useSearch } from "wouter";
 import { TickerContext } from "@/components/TickerContext";
@@ -612,7 +611,7 @@ export default function UniversalSymbolIntelligence() {
   const QUICK_CRYPTO = ["BTC", "ETH", "SOL", "TAO", "ONDO", "DOGE", "LINK"];
 
   return (
-    <AppLayout>
+    <>
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
@@ -867,6 +866,6 @@ export default function UniversalSymbolIntelligence() {
           </div>
         )}
       </div>
-    </AppLayout>
+    </>
   );
 }
