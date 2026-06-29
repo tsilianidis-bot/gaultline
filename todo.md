@@ -2984,3 +2984,24 @@
 - [x] Build PipelineHealthTab: per-provider status grid (LIVE/DEGRADED/DOWN), failure event log, auto-refresh
 - [x] Add auto-recovery polling loop: 30s countdown, fires dt-auto-recovery event, stops when live returns
 - [x] Add recovery countdown banner: shown when source !== live, seamlessly disappears when live resumes
+
+## Phase 7 — Intelligence Validation Center
+- [x] Schema migration: 8 new fields on decision_ledger (sector, recommendationType, engineSource, returnPct, drawdownPct, timeToTargetHours, regimeAtTime, marketCapCategory)
+- [x] Schema migration: create improvement_lessons table
+- [x] Schema migration: create ai_improvement_reports table
+- [x] Server: intelligenceValidation tRPC router with validationStats, breakdownByAssetClass, breakdownBySector, breakdownByRecommendationType, engineScorecards, confidenceCalibration, performanceOverTime, marketRegimeAnalysis, symbolLeaderboard, getImprovementLessons, getAiImprovementReports procedures
+- [x] Server: LLM lesson extraction on each resolved ledger entry (decisionLedgerEvaluator.ts)
+- [x] Server: weekly AI improvement report heartbeat handler + cron task
+- [x] Frontend: IntelligenceValidation.tsx page (14-part institutional dashboard)
+- [x] Frontend: Add Intelligence Validation to sidebar nav (AppLayout.tsx)
+- [x] Frontend: Add /app/intelligence-validation route (App.tsx)
+- [x] Tests: intelligenceValidation.test.ts — 25/25 passing
+
+## Decision First UX
+- [x] Detect broad/discovery queries in Ask FAULTLINE (e.g. "best opportunities", "what should I buy", "top picks")
+- [x] Return ranked opportunity list (Top 5 or Top 10) as first response for broad queries
+- [x] Each opportunity card shows: rank, ticker, asset class, recommendation, opportunity score, confidence
+- [x] Tapping/clicking an opportunity card triggers full institutional intelligence report for that asset
+- [x] Preserve existing single-asset query flow (no change when user asks about specific ticker)
+- [x] Mobile responsive opportunity list cards (flex/wrap layouts, auto-fill grids)
+- [x] Audit: Decision First philosophy applied across SmartDiscovery (OpportunityRankingCard + FullMarketBriefingCard)

@@ -110,6 +110,7 @@ const UniversalSymbolIntelligence = lazy(() => import("./pages/UniversalSymbolIn
 const Glossary = lazy(() => import("./pages/Glossary"));
 const ValidationLab = lazy(() => import("./pages/ValidationLab"));
 const FmosHealthDashboard = lazy(() => import("./pages/FmosHealthDashboard"));
+const IntelligenceValidation = lazy(() => import("./pages/IntelligenceValidation"));
 const ChatInbox = lazy(() => import("./pages/admin/ChatInbox"));
 const AdminPublishing  = lazy(() => import('./pages/AdminPublishing'));
 const DailyBriefArchive = lazy(() => import('./pages/DailyBriefArchive'));
@@ -468,6 +469,7 @@ function Router() {
               <Route path="/app/stock-heatmap" component={StockHeatmap} />
               <Route path="/app/sim-portfolio" component={SimPortfolio} />
               <Route path="/app/validation-lab" component={ValidationLab} />
+              <Route path="/app/intelligence-validation" component={IntelligenceValidation} />
               <Route path="/app/fmos-health" component={FmosHealthDashboard} />
               <Route path="/owner/simulation" component={OwnerSimulation} />
               <Route component={NotFound} />

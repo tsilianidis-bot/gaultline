@@ -1109,10 +1109,11 @@ const BIAS_COLORS: Record<string, string> = {
   neutral: "#FFD700",
 };
 
-function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive }: {
+function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive, onSelectAsset }: {
   answer: OpportunityRankingAnswer;
   onAskFollowUp: (prompt: string) => void;
   onDeepDive: (path: string) => void;
+  onSelectAsset: (ticker: string, name: string, assetType: "stock" | "crypto") => void;
 }) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [showSectors, setShowSectors] = useState(false);
@@ -1170,9 +1171,12 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive }: {
 
       {/* ── Ranked Opportunities ── */}
       <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
-        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
           <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: "0.12em" }}>RANKED OPPORTUNITIES</span>
-          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "10px" }}>{answer.topOpportunities.length} assets scored</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "10px", color: "rgba(255,255,255,0.3)", fontStyle: "italic" }}>Tap any asset for full institutional report →</span>
+            <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "10px" }}>{answer.topOpportunities.length} assets scored</span>
+          </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {answer.topOpportunities.map((opp, i) => {
@@ -1235,6 +1239,29 @@ function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive }: {
                 {/* Expanded detail */}
                 {isExpanded && (
                   <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {/* Decision First: Full Report CTA */}
+                    <button
+                      onClick={() => onSelectAsset(opp.ticker, opp.name, opp.assetType)}
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                        padding: "10px 16px",
+                        background: `${ac.bg}`,
+                        border: `1px solid ${ac.border}`,
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        color: ac.text,
+                        letterSpacing: "0.06em",
+                        transition: "all 0.15s ease",
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.opacity = "0.85"; }}
+                      onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}
+                    >
+                      <span>OPEN FULL INSTITUTIONAL REPORT FOR {opp.ticker}</span>
+                      <ExternalLink size={11} />
+                    </button>
 
                     {/* Thesis */}
                     <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: `1px solid ${BORDER}`, borderRadius: "6px" }}>
@@ -1456,7 +1483,7 @@ function UserBubble({ content }: { content: string }) {
 // ── Suggested Questions ───────────────────────────────────────
 
 // ── V3.0 Full Market Briefing Renderer ──────────────────────
-function FullMarketBriefingCard({ brief, onAskFollowUp }: { brief: BriefAnswer; onAskFollowUp: (prompt: string) => void }) {
+function FullMarketBriefingCard({ brief, onAskFollowUp, onSelectAsset }: { brief: BriefAnswer; onAskFollowUp: (prompt: string) => void; onSelectAsset?: (ticker: string, name: string, assetType: "stock" | "crypto") => void }) {
   const followUps = [
     "What are the best trades for this regime?",
     "How should I position my portfolio today?",
@@ -1516,22 +1543,41 @@ function FullMarketBriefingCard({ brief, onAskFollowUp }: { brief: BriefAnswer; 
         </div>
       )}
 
-      {/* Top Opportunities */}
+      {/* Top Opportunities — Decision First: each item is clickable */}
       {brief.topOpportunities.length > 0 && (
         <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: '8px', overflow: 'hidden' }}>
-          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${BORDER}` }}>
+          <div style={{ padding: '10px 14px', borderBottom: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', fontSize: '10px' }}>TOP OPPORTUNITIES</span>
+            {onSelectAsset && <span style={{ fontFamily: "'Inter', sans-serif", fontSize: '10px', color: 'rgba(255,255,255,0.25)', fontStyle: 'italic' }}>Tap for full report →</span>}
           </div>
           <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {brief.topOpportunities.map((opp, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '5px' }}>
-                <span style={{ ...MONO, fontSize: '12px', fontWeight: 700, color: '#00FF88', minWidth: '60px' }}>{opp.ticker}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{opp.primaryDriver}</div>
-                  <div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginTop: '2px' }}>{opp.suggestedAction} · {opp.timeHorizon}</div>
+              onSelectAsset ? (
+                <button
+                  key={i}
+                  onClick={() => onSelectAsset(opp.ticker, opp.ticker, 'stock')}
+                  style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '5px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.12s ease', width: '100%' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,255,136,0.09)'; e.currentTarget.style.borderColor = 'rgba(0,255,136,0.25)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,255,136,0.04)'; e.currentTarget.style.borderColor = 'rgba(0,255,136,0.1)'; }}
+                >
+                  <span style={{ ...MONO, fontSize: '12px', fontWeight: 700, color: '#00FF88', minWidth: '60px' }}>{opp.ticker}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{opp.primaryDriver}</div>
+                    <div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginTop: '2px' }}>{opp.suggestedAction} · {opp.timeHorizon}</div>
+                  </div>
+                  <div style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: '#00FF88' }}>{opp.opportunityScore}</div>
+                  <ExternalLink size={10} style={{ color: 'rgba(0,255,136,0.4)', flexShrink: 0 }} />
+                </button>
+              ) : (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '5px' }}>
+                  <span style={{ ...MONO, fontSize: '12px', fontWeight: 700, color: '#00FF88', minWidth: '60px' }}>{opp.ticker}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.4 }}>{opp.primaryDriver}</div>
+                    <div style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', marginTop: '2px' }}>{opp.suggestedAction} · {opp.timeHorizon}</div>
+                  </div>
+                  <div style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: '#00FF88' }}>{opp.opportunityScore}</div>
                 </div>
-                <div style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: '#00FF88' }}>{opp.opportunityScore}</div>
-              </div>
+              )
             ))}
           </div>
         </div>
@@ -2022,6 +2068,13 @@ export default function SmartDiscovery() {
     navigate(path);
   }, [navigate]);
 
+  // Decision First: selecting an asset from the ranked list sets global ticker context
+  // and navigates to Symbol Intelligence for the full institutional report.
+  const handleSelectAsset = useCallback((ticker: string, name: string, assetType: "stock" | "crypto") => {
+    setTicker(ticker, name, assetType);
+    navigate("/app/symbol-intelligence");
+  }, [navigate, setTicker]);
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -2225,7 +2278,7 @@ export default function SmartDiscovery() {
                   <UserBubble content={msg.content} />
                 ) : msg.briefAnswer ? (
                   <div className="fl-answer">
-                    <FullMarketBriefingCard brief={msg.briefAnswer} onAskFollowUp={(prompt) => void handleSubmit(prompt)} />
+                    <FullMarketBriefingCard brief={msg.briefAnswer} onAskFollowUp={(prompt) => void handleSubmit(prompt)} onSelectAsset={handleSelectAsset} />
                   </div>
                 ) : msg.opportunityAnswer ? (
                   <div className="fl-answer">
@@ -2233,6 +2286,7 @@ export default function SmartDiscovery() {
                       answer={msg.opportunityAnswer}
                       onAskFollowUp={(prompt) => void handleSubmit(prompt)}
                       onDeepDive={handleDeepDive}
+                      onSelectAsset={handleSelectAsset}
                     />
                   </div>
                 ) : msg.answer ? (

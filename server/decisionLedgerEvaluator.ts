@@ -33,6 +33,7 @@ import { invokeLLM } from "./_core/llm";
 import { getDb } from "./db";
 import { decisionLedger } from "../drizzle/schema";
 import { eq, and, isNull, lt } from "drizzle-orm";
+import { extractLessonForEntry } from "./lessonExtractor";
 
 // ── Timeframe parsing ─────────────────────────────────────────────────────────
 
@@ -439,6 +440,29 @@ export async function evaluateExpiredEntries(): Promise<{
 
       results.push({ id: entry.id, outcome: result.outcome, ticker: entry.ticker });
       evaluated++;
+
+      // Extract improvement lesson for this resolved entry (non-fatal)
+      extractLessonForEntry({
+        id: entry.id,
+        userId: entry.userId,
+        ticker: entry.ticker,
+        assetType: entry.assetType,
+        verdict: entry.verdict,
+        opportunityScore: entry.opportunityScore,
+        confidence: entry.confidence,
+        primaryDriver: entry.primaryDriver,
+        expectedTimeframe: entry.expectedTimeframe,
+        outcome: result.outcome,
+        evaluationNotes: result.evaluationNotes,
+        notes: entry.notes,
+        priceAtEntry: entry.priceAtEntry,
+        priceAtResolution: result.priceAtResolution,
+        elapsedMs: result.elapsedMs ?? null,
+        engineSource: entry.engineSource ?? null,
+        regimeAtTime: entry.regimeAtTime ?? null,
+        sector: entry.sector ?? null,
+        returnPct: entry.returnPct ?? null,
+      }).catch(err => console.error(`[LedgerEval] Lesson extraction failed for ${entry.id}:`, err));
 
       // Small delay between entries to avoid rate-limiting price APIs
       await new Promise(r => setTimeout(r, 300));

@@ -86,6 +86,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "report",       label: "Daily Briefing", shortLabel: "Briefing",  icon: FileText,   path: "/app/report" },
       { id: "track-record",  label: "Track Record",   shortLabel: "Track Rec", icon: Trophy,        path: "/app/track-record" },
       { id: "validation-lab", label: "Validation Lab", shortLabel: "Val. Lab",  icon: FlaskConical,  path: "/app/validation-lab" },
+      { id: "intelligence-validation", label: "Intelligence Validation", shortLabel: "Intel Val.", icon: Brain, path: "/app/intelligence-validation" },
       { id: "fmos-health",     label: "FMOS Health",     shortLabel: "FMOS",      icon: Shield,        path: "/app/fmos-health" },
       { id: "guide",          label: "Guide",          shortLabel: "Guide",     icon: BookOpen,      path: "/app/guide" },
       { id: "account",      label: "Account",        shortLabel: "Account",   icon: User,       path: "/app/account" },
