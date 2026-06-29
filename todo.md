@@ -2947,3 +2947,27 @@
 - [x] MEDIUM: Fix MarketingSite mobile nav CTA copy (Founder access $49/mo, not $299 one-time)
 - [x] MEDIUM: Add disclaimer instruction to both AI system prompts in smartDiscovery router
 - [x] MEDIUM: Add DisclaimerBanner to SocialIntelligence page
+
+## Automated Decision Ledger Evaluation Engine (Jun 29, 2026)
+
+- [x] Schema migration: added partially_correct, still_active outcome states
+- [x] Schema migration: added priceAtEntry, priceAtResolution, elapsedTimeframe, evaluationNotes, autoEvaluated, evaluatedAt fields
+- [x] Built decisionLedgerEvaluator.ts: conservative LLM-assisted scoring engine
+- [x] Timeframe parsing: converts "1 week", "3 days", "1 month" etc. to milliseconds
+- [x] Price fetching: Yahoo Finance for stocks, CoinGecko for crypto
+- [x] Conservative scoring: correct (>50% of expected move), partially_correct (>20%), still_active (timeframe not yet expired), incorrect (stop hit or <20% move)
+- [x] Falls back to still_active when data is ambiguous or unavailable
+- [x] Built scheduledLedgerEvaluation.ts: heartbeat handler for /api/scheduled/ledger-evaluation
+- [x] Registered heartbeat cron: every 6 hours (task_uid: nwcwWWNrM9YMRTQwLkgBQ8)
+- [x] logRecommendation: captures priceAtEntry at time of logging (non-fatal if price fetch fails)
+- [x] updateOutcome: supports all 5 outcome states; marks autoEvaluated=false on manual override
+- [x] getLedgerStats: win rate uses partially_correct = 0.5 points; returns partiallyCorrect + stillActive counts
+- [x] DecisionLedger frontend: LedgerEntry type updated with all new fields
+- [x] DecisionLedger frontend: Auto/Manual badge (Zap vs User icon)
+- [x] DecisionLedger frontend: Price-at-entry → price-at-resolution with % move display
+- [x] DecisionLedger frontend: Elapsed timeframe display
+- [x] DecisionLedger frontend: Auto-evaluation notes section (cyan border, Zap icon)
+- [x] DecisionLedger frontend: PARTIAL and STILL ACTIVE outcome buttons added
+- [x] DecisionLedger frontend: Filter tabs include partially_correct and still_active
+- [x] DecisionLedger frontend: Stats row includes PARTIAL and ACTIVE stat cards
+- [x] DecisionLedger frontend: "Your manual override always takes precedence" disclaimer

@@ -27,6 +27,7 @@ import { handleScheduledDailySnapshot } from "../scheduledDailySnapshot";
 import { handleScheduledSimPortfolio } from "../scheduledSimPortfolio";
 import { handleScheduledXPost, handleXNewsMonitor } from "../scheduledXPost";
 import { handleGenerateOrganicContent, handleRefreshSignalPages } from "../organicContentEngine";
+import { handleScheduledLedgerEvaluation } from "../scheduledLedgerEvaluation";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -150,6 +151,7 @@ async function startServer() {
   app.post("/api/scheduled/daily-sim-portfolio", handleScheduledSimPortfolio);
   app.post("/api/scheduled/generate-organic-content", handleGenerateOrganicContent);
   app.post("/api/scheduled/refresh-signal-pages", handleRefreshSignalPages);
+  app.post("/api/scheduled/ledger-evaluation", handleScheduledLedgerEvaluation);
   // Autonomous publishing pipeline
   app.post("/api/scheduled/daily-brief", handleDailyBrief);
   app.post("/api/scheduled/weekly-review", handleWeeklyReview);

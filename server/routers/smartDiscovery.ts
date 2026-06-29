@@ -17,6 +17,8 @@ import { resolveIntent } from "../intentResolver";
 import { getDb } from "../db";
 import { decisionLedger, DecisionLedgerEntry } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
+import { getQuote } from "../yahooProxy";
+import { getCoinMarketData } from "../coingeckoProxy";
 import { scanOpportunities } from "../ownerSimulation";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -697,6 +699,23 @@ export const smartDiscoveryRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return { success: true };
+
+      // Capture price at entry for later auto-evaluation
+      let priceAtEntry: number | null = null;
+      if (input.ticker && input.assetType) {
+        try {
+          if (input.assetType === "crypto") {
+            const data = await getCoinMarketData(input.ticker);
+            priceAtEntry = data?.currentPrice ?? null;
+          } else {
+            const quote = await getQuote(input.ticker);
+            priceAtEntry = quote.price ?? null;
+          }
+        } catch {
+          // Price fetch failure is non-fatal — entry still logged
+        }
+      }
+
       await db.insert(decisionLedger).values({
         userId: ctx.user.id,
         ticker: input.ticker,
@@ -708,6 +727,7 @@ export const smartDiscoveryRouter = router({
         expectedTimeframe: input.expectedTimeframe,
         queryType: input.queryType,
         outcome: "pending",
+        priceAtEntry,
       });
       return { success: true };
     }),
@@ -735,7 +755,7 @@ export const smartDiscoveryRouter = router({
   updateOutcome: protectedProcedure
     .input(z.object({
       id: z.number(),
-      outcome: z.enum(["correct", "incorrect", "pending"]),
+      outcome: z.enum(["correct", "incorrect", "pending", "partially_correct", "still_active"]),
       notes: z.string().max(500).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -746,7 +766,9 @@ export const smartDiscoveryRouter = router({
         .set({
           outcome: input.outcome,
           notes: input.notes ?? null,
-          resolvedAt: new Date(),
+          // Mark as user-driven (not auto-evaluated) when user manually sets outcome
+          autoEvaluated: false,
+          resolvedAt: input.outcome !== "pending" ? new Date() : null,
         })
         .where(eq(decisionLedger.id, input.id));
       return { success: true };
@@ -765,7 +787,11 @@ export const smartDiscoveryRouter = router({
 
     const resolved = entries.filter((e: DecisionLedgerEntry) => e.outcome !== "pending");
     const correct = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "correct");
-    const winRate = resolved.length > 0 ? Math.round((correct.length / resolved.length) * 100) : null;
+    const partiallyCorrect = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "partially_correct");
+    const stillActive = resolved.filter((e: DecisionLedgerEntry) => e.outcome === "still_active");
+    // Win rate: correct = 1pt, partially_correct = 0.5pt, incorrect/still_active = 0pt
+    const winPoints = correct.length + partiallyCorrect.length * 0.5;
+    const winRate = resolved.length > 0 ? Math.round((winPoints / resolved.length) * 100) : null;
 
     // Accuracy by asset class
     const byAsset: Record<string, { correct: number; total: number }> = {};
@@ -790,6 +816,8 @@ export const smartDiscoveryRouter = router({
       resolved: resolved.length,
       pending: entries.filter((e: DecisionLedgerEntry) => e.outcome === "pending").length,
       correct: correct.length,
+      partiallyCorrect: partiallyCorrect.length,
+      stillActive: stillActive.length,
       incorrect: resolved.filter((e: DecisionLedgerEntry) => e.outcome === "incorrect").length,
       winRate,
       byAsset: Object.entries(byAsset).map(([asset, stats]) => ({

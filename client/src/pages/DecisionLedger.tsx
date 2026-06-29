@@ -1,8 +1,8 @@
 /**
  * FAULTLINE — Decision Ledger
  * Tracks every Ask Intelligence recommendation with verdict, confidence,
- * and outcome tracking. Users mark each recommendation correct/incorrect
- * to build an accuracy audit trail.
+ * and outcome tracking. Supports manual user review AND automated evaluation
+ * via the scheduled heartbeat engine.
  */
 import React, { useState } from "react";
 import { useLocation } from "wouter";
@@ -13,7 +13,7 @@ import { useSEO } from "@/hooks/useSEO";
 import {
   CheckCircle, XCircle, Clock, BookOpen, BarChart2,
   TrendingUp, TrendingDown, Activity, ArrowLeft,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, Zap, User, AlertCircle, Minus,
 } from "lucide-react";
 
 // ── Design tokens ─────────────────────────────────────────────
@@ -37,10 +37,17 @@ interface LedgerEntry {
   primaryDriver: string;
   expectedTimeframe: string;
   queryType: string;
-  outcome: "pending" | "correct" | "incorrect";
+  outcome: "pending" | "correct" | "incorrect" | "partially_correct" | "still_active";
   notes: string | null;
   resolvedAt: Date | null;
   createdAt: Date;
+  // New auto-evaluation fields (optional — may not exist on older entries)
+  priceAtEntry?: number | null;
+  priceAtResolution?: number | null;
+  elapsedTimeframe?: string | null;
+  evaluationNotes?: string | null;
+  autoEvaluated?: boolean | null;
+  evaluatedAt?: Date | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -56,24 +63,47 @@ function verdictColor(verdict: string): string {
 function outcomeIcon(outcome: string) {
   if (outcome === "correct") return <CheckCircle size={14} style={{ color: "#00FF88" }} />;
   if (outcome === "incorrect") return <XCircle size={14} style={{ color: "#FF4444" }} />;
+  if (outcome === "partially_correct") return <AlertCircle size={14} style={{ color: "#FFB800" }} />;
+  if (outcome === "still_active") return <Activity size={14} style={{ color: "#00D4FF" }} />;
   return <Clock size={14} style={{ color: "#FFD700" }} />;
 }
 
 function outcomeLabel(outcome: string): string {
   if (outcome === "correct") return "CORRECT";
   if (outcome === "incorrect") return "INCORRECT";
+  if (outcome === "partially_correct") return "PARTIAL";
+  if (outcome === "still_active") return "ACTIVE";
   return "PENDING";
 }
 
 function outcomeColor(outcome: string): string {
   if (outcome === "correct") return "#00FF88";
   if (outcome === "incorrect") return "#FF4444";
+  if (outcome === "partially_correct") return "#FFB800";
+  if (outcome === "still_active") return "#00D4FF";
   return "#FFD700";
 }
 
 function formatDate(date: Date | string): string {
   const d = new Date(date);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatPrice(price: number | null | undefined): string {
+  if (price == null) return "—";
+  if (price >= 1000) return `$${price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (price >= 1) return `$${price.toFixed(2)}`;
+  return `$${price.toFixed(4)}`;
+}
+
+function priceDelta(entry: number | null, resolution: number | null): { pct: string; color: string } | null {
+  if (entry == null || resolution == null || entry === 0) return null;
+  const pct = ((resolution - entry) / entry) * 100;
+  const sign = pct >= 0 ? "+" : "";
+  return {
+    pct: `${sign}${pct.toFixed(2)}%`,
+    color: pct >= 0 ? "#00FF88" : "#FF4444",
+  };
 }
 
 // ── Stats Card ────────────────────────────────────────────────
@@ -101,15 +131,40 @@ function StatCard({ label, value, sub, color }: {
   );
 }
 
+// ── Auto-Evaluation Badge ─────────────────────────────────────
+
+function EvalBadge({ autoEvaluated }: { autoEvaluated: boolean | null }) {
+  if (autoEvaluated == null) return null;
+  return (
+    <span style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "3px",
+      padding: "2px 6px",
+      background: autoEvaluated ? "rgba(0,212,255,0.08)" : "rgba(255,255,255,0.04)",
+      border: `1px solid ${autoEvaluated ? "rgba(0,212,255,0.2)" : "rgba(255,255,255,0.08)"}`,
+      borderRadius: "3px",
+      ...MONO_SM,
+      fontSize: "8px",
+      color: autoEvaluated ? ACCENT : "rgba(255,255,255,0.3)",
+      letterSpacing: "0.1em",
+    }}>
+      {autoEvaluated ? <Zap size={8} /> : <User size={8} />}
+      {autoEvaluated ? "AUTO" : "MANUAL"}
+    </span>
+  );
+}
+
 // ── Ledger Entry Row ──────────────────────────────────────────
 
 function LedgerRow({ entry, onUpdateOutcome }: {
   entry: LedgerEntry;
-  onUpdateOutcome: (id: number, outcome: "correct" | "incorrect" | "pending", notes?: string) => void;
+  onUpdateOutcome: (id: number, outcome: "correct" | "incorrect" | "pending" | "partially_correct" | "still_active", notes?: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [notes, setNotes] = useState(entry.notes ?? "");
   const vc = verdictColor(entry.verdict);
+  const delta = priceDelta(entry.priceAtEntry ?? null, entry.priceAtResolution ?? null);
 
   return (
     <div style={{
@@ -150,6 +205,19 @@ function LedgerRow({ entry, onUpdateOutcome }: {
             <span style={{ ...SANS, fontSize: "14px", fontWeight: 700, color: vc, letterSpacing: "0.06em" }}>
               {entry.verdict}
             </span>
+            {/* Outcome badge */}
+            <span style={{
+              ...MONO_SM, fontSize: "8px",
+              color: outcomeColor(entry.outcome),
+              padding: "1px 5px",
+              background: `${outcomeColor(entry.outcome)}15`,
+              border: `1px solid ${outcomeColor(entry.outcome)}30`,
+              borderRadius: "3px",
+              letterSpacing: "0.1em",
+            }}>
+              {outcomeLabel(entry.outcome)}
+            </span>
+            {entry.autoEvaluated != null && <EvalBadge autoEvaluated={entry.autoEvaluated} />}
             <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>
               {formatDate(entry.createdAt)}
             </span>
@@ -166,8 +234,14 @@ function LedgerRow({ entry, onUpdateOutcome }: {
           </div>
         </div>
 
-        {/* Scores */}
+        {/* Scores + price delta */}
         <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+          {delta && (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "8px" }}>MOVE</div>
+              <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color: delta.color }}>{delta.pct}</div>
+            </div>
+          )}
           <div style={{ textAlign: "center" }}>
             <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "8px" }}>OPP</div>
             <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color: entry.opportunityScore >= 65 ? "#00FF88" : entry.opportunityScore >= 40 ? "#FFD700" : "#FF4444" }}>
@@ -207,12 +281,18 @@ function LedgerRow({ entry, onUpdateOutcome }: {
             </div>
           </div>
 
-          {/* Meta */}
+          {/* Meta row */}
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <div>
               <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>TIMEFRAME</div>
               <div style={{ ...MONO_SM, color: "#F0F4FF", fontSize: "11px" }}>{entry.expectedTimeframe}</div>
             </div>
+            {entry.elapsedTimeframe && (
+              <div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>ELAPSED</div>
+                <div style={{ ...MONO_SM, color: "#F0F4FF", fontSize: "11px" }}>{entry.elapsedTimeframe}</div>
+              </div>
+            )}
             <div>
               <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>ASSET TYPE</div>
               <div style={{ ...MONO_SM, color: "#F0F4FF", fontSize: "11px" }}>{entry.assetType?.toUpperCase() ?? "MACRO"}</div>
@@ -229,13 +309,77 @@ function LedgerRow({ entry, onUpdateOutcome }: {
             )}
           </div>
 
-          {/* Notes */}
+          {/* Price tracking row */}
+          {(entry.priceAtEntry != null || entry.priceAtResolution != null) && (
+            <div style={{
+              display: "flex",
+              gap: "16px",
+              flexWrap: "wrap",
+              padding: "10px 12px",
+              background: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.04)",
+              borderRadius: "5px",
+            }}>
+              <div>
+                <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>PRICE AT ENTRY</div>
+                <div style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: "#F0F4FF" }}>
+                  {formatPrice(entry.priceAtEntry)}
+                </div>
+              </div>
+              {entry.priceAtResolution != null && (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", color: "rgba(255,255,255,0.15)" }}>→</div>
+                  <div>
+                    <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>PRICE AT RESOLUTION</div>
+                    <div style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: "#F0F4FF" }}>
+                      {formatPrice(entry.priceAtResolution)}
+                    </div>
+                  </div>
+                  {delta && (
+                    <div>
+                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px" }}>MOVE</div>
+                      <div style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: delta.color }}>
+                        {delta.pct}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Auto-evaluation notes */}
+          {entry.evaluationNotes && (
+            <div style={{
+              padding: "10px 12px",
+              background: "rgba(0,212,255,0.04)",
+              border: "1px solid rgba(0,212,255,0.12)",
+              borderRadius: "5px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                <Zap size={10} style={{ color: ACCENT }} />
+                <div style={{ ...MONO_SM, color: ACCENT, fontSize: "9px", letterSpacing: "0.1em" }}>
+                  AUTO-EVALUATION NOTES
+                  {entry.evaluatedAt && (
+                    <span style={{ color: "rgba(255,255,255,0.25)", marginLeft: "8px" }}>
+                      {formatDate(entry.evaluatedAt)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>
+                {entry.evaluationNotes}
+              </div>
+            </div>
+          )}
+
+          {/* User notes */}
           <div>
-            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", marginBottom: "4px", fontSize: "9px" }}>NOTES</div>
+            <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", marginBottom: "4px", fontSize: "9px" }}>YOUR NOTES</div>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Add notes about this recommendation..."
+              placeholder="Add your own notes about this recommendation..."
               rows={2}
               style={{
                 width: "100%",
@@ -254,8 +398,8 @@ function LedgerRow({ entry, onUpdateOutcome }: {
           </div>
 
           {/* Outcome buttons */}
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px", letterSpacing: "0.1em" }}>MARK OUTCOME:</span>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "9px", letterSpacing: "0.1em" }}>OVERRIDE:</span>
             <button
               onClick={() => onUpdateOutcome(entry.id, "correct", notes)}
               style={{
@@ -263,16 +407,28 @@ function LedgerRow({ entry, onUpdateOutcome }: {
                 padding: "5px 10px",
                 background: entry.outcome === "correct" ? "rgba(0,255,136,0.15)" : "rgba(0,255,136,0.05)",
                 border: `1px solid ${entry.outcome === "correct" ? "rgba(0,255,136,0.4)" : "rgba(0,255,136,0.15)"}`,
-                borderRadius: "4px",
-                cursor: "pointer",
-                ...MONO_SM,
-                color: "#00FF88",
-                fontSize: "10px",
+                borderRadius: "4px", cursor: "pointer",
+                ...MONO_SM, color: "#00FF88", fontSize: "10px",
                 transition: "all 0.15s ease",
               }}
             >
               <CheckCircle size={10} />
               CORRECT
+            </button>
+            <button
+              onClick={() => onUpdateOutcome(entry.id, "partially_correct", notes)}
+              style={{
+                display: "flex", alignItems: "center", gap: "4px",
+                padding: "5px 10px",
+                background: entry.outcome === "partially_correct" ? "rgba(255,184,0,0.15)" : "rgba(255,184,0,0.05)",
+                border: `1px solid ${entry.outcome === "partially_correct" ? "rgba(255,184,0,0.4)" : "rgba(255,184,0,0.15)"}`,
+                borderRadius: "4px", cursor: "pointer",
+                ...MONO_SM, color: "#FFB800", fontSize: "10px",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <AlertCircle size={10} />
+              PARTIAL
             </button>
             <button
               onClick={() => onUpdateOutcome(entry.id, "incorrect", notes)}
@@ -281,16 +437,28 @@ function LedgerRow({ entry, onUpdateOutcome }: {
                 padding: "5px 10px",
                 background: entry.outcome === "incorrect" ? "rgba(255,68,68,0.15)" : "rgba(255,68,68,0.05)",
                 border: `1px solid ${entry.outcome === "incorrect" ? "rgba(255,68,68,0.4)" : "rgba(255,68,68,0.15)"}`,
-                borderRadius: "4px",
-                cursor: "pointer",
-                ...MONO_SM,
-                color: "#FF4444",
-                fontSize: "10px",
+                borderRadius: "4px", cursor: "pointer",
+                ...MONO_SM, color: "#FF4444", fontSize: "10px",
                 transition: "all 0.15s ease",
               }}
             >
               <XCircle size={10} />
               INCORRECT
+            </button>
+            <button
+              onClick={() => onUpdateOutcome(entry.id, "still_active", notes)}
+              style={{
+                display: "flex", alignItems: "center", gap: "4px",
+                padding: "5px 10px",
+                background: entry.outcome === "still_active" ? "rgba(0,212,255,0.15)" : "rgba(0,212,255,0.05)",
+                border: `1px solid ${entry.outcome === "still_active" ? "rgba(0,212,255,0.4)" : "rgba(0,212,255,0.15)"}`,
+                borderRadius: "4px", cursor: "pointer",
+                ...MONO_SM, color: ACCENT, fontSize: "10px",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <Activity size={10} />
+              STILL ACTIVE
             </button>
             {entry.outcome !== "pending" && (
               <button
@@ -299,16 +467,18 @@ function LedgerRow({ entry, onUpdateOutcome }: {
                   padding: "5px 10px",
                   background: "rgba(255,255,255,0.03)",
                   border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "4px",
-                  cursor: "pointer",
-                  ...MONO_SM,
-                  color: "rgba(255,255,255,0.3)",
-                  fontSize: "10px",
+                  borderRadius: "4px", cursor: "pointer",
+                  ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "10px",
                 }}
               >
                 RESET
               </button>
             )}
+          </div>
+
+          {/* Disclaimer: user always has final say */}
+          <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.2)", lineHeight: 1.5 }}>
+            Auto-evaluation is conservative and informational only. Your manual override always takes precedence.
           </div>
         </div>
       )}
@@ -326,7 +496,7 @@ export default function DecisionLedger() {
 
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
-  const [filter, setFilter] = useState<"all" | "pending" | "correct" | "incorrect">("all");
+  const [filter, setFilter] = useState<"all" | "pending" | "correct" | "incorrect" | "partially_correct" | "still_active">("all");
 
   const { data: entries = [], refetch } = trpc.smartDiscovery.getLedger.useQuery(
     { limit: 200 },
@@ -340,7 +510,7 @@ export default function DecisionLedger() {
     onSuccess: () => void refetch(),
   });
 
-  const handleUpdateOutcome = (id: number, outcome: "correct" | "incorrect" | "pending", notes?: string) => {
+  const handleUpdateOutcome = (id: number, outcome: "correct" | "incorrect" | "pending" | "partially_correct" | "still_active", notes?: string) => {
     updateMutation.mutate({ id, outcome, notes });
   };
 
@@ -399,7 +569,7 @@ export default function DecisionLedger() {
               DECISION LEDGER
             </div>
             <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "10px" }}>
-              Ask Intelligence recommendation history & accuracy tracking
+              Ask Intelligence recommendation history · auto-evaluated every 6h · manual override always wins
             </div>
           </div>
         </div>
@@ -407,7 +577,7 @@ export default function DecisionLedger() {
 
       {/* Stats row */}
       {stats && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px", marginBottom: "20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px", marginBottom: "20px" }}>
           <StatCard label="TOTAL" value={stats.total} sub="recommendations" />
           <StatCard
             label="WIN RATE"
@@ -416,7 +586,9 @@ export default function DecisionLedger() {
             color={stats.winRate != null ? (stats.winRate >= 60 ? "#00FF88" : stats.winRate >= 40 ? "#FFD700" : "#FF4444") : "rgba(255,255,255,0.4)"}
           />
           <StatCard label="CORRECT" value={stats.correct} color="#00FF88" />
+          <StatCard label="PARTIAL" value={(stats as any).partiallyCorrect ?? 0} color="#FFB800" />
           <StatCard label="INCORRECT" value={stats.incorrect} color="#FF4444" />
+          <StatCard label="ACTIVE" value={(stats as any).stillActive ?? 0} color={ACCENT} />
           <StatCard label="PENDING" value={stats.pending} color="#FFD700" />
         </div>
       )}
@@ -446,8 +618,8 @@ export default function DecisionLedger() {
       )}
 
       {/* Filter tabs */}
-      <div style={{ display: "flex", gap: "6px", marginBottom: "14px" }}>
-        {(["all", "pending", "correct", "incorrect"] as const).map(f => (
+      <div style={{ display: "flex", gap: "6px", marginBottom: "14px", flexWrap: "wrap" }}>
+        {(["all", "pending", "correct", "partially_correct", "still_active", "incorrect"] as const).map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -464,7 +636,7 @@ export default function DecisionLedger() {
               textTransform: "uppercase",
             }}
           >
-            {f}
+            {f === "partially_correct" ? "PARTIAL" : f === "still_active" ? "ACTIVE" : f}
           </button>
         ))}
       </div>
@@ -482,7 +654,7 @@ export default function DecisionLedger() {
           <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)" }}>
             {filter === "all"
               ? "No recommendations logged yet. Ask a question to get started."
-              : `No ${filter} recommendations.`
+              : `No ${filter === "partially_correct" ? "partially correct" : filter === "still_active" ? "still active" : filter} recommendations.`
             }
           </div>
           {filter === "all" && (

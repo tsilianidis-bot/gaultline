@@ -1,4 +1,4 @@
-import { boolean, decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, decimal, double, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 
 /**
@@ -1145,16 +1145,31 @@ export const decisionLedger = mysqlTable("decision_ledger", {
   expectedTimeframe: varchar("expectedTimeframe", { length: 64 }).notNull(),
   /** Query type: security, macro, opportunity, portfolio, general */
   queryType:        varchar("queryType", { length: 32 }).notNull(),
-  /** Outcome: pending, correct, incorrect */
-  outcome:          mysqlEnum("outcome", ["pending", "correct", "incorrect"]).default("pending").notNull(),
+  /** Outcome: pending, correct, incorrect, partially_correct, still_active */
+  outcome:          mysqlEnum("outcome", ["pending", "correct", "incorrect", "partially_correct", "still_active"]).default("pending").notNull(),
   /** Optional user notes about the outcome */
   notes:            text("notes"),
-  /** When the outcome was resolved */
+  /** Auto-generated evaluation notes from the evaluation engine (conservative, never guarantees) */
+  evaluationNotes:  text("evaluationNotes"),
+  /** Price of the asset at the time the recommendation was logged (null for macro questions) */
+  priceAtEntry:     double("priceAtEntry"),
+  /** Price of the asset when the recommendation was auto-evaluated (null until evaluated) */
+  priceAtResolution: double("priceAtResolution"),
+  /** Elapsed time in milliseconds between createdAt and resolution */
+  elapsedMs:        bigint("elapsedMs", { mode: "number" }),
+  /** Whether this outcome was set by the automated evaluation engine (false = user-driven) */
+  autoEvaluated:    boolean("autoEvaluated").default(false).notNull(),
+  /** When the automated evaluation engine last ran for this entry */
+  evaluatedAt:      timestamp("evaluatedAt"),
+  /** Heartbeat task UID for the per-entry evaluation job (used to cancel if user resolves manually) */
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  /** When the outcome was resolved (set by both user and auto-evaluation) */
   resolvedAt:       timestamp("resolvedAt"),
   createdAt:        timestamp("createdAt").defaultNow().notNull(),
 }, (t) => ({
   userIdIdx:    index("decision_ledger_userId_idx").on(t.userId),
   userDateIdx:  index("decision_ledger_userId_date_idx").on(t.userId, t.createdAt),
+  cronUidIdx:   index("decision_ledger_cronUid_idx").on(t.scheduleCronTaskUid),
 }));
 export type DecisionLedgerEntry = typeof decisionLedger.$inferSelect;
 export type InsertDecisionLedgerEntry = typeof decisionLedger.$inferInsert;
