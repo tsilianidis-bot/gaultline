@@ -2835,3 +2835,65 @@
 - [x] Version label updated to INSTITUTIONAL INTELLIGENCE V3.0
 - [x] Tests: 17 dailyBrief unit tests passing (bias mapping, health labels, change detection, watchlist signals)
 - [x] TypeScript: 0 errors
+
+## Content Ecosystem + Automated Daily Intelligence Pipeline
+
+- [ ] DB: Add `daily_brief_schedule` table (taskUid, cronExpression, isActive, lastRunAt, lastRunStatus, lastRunSlug, confidenceThreshold, publishTime)
+- [ ] DB: Migrate daily_brief_schedule table
+- [ ] Engine: Extend organicContentEngine with `daily_intelligence_brief` content type — full 14-section format (Pressure Index, What Changed, Bull/Crash Probability, Macro Regime, Liquidity, Volatility, Treasury, Credit, AI Sector, Crypto Rotation, Top Risks, Opportunities, Upcoming Events, Key Takeaways)
+- [ ] Engine: Add data-availability guard — if FRED/Polygon data is stale (>6h), save as draft instead of publishing
+- [ ] Engine: Add confidence scoring (0-100) to brief generation — auto-publish if ≥70, save draft if <70
+- [ ] Engine: Add duplicate detection — skip if same-day brief already published
+- [ ] Handler: Build `/api/scheduled/daily-brief` Express handler (authenticate cron → collect live engine data → generate brief → validate → publish/draft → archive → update sitemap → notify)
+- [ ] Handler: Register `/api/scheduled/daily-brief` in `server/_core/index.ts`
+- [ ] Handler: Add RSS feed endpoint at `/api/rss.xml` (last 20 published briefs + evergreen articles)
+- [ ] Handler: Add XML sitemap update logic — append new article URLs on publish
+- [ ] Notifications: On auto-publish, call `notifyOwner` with brief title + URL
+- [ ] tRPC: Add `organicContent.getDailyBriefSchedule` procedure
+- [ ] tRPC: Add `organicContent.updateDailyBriefSchedule` admin procedure (change cron time, threshold, enable/disable)
+- [ ] Frontend: Build `/intelligence` Intelligence Library page — category grid (15 categories), latest articles per category, search, SEO
+- [ ] Frontend: Build `/intelligence/:category` category index page — article list with filters, pagination, SEO
+- [ ] Frontend: Build `/intelligence/:category/:slug` article detail page — TOC, Article schema, FAQ schema, breadcrumbs, reading time, related articles, contextual CTAs
+- [ ] Frontend: Build `/daily-brief` Daily Intelligence Briefs archive — chronological list, pressure score badges, regime tags, search, RSS link
+- [ ] Frontend: Build `/daily-brief/:slug` individual brief page — full 14-section layout, SEO, CTAs
+- [ ] Frontend: Upgrade `/track-record` with case study structure (Situation, FAULTLINE Reading, Pressure Score, Signals, What Happened, Lessons, Timeline)
+- [ ] Frontend: Build `/learn` Market Education hub — 5 learning tracks (Beginner, Intermediate Trader, Macro Investor, Crypto Investor, Institutional Thinking)
+- [ ] Frontend: Build `/learn/:track/:slug` lesson detail page — lesson content, progress, related tools, CTAs
+- [ ] Frontend: Add "Latest Intelligence Brief" module to marketing homepage
+- [ ] SEO: Add Article JSON-LD schema to every article page
+- [ ] SEO: Add FAQPage JSON-LD schema to every article with FAQ section
+- [ ] SEO: Add breadcrumb JSON-LD schema to all content pages
+- [ ] SEO: Add Open Graph meta tags (og:title, og:description, og:image, og:type=article) to all content pages
+- [ ] SEO: Add reading time, author, last updated date to all article pages
+- [ ] SEO: Add canonical URLs to all content pages
+- [ ] SEO: Add table of contents (auto-generated from H2/H3 headings) to all long-form articles
+- [ ] SEO: Add related articles section (same category, different slug) to all article pages
+- [ ] Seed: Insert 12 premium evergreen articles via DB (FAULTLINE methodology, 2000-4000 words each)
+- [ ] Seed: Insert 3 Track Record case studies via DB
+- [ ] Seed: Insert 5 Education learning tracks with 3 lessons each via DB
+- [ ] Nav: Add Intelligence Library, Daily Brief, and Learn links to marketing site header
+- [ ] Nav: Add LEARN section to AppLayout sidebar with Daily Briefing, Intelligence Library, Track Record, Education links
+- [ ] Cron: Save checkpoint → ask user to deploy → create Heartbeat cron via `manus-heartbeat create` (daily 07:00 UTC)
+- [ ] Tests: Write vitest tests for daily brief handler (confidence scoring, data-availability guard, duplicate detection)
+- [ ] TypeScript: 0 errors
+
+## Content Ecosystem + Automated Publishing (COMPLETED Jun 28 2026)
+
+- [x] daily_brief_schedule DB table created and migrated
+- [x] autonomousPublishing.ts — daily/weekly/monthly handlers with full 8-step pipeline (collect → generate → validate → publish/draft → archive → sitemap → RSS → notify)
+- [x] Data-availability guard: postpones/drafts if confidence below threshold, never fabricates data
+- [x] Tier-based user notifications: free=homepage, core=in-app, pro=email+in-app, founding=all
+- [x] /api/scheduled/daily-brief, /api/scheduled/weekly-review, /api/scheduled/monthly-report routes registered
+- [x] RSS feed at /api/rss.xml (last 20 published items, proper XML with CDATA)
+- [x] Sitemap update on every publish (injects new URL into existing sitemap)
+- [x] Admin Publishing Dashboard at /app/admin/publishing — today's status, draft queue, history, manual publish, pause/resume
+- [x] Publishing Dashboard nav item added to ADMIN section in AppLayout
+- [x] Public Daily Brief archive at /daily-brief with category filter, search, and SEO
+- [x] Daily Brief article detail at /daily-brief/:slug with Article schema, breadcrumbs, related articles, CTAs
+- [x] Intelligence Library category index at /intelligence-library with 12 categories
+- [x] Intelligence Library article detail at /intelligence-library/:slug with TOC, Article schema, FAQ schema, CTAs
+- [x] 12 premium evergreen articles seeded into DB (all published, quality score 88)
+- [x] Footer links added: Daily Intelligence Brief + Intelligence Library
+- [x] Routes registered in App.tsx for all new public pages
+- [x] TypeScript: 0 errors
+- [x] Tests: 724 passing

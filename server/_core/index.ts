@@ -13,6 +13,16 @@ import { registerSEORoutes } from "../seoRoutes";
 import analyticsRoutes from "../analyticsRoutes";
 import { handleStripeWebhook } from "../stripe/webhook";
 import { handleScheduledPublishBlog } from "../scheduledBlog";
+import {
+  handleDailyBrief,
+  handleWeeklyReview,
+  handleMonthlyReport,
+  handleManualPublish,
+  handlePublishingStatus,
+  handleToggleActive,
+  handlePublishDraft,
+} from "../autonomousPublishing";
+import { handleRssFeed } from "../rssFeed";
 import { handleScheduledDailySnapshot } from "../scheduledDailySnapshot";
 import { handleScheduledSimPortfolio } from "../scheduledSimPortfolio";
 import { handleScheduledXPost, handleXNewsMonitor } from "../scheduledXPost";
@@ -140,6 +150,16 @@ async function startServer() {
   app.post("/api/scheduled/daily-sim-portfolio", handleScheduledSimPortfolio);
   app.post("/api/scheduled/generate-organic-content", handleGenerateOrganicContent);
   app.post("/api/scheduled/refresh-signal-pages", handleRefreshSignalPages);
+  // Autonomous publishing pipeline
+  app.post("/api/scheduled/daily-brief", handleDailyBrief);
+  app.post("/api/scheduled/weekly-review", handleWeeklyReview);
+  app.post("/api/scheduled/monthly-report", handleMonthlyReport);
+  app.post("/api/scheduled/daily-brief/manual", handleManualPublish);
+  app.get("/api/publishing/status", handlePublishingStatus);
+  app.post("/api/publishing/toggle-active", handleToggleActive);
+  app.post("/api/publishing/publish-draft/:id", handlePublishDraft);
+  // RSS feed
+  app.get("/api/rss.xml", handleRssFeed);
 
   // tRPC API
   app.use(

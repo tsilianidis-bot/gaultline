@@ -2458,6 +2458,8 @@ function Footer() {
                 { label: "AI Bubble Risk Tracker", href: "/ai-bubble-risk-tracker" },
                 { label: "Diagnostic AI", href: "/diagnostic-ai" },
                 { label: "Track Record", href: "/track-record" },
+                { label: "Daily Intelligence Brief", href: "/daily-brief" },
+                { label: "Intelligence Library", href: "/intelligence-library" },
               ].map((item) => (
                 <li key={item.href}>
                   <a href={item.href} className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">

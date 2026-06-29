@@ -111,6 +111,11 @@ const Glossary = lazy(() => import("./pages/Glossary"));
 const ValidationLab = lazy(() => import("./pages/ValidationLab"));
 const FmosHealthDashboard = lazy(() => import("./pages/FmosHealthDashboard"));
 const ChatInbox = lazy(() => import("./pages/admin/ChatInbox"));
+const AdminPublishing  = lazy(() => import('./pages/AdminPublishing'));
+const DailyBriefArchive = lazy(() => import('./pages/DailyBriefArchive'));
+const DailyBriefPost   = lazy(() => import('./pages/DailyBriefPost'));
+const IntelligenceLibrary = lazy(() => import('./pages/IntelligenceLibrary'));
+const IntelligenceLibraryPost = lazy(() => import('./pages/IntelligenceLibraryPost'));
 const CryptoHub = lazy(() => import("./pages/CryptoHub"));
 const DecisionEngine = lazy(() => import("./pages/DecisionEngine"));
 const MarketCommandCenter = lazy(() => import("./pages/MarketCommandCenter"));
@@ -191,6 +196,36 @@ function Router() {
         </ErrorBoundary>
       </Route>
 
+      {/* Daily Brief archive — standalone public pages */}
+      <Route path="/daily-brief/:slug">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <DailyBriefPost />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      <Route path="/daily-brief">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <DailyBriefArchive />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Intelligence Library — standalone public pages */}
+      <Route path="/intelligence-library/:slug">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <IntelligenceLibraryPost />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      <Route path="/intelligence-library">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <IntelligenceLibrary />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
       {/* Blog — standalone public pages */}
       <Route path="/blog/:slug">
         <ErrorBoundary>
@@ -404,6 +439,7 @@ function Router() {
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
               <Route path="/app/admin/blog" component={AdminBlog} />
+              <Route path="/app/admin/publishing" component={AdminPublishing} />
               <Route path="/app/admin/chat-inbox">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><ChatInbox /></Suspense></ErrorBoundary>
               </Route>

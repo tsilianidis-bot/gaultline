@@ -1190,3 +1190,43 @@ export const userPreferences = mysqlTable("user_preferences", {
 }));
 export type UserPreferences = typeof userPreferences.$inferSelect;
 export type InsertUserPreferences = typeof userPreferences.$inferInsert;
+
+// ── Daily Brief Schedule (Automated Publishing Pipeline) ─────────────────────
+/**
+ * Tracks the Heartbeat cron job configuration for the automated
+ * Daily Intelligence Brief publishing pipeline.
+ * One row per configured schedule (typically one active row).
+ */
+export const dailyBriefSchedule = mysqlTable("daily_brief_schedule", {
+  id:                   int("id").autoincrement().primaryKey(),
+  /** Manus Heartbeat task UID — used to update/pause/delete the cron */
+  taskUid:              varchar("taskUid", { length: 65 }),
+  /** 6-field cron expression (UTC) e.g. "0 0 7 * * *" = daily 07:00 UTC */
+  cronExpression:       varchar("cronExpression", { length: 64 }).notNull().default("0 0 7 * * *"),
+  /** Whether the cron is currently active */
+  isActive:             boolean("isActive").default(true).notNull(),
+  /** Confidence threshold (0-100) above which briefs are auto-published; below = draft */
+  confidenceThreshold:  int("confidenceThreshold").default(70).notNull(),
+  /** Minimum word count required for auto-publish */
+  minWordCount:         int("minWordCount").default(600).notNull(),
+  /** Timestamp of the last successful run */
+  lastRunAt:            timestamp("lastRunAt"),
+  /** Status of the last run: success | draft | skipped | error */
+  lastRunStatus:        varchar("lastRunStatus", { length: 20 }),
+  /** Slug of the last published/drafted brief */
+  lastRunSlug:          varchar("lastRunSlug", { length: 220 }),
+  /** Error message from last run (if any) */
+  lastRunError:         text("lastRunError"),
+  /** Total number of briefs published */
+  totalPublished:       int("totalPublished").default(0).notNull(),
+  /** Total number of drafts saved (below threshold) */
+  totalDrafts:          int("totalDrafts").default(0).notNull(),
+  /** Total number of skipped runs (duplicate / data unavailable) */
+  totalSkipped:         int("totalSkipped").default(0).notNull(),
+  createdAt:            timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:            timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  taskUidIdx: index("daily_brief_schedule_taskUid_idx").on(t.taskUid),
+}));
+export type DailyBriefSchedule = typeof dailyBriefSchedule.$inferSelect;
+export type InsertDailyBriefSchedule = typeof dailyBriefSchedule.$inferInsert;

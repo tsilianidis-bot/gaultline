@@ -97,6 +97,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: "x-posts",          label: "X Posts",          shortLabel: "X Posts",   icon: Zap,       path: "/app/x-posts" },
   { id: "x-post-queue",     label: "Post Queue",       shortLabel: "Queue",     icon: Settings,  path: "/app/x-post-queue" },
   { id: "admin-blog",       label: "Blog Manager",     shortLabel: "Blog Mgr",  icon: Newspaper, path: "/app/admin/blog" },
+  { id: "admin-publishing", label: "Publishing",        shortLabel: "Publish",   icon: Zap,       path: "/app/admin/publishing" },
   { id: "owner-simulation", label: "Owner Simulation", shortLabel: "Simulation",icon: Trophy,    path: "/owner/simulation" },
   { id: "seo-optimizer",    label: "SEO Optimizer",    shortLabel: "SEO",       icon: Search,    path: "/app/seo-optimizer" },
   { id: "analytics",        label: "Site Analytics",   shortLabel: "Analytics", icon: BarChart2, path: "/app/analytics" },
