@@ -2971,3 +2971,16 @@
 - [x] DecisionLedger frontend: Filter tabs include partially_correct and still_active
 - [x] DecisionLedger frontend: Stats row includes PARTIAL and ACTIVE stat cards
 - [x] DecisionLedger frontend: "Your manual override always takes precedence" disclaimer
+
+## Day Trade Intelligence Reliability Upgrade
+- [x] Add pipeline_health_log table (provider, endpoint, failure reason, response code, latency, retry attempts, recovery status, resolution time, auto_recovered)
+- [x] Add day_trade_snapshot table for persistent snapshot storage
+- [x] Build pipelineLogger.ts utility (logFailure, markRecovered, getRecentLogs, getProviderSummary)
+- [x] Add DB helpers: saveSnapshot, getLatestSnapshot, getRecentPipelineLogs, getPipelineSummary
+- [x] Upgrade dayTrade.scan to cascading pipeline: Live → LRU cache → DB snapshot → Institutional Fallback
+- [x] Add pipelineHealth tRPC router: logs, summary procedures
+- [x] Add DataSourceBanner component (LIVE / SNAPSHOT DATA / FALLBACK MODE indicator)
+- [x] Update all tab data extraction to handle new { data, source, snapshotAge } response shape
+- [x] Build PipelineHealthTab: per-provider status grid (LIVE/DEGRADED/DOWN), failure event log, auto-refresh
+- [x] Add auto-recovery polling loop: 30s countdown, fires dt-auto-recovery event, stops when live returns
+- [x] Add recovery countdown banner: shown when source !== live, seamlessly disappears when live resumes

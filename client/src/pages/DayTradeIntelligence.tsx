@@ -21,6 +21,37 @@ import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { useEngine } from "@/contexts/EngineContext";
 
+// ── DataSourceBanner: shown when data is from snapshot or fallback ────────────
+function DataSourceBanner({ source, snapshotAge }: { source: 'live' | 'snapshot' | 'fallback'; snapshotAge: number | null }) {
+  if (source === 'live') return null;
+  const isSnapshot = source === 'snapshot';
+  const ageLabel = snapshotAge != null
+    ? snapshotAge < 60_000 ? 'less than 1 min ago'
+    : snapshotAge < 3_600_000 ? `${Math.round(snapshotAge / 60_000)} min ago`
+    : `${Math.round(snapshotAge / 3_600_000)}h ago`
+    : null;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '10px',
+      padding: '8px 14px', marginBottom: '12px',
+      background: isSnapshot ? 'rgba(255,215,0,0.06)' : 'rgba(255,107,107,0.06)',
+      border: `1px solid ${isSnapshot ? 'rgba(255,215,0,0.25)' : 'rgba(255,107,107,0.25)'}`,
+      borderRadius: '4px',
+    }}>
+      {isSnapshot ? <Clock size={12} style={{ color: '#FFD700', flexShrink: 0 }} /> : <WifiOff size={12} style={{ color: '#FF6B6B', flexShrink: 0 }} />}
+      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: isSnapshot ? '#FFD700' : '#FF6B6B', letterSpacing: '0.06em' }}>
+        {isSnapshot
+          ? `SNAPSHOT DATA${ageLabel ? ` · captured ${ageLabel}` : ''} · live pipeline temporarily unavailable · auto-recovering`
+          : 'INSTITUTIONAL FALLBACK MODE · live + snapshot data unavailable · guidance below is static · auto-recovering'}
+      </span>
+      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
+        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isSnapshot ? '#FFD700' : '#FF6B6B' }} />
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>AUTO-RECOVERING</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Types (mirrors server dayTradeEngine.ts) ─────────────────
 type DayTradeSetup = {
   symbol: string;
@@ -522,12 +553,11 @@ function ScannerTab({ onSearch }: { onSearch: (sym: string, type: "stock" | "cry
     refetchInterval: 10 * 60 * 1000,
   });
 
-  const setups = (data ?? []) as unknown as AnySetup[];
-
+    const setups = ((data?.data ?? []) as unknown as AnySetup[]);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {DISCLAIMER}
-
+      {data && data.source !== 'live' && <DataSourceBanner source={data.source} snapshotAge={data.snapshotAge} />}
       {/* Filter bar */}
       <div style={{ ...CARD, display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
         <FilterSelect
@@ -617,12 +647,11 @@ function StockScreenerTab({ onSearch }: { onSearch: (sym: string, type: "stock" 
     refetchInterval: 10 * 60 * 1000,
   });
 
-  const setups = (data ?? []) as unknown as AnySetup[];
-
+    const setups = ((data?.data ?? []) as unknown as AnySetup[]);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {DISCLAIMER}
-
+      {data && data.source !== 'live' && <DataSourceBanner source={data.source} snapshotAge={data.snapshotAge} />}
       <div style={{ ...CARD, display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
         <div style={{ ...MONO_SM, color: "#00D4FF", fontWeight: 600, letterSpacing: "0.1em" }}>STOCK SCREENER</div>
         <FilterSelect
@@ -713,11 +742,12 @@ function CapScannerTab({ cap, onSearch }: { cap: "low" | "mid" | "large"; onSear
     riskProfile: cap === "low" ? "aggressive" : cap === "mid" ? "balanced" : "conservative",
     maxResults: 15,
   }, { staleTime: 5 * 60 * 1000, refetchInterval: 10 * 60 * 1000 });
-  const setups = (data ?? []) as unknown as AnySetup[];
+  const setups = ((data?.data ?? []) as unknown as AnySetup[]);
   const rgb = cap === "low" ? "245,158,11" : cap === "mid" ? "168,85,247" : "0,212,255";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {DISCLAIMER}
+      {data && data.source !== 'live' && <DataSourceBanner source={data.source} snapshotAge={data.snapshotAge} />}
       <div style={{ ...CARD, display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
         <div style={{ ...MONO_SM, color: meta.color, fontWeight: 600, letterSpacing: "0.1em" }}>{meta.label.toUpperCase()} SCANNER</div>
         <div style={{ ...MONO_SM, color: "#6B7280", fontSize: "9px", flex: 1 }}>{meta.desc}</div>
@@ -763,12 +793,11 @@ function CryptoScreenerTab({ onSearch }: { onSearch: (sym: string, type: "stock"
     refetchInterval: 10 * 60 * 1000,
   });
 
-  const setups = (data ?? []) as unknown as AnySetup[];
-
+    const setups = ((data?.data ?? []) as unknown as AnySetup[]);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {DISCLAIMER}
-
+      {data && data.source !== 'live' && <DataSourceBanner source={data.source} snapshotAge={data.snapshotAge} />}
       <div style={{ ...CARD, display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
         <div style={{ ...MONO_SM, color: "#9966FF", fontWeight: 600, letterSpacing: "0.1em" }}>CRYPTO SCREENER</div>
         <FilterSelect
@@ -993,12 +1022,11 @@ function ActiveSetupsTab({ onSearch }: { onSearch: (sym: string, type: "stock" |
     refetchInterval: 5 * 60 * 1000,
   });
 
-  const setups = ((data ?? []) as unknown as AnySetup[]).filter(s => !isNoTrade(s)) as DayTradeSetup[];
-
+    const setups = ((data?.data ?? []) as unknown as AnySetup[]).filter(s => !isNoTrade(s)) as DayTradeSetup[];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       {DISCLAIMER}
-
+      {data && data.source !== 'live' && <DataSourceBanner source={data.source} snapshotAge={data.snapshotAge} />}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#F0F4FF" }}>
@@ -1609,11 +1637,11 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
     refetchInterval: 10 * 60 * 1000,
   });
 
-  const setups = ((data ?? []) as unknown as AnySetup[]).filter(s => !isNoTrade(s)).slice(0, 10) as DayTradeSetup[];
-
+    const setups = ((data?.data ?? []) as unknown as AnySetup[]).filter(s => !isNoTrade(s)).slice(0, 10) as DayTradeSetup[];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
       {DISCLAIMER}
+      {data && data.source !== 'live' && <DataSourceBanner source={data.source} snapshotAge={data.snapshotAge} />}
 
       <div style={{ ...CARD, background: "rgba(0,212,255,0.03)", borderColor: "rgba(0,212,255,0.18)", padding: "14px 18px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
@@ -1706,6 +1734,128 @@ function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | 
   );
 }
 
+// ── Pipeline Health Tab ──────────────────────────────────────
+function PipelineHealthTab() {
+  const { data, isLoading, refetch, isFetching } = trpc.pipelineHealth.logs.useQuery(
+    { limit: 50 },
+    { staleTime: 30_000, refetchInterval: 60_000 }
+  );
+  const { data: statsData } = trpc.pipelineHealth.summary.useQuery(
+    undefined,
+    { staleTime: 30_000, refetchInterval: 60_000 }
+  );
+
+  const logs = data ?? [];
+  const stats = statsData ?? {};
+
+  const providerColor = (provider: string) => {
+    if (provider === 'polygon') return '#00D4FF';
+    if (provider === 'yahoo') return '#00FF88';
+    if (provider === 'coingecko') return '#9966FF';
+    if (provider === 'fred') return '#FFD700';
+    return '#94A3B8';
+  };
+
+  const statusColor = (status: string) => {
+    if (status === 'recovered') return '#00FF88';
+    if (status === 'active') return '#FF6B6B';
+    return '#FFD700';
+  };
+
+  const statusDot = (status: string) => (
+    <div style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor(status), flexShrink: 0,
+      boxShadow: status === 'active' ? `0 0 6px ${statusColor(status)}` : 'none' }} />
+  );
+
+  const fmtLatency = (ms: number | null) => ms != null ? `${ms}ms` : '—';
+  const fmtTime = (ts: number) => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  const PROVIDERS = ['polygon', 'yahoo', 'coingecko', 'fred', 'engine'];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      {/* Provider summary grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
+        {PROVIDERS.map(p => {
+          const s = (stats as Record<string, { total: number; failures: number; avgLatency: number | null; lastFailure: number | null }>)[p];
+          const failRate = s && s.total > 0 ? ((s.failures / s.total) * 100).toFixed(0) : '0';
+          const isHealthy = !s || s.failures === 0;
+          const isWarning = s && s.failures > 0 && s.failures / s.total < 0.2;
+          const color = isHealthy ? '#00FF88' : isWarning ? '#FFD700' : '#FF6B6B';
+          return (
+            <div key={p} style={{ ...CARD, padding: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: providerColor(p), letterSpacing: '0.1em', textTransform: 'uppercase' }}>{p}</span>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, boxShadow: `0 0 6px ${color}` }} />
+              </div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color }}>
+                {isHealthy ? 'LIVE' : isWarning ? 'DEGRADED' : 'DOWN'}
+              </div>
+              {s && (
+                <div style={{ marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>
+                    Fail rate: <span style={{ color }}>{failRate}%</span>
+                  </div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>
+                    Avg latency: <span style={{ color: '#94A3B8' }}>{fmtLatency(s.avgLatency)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Recent failure log */}
+      <div style={CARD}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '15px', color: '#F0F4FF' }}>Recent Pipeline Events</div>
+          <button onClick={() => refetch()} disabled={isFetching} style={{ padding: '4px 10px', background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: '4px', color: '#00D4FF', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <RefreshCw size={10} style={{ animation: isFetching ? 'spin 1s linear infinite' : 'none' }} /> Refresh
+          </button>
+        </div>
+        {isLoading ? (
+          <LoadingState label="Loading pipeline events..." />
+        ) : logs.length === 0 ? (
+          <EmptyState icon={<CheckCircle size={28} style={{ color: '#00FF88' }} />} title="All Systems Operational" message="No pipeline failures recorded in the last 50 events. Live data is flowing normally." />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {logs.map((log: { id: number; provider: string; endpoint: string; failureReason: string | null; responseCode: number | null; latencyMs: number | null; retryAttempts: number; recoveryStatus: string | null; resolutionTimeMs: number | null; autoRecovered: boolean; createdAt: Date }) => {
+              const status = log.recoveryStatus ?? 'active';
+              const createdMs = log.createdAt instanceof Date ? log.createdAt.getTime() : Number(log.createdAt);
+              return (
+                <div key={log.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 10px', background: 'rgba(0,0,0,0.3)', border: `1px solid ${statusColor(status)}22`, borderRadius: '4px' }}>
+                  {statusDot(status)}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '3px' }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: providerColor(log.provider), letterSpacing: '0.06em' }}>{log.provider.toUpperCase()}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>{log.endpoint}</span>
+                      {log.responseCode && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF6B6B' }}>HTTP {log.responseCode}</span>}
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', marginLeft: 'auto' }}>{fmtTime(createdMs)}</span>
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#94A3B8', lineHeight: 1.4 }}>{log.failureReason ?? 'Unknown error'}</div>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>Retries: {log.retryAttempts}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280' }}>Latency: {fmtLatency(log.latencyMs)}</span>
+                      {log.resolutionTimeMs != null && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00FF88' }}>Resolved in {log.resolutionTimeMs}ms</span>}
+                      {log.autoRecovered && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00D4FF' }}>⚡ AUTO</span>}
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: statusColor(status), textTransform: 'uppercase' }}>{status}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', textAlign: 'center' }}>
+        Auto-refreshes every 60s · Events are logged server-side on every pipeline failure · Resolved when live data resumes
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview",  label: "Overview",       icon: <Target size={13} /> },
   { id: "top10",     label: "Top 10 Ranked",  icon: <Star size={13} /> },
@@ -1718,6 +1868,7 @@ const TABS = [
   { id: "symbol",    label: "Symbol Search",  icon: <Search size={13} /> },
   { id: "active",    label: "Active Setups",  icon: <CheckCircle size={13} /> },
   { id: "watchlist", label: "Watchlist",      icon: <Bookmark size={13} /> },
+  { id: "pipeline",  label: "Pipeline Health", icon: <Wifi size={13} /> },
 ];
 
 // ── Main Page ─────────────────────────────────────────────────
@@ -1730,8 +1881,37 @@ export default function DayTradeIntelligence() {
   const urlType = (urlParams.get("type") === "crypto" ? "crypto" : "stock") as "stock" | "crypto";
   const urlAutorun = urlParams.get("autorun") === "1";
 
-  const [activeTab, setActiveTab] = useState(urlSymbol && urlAutorun ? "symbol" : "overview");
+    const [activeTab, setActiveTab] = useState(urlSymbol && urlAutorun ? "symbol" : "overview");
   const [, navigate] = useState<string>("");
+  // Auto-recovery: track last known data source across all scan queries
+  const [lastDataSource, setLastDataSource] = useState<'live' | 'snapshot' | 'fallback'>('live');
+  const [recoveryCountdown, setRecoveryCountdown] = useState(0);
+  const recoveryIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Probe the pipeline every 30s when not live; seamlessly restore when live returns
+  useEffect(() => {
+    if (lastDataSource === 'live') {
+      if (recoveryIntervalRef.current) {
+        clearInterval(recoveryIntervalRef.current);
+        recoveryIntervalRef.current = null;
+      }
+      setRecoveryCountdown(0);
+      return;
+    }
+    setRecoveryCountdown(30);
+    const tick = setInterval(() => {
+      setRecoveryCountdown(c => {
+        if (c <= 1) {
+          // Trigger a refetch by dispatching a custom event that tabs can listen to
+          window.dispatchEvent(new CustomEvent('dt-auto-recovery'));
+          return 30;
+        }
+        return c - 1;
+      });
+    }, 1000);
+    recoveryIntervalRef.current = tick;
+    return () => clearInterval(tick);
+  }, [lastDataSource]);
 
   // Auto-dispatch when navigated from Smart Discovery
   useEffect(() => {
@@ -1831,6 +2011,19 @@ export default function DayTradeIntelligence() {
           </div>
         </div>
 
+        {/* Auto-recovery countdown banner — shown only when not live */}
+        {lastDataSource !== 'live' && recoveryCountdown > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 14px', background: 'rgba(255,165,0,0.08)', border: '1px solid rgba(255,165,0,0.25)', borderRadius: '6px', marginBottom: '12px' }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FFA500', boxShadow: '0 0 6px #FFA500', animation: 'pulse 1.5s ease-in-out infinite', flexShrink: 0 }} />
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#FFA500', letterSpacing: '0.06em' }}>
+              {lastDataSource === 'snapshot' ? 'SNAPSHOT DATA' : 'FALLBACK MODE'} · Auto-recovery probe in {recoveryCountdown}s
+            </span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', marginLeft: 'auto' }}>
+              Live data will resume automatically when available
+            </span>
+          </div>
+        )}
+
         {/* Tab bar — horizontally scrollable on mobile */}
         <div style={{
           display: "flex",
@@ -1885,6 +2078,7 @@ export default function DayTradeIntelligence() {
         {activeTab === "symbol"    && <SymbolSearchTabWithEvent />}
         {activeTab === "active"    && <ActiveSetupsTab onSearch={handleSearch} />}
         {activeTab === "watchlist" && <WatchlistTab onSearch={handleSearch} />}
+        {activeTab === "pipeline" && <PipelineHealthTab />}
       </div>
     </>
   );

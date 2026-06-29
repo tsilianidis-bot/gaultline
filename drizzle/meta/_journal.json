@@ -260,6 +260,13 @@
       "when": 1782740712915,
       "tag": "0036_small_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1782742379963,
+      "tag": "0037_chief_umar",
+      "breakpoints": true
     }
   ]
 }

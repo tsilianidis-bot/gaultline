@@ -1,6 +1,6 @@
 import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -1341,4 +1341,57 @@ export async function getChatbotStats() {
     converted: converted?.c ?? 0,
     avgLeadScore: Math.round(Number(stats?.avgLeadScore ?? 0)),
   };
+}
+
+// ── Day Trade Snapshot helpers ────────────────────────────────────────────────
+// Persist the last successful scan result so the cascade can fall back to it.
+
+export async function saveDayTradeSnapshot(cacheKey: string, payload: unknown): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const json = JSON.stringify(payload);
+  await db.insert(dayTradeSnapshot)
+    .values({ cacheKey, payload: json, capturedAt: Date.now() })
+    .onDuplicateKeyUpdate({ set: { payload: json, capturedAt: Date.now() } });
+}
+
+export async function loadDayTradeSnapshot(cacheKey: string): Promise<{ payload: unknown; capturedAt: number } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(dayTradeSnapshot)
+    .where(eq(dayTradeSnapshot.cacheKey, cacheKey))
+    .limit(1);
+  if (!rows.length) return null;
+  try {
+    return { payload: JSON.parse(rows[0].payload), capturedAt: Number(rows[0].capturedAt) };
+  } catch {
+    return null;
+  }
+}
+
+// ── Pipeline Health Log helpers ───────────────────────────────────────────────
+
+export async function getPipelineHealthLogs(limit = 200) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(pipelineHealthLog)
+    .orderBy(desc(pipelineHealthLog.createdAt))
+    .limit(limit);
+}
+
+export async function getPipelineHealthSummary() {
+  const db = await getDb();
+  if (!db) return [];
+  // Per-provider: total failures, last failure, auto-recovered count, avg latency
+  const rows = await db.select({
+    provider: pipelineHealthLog.provider,
+    total: count(),
+    autoRecovered: sql<number>`SUM(CASE WHEN ${pipelineHealthLog.autoRecovered} = 1 THEN 1 ELSE 0 END)`,
+    avgLatencyMs: sql<number>`AVG(${pipelineHealthLog.latencyMs})`,
+    lastFailure: sql<Date>`MAX(${pipelineHealthLog.createdAt})`,
+  })
+    .from(pipelineHealthLog)
+    .groupBy(pipelineHealthLog.provider)
+    .orderBy(desc(sql`MAX(${pipelineHealthLog.createdAt})`));
+  return rows;
 }

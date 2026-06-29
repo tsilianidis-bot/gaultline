@@ -63,6 +63,8 @@ import {
 } from './ownerSimulation';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
+import { saveDayTradeSnapshot, loadDayTradeSnapshot, getPipelineHealthLogs, getPipelineHealthSummary } from './db';
+import { logPipelineFailure } from './pipelineLogger';
 import { getDayTradeWatchlist, addDayTradeWatchlistItem, removeDayTradeWatchlistItem, isDayTradeWatchlisted } from './db';
 import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntry, deleteTradeJournalEntry, getTradeJournalStats } from './db';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
@@ -2591,24 +2593,60 @@ export const appRouter = router({
         maxResults: z.number().min(1).max(30).default(12),
       }))
       .query(async ({ input }) => {
+        const sanitizeNumbers = (v: unknown): unknown => {
+          if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
+          if (v === null || v === undefined) return v;
+          if (Array.isArray(v)) return v.map(sanitizeNumbers);
+          if (typeof v === 'object') {
+            return Object.fromEntries(
+              Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
+            );
+          }
+          return v;
+        };
+        const cacheKey = `scan:${input.assetType}:${input.capBucket}:${input.direction}:${input.riskProfile}:${input.maxResults}`;
+        const t0 = Date.now();
+        // ── Tier 1: Live data ──────────────────────────────────────────────────
         try {
           const results = await dayTradeScanner(input);
-          const sanitizeNumbers = (v: unknown): unknown => {
-            if (typeof v === 'number') return (isFinite(v) && !isNaN(v)) ? v : 0;
-            if (v === null || v === undefined) return v;
-            if (Array.isArray(v)) return v.map(sanitizeNumbers);
-            if (typeof v === 'object') {
-              return Object.fromEntries(
-                Object.entries(v as Record<string, unknown>).map(([k, val]) => [k, sanitizeNumbers(val)])
-              );
-            }
-            return v;
-          };
-          return sanitizeNumbers(results) as typeof results;
-        } catch (err) {
-          console.error('[dayTrade.scan] Error:', err);
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Scanner failed. Please try again.' });
+          const clean = sanitizeNumbers(results) as typeof results;
+          // Persist snapshot for Tier 2 fallback (fire-and-forget)
+          saveDayTradeSnapshot(cacheKey, clean).catch(() => {});
+          return { data: clean, source: 'live' as const, snapshotAge: null as number | null };
+        } catch (liveErr) {
+          const latencyMs = Date.now() - t0;
+          console.error('[dayTrade.scan] Live scan failed, trying snapshot:', liveErr);
+          logPipelineFailure({
+            provider: 'polygon',
+            endpoint: 'dayTradeScanner',
+            latencyMs,
+            failureReason: String(liveErr),
+            retryAttempts: 0,
+            recoveryStatus: 'snapshot',
+            autoRecovered: true,
+          }).catch(() => {});
         }
+        // ── Tier 2: DB snapshot ───────────────────────────────────────────────
+        try {
+          const snap = await loadDayTradeSnapshot(cacheKey);
+          if (snap && snap.payload) {
+            const ageMs = Date.now() - snap.capturedAt;
+            const clean = sanitizeNumbers(snap.payload) as Awaited<ReturnType<typeof dayTradeScanner>>;
+            return { data: clean, source: 'snapshot' as const, snapshotAge: ageMs };
+          }
+        } catch (snapErr) {
+          console.error('[dayTrade.scan] Snapshot load failed:', snapErr);
+          logPipelineFailure({
+            provider: 'other',
+            endpoint: 'loadDayTradeSnapshot',
+            latencyMs: Date.now() - t0,
+            failureReason: String(snapErr),
+            recoveryStatus: 'fallback',
+            autoRecovered: false,
+          }).catch(() => {});
+        }
+        // ── Tier 3: Institutional Fallback ────────────────────────────────────
+        return { data: [] as Awaited<ReturnType<typeof dayTradeScanner>>, source: 'fallback' as const, snapshotAge: null as number | null };
       }),
     symbolSetup: coreProcedure
       .input(z.object({
@@ -2668,12 +2706,24 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         return { watchlisted: await isDayTradeWatchlisted(ctx.user.id, input.symbol.toUpperCase()) };
       }),
-    clearCache: protectedProcedure.mutation(() => {
+        clearCache: protectedProcedure.mutation(() => {
       clearDayTradeCache();
       return { success: true };
     }),
   }),
-
+  // ── Pipeline Health ──────────────────────────────────────────────────────
+  pipelineHealth: router({
+    // Get recent pipeline failure logs (admin only)
+    logs: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(500).default(200) }))
+      .query(async ({ input }) => {
+        return await getPipelineHealthLogs(input.limit);
+      }),
+    // Get per-provider summary (admin only)
+    summary: protectedProcedure.query(async () => {
+      return await getPipelineHealthSummary();
+    }),
+  }),
   // ── Trade Journal (Performance Tracking) ────────────────────────────────
   tradeJournal: router({
     // Get all journal entries for the current user

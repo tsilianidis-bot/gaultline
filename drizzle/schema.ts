@@ -1245,3 +1245,54 @@ export const dailyBriefSchedule = mysqlTable("daily_brief_schedule", {
 }));
 export type DailyBriefSchedule = typeof dailyBriefSchedule.$inferSelect;
 export type InsertDailyBriefSchedule = typeof dailyBriefSchedule.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Pipeline Health Log
+// Every API/provider failure is written here for Admin Diagnostics.
+// ─────────────────────────────────────────────────────────────────────────────
+export const pipelineHealthLog = mysqlTable("pipeline_health_log", {
+  id:               bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  /** Provider name: polygon | yahoo | coingecko | fred | news | llm | social | ledger */
+  provider:         varchar("provider", { length: 40 }).notNull(),
+  /** Endpoint or function that failed */
+  endpoint:         varchar("endpoint", { length: 200 }).notNull(),
+  /** HTTP response code (0 if network-level failure) */
+  responseCode:     int("responseCode"),
+  /** Latency in milliseconds */
+  latencyMs:        int("latencyMs"),
+  /** Human-readable failure reason */
+  failureReason:    text("failureReason"),
+  /** Number of retry attempts made */
+  retryAttempts:    int("retryAttempts").default(0).notNull(),
+  /** How the failure was resolved: cache | snapshot | fallback | recovered | unresolved */
+  recoveryStatus:   varchar("recoveryStatus", { length: 30 }),
+  /** Milliseconds until recovery (null if unresolved) */
+  resolutionTimeMs: int("resolutionTimeMs"),
+  /** Whether the failure was recovered automatically */
+  autoRecovered:    boolean("autoRecovered").default(false).notNull(),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  providerIdx:   index("pipeline_health_log_provider_idx").on(t.provider),
+  createdAtIdx:  index("pipeline_health_log_createdAt_idx").on(t.createdAt),
+}));
+export type PipelineHealthLog = typeof pipelineHealthLog.$inferSelect;
+export type InsertPipelineHealthLog = typeof pipelineHealthLog.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Day Trade Snapshot
+// Persists the last successful scan result so the cascade can fall back to it.
+// ─────────────────────────────────────────────────────────────────────────────
+export const dayTradeSnapshot = mysqlTable("day_trade_snapshot", {
+  id:          bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  /** Cache key matching the ScannerInput fingerprint */
+  cacheKey:    varchar("cacheKey", { length: 120 }).notNull(),
+  /** JSON-serialised DayTradeSetup[] */
+  payload:     text("payload").notNull(),
+  /** Epoch ms when this snapshot was captured */
+  capturedAt:  bigint("capturedAt", { mode: "number", unsigned: true }).notNull(),
+  createdAt:   timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  cacheKeyIdx: uniqueIndex("day_trade_snapshot_cacheKey_idx").on(t.cacheKey),
+}));
+export type DayTradeSnapshot = typeof dayTradeSnapshot.$inferSelect;
+export type InsertDayTradeSnapshot = typeof dayTradeSnapshot.$inferInsert;
