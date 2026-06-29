@@ -5,12 +5,12 @@
    Design: Palantir Noir — void black, neon accents, scanlines
    ============================================================ */
 import { useLocation } from "wouter";
-import { ReactNode, useState, useCallback } from "react";
+import { ReactNode, useState, useCallback, useEffect } from "react";
 import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle, Command, ScanSearch, FlaskConical,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle, Command, ScanSearch, FlaskConical, Users, TrendingDown, BellRing,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import AIReceptionistLink from "@/components/AIReceptionistLink";
@@ -50,6 +50,9 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "signals",        label: "Signals",             shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
       { id: "crypto",         label: "Crypto Hub",          shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
       { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
+      { id: "alerts",          label: "Alerts",              shortLabel: "Alerts",      icon: BellRing,        path: "/app/alerts" },
+      { id: "social-intel",    label: "Social Intelligence", shortLabel: "Social Intel",icon: Users,           path: "/app/social-intelligence" },
+      { id: "insider-intel",   label: "Insider Intelligence",shortLabel: "Insider",     icon: TrendingDown,    path: "/app/insider-intelligence" },
       { id: "dashboard",      label: "Dashboard",           shortLabel: "Dash",        icon: LayoutDashboard, path: "/app/dashboard" },
     ],
   },
@@ -169,8 +172,49 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Market breadth proxy: inverse of overall risk score
   const breadthScore = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
   const breadthLabel = breadthScore > 65 ? 'Broad' : breadthScore > 40 ? 'Mixed' : 'Narrow';
-  // BTC dominance — static proxy (no live feed)
-  const btcDom = 54.2;
+  // BTC dominance — live from /api/crypto/global (5-min cache)
+  const [btcDom, setBtcDom] = useState<number>(54.2);
+  const [btcDomPrev, setBtcDomPrev] = useState<number>(54.2);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchBtcDom = async () => {
+      try {
+        const res = await fetch('/api/crypto/global');
+        if (!res.ok) return;
+        const d = await res.json();
+        if (!cancelled && typeof d.btcDominance === 'number') {
+          setBtcDomPrev(d.btcDominance); // will be stale on first render, that's fine
+          setBtcDom(d.btcDominance);
+        }
+      } catch { /* silent */ }
+    };
+    fetchBtcDom();
+    const iv = setInterval(fetchBtcDom, 5 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, []);
+
+  // DXY — live from FRED DTWEXBGS (Broad Dollar Index, weekly)
+  const [dxy, setDxy] = useState<{ value: string; direction: 'up' | 'down' | 'flat' }>({ value: '—', direction: 'flat' });
+  useEffect(() => {
+    let cancelled = false;
+    const fetchDxy = async () => {
+      try {
+        const res = await fetch('/api/fred?series_id=DTWEXBGS&limit=2');
+        if (!res.ok) return;
+        const d = await res.json();
+        const obs: Array<{ value: string }> = d.observations ?? [];
+        if (!cancelled && obs.length >= 1 && obs[0].value !== '.') {
+          const current = parseFloat(obs[0].value);
+          const prev = obs.length >= 2 && obs[1].value !== '.' ? parseFloat(obs[1].value) : current;
+          const dir: 'up' | 'down' | 'flat' = current > prev + 0.1 ? 'up' : current < prev - 0.1 ? 'down' : 'flat';
+          setDxy({ value: current.toFixed(1), direction: dir });
+        }
+      } catch { /* silent */ }
+    };
+    fetchDxy();
+    const iv = setInterval(fetchDxy, 15 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(iv); };
+  }, []);
   // Fear & Greed proxy from overall score
   const fearGreed = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
   const fearGreedLabel = fearGreed > 75 ? 'Extreme Greed' : fearGreed > 55 ? 'Greed' : fearGreed > 45 ? 'Neutral' : fearGreed > 25 ? 'Fear' : 'Extreme Fear';
@@ -181,11 +225,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
     { label: 'AI Concentration', value: aiConcLabel, direction: aiConc > 28 ? 'up' : 'flat' },
     { label: 'Credit Stress', value: creditLabel, direction: creditDir },
     { label: 'VIX', value: vix.toFixed(1), direction: vix > 20 ? 'up' : 'down' },
-    { label: 'DXY', value: '97.4', direction: 'flat' },
+    { label: 'DXY', value: dxy.value, direction: dxy.direction },
     { label: 'Fed Cut Prob', value: `${fedCutProb}%`, direction: fedCutProb > 50 ? 'down' : 'up' },
     { label: '10Y Treasury', value: `${yield10Y.toFixed(2)}%`, direction: yield10Y > 4.5 ? 'up' : 'flat' },
     { label: 'HY Spread', value: `${hySpread}bps`, direction: hySpread > 350 ? 'up' : 'flat' },
-    { label: 'BTC Dominance', value: `${btcDom}%`, direction: 'flat' },
+    { label: 'BTC Dominance', value: `${btcDom.toFixed(1)}%`, direction: btcDom > btcDomPrev + 0.2 ? 'up' : btcDom < btcDomPrev - 0.2 ? 'down' : 'flat' },
     { label: 'Market Breadth', value: breadthLabel, direction: breadthScore > 55 ? 'down' : 'up' },
     { label: 'Fear & Greed', value: fearGreedLabel, direction: fearGreed > 55 ? 'down' : fearGreed < 45 ? 'up' : 'flat' },
     // Legacy items for backward compat

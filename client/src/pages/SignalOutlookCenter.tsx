@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import NarrativeLoader from "@/components/NarrativeLoader";
 import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 
 // ── Types (mirrored from server) ─────────────────────────────
 type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | "Avoid";
@@ -1702,6 +1703,7 @@ export default function SignalOutlookCenter() {
 
         {/* ── Inline upgrade prompt ────────────────────────────────── */}
         <SignalOutlookUpgradePrompt />
+        <DisclaimerBanner variant="default" />
 
       </div>
     </div>

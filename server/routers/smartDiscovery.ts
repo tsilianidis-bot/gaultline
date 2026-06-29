@@ -220,6 +220,7 @@ FIELD RULES:
 - invalidation: ONE sentence starting with "Thesis fails if..."
 - suggestedAction: ONE sentence starting with a verb.
 - Dynamic invalidation only — never hardcode prices. Use conditions like "breaks below moving average", "ETF outflows exceed threshold", "credit spreads widen beyond X bps".
+DISCLAIMER INSTRUCTION: All output is for informational and educational purposes only. Nothing constitutes financial advice or a solicitation to buy or sell any security.
 
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
 ${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
@@ -472,7 +473,8 @@ FIELD RULES:
 - avoidList: 3-5 assets to avoid right now with a specific one-sentence reason each.
 - sectorLeaderboard: Rate 8-10 sectors on a 1-5 scale (1=Avoid, 5=Strong Buy) with one-sentence reason.
 - whyTheseRankHighest: 3-4 sentences explaining the macro logic behind the top-ranked opportunities.
-- followUpChips: 4-5 natural follow-up questions the user might want to ask next.`;
+- followUpChips: 4-5 natural follow-up questions the user might want to ask next.
+DISCLAIMER INSTRUCTION: All output is for informational and educational purposes only. Nothing constitutes financial advice or a solicitation to buy or sell any security.`;
 
   const userPrompt = `${conversationContext}
 User question: "${query}"

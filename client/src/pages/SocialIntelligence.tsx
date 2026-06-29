@@ -8,6 +8,7 @@ import { useState, useMemo, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
 import { useSEO } from "@/hooks/useSEO";
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 import {
   TrendingUp, TrendingDown, Minus, Activity, BarChart2,
   RefreshCw, ExternalLink, Clock, Zap, Radio, MessageSquare,
@@ -1446,6 +1447,7 @@ export default function SocialIntelligence() {
           </div>
         )}
       </div>
+      <DisclaimerBanner variant="default" />
     </div>
   );
 }

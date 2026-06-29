@@ -229,7 +229,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
               >
                 <div>
                   <div className="text-[13px] font-mono font-bold tracking-widest text-[#FFD700]">MOVE BEFORE THE QUAKE</div>
-                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Founder access · $299 one-time · Limited spots remaining</div>
+                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Founding rate · $49/mo locked forever · Limited spots remaining</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 8h10M9 4l4 4-4 4" />

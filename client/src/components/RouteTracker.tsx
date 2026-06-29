@@ -64,6 +64,15 @@ const PAGE_TITLES: Record<string, string> = {
   "/app/admin/chat-inbox": "Chat Inbox | Admin",
   "/app/day-trade-intelligence": "FAULTLINE — Day Trade Intelligence",
   "/app/opportunities": "FAULTLINE — Opportunities",
+  "/app/social-intelligence": "FAULTLINE — Social Intelligence",
+  "/app/discover": "FAULTLINE — Ask Intelligence",
+  "/app/decision-engine": "FAULTLINE — Decision Engine",
+  "/app/signal-outlook": "FAULTLINE — Signal Outlook Center",
+  "/app/todays-story": "FAULTLINE — Today's Story",
+  "/app/decision-ledger": "FAULTLINE — Decision Ledger",
+  "/app/crypto-hub": "FAULTLINE — Crypto Hub",
+  "/app/market-command-center": "FAULTLINE — Market Command Center",
+  "/app/trade-preflight": "FAULTLINE — Trade Preflight",
 };
 
 function getPageTitle(path: string): string {
@@ -145,8 +154,7 @@ function sendInternalPageView(path: string, title: string, userId?: number) {
       utmCampaign,
       screenWidth: window.screen?.width,
     }),
-    // keepalive ensures the request completes even if the page navigates away
-    keepalive: true,
+    // Note: keepalive omitted — causes "Failed to fetch" in some proxy/iframe environments
   }).catch(() => {
     // Silently ignore — analytics must never break the app
   });

@@ -10,6 +10,9 @@
  *   - compact: single-line for tight layouts (mobile, sidebars)
  *   - full: multi-paragraph for high-risk pages (signals, scenarios, portfolio)
  */
+import { Link } from "wouter";
+
+const LINK_STYLE: React.CSSProperties = { color: "rgba(0,212,255,0.35)", textDecoration: "none" };
 
 interface DisclaimerBannerProps {
   variant?: "default" | "compact" | "full";
@@ -37,13 +40,13 @@ export default function DisclaimerBanner({ variant = "default", className }: Dis
         }}
       >
         For informational purposes only. Not financial advice.{" "}
-        <a href="/methodology" style={{ color: "rgba(0,212,255,0.35)", textDecoration: "none" }}>
+        <Link href="/methodology" style={LINK_STYLE}>
           Methodology
-        </a>{" "}
+        </Link>{" "}
         ·{" "}
-        <a href="/legal" style={{ color: "rgba(0,212,255,0.35)", textDecoration: "none" }}>
+        <Link href="/legal" style={LINK_STYLE}>
           Legal
-        </a>
+        </Link>
       </div>
     );
   }
@@ -66,16 +69,17 @@ export default function DisclaimerBanner({ variant = "default", className }: Dis
         </div>
         <p style={{ margin: "0 0 6px" }}>
           All content on this platform — including pressure scores, regime classifications, signals, rotation
-          suggestions, scenario outputs, and historical analogs — is for <strong style={{ color: "rgba(255,255,255,0.35)" }}>informational and educational purposes only</strong>.
+          suggestions, scenario outputs, and historical analogs — is for{" "}
+          <strong style={{ color: "rgba(255,255,255,0.35)" }}>informational and educational purposes only</strong>.
           Nothing here constitutes financial advice, investment recommendations, or a solicitation to buy or sell
           any security, cryptocurrency, or other financial instrument.
         </p>
         <p style={{ margin: 0 }}>
           Past structural similarity to historical episodes does not guarantee future outcomes. Always consult a
           qualified financial advisor before making investment decisions.{" "}
-          <a href="/methodology" style={{ color: "rgba(0,212,255,0.35)", textDecoration: "none" }}>
+          <Link href="/methodology" style={LINK_STYLE}>
             Read our full methodology →
-          </a>
+          </Link>
         </p>
       </div>
     );
@@ -100,13 +104,13 @@ export default function DisclaimerBanner({ variant = "default", className }: Dis
         For informational purposes only. Not financial advice. Past performance does not guarantee future results.
       </span>
       <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>
-      <a href="/methodology" style={{ color: "rgba(0,212,255,0.35)", textDecoration: "none" }}>
+      <Link href="/methodology" style={LINK_STYLE}>
         Methodology
-      </a>
+      </Link>
       <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>
-      <a href="/legal" style={{ color: "rgba(0,212,255,0.35)", textDecoration: "none" }}>
+      <Link href="/legal" style={LINK_STYLE}>
         Legal Disclosure
-      </a>
+      </Link>
     </div>
   );
 }

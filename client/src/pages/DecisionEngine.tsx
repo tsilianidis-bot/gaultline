@@ -14,6 +14,7 @@ import { Crosshair, Zap, Shield } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import SituationRoom from "./SituationRoom";
 import TradePreflight from "./TradePreflight";
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 
 const MONO = "'IBM Plex Mono', monospace";
 const SANS = "'IBM Plex Sans', sans-serif";
@@ -128,6 +129,7 @@ export default function DecisionEngine() {
         {activeTab === "situation-room" && <SituationRoom />}
         {activeTab === "trade-preflight" && <TradePreflight />}
       </div>
+      <DisclaimerBanner variant="full" />
     </div>
   );
 }

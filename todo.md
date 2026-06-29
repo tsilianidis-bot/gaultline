@@ -2933,3 +2933,17 @@
 - [x] useEngine imported in DayTradeIntelligence.tsx for macro snapshot in fallback
 - [x] TypeScript: 0 errors (npx tsc --noEmit)
 - [x] Tests: auth.logout.test.ts passing (1/1)
+
+## Million User Audit Fixes (Jun 29 2026)
+- [x] CRITICAL: Wire live DXY (FRED DTWEXBGS) into AppLayout ticker bar — was hardcoded 97.4
+- [x] CRITICAL: Wire live BTC Dominance (/api/crypto/global) into AppLayout ticker bar — was hardcoded 54.2%
+- [x] CRITICAL: Add DisclaimerBanner to SmartDiscovery (primary AI advice surface)
+- [x] CRITICAL: Add DisclaimerBanner to SignalOutlookCenter
+- [x] CRITICAL: Add DisclaimerBanner to DecisionEngine
+- [x] HIGH: Add Social Intelligence, Insider Intelligence, and Alerts to sidebar nav (were orphaned)
+- [x] MEDIUM: Fix DisclaimerBanner links to use wouter Link (SPA navigation, no full page reload)
+- [x] MEDIUM: Remove keepalive from RouteTracker analytics fetch (caused Failed to fetch in preview proxy)
+- [x] MEDIUM: Add missing page titles to RouteTracker for new pages
+- [x] MEDIUM: Fix MarketingSite mobile nav CTA copy (Founder access $49/mo, not $299 one-time)
+- [x] MEDIUM: Add disclaimer instruction to both AI system prompts in smartDiscovery router
+- [x] MEDIUM: Add DisclaimerBanner to SocialIntelligence page

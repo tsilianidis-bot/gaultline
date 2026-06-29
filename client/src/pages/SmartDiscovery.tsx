@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import OnboardingFlow from "@/components/OnboardingFlow";
+import DisclaimerBanner from "@/components/DisclaimerBanner";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -2405,6 +2406,7 @@ export default function SmartDiscovery() {
           )}
         </div>
       </div>
+      <DisclaimerBanner variant="default" />
     </>
   );
 }
