@@ -14,10 +14,12 @@ import {
   TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp,
   Activity, Zap, BarChart2, Shield, Clock, Bookmark,
   CheckCircle, XCircle, AlertCircle, Info, Layers,
+  Star, Bell, BookOpen, Wifi, WifiOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import FaultlineTerm from "@/components/FaultlineTerm";
+import { useEngine } from "@/contexts/EngineContext";
 
 // ── Types (mirrors server dayTradeEngine.ts) ─────────────────
 type DayTradeSetup = {
@@ -1368,9 +1370,345 @@ function EmptyState({ icon: _icon, title, message }: { icon: React.ReactNode; ti
   );
 }
 
-// ── Tab definitions ───────────────────────────────────────────
+function InstitutionalFallback({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const { output, isLive, lastUpdated } = useEngine();
+  const [showSectors, setShowSectors] = useState(true);
+  const [showPlaybook, setShowPlaybook] = useState(true);
+  const [showWatchlist, setShowWatchlist] = useState(true);
+  const [showRisk, setShowRisk] = useState(false);
+  const [showMacro, setShowMacro] = useState(false);
+
+  const isAuth = message.includes("UNAUTHORIZED") || message.includes("FORBIDDEN");
+  if (isAuth) {
+    return (
+      <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)", background: "rgba(255,107,107,0.04)", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "32px", textAlign: "center" }}>
+        <AlertCircle size={24} style={{ color: "#FF6B6B" }} />
+        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF6B6B" }}>SUBSCRIPTION REQUIRED</div>
+        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6, maxWidth: "400px" }}>Core subscription required to access Day Trade Intelligence.</div>
+      </div>
+    );
+  }
+
+  const regimeLabel = output?.regime?.label ?? "Unknown";
+  const regimeColor = output?.regime?.color ?? "#94A3B8";
+  const pressure = output?.overall?.score ?? 0;
+  const bullProb = output?.probability?.bullProbability ?? 50;
+  const lastUpdatedStr = lastUpdated ? lastUpdated.toLocaleTimeString() : "Not available";
+
+  const SECTORS_DATA = [
+    { name: "Technology (XLK)",      bias: "Monitor",  note: "High beta; avoid during data outages" },
+    { name: "Semiconductors (SOXX)", bias: "Monitor",  note: "Momentum-driven; wait for data restore" },
+    { name: "Financials (XLF)",      bias: "Neutral",  note: "Rate-sensitive; watch Fed signals" },
+    { name: "Energy (XLE)",          bias: "Neutral",  note: "Commodity-linked; check oil levels" },
+    { name: "Bitcoin (BTC)",         bias: "Monitor",  note: "24/7 liquidity; crypto data may differ" },
+    { name: "Ethereum (ETH)",        bias: "Monitor",  note: "Protocol risk; watch BTC correlation" },
+  ];
+
+  const PLAYBOOK_DATA = [
+    { rule: "Wait for data confirmation", detail: "Never enter a position without confirmed live price and volume data." },
+    { rule: "Reduce position size by 50%", detail: "During data outages, cut all position sizes in half to manage unknown risk." },
+    { rule: "Widen stops by 1.5x",         detail: "Spread widens during data gaps. Use 1.5x normal stop distance." },
+    { rule: "Avoid momentum setups",        detail: "Momentum trades require real-time tape reading. Skip until data restores." },
+    { rule: "Focus on mean-reversion",      detail: "If you must trade, mean-reversion setups are less data-dependent." },
+    { rule: "Check pre-market levels",      detail: "Use last known support/resistance levels from prior session as reference." },
+  ];
+
+  const WATCHLIST_DATA = [
+    { sym: "NVDA", type: "stock",  note: "AI leader; high conviction when data restores" },
+    { sym: "AAPL", type: "stock",  note: "Liquid; tight spreads; good for data-gap trading" },
+    { sym: "TSLA", type: "stock",  note: "High volatility; wait for clear setup" },
+    { sym: "SPY",  type: "stock",  note: "Index ETF; macro proxy; always liquid" },
+    { sym: "BTC",  type: "crypto", note: "24/7 market; independent data source" },
+    { sym: "ETH",  type: "crypto", note: "Protocol activity; check on-chain" },
+    { sym: "AMD",  type: "stock",  note: "Semiconductor proxy; correlated to NVDA" },
+    { sym: "META", type: "stock",  note: "Ad revenue proxy; stable fundamentals" },
+  ];
+
+  const RISK_DATA = [
+    { title: "Maximum Risk Per Trade", value: "0.5% of portfolio", detail: "During data outages, cut normal risk per trade by 50%." },
+    { title: "Daily Loss Limit",       value: "1.5% of portfolio", detail: "Stop trading for the day if this threshold is hit." },
+    { title: "Correlation Check",      value: "Required",          detail: "Avoid holding correlated positions when data is incomplete." },
+    { title: "Leverage",               value: "Reduce to 1:1",     detail: "No leverage during data outages. Spot only." },
+  ];
+
+  const MACRO_DATA = [
+    { label: "Market Regime",    value: regimeLabel,                       color: regimeColor },
+    { label: "Pressure Score",   value: `${pressure.toFixed(1)}/10`,       color: pressure >= 6.5 ? "#FF6B6B" : pressure >= 4.0 ? "#FFD700" : "#00FF88" },
+    { label: "Bull Probability", value: `${bullProb}%`,                    color: bullProb >= 60 ? "#00FF88" : bullProb >= 40 ? "#FFD700" : "#FF6B6B" },
+    { label: "Data Source",      value: isLive ? "LIVE (FRED)" : "CACHED", color: isLive ? "#00FF88" : "#FFD700" },
+    { label: "Last Updated",     value: lastUpdatedStr,                    color: "#94A3B8" },
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <div style={{ ...CARD, borderColor: "rgba(255,165,0,0.25)", background: "rgba(255,165,0,0.04)", padding: "16px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <WifiOff size={16} style={{ color: "#FFA500", flexShrink: 0 }} />
+            <div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#FFA500" }}>LIVE DAY TRADE DATA TEMPORARILY UNAVAILABLE</div>
+              <div style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px", marginTop: "2px" }}>FAULTLINE requires real-time market data to generate reliable intraday setups. Institutional guidance below remains valid.</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <div style={{ ...MONO_SM, fontSize: "9px", color: "#6B7280" }}>AUTO-RETRY ACTIVE</div>
+            <button onClick={onRetry} style={{ padding: "6px 14px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "4px", color: "#00D4FF", ...MONO_SM, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+              <RefreshCw size={10} /> Retry Now
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style={CARD}>
+        <button onClick={() => setShowMacro(v => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: showMacro ? "12px" : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Activity size={12} style={{ color: "#00D4FF" }} />
+            <span style={{ ...MONO_SM, color: "#00D4FF", letterSpacing: "0.1em" }}>MACRO SNAPSHOT (FAULTLINE ENGINE)</span>
+          </div>
+          {showMacro ? <ChevronUp size={12} style={{ color: "#6B7280" }} /> : <ChevronDown size={12} style={{ color: "#6B7280" }} />}
+        </button>
+        {showMacro && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "8px" }}>
+            {MACRO_DATA.map(s => (
+              <div key={s.label} style={{ padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px" }}>
+                <div style={LABEL}>{s.label}</div>
+                <div style={{ ...VALUE, color: s.color, fontSize: "12px" }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={CARD}>
+        <button onClick={() => setShowSectors(v => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: showSectors ? "12px" : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <BarChart2 size={12} style={{ color: "#FFD700" }} />
+            <span style={{ ...MONO_SM, color: "#FFD700", letterSpacing: "0.1em" }}>SECTORS WORTH MONITORING</span>
+          </div>
+          {showSectors ? <ChevronUp size={12} style={{ color: "#6B7280" }} /> : <ChevronDown size={12} style={{ color: "#6B7280" }} />}
+        </button>
+        {showSectors && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {SECTORS_DATA.map(s => (
+              <div key={s.name} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px" }}>
+                <span style={{ ...MONO_SM, fontWeight: 700, color: "#F0F4FF", minWidth: "170px" }}>{s.name}</span>
+                <span style={{ ...MONO_SM, fontSize: "9px", padding: "2px 6px", background: "rgba(255,215,0,0.08)", border: "1px solid rgba(255,215,0,0.2)", borderRadius: "3px", color: "#FFD700" }}>{s.bias}</span>
+                <span style={{ ...MONO_SM, color: "#6B7280", fontSize: "10px" }}>{s.note}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={CARD}>
+        <button onClick={() => setShowPlaybook(v => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: showPlaybook ? "12px" : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <BookOpen size={12} style={{ color: "#00FF88" }} />
+            <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>INSTITUTIONAL PLAYBOOK - DATA OUTAGE PROTOCOL</span>
+          </div>
+          {showPlaybook ? <ChevronUp size={12} style={{ color: "#6B7280" }} /> : <ChevronDown size={12} style={{ color: "#6B7280" }} />}
+        </button>
+        {showPlaybook && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {PLAYBOOK_DATA.map((p, i) => (
+              <div key={i} style={{ display: "flex", gap: "10px", padding: "8px 10px", background: "rgba(0,255,136,0.02)", border: "1px solid rgba(0,255,136,0.08)", borderRadius: "4px" }}>
+                <div style={{ ...MONO_SM, fontSize: "9px", color: "#00FF88", fontWeight: 700, minWidth: "20px", paddingTop: "1px" }}>{String(i + 1).padStart(2, "0")}</div>
+                <div>
+                  <div style={{ ...MONO_SM, color: "#F0F4FF", fontWeight: 600, marginBottom: "2px" }}>{p.rule}</div>
+                  <div style={{ ...MONO_SM, color: "#6B7280", fontSize: "10px", lineHeight: 1.5 }}>{p.detail}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={CARD}>
+        <button onClick={() => setShowWatchlist(v => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: showWatchlist ? "12px" : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Star size={12} style={{ color: "#00D4FF" }} />
+            <span style={{ ...MONO_SM, color: "#00D4FF", letterSpacing: "0.1em" }}>WATCHLIST CANDIDATES FOR NEXT OPPORTUNITY</span>
+          </div>
+          {showWatchlist ? <ChevronUp size={12} style={{ color: "#6B7280" }} /> : <ChevronDown size={12} style={{ color: "#6B7280" }} />}
+        </button>
+        {showWatchlist && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "6px" }}>
+            {WATCHLIST_DATA.map(w => (
+              <div key={w.sym} style={{ padding: "8px 10px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.1)", borderRadius: "4px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "3px" }}>
+                  <span style={{ ...MONO_SM, fontWeight: 700, color: "#F0F4FF", fontSize: "13px" }}>{w.sym}</span>
+                  <span style={{ ...MONO_SM, fontSize: "8px", padding: "1px 5px", background: w.type === "crypto" ? "rgba(153,102,255,0.12)" : "rgba(0,212,255,0.08)", border: `1px solid ${w.type === "crypto" ? "rgba(153,102,255,0.25)" : "rgba(0,212,255,0.2)"}`, borderRadius: "3px", color: w.type === "crypto" ? "#9966FF" : "#00D4FF" }}>{w.type.toUpperCase()}</span>
+                </div>
+                <div style={{ ...MONO_SM, color: "#6B7280", fontSize: "10px", lineHeight: 1.4 }}>{w.note}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={CARD}>
+        <button onClick={() => setShowRisk(v => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: showRisk ? "12px" : 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Shield size={12} style={{ color: "#FF9500" }} />
+            <span style={{ ...MONO_SM, color: "#FF9500", letterSpacing: "0.1em" }}>RISK MANAGEMENT - OUTAGE PROTOCOL</span>
+          </div>
+          {showRisk ? <ChevronUp size={12} style={{ color: "#6B7280" }} /> : <ChevronDown size={12} style={{ color: "#6B7280" }} />}
+        </button>
+        {showRisk && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {RISK_DATA.map((r, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "8px 10px", background: "rgba(255,149,0,0.03)", border: "1px solid rgba(255,149,0,0.1)", borderRadius: "4px" }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ ...MONO_SM, color: "#F0F4FF", fontWeight: 600, marginBottom: "2px" }}>{r.title}</div>
+                  <div style={{ ...MONO_SM, color: "#6B7280", fontSize: "10px", lineHeight: 1.5 }}>{r.detail}</div>
+                </div>
+                <div style={{ ...MONO_SM, fontWeight: 700, color: "#FF9500", fontSize: "12px", flexShrink: 0, paddingTop: "1px" }}>{r.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ ...CARD, borderColor: "rgba(255,255,255,0.06)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
+          <Wifi size={11} style={{ color: "#6B7280" }} />
+          <span style={{ ...MONO_SM, color: "#6B7280", letterSpacing: "0.1em" }}>DATA PIPELINE STATUS</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          {[
+            { label: "Market Price Feed",  status: "OFFLINE",                      color: "#FF6B6B" },
+            { label: "Volume Data",         status: "OFFLINE",                      color: "#FF6B6B" },
+            { label: "Options Flow",        status: "OFFLINE",                      color: "#FF6B6B" },
+            { label: "FRED Macro Data",     status: isLive ? "ONLINE" : "CACHED",   color: isLive ? "#00FF88" : "#FFD700" },
+            { label: "AI Analysis Engine",  status: "STANDBY",                      color: "#FFD700" },
+          ].map(item => (
+            <div key={item.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 8px", background: "rgba(255,255,255,0.01)", borderRadius: "3px" }}>
+              <span style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px" }}>{item.label}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: item.color }} />
+                <span style={{ ...MONO_SM, fontSize: "9px", color: item.color }}>{item.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151", marginTop: "8px" }}>AUTOMATIC RETRY ACTIVE - checking every 60 seconds</div>
+      </div>
+    </div>
+  );
+}
+
+function Top10RankedTab({ onSearch }: { onSearch: (sym: string, type: "stock" | "crypto") => void }) {
+  const { data, isLoading, error, refetch, isFetching } = trpc.dayTrade.scan.useQuery({
+    assetType: "both",
+    capBucket: "mixed",
+    direction: "both",
+    riskProfile: "balanced",
+    maxResults: 10,
+  }, {
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
+  });
+
+  const setups = ((data ?? []) as unknown as AnySetup[]).filter(s => !isNoTrade(s)).slice(0, 10) as DayTradeSetup[];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+      {DISCLAIMER}
+
+      <div style={{ ...CARD, background: "rgba(0,212,255,0.03)", borderColor: "rgba(0,212,255,0.18)", padding: "14px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Star size={14} style={{ color: "#FFD700" }} />
+            <div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#F0F4FF", letterSpacing: "0.06em" }}>TOP 10 RANKED INTRADAY SETUPS</div>
+              <div style={{ ...MONO_SM, color: "#6B7280", fontSize: "10px" }}>Ranked by Execution Score - All asset classes - Auto-refreshes every 10 min</div>
+            </div>
+          </div>
+          <button onClick={() => refetch()} disabled={isFetching} style={{ padding: "6px 14px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", borderRadius: "4px", color: "#00D4FF", ...MONO_SM, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+            <RefreshCw size={11} style={{ animation: isFetching ? "spin 1s linear infinite" : "none" }} />
+            {isFetching ? "Scanning..." : "Refresh"}
+          </button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <LoadingState label="Scanning for top 10 setups..." />
+      ) : error ? (
+        <InstitutionalFallback message={error.message} onRetry={() => refetch()} />
+      ) : setups.length === 0 ? (
+        <InstitutionalFallback message="No high-conviction setups identified" onRetry={() => refetch()} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {setups.map((s, i) => {
+            const gradeColor = s.executionGrade === "A" ? "#00FF88" : s.executionGrade === "B" ? "#00D4FF" : s.executionGrade === "C" ? "#FFD700" : s.executionGrade === "D" ? "#FF9500" : "#FF6B6B";
+            const rankMedal = i === 0 ? "#FFD700" : i === 1 ? "#C0C0C0" : i === 2 ? "#CD7F32" : "rgba(255,255,255,0.2)";
+            return (
+              <div key={s.symbol} style={{ ...CARD, padding: "0", overflow: "hidden", borderColor: s.direction === "bullish" ? "rgba(0,255,136,0.15)" : "rgba(255,107,107,0.15)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 14px", flexWrap: "wrap" }}>
+                  <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: `${rankMedal}18`, border: `1px solid ${rankMedal}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color: rankMedal }}>#{i + 1}</span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: "120px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                      <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: s.direction === "bullish" ? "#00FF88" : "#FF6B6B" }}>{s.symbol}</span>
+                      <span style={{ ...MONO_SM, fontSize: "9px", color: "#6B7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100px" }}>{s.name}</span>
+                      <span style={{ ...MONO_SM, fontSize: "8px", padding: "1px 4px", background: s.assetType === "crypto" ? "rgba(153,102,255,0.1)" : "rgba(0,212,255,0.08)", border: `1px solid ${s.assetType === "crypto" ? "rgba(153,102,255,0.2)" : "rgba(0,212,255,0.15)"}`, borderRadius: "2px", color: s.assetType === "crypto" ? "#9966FF" : "#00D4FF" }}>{s.assetType.toUpperCase()}</span>
+                    </div>
+                    <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151", marginTop: "1px" }}>{s.setupType} - {fmtHold(s.expectedHoldMinutes)} hold</div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "12px" }}>{fmt(s.currentPrice)}</div>
+                    <div style={{ ...MONO_SM, fontSize: "10px", color: s.changePercent >= 0 ? "#00FF88" : "#FF6B6B" }}>{pct(s.changePercent)}</div>
+                  </div>
+                  <div style={{ flexShrink: 0 }}><DirIcon d={s.direction} /></div>
+                  <div style={{ textAlign: "center", flexShrink: 0 }}>
+                    <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151" }}>CONF</div>
+                    <div style={{ ...MONO_SM, fontWeight: 700, color: confColor(s.confidence), fontSize: "13px" }}>{s.confidence}</div>
+                  </div>
+                  <div style={{ width: "26px", height: "26px", borderRadius: "3px", background: `${gradeColor}15`, border: `1px solid ${gradeColor}35`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "13px", color: gradeColor }}>{s.executionGrade}</span>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ ...MONO_SM, fontSize: "9px", color: "#374151" }}>R/R</div>
+                    <div style={{ ...MONO_SM, fontWeight: 600, color: "#F0F4FF", fontSize: "11px" }}>{s.riskRewardRatio.toFixed(1)}:1</div>
+                  </div>
+                  <button onClick={() => onSearch(s.symbol, s.assetType)} style={{ padding: "4px 10px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "3px", color: "#00D4FF", ...MONO_SM, fontSize: "9px", cursor: "pointer", flexShrink: 0 }}>Report</button>
+                </div>
+                <div style={{ display: "flex", borderTop: "1px solid rgba(255,255,255,0.04)", background: "rgba(0,0,0,0.2)", flexWrap: "wrap" }}>
+                  {[
+                    { label: "ENTRY",   value: `${fmt(s.entryZoneLow)}-${fmt(s.entryZoneHigh)}`, color: "#00D4FF" },
+                    { label: "T1",      value: fmt(s.target1),            color: "#00FF88" },
+                    { label: "T2",      value: fmt(s.target2),            color: "#7CFF7C" },
+                    { label: "STOP",    value: fmt(s.stopLoss),           color: "#FF6B6B" },
+                    { label: "PROB",    value: `${s.probabilityRating}%`, color: confColor(s.probabilityRating) },
+                    { label: "RISK",    value: s.riskLevel,               color: riskColor(s.riskLevel) },
+                    { label: "REL-VOL", value: s.relativeVolume != null ? `${s.relativeVolume.toFixed(1)}x` : "N/A", color: s.relativeVolume != null && s.relativeVolume >= 1.5 ? "#00FF88" : "#94A3B8" },
+                  ].map(kv => (
+                    <div key={kv.label} style={{ flex: 1, padding: "5px 8px", borderRight: "1px solid rgba(255,255,255,0.04)", minWidth: "60px" }}>
+                      <div style={{ ...MONO_SM, fontSize: "8px", color: "#374151", marginBottom: "1px" }}>{kv.label}</div>
+                      <div style={{ ...MONO_SM, fontSize: "10px", fontWeight: 600, color: kv.color, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{kv.value}</div>
+                    </div>
+                  ))}
+                </div>
+                {s.catalyst && (
+                  <div style={{ padding: "5px 14px", borderTop: "1px solid rgba(255,255,255,0.04)", background: "rgba(0,0,0,0.15)" }}>
+                    <span style={{ ...MONO_SM, fontSize: "9px", color: "#374151" }}>CATALYST: </span>
+                    <span style={{ ...MONO_SM, fontSize: "9px", color: "#6B7280" }}>{s.catalyst}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <DataFreshnessBadge source="Top 10 Ranked" generatedAt={setups[0]?.generatedAt ?? Date.now()} isRefreshing={isFetching} thresholds={[5, 15, 60]} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TABS = [
   { id: "overview",  label: "Overview",       icon: <Target size={13} /> },
+  { id: "top10",     label: "Top 10 Ranked",  icon: <Star size={13} /> },
   { id: "scanner",   label: "Market Scanner", icon: <Activity size={13} /> },
   { id: "stocks",    label: "Stock Screener", icon: <BarChart2 size={13} /> },
   { id: "lowcap",    label: "Low Cap",         icon: <Layers size={13} /> },
@@ -1537,6 +1875,7 @@ export default function DayTradeIntelligence() {
 
         {/* Tab content */}
         {activeTab === "overview"  && <OverviewTab />}
+        {activeTab === "top10"     && <Top10RankedTab onSearch={handleSearch} />}
         {activeTab === "scanner"   && <ScannerTab onSearch={handleSearch} />}
         {activeTab === "stocks"    && <StockScreenerTab onSearch={handleSearch} />}
         {activeTab === "lowcap"    && <CapScannerTab cap="low"   onSearch={handleSearch} />}

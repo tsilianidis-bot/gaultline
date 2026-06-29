@@ -25,7 +25,9 @@ import {
   Zap, RefreshCw, Send, Activity, BarChart2,
   GitBranch, Shield, Clock, Target, BookOpen,
   CheckCircle, XCircle, Eye, ArrowUp, ArrowDown, Minus,
+  Star, TrendingUp as TrendUp, AlertCircle, Info,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import OnboardingFlow from "@/components/OnboardingFlow";
 
 // ── Design tokens ─────────────────────────────────────────────
@@ -89,6 +91,48 @@ interface FaultlineAnswer {
   deepDiveLinks: Array<{ label: string; path: string; description: string }>;
 }
 
+// ── Opportunity Ranking Types (mirrors server OpportunityRankingAnswer) ──
+interface RankedOpportunityItem {
+  rank: number;
+  ticker: string;
+  name: string;
+  sector: string;
+  assetType: "stock" | "crypto";
+  action: "BUY" | "ACCUMULATE" | "WATCH" | "AVOID";
+  convictionScore: number;
+  riskLevel: "Low" | "Medium" | "High" | "Extreme";
+  primaryDriver: string;
+  nearTermCatalyst: string;
+  keyRisk: string;
+  thesisSummary: string;
+  entryZone: string | null;
+  stopLevel: string | null;
+  targetOne: string | null;
+  riskRewardRatio: string | null;
+  dataFreshness: string;
+}
+
+interface SectorRating {
+  sector: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  bias: "bullish" | "bearish" | "neutral";
+  reason: string;
+}
+
+interface OpportunityRankingAnswer {
+  queryType: "opportunity";
+  macroContext: string;
+  regimeLabel: string;
+  regimeColor: "green" | "yellow" | "red";
+  topOpportunities: RankedOpportunityItem[];
+  avoidList: Array<{ ticker: string; name: string; reason: string }>;
+  sectorLeaderboard: SectorRating[];
+  whyTheseRankHighest: string;
+  followUpChips: string[];
+  dataFreshness: string;
+  deepDiveLinks: Array<{ label: string; path: string; description: string }>;
+}
+
 // V3.0 Daily Brief answer type
 interface BriefAnswer {
   todaysMarket: {
@@ -129,6 +173,7 @@ interface ConversationMessage {
   ticker?: string | null;
   timestamp: number;
   answer?: FaultlineAnswer;
+  opportunityAnswer?: OpportunityRankingAnswer;
   briefAnswer?: BriefAnswer;
 }
 
@@ -1015,6 +1060,376 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
   );
 }
 
+// ── Opportunity Ranking Card (AI Intent Routing) ─────────────
+
+function HoverTip({ label, tip }: { label: string; tip: string }) {
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "3px", cursor: "help" }}>
+            {label}
+            <Info size={10} style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-xs bg-gray-900 border border-gray-700 text-gray-200 p-3">
+          <p>{tip}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+const ACTION_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  BUY:        { bg: "rgba(0,255,136,0.12)",  border: "rgba(0,255,136,0.35)",  text: "#00FF88" },
+  ACCUMULATE: { bg: "rgba(0,212,255,0.10)",  border: "rgba(0,212,255,0.30)",  text: "#00D4FF" },
+  WATCH:      { bg: "rgba(255,215,0,0.08)",  border: "rgba(255,215,0,0.25)",  text: "#FFD700" },
+  AVOID:      { bg: "rgba(255,68,68,0.08)",  border: "rgba(255,68,68,0.25)",  text: "#FF4444" },
+};
+
+const RISK_COLORS: Record<string, string> = {
+  Low:     "#00FF88",
+  Medium:  "#FFD700",
+  High:    "#FF9500",
+  Extreme: "#FF4444",
+};
+
+const STAR_COLORS: Record<number, string> = {
+  5: "#00FF88",
+  4: "#7CFF7C",
+  3: "#FFD700",
+  2: "#FF9500",
+  1: "#FF4444",
+};
+
+const BIAS_COLORS: Record<string, string> = {
+  bullish: "#00FF88",
+  bearish: "#FF4444",
+  neutral: "#FFD700",
+};
+
+function OpportunityRankingCard({ answer, onAskFollowUp, onDeepDive }: {
+  answer: OpportunityRankingAnswer;
+  onAskFollowUp: (prompt: string) => void;
+  onDeepDive: (path: string) => void;
+}) {
+  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [showSectors, setShowSectors] = useState(false);
+  const [showAvoid, setShowAvoid] = useState(false);
+  const [showDeepDive, setShowDeepDive] = useState(false);
+
+  const regimeColor = answer.regimeColor === "green" ? "#00FF88" : answer.regimeColor === "red" ? "#FF4444" : "#FFD700";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+
+      {/* ── Header: Macro Context ── */}
+      <div style={{
+        padding: "14px 18px",
+        background: "rgba(0,212,255,0.04)",
+        border: "1px solid rgba(0,212,255,0.14)",
+        borderRadius: "8px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px", flexWrap: "wrap", gap: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Activity size={12} style={{ color: ACCENT }} />
+            <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: "0.12em" }}>OPPORTUNITY SCAN — FULL MARKET UNIVERSE</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: regimeColor }} />
+            <span style={{ ...MONO_SM, color: regimeColor, fontSize: "10px", fontWeight: 700 }}>{answer.regimeLabel}</span>
+          </div>
+        </div>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D4E0", lineHeight: 1.65, margin: 0 }}>
+          {answer.macroContext}
+        </p>
+        <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.2)", fontSize: "9px", marginTop: "8px" }}>
+          {answer.dataFreshness}
+        </div>
+      </div>
+
+      {/* ── Why These Rank Highest ── */}
+      <div style={{
+        padding: "12px 16px",
+        background: SURFACE,
+        border: `1px solid ${BORDER}`,
+        borderRadius: "8px",
+        display: "flex",
+        gap: "10px",
+        alignItems: "flex-start",
+      }}>
+        <Zap size={12} style={{ color: "#FFD700", marginTop: "2px", flexShrink: 0 }} />
+        <div>
+          <div style={{ ...MONO_SM, color: "#FFD700", marginBottom: "4px", fontSize: "9px", letterSpacing: "0.12em" }}>WHY THESE RANK HIGHEST</div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D4E0", lineHeight: 1.65, margin: 0 }}>
+            {answer.whyTheseRankHighest}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Ranked Opportunities ── */}
+      <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
+        <div style={{ padding: "12px 16px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ ...MONO_SM, color: ACCENT, letterSpacing: "0.12em" }}>RANKED OPPORTUNITIES</span>
+          <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.25)", fontSize: "10px" }}>{answer.topOpportunities.length} assets scored</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {answer.topOpportunities.map((opp, i) => {
+            const ac = ACTION_COLORS[opp.action] ?? ACTION_COLORS.WATCH;
+            const riskColor = RISK_COLORS[opp.riskLevel] ?? "#FFD700";
+            const isExpanded = expandedIdx === i;
+            const convColor = opp.convictionScore >= 70 ? "#00FF88" : opp.convictionScore >= 45 ? "#FFD700" : "#FF4444";
+            return (
+              <div key={i} style={{ borderBottom: i < answer.topOpportunities.length - 1 ? `1px solid ${BORDER}` : "none" }}>
+                {/* Collapsed row */}
+                <button
+                  onClick={() => setExpandedIdx(isExpanded ? null : i)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: "10px", width: "100%",
+                    padding: "11px 16px", background: "none", border: "none", cursor: "pointer",
+                    textAlign: "left", transition: "background 0.12s ease",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "none")}
+                >
+                  {/* Rank badge */}
+                  <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.25)", width: "18px", flexShrink: 0 }}>#{opp.rank}</div>
+
+                  {/* Ticker + Name + Sector */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" }}>
+                      <span style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: "#F0F4FF" }}>{opp.ticker}</span>
+                      <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.4)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "140px" }}>{opp.name}</span>
+                      <span style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.25)", padding: "1px 5px", background: "rgba(255,255,255,0.04)", borderRadius: "3px" }}>{opp.sector}</span>
+                      <span style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.2)", padding: "1px 5px", background: "rgba(255,255,255,0.03)", borderRadius: "3px", textTransform: "uppercase" }}>{opp.assetType}</span>
+                    </div>
+                    <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.45)", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {opp.primaryDriver}
+                    </div>
+                  </div>
+
+                  {/* Action badge */}
+                  <div style={{ ...MONO_SM, fontSize: "10px", fontWeight: 700, padding: "3px 8px", background: ac.bg, border: `1px solid ${ac.border}`, borderRadius: "4px", color: ac.text, flexShrink: 0 }}>
+                    {opp.action}
+                  </div>
+
+                  {/* Conviction score */}
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                    <span style={{ ...MONO, fontSize: "14px", fontWeight: 700, color: convColor }}>{opp.convictionScore}</span>
+                    <span style={{ ...MONO_SM, fontSize: "8px", color: "rgba(255,255,255,0.2)" }}>SCORE</span>
+                  </div>
+
+                  {/* Risk badge */}
+                  <div style={{ ...MONO_SM, fontSize: "9px", color: riskColor, padding: "2px 6px", background: `${riskColor}15`, border: `1px solid ${riskColor}30`, borderRadius: "3px", flexShrink: 0 }}>
+                    {opp.riskLevel}
+                  </div>
+
+                  {/* Expand toggle */}
+                  {isExpanded
+                    ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+                    : <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.3)", flexShrink: 0 }} />
+                  }
+                </button>
+
+                {/* Expanded detail */}
+                {isExpanded && (
+                  <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "10px" }}>
+
+                    {/* Thesis */}
+                    <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: `1px solid ${BORDER}`, borderRadius: "6px" }}>
+                      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "4px", fontSize: "9px" }}>INSTITUTIONAL THESIS</div>
+                      <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#C8D4E0", lineHeight: 1.6, margin: 0 }}>{opp.thesisSummary}</p>
+                    </div>
+
+                    {/* Key metrics grid */}
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px" }}>
+                      {opp.entryZone && (
+                        <div style={{ padding: "8px 10px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)", borderRadius: "5px" }}>
+                          <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "2px" }}>
+                            <HoverTip label="ENTRY ZONE" tip="The price range where risk/reward is most favorable. Entering within this zone maximizes the trade's probability of success." />
+                          </div>
+                          <div style={{ ...MONO, fontSize: "12px", color: "#00FF88", fontWeight: 700 }}>{opp.entryZone}</div>
+                        </div>
+                      )}
+                      {opp.stopLevel && (
+                        <div style={{ padding: "8px 10px", background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.12)", borderRadius: "5px" }}>
+                          <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "2px" }}>
+                            <HoverTip label="STOP LOSS" tip="The price level at which the trade thesis is invalidated. Exiting at this level caps maximum loss." />
+                          </div>
+                          <div style={{ ...MONO, fontSize: "12px", color: "#FF4444", fontWeight: 700 }}>{opp.stopLevel}</div>
+                        </div>
+                      )}
+                      {opp.targetOne && (
+                        <div style={{ padding: "8px 10px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.12)", borderRadius: "5px" }}>
+                          <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "2px" }}>
+                            <HoverTip label="TARGET" tip="Primary profit target based on technical levels, historical resistance, and macro context." />
+                          </div>
+                          <div style={{ ...MONO, fontSize: "12px", color: ACCENT, fontWeight: 700 }}>{opp.targetOne}</div>
+                        </div>
+                      )}
+                      {opp.riskRewardRatio && (
+                        <div style={{ padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: `1px solid ${BORDER}`, borderRadius: "5px" }}>
+                          <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "2px" }}>
+                            <HoverTip label="R/R RATIO" tip="Risk-to-reward ratio. A ratio of 1:3 means you risk $1 to potentially gain $3. Institutional traders typically require at least 1:2." />
+                          </div>
+                          <div style={{ ...MONO, fontSize: "12px", color: "#F0F4FF", fontWeight: 700 }}>{opp.riskRewardRatio}</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Catalyst + Risk row */}
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                      <div style={{ padding: "8px 10px", background: "rgba(0,255,136,0.03)", border: "1px solid rgba(0,255,136,0.08)", borderRadius: "5px" }}>
+                        <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "3px" }}>NEAR-TERM CATALYST</div>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "#A8D8A8", lineHeight: 1.5, margin: 0 }}>{opp.nearTermCatalyst}</p>
+                      </div>
+                      <div style={{ padding: "8px 10px", background: "rgba(255,68,68,0.03)", border: "1px solid rgba(255,68,68,0.08)", borderRadius: "5px" }}>
+                        <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "3px" }}>KEY RISK</div>
+                        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "#D8A8A8", lineHeight: 1.5, margin: 0 }}>{opp.keyRisk}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Sector Leaderboard ── */}
+      {answer.sectorLeaderboard && answer.sectorLeaderboard.length > 0 && (
+        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
+          <button
+            onClick={() => setShowSectors(v => !v)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "12px 16px", background: "none", border: "none", cursor: "pointer" }}
+          >
+            <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.45)", letterSpacing: "0.12em" }}>SECTOR LEADERBOARD</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.2)", fontSize: "10px" }}>{answer.sectorLeaderboard.length} sectors rated</span>
+              {showSectors ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)" }} /> : <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.3)" }} />}
+            </div>
+          </button>
+          {showSectors && (
+            <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+              {answer.sectorLeaderboard.map((s, i) => {
+                const starColor = STAR_COLORS[s.rating] ?? "#FFD700";
+                const biasColor = BIAS_COLORS[s.bias] ?? "#FFD700";
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", background: "rgba(255,255,255,0.02)", border: `1px solid ${BORDER}`, borderRadius: "5px" }}>
+                    {/* Stars */}
+                    <div style={{ display: "flex", gap: "2px", flexShrink: 0 }}>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <Star key={n} size={9} style={{ color: n <= s.rating ? starColor : "rgba(255,255,255,0.12)", fill: n <= s.rating ? starColor : "none" }} />
+                      ))}
+                    </div>
+                    {/* Sector name */}
+                    <span style={{ ...MONO_SM, fontSize: "11px", color: "#E8EDF5", fontWeight: 600, flex: 1, minWidth: 0 }}>{s.sector}</span>
+                    {/* Bias badge */}
+                    <span style={{ ...MONO_SM, fontSize: "9px", color: biasColor, padding: "2px 6px", background: `${biasColor}12`, border: `1px solid ${biasColor}25`, borderRadius: "3px", flexShrink: 0 }}>
+                      {s.bias.toUpperCase()}
+                    </span>
+                    {/* Reason */}
+                    <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.35)", flex: 2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.reason}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Avoid List ── */}
+      {answer.avoidList && answer.avoidList.length > 0 && (
+        <div style={{ background: SURFACE, border: "1px solid rgba(255,68,68,0.12)", borderRadius: "8px", overflow: "hidden" }}>
+          <button
+            onClick={() => setShowAvoid(v => !v)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "12px 16px", background: "none", border: "none", cursor: "pointer" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+              <AlertCircle size={11} style={{ color: "#FF4444" }} />
+              <span style={{ ...MONO_SM, color: "#FF6B6B", letterSpacing: "0.12em" }}>AVOID LIST</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.2)", fontSize: "10px" }}>{answer.avoidList.length} flagged</span>
+              {showAvoid ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)" }} /> : <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.3)" }} />}
+            </div>
+          </button>
+          {showAvoid && (
+            <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+              {answer.avoidList.map((item, i) => (
+                <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start", padding: "8px 10px", background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.1)", borderRadius: "5px" }}>
+                  <span style={{ ...MONO, fontSize: "12px", fontWeight: 700, color: "#FF6B6B", flexShrink: 0, minWidth: "48px" }}>{item.ticker}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.4)", flexShrink: 0, minWidth: "80px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</span>
+                  <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,68,68,0.7)", lineHeight: 1.5 }}>{item.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Deep Dive Actions ── */}
+      {answer.deepDiveLinks && answer.deepDiveLinks.length > 0 && (
+        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
+          <button
+            onClick={() => setShowDeepDive(v => !v)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "12px 16px", background: "none", border: "none", cursor: "pointer" }}
+          >
+            <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", letterSpacing: "0.12em" }}>DEEPER ANALYSIS</span>
+            {showDeepDive ? <ChevronUp size={12} style={{ color: "rgba(255,255,255,0.3)" }} /> : <ChevronDown size={12} style={{ color: "rgba(255,255,255,0.3)" }} />}
+          </button>
+          {showDeepDive && (
+            <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: "6px" }}>
+              {answer.deepDiveLinks.map((link, i) => (
+                <button
+                  key={i}
+                  onClick={() => onDeepDive(link.path)}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 12px", background: "rgba(255,255,255,0.02)", border: `1px solid ${BORDER}`, borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "background 0.15s ease" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(0,212,255,0.06)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.02)")}
+                >
+                  <div>
+                    <div style={{ ...MONO_SM, color: "#F0F4FF", fontWeight: 600, fontSize: "11px" }}>{link.label}</div>
+                    <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "9px", marginTop: "2px" }}>{link.description}</div>
+                  </div>
+                  <ExternalLink size={11} style={{ color: "rgba(255,255,255,0.25)", flexShrink: 0 }} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Follow-up Chips ── */}
+      {answer.followUpChips && answer.followUpChips.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
+          {answer.followUpChips.map((chip, i) => (
+            <button
+              key={i}
+              onClick={() => onAskFollowUp(chip)}
+              style={{
+                padding: "7px 13px",
+                background: "rgba(0,212,255,0.06)",
+                border: "1px solid rgba(0,212,255,0.18)",
+                borderRadius: "20px",
+                cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
+                fontSize: "12px",
+                color: "rgba(0,212,255,0.85)",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(0,212,255,0.12)"; e.currentTarget.style.borderColor = "rgba(0,212,255,0.35)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(0,212,255,0.06)"; e.currentTarget.style.borderColor = "rgba(0,212,255,0.18)"; }}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── User Bubble ───────────────────────────────────────────────
 
 function UserBubble({ content }: { content: string }) {
@@ -1535,32 +1950,45 @@ export default function SmartDiscovery() {
 
       stopExecutionSequence();
 
-      // Update global ticker if answer identified a security
-      if (answer.ticker && answer.assetType) {
-        setTicker(answer.ticker, answer.ticker, answer.assetType as "stock" | "crypto");
-      }
+      // Route based on queryType
+      if (answer.queryType === "opportunity") {
+        const oppAnswer = answer as unknown as OpportunityRankingAnswer;
+        const assistantMsg: ConversationMessage = {
+          role: "assistant",
+          content: oppAnswer.macroContext,
+          timestamp: Date.now(),
+          opportunityAnswer: oppAnswer,
+        };
+        setConversation(prev => [...prev, assistantMsg]);
+      } else {
+        const fa = answer as unknown as FaultlineAnswer;
+        // Update global ticker if answer identified a security
+        if (fa.ticker && fa.assetType) {
+          setTicker(fa.ticker, fa.ticker, fa.assetType as "stock" | "crypto");
+        }
 
-      const assistantMsg: ConversationMessage = {
-        role: "assistant",
-        content: answer.executiveSummary,
-        ticker: answer.ticker,
-        timestamp: Date.now(),
-        answer: answer as FaultlineAnswer,
-      };
-      setConversation(prev => [...prev, assistantMsg]);
+        const assistantMsg: ConversationMessage = {
+          role: "assistant",
+          content: fa.executiveSummary,
+          ticker: fa.ticker,
+          timestamp: Date.now(),
+          answer: fa,
+        };
+        setConversation(prev => [...prev, assistantMsg]);
 
-      // Log to Decision Ledger (fire-and-forget, only for logged-in users)
-      if (user && answer.ticker) {
-        logMutation.mutate({
-          ticker: answer.ticker,
-          assetType: answer.assetType as "stock" | "crypto" | null,
-          verdict: answer.verdict,
-          opportunityScore: answer.opportunityScore,
-          confidence: answer.confidence,
-          primaryDriver: answer.primaryDriver ?? "",
-          expectedTimeframe: answer.expectedTimeframe ?? "",
-          queryType: answer.queryType ?? "general",
-        });
+        // Log to Decision Ledger (fire-and-forget, only for logged-in users)
+        if (user && fa.ticker) {
+          logMutation.mutate({
+            ticker: fa.ticker,
+            assetType: fa.assetType as "stock" | "crypto" | null,
+            verdict: fa.verdict,
+            opportunityScore: fa.opportunityScore,
+            confidence: fa.confidence,
+            primaryDriver: fa.primaryDriver ?? "",
+            expectedTimeframe: fa.expectedTimeframe ?? "",
+            queryType: fa.queryType ?? "general",
+          });
+        }
       }
     } catch (err: unknown) {
       stopExecutionSequence();
@@ -1797,6 +2225,14 @@ export default function SmartDiscovery() {
                 ) : msg.briefAnswer ? (
                   <div className="fl-answer">
                     <FullMarketBriefingCard brief={msg.briefAnswer} onAskFollowUp={(prompt) => void handleSubmit(prompt)} />
+                  </div>
+                ) : msg.opportunityAnswer ? (
+                  <div className="fl-answer">
+                    <OpportunityRankingCard
+                      answer={msg.opportunityAnswer}
+                      onAskFollowUp={(prompt) => void handleSubmit(prompt)}
+                      onDeepDive={handleDeepDive}
+                    />
                   </div>
                 ) : msg.answer ? (
                   <div className="fl-answer">

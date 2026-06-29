@@ -2897,3 +2897,39 @@
 - [x] Routes registered in App.tsx for all new public pages
 - [x] TypeScript: 0 errors
 - [x] Tests: 724 passing
+
+## AI Intent Routing + Day Trade Intelligence Production Completion (Jun 29, 2026)
+
+### AI Intent Routing
+- [ ] Wire orchestrateWithRouting into the ask procedure (replace direct orchestrateAnswer call)
+- [ ] Build OpportunityRankingCard frontend component (ranked list, sector leaderboard, avoid list, why-these-rank, follow-up chips)
+- [ ] Wire OpportunityRankingCard in SmartDiscovery conversation rendering
+
+### Day Trade Intelligence — Live Data Dashboard
+- [ ] Top 10 ranked day trade opportunities with all 18 fields (ticker, name, sector, price, entry zone, targets, stop, R/R, rel vol, VWAP, ATR, gap%, momentum, liquidity, catalyst, confidence, opportunity score, time horizon, updated, position size, primary driver, thesis, risk factors)
+- [ ] Auto-refresh as new market data arrives
+
+### Day Trade Intelligence — Institutional Fallback (when data unavailable)
+- [ ] Replace error page with institutional fallback header ("LIVE DAY TRADE DATA TEMPORARILY UNAVAILABLE")
+- [ ] Section 1: Last Verified Market Snapshot (regime, pressure, liquidity, breadth, VIX, major indices, timestamp)
+- [ ] Section 2: Watchlist Until Live Data Returns (5-8 tickers, labeled "Watch Until Live Data Returns", never as active signals)
+- [ ] Section 3: Trader Preparation Mode (10 preparation tasks checklist)
+- [ ] Section 4: Market Education (rotating institutional trading education cards)
+- [ ] Section 5: Live Data Status (per-provider status: Polygon, Finnhub, FRED, News, Crypto, Options — Connected/Degraded/Offline + retry countdown + manual retry)
+- [ ] Section 6: Notifications (enable "Notify me when Day Trade Intelligence becomes available")
+
+## AI Intent Routing + Day Trade Intelligence — Session Update (Jun 29, 2026)
+- [x] OpportunityRankingCard frontend component built (ranked list, sector leaderboard, avoid list, macro context, follow-up chips, hover tooltips)
+- [x] OpportunityRankingAnswer type added to SmartDiscovery.tsx (frontend)
+- [x] ConversationMessage type updated to support opportunityAnswer field
+- [x] handleSubmit updated to route opportunity ranking answers to opportunityAnswer field
+- [x] OpportunityRankingCard wired into conversation rendering loop
+- [x] Top10RankedTab built: live scan of top 10 setups, ranked by execution score, all 18 fields, gold/silver/bronze rank badges, key levels bar, catalyst line, Report button
+- [x] InstitutionalFallback built (6 sections): status banner, macro snapshot (engine data), sectors worth monitoring, institutional playbook, watchlist candidates, risk management rules, data pipeline status
+- [x] Top 10 Ranked tab added to TABS array (second position, Star icon)
+- [x] Top10RankedTab wired into tab rendering switch
+- [x] InstitutionalFallback used as error/empty state for Top10RankedTab
+- [x] Star, Bell, BookOpen, Wifi, WifiOff icons imported
+- [x] useEngine imported in DayTradeIntelligence.tsx for macro snapshot in fallback
+- [x] TypeScript: 0 errors (npx tsc --noEmit)
+- [x] Tests: auth.logout.test.ts passing (1/1)

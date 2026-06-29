@@ -17,6 +17,7 @@ import { resolveIntent } from "../intentResolver";
 import { getDb } from "../db";
 import { decisionLedger, DecisionLedgerEntry } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
+import { scanOpportunities } from "../ownerSimulation";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -378,6 +379,275 @@ JSON schema:
   }) as FaultlineAnswer;
 }
 
+// ── Opportunity Ranking Types ───────────────────────────────
+
+export interface RankedOpportunityItem {
+  rank: number;
+  ticker: string;
+  name: string;
+  sector: string;
+  assetType: "stock" | "crypto";
+  action: "BUY" | "ACCUMULATE" | "WATCH" | "AVOID";
+  convictionScore: number;        // 0–100
+  riskLevel: "Low" | "Medium" | "High" | "Extreme";
+  primaryDriver: string;          // one sentence
+  nearTermCatalyst: string;       // one sentence
+  keyRisk: string;                // one sentence
+  thesisSummary: string;          // 2 sentences
+  entryZone: string | null;
+  stopLevel: string | null;
+  targetOne: string | null;
+  riskRewardRatio: string | null;
+  dataFreshness: string;
+}
+
+export interface SectorRating {
+  sector: string;
+  rating: 1 | 2 | 3 | 4 | 5;    // 1=Avoid, 5=Strong Buy
+  bias: "bullish" | "bearish" | "neutral";
+  reason: string;                 // one sentence
+}
+
+export interface OpportunityRankingAnswer {
+  queryType: "opportunity";
+  macroContext: string;           // 2-3 sentence macro backdrop
+  regimeLabel: string;
+  regimeColor: "green" | "yellow" | "red";
+  topOpportunities: RankedOpportunityItem[];  // top 5-8
+  avoidList: Array<{ ticker: string; name: string; reason: string; }>;
+  sectorLeaderboard: SectorRating[];
+  whyTheseRankHighest: string;    // 3-4 sentence narrative
+  followUpChips: string[];        // 4-5 suggested follow-up questions
+  dataFreshness: string;
+  deepDiveLinks: Array<{ label: string; path: string; description: string; }>;
+}
+
+// ── Orchestrate Opportunity Ranking ──────────────────────────
+async function orchestrateOpportunityRanking(
+  query: string,
+  conversationHistory: ConversationMessage[],
+): Promise<OpportunityRankingAnswer> {
+  // 1. Get live FMOS regime context
+  const fmosResult = await runFMOSPipelineFast({}).catch(() => null);
+  const fmos = fmosResult ?? null;
+  const pressureData = fmos?.pressure ?? null;
+  const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
+  const pressureScore = pressureData ? (pressureData.overallPressure / 10) : 5;
+  const regimeColor: "green" | "yellow" | "red" = pressureScore <= 3 ? "green" : pressureScore <= 6 ? "yellow" : "red";
+
+  // 2. Scan the full investment universe (top 30 by composite score)
+  const rawOpportunities = await scanOpportunities(null, 100000, "both").catch(() => []);
+  const topRaw = rawOpportunities.slice(0, 30);
+  const avoidRaw = rawOpportunities.filter(o => o.direction === "AVOID").slice(0, 5);
+
+  // 3. Build compact context for LLM
+  const universeContext = topRaw.map((o, i) =>
+    `${i + 1}. ${o.ticker} (${o.name}) — ${o.sector} — ${o.assetType} — Score: ${o.compositeScore}/100 — Direction: ${o.direction} — Macro Fit: ${o.macroFit}/100 — Momentum: ${o.momentumScore}/100 — R/R: ${o.riskRewardRatio.toFixed(1)} — Confidence: ${o.faultlineConfidence}% — Why: ${o.whyNow}`
+  ).join("\n");
+
+  const avoidContext = avoidRaw.map(o =>
+    `${o.ticker} (${o.name}): ${o.invalidation}`
+  ).join("\n");
+
+  const conversationContext = conversationHistory.length > 0
+    ? `\nPrevious conversation:\n${conversationHistory.slice(-4).map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n")}\n`
+    : "";
+
+  const systemPrompt = `You are FAULTLINE — an elite institutional market intelligence system.
+You are a Chief Investment Strategist presenting a ranked opportunity scan to an investment committee.
+
+Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
+${fmos ? `Bull Probability: ${fmos.probability.bull}% | Bear Probability: ${fmos.probability.bear}% | Primary Driver: ${fmos.probability.primaryDriver}` : ""}
+
+WRITING STYLE:
+- Lead with the highest-conviction ideas. Rank by institutional merit, not popularity.
+- Every recommendation must be grounded in the current regime context.
+- Be specific: name the catalyst, name the risk, name the entry zone.
+- Never use: "navigate", "landscape", "nuanced", "could", "may", "possibly"
+- Use declarative statements. Write like a CIO briefing an investment committee.
+
+FIELD RULES:
+- topOpportunities: Select the 5-8 highest-conviction ideas from the universe scan. Rank by conviction score descending.
+- For each opportunity: primaryDriver = one sentence, nearTermCatalyst = one sentence, keyRisk = one sentence, thesisSummary = exactly 2 sentences.
+- avoidList: 3-5 assets to avoid right now with a specific one-sentence reason each.
+- sectorLeaderboard: Rate 8-10 sectors on a 1-5 scale (1=Avoid, 5=Strong Buy) with one-sentence reason.
+- whyTheseRankHighest: 3-4 sentences explaining the macro logic behind the top-ranked opportunities.
+- followUpChips: 4-5 natural follow-up questions the user might want to ask next.`;
+
+  const userPrompt = `${conversationContext}
+User question: "${query}"
+
+Universe scan results (sorted by composite score):
+${universeContext}
+
+Avoid candidates:
+${avoidContext}
+
+Respond with a JSON object matching this exact schema:
+{
+  "macroContext": string (2-3 sentences — current macro backdrop and what it means for opportunities),
+  "topOpportunities": Array of {
+    "rank": number,
+    "ticker": string,
+    "name": string,
+    "sector": string,
+    "assetType": "stock" | "crypto",
+    "action": "BUY" | "ACCUMULATE" | "WATCH" | "AVOID",
+    "convictionScore": number (0-100),
+    "riskLevel": "Low" | "Medium" | "High" | "Extreme",
+    "primaryDriver": string (one sentence),
+    "nearTermCatalyst": string (one sentence),
+    "keyRisk": string (one sentence),
+    "thesisSummary": string (exactly 2 sentences),
+    "entryZone": string | null,
+    "stopLevel": string | null,
+    "targetOne": string | null,
+    "riskRewardRatio": string | null,
+    "dataFreshness": string
+  },
+  "avoidList": Array of { "ticker": string, "name": string, "reason": string (one sentence) },
+  "sectorLeaderboard": Array of { "sector": string, "rating": 1|2|3|4|5, "bias": "bullish"|"bearish"|"neutral", "reason": string },
+  "whyTheseRankHighest": string (3-4 sentences),
+  "followUpChips": string[] (4-5 follow-up questions)
+}`;
+
+  const llmResponse = await invokeLLM({
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "opportunity_ranking_v1",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            macroContext: { type: "string" },
+            topOpportunities: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  rank: { type: "number" },
+                  ticker: { type: "string" },
+                  name: { type: "string" },
+                  sector: { type: "string" },
+                  assetType: { type: "string" },
+                  action: { type: "string" },
+                  convictionScore: { type: "number" },
+                  riskLevel: { type: "string" },
+                  primaryDriver: { type: "string" },
+                  nearTermCatalyst: { type: "string" },
+                  keyRisk: { type: "string" },
+                  thesisSummary: { type: "string" },
+                  entryZone: { type: ["string", "null"] },
+                  stopLevel: { type: ["string", "null"] },
+                  targetOne: { type: ["string", "null"] },
+                  riskRewardRatio: { type: ["string", "null"] },
+                  dataFreshness: { type: "string" },
+                },
+                required: ["rank","ticker","name","sector","assetType","action","convictionScore","riskLevel","primaryDriver","nearTermCatalyst","keyRisk","thesisSummary","entryZone","stopLevel","targetOne","riskRewardRatio","dataFreshness"],
+                additionalProperties: false,
+              },
+            },
+            avoidList: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  ticker: { type: "string" },
+                  name: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["ticker","name","reason"],
+                additionalProperties: false,
+              },
+            },
+            sectorLeaderboard: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  sector: { type: "string" },
+                  rating: { type: "number" },
+                  bias: { type: "string" },
+                  reason: { type: "string" },
+                },
+                required: ["sector","rating","bias","reason"],
+                additionalProperties: false,
+              },
+            },
+            whyTheseRankHighest: { type: "string" },
+            followUpChips: { type: "array", items: { type: "string" } },
+          },
+          required: ["macroContext","topOpportunities","avoidList","sectorLeaderboard","whyTheseRankHighest","followUpChips"],
+          additionalProperties: false,
+        },
+      },
+    },
+  });
+
+  const rawContent = ((llmResponse.choices[0].message.content as string) ?? "").trim();
+  const jsonContent = rawContent.startsWith("`")
+    ? rawContent.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim()
+    : rawContent;
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(jsonContent);
+  } catch (parseErr) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "FAULTLINE opportunity ranking engine returned an invalid response. Please try again.",
+      cause: parseErr,
+    });
+  }
+
+  const followUpChips = (raw.followUpChips as string[]) ?? [
+    "What is the #1 opportunity right now?",
+    "Show me the top crypto opportunities",
+    "What sectors should I avoid?",
+    "What are the highest conviction setups?",
+  ];
+
+  return sanitize({
+    queryType: "opportunity" as const,
+    macroContext: raw.macroContext,
+    regimeLabel,
+    regimeColor,
+    topOpportunities: raw.topOpportunities,
+    avoidList: raw.avoidList,
+    sectorLeaderboard: raw.sectorLeaderboard,
+    whyTheseRankHighest: raw.whyTheseRankHighest,
+    followUpChips,
+    dataFreshness: "Live — updated just now",
+    deepDiveLinks: [
+      { label: "Opportunity Radar", path: "/app/opportunities", description: "Full ranked opportunity scan with filters" },
+      { label: "Ask Intelligence", path: "/app/ask", description: "Ask about any specific opportunity" },
+      { label: "Market Stress", path: "/app/pressure", description: "Macro risk and pressure indicators" },
+      { label: "Decision Ledger", path: "/app/decision-ledger", description: "Track recommendation history" },
+    ],
+  }) as OpportunityRankingAnswer;
+}
+
+// ── Route opportunity queries ─────────────────────────────────
+// Modify orchestrateAnswer to detect opportunity intent and delegate
+async function orchestrateWithRouting(
+  query: string,
+  conversationHistory: ConversationMessage[],
+  contextTicker: string | null,
+  contextAssetType: "stock" | "crypto" | null,
+): Promise<FaultlineAnswer | OpportunityRankingAnswer> {
+  const intent = resolveIntent(query, contextTicker, contextAssetType);
+  // Route broad opportunity queries to the ranking engine
+  if (intent.queryType === "opportunity" && !intent.ticker) {
+    return orchestrateOpportunityRanking(query, conversationHistory);
+  }
+  // All other queries go to the single-asset/macro answer engine
+  return orchestrateAnswer(query, conversationHistory, contextTicker, contextAssetType);
+}
+
 // ── Router ────────────────────────────────────────────────────
 
 export const smartDiscoveryRouter = router({
@@ -398,7 +668,7 @@ export const smartDiscoveryRouter = router({
       contextAssetType: z.enum(["stock", "crypto"]).nullable().optional(),
     }))
     .mutation(async ({ input }) => {
-      const answer = await orchestrateAnswer(
+      const answer = await orchestrateWithRouting(
         input.query,
         input.conversationHistory as ConversationMessage[],
         input.contextTicker ?? null,

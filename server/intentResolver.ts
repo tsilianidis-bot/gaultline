@@ -419,9 +419,21 @@ const PORTFOLIO_KEYWORDS = [
 ];
 
 const OPPORTUNITY_KEYWORDS = [
+  // Original
   "opportunit", "swing trade", "best trade", "what to buy", "what should i buy",
   "best stock", "best crypto", "top pick", "undervalued", "oversold", "overbought",
   "screener", "scanner", "find me", "recommend", "suggestions",
+  // Spec additions — broad market / multi-asset queries
+  "best invest", "top invest", "what should i invest", "where should i invest",
+  "highest conviction", "best opportunities", "top opportunities",
+  "what are the best", "what stocks", "what crypto", "what etf",
+  "highest upside", "what to accumulate", "what has upside",
+  "market scan", "full scan", "rank", "ranking", "leaderboard",
+  "best buys", "top buys", "buy list",
+  "investment ideas", "trade ideas", "conviction ideas",
+  "best defensive", "best growth", "best value",
+  "highest return", "best risk reward", "best risk/reward",
+  "what should i accumulate", "what to watch",
 ];
 
 // ── Main resolver function ────────────────────────────────────
