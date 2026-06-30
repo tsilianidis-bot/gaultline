@@ -15,6 +15,72 @@
 export type AssetType = "stock" | "crypto" | "etf" | "forex" | "commodity" | null;
 export type QueryType = "security" | "macro" | "opportunity" | "portfolio" | "general";
 
+/**
+ * QuestionIntent: the specific TYPE of question the user is asking.
+ * Used to determine which answer fields to populate first (exact-question-first).
+ */
+export type QuestionIntent =
+  | "downside"          // How low can it fall? What is the downside?
+  | "upside"            // How high can it go? What is the upside?
+  | "buy_verdict"       // Should I buy? Is it a good buy?
+  | "sell_verdict"      // Should I sell? Time to exit?
+  | "wait_verdict"      // Should I wait? Is now the right time?
+  | "entry_zone"        // Where should I enter? What is the entry?
+  | "exit_zone"         // Where should I exit? What is the exit?
+  | "target_price"      // What is the target? What price can it reach?
+  | "invalidation"      // What price invalidates this? What breaks the thesis?
+  | "risk_assessment"   // What is the risk? How risky is this?
+  | "compare"           // Compare A vs B
+  | "opportunity_ranking" // Best opportunities, top picks
+  | "general_analysis"; // Default — full institutional report
+
+/**
+ * Detect the specific question intent from the user's query.
+ * This runs AFTER ticker/asset detection and determines which answer
+ * fields must be populated first.
+ */
+export function detectQuestionIntent(query: string): QuestionIntent {
+  const q = query.toLowerCase().trim();
+
+  // Compare
+  if (/\bvs\.?\b|\bversus\b|\bcompare\b|\bwhich is better\b|\bwhich one\b/.test(q)) return "compare";
+
+  // Opportunity ranking (broad multi-asset)
+  if (/best opportunit|top opportunit|best invest|top invest|best trade|best stock|best crypto|top pick|highest conviction|what (should i buy|to buy|are the best)|buy list|what stocks|what crypto|investment ideas|trade ideas/.test(q)) return "opportunity_ranking";
+
+  // Downside / how low
+  if (/how low|how far (down|it fall|will it drop|can it drop|could it drop|can it fall|could it fall)|how far can|downside|fall to|drop to|crash to|how much (can it|will it) (fall|drop|lose)|bear.?case (price|target|level)|worst.?case (price|target|scenario)|what.?s the (low|bottom|floor)|minimum (price|level)|how bad/.test(q)) return "downside";
+
+  // Upside / how high
+  if (/how high|how far (up|can it go|will it rise)|upside|rally to|rise to|ceiling|resistance level|how much (can it|will it) (gain|rise|go up)|bull.?case (price|target|level)|best.?case (price|target)|what.?s the (high|ceiling|top)|maximum (price|level)|price target|moon|target price|where (will|can|could) (it|this|\w+) (go|trade|end up)|where will it go|fair value|fair price|intrinsic value|end of year target|eoy target|12.month target/.test(q)) return "upside";
+
+  // Entry zone (specific price questions — must come BEFORE buy_verdict to handle 'buy at $X')
+  if (/where (should i|to) enter|entry (zone|point|price|level)|good (entry|buy point|price to buy)|buy (at|around|near) \$|accumulate (at|around|near)|dip (to buy|entry)|what price (to buy|should i buy)/.test(q)) return "entry_zone";
+
+  // Exit zone (specific price questions — must come BEFORE sell_verdict to handle 'take profit at $X')
+  if (/where (should i|to) (exit|sell|take profit)|exit (zone|point|price|level)|profit target|sell (at|around|near|target) \$|take profit at|when (should i|to) sell|what price (to sell|should i sell)|trim (at|around)|reduce (at|around)|where (to|should i) take (profit|gains)|sell target|exit target/.test(q)) return "exit_zone";
+
+  // Buy verdict
+  if (/should i buy|is (it|this|\w+) (a good|worth) (buy|investment|trade)|is (\w+ )?a good buy|buy or (wait|hold|sell)|good time to buy|right time to buy|buy now|buy today|add (to|more)|accumulate now/.test(q)) return "buy_verdict";
+
+  // Sell verdict
+  if (/should i sell|time to (sell|exit)|sell now|sell today|exit now|exit today|lock in (profit|gains)|sell or hold|should i take profit|take (my )?profit now/.test(q)) return "sell_verdict";
+
+  // Invalidation
+  if (/invalidat|what (price|level) (breaks|kills|ends|destroys|invalidates)|thesis (fail|break|end)|where (is|should) (the stop|my stop)|stop.?loss (level|be|for|at)|what breaks|what kills|what ends the bull|what would break/.test(q)) return "invalidation";
+
+  // Risk assessment
+  if (/what.?s the risk|how risky|risk level|how dangerous|how safe|risk.?reward|downside risk|tail risk|black swan|worst case|how much (can i|could i) lose|maximum loss|how volatile/.test(q)) return "risk_assessment";
+
+  // Wait verdict
+  if (/should i wait|wait (for|until)|hold (off|on)|not yet|too early|too late|right time|is now (a good|the right) time|when (is the right|should i)/.test(q)) return "wait_verdict";
+
+  // Target price (kept as alias — upside now handles most of these)
+  if (/price target|what.?s (the target|a fair value|fair price|intrinsic value)/.test(q)) return "upside";
+
+  return "general_analysis";
+}
+
 export interface IntentResult {
   ticker: string | null;
   assetType: AssetType;
@@ -217,6 +283,23 @@ const STOCK_NAME_MAP: Record<string, { ticker: string; name: string }> = {
   "mastercard": { ticker: "MA", name: "Mastercard" },
   "american express": { ticker: "AXP", name: "American Express" },
   "amex": { ticker: "AXP", name: "American Express" },
+  // Bitcoin proxy / treasury stocks
+  "microstrategy": { ticker: "MSTR", name: "MicroStrategy (Bitcoin proxy)" },
+  "micro strategy": { ticker: "MSTR", name: "MicroStrategy (Bitcoin proxy)" },
+  "mstr": { ticker: "MSTR", name: "MicroStrategy (Bitcoin proxy)" },
+  "strategy": { ticker: "MSTR", name: "MicroStrategy / Strategy (Bitcoin proxy)" },
+  "marathon digital": { ticker: "MARA", name: "Marathon Digital Holdings" },
+  "marathon holdings": { ticker: "MARA", name: "Marathon Digital Holdings" },
+  "mara": { ticker: "MARA", name: "Marathon Digital Holdings" },
+  "riot platforms": { ticker: "RIOT", name: "Riot Platforms" },
+  "riot blockchain": { ticker: "RIOT", name: "Riot Platforms" },
+  "riot": { ticker: "RIOT", name: "Riot Platforms" },
+  "cleanspark": { ticker: "CLSK", name: "CleanSpark" },
+  "cipher mining": { ticker: "CIFR", name: "Cipher Mining" },
+  "core scientific": { ticker: "CORZ", name: "Core Scientific" },
+  "bitdeer": { ticker: "BTDR", name: "Bitdeer Technologies" },
+  "semler scientific": { ticker: "SMLR", name: "Semler Scientific (Bitcoin treasury)" },
+  "metaplanet": { ticker: "3350", name: "Metaplanet (Bitcoin proxy, Japan)" },
   // Finance
   "jpmorgan": { ticker: "JPM", name: "JPMorgan Chase" },
   "jp morgan": { ticker: "JPM", name: "JPMorgan Chase" },

@@ -3005,3 +3005,22 @@
 - [x] Preserve existing single-asset query flow (no change when user asks about specific ticker)
 - [x] Mobile responsive opportunity list cards (flex/wrap layouts, auto-fill grids)
 - [x] Audit: Decision First philosophy applied across SmartDiscovery (OpportunityRankingCard + FullMarketBriefingCard)
+
+## Bug Fix — Answer the Exact Question Asked
+
+- [x] Audit SmartDiscovery intent router and LLM prompt pipeline
+- [x] Extend intent detection to 13 question types: downside, upside, buy_verdict, sell_verdict, wait_verdict, entry_zone, exit_zone, invalidation, risk_assessment, target_price, compare, opportunity_ranking, general
+- [x] Add MSTR/MicroStrategy → Bitcoin proxy detection in ticker normalization (+ MARA, RIOT, CLSK, COIN)
+- [x] Server: update LLM system prompt to always answer the exact question first before broader analysis
+- [x] Server: add 30 question-type-specific direct-answer fields to the LLM response schema
+- [x] Frontend: DirectAnswerPanel component — renders the direct answer prominently at the top of every response
+- [x] Frontend: DownsideAnswer renderer — base/bear/extreme zones + triggers + invalidation
+- [x] Frontend: UpsideAnswer renderer — base/bull/extreme targets + catalysts
+- [x] Frontend: BuyVerdictAnswer renderer — BUY/WAIT/ACCUMULATE/AVOID verdict card
+- [x] Frontend: EntryZoneAnswer renderer — entry zone + stop + target + R:R
+- [x] Frontend: ExitZoneAnswer renderer — exit zones + reason
+- [x] Frontend: InvalidationAnswer renderer — invalidation price + conditions
+- [x] Frontend: RiskAssessmentAnswer renderer — risk rating + factors + R:R
+- [x] Tests: questionIntent.test.ts — 56/56 passing (all 13 intent types + MSTR aliases)
+- [x] TypeScript: 0 errors
+- [x] Checkpoint

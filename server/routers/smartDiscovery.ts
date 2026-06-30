@@ -13,7 +13,7 @@ import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { getQuickOutlook } from "../signalOutlook";
 import { invokeLLM } from "../_core/llm";
-import { resolveIntent } from "../intentResolver";
+import { resolveIntent, detectQuestionIntent, QuestionIntent } from "../intentResolver";
 import { getDb } from "../db";
 import { decisionLedger, DecisionLedgerEntry } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
@@ -43,9 +43,61 @@ export interface FaultlineAnswer {
   ticker: string | null;
   assetType: "stock" | "crypto" | null;
   queryType: "security" | "macro" | "opportunity" | "portfolio" | "general";
+  questionIntent: QuestionIntent;  // The specific type of question asked
   currentRegime: string;
   regimeColor: "green" | "yellow" | "red";
   dataFreshness: string;
+
+  // ── DIRECT ANSWER BLOCK ─────────────────────────────────────────────────
+  // These fields answer the EXACT question asked. They are shown FIRST before
+  // any broader analysis. Populated based on questionIntent.
+
+  // Downside fields (questionIntent === "downside")
+  downsideBaseZone: string | null;       // e.g. "$280–$310"
+  downsideBearTarget: string | null;     // e.g. "$220–$240"
+  downsideExtremeTarget: string | null;  // e.g. "$150–$180"
+  downsideMostLikely: string | null;     // One sentence: most probable outcome
+  downsideTriggers: string[];            // What triggers each level
+  downsideInvalidation: string | null;   // What would prevent the downside
+
+  // Upside fields (questionIntent === "upside" | "target_price")
+  upsideBaseTarget: string | null;       // e.g. "$450–$480"
+  upsideBullTarget: string | null;       // e.g. "$550–$600"
+  upsideExtremeTarget: string | null;    // e.g. "$700+"
+  upsideMostLikely: string | null;       // One sentence: most probable outcome
+  upsideCatalysts: string[];             // What triggers each level
+  upsideInvalidation: string | null;     // What would prevent the upside
+
+  // Buy/Sell/Wait verdict (questionIntent === "buy_verdict" | "sell_verdict" | "wait_verdict")
+  actionVerdict: "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD" | null;
+  actionVerdictReason: string | null;    // One sentence: why this verdict
+  actionVerdictConditions: string[];     // Conditions that would change the verdict
+
+  // Entry zone (questionIntent === "entry_zone")
+  entryZoneIdeal: string | null;         // e.g. "$290–$310"
+  entryZoneAggressive: string | null;    // e.g. "$320–$335" (for momentum buyers)
+  entryZoneConservative: string | null;  // e.g. "$260–$280" (wait for pullback)
+  entryZoneStop: string | null;          // Stop loss for the entry
+  entryZoneTarget: string | null;        // First profit target from entry
+  entryZoneRR: string | null;            // Risk:reward ratio
+
+  // Exit zone (questionIntent === "exit_zone")
+  exitZonePrimary: string | null;        // First profit target
+  exitZoneSecondary: string | null;      // Second profit target
+  exitZoneFull: string | null;           // Full exit / stop out level
+  exitZoneReason: string | null;         // Why these levels
+
+  // Invalidation (questionIntent === "invalidation")
+  invalidationPrice: string | null;      // Specific price level
+  invalidationConditions: string[];      // Conditions that break the thesis
+  invalidationWhatHappens: string | null; // What to do if invalidated
+
+  // Risk assessment (questionIntent === "risk_assessment")
+  riskRating: "LOW" | "MODERATE" | "HIGH" | "EXTREME" | null;
+  riskSummary: string | null;            // One sentence: overall risk assessment
+  riskFactors: string[];                 // 3-5 specific risk factors
+  riskRewardRatio: string | null;        // e.g. "1:3"
+  maxDrawdownEstimate: string | null;    // e.g. "-35% in bear case"
 
   // Primary Driver (Section 5)
   primaryDriver: string;          // One sentence — the single most important factor
@@ -162,6 +214,9 @@ async function orchestrateAnswer(
   const assetType = intent.assetType === "crypto" ? "crypto" : intent.assetType === "stock" ? "stock" : null;
   const queryType = intent.queryType;
 
+  // 1b. Detect the specific question intent (downside / upside / buy_verdict / etc.)
+  const questionIntent: QuestionIntent = detectQuestionIntent(query);
+
   // 2. Fetch live market data via FMOS pipeline
   const [fmosResult, quickOutlook] = await Promise.allSettled([
     runFMOSPipelineFast({ symbol: ticker ?? undefined }),
@@ -196,8 +251,107 @@ Data Status: ${outlookData.dataStatus}
     ? `\nPrevious conversation:\n${conversationHistory.slice(-6).map(m => `${m.role.toUpperCase()}: ${m.content}`).join("\n")}\n`
     : "";
 
+  // Build question-intent-specific instructions for the LLM
+  const intentInstructions: Record<QuestionIntent, string> = {
+    downside: `
+QUESTION TYPE: DOWNSIDE ANALYSIS
+The user is asking HOW LOW this asset can fall. You MUST answer this FIRST.
+Populate these fields with SPECIFIC PRICE LEVELS (not conditions):
+- downsideBaseZone: Most likely pullback zone (e.g. "$280–$310")
+- downsideBearTarget: Bear case downside target (e.g. "$220–$240")
+- downsideExtremeTarget: Crash/extreme scenario target (e.g. "$150–$180")
+- downsideMostLikely: One sentence — the single most probable outcome
+- downsideTriggers: What triggers each level (3 items)
+- downsideInvalidation: What would prevent/invalidate the downside
+Do NOT lead with generic bull/bear percentages. Lead with price levels.`,
+    upside: `
+QUESTION TYPE: UPSIDE ANALYSIS
+The user is asking HOW HIGH this asset can go. You MUST answer this FIRST.
+Populate these fields with SPECIFIC PRICE LEVELS:
+- upsideBaseTarget: Base case upside target (e.g. "$450–$480")
+- upsideBullTarget: Bull case target (e.g. "$550–$600")
+- upsideExtremeTarget: Extreme/moonshot target (e.g. "$700+")
+- upsideMostLikely: One sentence — the single most probable outcome
+- upsideCatalysts: What triggers each level (3 items)
+- upsideInvalidation: What would prevent/invalidate the upside`,
+    buy_verdict: `
+QUESTION TYPE: BUY VERDICT
+The user is asking SHOULD I BUY. You MUST answer this FIRST with a clear verdict.
+- actionVerdict: "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD"
+- actionVerdictReason: One sentence — the single most important reason for this verdict
+- actionVerdictConditions: 3 conditions that would change the verdict
+Do NOT bury the verdict in analysis. State it immediately.`,
+    sell_verdict: `
+QUESTION TYPE: SELL VERDICT
+The user is asking SHOULD I SELL. You MUST answer this FIRST with a clear verdict.
+- actionVerdict: "SELL" | "REDUCE" | "HOLD" | "WAIT" | "BUY NOW" | "ACCUMULATE"
+- actionVerdictReason: One sentence — the single most important reason for this verdict
+- actionVerdictConditions: 3 conditions that would change the verdict`,
+    wait_verdict: `
+QUESTION TYPE: WAIT/TIMING VERDICT
+The user is asking IS NOW THE RIGHT TIME. You MUST answer this FIRST.
+- actionVerdict: "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD"
+- actionVerdictReason: One sentence — the single most important reason for this timing verdict
+- actionVerdictConditions: 3 conditions that would change the timing`,
+    entry_zone: `
+QUESTION TYPE: ENTRY ZONE
+The user is asking WHERE TO ENTER. You MUST answer this FIRST with SPECIFIC PRICE LEVELS.
+- entryZoneIdeal: Ideal entry zone (e.g. "$290–$310")
+- entryZoneAggressive: Aggressive entry for momentum buyers (e.g. "$320–$335")
+- entryZoneConservative: Conservative entry on pullback (e.g. "$260–$280")
+- entryZoneStop: Stop loss level for the entry
+- entryZoneTarget: First profit target from entry
+- entryZoneRR: Risk:reward ratio (e.g. "1:3")`,
+    exit_zone: `
+QUESTION TYPE: EXIT ZONE / TAKE PROFIT
+The user is asking WHERE TO EXIT. You MUST answer this FIRST with SPECIFIC PRICE LEVELS.
+- exitZonePrimary: First profit target / partial exit
+- exitZoneSecondary: Second profit target / full exit
+- exitZoneFull: Full exit / stop out level
+- exitZoneReason: One sentence — why these levels`,
+    target_price: `
+QUESTION TYPE: PRICE TARGET
+The user is asking WHAT IS THE TARGET PRICE. You MUST answer this FIRST.
+- upsideBaseTarget: Base case price target
+- upsideBullTarget: Bull case price target
+- upsideExtremeTarget: Extreme/moonshot target
+- upsideMostLikely: One sentence — most probable outcome
+- upsideCatalysts: What drives each target (3 items)
+- upsideInvalidation: What invalidates the target`,
+    invalidation: `
+QUESTION TYPE: INVALIDATION PRICE
+The user is asking WHAT PRICE BREAKS THE THESIS. You MUST answer this FIRST.
+- invalidationPrice: The specific price level that invalidates the thesis (e.g. "$280")
+- invalidationConditions: 3 specific conditions that would break the thesis
+- invalidationWhatHappens: One sentence — what to do if the thesis is invalidated`,
+    risk_assessment: `
+QUESTION TYPE: RISK ASSESSMENT
+The user is asking HOW RISKY THIS IS. You MUST answer this FIRST.
+- riskRating: "LOW" | "MODERATE" | "HIGH" | "EXTREME"
+- riskSummary: One sentence — the overall risk assessment
+- riskFactors: 3-5 specific risk factors
+- riskRewardRatio: Risk:reward ratio (e.g. "1:3")
+- maxDrawdownEstimate: Maximum drawdown estimate (e.g. "-35% in bear case")`,
+    compare: `
+QUESTION TYPE: COMPARISON
+The user is asking to COMPARE two or more assets. Lead with a clear winner/recommendation.
+- actionVerdict: Which asset to prefer (use the ticker as the verdict)
+- actionVerdictReason: One sentence — why this asset wins the comparison
+- actionVerdictConditions: 3 conditions that would change the preference`,
+    opportunity_ranking: `
+QUESTION TYPE: OPPORTUNITY RANKING
+The user wants the BEST OPPORTUNITIES. This will be handled by the ranking engine.
+For the general answer fields, provide macro context only.`,
+    general_analysis: `
+QUESTION TYPE: GENERAL ANALYSIS
+Provide a comprehensive institutional analysis. Lead with the verdict and primary driver.`,
+  };
+
+  const questionIntentInstruction = intentInstructions[questionIntent];
+
   const systemPrompt = `You are FAULTLINE — an elite institutional market intelligence system.
 You are a Chief Investment Strategist, NOT a chatbot.
+${questionIntentInstruction}
 
 WRITING STYLE (strict):
 - Evidence first. Opinion second.
@@ -276,7 +430,42 @@ JSON schema:
   "expectedTimeframe": string,
   "suggestedAction": string (one sentence starting with a verb),
   "positionSizeGuidance": string | null,
-  "whatChangesThesis": string
+  "whatChangesThesis": string,
+
+  // DIRECT ANSWER FIELDS — populate based on question type:
+  "downsideBaseZone": string | null,
+  "downsideBearTarget": string | null,
+  "downsideExtremeTarget": string | null,
+  "downsideMostLikely": string | null,
+  "downsideTriggers": string[],
+  "downsideInvalidation": string | null,
+  "upsideBaseTarget": string | null,
+  "upsideBullTarget": string | null,
+  "upsideExtremeTarget": string | null,
+  "upsideMostLikely": string | null,
+  "upsideCatalysts": string[],
+  "upsideInvalidation": string | null,
+  "actionVerdict": "BUY NOW" | "ACCUMULATE" | "WAIT" | "SELL" | "REDUCE" | "HOLD" | null,
+  "actionVerdictReason": string | null,
+  "actionVerdictConditions": string[],
+  "entryZoneIdeal": string | null,
+  "entryZoneAggressive": string | null,
+  "entryZoneConservative": string | null,
+  "entryZoneStop": string | null,
+  "entryZoneTarget": string | null,
+  "entryZoneRR": string | null,
+  "exitZonePrimary": string | null,
+  "exitZoneSecondary": string | null,
+  "exitZoneFull": string | null,
+  "exitZoneReason": string | null,
+  "invalidationPrice": string | null,
+  "invalidationConditions": string[],
+  "invalidationWhatHappens": string | null,
+  "riskRating": "LOW" | "MODERATE" | "HIGH" | "EXTREME" | null,
+  "riskSummary": string | null,
+  "riskFactors": string[],
+  "riskRewardRatio": string | null,
+  "maxDrawdownEstimate": string | null
 }`;
 
   const llmResponse = await invokeLLM({
@@ -338,6 +527,40 @@ JSON schema:
             suggestedAction: { type: "string" },
             positionSizeGuidance: { type: ["string", "null"] },
             whatChangesThesis: { type: "string" },
+            // Direct answer fields
+            downsideBaseZone: { type: ["string", "null"] },
+            downsideBearTarget: { type: ["string", "null"] },
+            downsideExtremeTarget: { type: ["string", "null"] },
+            downsideMostLikely: { type: ["string", "null"] },
+            downsideTriggers: { type: "array", items: { type: "string" } },
+            downsideInvalidation: { type: ["string", "null"] },
+            upsideBaseTarget: { type: ["string", "null"] },
+            upsideBullTarget: { type: ["string", "null"] },
+            upsideExtremeTarget: { type: ["string", "null"] },
+            upsideMostLikely: { type: ["string", "null"] },
+            upsideCatalysts: { type: "array", items: { type: "string" } },
+            upsideInvalidation: { type: ["string", "null"] },
+            actionVerdict: { type: ["string", "null"] },
+            actionVerdictReason: { type: ["string", "null"] },
+            actionVerdictConditions: { type: "array", items: { type: "string" } },
+            entryZoneIdeal: { type: ["string", "null"] },
+            entryZoneAggressive: { type: ["string", "null"] },
+            entryZoneConservative: { type: ["string", "null"] },
+            entryZoneStop: { type: ["string", "null"] },
+            entryZoneTarget: { type: ["string", "null"] },
+            entryZoneRR: { type: ["string", "null"] },
+            exitZonePrimary: { type: ["string", "null"] },
+            exitZoneSecondary: { type: ["string", "null"] },
+            exitZoneFull: { type: ["string", "null"] },
+            exitZoneReason: { type: ["string", "null"] },
+            invalidationPrice: { type: ["string", "null"] },
+            invalidationConditions: { type: "array", items: { type: "string" } },
+            invalidationWhatHappens: { type: ["string", "null"] },
+            riskRating: { type: ["string", "null"] },
+            riskSummary: { type: ["string", "null"] },
+            riskFactors: { type: "array", items: { type: "string" } },
+            riskRewardRatio: { type: ["string", "null"] },
+            maxDrawdownEstimate: { type: ["string", "null"] },
           },
           required: [
             "verdict","verdictColor","opportunityScore","confidence","confidenceLabel",
@@ -348,7 +571,14 @@ JSON schema:
             "catalysts","threats","evidenceScores",
             "whyNotBuy","whyNotSell","watchCatalysts",
             "support","resistance","entryZone","profitTargets","stopLevel",
-            "invalidation","expectedTimeframe","suggestedAction","positionSizeGuidance","whatChangesThesis"
+            "invalidation","expectedTimeframe","suggestedAction","positionSizeGuidance","whatChangesThesis",
+            "downsideBaseZone","downsideBearTarget","downsideExtremeTarget","downsideMostLikely","downsideTriggers","downsideInvalidation",
+            "upsideBaseTarget","upsideBullTarget","upsideExtremeTarget","upsideMostLikely","upsideCatalysts","upsideInvalidation",
+            "actionVerdict","actionVerdictReason","actionVerdictConditions",
+            "entryZoneIdeal","entryZoneAggressive","entryZoneConservative","entryZoneStop","entryZoneTarget","entryZoneRR",
+            "exitZonePrimary","exitZoneSecondary","exitZoneFull","exitZoneReason",
+            "invalidationPrice","invalidationConditions","invalidationWhatHappens",
+            "riskRating","riskSummary","riskFactors","riskRewardRatio","maxDrawdownEstimate"
           ],
           additionalProperties: false,
         },
@@ -377,6 +607,7 @@ JSON schema:
     ticker,
     assetType,
     queryType,
+    questionIntent,
     regimeColor,
     deepDiveLinks: buildDeepDiveLinks(ticker, assetType, queryType),
   }) as FaultlineAnswer;
