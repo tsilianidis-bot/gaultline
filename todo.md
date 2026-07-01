@@ -3043,25 +3043,25 @@
 ## Unified Market Intelligence System — Design Philosophy
 
 ### Phase 1: Market Context Strip
-- [ ] Create MarketContextStrip component — slim persistent banner showing regime, Pressure Index, market verdict, one-line AI synthesis
-- [ ] Inject MarketContextStrip into AppLayout above all page content
-- [ ] Strip pulls from EngineContext (zero new API calls)
-- [ ] Strip is collapsible (user preference saved to localStorage)
+- [x] Create MarketContextStrip component — slim persistent banner showing regime, Pressure Index, market verdict, one-line AI synthesis
+- [x] Inject MarketContextStrip into AppLayout above all page content
+- [x] Strip pulls from EngineContext (zero new API calls)
+- [x] Strip is collapsible (user preference saved to localStorage)
 
 ### Phase 2: Navigation Restructure
-- [ ] Rename nav groups to 7-question flow: SITUATION → UNDERSTAND → OPPORTUNITIES → DECIDE → MONITOR → REVIEW
-- [ ] Reorder nav items so each group answers its question naturally
-- [ ] Add nav group tooltips explaining what each group answers
+- [x] Rename nav groups to 7-question flow: SITUATION → UNDERSTAND → OPPORTUNITIES → DECIDE → MONITOR → REVIEW
+- [x] Reorder nav items so each group answers its question naturally
+- [x] Add nav group tooltips explaining what each group answers
 
 ### Phase 3: Synthesis Layer
-- [ ] Add "What does this mean?" MarketSynthesisPanel component
-- [ ] Inject into Dashboard (connects regime + pressure + verdict)
-- [ ] Inject into SituationRoom (connects macro + structure + risk)
-- [ ] Inject into Signals page (connects signals to current regime)
-- [ ] Inject into Pressure/PressureIndex page (connects stress to opportunity)
-- [ ] Add cross-feature "Continue the conversation →" contextual next-step links
+- [x] Add "What does this mean?" MarketSynthesisPanel component
+- [x] Inject into Dashboard (connects regime + pressure + verdict)
+- [x] Inject into SituationRoom (connects macro + structure + risk) — injected into MarketCommandCenter with context="situation"
+- [x] Inject into Signals page (connects signals to current regime)
+- [x] Inject into Pressure/PressureIndex page (connects stress to opportunity) — also injected into SignalOutlookCenter and DailyReport
+- [x] Add cross-feature "Continue the conversation →" contextual next-step links
 
 ### Phase 4: Audit + Tests
-- [ ] TypeScript: 0 errors
-- [ ] Full test suite passing
-- [ ] Checkpoint
+- [x] TypeScript: 0 errors
+- [x] Full test suite passing (40 new tests in unifiedMarketIntelligence.test.ts, 912 total passing)
+- [x] Checkpoint
