@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
+import { useTickerStore } from "@/contexts/TickerStore";
 
 // ── Shared styles ─────────────────────────────────────────────
 const CARD: React.CSSProperties = {
@@ -597,6 +598,8 @@ export default function UniversalSymbolIntelligence() {
 
   const report = data as DayTradeReport | null | undefined;
 
+  const { setTicker } = useTickerStore();
+
   const handleSearch = useCallback(() => {
     const sym = query.trim().toUpperCase();
     if (!sym) {
@@ -605,7 +608,9 @@ export default function UniversalSymbolIntelligence() {
     }
     setSubmitted({ symbol: sym, assetType });
     setActiveTab("overview");
-  }, [query, assetType]);
+    // Update global context so Ask FAULTLINE knows the active symbol
+    setTicker(sym, sym, assetType);
+  }, [query, assetType, setTicker]);
 
   const QUICK_STOCKS = ["SPY", "NVDA", "PLTR", "TSLA", "AAPL", "META", "AMD", "MSFT"];
   const QUICK_CRYPTO = ["BTC", "ETH", "SOL", "TAO", "ONDO", "DOGE", "LINK"];
@@ -725,7 +730,7 @@ export default function UniversalSymbolIntelligence() {
             {(assetType === "stock" ? QUICK_STOCKS : QUICK_CRYPTO).map(sym => (
               <button
                 key={sym}
-                onClick={() => { setQuery(sym); setSubmitted({ symbol: sym, assetType }); setActiveTab("overview"); }}
+                onClick={() => { setQuery(sym); setSubmitted({ symbol: sym, assetType }); setActiveTab("overview"); setTicker(sym, sym, assetType); }}
                 style={{
                   padding: "3px 10px",
                   background: "rgba(255,255,255,0.04)",

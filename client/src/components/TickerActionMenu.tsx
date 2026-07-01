@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import {
   Search, TrendingUp, BookOpen, Plus, Check, ChevronDown,
 } from "lucide-react";
+import { useTickerStore } from "@/contexts/TickerStore";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -66,6 +67,7 @@ export function TickerActionMenu({
   const resolved = resolveAssetType(ticker, assetType);
   const sym = ticker.toUpperCase();
   const displayName = name ?? sym;
+  const { setTicker: setGlobalTicker } = useTickerStore();
 
   // Watchlist state
   const [inWatchlist, setInWatchlist] = useState(false);
@@ -97,22 +99,26 @@ export function TickerActionMenu({
 
   const handleSearch = useCallback(() => {
     setOpen(false);
+    // Update global Ask context so Ask FAULTLINE knows the active symbol
+    setGlobalTicker(sym, displayName, resolved);
     if (resolved === "crypto") {
       navigate(`/crypto-search?symbol=${sym}`);
     } else {
       navigate(`/signals?search=${sym}`);
     }
-  }, [resolved, sym, navigate]);
+  }, [resolved, sym, displayName, navigate, setGlobalTicker]);
 
   const handleFullReading = useCallback(() => {
     setOpen(false);
+    setGlobalTicker(sym, displayName, resolved);
     navigate(`/signal-outlook?symbol=${sym}&type=${resolved}`);
-  }, [resolved, sym, navigate]);
+  }, [resolved, sym, displayName, navigate, setGlobalTicker]);
 
   const handleSignalOutlook = useCallback(() => {
     setOpen(false);
+    setGlobalTicker(sym, displayName, resolved);
     navigate(`/signal-outlook?symbol=${sym}&type=${resolved}`);
-  }, [resolved, sym, navigate]);
+  }, [resolved, sym, displayName, navigate, setGlobalTicker]);
 
   const handleAddWatchlist = useCallback(() => {
     setOpen(false);

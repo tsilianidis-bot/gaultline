@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
+import { useTickerStore } from "@/contexts/TickerStore";
 import DecisionConfidencePanel, { type ConfidenceData } from "@/components/DecisionConfidencePanel";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -503,10 +504,16 @@ export default function SituationRoom() {
   const resultRef = useRef<HTMLDivElement>(null);
   const autorunFiredRef = useRef(false);
 
+  const { setTicker: setGlobalTicker } = useTickerStore();
+
   const simulate = trpc.trade.simulate.useMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       setShowResult(true);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+      // Update global Ask context so user can ask follow-up questions about this symbol
+      if (variables.ticker) {
+        setGlobalTicker(variables.ticker, variables.ticker, "stock");
+      }
     },
   });
 

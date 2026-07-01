@@ -402,9 +402,15 @@ ${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decisi
 ${evidenceContext}
 ${outlookSummary}`;
 
+  // Explicit global mode instruction when no symbol context
+  const globalModeInstruction = !ticker
+    ? `\nCONTEXT: This is a GLOBAL MARKET question. Do NOT focus on any specific security. Answer for the broad market, macro environment, or the specific asset class mentioned. Use "MARKET" as the verdict context. For bull/bear probabilities, use broad market probabilities.`
+    : `\nCONTEXT: This analysis is focused on ${ticker} (${assetType}). All verdicts, probabilities, and price levels must be specific to ${ticker}.`;
+
   const userPrompt = `${conversationContext}
 User question: "${query}"
 ${ticker ? `Security in focus: ${ticker} (${assetType})` : ""}
+${globalModeInstruction}
 
 Respond with a JSON object matching this exact schema. Every field is required.
 

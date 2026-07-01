@@ -18,6 +18,7 @@ import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
+import { useTickerStore } from "@/contexts/TickerStore";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getRiskLabel(riskLevel: string): string {
@@ -148,12 +149,15 @@ function SmartDiscovery() {
     { label: "Today's market verdict", query: "What is today's market verdict and regime?" },
   ];
 
+  const { askPlaceholder } = useTickerStore();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = query.trim();
     if (!trimmed) return;
     // Navigate to Ask FAULTLINE with the question pre-filled via URL param.
     // SmartDiscovery reads ?q= on mount and auto-submits through the real intelligence pipeline.
+    // The intelligent context classifier in SmartDiscovery will resolve the correct symbol/mode.
     navigate(`/app/discover?q=${encodeURIComponent(trimmed)}`);
     setQuery("");
   };
@@ -177,7 +181,7 @@ function SmartDiscovery() {
             onChange={e => setQuery(e.target.value)}
             onFocus={() => setFocused(true)}
             onBlur={() => setTimeout(() => setFocused(false), 150)}
-            placeholder="Ask anything — Should I buy NVDA? Best swing trades. What are institutions buying?"
+            placeholder={askPlaceholder}
             style={{
               flex: 1, background: "none", border: "none", outline: "none",
               fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px",

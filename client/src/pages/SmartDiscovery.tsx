@@ -2235,7 +2235,7 @@ export default function SmartDiscovery() {
 
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
-  const { current: contextTicker, setTicker } = useTickerStore();
+  const { current: contextTicker, setTicker, clearTicker, resolveAskContext, askPlaceholder } = useTickerStore();
 
   const [query, setQuery] = useState("");
   const [conversation, setConversation] = useState<ConversationMessage[]>([]);
@@ -2340,6 +2340,13 @@ export default function SmartDiscovery() {
     const question = (q ?? query).trim();
     if (!question || isExecuting) return;
 
+    // ── Intelligent context resolution ──────────────────────────────────────
+    // Classify the question BEFORE anything else. This auto-clears the ticker
+    // for global questions and switches to a new ticker if one is detected.
+    const resolvedIntent = resolveAskContext(question);
+    // resolvedIntent.resolvedTicker is the symbol to send to the backend
+    // resolvedIntent.shouldClearSymbol means the store already cleared it
+
     setQuery("");
     setError(null);
     setIsExecuting(true);
@@ -2395,8 +2402,12 @@ export default function SmartDiscovery() {
       const answer = await askMutation.mutateAsync({
         query: question,
         conversationHistory: historyForApi,
-        contextTicker: contextTicker?.ticker ?? null,
-        contextAssetType: contextTicker?.assetType ?? null,
+        // Use the resolved context from the classifier, not the raw store state.
+        // This ensures global questions never carry a stale ticker to the backend.
+        contextTicker: resolvedIntent.resolvedTicker,
+        contextAssetType: resolvedIntent.mode === "crypto" ? "crypto"
+          : resolvedIntent.mode === "stock" ? "stock"
+          : null,
       });
 
       stopExecutionSequence();
@@ -2769,13 +2780,31 @@ export default function SmartDiscovery() {
                 <div style={{
                   display: "flex",
                   alignItems: "center",
-                  padding: "0 10px",
+                  gap: "6px",
+                  padding: "0 8px 0 10px",
                   background: "rgba(0,212,255,0.08)",
                   border: "1px solid rgba(0,212,255,0.2)",
                   borderRadius: "5px",
                   flexShrink: 0,
                 }}>
                   <span style={{ ...MONO_SM, color: ACCENT, fontWeight: 700 }}>{contextTicker.ticker}</span>
+                  <button
+                    onClick={clearTicker}
+                    title="Clear context — switch to global mode"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "0",
+                      display: "flex",
+                      alignItems: "center",
+                      color: "rgba(0,212,255,0.5)",
+                      fontSize: "12px",
+                      lineHeight: 1,
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
               )}
               <input
@@ -2783,11 +2812,7 @@ export default function SmartDiscovery() {
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={
-                  contextTicker
-                    ? `Ask about ${contextTicker.ticker}, or type any question...`
-                    : "Ask anything — Should I buy NVDA? How dangerous is the market? Best swing trades..."
-                }
+                placeholder={askPlaceholder}
                 disabled={isExecuting}
                 style={{
                   flex: 1,
@@ -2829,7 +2854,7 @@ export default function SmartDiscovery() {
               </span>
               {contextTicker && (
                 <span style={{ ...MONO_SM, color: "rgba(0,212,255,0.5)", fontSize: "10px" }}>
-                  Context: {contextTicker.ticker}
+                  ● {contextTicker.ticker} context active
                 </span>
               )}
               <button

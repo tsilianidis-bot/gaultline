@@ -3149,3 +3149,55 @@
 - [x] TypeScript: 0 errors
 - [x] Full test suite passing (898 passing, 1 pre-existing SendGrid failure, 26 new askUxFixes tests)
 - [x] Checkpoint
+
+## Intelligent Ask Context Management (Phase 9)
+
+### Architecture
+- [x] Extended `client/src/contexts/TickerStore.tsx` — added askMode, resolveAskContext, getPlaceholder to existing global store
+- [x] Store exposes: setTicker(symbol, type), clearTicker(), resolveAskContext(question) → resolvedContext, askPlaceholder
+- [x] TickerStore already wrapped at App.tsx level (no new provider needed)
+
+### Intent Classification (Frontend)
+- [x] `client/src/lib/askIntentClassifier.ts` — classifies question into 12 intent modes
+- [x] Global triggers: "best investments", "top opportunities", "market", "sectors", "dangerous", "buy right now", "what should I", "crypto opportunities", "best stocks", "outlook"
+- [x] Ticker detection: contextual patterns (run on original string, require ALL CAPS) + KNOWN_TICKERS fallback
+- [x] COMMON_WORDS_NOT_TICKERS exclusion set prevents false positives (RIGHT, NOW, HOT, LOW, etc.)
+- [x] Comparison detection runs BEFORE single-ticker detection (SPY vs QQQ → comparison, not stock)
+- [x] Specific sub-modes (sector, risk, crypto, macro, portfolio, economic) run BEFORE global patterns
+- [x] If new ticker detected in question → switch context to that ticker
+- [x] If global intent detected → clear symbol, switch to GLOBAL mode
+- [x] If question is ambiguous and symbol is active → keep symbol context
+
+### Placeholder Text
+- [x] When activeSymbol is set: "Ask about {SYMBOL}..."
+- [x] When in GLOBAL mode: "Ask anything about the markets..."
+- [x] When in MACRO mode: "Ask about macro conditions..."
+- [x] When in PORTFOLIO mode: "Ask about your portfolio..."
+- [x] All 12 modes have distinct placeholder text via getAskPlaceholder()
+
+### SmartDiscovery Integration
+- [x] Both upper input and floating bar use askPlaceholder from TickerStore
+- [x] On submit: resolveAskContext() runs FIRST, updates store, then calls backend
+- [x] Context badge in floating bar shows active symbol with × clear button
+- [x] Placeholder text driven by TickerStore
+
+### All Ask Entry Points
+- [x] Command Center Ask box → uses askPlaceholder from TickerStore
+- [x] Symbol Intelligence Ask → calls setTicker() when symbol is selected (handleSearch + quick-pick chips)
+- [x] SituationRoom → calls setTicker() when simulate.mutate succeeds
+- [x] TradePreflight → calls setTicker() when simulate.mutate succeeds
+- [x] TickerActionMenu → calls setTicker() on every ticker interaction (propagates platform-wide)
+- [ ] Portfolio Ask → future work
+- [ ] Dashboard Ask box → future work
+- [ ] Macro Ask → future work
+
+### Backend
+- [x] resolveAskContext() passes resolvedSymbol and resolvedMode to tRPC ask procedure
+- [x] Backend system prompt explicitly states GLOBAL MODE when contextTicker is null
+- [x] No stale ticker context reaches the LLM when question is global
+
+### Tests
+- [x] askContextManager.test.ts: 35 tests covering all 12 modes, ticker detection, ambiguous cases, comparison, context preservation, context clearing, placeholder text
+- [x] All 35 tests pass (1 pre-existing SendGrid failure unrelated)
+- [x] TypeScript: 0 errors
+- [x] Checkpoint

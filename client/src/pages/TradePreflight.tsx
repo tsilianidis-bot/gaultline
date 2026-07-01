@@ -12,6 +12,7 @@ import PageHeader from "@/components/PageHeader";
 import { AlertTriangle, CheckCircle, XCircle, Target, Zap, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Activity, Shield, BarChart2, RefreshCw } from "lucide-react";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
+import { useTickerStore } from "@/contexts/TickerStore";
 
 // ── Types ─────────────────────────────────────────────────────
 type MoveType =
@@ -166,10 +167,16 @@ export default function TradePreflight() {
   });
   const resultRef = useRef<HTMLDivElement>(null);
 
+  const { setTicker: setGlobalTicker } = useTickerStore();
+
   const simulate = trpc.trade.simulate.useMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       setShowResult(true);
       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      // Update global Ask context so user can ask follow-up questions about this symbol
+      if (variables.ticker) {
+        setGlobalTicker(variables.ticker, variables.ticker, "stock");
+      }
     },
   });
 
