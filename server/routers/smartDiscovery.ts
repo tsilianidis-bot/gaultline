@@ -21,6 +21,25 @@ import { getQuote } from "../yahooProxy";
 import { getCoinMarketData } from "../coingeckoProxy";
 import { scanOpportunities } from "../ownerSimulation";
 
+// ── LLM timeout helper ───────────────────────────────────────
+// Wraps any promise with a 55-second timeout so the user gets a friendly
+// error instead of staring at a spinner until Cloud Run kills the request.
+async function withLLMTimeout<T>(p: Promise<T>): Promise<T> {
+  const TIMEOUT_MS = 55_000;
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new TRPCError({
+      code: "TIMEOUT",
+      message: "FAULTLINE analysis timed out. Market data services may be slow — please try again.",
+    })), TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([p, timeout]);
+  } finally {
+    clearTimeout(timer!);
+  }
+}
+
 // ── Types ─────────────────────────────────────────────────────
 
 export interface EvidenceScore {
@@ -468,7 +487,7 @@ JSON schema:
   "maxDrawdownEstimate": string | null
 }`;
 
-  const llmResponse = await invokeLLM({
+  const llmResponse = await withLLMTimeout(invokeLLM({
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -584,7 +603,7 @@ JSON schema:
         },
       },
     },
-  });
+  }));
 
   // Safely parse LLM JSON — strip markdown fences if present, throw TRPCError on parse failure
   const rawContent = ((llmResponse.choices[0].message.content as string) ?? "").trim();
@@ -746,7 +765,7 @@ Respond with a JSON object matching this exact schema:
   "followUpChips": string[] (4-5 follow-up questions)
 }`;
 
-  const llmResponse = await invokeLLM({
+  const llmResponse = await withLLMTimeout(invokeLLM({
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -822,7 +841,7 @@ Respond with a JSON object matching this exact schema:
         },
       },
     },
-  });
+  }));
 
   const rawContent = ((llmResponse.choices[0].message.content as string) ?? "").trim();
   const jsonContent = rawContent.startsWith("`")

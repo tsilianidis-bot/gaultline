@@ -721,9 +721,29 @@ function WatchCatalysts({ catalysts }: { catalysts: string[] }) {
 // ── Direct Answer Panel ───────────────────────────────────────
 // Renders the exact answer to the user's specific question BEFORE the full report
 
+// ── Inline Bull/Bear Probability Bar (used inside DirectAnswerPanel) ────────
+function InlineProbBar({ bull, bear }: { bull: number; bear: number }) {
+  const neutral = Math.max(0, 100 - bull - bear);
+  return (
+    <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "5px" }}>
+      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "6px", fontSize: "9px", letterSpacing: "0.1em" }}>PROBABILITY DISTRIBUTION</div>
+      <div style={{ display: "flex", height: "5px", borderRadius: "3px", overflow: "hidden", gap: "1px" }}>
+        <div style={{ width: `${bull}%`, background: "#00FF88" }} />
+        {neutral > 0 && <div style={{ width: `${neutral}%`, background: "#FFD700" }} />}
+        <div style={{ width: `${bear}%`, background: "#FF4444" }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
+        <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>BULL {bull}%</span>
+        {neutral > 0 && <span style={{ ...MONO_SM, color: "#FFD700", fontSize: "10px" }}>NEUTRAL {neutral}%</span>}
+        <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "10px" }}>BEAR {bear}%</span>
+      </div>
+    </div>
+  );
+}
+
 function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
   const intent = answer.questionIntent;
-  if (!intent || intent === "general_analysis" || intent === "opportunity_ranking") return null;
+  if (!intent || intent === "opportunity_ranking") return null;
 
   const panelStyle: React.CSSProperties = {
     padding: "16px 18px",
@@ -999,18 +1019,45 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
     );
   }
 
+  // ── General Analysis — lead with verdict + bull/bear ──
+  if (intent === "general_analysis") {
+    const verdictColors: Record<string, string> = {
+      "STRONG BUY": "#00FF88", "BUY": "#00FF88", "ACCUMULATE": "#00CC6A",
+      "WAIT": "#FFD700", "HOLD": "#FFD700", "LOW CONVICTION": "#FFD700",
+      "REDUCE": "#FF6B6B", "STRONG REDUCE": "#FF4444", "SELL": "#FF4444",
+      "HIGH RISK": "#FF4444", "MACRO ANSWER": ACCENT,
+    };
+    const vc = verdictColors[answer.verdict] ?? "#E8EDF5";
+    const bull = answer.bullProbability ?? 50;
+    const bear = answer.bearProbability ?? 50;
+    return (
+      <div style={{ ...panelStyle, border: `1px solid ${vc}33`, background: `${vc}06` }}>
+        <div style={{ ...labelStyle, color: vc }}>DIRECT ANSWER</div>
+        <div style={{ ...bigValueStyle, color: vc, marginBottom: "6px" }}>{answer.verdict}</div>
+        {answer.primaryDriver && (
+          <div style={{ ...subValueStyle, fontSize: "13px", marginBottom: "8px", color: "rgba(255,255,255,0.8)" }}>{answer.primaryDriver}</div>
+        )}
+        {answer.executiveSummary && (
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "rgba(255,255,255,0.65)", lineHeight: 1.6, marginBottom: "4px" }}>{answer.executiveSummary}</div>
+        )}
+        <InlineProbBar bull={bull} bear={bear} />
+      </div>
+    );
+  }
+
   // ── Risk Assessment ──
   if (intent === "risk_assessment") {
-    if (!answer.riskRating) return null;
     const riskColors: Record<string, string> = {
       "LOW": "#00FF88", "MODERATE": "#FFD700", "HIGH": "#FF8C00", "EXTREME": "#FF4444",
     };
-    const rc = riskColors[answer.riskRating] ?? "#E8EDF5";
+    const rc = answer.riskRating ? (riskColors[answer.riskRating] ?? "#E8EDF5") : "#FFD700";
+    const bull = answer.bullProbability ?? 50;
+    const bear = answer.bearProbability ?? 50;
     return (
       <div style={{ ...panelStyle, border: `1px solid ${rc}33`, background: `${rc}08` }}>
         <div style={{ ...labelStyle, color: rc }}>DIRECT ANSWER — RISK ASSESSMENT</div>
         <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "10px", flexWrap: "wrap" }}>
-          <div style={{ ...bigValueStyle, color: rc }}>{answer.riskRating} RISK</div>
+          {answer.riskRating && <div style={{ ...bigValueStyle, color: rc }}>{answer.riskRating} RISK</div>}
           {answer.riskRewardRatio && (
             <div style={colStyle}>
               <div style={colLabelStyle}>RISK:REWARD</div>
@@ -1028,13 +1075,14 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
           <div style={{ ...subValueStyle, fontSize: "13px", marginBottom: "8px", color: "rgba(255,255,255,0.8)" }}>{answer.riskSummary}</div>
         )}
         {answer.riskFactors && answer.riskFactors.length > 0 && (
-          <div>
+          <div style={{ marginBottom: "8px" }}>
             <div style={colLabelStyle}>KEY RISK FACTORS</div>
             {answer.riskFactors.map((r, i) => (
               <div key={i} style={bulletStyle}>• {r}</div>
             ))}
           </div>
         )}
+        <InlineProbBar bull={bull} bear={bear} />
       </div>
     );
   }
@@ -1057,35 +1105,19 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
 
   // Determine if this is a WAIT/HOLD verdict
   const isWaitHold = ["WAIT", "HOLD", "LOW CONVICTION"].includes(answer.verdict);
+  // For general_analysis the DirectAnswerPanel already shows the executive summary — skip it in the body
+  const isGeneralAnalysis = answer.questionIntent === "general_analysis";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
 
-      {/* ── DIRECT ANSWER PANEL (renders first for specific question types) ── */}
+      {/* ── DIRECT ANSWER PANEL (renders first for ALL question types) ── */}
       <DirectAnswerPanel answer={answer} />
 
-      {/* ── PRIMARY DRIVER (V2.0 — Section 5) ── */}
-      {answer.primaryDriver && (
-        <div style={{
-          padding: "10px 14px",
-          background: `${vs.background}`,
-          border: `1px solid ${vs.borderColor}`,
-          borderRadius: "6px",
-          display: "flex",
-          gap: "10px",
-          alignItems: "flex-start",
-        }}>
-          <Zap size={12} style={{ color: vs.color, marginTop: "2px", flexShrink: 0 }} />
-          <div>
-            <div style={{ ...MONO_SM, color: vs.color, marginBottom: "2px", fontSize: "9px", letterSpacing: "0.12em" }}>PRIMARY DRIVER</div>
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#E8EDF5", fontWeight: 500, lineHeight: 1.5 }}>
-              {answer.primaryDriver}
-            </span>
-          </div>
-        </div>
-      )}
+      {/* ── Bull / Bear with Probabilities — always visible, immediately after direct answer ── */}
+      {!isGeneralAnalysis && <BullBearSection answer={answer} />}
 
-      {/* ── BOTTOM LINE card ── */}
+      {/* ── BOTTOM LINE card (verdict + scores + action) ── */}
       <div style={{
         padding: "16px 18px",
         background: vs.background,
@@ -1194,32 +1226,25 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
         />
       </div>
 
-      {/* ── Executive Summary ── */}
-      <div style={{ padding: "16px 18px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
-        <div style={{ ...MONO_SM, color: ACCENT, marginBottom: "8px", letterSpacing: "0.12em" }}>FAULTLINE ASSESSMENT</div>
-        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", color: "#E8EDF5", lineHeight: 1.7, margin: 0 }}>
-          {answer.executiveSummary}
-        </p>
-      </div>
+      {/* ── Executive Summary (only for non-general_analysis, since general_analysis shows it in DirectAnswerPanel) ── */}
+      {!isGeneralAnalysis && (
+        <div style={{ padding: "16px 18px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+          <div style={{ ...MONO_SM, color: ACCENT, marginBottom: "8px", letterSpacing: "0.12em" }}>FAULTLINE ASSESSMENT</div>
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "14px", color: "#E8EDF5", lineHeight: 1.7, margin: 0 }}>
+            {answer.executiveSummary}
+          </p>
+        </div>
+      )}
 
-      {/* ── Evidence Engine (V2.0 — Section 6) ── */}
+      {/* ── Evidence Engine (14 categories) ── */}
       {answer.evidenceScores && answer.evidenceScores.length > 0 && (
         <EvidenceEngineGrid scores={answer.evidenceScores} />
       )}
 
-      {/* ── Bull / Bear with Probabilities (V2.0 — Sections 7-8) ── */}
-      <BullBearSection answer={answer} />
+      {/* ── Bull / Bear (shown here for general_analysis since InlineProbBar is already in DirectAnswerPanel) ── */}
+      {isGeneralAnalysis && <BullBearSection answer={answer} />}
 
-      {/* ── Confidence Breakdown (V2.0) ── */}
-      {answer.confidenceReasons && answer.confidenceReasons.length > 0 && (
-        <ConfidenceBreakdown
-          confidence={answer.confidence}
-          label={answer.confidenceLabel}
-          reasons={answer.confidenceReasons}
-        />
-      )}
-
-      {/* ── Why Not Buy/Sell (V2.0 — Section 10, only for WAIT/HOLD) ── */}
+      {/* ── Why Not Buy/Sell (only for WAIT/HOLD) ── */}
       {isWaitHold && (
         <WhyNotSection whyNotBuy={answer.whyNotBuy} whyNotSell={answer.whyNotSell} />
       )}
@@ -1241,15 +1266,7 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
         </div>
       </div>
 
-      {/* ── Institutional Insight (V2.1 — Section 7) ── */}
-      <InstitutionalInsightCard answer={answer} />
-
-      {/* ── Evidence Transparency (V2.1 — Section 8) ── */}
-      {answer.evidenceScores && answer.evidenceScores.length > 0 && (
-        <EvidenceTransparency scores={answer.evidenceScores} />
-      )}
-
-      {/* ── What Changes Our View (V2.0 — Section 11) ── */}
+      {/* ── What Changes Our View ── */}
       {answer.watchCatalysts && answer.watchCatalysts.length > 0 && (
         <WatchCatalysts catalysts={answer.watchCatalysts} />
       )}
@@ -2275,19 +2292,23 @@ export default function SmartDiscovery() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
   // Auto-submit if ?q= URL param is present (used by MarketCommandCenter and other entry points)
+  // Re-fires whenever the search string changes so navigating back with a new ?q= works too
+  const locationSearch = typeof window !== "undefined" ? window.location.search : "";
+  const [lastProcessedQuery, setLastProcessedQuery] = useState("");
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlQuery = params.get("q");
-    if (urlQuery && urlQuery.trim()) {
+    if (urlQuery && urlQuery.trim() && urlQuery.trim() !== lastProcessedQuery) {
+      setLastProcessedQuery(urlQuery.trim());
       // Remove the param from the URL without a page reload
       window.history.replaceState({}, "", window.location.pathname);
       // Small delay to let the page fully mount before submitting
       setTimeout(() => {
         void handleSubmit(urlQuery.trim());
-      }, 200);
+      }, 150);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [locationSearch]);
 
   // Scroll to bottom when conversation updates
   useEffect(() => {
@@ -2654,7 +2675,7 @@ export default function SmartDiscovery() {
 
         {/* ── Conversation ── */}
         {!isEmpty && (
-          <div style={{ flex: 1, paddingTop: "24px", paddingBottom: "120px", display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ flex: 1, paddingTop: "24px", paddingBottom: "clamp(140px, 20vw, 180px)", display: "flex", flexDirection: "column", gap: "20px" }}>
             {conversation.map((msg, i) => (
               <div key={i}>
                 {msg.role === "user" ? (

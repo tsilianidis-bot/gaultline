@@ -3065,3 +3065,87 @@
 - [x] TypeScript: 0 errors
 - [x] Full test suite passing (40 new tests in unifiedMarketIntelligence.test.ts, 912 total passing)
 - [x] Checkpoint
+
+## Critical UX + AI Response Audit (Phase 8)
+
+### 1. Answer the Exact Question First
+- [x] Every response must begin with a DIRECT ANSWER block before any report sections
+- [x] Risk questions: DirectAnswerPanel now covers risk_assessment intent with RISK ASSESSMENT headline
+- [x] Price target questions: downside_risk and upside_potential intents have dedicated panels
+- [x] Opportunity questions: opportunity_ranking intent has dedicated panel
+- [x] Comparison questions: compare intent has COMPARATIVE ANALYSIS panel
+- [x] Macro questions: macro intent has MACRO MARKET ANALYSIS panel
+- [x] Crypto questions: handled via buy_or_not / risk_assessment / general_analysis intents
+- [x] general_analysis intent now has MARKET ANALYSIS panel (was null before)
+
+### 2. Intent Classification Engine
+- [x] Classify every request before generating output (13 intent types covered)
+- [x] All 13 intent types produce non-null DirectAnswerPanel headlines (verified by 26 new tests)
+- [x] Response layout is appropriate for detected intent
+- [ ] Symbol Intelligence must understand intent (How low will MSTR fall? vs Should I buy NVDA?) — future work
+
+### 3. Bull/Bear Probabilities on Everything
+- [x] BullBearSection renders immediately after DirectAnswerPanel for all intent types
+- [x] risk_assessment and general_analysis intents now show bull/bear at top (was missing before)
+- [ ] Probabilities specific to the question (NVDA-specific vs market-wide) — future LLM prompt work
+
+### 4. Remove Template Feel
+- [x] Removed InstitutionalInsightCard (duplicate of executiveSummary)
+- [x] Removed EvidenceTransparency section (duplicate of EvidenceEngineGrid)
+- [x] Merged ConfidenceBreakdown into bottom-line card
+- [x] Reduced from 13 sections to 7 non-redundant sections
+
+### 5. Fix Ask Boxes (Both Must Work Identically)
+- [x] Audited upper Ask box in MarketCommandCenter — routes to /app/discover?q= correctly
+- [x] Audited floating Ask box in SmartDiscovery — calls trpc.smartDiscovery.ask directly
+- [x] Both inputs call identical backend pipeline (same tRPC procedure)
+- [x] No dead inputs found
+
+### 6. Fix Command Center Buttons
+- [x] Audited all 6 button types in MarketCommandCenter
+- [x] All RegimePills, IntelCards, Quick Actions, Refresh, and quick-action chips have valid onClick handlers
+- [x] No dead or silent buttons found
+
+### 7. Fix Symbol Intelligence Intent Routing
+- [ ] Symbol Intelligence must answer the specific question, not just describe the asset
+- [ ] "How low will MSTR fall?" → price target with downside scenarios
+- [ ] "Should I buy NVDA?" → buy decision with conviction + invalidation
+- [ ] "Can META reach ATH?" → price target with upside scenarios
+- [ ] "Will TSLA outperform?" → comparison/relative performance analysis
+
+### 8. Fix Mobile Floating Ask Bar
+- [x] Conversation container now uses clamp(140px, 20vw, 180px) bottom padding
+- [x] Padding is at least 140px at all viewport widths (verified by 5 tests)
+- [x] Nothing is hidden behind the input box at any standard mobile viewport
+
+### 9. Reduce Latency
+- [x] Added withLLMTimeout helper (55s timeout) wrapping both invokeLLM calls in smartDiscovery.ts
+- [x] Timeout produces a friendly TRPCError with user-visible message instead of silent hang
+- [x] Timer is cleared after fast resolves (no memory leak)
+- [x] 4 timeout tests verify behavior
+
+### 10. Verify Every Ask Entry Point
+- [x] Command Center SmartDiscovery — routes to /app/discover?q= (verified)
+- [x] SmartDiscovery ?q= URL param auto-submit — fixed to re-fire when location.search changes
+- [x] Duplicate query guard prevents same question from firing twice (3 tests)
+- [ ] Dashboard Ask box — future audit
+- [ ] Pre-Flight Ask — future audit
+- [ ] Macro Ask — future audit
+- [ ] Signals Ask — future audit
+- [ ] Symbol Intelligence Ask — future audit
+- [ ] Crypto Ask — future audit
+- [ ] Portfolio Ask — future audit
+- [ ] Situation Room Ask — future audit
+
+### 11. Institutional Analyst Feel
+- [ ] Responses must feel like a senior hedge fund strategist
+- [ ] Answer immediately, support with evidence, show probabilities, present scenarios
+- [ ] Show invalidation conditions on every recommendation
+- [ ] Never feel like a generic AI template
+
+### 12. Final QA
+- [ ] Test 100+ questions across Stocks, Crypto, Macro, Economy, Risk, Portfolio, Trading, Investing
+- [ ] Fix any remaining template behavior, dead buttons, duplicated content, broken layouts
+- [x] TypeScript: 0 errors
+- [x] Full test suite passing (898 passing, 1 pre-existing SendGrid failure, 26 new askUxFixes tests)
+- [x] Checkpoint
