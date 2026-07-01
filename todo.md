@@ -3039,3 +3039,29 @@
 - [x] Tests: intentResolverFixes.test.ts — 27/27 passing (COMP false positive, market-wide guard, word-boundary, ticker extraction)
 - [x] TypeScript: 0 errors
 - [x] Checkpoint
+
+## Unified Market Intelligence System — Design Philosophy
+
+### Phase 1: Market Context Strip
+- [ ] Create MarketContextStrip component — slim persistent banner showing regime, Pressure Index, market verdict, one-line AI synthesis
+- [ ] Inject MarketContextStrip into AppLayout above all page content
+- [ ] Strip pulls from EngineContext (zero new API calls)
+- [ ] Strip is collapsible (user preference saved to localStorage)
+
+### Phase 2: Navigation Restructure
+- [ ] Rename nav groups to 7-question flow: SITUATION → UNDERSTAND → OPPORTUNITIES → DECIDE → MONITOR → REVIEW
+- [ ] Reorder nav items so each group answers its question naturally
+- [ ] Add nav group tooltips explaining what each group answers
+
+### Phase 3: Synthesis Layer
+- [ ] Add "What does this mean?" MarketSynthesisPanel component
+- [ ] Inject into Dashboard (connects regime + pressure + verdict)
+- [ ] Inject into SituationRoom (connects macro + structure + risk)
+- [ ] Inject into Signals page (connects signals to current regime)
+- [ ] Inject into Pressure/PressureIndex page (connects stress to opportunity)
+- [ ] Add cross-feature "Continue the conversation →" contextual next-step links
+
+### Phase 4: Audit + Tests
+- [ ] TypeScript: 0 errors
+- [ ] Full test suite passing
+- [ ] Checkpoint

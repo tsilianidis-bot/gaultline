@@ -23,6 +23,7 @@ import {
 import NarrativeLoader from "@/components/NarrativeLoader";
 import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
+import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 
 // ── Types (mirrored from server) ─────────────────────────────
 type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | "Avoid";
@@ -1476,6 +1477,11 @@ export default function SignalOutlookCenter() {
       />
 
       <div style={{ maxWidth: "900px", margin: "0 auto", padding: "0 16px" }}>
+
+        {/* ── What does this mean? synthesis panel ── */}
+        <div style={{ marginBottom: "16px" }}>
+          <MarketSynthesisPanel context="signal-outlook" />
+        </div>
 
         {/* ── Search bar ── */}
         <div style={{

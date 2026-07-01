@@ -17,6 +17,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getRiskLabel(riskLevel: string): string {
@@ -503,6 +504,11 @@ export default function MarketCommandCenter() {
       {/* ── SMART DISCOVERY ─────────────────────────────────────── */}
       <div style={{ position: "relative", zIndex: 2, padding: "14px 20px 0" }}>
         <SmartDiscovery />
+      </div>
+
+      {/* ── WHAT DOES THIS MEAN? synthesis panel ─────────────────────────────────── */}
+      <div style={{ position: "relative", zIndex: 2, padding: "0 20px 8px" }}>
+        <MarketSynthesisPanel context="situation" />
       </div>
 
       {/* ── 8 REGIME PILLS ──────────────────────────────────────── */}

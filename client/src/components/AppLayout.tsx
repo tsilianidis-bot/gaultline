@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import AIReceptionistLink from "@/components/AIReceptionistLink";
+import MarketContextStrip from "@/components/MarketContextStrip";
 import UniversalTickerBar from "@/components/UniversalTickerBar";
 import CommandSearch, { useCommandSearch } from "@/components/CommandSearch";
 import { useMemo } from "react";
@@ -40,56 +41,57 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    // INTELLIGENCE: Observe — situational awareness and proactive discovery
-    label: "INTELLIGENCE",
+    // Q1 + Q2: What is the market doing right now? Why?
+    label: "SITUATION",
     items: [
-      { id: "discover",       label: "Ask FAULTLINE",       shortLabel: "Ask",         icon: Search,          path: "/app/discover" },
       { id: "command",        label: "Command Center",       shortLabel: "Command",     icon: Command,         path: "/app/command" },
-      { id: "todays-story",   label: "Today's Story",       shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
-      { id: "opportunities",  label: "Opportunities",       shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
-      { id: "signals",        label: "Signals",             shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
-      { id: "crypto",         label: "Crypto Hub",          shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
-      { id: "pre-flight",     label: "Pre-Flight",          shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
-      { id: "alerts",          label: "Alerts",              shortLabel: "Alerts",      icon: BellRing,        path: "/app/alerts" },
-      { id: "social-intel",    label: "Social Intelligence", shortLabel: "Social Intel",icon: Users,           path: "/app/social-intelligence" },
-      { id: "insider-intel",   label: "Insider Intelligence",shortLabel: "Insider",     icon: TrendingDown,    path: "/app/insider-intelligence" },
-      { id: "dashboard",      label: "Dashboard",           shortLabel: "Dash",        icon: LayoutDashboard, path: "/app/dashboard" },
+      { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",        icon: LayoutDashboard, path: "/app/dashboard" },
+      { id: "todays-story",   label: "Today's Story",        shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
+      { id: "pressure",       label: "Pressure Index",       shortLabel: "Pressure",    icon: Gauge,           path: "/app/pressure" },
+      { id: "diagnostic",     label: "AI Diagnostic",        shortLabel: "Diagnostic",  icon: Cpu,             path: "/app/diagnostic" },
+      { id: "report",         label: "Daily Briefing",       shortLabel: "Briefing",    icon: FileText,        path: "/app/report" },
     ],
   },
   {
-    // ANALYSIS: Analyze + Decide — deep intelligence and decision support
-    label: "ANALYSIS",
+    // Q3 + Q4: What does it mean? What is the highest probability outcome?
+    label: "UNDERSTAND",
     items: [
-      { id: "symbol-intel",    label: "Symbol Intelligence", shortLabel: "Symbol Intel", icon: Telescope,     path: "/app/symbol-intelligence" },
-      { id: "decision-engine", label: "Decision Engine",     shortLabel: "Decide",       icon: Crosshair,     path: "/app/decision-engine" },
-      { id: "diagnostic",      label: "AI Diagnostic",       shortLabel: "Diagnostic",   icon: Cpu,           path: "/app/diagnostic" },
-      { id: "pressure",        label: "Market Stress",       shortLabel: "Stress",       icon: Gauge,         path: "/app/pressure" },
-      { id: "signal-outlook",  label: "Signal Outlook",      shortLabel: "Outlook",      icon: Eye,           path: "/app/signal-outlook" },
-      { id: "day-trade",       label: "Day Trade Intel",     shortLabel: "Day Trade",    icon: Target,        path: "/app/day-trade-intelligence" },
+      { id: "signal-outlook",  label: "Signal Outlook",       shortLabel: "Outlook",     icon: Eye,             path: "/app/signal-outlook" },
+      { id: "pre-flight",      label: "Pre-Flight Check",     shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
+      { id: "social-intel",    label: "Social Intelligence",  shortLabel: "Social Intel",icon: Users,           path: "/app/social-intelligence" },
+      { id: "insider-intel",   label: "Insider Intelligence", shortLabel: "Insider",     icon: TrendingDown,    path: "/app/insider-intelligence" },
+      { id: "alt-rotation",    label: "Sector Rotation",      shortLabel: "Rotation",    icon: RotateCcw,       path: "/app/alt-rotation" },
+      { id: "crypto",          label: "Crypto Hub",           shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
     ],
   },
   {
-    // PORTFOLIO: Monitor — track, manage, and review positions
-    label: "PORTFOLIO",
+    // Q5 + Q6: What could change the outlook? How do I capitalize?
+    label: "OPPORTUNITIES",
     items: [
-      { id: "portfolio",     label: "Portfolio",       shortLabel: "Portfolio",  icon: Briefcase,  path: "/app/portfolio" },
-      { id: "watchlist",     label: "Watchlist",       shortLabel: "Watch",      icon: Bell,       path: "/app/watchlist" },
-      { id: "alt-rotation",  label: "Sector Rotation", shortLabel: "Rotation",   icon: RotateCcw,  path: "/app/alt-rotation" },
-      { id: "trade-journal", label: "Trade Journal",   shortLabel: "Journal",    icon: BookOpen,   path: "/app/trade-journal" },
-      { id: "decision-ledger", label: "Decision Ledger",  shortLabel: "Ledger",     icon: Bookmark,   path: "/app/decision-ledger" },
+      { id: "discover",        label: "Ask FAULTLINE",        shortLabel: "Ask",         icon: Search,          path: "/app/discover" },
+      { id: "opportunities",   label: "Opportunities",        shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
+      { id: "signals",         label: "Signals",              shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
+      { id: "symbol-intel",    label: "Symbol Intelligence",  shortLabel: "Symbol Intel",icon: Telescope,       path: "/app/symbol-intelligence" },
+      { id: "decision-engine", label: "Decision Engine",      shortLabel: "Decide",      icon: Crosshair,       path: "/app/decision-engine" },
+      { id: "day-trade",       label: "Day Trade Intel",      shortLabel: "Day Trade",   icon: Target,          path: "/app/day-trade-intelligence" },
+      { id: "premarket",       label: "Premarket Intelligence",shortLabel: "Premarket",  icon: Activity,        path: "/app/premarket-intelligence" },
     ],
   },
   {
-    // LEARN: Context, education, and account management
-    label: "LEARN",
+    // Q7: What should I continue monitoring?
+    label: "MONITOR",
     items: [
-      { id: "report",       label: "Daily Briefing", shortLabel: "Briefing",  icon: FileText,   path: "/app/report" },
-      { id: "track-record",  label: "Track Record",   shortLabel: "Track Rec", icon: Trophy,        path: "/app/track-record" },
-      { id: "validation-lab", label: "Validation Lab", shortLabel: "Val. Lab",  icon: FlaskConical,  path: "/app/validation-lab" },
+      { id: "alerts",           label: "Alerts",               shortLabel: "Alerts",      icon: BellRing,        path: "/app/alerts" },
+      { id: "watchlist",        label: "Watchlist",            shortLabel: "Watch",       icon: Bell,            path: "/app/watchlist" },
+      { id: "portfolio",        label: "Portfolio",            shortLabel: "Portfolio",   icon: Briefcase,       path: "/app/portfolio" },
+      { id: "trade-journal",    label: "Trade Journal",        shortLabel: "Journal",     icon: BookOpen,        path: "/app/trade-journal" },
+      { id: "decision-ledger",  label: "Decision Ledger",      shortLabel: "Ledger",      icon: Bookmark,        path: "/app/decision-ledger" },
+      { id: "track-record",     label: "Track Record",         shortLabel: "Track Rec",   icon: Trophy,          path: "/app/track-record" },
+      { id: "validation-lab",   label: "Validation Lab",       shortLabel: "Val. Lab",    icon: FlaskConical,    path: "/app/validation-lab" },
       { id: "intelligence-validation", label: "Intelligence Validation", shortLabel: "Intel Val.", icon: Brain, path: "/app/intelligence-validation" },
-      { id: "fmos-health",     label: "FMOS Health",     shortLabel: "FMOS",      icon: Shield,        path: "/app/fmos-health" },
-      { id: "guide",          label: "Guide",          shortLabel: "Guide",     icon: BookOpen,      path: "/app/guide" },
-      { id: "account",      label: "Account",        shortLabel: "Account",   icon: User,       path: "/app/account" },
+      { id: "fmos-health",      label: "FMOS Health",          shortLabel: "FMOS",        icon: Shield,          path: "/app/fmos-health" },
+      { id: "guide",            label: "Guide",                shortLabel: "Guide",       icon: BookOpen,        path: "/app/guide" },
+      { id: "account",          label: "Account",              shortLabel: "Account",     icon: User,            path: "/app/account" },
     ],
   },
 ];
@@ -645,6 +647,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* ── Main content ── */}
       <main style={{ flex: 1, paddingBottom: '72px' }} className="lg:pb-0">
+        <MarketContextStrip />
         {children}
       </main>
 

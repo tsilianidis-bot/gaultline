@@ -27,6 +27,7 @@ import { SizingCalculator } from "@/components/SizingCalculator";
 import { trackStockSignalViewed } from "@/hooks/useAnalytics";
 import { TickerChip } from "@/components/TickerActionMenu";
 import FaultlineTerm from "@/components/FaultlineTerm";
+import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -1609,6 +1610,11 @@ function SignalsInner() {
 
       {/* ── Signals Module Sub-Nav: navigate between Stocks, Crypto, Signal Outlook ── */}
       <SignalsSubNav />
+
+      {/* ── What does this mean? synthesis panel ── */}
+      <div style={{ padding: '0 16px', marginBottom: '8px', marginTop: '8px' }}>
+        <MarketSynthesisPanel context="signals" />
+      </div>
 
       {/* ── View Switcher Tab Bar ────────────────────────── */}
       <div style={{

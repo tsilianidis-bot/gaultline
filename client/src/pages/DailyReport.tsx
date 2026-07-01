@@ -21,6 +21,7 @@ import {
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 
 // ── Typewriter hook ──────────────────────────────────────────
 function useTypewriter(text: string, speed = 18): { displayed: string; done: boolean } {
@@ -192,6 +193,11 @@ export default function DailyReport() {
         }
       />
       <div style={{ padding: '20px 16px 60px' }}>
+
+      {/* ── What does this mean? synthesis panel ── */}
+      <div style={{ marginBottom: '16px' }}>
+        <MarketSynthesisPanel context="daily-brief" />
+      </div>
 
       {/* ── Report Body ── */}
       <div ref={reportRef} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
