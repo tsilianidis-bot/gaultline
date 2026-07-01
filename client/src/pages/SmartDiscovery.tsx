@@ -2274,6 +2274,20 @@ export default function SmartDiscovery() {
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
+  // Auto-submit if ?q= URL param is present (used by MarketCommandCenter and other entry points)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlQuery = params.get("q");
+    if (urlQuery && urlQuery.trim()) {
+      // Remove the param from the URL without a page reload
+      window.history.replaceState({}, "", window.location.pathname);
+      // Small delay to let the page fully mount before submitting
+      setTimeout(() => {
+        void handleSubmit(urlQuery.trim());
+      }, 200);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Scroll to bottom when conversation updates
   useEffect(() => {

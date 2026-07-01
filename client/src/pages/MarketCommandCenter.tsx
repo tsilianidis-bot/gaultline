@@ -139,36 +139,21 @@ function SmartDiscovery() {
   }, []);
 
   const QUICK_ACTIONS = [
-    { label: "Best swing trades", href: "/app/opportunities" },
-    { label: "Should I buy NVDA?", href: "/app/symbol-intelligence" },
-    { label: "What are institutions buying?", href: "/app/signal-outlook" },
-    { label: "Best AI stocks", href: "/app/signals" },
-    { label: "Bitcoin risk", href: "/app/crypto" },
-    { label: "Today's market verdict", href: "/app/pre-flight" },
+    { label: "Best swing trades", query: "What are the best swing trades right now?" },
+    { label: "Should I buy NVDA?", query: "Should I buy NVDA?" },
+    { label: "What are institutions buying?", query: "What are institutions buying right now?" },
+    { label: "Best AI stocks", query: "What are the best AI stocks to buy right now?" },
+    { label: "Bitcoin risk", query: "What is the risk level for Bitcoin right now?" },
+    { label: "Today's market verdict", query: "What is today's market verdict and regime?" },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
-    const q = query.trim().toLowerCase();
-    // Route intent to correct engine
-    if (q.includes("nvda") || q.includes("tsla") || q.includes("aapl") || q.includes("meta") || q.includes("amd") || q.includes("pltr") || q.match(/\b[A-Z]{1,5}\b/)) {
-      navigate("/app/symbol-intelligence");
-    } else if (q.includes("bitcoin") || q.includes("btc") || q.includes("eth") || q.includes("crypto")) {
-      navigate("/app/crypto");
-    } else if (q.includes("swing") || q.includes("trade") || q.includes("opportunity") || q.includes("opportunities")) {
-      navigate("/app/opportunities");
-    } else if (q.includes("institution") || q.includes("institutional") || q.includes("insider")) {
-      navigate("/app/signal-outlook");
-    } else if (q.includes("sector") || q.includes("rotation")) {
-      navigate("/app/alt-rotation");
-    } else if (q.includes("risk") || q.includes("crash") || q.includes("stress")) {
-      navigate("/app/pressure");
-    } else if (q.includes("portfolio")) {
-      navigate("/app/portfolio");
-    } else {
-      navigate("/app/decision-engine");
-    }
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    // Navigate to Ask FAULTLINE with the question pre-filled via URL param.
+    // SmartDiscovery reads ?q= on mount and auto-submits through the real intelligence pipeline.
+    navigate(`/app/discover?q=${encodeURIComponent(trimmed)}`);
     setQuery("");
   };
 
@@ -208,7 +193,7 @@ function SmartDiscovery() {
         {QUICK_ACTIONS.map(a => (
           <button
             key={a.label}
-            onClick={() => navigate(a.href)}
+            onClick={() => navigate(`/app/discover?q=${encodeURIComponent(a.query)}`)}
             style={{
               padding: "4px 10px", background: "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px",

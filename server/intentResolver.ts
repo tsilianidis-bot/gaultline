@@ -520,6 +520,65 @@ const OPPORTUNITY_KEYWORDS = [
 ];
 
 // ── Main resolver function ────────────────────────────────────
+/**
+ * MARKET_WIDE_KEYWORDS — phrases that indicate a broad market query.
+ * When any of these are present, ticker extraction is skipped entirely.
+ * Intent takes priority over ticker detection for market-wide queries.
+ */
+const MARKET_WIDE_KEYWORDS = [
+  // Explicit market-wide scope
+  "crypto market", "stock market", "equity market", "the market",
+  "entire market", "whole market", "overall market", "broad market",
+  // Report / briefing requests
+  "market intelligence report", "market report", "market briefing",
+  "market overview", "market analysis", "market outlook",
+  "crypto report", "crypto briefing", "crypto overview", "crypto analysis",
+  "crypto intelligence", "crypto market report",
+  "stock report", "stock briefing", "stock overview", "stock analysis",
+  // Broad opportunity discovery
+  "best opportunities", "top opportunities", "best investments",
+  "best stocks", "best cryptos", "best trades", "top picks",
+  "what to buy", "what should i buy", "investment ideas",
+  // Macro / regime
+  "macro outlook", "macro analysis", "macro report",
+  "market regime", "current regime", "market conditions",
+  "best day trades", "best swing trades",
+];
+
+/**
+ * Returns true if the query is clearly a broad/market-wide query
+ * that should NOT trigger ticker extraction.
+ */
+function isMarketWideQuery(lower: string): boolean {
+  return MARKET_WIDE_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+/**
+ * Word-boundary safe includes check.
+ * For short names (≤4 chars) or names that are common English substrings,
+ * we require a word boundary to avoid false positives like
+ * "comp" matching inside "comprehensive".
+ */
+const WORD_BOUNDARY_NAMES = new Set([
+  // Crypto names that are common English substrings
+  "comp", "uni", "near", "sol", "op", "arb", "sei", "sui", "apt",
+  "band", "ocean", "fetch", "nano", "neo", "gas", "sc", "ray",
+  "one", "ark", "rep", "dot", "ada", "vet", "etc", "fil",
+  "sand", "mana", "gala", "flow", "link", "bal", "uma",
+  // Stock names that are common English words
+  "near", "riot", "block", "arm", "shell", "flow",
+  // Forex/commodity names that are common English substrings
+  "pound", "euro", "franc", "yen", "dollar", "oil", "gas",
+]);
+
+function nameMatchesQuery(name: string, lower: string): boolean {
+  if (WORD_BOUNDARY_NAMES.has(name)) {
+    // Use word-boundary regex to avoid substring false positives
+    return new RegExp(`\\b${name.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\b`).test(lower);
+  }
+  return lower.includes(name);
+}
+
 export function resolveIntent(
   query: string,
   contextTicker: string | null = null,
@@ -529,9 +588,25 @@ export function resolveIntent(
   const lower = raw.toLowerCase();
   const upper = raw.toUpperCase();
 
+  // ── Step 0: Market-wide query guard ──────────────────────────
+  // If the query is clearly about the whole market / a broad report,
+  // skip all ticker extraction and route directly to macro/opportunity.
+  if (isMarketWideQuery(lower)) {
+    const queryType = classifyQueryType(lower, null);
+    return {
+      ticker: null,
+      assetType: null,
+      queryType,
+      assetName: null,
+      needsClarification: false,
+      clarificationPrompt: null,
+      confidence: "high",
+    };
+  }
+
   // ── Step 1: Check commodity/forex by name (highest priority for named assets) ──
   for (const [name, info] of Object.entries(COMMODITY_MAP)) {
-    if (lower.includes(name)) {
+    if (nameMatchesQuery(name, lower)) {
       return {
         ticker: info.ticker,
         assetType: info.assetType,
@@ -546,7 +621,7 @@ export function resolveIntent(
 
   // ── Step 2: Check crypto by name ──────────────────────────
   for (const [name, ticker] of Object.entries(CRYPTO_NAME_MAP)) {
-    if (lower.includes(name)) {
+    if (nameMatchesQuery(name, lower)) {
       return {
         ticker,
         assetType: "crypto",
@@ -561,7 +636,7 @@ export function resolveIntent(
 
   // ── Step 3: Check stock by common name ───────────────────
   for (const [name, info] of Object.entries(STOCK_NAME_MAP)) {
-    if (lower.includes(name)) {
+    if (nameMatchesQuery(name, lower)) {
       return {
         ticker: info.ticker,
         assetType: "stock",

@@ -3024,3 +3024,18 @@
 - [x] Tests: questionIntent.test.ts — 56/56 passing (all 13 intent types + MSTR aliases)
 - [x] TypeScript: 0 errors
 - [x] Checkpoint
+
+## Bug Fix — Unified Ask Input Routing + Intent Priority [COMPLETE]
+
+- [x] Audit all 6 Ask inputs: identified MarketCommandCenter SmartDiscovery as the broken input (naive keyword router, never called intelligence pipeline)
+- [x] Root cause: MarketCommandCenter handleSubmit used if/else keyword routing to navigate to different pages instead of calling trpc.smartDiscovery.ask
+- [x] Fix MarketCommandCenter: handleSubmit now navigates to /app/discover?q={encoded_query}
+- [x] Fix QUICK_ACTIONS chips: each chip now navigates to /app/discover?q={full_question} instead of /app/other-page
+- [x] SmartDiscovery: added URL ?q= param reader that auto-submits on mount (cleans URL after reading)
+- [x] Fix COMP false positive: 'comprehensive' no longer matches COMP (word-boundary regex)
+- [x] Fix 'pound' false positive: 'compound' no longer matches GBPUSD (pound added to WORD_BOUNDARY_NAMES)
+- [x] Add WORD_BOUNDARY_NAMES set for ambiguous crypto/stock/forex names (comp, uni, near, sol, op, arb, pound, euro, etc.)
+- [x] Add MARKET_WIDE_KEYWORDS guard: 8 broad query patterns skip ticker extraction entirely
+- [x] Tests: intentResolverFixes.test.ts — 27/27 passing (COMP false positive, market-wide guard, word-boundary, ticker extraction)
+- [x] TypeScript: 0 errors
+- [x] Checkpoint
