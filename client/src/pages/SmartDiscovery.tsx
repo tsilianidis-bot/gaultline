@@ -2250,11 +2250,14 @@ export default function SmartDiscovery() {
   });
   useEffect(() => {
     if (!user || preferencesQuery.isLoading) return;
+    // Do NOT show onboarding if the query errored (network issue, DB unavailable, etc.)
+    // Only show onboarding when we have a confirmed null/incomplete preferences row
+    if (preferencesQuery.isError) return;
     const data = preferencesQuery.data;
     if (!data || !data.onboardingComplete) {
       setShowOnboarding(true);
     }
-  }, [user, preferencesQuery.isLoading, preferencesQuery.data]);
+  }, [user, preferencesQuery.isLoading, preferencesQuery.isError, preferencesQuery.data]);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -2438,14 +2441,14 @@ export default function SmartDiscovery() {
         };
         setConversation(prev => [...prev, assistantMsg]);
 
-        // Log to Decision Ledger (fire-and-forget, only for logged-in users)
-        if (user && fa.ticker) {
+        // Log to Decision Ledger (fire-and-forget, all logged-in users including global questions)
+        if (user) {
           logMutation.mutate({
-            ticker: fa.ticker,
-            assetType: fa.assetType as "stock" | "crypto" | null,
-            verdict: fa.verdict,
-            opportunityScore: fa.opportunityScore,
-            confidence: fa.confidence,
+            ticker: fa.ticker ?? null,
+            assetType: (fa.assetType as "stock" | "crypto" | null) ?? null,
+            verdict: fa.verdict ?? "NEUTRAL",
+            opportunityScore: fa.opportunityScore ?? 5,
+            confidence: fa.confidence ?? 50,
             primaryDriver: fa.primaryDriver ?? "",
             expectedTimeframe: fa.expectedTimeframe ?? "",
             queryType: fa.queryType ?? "general",
@@ -2468,7 +2471,9 @@ export default function SmartDiscovery() {
           errorMsg = "Analysis timed out. Market data services may be slow — please try again.";
         } else if (msg.includes("invalid response") || msg.includes("parse")) {
           errorMsg = "FAULTLINE analysis engine returned an unexpected response. Please try again.";
-        } else if (msg && msg !== "Unable to transform response from server") {
+        } else if (msg.includes("Unable to transform response from server") || msg.includes("transform")) {
+          errorMsg = "FAULTLINE received an unexpected response from the analysis engine. Please try again.";
+        } else if (msg) {
           errorMsg = msg;
         }
       }

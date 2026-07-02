@@ -515,10 +515,10 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           gap: '4px', marginBottom: '8px',
         }}>
           {[
-            { label: 'ENTRY', value: `$${tradingSignal.priceLevels.entryZone.toFixed(2)}`, color: ACTION_COLORS[tradingSignal.action].text },
-            { label: 'STOP', value: `$${tradingSignal.priceLevels.stopLoss.toFixed(2)}`, color: '#FF2D55' },
-            { label: 'TARGET', value: `$${tradingSignal.priceLevels.targetPrice.toFixed(2)}`, color: '#00D4FF' },
-            { label: 'R:R', value: `${tradingSignal.priceLevels.riskReward}:1`, color: tradingSignal.priceLevels.riskReward >= 2 ? '#22C55E' : tradingSignal.priceLevels.riskReward >= 1.5 ? '#FFD700' : '#FF9500' },
+            { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone != null ? `$${tradingSignal.priceLevels.entryZone.toFixed(2)}` : '—', color: ACTION_COLORS[tradingSignal.action].text },
+            { label: 'STOP', value: tradingSignal.priceLevels.stopLoss != null ? `$${tradingSignal.priceLevels.stopLoss.toFixed(2)}` : '—', color: '#FF2D55' },
+            { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice != null ? `$${tradingSignal.priceLevels.targetPrice.toFixed(2)}` : '—', color: '#00D4FF' },
+            { label: 'R:R', value: tradingSignal.priceLevels.riskReward != null ? `${tradingSignal.priceLevels.riskReward}:1` : '—', color: (tradingSignal.priceLevels.riskReward ?? 0) >= 2 ? '#22C55E' : (tradingSignal.priceLevels.riskReward ?? 0) >= 1.5 ? '#FFD700' : '#FF9500' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{
               background: 'rgba(255,255,255,0.03)',
@@ -617,10 +617,10 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               {/* Top row: entry/stop/target/R:R */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', marginBottom: '6px' }}>
                 {[
-                  { label: 'ENTRY', value: `$${tradingSignal.priceLevels.entryZone.toFixed(2)}`, color: ACTION_COLORS[tradingSignal.action].text, sub: tradingSignal.action === 'BUY' ? 'BUY ZONE' : tradingSignal.action === 'SELL' ? 'SHORT ZONE' : 'LEVEL' },
-                  { label: 'STOP LOSS', value: `$${tradingSignal.priceLevels.stopLoss.toFixed(2)}`, color: '#FF2D55', sub: `ATR ×1.5` },
-                  { label: 'TARGET', value: `$${tradingSignal.priceLevels.targetPrice.toFixed(2)}`, color: '#00D4FF', sub: '2:1 R:R' },
-                  { label: 'RISK/REWARD', value: `${tradingSignal.priceLevels.riskReward}:1`, color: tradingSignal.priceLevels.riskReward >= 2 ? '#22C55E' : tradingSignal.priceLevels.riskReward >= 1.5 ? '#FFD700' : '#FF9500', sub: `ATR $${tradingSignal.priceLevels.atr.toFixed(2)}` },
+                  { label: 'ENTRY', value: tradingSignal.priceLevels.entryZone != null ? `$${tradingSignal.priceLevels.entryZone.toFixed(2)}` : '—', color: ACTION_COLORS[tradingSignal.action].text, sub: tradingSignal.action === 'BUY' ? 'BUY ZONE' : tradingSignal.action === 'SELL' ? 'SHORT ZONE' : 'LEVEL' },
+                  { label: 'STOP LOSS', value: tradingSignal.priceLevels.stopLoss != null ? `$${tradingSignal.priceLevels.stopLoss.toFixed(2)}` : '—', color: '#FF2D55', sub: `ATR ×1.5` },
+                  { label: 'TARGET', value: tradingSignal.priceLevels.targetPrice != null ? `$${tradingSignal.priceLevels.targetPrice.toFixed(2)}` : '—', color: '#00D4FF', sub: '2:1 R:R' },
+                  { label: 'RISK/REWARD', value: tradingSignal.priceLevels.riskReward != null ? `${tradingSignal.priceLevels.riskReward}:1` : '—', color: (tradingSignal.priceLevels.riskReward ?? 0) >= 2 ? '#22C55E' : (tradingSignal.priceLevels.riskReward ?? 0) >= 1.5 ? '#FFD700' : '#FF9500', sub: tradingSignal.priceLevels.atr != null ? `ATR $${tradingSignal.priceLevels.atr.toFixed(2)}` : 'ATR —' },
                 ].map(({ label, value, color, sub }) => (
                   <div key={label} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.02)', borderRadius: '2px', padding: '5px 4px', borderTop: `2px solid ${color}30` }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.08em', marginBottom: '2px' }}>{label}</div>

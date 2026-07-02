@@ -103,7 +103,7 @@ export interface DayTradeReport extends DayTradeSetup {
   whatCancelsThisTrade: string;
   confidenceReasoning: string;
   catalystSummary: string;
-  noTradeReason?: string;              // populated when setupType === "NO_TRADE"
+  noTradeReason?: string | null;       // populated when setupType === "NO_TRADE"
   // Execution Score breakdown
   executionScoreBreakdown: ExecutionScoreBreakdown;
   // Why Should I Trade This?
@@ -473,7 +473,7 @@ interface LLMEnrichment {
   whatCancelsThisTrade: string;
   confidenceReasoning: string;
   catalystSummary: string;
-  noTradeReason?: string;
+  noTradeReason?: string | null;
   // Phase 3.0 additions
   bullCase: string;
   bearCase: string;
@@ -621,7 +621,7 @@ Return JSON with these exact fields:
       whatCancelsThisTrade: `Trade invalidated if price breaks ${direction === "bullish" ? "below" : "above"} the stop level or volume collapses.`,
       confidenceReasoning: `Confidence ${confidence}/100 based on RSI (${rsi}), relative volume, and ${rr}:1 risk/reward.`,
       catalystSummary: "AI analysis unavailable — using deterministic signal.",
-      noTradeReason: isNoTrade ? `Confidence ${confidence}/100 is below the ${MIN_CONFIDENCE}/100 minimum threshold for a valid intraday setup.` : undefined,
+      noTradeReason: isNoTrade ? `Confidence ${confidence}/100 is below the ${MIN_CONFIDENCE}/100 minimum threshold for a valid intraday setup.` : null,
       bullCase: `${symbol} shows ${direction} momentum with ${Math.abs(changePercent).toFixed(1)}% move. Volume confirmation and technical setup support continuation toward target.`,
       bearCase: `If volume fades or market conditions deteriorate, ${symbol} may reverse. Stop level provides defined risk.`,
       primaryCatalyst: `${setupType} pattern with ${relVol !== null ? relVol.toFixed(1) + "x" : "elevated"} relative volume.`,

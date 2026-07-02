@@ -57,6 +57,7 @@ export const intelligenceValidationRouter = router({
    * Returns: total, resolved, pending, win rate, strict accuracy, trend vs prior period.
    */
   validationStats: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return null;
 
@@ -105,12 +106,17 @@ export const intelligenceValidationRouter = router({
       priorWinRate: priorStats.winRate,
       sampleSufficient: stats.resolved >= 10,
     };
+    } catch (err) {
+      console.error("[intelligenceValidation] validationStats error:", err);
+      return null;
+    }
   }),
 
   /**
    * Breakdown by asset class: stock vs crypto vs macro.
    */
   breakdownByAssetClass: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return [];
 
@@ -130,12 +136,14 @@ export const intelligenceValidationRouter = router({
       assetClass,
       ...computeAccuracy(rows),
     })).sort((a, b) => b.total - a.total);
+    } catch (err) { console.error("[intelligenceValidation] breakdownByAssetClass error:", err); return []; }
   }),
 
   /**
    * Breakdown by sector (Technology, Healthcare, Crypto, etc.)
    */
   breakdownBySector: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return [];
 
@@ -155,12 +163,14 @@ export const intelligenceValidationRouter = router({
       sector,
       ...computeAccuracy(rows),
     })).sort((a, b) => b.resolved - a.resolved);
+    } catch (err) { console.error("[intelligenceValidation] breakdownBySector error:", err); return []; }
   }),
 
   /**
    * Breakdown by recommendation type (Accumulate, Reduce, Bullish, Day Trade, etc.)
    */
   breakdownByRecommendationType: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return [];
 
@@ -180,12 +190,14 @@ export const intelligenceValidationRouter = router({
       recommendationType: type,
       ...computeAccuracy(rows),
     })).sort((a, b) => b.resolved - a.resolved);
+    } catch (err) { console.error("[intelligenceValidation] breakdownByRecommendationType error:", err); return []; }
   }),
 
   /**
    * Engine scorecards — accuracy per intelligence engine.
    */
   engineScorecards: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return [];
 
@@ -222,6 +234,7 @@ export const intelligenceValidationRouter = router({
           : "D",
       };
     }).sort((a, b) => (b.winRate ?? -1) - (a.winRate ?? -1));
+    } catch (err) { console.error("[intelligenceValidation] engineScorecards error:", err); return []; }
   }),
 
   /**
@@ -229,6 +242,7 @@ export const intelligenceValidationRouter = router({
    * Bands: 50-59, 60-69, 70-79, 80-89, 90-100
    */
   confidenceCalibration: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return [];
 
@@ -260,6 +274,7 @@ export const intelligenceValidationRouter = router({
         isCalibrated: calibrationDelta !== null ? Math.abs(calibrationDelta) <= 10 : null,
       };
     });
+    } catch (err) { console.error("[intelligenceValidation] confidenceCalibration error:", err); return []; }
   }),
 
   /**
@@ -270,6 +285,7 @@ export const intelligenceValidationRouter = router({
       weeks: z.number().min(4).max(52).default(12),
     }))
     .query(async ({ ctx, input }) => {
+      try {
       const db = await getDb();
       if (!db) return [];
 
@@ -297,12 +313,14 @@ export const intelligenceValidationRouter = router({
           ...computeAccuracy(rows),
         }))
         .sort((a, b) => a.week.localeCompare(b.week));
+      } catch (err) { console.error("[intelligenceValidation] performanceOverTime error:", err); return []; }
     }),
 
   /**
    * Market regime analysis — accuracy by regime at the time of recommendation.
    */
   marketRegimeAnalysis: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return [];
 
@@ -322,6 +340,7 @@ export const intelligenceValidationRouter = router({
       regime,
       ...computeAccuracy(rows),
     })).sort((a, b) => b.resolved - a.resolved);
+    } catch (err) { console.error("[intelligenceValidation] marketRegimeAnalysis error:", err); return []; }
   }),
 
   /**
@@ -329,6 +348,7 @@ export const intelligenceValidationRouter = router({
    * Returns top 10 best and top 10 worst by win rate (min 3 resolved).
    */
   symbolLeaderboard: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return { best: [], worst: [] };
 
@@ -362,6 +382,7 @@ export const intelligenceValidationRouter = router({
       best: sorted.slice(0, 10),
       worst: [...sorted].sort((a, b) => (a.winRate ?? 101) - (b.winRate ?? 101)).slice(0, 10),
     };
+    } catch (err) { console.error("[intelligenceValidation] symbolLeaderboard error:", err); return { best: [], worst: [] }; }
   }),
 
   /**
@@ -375,6 +396,7 @@ export const intelligenceValidationRouter = router({
       engineSource: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
+      try {
       const db = await getDb();
       if (!db) return [];
 
@@ -392,6 +414,7 @@ export const intelligenceValidationRouter = router({
         .where(and(...conditions))
         .orderBy(desc(improvementLessons.createdAt))
         .limit(input.limit);
+      } catch (err) { console.error("[intelligenceValidation] getImprovementLessons error:", err); return []; }
     }),
 
   /**
@@ -403,6 +426,7 @@ export const intelligenceValidationRouter = router({
       limit: z.number().min(1).max(52).default(12),
     }))
     .query(async ({ ctx: _ctx, input }) => {
+      try {
       const db = await getDb();
       if (!db) return [];
 
@@ -411,6 +435,7 @@ export const intelligenceValidationRouter = router({
         .from(aiImprovementReports)
         .orderBy(desc(aiImprovementReports.weekOf))
         .limit(input.limit);
+      } catch (err) { console.error("[intelligenceValidation] getAiImprovementReports error:", err); return []; }
     }),
 
   /**
@@ -418,6 +443,7 @@ export const intelligenceValidationRouter = router({
    * Used for the "Top Recurring Patterns" section.
    */
   getPatternTagFrequency: protectedProcedure.query(async ({ ctx }) => {
+    try {
     const db = await getDb();
     if (!db) return [];
 
@@ -436,5 +462,6 @@ export const intelligenceValidationRouter = router({
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 15);
+    } catch (err) { console.error("[intelligenceValidation] getPatternTagFrequency error:", err); return []; }
   }),
 });

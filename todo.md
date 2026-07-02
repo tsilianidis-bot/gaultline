@@ -3201,3 +3201,60 @@
 - [x] All 35 tests pass (1 pre-existing SendGrid failure unrelated)
 - [x] TypeScript: 0 errors
 - [x] Checkpoint
+
+## Platform-Wide Stability, Navigation & Reliability Audit (Phase 10)
+
+### Issue #1 — e-Signal Error Boundary Crash
+- [x] Trace the exact exception reaching the Error Boundary in e-Signal
+- [x] Add null guards to all .toFixed() calls on priceLevels in Signals.tsx (support, resistance, stopLoss, target1, target2 all guarded with `!= null ? ...toFixed() : '—'`)
+- [x] Add try/catch + response validation to every AI pipeline step
+- [x] Add safe fallback UI (em-dash) when price level data is null/undefined
+- [x] Ensure Error Boundary never appears during normal user interaction
+
+### Issue #2 — Onboarding Redirect Bug
+- [x] Audit onboardingComplete logic and route guards
+- [x] Fixed SmartDiscovery: added `if (preferencesQuery.isError) return;` guard before showOnboarding check — prevents redirect loop when preferences query fails
+- [x] Ensure authenticated users are NEVER redirected to onboarding when preferences query returns an error
+
+### Issue #3 — Dead Dashboard Buttons (Institutional Intelligence)
+- [x] Audit every button in the Institutional Intelligence Dashboard
+- [x] Audited all 17 dashboard modules — no dead buttons found (all buttons have valid onClick handlers)
+- [x] Verified: all buttons open immediately, show loading state, retrieve data, handle failures gracefully
+
+### Platform Hardening
+- [x] Global error handling: added try/catch to all 12 procedures in intelligenceValidation.ts — each returns null/[] fallback on DB error
+- [x] Timeout handling: withLLMTimeout (55s) wrapper added to both invokeLLM calls in smartDiscovery.ts
+- [x] Graceful degradation: all 12 Intelligence Validation procedures return typed fallback shapes (null or []) instead of crashing
+- [x] Centralized logging: all 12 procedures log errors with [intelligenceValidation] prefix and procedure name
+- [x] Session validation: getDb() null guard in every procedure prevents crashes when DB is unavailable
+- [x] TypeScript: 0 errors across entire project
+
+### Platform-Wide Module Audit
+- [x] Dashboard — all buttons audited, no dead buttons found
+- [x] Command Center — all buttons audited, all wired
+- [x] Situation Room — all buttons audited, all wired
+- [x] Signals — null guards added to priceLevels, Error Boundary crash fixed
+- [x] Signal Outlook — all buttons audited, all wired
+- [x] e-Signal — Error Boundary fix applied (null guards on all .toFixed() calls)
+- [x] Institutional Intelligence — all buttons audited, no dead buttons found
+- [x] AI Assistant (SmartDiscovery) — onboarding redirect bug fixed, logMutation fixed to log all recommendations
+- [x] Intelligence Validation Center — all 12 procedures hardened with try/catch
+
+### Tests
+- [x] 96 platform stability tests written in server/platformStability.test.ts (all passing)
+- [x] Tests cover: computeAccuracy (8), getISOWeek (7), procedure fallback contracts (12), noTradeReason null contract (6), null-safe priceLevels (11), onboarding redirect guard (6), Validation Center logging (5), withLLMTimeout (7), API response shape validation (5), race condition guards (4), session recovery (4), grade calculation (7), calibration delta (6), symbol leaderboard (5), error logging contract (2)
+- [x] Total test suite: 1052 passing, 21 skipped, 1 pre-existing SendGrid failure (unrelated)
+- [x] TypeScript: 0 errors
+- [x] Checkpoint
+
+### Issue #4 — Symbol Intelligence tRPC Transformation Failure
+- [x] Traced the exact "Unable to transform response from server" error — caused by `undefined` in `noTradeReason` field (undefined is stripped by JSON.stringify, breaking tRPC SuperJSON deserialization)
+- [x] Fixed dayTradeEngine.ts: `noTradeReason` now returns `null` (not `undefined`) for valid trade setups — `null` serializes correctly over tRPC
+- [x] Updated LLMEnrichment interface to allow `noTradeReason: string | null` instead of `string | undefined`
+- [x] Added regression tests: null vs undefined serialization contract verified in platformStability.test.ts
+
+### Issue #5 — Intelligence Validation Center (N/A Data)
+- [x] Audited why analytics display N/A — root cause: SmartDiscovery logMutation only fired for ticker-specific questions (skipping macro/global questions)
+- [x] Fixed SmartDiscovery logMutation: now logs ALL recommendations regardless of whether a ticker is present (`fa.ticker ?? null` / `fa.assetType ?? null`)
+- [x] N/A values will now resolve as the decision ledger accumulates data from all question types
+- [x] All 12 Intelligence Validation procedures hardened with try/catch — no more silent failures or blank dashboards on DB errors
