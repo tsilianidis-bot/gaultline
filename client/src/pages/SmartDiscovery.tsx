@@ -2470,6 +2470,14 @@ export default function SmartDiscovery() {
     // resolvedIntent.resolvedTicker is the symbol to send to the backend
     // resolvedIntent.shouldClearSymbol means the store already cleared it
 
+    // ── Stage 1: User input received ──────────────────────────────
+    console.info("[FAULTLINE Pipeline] Stage 1: User input received", {
+      question: question.slice(0, 80),
+      resolvedTicker: resolvedIntent.resolvedTicker,
+      mode: resolvedIntent.mode,
+      shouldClearSymbol: resolvedIntent.shouldClearSymbol,
+    });
+
     setQuery("");
     setError(null);
     setIsExecuting(true);
@@ -2522,6 +2530,12 @@ export default function SmartDiscovery() {
         setIsExecuting(false);
         return;
       }
+      // ── Stage 2: Sending request to backend ──────────────────────
+      console.info("[FAULTLINE Pipeline] Stage 2: Sending request to backend", {
+        query: question.slice(0, 80),
+        contextTicker: resolvedIntent.resolvedTicker,
+        contextAssetType: resolvedIntent.mode,
+      });
       const answer = await askMutation.mutateAsync({
         query: question,
         conversationHistory: historyForApi,
@@ -2531,6 +2545,11 @@ export default function SmartDiscovery() {
         contextAssetType: resolvedIntent.mode === "crypto" ? "crypto"
           : resolvedIntent.mode === "stock" ? "stock"
           : null,
+      });
+      // ── Stage 3: Backend response received ───────────────────────
+      console.info("[FAULTLINE Pipeline] Stage 3: Backend response received", {
+        queryType: (answer as { queryType?: string }).queryType,
+        hasTicker: !!(answer as { ticker?: string }).ticker,
       });
 
       stopExecutionSequence();
@@ -2552,9 +2571,21 @@ export default function SmartDiscovery() {
           setTicker(fa.ticker, fa.ticker, fa.assetType as "stock" | "crypto");
         }
 
+        // ── Stage 4: Rendering response ───────────────────────────
+        // Guard against silent failure: if executiveSummary is empty, use a fallback
+        const displayContent = fa.executiveSummary?.trim()
+          || fa.primaryDriver?.trim()
+          || fa.whyThisVerdict?.trim()
+          || "Analysis complete. See the full breakdown below.";
+        console.info("[FAULTLINE Pipeline] Stage 4: Rendering response", {
+          ticker: fa.ticker,
+          verdict: fa.verdict,
+          hasExecutiveSummary: !!fa.executiveSummary,
+          hasCollectiveReading: !!fa.collectiveReading,
+        });
         const assistantMsg: ConversationMessage = {
           role: "assistant",
-          content: fa.executiveSummary,
+          content: displayContent,
           ticker: fa.ticker,
           timestamp: Date.now(),
           answer: fa,
@@ -2577,6 +2608,8 @@ export default function SmartDiscovery() {
       }
     } catch (err: unknown) {
       stopExecutionSequence();
+      // ── Pipeline failure: log and display visible error ───────────
+      console.error("[FAULTLINE Pipeline] ERROR: Pipeline failed", err);
       let errorMsg = "FAULTLINE encountered an error. Please try again.";
       if (err && typeof err === "object") {
         const e = err as { message?: string; data?: { code?: string; httpStatus?: number } };

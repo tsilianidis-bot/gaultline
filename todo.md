@@ -3294,3 +3294,28 @@
 - [x] Write vitest test asserting collectiveReading fields are present in schema
 - [x] TypeScript check (0 errors)
 - [x] Save checkpoint
+
+## Chat Pipeline Audit and Fix
+
+- [x] Audit: input handler — Enter key and Send button use same handler
+- [x] Audit: submission deduplication — no double-fire
+- [x] Audit: backend tRPC procedure — always returns response or structured error
+- [x] Audit: frontend error rendering — never silently fails
+- [x] Audit: broad-market routing — not hijacked by active symbol
+- [x] Fix: unify Enter/Send to single handleSubmit
+- [x] Fix: add isSubmitting guard to prevent duplicate requests
+- [x] Fix: add pipeline logging (8 stages server + 4 stages frontend)
+- [x] Fix: add visible error display for every failure stage
+- [x] Fix: ensure broad-market questions bypass active-symbol context
+- [x] Fix: backend procedure wraps all errors in structured TRPCError
+- [x] Fix: frontend renders every non-empty response (silent-failure guard)
+- [x] Test: broad market questions
+- [x] Test: active symbol questions
+- [x] Test: questions with no active symbol
+- [x] Test: empty responses
+- [x] Test: API failures
+- [x] Test: network failures
+- [x] Test: rendering failures
+- [x] Produce pipeline audit report
+- [x] TypeScript check (0 errors)
+- [x] Save checkpoint

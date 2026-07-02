@@ -122,6 +122,12 @@ const ENGLISH_SKIP = new Set([
   "MACRO","MICRO","SECTOR","MARKET","STOCK","CRYPTO","FOREX","GOLD","OIL","GAS","SILVER",
   "SAFE","RISKY","VOLATILE","STABLE","STRONG","WEAK","CHEAP","EXPENSIVE",
   "TODAY","TOMORROW","QUARTER","DAILY","WEEKLY","MONTHLY",
+  // Common English adjectives/adverbs that are also valid tickers — exclude from auto-detection
+  // (users who want these as tickers must use contextual patterns like "analyze RIGHT" or "buy RIGHT")
+  "RIGHT","WELL","JUST","EVEN","ALSO","ONLY","VERY","MUCH","MORE","LESS",
+  "SOME","MANY","BOTH","EACH","SUCH","SAME","ELSE","THEN","THAN",
+  "THAT","THIS","THEY","THEM","THERE","HERE","HAVE","WITH",
+  "MINE","OURS","HERS","HOT","COOL","FAST","SLOW","REAL","TRUE","PURE",
 ]);
 
 // ── Crypto: name → ticker mapping ─────────────────────────────
@@ -634,7 +640,7 @@ const WORD_BOUNDARY_NAMES = new Set([
   "one", "ark", "rep", "dot", "ada", "vet", "etc", "fil",
   "sand", "mana", "gala", "flow", "link", "bal", "uma",
   // Stock names that are common English words
-  "near", "riot", "block", "arm", "shell", "flow",
+  "near", "riot", "block", "arm", "shell", "flow", "target",
   // Forex/commodity names that are common English substrings
   "pound", "euro", "franc", "yen", "dollar", "oil", "gas",
 ]);

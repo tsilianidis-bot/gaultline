@@ -20,6 +20,7 @@ import { eq, desc } from "drizzle-orm";
 import { getQuote } from "../yahooProxy";
 import { getCoinMarketData } from "../coingeckoProxy";
 import { scanOpportunities } from "../ownerSimulation";
+import { log } from "../logger";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -257,16 +258,20 @@ async function orchestrateAnswer(
   contextTicker: string | null,
   contextAssetType: "stock" | "crypto" | null,
 ): Promise<FaultlineAnswer> {
+  const t0 = Date.now();
 
+  // ── Stage 3: Context assembly ──────────────────────────────────
   // 1. Resolve intent using the robust IntentResolver
   const intent = resolveIntent(query, contextTicker, contextAssetType as "stock" | "crypto" | null);
   const ticker = intent.ticker;
   const assetType = intent.assetType === "crypto" ? "crypto" : intent.assetType === "stock" ? "stock" : null;
   const queryType = intent.queryType;
+  log.info("[Ask] Stage 3: Context assembled", { ticker, assetType, queryType, latencyMs: Date.now() - t0 });
 
   // 1b. Detect the specific question intent (downside / upside / buy_verdict / etc.)
   const questionIntent: QuestionIntent = detectQuestionIntent(query);
 
+  // ── Stage 4: Market data fetch ─────────────────────────────────
   // 2. Fetch live market data via FMOS pipeline
   const [fmosResult, quickOutlook] = await Promise.allSettled([
     runFMOSPipelineFast({ symbol: ticker ?? undefined }),
@@ -276,6 +281,11 @@ async function orchestrateAnswer(
   const fmos = fmosResult.status === "fulfilled" ? fmosResult.value : null;
   const pressureData = fmos?.pressure ?? null;
   const outlookData = quickOutlook.status === "fulfilled" ? quickOutlook.value : null;
+  log.info("[Ask] Stage 4: Market data fetched", {
+    fmosStatus: fmosResult.status,
+    outlookStatus: quickOutlook.status,
+    latencyMs: Date.now() - t0,
+  });
 
   // 3. Build context for LLM
   const regimeLabel = fmos?.regime?.currentRegime ?? pressureData?.regime ?? "UNCERTAIN";
@@ -534,6 +544,8 @@ JSON schema:
   "followUpChips": string[] (4-5 contextual follow-up questions the user might want to ask next, tailored to the answer)
 }`;
 
+  // ── Stage 5: LLM request ──────────────────────────────────────
+  log.info("[Ask] Stage 5: Sending LLM request", { ticker, queryType, questionIntent, latencyMs: Date.now() - t0 });
   const llmResponse = await withLLMTimeout(invokeLLM({
     messages: [
       { role: "system", content: systemPrompt },
@@ -667,6 +679,10 @@ JSON schema:
     },
   }));
 
+  // ── Stage 6: LLM response received ───────────────────────────
+  log.info("[Ask] Stage 6: LLM response received", { latencyMs: Date.now() - t0 });
+
+  // ── Stage 7: Response parsing ──────────────────────────────────
   // Safely parse LLM JSON — strip markdown fences if present, throw TRPCError on parse failure
   const rawContent = ((llmResponse.choices[0].message.content as string) ?? "").trim();
   const jsonContent = rawContent.startsWith("`")
@@ -693,6 +709,14 @@ JSON schema:
     practicalAction: "Review the full analysis above before making any investment decision.",
     summary: "Collective Reading: Insufficient signal data to produce a definitive synthesis. Review the individual evidence scores and verdict above.",
   };
+
+  // ── Stage 8: Response ready for UI rendering ─────────────────
+  log.info("[Ask] Stage 8: Response ready", {
+    verdict: (raw as Record<string, unknown>).verdict,
+    ticker,
+    queryType,
+    totalLatencyMs: Date.now() - t0,
+  });
 
   return sanitize({
     ...raw,
@@ -974,13 +998,37 @@ async function orchestrateWithRouting(
   contextTicker: string | null,
   contextAssetType: "stock" | "crypto" | null,
 ): Promise<FaultlineAnswer | OpportunityRankingAnswer> {
+  const t0 = Date.now();
+  log.info("[Ask] Pipeline start", { query: query.slice(0, 80), contextTicker, contextAssetType });
+
+  // ── Stage 1: Intent classification ───────────────────────────
   const intent = resolveIntent(query, contextTicker, contextAssetType);
+  log.info("[Ask] Intent resolved", {
+    ticker: intent.ticker,
+    assetType: intent.assetType,
+    queryType: intent.queryType,
+    confidence: intent.confidence,
+    latencyMs: Date.now() - t0,
+  });
+
+  // ── Stage 2: Routing decision ─────────────────────────────────
+  // ROUTING RULE 2 & 3: If the intent resolver found no ticker (broad/macro/general
+  // question), do NOT pass the contextTicker to the answer engine. The active symbol
+  // is context, not the default answer subject.
+  const resolvedTicker = intent.ticker;
+  const resolvedAssetType = intent.assetType as "stock" | "crypto" | null;
+
   // Route broad opportunity queries to the ranking engine
-  if (intent.queryType === "opportunity" && !intent.ticker) {
+  if (intent.queryType === "opportunity" && !resolvedTicker) {
+    log.info("[Ask] Routing to opportunity ranking engine");
     return orchestrateOpportunityRanking(query, conversationHistory);
   }
-  // All other queries go to the single-asset/macro answer engine
-  return orchestrateAnswer(query, conversationHistory, contextTicker, contextAssetType);
+
+  // For all other queries: pass the RESOLVED ticker (may be null for macro/general)
+  // not the raw contextTicker. This prevents broad questions from being answered
+  // as if the active symbol is the subject.
+  log.info("[Ask] Routing to answer engine", { resolvedTicker, resolvedAssetType });
+  return orchestrateAnswer(query, conversationHistory, resolvedTicker, resolvedAssetType);
 }
 
 // ── Router ────────────────────────────────────────────────────
