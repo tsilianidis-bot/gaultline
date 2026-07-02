@@ -313,7 +313,7 @@ export const intelligenceValidationRouter = router({
           ...computeAccuracy(rows),
         }))
         .sort((a, b) => a.week.localeCompare(b.week));
-      } catch (err) { console.error("[intelligenceValidation] performanceOverTime error:", err); return []; }
+    } catch (err) { console.error("[intelligenceValidation] performanceOverTime error:", err); return []; }
     }),
 
   /**

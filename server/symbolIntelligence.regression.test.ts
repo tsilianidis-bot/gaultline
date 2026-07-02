@@ -301,8 +301,18 @@ describe("IntentResolver — invalid and edge cases", () => {
     expect(r.ticker).toBeNull();
   });
 
-  it("uses context ticker when query has no explicit symbol", () => {
+  it("does NOT inherit context ticker for generic non-referential queries (Rule 3)", () => {
+    // Rule 3: The active symbol is context, not the default answer.
+    // 'What do you think?' is a generic question — it does not explicitly
+    // reference the active symbol, so the ticker should NOT be inherited.
     const r = resolveIntent("What do you think?", "NVDA", "stock");
+    // Should be classified as general/macro, not security
+    expect(r.queryType).not.toBe("security");
+  });
+
+  it("inherits context ticker for explicit back-references (Rule 3)", () => {
+    // 'what about it' explicitly refers to the active symbol
+    const r = resolveIntent("what about it", "NVDA", "stock");
     expect(r.ticker).toBe("NVDA");
     expect(r.assetType).toBe("stock");
   });

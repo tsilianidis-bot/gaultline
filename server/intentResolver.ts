@@ -524,6 +524,10 @@ const OPPORTUNITY_KEYWORDS = [
  * MARKET_WIDE_KEYWORDS — phrases that indicate a broad market query.
  * When any of these are present, ticker extraction is skipped entirely.
  * Intent takes priority over ticker detection for market-wide queries.
+ *
+ * ROUTING RULE 2 (from spec): If the user asks a broad market question
+ * (e.g. "What are the best AI stocks?", "What sectors look attractive?",
+ * "Where should I invest right now?"), do NOT default to the active ticker.
  */
 const MARKET_WIDE_KEYWORDS = [
   // Explicit market-wide scope
@@ -543,14 +547,78 @@ const MARKET_WIDE_KEYWORDS = [
   "macro outlook", "macro analysis", "macro report",
   "market regime", "current regime", "market conditions",
   "best day trades", "best swing trades",
+  // Rule 2 additions — sector / category questions
+  "best ai stocks", "best ai stock", "best tech stocks", "best tech stock",
+  "best dividend stocks", "best dividend stock", "best growth stocks", "best growth stock",
+  "best value stocks", "best value stock", "best defensive stocks", "best defensive stock",
+  "best small cap", "best mid cap", "best large cap",
+  "best etf", "best etfs", "best sector", "best sectors",
+  "what sectors", "which sectors", "sector rotation", "sector outlook",
+  "where should i invest", "where to invest", "where to put my money",
+  "what should i invest in", "what to invest in",
+  "highest conviction", "conviction ideas", "trade ideas",
+  "best momentum stocks", "best momentum plays",
+  "top growth stocks", "top value stocks", "top dividend stocks",
+  "give me your top", "give me the best", "show me the best", "show me the top",
+  "what are the best", "what are your top", "what are the top",
+  "ranked list", "ranking of", "leaderboard",
+  "best opportunities right now", "top opportunities right now",
+  "best plays right now", "best trades right now",
 ];
+
+/**
+ * BROAD_QUERY_PATTERNS — regex patterns for broad market questions that
+ * keyword matching alone may miss. Applied AFTER keyword check.
+ */
+const BROAD_QUERY_PATTERNS: RegExp[] = [
+  // "What are the best X stocks/cryptos/plays?"
+  /what\s+are\s+the\s+best\s+\w+\s+(stocks?|cryptos?|coins?|plays?|trades?|investments?|picks?)/i,
+  // "What X stocks/sectors look attractive/good/bullish?"
+  /what\s+\w*\s*(stocks?|sectors?|cryptos?|etfs?)\s+(look|are|seem)\s+(attractive|good|bullish|interesting|worth)/i,
+  // "Which stocks/sectors should I buy/watch/consider?"
+  /which\s+(stocks?|sectors?|cryptos?|etfs?|assets?)\s+(should\s+i|to|are\s+worth)/i,
+  // "Where should I invest / put my money?"
+  /where\s+should\s+i\s+(invest|put|allocate)/i,
+  // "Best X for [timeframe/condition]"
+  /best\s+\w+\s+(stocks?|cryptos?|etfs?|plays?|trades?)\s+(for|in|right\s+now|today|this\s+week)/i,
+  // "Top X picks / ideas"
+  /top\s+\d*\s*(stock|crypto|etf|pick|idea|play|trade)/i,
+  // "Give me a list of / Rank / Show me the top"
+  /(give\s+me\s+a\s+list|rank\s+(the|me)|show\s+me\s+the\s+top|list\s+(the|me|your))/i,
+];
+
+function isBroadQueryPattern(lower: string): boolean {
+  return BROAD_QUERY_PATTERNS.some(p => p.test(lower));
+}
+
+/**
+ * CONTEXT_DEPENDENT_PATTERNS — phrases that clearly refer to the active symbol.
+ * ONLY these patterns should inherit the context ticker at Step 8.
+ * Everything else should be answered independently.
+ *
+ * ROUTING RULE 3 (from spec): The active symbol is context, not the default answer.
+ * Never assume the active symbol is the subject unless the user explicitly refers to it
+ * or the wording clearly depends on prior context.
+ */
+const CONTEXT_DEPENDENT_PATTERNS: RegExp[] = [
+  // Explicit back-reference to prior conversation
+  /\b(it|this one|that one|this stock|this crypto|this asset|this ticker|the one we|the one you)\b/i,
+  // "what about it", "how does it look", "tell me more"
+  /^(what about it|how does it look|tell me more|more on this|more about this|what else|anything else|go deeper|expand on that|elaborate)\b/i,
+  // "how is it doing", "what's the latest", "any update"
+  /^(how is it doing|what.?s the latest|any update|what.?s new|what changed)\b/i,
+];
+
+function isContextDependentQuery(lower: string): boolean {
+  return CONTEXT_DEPENDENT_PATTERNS.some(p => p.test(lower));
+}
 
 /**
  * Returns true if the query is clearly a broad/market-wide query
  * that should NOT trigger ticker extraction.
  */
 function isMarketWideQuery(lower: string): boolean {
-  return MARKET_WIDE_KEYWORDS.some(kw => lower.includes(kw));
+  return MARKET_WIDE_KEYWORDS.some(kw => lower.includes(kw)) || isBroadQueryPattern(lower);
 }
 
 /**
@@ -587,6 +655,23 @@ export function resolveIntent(
   const raw = query.trim();
   const lower = raw.toLowerCase();
   const upper = raw.toUpperCase();
+
+  // ── Step 0a: Context-dependent early exit ──────────────────────────
+  // ROUTING RULE 3: If the query clearly refers back to the active symbol
+  // (e.g. "what about it", "tell me more", "how does it look"), inherit the
+  // context ticker BEFORE any ticker extraction to prevent false positives
+  // like parsing "ME" out of "tell me more".
+  if (contextTicker && contextAssetType && isContextDependentQuery(lower)) {
+    return {
+      ticker: contextTicker,
+      assetType: contextAssetType,
+      queryType: classifyQueryType(lower, contextTicker),
+      assetName: contextTicker,
+      needsClarification: false,
+      clarificationPrompt: null,
+      confidence: "medium",
+    };
+  }
 
   // ── Step 0: Market-wide query guard ──────────────────────────
   // If the query is clearly about the whole market / a broad report,
@@ -742,8 +827,12 @@ export function resolveIntent(
     }
   }
 
-  // ── Step 8: Use context ticker if available ───────────────
-  if (contextTicker && contextAssetType) {
+  // ── Step 8: Context ticker fallback ──────────────────────
+  // ROUTING RULE 3: Only inherit the active context ticker if the query
+  // clearly refers back to it (e.g. "what about it", "how does it look").
+  // For all other queries that reached this point without a ticker, treat
+  // them as broad/macro questions and let Step 9 classify them.
+  if (contextTicker && contextAssetType && isContextDependentQuery(lower)) {
     return {
       ticker: contextTicker,
       assetType: contextAssetType,

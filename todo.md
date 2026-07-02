@@ -3270,3 +3270,27 @@
 - [x] Added "Best Day Trades Today" to QUICK_ACTIONS in SmartDiscovery.tsx
 - [x] Added followUpChips to FaultlineAnswer LLM schema — LLM generates 4-5 contextual follow-up chips per answer
 - [x] InstitutionalAnswer component renders followUpChips as tappable action chips below each answer
+
+## Ask FAULTLINE — Intent Routing V2 (System Prompt Update)
+
+- [ ] Expand MARKET_WIDE_KEYWORDS in intentResolver.ts to cover all 6 routing rules from the new spec
+- [ ] Add BROAD_QUERY_PATTERNS — regex-based broad-query detection for queries not caught by keyword matching
+- [ ] Guard Step 8 context fallback: only inherit context ticker for queries that are clearly about the active symbol (e.g. "what about it", "how does it look", "tell me more")
+- [ ] Add ambiguity detection: if query is ambiguous (could be ticker OR broad), set needsClarification: true with a concise clarificationPrompt
+- [ ] Update orchestrateWithRouting to handle needsClarification: return a clarification response instead of routing to LLM
+- [ ] Update system prompt in orchestrateAnswer to include the 6 routing rules
+- [ ] Update opportunity ranking system prompt to include the 6 routing rules
+- [ ] Write vitest tests for the new routing rules (intentResolverFixes.test.ts)
+- [x] TypeScript check (0 errors)
+- [x] Save checkpoint
+
+## Collective Reading — Synthesis Requirement
+
+- [x] Add collectiveReading field to FaultlineAnswer JSON schema in smartDiscovery.ts
+- [x] Update system prompt to require Collective Reading in every answer (5 sub-fields: riskRegime, beneficiaries, strongestReason, invalidation, practicalAction)
+- [x] Update opportunity ranking system prompt to include Collective Reading
+- [x] Add collectiveReading to the response sanitizer / fallback defaults
+- [x] Update frontend DirectAnswerPanel to render the Collective Reading section prominently
+- [x] Write vitest test asserting collectiveReading fields are present in schema
+- [x] TypeScript check (0 errors)
+- [x] Save checkpoint

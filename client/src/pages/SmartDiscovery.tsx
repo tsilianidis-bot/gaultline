@@ -133,6 +133,15 @@ interface FaultlineAnswer {
   riskFactors?: string[];
   riskRewardRatio?: string | null;
   maxDrawdownEstimate?: string | null;
+  // Collective Reading — synthesis section
+  collectiveReading?: {
+    riskRegime: "risk-on" | "risk-off" | "mixed";
+    beneficiaries: string[];
+    strongestReason: string;
+    invalidation: string;
+    practicalAction: string;
+    summary: string;
+  } | null;
 }
 
 // ── Opportunity Ranking Types (mirrors server OpportunityRankingAnswer) ──
@@ -1444,6 +1453,81 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
           </div>
         )}
       </div>
+      {/* ── Collective Reading ── */}
+      {answer.collectiveReading && answer.collectiveReading.summary && (
+        <div style={{
+          background: "linear-gradient(135deg, rgba(0,212,255,0.06) 0%, rgba(0,255,136,0.04) 100%)",
+          border: "1px solid rgba(0,212,255,0.22)",
+          borderRadius: "10px",
+          padding: "16px 18px",
+          marginTop: "4px",
+        }}>
+          {/* Header row */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
+            <div style={{
+              padding: "3px 10px",
+              background: answer.collectiveReading.riskRegime === "risk-on"
+                ? "rgba(0,255,136,0.15)"
+                : answer.collectiveReading.riskRegime === "risk-off"
+                ? "rgba(255,68,68,0.15)"
+                : "rgba(255,215,0,0.12)",
+              border: `1px solid ${
+                answer.collectiveReading.riskRegime === "risk-on"
+                  ? "rgba(0,255,136,0.35)"
+                  : answer.collectiveReading.riskRegime === "risk-off"
+                  ? "rgba(255,68,68,0.35)"
+                  : "rgba(255,215,0,0.30)"
+              }`,
+              borderRadius: "12px",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              fontWeight: 700,
+              letterSpacing: "0.12em",
+              color: answer.collectiveReading.riskRegime === "risk-on"
+                ? "#00FF88"
+                : answer.collectiveReading.riskRegime === "risk-off"
+                ? "#FF4444"
+                : "#FFD700",
+              textTransform: "uppercase",
+            }}>
+              {answer.collectiveReading.riskRegime}
+            </div>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, letterSpacing: "0.1em", color: "rgba(0,212,255,0.9)", textTransform: "uppercase" }}>
+              Collective Reading
+            </span>
+          </div>
+
+          {/* Summary paragraph */}
+          <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "rgba(255,255,255,0.82)", lineHeight: 1.65, margin: "0 0 12px 0" }}>
+            {answer.collectiveReading.summary}
+          </p>
+
+          {/* Beneficiaries */}
+          {answer.collectiveReading.beneficiaries && answer.collectiveReading.beneficiaries.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "10px" }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,255,255,0.35)", letterSpacing: "0.08em", alignSelf: "center" }}>BENEFITS</span>
+              {answer.collectiveReading.beneficiaries.map((b, i) => (
+                <span key={i} style={{
+                  padding: "3px 9px",
+                  background: "rgba(0,212,255,0.08)",
+                  border: "1px solid rgba(0,212,255,0.2)",
+                  borderRadius: "10px",
+                  fontFamily: "'Inter', sans-serif",
+                  fontSize: "11px",
+                  color: "rgba(0,212,255,0.85)",
+                }}>{b}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Practical action */}
+          <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,255,255,0.35)", letterSpacing: "0.08em", paddingTop: "2px", flexShrink: 0 }}>ACTION</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>{answer.collectiveReading.practicalAction}</span>
+          </div>
+        </div>
+      )}
+
       {/* ── Follow-up Action Chips ── */}
       {answer.followUpChips && answer.followUpChips.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", paddingTop: "4px" }}>

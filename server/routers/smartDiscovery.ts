@@ -168,6 +168,17 @@ export interface FaultlineAnswer {
   }>;
   // Follow-up chips — contextual next questions based on the answer
   followUpChips: string[];
+
+  // ── COLLECTIVE READING — mandatory synthesis section ───────────────────────
+  // Combines all signals into one clear investment reading.
+  collectiveReading: {
+    riskRegime: "risk-on" | "risk-off" | "mixed";     // Overall environment
+    beneficiaries: string[];                           // Asset types / sectors / stocks that benefit most
+    strongestReason: string;                           // The single most compelling reason for the reading
+    invalidation: string;                              // What could invalidate the reading
+    practicalAction: string;                           // What the investor should actually do
+    summary: string;                                   // One-paragraph synthesis (the full Collective Reading)
+  } | null;
 }
 
 export interface ConversationMessage {
@@ -392,6 +403,14 @@ Provide a comprehensive institutional analysis. Lead with the verdict and primar
 You are a Chief Investment Strategist, NOT a chatbot.
 ${questionIntentInstruction}
 
+INTENT ROUTING RULES (MUST follow before generating any response):
+1. If the user asks about a specific ticker (e.g. "Should I buy NVDA?", "Analyze RIGHT", "Compare RIGHT to PLTR"), answer about THAT ticker only.
+2. If the user asks a broad market question (e.g. "What are the best AI stocks?", "What sectors look attractive?", "Where should I invest right now?", "What are the best dividend stocks?"), do NOT default to the active ticker. The active symbol is context, not the subject.
+3. The active symbol is context, not the default answer. Never assume the active symbol is the subject unless the user explicitly refers to it ("it", "this one", "what about it") or the wording clearly depends on prior context.
+4. If a broad question is asked while a symbol is active, answer the broad question first. Then optionally note how the active symbol compares.
+5. Never force every response into a Buy/Hold/Sell verdict. Recommendation verdicts are appropriate ONLY when evaluating a specific security.
+6. If the user's intent is genuinely ambiguous, the system will ask a clarifying question — do not force an answer.
+
 WRITING STYLE (strict):
 - Evidence first. Opinion second.
 - Lead with the verdict. Never bury the conclusion.
@@ -415,6 +434,7 @@ FIELD RULES:
 - invalidation: ONE sentence starting with "Thesis fails if..."
 - suggestedAction: ONE sentence starting with a verb.
 - Dynamic invalidation only — never hardcode prices. Use conditions like "breaks below moving average", "ETF outflows exceed threshold", "credit spreads widen beyond X bps".
+- collectiveReading: REQUIRED in every answer. Do NOT stop at listing signals or scores. After analyzing all evidence, synthesize them into one clear investment reading that answers: (1) Are conditions risk-on, risk-off, or mixed? (2) Which asset types, sectors, or stocks benefit most? (3) What is the strongest single reason for this reading? (4) What could invalidate the reading? (5) What should the investor actually do with this information? The summary field must be a flowing institutional paragraph starting with "Collective Reading:" — like the example: "Collective Reading: Liquidity is improving, volatility is contained, and earnings expectations are supportive. Collectively, this creates a risk-on environment favoring growth equities, AI infrastructure, semiconductors, and high-quality tech. The main risk is a reversal in rates or inflation expectations. The practical takeaway is to favor leading AI names on pullbacks rather than chasing weak speculative stocks."
 DISCLAIMER INSTRUCTION: All output is for informational and educational purposes only. Nothing constitutes financial advice or a solicitation to buy or sell any security.
 
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
@@ -429,7 +449,7 @@ ${outlookSummary}`;
 
   const userPrompt = `${conversationContext}
 User question: "${query}"
-${ticker ? `Security in focus: ${ticker} (${assetType})` : ""}
+${ticker ? `Security in focus: ${ticker} (${assetType})` : `Active symbol (context only — NOT the subject unless the question is clearly about it): ${contextTicker ?? 'none'}`}
 ${globalModeInstruction}
 
 Respond with a JSON object matching this exact schema. Every field is required.
@@ -608,6 +628,19 @@ JSON schema:
             riskRewardRatio: { type: ["string", "null"] },
             maxDrawdownEstimate: { type: ["string", "null"] },
             followUpChips: { type: "array", items: { type: "string" } },
+            collectiveReading: {
+              type: "object",
+              properties: {
+                riskRegime: { type: "string" },
+                beneficiaries: { type: "array", items: { type: "string" } },
+                strongestReason: { type: "string" },
+                invalidation: { type: "string" },
+                practicalAction: { type: "string" },
+                summary: { type: "string" },
+              },
+              required: ["riskRegime", "beneficiaries", "strongestReason", "invalidation", "practicalAction", "summary"],
+              additionalProperties: false,
+            },
           },
           required: [
             "verdict","verdictColor","opportunityScore","confidence","confidenceLabel",
@@ -626,7 +659,7 @@ JSON schema:
             "exitZonePrimary","exitZoneSecondary","exitZoneFull","exitZoneReason",
             "invalidationPrice","invalidationConditions","invalidationWhatHappens",
             "riskRating","riskSummary","riskFactors","riskRewardRatio","maxDrawdownEstimate",
-            "followUpChips"
+            "followUpChips","collectiveReading"
           ],
           additionalProperties: false,
         },
@@ -650,6 +683,17 @@ JSON schema:
     });
   }
 
+  // Ensure collectiveReading is always present with a fallback
+  const rawCollective = raw.collectiveReading as Record<string, unknown> | null | undefined;
+  const collectiveReadingFallback = rawCollective ?? {
+    riskRegime: "mixed",
+    beneficiaries: [],
+    strongestReason: "Insufficient data to determine a clear collective reading.",
+    invalidation: "Conditions change materially from current readings.",
+    practicalAction: "Review the full analysis above before making any investment decision.",
+    summary: "Collective Reading: Insufficient signal data to produce a definitive synthesis. Review the individual evidence scores and verdict above.",
+  };
+
   return sanitize({
     ...raw,
     ticker,
@@ -657,6 +701,7 @@ JSON schema:
     queryType,
     questionIntent,
     regimeColor,
+    collectiveReading: collectiveReadingFallback,
     deepDiveLinks: buildDeepDiveLinks(ticker, assetType, queryType, query),
   }) as FaultlineAnswer;
 }
@@ -737,6 +782,13 @@ async function orchestrateOpportunityRanking(
 
   const systemPrompt = `You are FAULTLINE — an elite institutional market intelligence system.
 You are a Chief Investment Strategist presenting a ranked opportunity scan to an investment committee.
+
+INTENT ROUTING RULES (MUST follow):
+1. Answer the user's ACTUAL question — not the question implied by any currently selected symbol.
+2. This is a BROAD MARKET question. Return a ranked list of the most relevant securities. Do NOT default to any single active ticker.
+3. Never force a Buy/Hold/Sell verdict on a broad question. Rank by conviction and explain why.
+4. If the question specifies a category (e.g. "best AI stocks", "best dividend stocks"), filter the universe to that category.
+5. Always answer the broad question first. If an active symbol is relevant, note its rank in the list.
 
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
 ${fmos ? `Bull Probability: ${fmos.probability.bull}% | Bear Probability: ${fmos.probability.bear}% | Primary Driver: ${fmos.probability.primaryDriver}` : ""}

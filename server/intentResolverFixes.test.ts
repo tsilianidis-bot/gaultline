@@ -116,6 +116,113 @@ describe("Word-boundary matching for ambiguous names", () => {
   });
 });
 
+describe("Routing Rule 2 — broad market questions ignore active context ticker", () => {
+  it("should return null ticker for 'What are the best AI stocks?' even with context ticker", () => {
+    const result = resolveIntent("What are the best AI stocks?", "PLTR", "stock");
+    expect(result.ticker).toBeNull();
+    expect(["opportunity", "macro", "general"]).toContain(result.queryType);
+  });
+
+  it("should return null ticker for 'What sectors look attractive?' with active context", () => {
+    const result = resolveIntent("What sectors look attractive right now?", "NVDA", "stock");
+    expect(result.ticker).toBeNull();
+  });
+
+  it("should return null ticker for 'Where should I invest right now?' with active context", () => {
+    const result = resolveIntent("Where should I invest right now?", "BTC", "crypto");
+    expect(result.ticker).toBeNull();
+  });
+
+  it("should return null ticker for 'What are the best dividend stocks?' with active context", () => {
+    const result = resolveIntent("What are the best dividend stocks?", "TSLA", "stock");
+    expect(result.ticker).toBeNull();
+  });
+
+  it("should return null ticker for 'best momentum stocks right now' with active context", () => {
+    const result = resolveIntent("best momentum stocks right now", "AAPL", "stock");
+    expect(result.ticker).toBeNull();
+  });
+
+  it("should return null ticker for 'top growth stocks' with active context", () => {
+    const result = resolveIntent("top growth stocks", "MSFT", "stock");
+    expect(result.ticker).toBeNull();
+  });
+
+  it("should return null ticker for 'give me your top picks' with active context", () => {
+    const result = resolveIntent("give me your top picks", "ETH", "crypto");
+    expect(result.ticker).toBeNull();
+  });
+
+  it("should return null ticker for 'what should i buy right now' with active context", () => {
+    const result = resolveIntent("what should i buy right now", "SOL", "crypto");
+    expect(result.ticker).toBeNull();
+  });
+});
+
+describe("Routing Rule 1 — ticker-specific questions answer about that ticker", () => {
+  it("should extract NVDA from 'Should I buy NVDA?' regardless of context ticker", () => {
+    const result = resolveIntent("Should I buy NVDA?", "PLTR", "stock");
+    expect(result.ticker).toBe("NVDA");
+    expect(result.queryType).toBe("security");
+  });
+
+  it("should extract RIGHT from 'Analyze RIGHT' when context is PLTR", () => {
+    const result = resolveIntent("Analyze RIGHT", "PLTR", "stock");
+    expect(result.ticker).toBe("RIGHT");
+    expect(result.queryType).toBe("security");
+  });
+
+  it("should extract TSLA from 'Compare TSLA to NVDA'", () => {
+    const result = resolveIntent("Compare TSLA to NVDA", "AAPL", "stock");
+    // Either TSLA or NVDA is acceptable — the key is it's NOT the context ticker AAPL
+    expect(result.ticker).not.toBe("AAPL");
+    expect(result.queryType).toBe("security");
+  });
+});
+
+describe("Routing Rule 3 — context ticker only inherited for context-dependent queries", () => {
+  it("should inherit context ticker for 'what about it'", () => {
+    const result = resolveIntent("what about it", "PLTR", "stock");
+    expect(result.ticker).toBe("PLTR");
+  });
+
+  it("should inherit context ticker for 'how does it look'", () => {
+    const result = resolveIntent("how does it look", "BTC", "crypto");
+    expect(result.ticker).toBe("BTC");
+  });
+
+  it("should inherit context ticker for 'tell me more'", () => {
+    const result = resolveIntent("tell me more", "NVDA", "stock");
+    expect(result.ticker).toBe("NVDA");
+  });
+
+  it("should NOT inherit context ticker for a generic question without back-reference", () => {
+    // A generic question that doesn't reference the active symbol
+    const result = resolveIntent("what is the macro outlook", "PLTR", "stock");
+    // Should be macro/general, not security
+    expect(result.queryType).not.toBe("security");
+  });
+
+  it("should NOT inherit context ticker for 'what are the risks in the market'", () => {
+    const result = resolveIntent("what are the risks in the market", "AAPL", "stock");
+    expect(result.ticker).toBeNull();
+  });
+});
+
+describe("Routing Rule 5 — no forced Buy/Hold/Sell on broad questions", () => {
+  it("should return opportunity queryType (not security) for 'best stocks to buy'", () => {
+    const result = resolveIntent("best stocks to buy");
+    expect(result.queryType).not.toBe("security");
+    expect(result.ticker).toBeNull();
+  });
+
+  it("should return macro queryType for 'what is the market regime'", () => {
+    const result = resolveIntent("what is the market regime");
+    expect(result.queryType).not.toBe("security");
+    expect(result.ticker).toBeNull();
+  });
+});
+
 describe("Correct ticker extraction still works", () => {
   it("should match BTC for 'should I buy bitcoin'", () => {
     const result = resolveIntent("should I buy bitcoin");
