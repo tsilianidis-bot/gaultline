@@ -3258,3 +3258,15 @@
 - [x] Fixed SmartDiscovery logMutation: now logs ALL recommendations regardless of whether a ticker is present (`fa.ticker ?? null` / `fa.assetType ?? null`)
 - [x] N/A values will now resolve as the decision ledger accumulates data from all question types
 - [x] All 12 Intelligence Validation procedures hardened with try/catch — no more silent failures or blank dashboards on DB errors
+
+## Mobile Ticker Bar Overlap Fix (Sitewide)
+- [x] Fixed mobile header: subtitle hidden on mobile, AI Receptionist collapses to icon-only, Search collapses to icon-only — prevents content sliding under header
+- [x] Applied in AppLayout.tsx using useIsMobile() hook sitewide
+- [x] Removed dead Premarket Intelligence nav item (no route registered)
+
+## Ask FAULTLINE Day Trade Routing
+- [x] Added isDayTradeQuery() helper to buildDeepDiveLinks in smartDiscovery.ts
+- [x] Day trading queries now include "View Day Trade Setups" deep link → /app/day-trade-intelligence
+- [x] Added "Best Day Trades Today" to QUICK_ACTIONS in SmartDiscovery.tsx
+- [x] Added followUpChips to FaultlineAnswer LLM schema — LLM generates 4-5 contextual follow-up chips per answer
+- [x] InstitutionalAnswer component renders followUpChips as tappable action chips below each answer

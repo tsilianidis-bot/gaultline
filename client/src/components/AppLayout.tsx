@@ -21,6 +21,7 @@ import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { useIsMobile } from "@/hooks/useMobile";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: command → markets → intelligence → analysis → account
@@ -74,7 +75,6 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "symbol-intel",    label: "Symbol Intelligence",  shortLabel: "Symbol Intel",icon: Telescope,       path: "/app/symbol-intelligence" },
       { id: "decision-engine", label: "Decision Engine",      shortLabel: "Decide",      icon: Crosshair,       path: "/app/decision-engine" },
       { id: "day-trade",       label: "Day Trade Intel",      shortLabel: "Day Trade",   icon: Target,          path: "/app/day-trade-intelligence" },
-      { id: "premarket",       label: "Premarket Intelligence",shortLabel: "Premarket",  icon: Activity,        path: "/app/premarket-intelligence" },
     ],
   },
   {
@@ -131,6 +131,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const isAdmin = authUser?.role === "admin";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { isOpen: cmdOpen, open: openCmd, close: closeCmd } = useCommandSearch();
+  const isMobile = useIsMobile();
 
   // Count breached watchlist items for badge
   const breachCount = useMemo(() => {
@@ -316,9 +317,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#F0F4FF', letterSpacing: '0.08em', lineHeight: 1 }}>
                 FAULTLINE
               </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#6B7280', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                Systemic Risk Intelligence
-              </div>
+              {!isMobile && (
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#6B7280', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                  Systemic Risk Intelligence
+                </div>
+              )}
             </div>
           </div>
 
@@ -342,7 +345,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </span>
             </div>
             {/* ── AI Receptionist phone ── */}
-            <AIReceptionistLink variant="button" location="header" />
+            <AIReceptionistLink variant={isMobile ? "icon-only" : "button"} location="header" />
 
             {/* ── Cmd+K search button ── */}
             <button
@@ -350,7 +353,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               title="Search pages & symbols (⌘K)"
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '4px 10px',
+                padding: isMobile ? '4px 8px' : '4px 10px',
                 background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '4px',
@@ -361,8 +364,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
             >
               <Search size={11} style={{ color: '#6B7280' }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#6B7280', letterSpacing: '0.08em' }}>Search</span>
-              <kbd style={{ padding: '1px 4px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>⌘K</kbd>
+              {!isMobile && (
+                <>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#6B7280', letterSpacing: '0.08em' }}>Search</span>
+                  <kbd style={{ padding: '1px 4px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>⌘K</kbd>
+                </>
+              )}
             </button>
 
             {isLive && !isLoading && (

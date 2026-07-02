@@ -90,6 +90,7 @@ interface FaultlineAnswer {
   positionSizeGuidance: string | null;
   whatChangesThesis: string;
   deepDiveLinks: Array<{ label: string; path: string; description: string }>;
+  followUpChips?: string[];
   // Question intent
   questionIntent?: string;
   // Direct answer fields — downside
@@ -1092,7 +1093,7 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
 
 // ── Full Institutional Answer ─────────────────────────────────
 
-function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; onDeepDive: (path: string) => void }) {
+function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: FaultlineAnswer; onDeepDive: (path: string) => void; onAskFollowUp: (prompt: string) => void }) {
   const [showExpanded, setShowExpanded] = useState(false);
   const [showDeepDive, setShowDeepDive] = useState(false);
   const vs = verdictStyle(answer.verdictColor);
@@ -1443,6 +1444,40 @@ function InstitutionalAnswer({ answer, onDeepDive }: { answer: FaultlineAnswer; 
           </div>
         )}
       </div>
+      {/* ── Follow-up Action Chips ── */}
+      {answer.followUpChips && answer.followUpChips.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", paddingTop: "4px" }}>
+          {answer.followUpChips.map((chip, i) => (
+            <button
+              key={i}
+              onClick={() => onAskFollowUp(chip)}
+              style={{
+                padding: "7px 12px",
+                background: "rgba(0,212,255,0.06)",
+                border: "1px solid rgba(0,212,255,0.18)",
+                borderRadius: "20px",
+                cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
+                fontSize: "11px",
+                color: "rgba(0,212,255,0.85)",
+                letterSpacing: "0.01em",
+                transition: "background 0.15s ease, border-color 0.15s ease",
+                textAlign: "left",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(0,212,255,0.12)";
+                e.currentTarget.style.borderColor = "rgba(0,212,255,0.35)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(0,212,255,0.06)";
+                e.currentTarget.style.borderColor = "rgba(0,212,255,0.18)";
+              }}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2055,6 +2090,7 @@ const QUICK_ACTIONS: Array<{ emoji: string; label: string; prompt: string }> = [
   { emoji: "💼", label: "Portfolio Risk Review", prompt: "Review current portfolio risk conditions and what I should watch" },
   { emoji: "📰", label: "What Changed?", prompt: "What changed in the market since yesterday?" },
   { emoji: "🔄", label: "Sector Rotation", prompt: "Analyze current sector rotation and where institutional money is flowing" },
+  { emoji: "⚡", label: "Best Day Trades Today", prompt: "What are the best day trading setups for today? Show me high-probability intraday opportunities with entry, stop, and target levels" },
 ];
 
 // ── V3.0 Market Snapshot Component ───────────────────────────
@@ -2711,7 +2747,7 @@ export default function SmartDiscovery() {
                   </div>
                 ) : msg.answer ? (
                   <div className="fl-answer">
-                    <InstitutionalAnswer answer={msg.answer} onDeepDive={handleDeepDive} />
+                    <InstitutionalAnswer answer={msg.answer} onDeepDive={handleDeepDive} onAskFollowUp={(prompt) => void handleSubmit(prompt)} />
                   </div>
                 ) : null}
               </div>

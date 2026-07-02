@@ -166,6 +166,8 @@ export interface FaultlineAnswer {
     path: string;
     description: string;
   }>;
+  // Follow-up chips — contextual next questions based on the answer
+  followUpChips: string[];
 }
 
 export interface ConversationMessage {
@@ -198,12 +200,30 @@ function sanitize(v: unknown): unknown {
   return v;
 }
 
+// ── Day trade query detection ────────────────────────────────
+const DAY_TRADE_KEYWORDS = [
+  "day trade", "day trades", "day trading", "intraday", "intra-day",
+  "best trades today", "best trade today", "trades for today",
+  "scalp", "scalping", "momentum trade", "momentum trades",
+  "short term trade", "short-term trade", "quick trade", "quick trades",
+  "today's setups", "today's trades", "setups for today",
+  "what to day trade", "what should i day trade",
+];
+function isDayTradeQuery(query: string): boolean {
+  const lower = query.toLowerCase();
+  return DAY_TRADE_KEYWORDS.some(k => lower.includes(k));
+}
+
 // ── Build deep-dive links ─────────────────────────────────────
 
-function buildDeepDiveLinks(ticker: string | null, assetType: "stock" | "crypto" | null, queryType: string) {
+function buildDeepDiveLinks(ticker: string | null, assetType: "stock" | "crypto" | null, queryType: string, query = "") {
   const links = [];
   const params = ticker ? `?symbol=${ticker}&type=${assetType ?? "stock"}&autorun=1` : "";
 
+  // Day trade queries always get Day Trade Intel as the first link
+  if (isDayTradeQuery(query)) {
+    links.push({ label: "Day Trade Intel", path: "/app/day-trade-intelligence", description: "Live market favorability, scanner, and intraday setups" });
+  }
   if (ticker) {
     links.push({ label: "Full Decision Engine", path: `/app/decision-engine${params}`, description: "Complete institutional analysis with all intelligence panels" });
     links.push({ label: "Symbol Intelligence", path: `/app/symbol-intelligence${params}`, description: "Technical setup, risk analysis, and AI insights" });
@@ -490,7 +510,8 @@ JSON schema:
   "riskSummary": string | null,
   "riskFactors": string[],
   "riskRewardRatio": string | null,
-  "maxDrawdownEstimate": string | null
+  "maxDrawdownEstimate": string | null,
+  "followUpChips": string[] (4-5 contextual follow-up questions the user might want to ask next, tailored to the answer)
 }`;
 
   const llmResponse = await withLLMTimeout(invokeLLM({
@@ -586,6 +607,7 @@ JSON schema:
             riskFactors: { type: "array", items: { type: "string" } },
             riskRewardRatio: { type: ["string", "null"] },
             maxDrawdownEstimate: { type: ["string", "null"] },
+            followUpChips: { type: "array", items: { type: "string" } },
           },
           required: [
             "verdict","verdictColor","opportunityScore","confidence","confidenceLabel",
@@ -603,7 +625,8 @@ JSON schema:
             "entryZoneIdeal","entryZoneAggressive","entryZoneConservative","entryZoneStop","entryZoneTarget","entryZoneRR",
             "exitZonePrimary","exitZoneSecondary","exitZoneFull","exitZoneReason",
             "invalidationPrice","invalidationConditions","invalidationWhatHappens",
-            "riskRating","riskSummary","riskFactors","riskRewardRatio","maxDrawdownEstimate"
+            "riskRating","riskSummary","riskFactors","riskRewardRatio","maxDrawdownEstimate",
+            "followUpChips"
           ],
           additionalProperties: false,
         },
@@ -634,7 +657,7 @@ JSON schema:
     queryType,
     questionIntent,
     regimeColor,
-    deepDiveLinks: buildDeepDiveLinks(ticker, assetType, queryType),
+    deepDiveLinks: buildDeepDiveLinks(ticker, assetType, queryType, query),
   }) as FaultlineAnswer;
 }
 
