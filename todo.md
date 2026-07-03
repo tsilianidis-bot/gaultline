@@ -3319,3 +3319,25 @@
 - [x] Produce pipeline audit report
 - [x] TypeScript check (0 errors)
 - [x] Save checkpoint
+
+## AI Stabilization Sprint — Project Black
+
+- [ ] Create immutable backup checkpoint "FAULTLINE v3.3 — AI Stabilization Sprint"
+- [ ] Audit all Ask input surfaces (header, Ask page, mobile, Command Center, Symbol Intel, Dashboard, Pre-Flight, Portfolio)
+- [ ] Build shared useAskSubmit hook — single handler for all Ask inputs
+- [ ] Wire all Ask inputs to shared hook and same backend endpoint
+- [ ] Ensure all inputs support: Enter key, Send button, mobile keyboard submit, loading state, error state, response rendering, ledger logging
+- [ ] Fix intent-before-ticker: intent classification runs before ticker detection
+- [ ] Fix context management: global mode vs symbol mode switching
+- [ ] Fix context switching: new symbol in question auto-switches context
+- [ ] Enforce direct-answer-first response structure in system prompt and JSON schema
+- [ ] Add directAnswer field to FaultlineAnswer schema (required, question-type-specific)
+- [ ] Add response validator: 8-point validation before rendering
+- [ ] Fix price target questions: base/bull/bear/extreme targets + probabilities
+- [ ] Fix opportunity questions: ranked list first, deep report second
+- [ ] Fix mobile layout: floating Ask bar must not cover report content
+- [ ] Reduce template repetition by 30%: merge overlapping sections
+- [ ] Improve failure handling: no silent failures, no infinite spinners, graceful API fallback
+- [ ] Run full QA on 10 test prompts across all Ask surfaces
+- [ ] Write automated tests for all 10 QA prompts
+- [ ] Save final checkpoint
