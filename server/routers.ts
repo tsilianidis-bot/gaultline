@@ -77,7 +77,7 @@ import {
 } from './db';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { resolve, join } from 'path';
-import { xPostQueue, users } from '../drizzle/schema';
+import { xPostQueue, users, demoTokens } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getDb } from './db';
 
@@ -3003,6 +3003,88 @@ export const appRouter = router({
           vix:           input.vix ?? null,
           creditSpread:  input.creditSpread ?? null,
         });
+      }),
+  }),
+  demo: router({
+    /**
+     * Validate and consume a single-use demo token.
+     * Returns { valid: true } and marks the token as used.
+     * Returns { valid: false, reason: string } if invalid or already used.
+     */
+    validateToken: publicProcedure
+      .input(z.object({
+        token: z.string().min(1).max(64).trim(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+        const normalised = input.token.toUpperCase().trim();
+        const rows = await db
+          .select()
+          .from(demoTokens)
+          .where(eq(demoTokens.token, normalised))
+          .limit(1);
+        if (rows.length === 0) {
+          return { valid: false as const, reason: 'Invalid access code.' };
+        }
+        const row = rows[0];
+        if (row.used) {
+          return { valid: false as const, reason: 'This access code has already been used.' };
+        }
+        // Consume the token atomically
+        const ip = (ctx.req.headers['x-forwarded-for'] as string | undefined)
+          ?? ctx.req.socket?.remoteAddress
+          ?? null;
+        await db
+          .update(demoTokens)
+          .set({ used: true, usedAt: new Date(), usedByIp: ip })
+          .where(eq(demoTokens.id, row.id));
+        return { valid: true as const };
+      }),
+
+    /**
+     * Generate N new single-use demo tokens (admin only).
+     * Returns the newly created token strings.
+     */
+    generateTokens: protectedProcedure
+      .input(z.object({ count: z.number().int().min(1).max(50).default(3) }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+        }
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+        const adjectives = ['ALPHA','BETA','DELTA','GAMMA','SIGMA','OMEGA','ZETA','KAPPA','THETA','LAMBDA','NOVA','APEX','FLUX','CORE','EDGE','PEAK','WAVE','GRID','BOLT','ARC'];
+        const generated: string[] = [];
+        for (let i = 0; i < input.count; i++) {
+          const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+          const num = Math.floor(1000 + Math.random() * 9000);
+          const token = `FL-${adj}-${num}`;
+          try {
+            await db.insert(demoTokens).values({ token });
+            generated.push(token);
+          } catch {
+            // Skip duplicates silently
+          }
+        }
+        return { tokens: generated };
+      }),
+
+    /**
+     * List all demo tokens with their status (admin only).
+     */
+    listTokens: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin only' });
+        }
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+        const rows = await db
+          .select()
+          .from(demoTokens)
+          .orderBy(demoTokens.createdAt);
+        return rows;
       }),
   }),
 });

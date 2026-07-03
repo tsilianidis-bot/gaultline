@@ -14,6 +14,7 @@ import {
   trackStripeCheckoutStarted,
 } from "@/hooks/useAnalytics";
 import AIReceptionistLink from "@/components/AIReceptionistLink";
+import DemoAccessModal from "@/components/DemoAccessModal";
 const PLATFORM_URL = "/app";
 
 // ── Asset URLs ────────────────────────────────────────────────
@@ -343,7 +344,7 @@ function HeroStats() {
 }
 
 // ── Hero ──────────────────────────────────────────────────────
-function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
+function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onTryDemo: () => void }) {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050608]">
       {/* Cinematic hero background image */}
@@ -431,6 +432,17 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
               <path d="M2 7h10M8 3l4 4-4 4" />
             </svg>
           </a>
+          <button
+            onClick={onTryDemo}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 font-mono font-bold text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
+            style={{ border: "1px solid rgba(255,215,0,0.35)", color: "#FFD700", background: "rgba(255,215,0,0.06)", minHeight: "56px" }}
+          >
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="6.5" cy="6.5" r="5" />
+              <path d="M6.5 4v3.5l2 1" />
+            </svg>
+            TRY DEMO
+          </button>
           <AIReceptionistLink
             variant="tap-to-call"
             location="homepage_hero"
@@ -2756,6 +2768,7 @@ function AboutSection() {
 // ── Main export ───────────────────────────────────────────────
 export default function MarketingSite() {
   const formRef = useRef<HTMLDivElement>(null);
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
 
   useSEO({
     title: "FAULTLINE — Market Risk Intelligence Platform",
@@ -2776,8 +2789,9 @@ export default function MarketingSite() {
         }
       `}</style>
       <StatusTicker />
+      <DemoAccessModal open={demoModalOpen} onClose={() => setDemoModalOpen(false)} />
       <Nav onRequestAccess={scrollToForm} />
-      <Hero onRequestAccess={scrollToForm} />
+      <Hero onRequestAccess={scrollToForm} onTryDemo={() => setDemoModalOpen(true)} />
       <WhyFaultlineExistsSection />
       <ProofSection />
       <AboutSection />

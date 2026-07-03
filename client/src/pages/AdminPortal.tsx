@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useSEO } from "@/hooks/useSEO";
+import DemoTokensTab from "@/components/DemoTokensTab";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -1324,7 +1325,7 @@ function ContentTab() {
 
 // ── Main Portal ─────────────────────────────────────────────────────────────────
 
-type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine" | "seo" | "content";
+type Tab = "overview" | "waitlist" | "users" | "health" | "stats" | "engine" | "seo" | "content" | "demo";
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "overview", label: "Overview",       icon: "◈" },
@@ -1335,6 +1336,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "engine",   label: "Engine & Flags",  icon: "⚙" },
   { id: "seo",      label: "SEO",             icon: "◐" },
   { id: "content",  label: "Content",         icon: "✦" },
+  { id: "demo",     label: "Demo Tokens",     icon: "🔑" },
 ];
 
 export default function AdminPortal() {
@@ -1421,6 +1423,7 @@ export default function AdminPortal() {
       {activeTab === "engine"   && <EngineTab />}
       {activeTab === "seo"      && <SEOTab />}
       {activeTab === "content"   && <ContentTab />}
+      {activeTab === "demo"      && <DemoTokensTab />}
     </div>
   );
 }

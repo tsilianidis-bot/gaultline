@@ -1392,3 +1392,25 @@ export const aiImprovementReports = mysqlTable("ai_improvement_reports", {
 }));
 export type AiImprovementReport = typeof aiImprovementReports.$inferSelect;
 export type InsertAiImprovementReport = typeof aiImprovementReports.$inferInsert;
+
+// ── Demo Access Tokens ───────────────────────────────────────
+
+/**
+ * Single-use demo access tokens.
+ * Each token (password) can be used exactly once to access the demo.
+ * Once used, usedAt is set and the token is permanently expired.
+ */
+export const demoTokens = mysqlTable("demoTokens", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The password string shown to the user */
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  /** Whether this token has been consumed */
+  used: boolean("used").default(false).notNull(),
+  /** When it was consumed — null means still available */
+  usedAt: timestamp("usedAt"),
+  /** IP address of the consumer (for audit) */
+  usedByIp: varchar("usedByIp", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DemoToken = typeof demoTokens.$inferSelect;
+export type InsertDemoToken = typeof demoTokens.$inferInsert;
