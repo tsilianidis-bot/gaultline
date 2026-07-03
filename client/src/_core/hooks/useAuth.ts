@@ -1,4 +1,5 @@
 import { getLoginUrl } from "@/const";
+import { DEMO_USER, isDemoPath } from "@/contexts/DemoContext";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -13,9 +14,14 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
   const utils = trpc.useUtils();
 
+  // Demo mode bypass — skip OAuth entirely
+  const isDemo = isDemoPath();
+
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
+    // Skip the network call entirely in demo mode
+    enabled: !isDemo,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -25,6 +31,7 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    if (isDemo) return; // no-op in demo mode
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
@@ -39,9 +46,19 @@ export function useAuth(options?: UseAuthOptions) {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
-  }, [logoutMutation, utils]);
+  }, [isDemo, logoutMutation, utils]);
 
   const state = useMemo(() => {
+    // In demo mode, return the synthetic demo user immediately
+    if (isDemo) {
+      return {
+        user: DEMO_USER as unknown as typeof meQuery.data,
+        loading: false,
+        error: null,
+        isAuthenticated: true,
+      };
+    }
+
     localStorage.setItem(
       "manus-runtime-user-info",
       JSON.stringify(meQuery.data)
@@ -53,6 +70,7 @@ export function useAuth(options?: UseAuthOptions) {
       isAuthenticated: Boolean(meQuery.data),
     };
   }, [
+    isDemo,
     meQuery.data,
     meQuery.error,
     meQuery.isLoading,
@@ -61,14 +79,16 @@ export function useAuth(options?: UseAuthOptions) {
   ]);
 
   useEffect(() => {
+    if (isDemo) return; // never redirect in demo mode
     if (!redirectOnUnauthenticated) return;
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    window.location.href = redirectPath;
   }, [
+    isDemo,
     redirectOnUnauthenticated,
     redirectPath,
     logoutMutation.isPending,
@@ -78,7 +98,7 @@ export function useAuth(options?: UseAuthOptions) {
 
   return {
     ...state,
-    refresh: () => meQuery.refetch(),
+    refresh: () => (isDemo ? undefined : meQuery.refetch()),
     logout,
   };
 }

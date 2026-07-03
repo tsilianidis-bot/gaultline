@@ -90,7 +90,7 @@ const KNOWN_TICKERS = new Set([
   "DIS", "CMCSA", "T", "VZ", "TMUS", "CHTR",
   "BA", "LMT", "RTX", "NOC", "GD", "L3H", "HII",
   "CAT", "DE", "MMM", "HON", "GE", "EMR", "ITW",
-  "RIGHT", "SMCI", "ARM", "ASML", "TSM", "SAMSF",
+  "SMCI", "ARM", "ASML", "TSM", "SAMSF",
 ]);
 
 /**

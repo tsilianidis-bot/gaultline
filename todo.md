@@ -3341,3 +3341,14 @@
 - [ ] Run full QA on 10 test prompts across all Ask surfaces
 - [ ] Write automated tests for all 10 QA prompts
 - [ ] Save final checkpoint
+
+## Demo Mode (Read-Only Access for External Auditors)
+- [ ] Create DemoContext with mock demo user (id: 0, name: "Demo User", role: "user", accessTier: "premium")
+- [ ] Add /api/demo/session backend endpoint that returns demo user object
+- [ ] Add useDemoMode hook that checks URL path for /demo prefix
+- [ ] Wire demo user into useAuth so all components see a valid user
+- [ ] Add demo banner component (fixed top bar: "DEMO MODE — Read Only")
+- [ ] Disable write operations in demo mode (payments, portfolio saves, ledger logs)
+- [ ] Add /demo route in App.tsx that wraps app in DemoProvider
+- [ ] Test all major pages load in demo mode without login
+- [ ] Save checkpoint and deliver /demo URL

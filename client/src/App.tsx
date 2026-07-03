@@ -15,6 +15,8 @@ import FREDDebugConsole from "./components/FREDDebugConsole";
 import CookieConsent from './components/CookieConsent';
 import ChatbotWidget from './components/ChatbotWidget';
 import RouteTracker from './components/RouteTracker';
+import { DemoProvider, isDemoPath } from './contexts/DemoContext';
+import DemoBanner from './components/DemoBanner';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -161,6 +163,22 @@ const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 function Router() {
   return (
     <Switch>
+      {/* Demo mode — /demo and /demo/* redirect to /app/* with DemoProvider active */}
+      <Route path="/demo/discover"><Redirect to="/app/discover" /></Route>
+      <Route path="/demo/dashboard"><Redirect to="/app/dashboard" /></Route>
+      <Route path="/demo/pressure"><Redirect to="/app/pressure" /></Route>
+      <Route path="/demo/signals"><Redirect to="/app/signals" /></Route>
+      <Route path="/demo/diagnostic"><Redirect to="/app/diagnostic" /></Route>
+      <Route path="/demo/signal-outlook"><Redirect to="/app/signal-outlook" /></Route>
+      <Route path="/demo/day-trade-intelligence"><Redirect to="/app/day-trade-intelligence" /></Route>
+      <Route path="/demo/decision-engine"><Redirect to="/app/decision-engine" /></Route>
+      <Route path="/demo/opportunities"><Redirect to="/app/opportunities" /></Route>
+      <Route path="/demo/insider-intelligence"><Redirect to="/app/insider-intelligence" /></Route>
+      <Route path="/demo/social-intelligence"><Redirect to="/app/social-intelligence" /></Route>
+      <Route path="/demo/crypto"><Redirect to="/app/crypto" /></Route>
+      <Route path="/demo/watchlist"><Redirect to="/app/watchlist" /></Route>
+      <Route path="/demo/portfolio"><Redirect to="/app/portfolio" /></Route>
+      <Route path="/demo"><Redirect to="/app/discover" /></Route>
       {/* Public Shared Report — no login required, no AppLayout */}
       <Route path="/r/:publicShareId">
         <ErrorBoundary>
@@ -483,11 +501,15 @@ function Router() {
 }
 
 function App() {
+  const isDemo = isDemoPath();
+
   // Show intro if not seen this session.
   // Auto-skip when the user lands directly on a deep /app/* link
   // (e.g. /app/situation-room) so the feature is immediately visible.
+  // Also skip for demo mode — auditors should see the app immediately.
   const [introComplete, setIntroComplete] = useState<boolean>(() => {
     try {
+      if (isDemo) return true; // skip intro in demo mode
       if (sessionStorage.getItem(INTRO_SEEN_KEY) === '1') return true;
       const path = window.location.pathname;
       // Skip intro for any deep app link that isn't the root dashboard
@@ -516,14 +538,17 @@ function App() {
     if (introComplete) setDashVisible(true);
   }, [introComplete]);
 
-  return (
+  const appContent = (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <EngineProvider>
           <TooltipProvider>
             <Toaster />
 
-            {/* Cinematic intro — shown once per session */}
+            {/* Demo mode banner — shown at top of every page in demo mode */}
+            {isDemo && <DemoBanner />}
+
+            {/* Cinematic intro — shown once per session (skipped in demo mode) */}
             {!introComplete && (
               <IntroScreen onComplete={handleIntroComplete} />
             )}
@@ -536,6 +561,8 @@ function App() {
                 // Keep in DOM so engine/data loads during intro
                 visibility: introComplete ? 'visible' : 'hidden',
                 pointerEvents: introComplete ? 'auto' : 'none',
+                // Push content below demo banner in demo mode
+                paddingTop: isDemo ? '30px' : undefined,
               }}
             >
               <RouteTracker />
@@ -543,8 +570,8 @@ function App() {
               <FREDDebugConsole />
             </div>
 
-            {/* GDPR Cookie Consent Banner */}
-            <CookieConsent />
+            {/* GDPR Cookie Consent Banner — hidden in demo mode */}
+            {!isDemo && <CookieConsent />}
 
             {/* AI Market Intelligence Concierge — floating chatbot on all pages */}
             <ChatbotWidget />
@@ -554,6 +581,8 @@ function App() {
       </ThemeProvider>
     </ErrorBoundary>
   );
+
+  return isDemo ? <DemoProvider>{appContent}</DemoProvider> : appContent;
 }
 
 export default App;
