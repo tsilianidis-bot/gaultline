@@ -1,11 +1,18 @@
 /**
  * FAULTLINE AI Market Intelligence Concierge
  * Floating bottom-right chat widget for all public pages.
+ *
+ * Improvements:
+ * - Chatbot Improvement 1: Live market context (regime, pressure score) injected into every message
+ * - Chatbot Improvement 2: Conversation history persisted in localStorage — survives page refreshes
+ * - Chatbot Improvement 3: Context-aware proactive welcome message based on current page
  */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { trackEvent } from "@/lib/analytics";
 import { MessageCircle, X, Send, Loader2, Bot, ChevronDown, Mail, AlertCircle } from "lucide-react";
+import { useEngine } from "@/contexts/EngineContext";
+import { useLocation } from "wouter";
 
 // ── Visitor ID ────────────────────────────────────────────────────────────────
 function getVisitorId(): string {
@@ -18,6 +25,73 @@ function getVisitorId(): string {
   return id;
 }
 
+// ── History Persistence ───────────────────────────────────────────────────────
+const HISTORY_KEY = "faultline_chat_history_v1";
+const SESSION_ID_KEY = "faultline_chat_session_id_v1";
+const MAX_PERSISTED_MESSAGES = 20; // keep last 20 messages in localStorage
+
+function loadPersistedHistory(): Message[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<{ id: string; role: string; content: string; timestamp: string }>;
+    return parsed.map(m => ({
+      id: m.id,
+      role: m.role as "user" | "bot",
+      content: m.content,
+      timestamp: new Date(m.timestamp),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(messages: Message[]): void {
+  try {
+    const toSave = messages.slice(-MAX_PERSISTED_MESSAGES);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(toSave));
+  } catch {}
+}
+
+function loadPersistedSessionId(): number | null {
+  try {
+    const raw = localStorage.getItem(SESSION_ID_KEY);
+    if (!raw) return null;
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
+function saveSessionId(id: number): void {
+  try { localStorage.setItem(SESSION_ID_KEY, String(id)); } catch {}
+}
+
+// ── Context-aware proactive welcome messages ──────────────────────────────────
+function getProactiveWelcome(pathname: string, regimeLabel?: string): string {
+  const regime = regimeLabel ? ` The current market regime is: **${regimeLabel}**.` : "";
+  if (pathname.includes("/pressure")) {
+    return `Hi! I'm the FAULTLINE AI Concierge.${regime} You're looking at the Pressure Index — want me to explain what the current score means for your portfolio?`;
+  }
+  if (pathname.includes("/signals")) {
+    return `Hi! I'm the FAULTLINE AI Concierge.${regime} You're on the Signals page. Want me to explain how FAULTLINE scores stocks and crypto, or help you understand a specific signal?`;
+  }
+  if (pathname.includes("/diagnostic")) {
+    return `Hi! I'm the FAULTLINE AI Concierge.${regime} You're using Diagnostic AI. Want me to explain what the 4-timeframe analysis means, or walk you through the current regime reading?`;
+  }
+  if (pathname.includes("/day-trade")) {
+    return `Hi! I'm the FAULTLINE AI Concierge.${regime} You're on Day Trade Intelligence. Want me to explain how the Execution Score works or what makes a high-probability setup?`;
+  }
+  if (pathname.includes("/situation-room")) {
+    return `Hi! I'm the FAULTLINE AI Concierge.${regime} You're in the Situation Room. Want me to explain how the Trade Preflight Simulator works?`;
+  }
+  if (pathname.includes("/discover") || pathname.includes("/command-center")) {
+    return `Hi! I'm the FAULTLINE AI Concierge.${regime} You're on the Ask FAULTLINE page. I can help explain the platform, pricing, or answer questions about current market conditions.`;
+  }
+  return `Hi! I'm the FAULTLINE AI Concierge.${regime} I can explain our Pressure Index, Signals, Situation Room, Diagnostic AI, and pricing plans. What would you like to know?`;
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Message {
   id: string;
@@ -25,13 +99,6 @@ interface Message {
   content: string;
   timestamp: Date;
 }
-
-const WELCOME_MESSAGE: Message = {
-  id: "welcome",
-  role: "bot",
-  content: "Hi! I'm the FAULTLINE AI Concierge. I can explain our Pressure Index, Signals, Situation Room, Diagnostic AI, and pricing plans. What would you like to know?",
-  timestamp: new Date(),
-};
 
 const DISCLAIMER = "FAULTLINE provides market intelligence and risk analysis, not personalized financial advice.";
 
@@ -130,22 +197,68 @@ function MessageBubble({ msg }: { msg: Message }) {
 
 // ── Main Widget ───────────────────────────────────────────────────────────────
 export default function ChatbotWidget() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
+  const [location] = useLocation();
+
+  // Live market context from engine
+  const engine = (() => {
+    try {
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      return useEngine();
+    } catch {
+      return null;
+    }
+  })();
+
+  // Build live context object for server
+  const liveContext = engine ? {
+    regimeLabel:      engine.output.regime.label,
+    pressureScore:    engine.output.overall.score * 10, // engine score is 0-10, convert to 0-100
+    pressureLevel:    engine.output.overall.riskLevel,
+    crashProbability: engine.output.probability.crashProbability,
+    bullProbability:  engine.output.probability.bullProbability,
+    currentPage:      location,
+  } : undefined;
+
+  // ── History persistence: load from localStorage on mount ──────────────────
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const persisted = loadPersistedHistory();
+    if (persisted.length > 0) return persisted;
+    // Build context-aware welcome message
+    const welcomeContent = getProactiveWelcome(
+      typeof window !== "undefined" ? window.location.pathname : "/",
+      engine?.output.regime.label,
+    );
+    return [{
+      id: "welcome",
+      role: "bot" as const,
+      content: welcomeContent,
+      timestamp: new Date(),
+    }];
+  });
+
   const [input, setInput] = useState("");
-  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<number | null>(() => loadPersistedSessionId());
   const [isTyping, setIsTyping] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [leadScore, setLeadScore] = useState(0);
   const [planInterest, setPlanInterest] = useState<string | undefined>();
   const [leadCaptured, setLeadCaptured] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const visitorId = useRef(getVisitorId()).current;
 
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    saveHistory(messages);
+  }, [messages]);
+
   const startSession = trpc.chatbot.startSession.useMutation({
-    onSuccess: (data) => setSessionId(data.sessionId),
+    onSuccess: (data) => {
+      setSessionId(data.sessionId);
+      saveSessionId(data.sessionId);
+    },
   });
 
   const sendMessage = trpc.chatbot.sendMessage.useMutation({
@@ -159,7 +272,6 @@ export default function ChatbotWidget() {
       setMessages(prev => [...prev, botMsg]);
       setIsTyping(false);
       setLeadScore(data.leadScore);
-      // planInterest is tracked locally via detectIntent in the backend; update from securitiesMentioned context
 
       // Show lead capture if high intent and not yet captured
       if (data.askForEmail && !leadCaptured && !showLeadCapture) {
@@ -207,7 +319,7 @@ export default function ChatbotWidget() {
     setUnread(0);
     trackEvent("chatbot_opened", { page: window.location.pathname });
 
-    // Start session if not started
+    // Start session if not started (or if persisted session was lost)
     if (!sessionId && !startSession.isPending) {
       startSession.mutate({ visitorId, pageUrl: window.location.href });
     }
@@ -228,8 +340,9 @@ export default function ChatbotWidget() {
     setIsTyping(true);
     setShowLeadCapture(false);
 
-    sendMessage.mutate({ sessionId, visitorId, message: text });
-  }, [input, sessionId, isTyping, sendMessage, visitorId]);
+    // Pass live market context with every message (Improvement 1)
+    sendMessage.mutate({ sessionId, visitorId, message: text, liveContext });
+  }, [input, sessionId, isTyping, sendMessage, visitorId, liveContext]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -240,10 +353,11 @@ export default function ChatbotWidget() {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button — on mobile, raised above the 72px bottom nav bar */}
       <button
         onClick={isOpen ? () => setIsOpen(false) : handleOpen}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#050A10] border border-cyan-400/40 shadow-lg shadow-cyan-400/10 flex items-center justify-center hover:border-cyan-400/70 hover:shadow-cyan-400/20 transition-all duration-200 active:scale-95 group"
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-[#050A10] border border-cyan-400/40 shadow-lg shadow-cyan-400/10 flex items-center justify-center hover:border-cyan-400/70 hover:shadow-cyan-400/20 transition-all duration-200 active:scale-95 group md:bottom-6"
+        style={{ bottom: 'calc(72px + 16px)' }}
         aria-label="Open FAULTLINE AI Concierge"
       >
         {isOpen ? (
@@ -260,11 +374,11 @@ export default function ChatbotWidget() {
         )}
       </button>
 
-      {/* Chat panel */}
+      {/* Chat panel — on mobile, positioned above the raised FAB */}
       {isOpen && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-24px)] rounded-2xl border border-white/10 bg-[#050A10] shadow-2xl shadow-black/60 flex flex-col overflow-hidden"
-          style={{ height: "520px" }}
+          className="fixed right-6 z-50 w-[360px] max-w-[calc(100vw-24px)] rounded-2xl border border-white/10 bg-[#050A10] shadow-2xl shadow-black/60 flex flex-col overflow-hidden"
+          style={{ height: "520px", bottom: 'calc(72px + 16px + 56px + 12px)' }}
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-[#080F1A]">
@@ -277,12 +391,30 @@ export default function ChatbotWidget() {
                 <p className="text-[10px] text-cyan-400/70 font-mono">Market Intelligence Concierge</p>
               </div>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* Clear history button */}
+              <button
+                onClick={() => {
+                  try { localStorage.removeItem(HISTORY_KEY); localStorage.removeItem(SESSION_ID_KEY); } catch {}
+                  const welcomeContent = getProactiveWelcome(window.location.pathname, engine?.output.regime.label);
+                  setMessages([{ id: "welcome", role: "bot", content: welcomeContent, timestamp: new Date() }]);
+                  setSessionId(null);
+                  setLeadCaptured(false);
+                  setShowLeadCapture(false);
+                  startSession.mutate({ visitorId, pageUrl: window.location.href });
+                }}
+                className="text-slate-600 hover:text-slate-400 transition-colors text-[9px] font-mono"
+                title="Clear chat history"
+              >
+                CLEAR
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Messages */}

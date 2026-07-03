@@ -2847,9 +2847,18 @@ export const appRouter = router({
     // Send a message and get a bot response
     sendMessage: publicProcedure
       .input(z.object({
-        sessionId: z.number().int().positive(),
-        visitorId: z.string().max(64),
-        message:   z.string().min(1).max(2000),
+        sessionId:   z.number().int().positive(),
+        visitorId:   z.string().max(64),
+        message:     z.string().min(1).max(2000),
+        // Optional live market context injected from the frontend engine
+        liveContext: z.object({
+          regimeLabel:      z.string().max(100).optional(),
+          pressureScore:    z.number().min(0).max(100).optional(),
+          pressureLevel:    z.string().max(32).optional(),
+          crashProbability: z.number().min(0).max(100).optional(),
+          bullProbability:  z.number().min(0).max(100).optional(),
+          currentPage:      z.string().max(200).optional(),
+        }).optional(),
       }))
       .mutation(async ({ input }) => {
         // Fetch conversation history
@@ -2867,8 +2876,8 @@ export const appRouter = router({
           intent: analysis.intent,
         });
 
-        // Generate bot response
-        const botResponse = await generateBotResponse(chatHistory, input.message);
+        // Generate bot response (with optional live market context)
+        const botResponse = await generateBotResponse(chatHistory, input.message, input.liveContext);
 
         // Store bot message
         await addChatbotMessage({

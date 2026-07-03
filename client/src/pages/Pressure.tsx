@@ -15,30 +15,45 @@ import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useLocation } from "wouter";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
-// All stress-related analysis lives under one roof — no need to navigate away
+// All stress-related analysis lives under one roof — in-page state, no navigation
 const STRESS_TABS = [
-  { id: 'pressure',  label: 'Pressure',       icon: Activity,  path: '/app/pressure' },
-  { id: 'scores',    label: 'Risk Scores',     icon: BarChart2, path: '/app/scores' },
-  { id: 'charts',    label: 'Charts',          icon: BarChart2, path: '/app/charts' },
-  { id: 'aftershock',label: 'Aftershock',      icon: Waves,     path: '/app/aftershock-engine' },
-  { id: 'analogs',   label: 'Analogs',         icon: Clock,     path: '/app/analogs' },
-  { id: 'scenarios', label: 'Scenarios',       icon: GitBranch, path: '/app/scenarios' },
-  { id: 'domain',    label: 'Domain Analysis', icon: Zap,       path: '/app/diagnostic' },
+  { id: 'pressure',   label: 'Pressure',       icon: Activity  },
+  { id: 'scores',     label: 'Risk Scores',     icon: BarChart2 },
+  { id: 'charts',     label: 'Charts',          icon: BarChart2 },
+  { id: 'aftershock', label: 'Aftershock',      icon: Waves     },
+  { id: 'analogs',    label: 'Analogs',         icon: Clock     },
+  { id: 'scenarios',  label: 'Scenarios',       icon: GitBranch },
+  { id: 'domain',     label: 'Domain Analysis', icon: Zap       },
 ];
-function StressTabBar() {
-  const [location, navigate] = useLocation();
-  const active = STRESS_TABS.find(t => location === t.path || location.startsWith(t.path + '/'))?.id ?? 'pressure';
+
+type StressTabId = typeof STRESS_TABS[number]['id'];
+
+function StressTabBar({ active, onSelect }: { active: StressTabId; onSelect: (id: StressTabId) => void }) {
   return (
-    <div style={{ display: 'flex', gap: '4px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0' }}>
+    <div style={{ display: 'flex', gap: '4px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '0', overflowX: 'auto' }}>
       {STRESS_TABS.map(tab => {
         const Icon = tab.icon;
         const isActive = active === tab.id;
         return (
-          <button key={tab.id} onClick={() => navigate(tab.path)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', cursor: 'pointer', border: 'none', background: 'transparent', borderBottom: isActive ? '2px solid #00D4FF' : '2px solid transparent', color: isActive ? '#00D4FF' : '#4B5563', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'color 0.15s ease', marginBottom: '-1px' }}>
+          <button key={tab.id} onClick={() => onSelect(tab.id as StressTabId)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', cursor: 'pointer', border: 'none', background: 'transparent', borderBottom: isActive ? '2px solid #00D4FF' : '2px solid transparent', color: isActive ? '#00D4FF' : '#4B5563', fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'color 0.15s ease', marginBottom: '-1px', whiteSpace: 'nowrap', flexShrink: 0 }}>
             <Icon size={12} />{tab.label}
           </button>
         );
       })}
+    </div>
+  );
+}
+
+// Placeholder panel for tabs not yet fully built
+function ComingSoonPanel({ label }: { label: string }) {
+  return (
+    <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563', letterSpacing: '0.15em', marginBottom: '12px' }}>
+        {label.toUpperCase()} · COMING SOON
+      </div>
+      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#374151' }}>
+        This intelligence module is being built. Check back soon.
+      </div>
     </div>
   );
 }
@@ -861,6 +876,7 @@ function PressureSkeleton() {
 // ── Main Pressure Page ────────────────────────────────────────
 export default function Pressure() {
   useSEO(PAGE_SEO.pressure);
+  const [activeTab, setActiveTab] = useState<StressTabId>('pressure');
   const { data, isLoading, error, refetch, isFetching } = trpc.pressure.getCurrentPressure.useQuery(
     undefined,
     { refetchInterval: 5 * 60 * 1000 } // auto-refresh every 5 minutes
@@ -924,8 +940,11 @@ export default function Pressure() {
           badgeColor={data.dataSource === 'live' ? 'green' : 'amber'}
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
-        <StressTabBar />
-        <div style={{ padding: "24px" }}>
+        <StressTabBar active={activeTab} onSelect={setActiveTab} />
+        {activeTab !== 'pressure' && (
+          <ComingSoonPanel label={STRESS_TABS.find(t => t.id === activeTab)?.label ?? activeTab} />
+        )}
+        {activeTab === 'pressure' && <div style={{ padding: "24px" }}>
 
         {/* ── Page header ──────────────────────────────────── */}
         <motion.div
@@ -1218,7 +1237,7 @@ export default function Pressure() {
         </div>
 
         <DisclaimerBanner />
-        </div>{/* /padding div */}
+        </div>}{/* /padding div — closes {activeTab === 'pressure' && <div> */}
       </div>
     </div>
   );

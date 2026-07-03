@@ -51,14 +51,15 @@ export default function CookieConsent() {
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 9999,
-        width: 'min(560px, calc(100vw - 32px))',
+        width: 'min(560px, calc(100vw - 24px))',
         background: 'rgba(10,12,16,0.97)',
         border: '1px solid rgba(0,212,255,0.18)',
         borderRadius: '8px',
-        padding: '16px 20px',
+        padding: '14px 16px',
         boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,255,0.06)',
         animation: 'fade-slide-up 0.35s cubic-bezier(0.23,1,0.32,1) both',
         backdropFilter: 'blur(12px)',
+        boxSizing: 'border-box',
       }}
     >
       {/* Top accent line */}
@@ -68,7 +69,8 @@ export default function CookieConsent() {
         borderRadius: '8px 8px 0 0',
       }} />
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+      {/* Icon + text row — stacks on very narrow screens */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
         {/* Icon */}
         <div style={{
           width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
@@ -79,7 +81,7 @@ export default function CookieConsent() {
           <span style={{ fontSize: '13px' }}>🍪</span>
         </div>
 
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: '1 1 200px', minWidth: 0 }}>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
             color: '#00D4FF', letterSpacing: '0.12em', textTransform: 'uppercase',
@@ -89,7 +91,8 @@ export default function CookieConsent() {
           </div>
           <p style={{
             fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px',
-            color: '#9CA3AF', lineHeight: 1.55, margin: '0 0 12px',
+            color: '#9CA3AF', lineHeight: 1.55, margin: '0 0 10px',
+            wordBreak: 'break-word',
           }}>
             FAULTLINE uses analytics cookies to understand how the platform is used and improve the experience.
             No personal data is sold or shared with third parties.{' '}
@@ -98,6 +101,7 @@ export default function CookieConsent() {
             </Link>
           </p>
 
+          {/* Buttons — wrap to next line on narrow screens */}
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button
               onClick={handleAccept}
@@ -106,7 +110,7 @@ export default function CookieConsent() {
                 letterSpacing: '0.08em', padding: '8px 18px',
                 background: 'rgba(0,212,255,0.12)', border: '1px solid rgba(0,212,255,0.35)',
                 borderRadius: '4px', color: '#00D4FF', cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.15s ease', flexShrink: 0,
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.2)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.12)')}
@@ -120,7 +124,7 @@ export default function CookieConsent() {
                 letterSpacing: '0.08em', padding: '8px 18px',
                 background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: '4px', color: '#6B7280', cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.15s ease', flexShrink: 0,
               }}
               onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)')}
               onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}

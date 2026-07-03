@@ -3352,3 +3352,37 @@
 - [ ] Add /demo route in App.tsx that wraps app in DemoProvider
 - [ ] Test all major pages load in demo mode without login
 - [ ] Save checkpoint and deliver /demo URL
+
+## Perplexity QA Audit — July 3, 2026
+
+### Bug Fixes
+- [ ] Bug 1: SKIP INTRO on /demo leads to 404 — fix demo route so SKIP INTRO loads main demo dashboard
+- [ ] Bug 2: DAILY BRIEFING nav tab links to /app/daily-briefing (404) — fix route or hide tab
+- [ ] Bug 3: /app/social and /app/understand are 404 — hide broken tabs from nav
+- [x] Bug 4: Chatbot FAB overlaps MORE button on mobile (390px) — reposition FAB to bottom: 80px+
+- [x] Bug 5: Cookie banner DECLINE button not visible on mobile — make banner fully responsive
+- [x] Bug 6: Pressure Index sub-tabs broken — convert to in-page state, no navigation away
+- [x] Bonus: Rename app from "Copy of FAULTLINE" to "FAULTLINE" in VITE_APP_TITLE (requires Settings → General in UI)
+
+### Chatbot Improvements
+- [x] Improvement 1: Connect AI Concierge to live FAULTLINE data (Pressure Index, recession probability, active signals)
+- [x] Improvement 2: Persist conversation history in localStorage (survives page refresh + widget close/reopen)
+- [x] Improvement 3: Context-aware proactive messages based on current page (fire once per page visit)
+
+### Performance Fixes
+- [ ] Perf 1: Reduce page weight from ~6MB to under 2MB (WebP images, gzip/Brotli compression)
+- [ ] Perf 2: Eliminate 357 KiB unused JavaScript (bundle analysis, tree-shaking)
+- [ ] Perf 3: Fix render-blocking resources (defer/async non-critical scripts, async CSS)
+- [ ] Perf 4: Lazy-load all non-critical JS (route-based and component-based code splitting)
+- [ ] Perf 5: Fix mobile LCP from 33s to under 2.5s
+- [ ] Perf 6: Fix desktop main-thread blocking (34.5s, 20 long tasks)
+- [ ] Perf 7: Add explicit width and height to all img elements
+- [ ] Perf 8: Defer all third-party scripts (analytics, tracking)
+
+### SEO — Meta Tags
+- [ ] SEO 1: Add meta description to every page
+- [ ] SEO 2: Add Open Graph tags to every page + create 1200x630 og-image.png
+- [ ] SEO 3: Add Twitter Card tags to every page
+- [ ] SEO 4: Add canonical tag to every page
+- [ ] SEO 5: Add JSON-LD structured data schema to marketing homepage
+- [ ] SEO 6: Add alt text to all img elements

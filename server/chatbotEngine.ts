@@ -284,12 +284,38 @@ function buildFallbackPricingResponse(): string {
 Visit https://getfaultline.live to get started. Remember: FAULTLINE provides market intelligence and risk analysis, not personalized financial advice.`;
 }
 
+export interface LiveMarketContext {
+  regimeLabel?: string;
+  pressureScore?: number;
+  pressureLevel?: string;
+  crashProbability?: number;
+  bullProbability?: number;
+  currentPage?: string;
+}
+
+/**
+ * Build a concise live-market context block to prepend to the system prompt.
+ * This gives the LLM awareness of current conditions without overwhelming it.
+ */
+function buildLiveContextBlock(ctx: LiveMarketContext): string {
+  const parts: string[] = [];
+  if (ctx.regimeLabel) parts.push(`Current Market Regime: ${ctx.regimeLabel}`);
+  if (ctx.pressureScore !== undefined) parts.push(`FAULTLINE Pressure Index: ${Math.round(ctx.pressureScore)}/100 (${ctx.pressureLevel ?? 'unknown'})`);
+  if (ctx.crashProbability !== undefined) parts.push(`Crash Probability: ${Math.round(ctx.crashProbability)}%`);
+  if (ctx.bullProbability !== undefined) parts.push(`Bull Continuation Probability: ${Math.round(ctx.bullProbability)}%`);
+  if (ctx.currentPage) parts.push(`User is currently on: ${ctx.currentPage}`);
+  if (parts.length === 0) return '';
+  return `\n\n## Live Market Context (as of right now — use this to give relevant, timely answers)\n${parts.join('\n')}\n\nWhen the user asks about current market conditions, risk levels, or what the platform is showing, reference the above data naturally.`;
+}
+
 export async function generateBotResponse(
   history: ChatMessage[],
   newUserMessage: string,
+  liveContext?: LiveMarketContext,
 ): Promise<string> {
   // Build system prompt fresh each time — pricing is always injected from canonical source
-  const systemPrompt = buildSystemPrompt();
+  const basePrompt = buildSystemPrompt();
+  const systemPrompt = liveContext ? basePrompt + buildLiveContextBlock(liveContext) : basePrompt;
 
   // Build message array for LLM
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [

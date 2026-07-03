@@ -69,11 +69,29 @@ export function useDemoMode(): DemoContextValue {
   return useContext(DemoContext);
 }
 
+const DEMO_SESSION_KEY = "faultline_demo_session";
+
 /**
- * Returns true if the current URL path starts with /demo.
+ * Returns true if the current URL path starts with /demo,
+ * OR if the user entered via /demo this session (persisted in sessionStorage).
  * Safe to call outside React (e.g., in route guards).
  */
 export function isDemoPath(): boolean {
   if (typeof window === "undefined") return false;
-  return window.location.pathname.startsWith("/demo");
+  // Direct /demo path — activate and persist
+  if (window.location.pathname.startsWith("/demo")) {
+    try { sessionStorage.setItem(DEMO_SESSION_KEY, "1"); } catch {}
+    return true;
+  }
+  // Already entered via /demo this session (survives redirect to /app/*)
+  try {
+    return sessionStorage.getItem(DEMO_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Clear demo session (e.g., when user logs in properly) */
+export function clearDemoSession(): void {
+  try { sessionStorage.removeItem(DEMO_SESSION_KEY); } catch {}
 }
