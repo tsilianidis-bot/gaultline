@@ -1,6 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { ENV } from "./_core/env";
-import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter } from "./routers/index";
+import { analyticsRouter, blogRouter, billingRouter, adminRouter, outlookRouter, organicContentRouter, smartDiscoveryRouter, fmosRouter, dailyBriefRouter, intelligenceValidationRouter, marketIntelligenceRouter } from "./routers/index";
 import { notifyOwner } from "./_core/notification";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -98,6 +98,7 @@ export const appRouter = router({
   dailyBrief: dailyBriefRouter,
 
   intelligenceValidation: intelligenceValidationRouter,
+  marketIntelligence: marketIntelligenceRouter,
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -2869,6 +2870,13 @@ export const appRouter = router({
             invalidationSignals:   z.array(z.string().max(300)).max(5),
             tradingBias:           z.string().max(600),
           }).optional(),
+          // Cross-market regime data
+          stockMarketRegime:  z.string().max(80).optional(),
+          stockRiskLevel:     z.string().max(32).optional(),
+          cryptoMarketRegime: z.string().max(80).optional(),
+          cryptoRiskLevel:    z.string().max(32).optional(),
+          alignmentStatus:    z.string().max(80).optional(),
+          alignmentScore:     z.number().min(0).max(100).optional(),
         }).optional(),
       }))
       .mutation(async ({ input }) => {

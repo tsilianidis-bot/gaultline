@@ -209,6 +209,12 @@ export default function ChatbotWidget() {
     }
   })();
 
+  // Fetch cross-market regime data (lightweight, cached 10 min)
+  const { data: regimeData } = trpc.marketIntelligence.getAll.useQuery(undefined, {
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
   // Fetch BTC cycle data from crypto intelligence (public, lightweight)
   const { data: cryptoData } = trpc.crypto.getSignals.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
@@ -224,6 +230,15 @@ export default function ChatbotWidget() {
     crashProbability: engine.output.probability.crashProbability,
     bullProbability:  engine.output.probability.bullProbability,
     currentPage:      location,
+    // Cross-market regime data
+    ...(regimeData ? {
+      stockMarketRegime:  regimeData.stockRegime.regime,
+      stockRiskLevel:     regimeData.stockRegime.riskLevel,
+      cryptoMarketRegime: regimeData.cryptoRegime.regime,
+      cryptoRiskLevel:    regimeData.cryptoRegime.riskLevel,
+      alignmentStatus:    regimeData.alignmentStatus,
+      alignmentScore:     regimeData.alignmentScore,
+    } : {}),
     // BTC cycle state from crypto intelligence
     ...(cryptoData?.btcDashboard ? {
       btcCyclePhase:      cryptoData.btcDashboard.marketCyclePhase.phase,

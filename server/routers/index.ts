@@ -13,3 +13,4 @@ export { smartDiscoveryRouter } from "./smartDiscovery";
 export { fmosRouter } from "./fmos";
 export { dailyBriefRouter } from "./dailyBrief";
 export { intelligenceValidationRouter } from "./intelligenceValidation";
+export { marketIntelligenceRouter } from "./marketIntelligence";

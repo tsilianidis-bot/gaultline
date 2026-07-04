@@ -125,6 +125,7 @@ const MarketCommandCenter = lazy(() => import("./pages/MarketCommandCenter"));
 const TodaysStory = lazy(() => import("./pages/TodaysStory"));
 const SmartDiscovery = lazy(() => import("./pages/SmartDiscovery"));
 const DecisionLedger = lazy(() => import("./pages/DecisionLedger"));
+const MarketIntelligence = lazy(() => import("./pages/MarketIntelligence"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -469,6 +470,7 @@ function Router() {
               <Route path="/app/trade-preflight"><Redirect to="/app/decision-engine" /></Route>
               <Route path="/app/situation-room"><Redirect to="/app/decision-engine" /></Route>
               <Route path="/app/opportunities" component={Opportunities} />
+              <Route path="/app/market-intelligence" component={MarketIntelligence} />
               <Route path="/app/signal-outlook" component={SignalOutlookCenter} />
               <Route path="/app/social-intelligence" component={SocialIntelligence} />
               <Route path="/app/pre-flight" component={PreFlight} />

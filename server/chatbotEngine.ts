@@ -302,6 +302,13 @@ export interface LiveMarketContext {
     invalidationSignals: string[];
     tradingBias: string;
   };
+  // Cross-market regime data
+  stockMarketRegime?: string;
+  stockRiskLevel?: string;
+  cryptoMarketRegime?: string;
+  cryptoRiskLevel?: string;
+  alignmentStatus?: string;
+  alignmentScore?: number;
 }
 
 /**
@@ -319,6 +326,17 @@ function buildLiveContextBlock(ctx: LiveMarketContext): string {
   // BTC cycle phase context
   if (ctx.btcCyclePhase) {
     parts.push(`Bitcoin Market Cycle Phase: ${ctx.btcCyclePhase} (${ctx.btcCycleConfidence ?? 0}% confidence)`);
+  }
+
+  // Cross-market regime context
+  if (ctx.stockMarketRegime) {
+    parts.push(`US Stock Market Regime: ${ctx.stockMarketRegime} (Risk: ${ctx.stockRiskLevel ?? 'unknown'})`);
+  }
+  if (ctx.cryptoMarketRegime) {
+    parts.push(`Crypto Market Regime: ${ctx.cryptoMarketRegime} (Risk: ${ctx.cryptoRiskLevel ?? 'unknown'})`);
+  }
+  if (ctx.alignmentStatus) {
+    parts.push(`Cross-Market Alignment: ${ctx.alignmentStatus} (Score: ${ctx.alignmentScore ?? 0}/100)`);
   }
 
   if (parts.length === 0) return '';

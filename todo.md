@@ -3401,3 +3401,16 @@
 - [x] Update ChatbotWidget.tsx to fetch crypto data and pass BTC cycle state in liveContext
 - [x] Add AccumulationPhasePanel component to CryptoIntelligence.tsx with structured 5-section layout
 - [x] Write 10 new tests for accumulation phase classification in cryptoIntelligence.test.ts (all pass)
+
+## Market Intelligence System (July 4, 2026)
+
+- [x] Stock Market Regime Engine (server/stockRegimeEngine.ts) — classifies US equities into 8 regimes using FAULTLINE Pressure Index + SPY price trend
+- [x] Crypto Market Regime Engine (server/cryptoRegimeEngine.ts) — adapts existing CryptoIntelligence into formal CryptoMarketRegime output
+- [x] Cross-Market Intelligence Engine (server/crossMarketEngine.ts) — detects alignment/divergence, plain English summary, regime-change alerts
+- [x] tRPC router (server/routers/marketIntelligence.ts) — getMarketIntelligence procedure with regime-change notifications
+- [x] Market Intelligence dashboard page (client/src/pages/MarketIntelligence.tsx)
+- [x] Navigation entry added to UNDERSTAND group in AppLayout.tsx
+- [x] Route registered in App.tsx at /app/market-intelligence
+- [x] Chatbot live context updated with stock/crypto regime and alignment status
+- [x] Tests: 17 new tests all passing (server/marketIntelligence.test.ts)
+- [x] TypeScript: 0 errors
