@@ -291,6 +291,17 @@ export interface LiveMarketContext {
   crashProbability?: number;
   bullProbability?: number;
   currentPage?: string;
+  // BTC cycle state
+  btcCyclePhase?: string;
+  btcCycleConfidence?: number;
+  btcAccumulationAnalysis?: {
+    directAnswer: string;
+    confidenceLabel: string;
+    keyEvidence: string[];
+    bullCycleConfirmation: string[];
+    invalidationSignals: string[];
+    tradingBias: string;
+  };
 }
 
 /**
@@ -304,8 +315,43 @@ function buildLiveContextBlock(ctx: LiveMarketContext): string {
   if (ctx.crashProbability !== undefined) parts.push(`Crash Probability: ${Math.round(ctx.crashProbability)}%`);
   if (ctx.bullProbability !== undefined) parts.push(`Bull Continuation Probability: ${Math.round(ctx.bullProbability)}%`);
   if (ctx.currentPage) parts.push(`User is currently on: ${ctx.currentPage}`);
+
+  // BTC cycle phase context
+  if (ctx.btcCyclePhase) {
+    parts.push(`Bitcoin Market Cycle Phase: ${ctx.btcCyclePhase} (${ctx.btcCycleConfidence ?? 0}% confidence)`);
+  }
+
   if (parts.length === 0) return '';
-  return `\n\n## Live Market Context (as of right now — use this to give relevant, timely answers)\n${parts.join('\n')}\n\nWhen the user asks about current market conditions, risk levels, or what the platform is showing, reference the above data naturally.`;
+
+  let block = `\n\n## Live Market Context (as of right now — use this to give relevant, timely answers)\n${parts.join('\n')}\n\nWhen the user asks about current market conditions, risk levels, or what the platform is showing, reference the above data naturally.`;
+
+  // If BTC is in accumulation phase, inject the full structured intelligence block
+  if (ctx.btcCyclePhase === 'Bear Market → Accumulation Phase' && ctx.btcAccumulationAnalysis) {
+    const a = ctx.btcAccumulationAnalysis;
+    block += `\n\n## Bitcoin Cycle Intelligence — CRITICAL INSTRUCTIONS FOR BTC QUESTIONS
+When any user asks about Bitcoin, BTC, or crypto market cycle, you MUST follow this exact response structure:
+
+**STEP 1 — Direct Answer First (always lead with this):**
+"${a.directAnswer}"
+
+**STEP 2 — Confidence:** ${a.confidenceLabel} (${ctx.btcCycleConfidence ?? 0}%)
+
+**STEP 3 — Key Evidence (cite 3–5 of these):**
+${a.keyEvidence.map(e => `- ${e}`).join('\n')}
+
+**STEP 4 — What would confirm a new bull cycle:**
+${a.bullCycleConfirmation.map(c => `- ${c}`).join('\n')}
+
+**STEP 5 — What would invalidate the accumulation thesis:**
+${a.invalidationSignals.map(s => `- ${s}`).join('\n')}
+
+**STEP 6 — Actionable Trading Bias:**
+${a.tradingBias}
+
+IMPORTANT: Never label BTC as simply "bull" or "bear" when in this phase. Always use the full label: "Bear Market → Accumulation Phase". Explain that a new bull cycle is NOT confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained risk-on confirmation.`;
+  }
+
+  return block;
 }
 
 export async function generateBotResponse(

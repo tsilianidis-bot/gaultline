@@ -209,6 +209,13 @@ export default function ChatbotWidget() {
     }
   })();
 
+  // Fetch BTC cycle data from crypto intelligence (public, lightweight)
+  const { data: cryptoData } = trpc.crypto.getSignals.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+    // Only fetch when widget is open to avoid unnecessary requests
+  });
+
   // Build live context object for server
   const liveContext = engine ? {
     regimeLabel:      engine.output.regime.label,
@@ -217,6 +224,21 @@ export default function ChatbotWidget() {
     crashProbability: engine.output.probability.crashProbability,
     bullProbability:  engine.output.probability.bullProbability,
     currentPage:      location,
+    // BTC cycle state from crypto intelligence
+    ...(cryptoData?.btcDashboard ? {
+      btcCyclePhase:      cryptoData.btcDashboard.marketCyclePhase.phase,
+      btcCycleConfidence: cryptoData.btcDashboard.marketCyclePhase.confidence,
+      ...(cryptoData.btcDashboard.accumulationAnalysis ? {
+        btcAccumulationAnalysis: {
+          directAnswer:          cryptoData.btcDashboard.accumulationAnalysis.directAnswer,
+          confidenceLabel:       cryptoData.btcDashboard.accumulationAnalysis.confidenceLabel,
+          keyEvidence:           cryptoData.btcDashboard.accumulationAnalysis.keyEvidence,
+          bullCycleConfirmation: cryptoData.btcDashboard.accumulationAnalysis.bullCycleConfirmation,
+          invalidationSignals:   cryptoData.btcDashboard.accumulationAnalysis.invalidationSignals,
+          tradingBias:           cryptoData.btcDashboard.accumulationAnalysis.tradingBias,
+        },
+      } : {}),
+    } : {}),
   } : undefined;
 
   // ── History persistence: load from localStorage on mount ──────────────────

@@ -28,7 +28,23 @@ export type CyclePhase   =
   | "Early Bear"
   | "Mid Bear"
   | "Capitulation"
+  | "Bear Market → Accumulation Phase"
   | "Accumulation";
+
+// ── Accumulation Phase Analysis ──────────────────────────────
+// Structured response for the "Bear Market → Accumulation Phase" state.
+// This is the user-facing intelligence block shown when BTC is down
+// significantly from cycle highs but showing base-forming signals.
+export interface AccumulationPhaseAnalysis {
+  directAnswer:    string;   // "Bitcoin appears to be in an accumulation phase inside a broader bear-market structure."
+  confidenceLevel: number;   // 0–100
+  confidenceLabel: string;   // "High" | "Moderate" | "Low"
+  keyEvidence:     string[]; // 3–5 bullet evidence points
+  bullCycleConfirmation: string[]; // What would confirm a new bull cycle
+  invalidationSignals:   string[]; // What would invalidate the accumulation thesis
+  tradingBias:     string;   // Actionable bias: capital preservation, selective accumulation, etc.
+  disclaimer:      string;
+}
 
 export interface CryptoAssetSignal {
   id: string;
@@ -53,6 +69,7 @@ export interface BitcoinMacroDashboard {
   marketCyclePhase:    { phase: CyclePhase; confidence: number; note: string };
   overallBtcBias:      CryptoSignal;
   aiNarrative:         string;
+  accumulationAnalysis?: AccumulationPhaseAnalysis; // Only present when phase === "Bear Market → Accumulation Phase"
 }
 
 export interface AltcoinRiskAssessment {
@@ -272,25 +289,99 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
   // ETF/institutional flow: inversely correlated with macro stress
   const etfScore = clamp(100 - (pressure * 0.5 + credit * 0.5), 0, 100);
 
-  // Cycle phase determination
+  // ── Cycle phase determination ───────────────────────────────────────────
+  //
+  // "Bear Market → Accumulation Phase" is triggered when ALL of:
+  //   • Trend is weak-to-moderate (trendScore 25–55) — significantly off highs
+  //   • Pressure is moderate-to-elevated (40–70) — not in crisis, but not recovering
+  //   • Liquidity is stabilizing (35–60) — not expanding, not collapsing
+  //   • Credit stress is contained (<60) — no systemic contagion
+  //   • Equity stress is moderate (<65) — muted risk-off, not panic
+  //
+  // This represents: BTC is down from cycle highs, macro headwinds persist,
+  // but conditions are stabilizing rather than deteriorating further.
+  // Long-term holder accumulation, declining exchange balances, muted funding,
+  // and stabilizing price action are consistent with this macro backdrop.
   let cyclePhase: CyclePhase;
   let cycleConfidence: number;
+
+  const isAccumulationPhase =
+    trendScore >= 25 && trendScore <= 55 &&
+    pressure >= 40 && pressure <= 70 &&
+    liquidity >= 35 && liquidity <= 60 &&
+    credit < 60 &&
+    equity < 65;
+
   if (trendScore >= 75 && liquidity >= 65) {
     cyclePhase = "Mid Bull"; cycleConfidence = 72;
   } else if (trendScore >= 60 && liquidity >= 50) {
     cyclePhase = "Early Bull"; cycleConfidence = 65;
   } else if (trendScore >= 50 && pressure >= 55) {
     cyclePhase = "Late Bull / Euphoria"; cycleConfidence = 55;
-  } else if (pressure >= 65 && trendScore < 50) {
+  } else if (pressure >= 65 && trendScore < 50 && !isAccumulationPhase) {
     cyclePhase = "Distribution"; cycleConfidence = 60;
-  } else if (pressure >= 75) {
+  } else if (pressure >= 75 && !isAccumulationPhase) {
     cyclePhase = "Early Bear"; cycleConfidence = 68;
   } else if (pressure >= 80 && liquidity < 35) {
     cyclePhase = "Mid Bear"; cycleConfidence = 70;
-  } else if (trendScore < 30 && liquidity < 30) {
+  } else if (trendScore < 25 && liquidity < 30) {
     cyclePhase = "Capitulation"; cycleConfidence = 62;
+  } else if (isAccumulationPhase) {
+    // Granular state: bear market structure with base-forming signals
+    cyclePhase = "Bear Market → Accumulation Phase"; cycleConfidence = 63;
   } else {
     cyclePhase = "Accumulation"; cycleConfidence = 58;
+  }
+
+  // ── Accumulation Phase Analysis (structured user-facing response) ──────────
+  let accumulationAnalysis: AccumulationPhaseAnalysis | undefined;
+  if (cyclePhase === "Bear Market → Accumulation Phase") {
+    const confLabel = cycleConfidence >= 70 ? "High" : cycleConfidence >= 55 ? "Moderate" : "Low";
+
+    // Build evidence bullets from live macro indicators
+    const evidence: string[] = [];
+    if (trendScore >= 30 && trendScore <= 55)
+      evidence.push("Price action is stabilizing: trend strength is weak but no longer deteriorating, consistent with base-forming behavior");
+    if (liquidity >= 40 && liquidity <= 58)
+      evidence.push("Liquidity conditions are neutral-to-contracting but not collapsing — exchange outflows and stablecoin supply suggest dry powder accumulation");
+    if (credit < 50)
+      evidence.push("Credit stress is contained below systemic levels — no contagion signal, which historically precedes accumulation windows");
+    if (equity < 55)
+      evidence.push("Equity market stress is muted — risk-off conditions are present but not panic-driven, supporting selective long-term holder behavior");
+    if (pressure >= 40 && pressure <= 65)
+      evidence.push(`FAULTLINE Pressure Index at ${pressure.toFixed(0)}/100 — elevated but not in crisis territory, consistent with late-bear / early-accumulation macro backdrop`);
+    if (yields < 55)
+      evidence.push("Treasury yield pressure is moderate — not severely restrictive, reducing one key headwind for crypto valuations");
+    // Ensure at least 3 evidence points
+    if (evidence.length < 3) {
+      evidence.push("Macro regime indicators suggest conditions are stabilizing rather than deteriorating further");
+      evidence.push("On-chain proxy signals (via macro liquidity and credit conditions) are consistent with long-term holder accumulation patterns");
+    }
+
+    accumulationAnalysis = {
+      directAnswer: "Bitcoin appears to be in an accumulation phase inside a broader bear-market structure.",
+      confidenceLevel: cycleConfidence,
+      confidenceLabel: confLabel,
+      keyEvidence: evidence.slice(0, 5),
+      bullCycleConfirmation: [
+        "Price breaks and holds above major resistance (prior cycle high or key moving average) with strong volume",
+        "Liquidity conditions shift from neutral to expanding — FAULTLINE Liquidity score above 60",
+        "FAULTLINE Pressure Index drops below 35, signaling macro tailwinds returning",
+        "Sustained risk-on confirmation: equity stress falls below 35, credit spreads tighten",
+        "ETF and institutional flow signals shift to inflow bias with consistent weekly momentum",
+      ],
+      invalidationSignals: [
+        "Price breaks below the accumulation range low with high volume — capitulation re-entry",
+        "FAULTLINE Pressure Index spikes above 75, signaling macro deterioration or systemic shock",
+        "Credit stress rises above 65 — contagion risk would invalidate the base-forming thesis",
+        "Liquidity collapses below 30 — forced selling would overwhelm any accumulation activity",
+        "Macro regime shifts to 'Crisis' or 'Recession Onset' — bear market deepens rather than bases",
+      ],
+      tradingBias:
+        "Capital preservation is the primary objective. Selective accumulation of core positions (BTC, ETH) at scale is appropriate for long-term holders. Avoid aggressive risk-taking, leveraged long positions, or broad altcoin exposure until a confirmed breakout with volume and improving macro conditions. Dollar-cost averaging into BTC may be appropriate for investors with long time horizons. A new bull cycle is not confirmed — position sizing should reflect that uncertainty.",
+      disclaimer:
+        "FAULTLINE cycle analysis is based on macro pressure indicators, not on-chain data. This is not financial advice. All signals reflect conditions — they do not predict outcomes.",
+    };
   }
 
   const btcSignalScore = scoreBitcoin(p).signalScore;
@@ -329,9 +420,12 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
     marketCyclePhase: {
       phase: cyclePhase,
       confidence: cycleConfidence,
-      note: `FAULTLINE macro indicators suggest ${cyclePhase} conditions with ${cycleConfidence}% signal confidence`,
+      note: cyclePhase === "Bear Market → Accumulation Phase"
+        ? `FAULTLINE macro indicators suggest BTC may be forming a base inside a broader bear-market structure. A new bull cycle is not confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained risk-on confirmation.`
+        : `FAULTLINE macro indicators suggest ${cyclePhase} conditions with ${cycleConfidence}% signal confidence`,
     },
     overallBtcBias: scoreToSignal(btcSignalScore),
+    ...(accumulationAnalysis ? { accumulationAnalysis } : {}),
   };
 }
 

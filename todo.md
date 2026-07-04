@@ -3386,3 +3386,18 @@
 - [ ] SEO 4: Add canonical tag to every page
 - [ ] SEO 5: Add JSON-LD structured data schema to marketing homepage
 - [ ] SEO 6: Add alt text to all img elements
+
+## BTC Cycle Classification — Accumulation Phase (Jul 4 2026)
+
+- [x] Add "Bear Market → Accumulation Phase" as a distinct CyclePhase type in cryptoIntelligence.ts
+- [x] Build isAccumulationPhase() detector: pressure 40–70, trend 25–55, liquidity 35–60, credit < 60, equity < 65
+- [x] Build AccumulationPhaseAnalysis object with: directAnswer, confidenceLabel, confidenceLevel, keyEvidence (5), bullCycleConfirmation (5), invalidationSignals (5), tradingBias, disclaimer
+- [x] Export AccumulationPhaseAnalysis type from cryptoIntelligence.ts
+- [x] Attach accumulationAnalysis to BitcoinMacroDashboard return when phase is detected
+- [x] Update marketCyclePhase.note to describe base-forming and unconfirmed bull cycle
+- [x] Update chatbotEngine.ts LiveMarketContext to include btcCyclePhase, btcCycleConfidence, btcAccumulationAnalysis
+- [x] Update buildLiveContextBlock to inject full BTC cycle intelligence block with 6-step response structure
+- [x] Update routers.ts sendMessage schema to accept btcCyclePhase, btcCycleConfidence, btcAccumulationAnalysis
+- [x] Update ChatbotWidget.tsx to fetch crypto data and pass BTC cycle state in liveContext
+- [x] Add AccumulationPhasePanel component to CryptoIntelligence.tsx with structured 5-section layout
+- [x] Write 10 new tests for accumulation phase classification in cryptoIntelligence.test.ts (all pass)

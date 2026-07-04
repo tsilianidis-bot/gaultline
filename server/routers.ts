@@ -2858,6 +2858,17 @@ export const appRouter = router({
           crashProbability: z.number().min(0).max(100).optional(),
           bullProbability:  z.number().min(0).max(100).optional(),
           currentPage:      z.string().max(200).optional(),
+          // BTC cycle state
+          btcCyclePhase:    z.string().max(80).optional(),
+          btcCycleConfidence: z.number().min(0).max(100).optional(),
+          btcAccumulationAnalysis: z.object({
+            directAnswer:          z.string().max(300),
+            confidenceLabel:       z.string().max(20),
+            keyEvidence:           z.array(z.string().max(300)).max(5),
+            bullCycleConfirmation: z.array(z.string().max(300)).max(5),
+            invalidationSignals:   z.array(z.string().max(300)).max(5),
+            tradingBias:           z.string().max(600),
+          }).optional(),
         }).optional(),
       }))
       .mutation(async ({ input }) => {

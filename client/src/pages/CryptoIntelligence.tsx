@@ -10,6 +10,7 @@ import type {
   CryptoSignal,
   CryptoRisk,
   MomentumDir,
+  AccumulationPhaseAnalysis,
 } from "../../../server/cryptoIntelligence";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
@@ -59,6 +60,92 @@ function scoreBar(score: number, color = "bg-cyan-500") {
         className={`h-full rounded-full transition-all duration-700 ${color}`}
         style={{ width: `${Math.max(2, score)}%` }}
       />
+    </div>
+  );
+}
+
+// ── Accumulation Phase Panel ─────────────────────────────────
+// Rendered when BTC cycle phase === "Bear Market → Accumulation Phase".
+// Displays the full structured response: direct answer, confidence,
+// key evidence, bull confirmation, invalidation, trading bias.
+
+function AccumulationPhasePanel({ analysis }: { analysis: AccumulationPhaseAnalysis }) {
+  const confColor = analysis.confidenceLevel >= 70
+    ? "text-cyan-400 border-cyan-500/40 bg-cyan-500/8"
+    : analysis.confidenceLevel >= 55
+    ? "text-amber-400 border-amber-500/40 bg-amber-500/8"
+    : "text-slate-400 border-slate-500/40 bg-slate-500/8";
+
+  return (
+    <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/6 via-transparent to-transparent p-6 space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-mono text-amber-400 mb-1 tracking-wider">BITCOIN CYCLE INTELLIGENCE</div>
+          <div className="text-lg font-black text-white">Bear Market → Accumulation Phase</div>
+        </div>
+        <span className={`text-xs font-mono px-3 py-1.5 rounded-full border ${confColor} self-start sm:self-auto`}>
+          {analysis.confidenceLabel} Confidence — {analysis.confidenceLevel}%
+        </span>
+      </div>
+
+      {/* Direct Answer */}
+      <div className="rounded-xl border border-white/8 bg-white/3 p-4">
+        <div className="text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">FAULTLINE Assessment</div>
+        <p className="text-base font-semibold text-white leading-relaxed">{analysis.directAnswer}</p>
+        <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+          BTC may be forming a base, but a new bull cycle is not confirmed until price breaks major resistance
+          with strong volume, improving liquidity, and sustained risk-on confirmation.
+        </p>
+      </div>
+
+      {/* Key Evidence */}
+      <div>
+        <div className="text-xs font-mono text-slate-500 mb-3 uppercase tracking-wider">Key Evidence</div>
+        <ul className="space-y-2">
+          {analysis.keyEvidence.map((e, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
+              <span className="text-amber-400 mt-0.5 shrink-0">▸</span>
+              <span>{e}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Two-column: Confirmation vs Invalidation */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+          <div className="text-xs font-mono text-emerald-400 mb-3 uppercase tracking-wider">Bull Cycle Confirmation</div>
+          <ul className="space-y-2">
+            {analysis.bullCycleConfirmation.map((c, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>
+                <span>{c}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
+          <div className="text-xs font-mono text-red-400 mb-3 uppercase tracking-wider">Invalidation Signals</div>
+          <ul className="space-y-2">
+            {analysis.invalidationSignals.map((s, i) => (
+              <li key={i} className="flex items-start gap-2 text-xs text-slate-300">
+                <span className="text-red-400 mt-0.5 shrink-0">✕</span>
+                <span>{s}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Trading Bias */}
+      <div className="rounded-xl border border-slate-700/50 bg-slate-800/30 p-4">
+        <div className="text-xs font-mono text-slate-500 mb-2 uppercase tracking-wider">Actionable Trading Bias</div>
+        <p className="text-sm text-slate-300 leading-relaxed">{analysis.tradingBias}</p>
+      </div>
+
+      {/* Disclaimer */}
+      <p className="text-xs text-slate-600 leading-relaxed">{analysis.disclaimer}</p>
     </div>
   );
 }
@@ -520,6 +607,11 @@ function CryptoIntelligenceInner() {
                   </p>
                 )}
               </div>
+
+              {/* Bear Market → Accumulation Phase: structured intelligence panel */}
+              {data.btcDashboard.accumulationAnalysis && (
+                <AccumulationPhasePanel analysis={data.btcDashboard.accumulationAnalysis} />
+              )}
 
               {/* 6 metric tiles */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
