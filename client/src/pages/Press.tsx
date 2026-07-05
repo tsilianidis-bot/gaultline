@@ -8,52 +8,141 @@ const PRESS_KIT_ASSETS = [
     id: "company-overview",
     label: "Company Overview",
     desc: "One-page summary of Phoenix Systems and FAULTLINE.",
-    type: "PDF",
+    type: "TXT",
     icon: "📄",
   },
   {
     id: "product-overview",
     label: "Product Overview",
     desc: "FAULTLINE platform capabilities, feature summary, and use cases.",
-    type: "PDF",
+    type: "TXT",
     icon: "📋",
   },
   {
     id: "fact-sheet",
     label: "Fact Sheet",
     desc: "Key data points, platform metrics, and product facts.",
-    type: "PDF",
+    type: "TXT",
     icon: "📊",
   },
   {
     id: "press-release",
     label: "Press Release",
     desc: "Official launch announcement for FAULTLINE.",
-    type: "PDF",
+    type: "TXT",
     icon: "📰",
   },
   {
-    id: "boilerplate",
-    label: "Company Boilerplate",
-    desc: "Standard approved language for use in articles and publications.",
+    id: "boilerplate-50",
+    label: "Company Boilerplate — 50 Words",
+    desc: "Approved short-form boilerplate for editorial use.",
     type: "TXT",
     icon: "📝",
   },
+  {
+    id: "boilerplate-150",
+    label: "Company Boilerplate — 150 Words",
+    desc: "Standard boilerplate for articles and publications.",
+    type: "TXT",
+    icon: "📝",
+  },
+  {
+    id: "boilerplate-500",
+    label: "Company Boilerplate — 500 Words",
+    desc: "Long-form boilerplate for feature articles and profiles.",
+    type: "TXT",
+    icon: "📝",
+  },
+  {
+    id: "outreach-email",
+    label: "Media Outreach Email",
+    desc: "Approved template for journalist outreach. Customise the recipient name before sending.",
+    type: "TXT",
+    icon: "✉️",
+  },
+  {
+    id: "followup-email",
+    label: "Follow-Up Email",
+    desc: "Approved follow-up template for unanswered media inquiries.",
+    type: "TXT",
+    icon: "✉️",
+  },
 ];
 
-const BOILERPLATE = `About Phoenix Systems
+const BOILERPLATE_50 = `About Phoenix Systems
 
-Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform that continuously monitors systemic stress across economic, financial, and market systems — detecting regime shifts before they become obvious.
+Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform that monitors systemic financial pressure in real time — helping investors understand the risk environment before markets reprice it. Available at getfaultline.live.`;
+
+const BOILERPLATE_150 = `About Phoenix Systems
+
+Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. The company develops decision-intelligence systems designed to reduce the information asymmetry between institutional and individual decision-makers.
+
+Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform that continuously monitors systemic stress across economic, financial, and market systems — detecting regime shifts before they become obvious. FAULTLINE provides a continuous Pressure Index™, regime classification, institutional-grade signal intelligence, and scenario analysis tools.
 
 FAULTLINE is designed for investors, traders, and analysts who want to understand the risk environment before it reprices. The platform provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
 
-About FAULTLINE
+FAULTLINE is available at getfaultline.live with tiered access for individual investors, active traders, and institutional users.
 
-FAULTLINE is a macroeconomic risk intelligence platform developed by Phoenix Systems. It monitors the economic, financial, and market fault lines where stress builds beneath the surface, providing a continuous Pressure Index, regime detection, and institutional-grade intelligence tools. FAULTLINE is available at getfaultline.live.
+Press contact: press@getfaultline.live`;
 
-Press Contact
+const BOILERPLATE_500 = `About Phoenix Systems
 
-press@getfaultline.live`;
+Phoenix Systems is an AI-first technology company focused on building intelligent platforms that transform complex information into actionable understanding. The company was founded on a straightforward observation: most individual investors are making decisions with fundamentally incomplete situational awareness. They can see price action. They can access earnings data. What they cannot easily access is a continuous, integrated view of the underlying structural conditions that drive markets — the systemic pressures, regime shifts, and macroeconomic fault lines that institutional investors monitor as a matter of course.
+
+Phoenix Systems was created to close that gap.
+
+The company's approach to artificial intelligence is deliberately calibrated. Phoenix Systems does not use AI to generate predictions or recommendations. It uses AI to synthesise, classify, and contextualise — to surface what is happening and what has historically happened in similar conditions, and to present that information in a form that supports human judgment rather than replacing it. Every product Phoenix Systems builds is designed to reduce information asymmetry, not to manufacture false certainty.
+
+FAULTLINE is Phoenix Systems' flagship product and the first in a growing portfolio of decision-intelligence platforms. FAULTLINE is a macroeconomic risk intelligence platform that takes a risk-first approach to market analysis. Rather than beginning with stock selection or trading signals, FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system?
+
+The platform continuously monitors systemic financial pressure across seven risk vectors — credit stress, liquidity conditions, volatility, yield curve dynamics, systemic risk indicators, inflation, and geopolitical exposure — and synthesises them into a single, continuously updated composite score: the Pressure Index™. The Pressure Index™ drives the platform's market regime classification engine, which categorises current conditions into one of five regimes and tracks how those regimes have historically resolved.
+
+The Historical Analog Engine identifies historical market periods that most closely resemble current conditions and surfaces their outcome distributions — not as a single prediction, but as a range of historically plausible scenarios. Signal Intelligence provides directional signals across equities, crypto, and macro, always contextualised against the current regime. Symbol Intelligence provides deep-dive analysis for individual stocks and digital assets. The Decision Engine offers a structured framework for evaluating ideas against the current risk environment.
+
+All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
+
+FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Observer (free), Trader, Power, and Founding Member.
+
+Press contact: press@getfaultline.live
+Website: getfaultline.live`;
+
+const OUTREACH_EMAIL = `Subject: FAULTLINE — Risk-First Market Intelligence Platform | Press Inquiry
+
+Dear [Editor/Reporter Name],
+
+I am writing on behalf of Phoenix Systems to introduce FAULTLINE, a macroeconomic risk intelligence platform that takes a fundamentally different approach to market analysis.
+
+Most investing platforms begin with stock selection or trading signals. FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system? The platform continuously monitors systemic financial pressure across seven risk vectors and synthesises them into a single, continuously updated Pressure Index™ — giving individual investors the same quality of situational awareness that institutional participants take for granted.
+
+FAULTLINE is available at getfaultline.live and is designed for investors, traders, and analysts who want to understand the risk environment before making investment decisions.
+
+I would welcome the opportunity to provide a briefing, product demonstration, or embargo access ahead of any planned coverage. Full press materials — including a press release, fact sheet, product overview, and company boilerplate — are available at getfaultline.live/press.
+
+Please let me know if you have any questions or would like to arrange a call.
+
+Best regards,
+Phoenix Systems Press Team
+press@getfaultline.live
+getfaultline.live/press`;
+
+const FOLLOWUP_EMAIL = `Subject: Following Up — FAULTLINE Press Materials
+
+Dear [Editor/Reporter Name],
+
+I wanted to follow up on my previous note regarding FAULTLINE, Phoenix Systems' macroeconomic risk intelligence platform.
+
+I understand your schedule is demanding. I am writing briefly to confirm that full press materials remain available at getfaultline.live/press, including a press release, company fact sheet, product overview, and company boilerplate in multiple formats.
+
+If FAULTLINE is relevant to any upcoming coverage of financial technology, macroeconomic risk, retail investor tools, or AI applications in financial services, I would be glad to arrange a briefing or product demonstration at your convenience.
+
+I am also available to answer any specific questions you may have about the platform, its methodology, or Phoenix Systems' broader product vision.
+
+Thank you for your time.
+
+Best regards,
+Phoenix Systems Press Team
+press@getfaultline.live
+getfaultline.live/press`;
 
 const FACT_SHEET = `FAULTLINE — Fact Sheet
 Platform: Macroeconomic risk intelligence
@@ -158,7 +247,11 @@ const ASSET_CONTENT: Record<string, string> = {
   "product-overview": PRODUCT_OVERVIEW,
   "fact-sheet": FACT_SHEET,
   "press-release": PRESS_RELEASE,
-  boilerplate: BOILERPLATE,
+  "boilerplate-50": BOILERPLATE_50,
+  "boilerplate-150": BOILERPLATE_150,
+  "boilerplate-500": BOILERPLATE_500,
+  "outreach-email": OUTREACH_EMAIL,
+  "followup-email": FOLLOWUP_EMAIL,
 };
 
 function copyToClipboard(text: string, setCopied: (v: boolean) => void) {
@@ -569,6 +662,345 @@ export default function Press() {
         </div>
       </section>
 
+      {/* ── About Phoenix Systems ── */}
+      <section
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+          padding: "0 24px 72px",
+        }}
+      >
+        <div style={{ marginBottom: "28px" }}>
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              letterSpacing: "0.35em",
+              color: "rgba(0,212,255,0.5)",
+              textTransform: "uppercase",
+              marginBottom: "8px",
+            }}
+          >
+            ◆ About the Company
+          </div>
+          <h2
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "22px",
+              fontWeight: 700,
+              color: "#F0F4FF",
+              letterSpacing: "0.04em",
+              margin: 0,
+            }}
+          >
+            About Phoenix Systems
+          </h2>
+        </div>
+        <div
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "10px",
+            padding: "32px",
+          }}
+        >
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            Phoenix Systems is an AI-first technology company focused on building intelligent platforms that transform complex information into actionable understanding. The company develops decision-intelligence systems designed to reduce the information asymmetry between institutional and individual decision-makers.
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            Phoenix Systems was founded on a straightforward observation: most individual investors are making decisions with fundamentally incomplete situational awareness. They can see price action. They can access earnings data. What they cannot easily access is a continuous, integrated view of the underlying structural conditions that drive markets — the systemic pressures, regime shifts, and macroeconomic fault lines that institutional investors monitor as a matter of course. Phoenix Systems was created to close that gap.
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            The company’s approach to artificial intelligence is deliberately calibrated. Phoenix Systems does not use AI to generate predictions or recommendations. It uses AI to synthesise, classify, and contextualise — to surface what is happening and what has historically happened in similar conditions, and to present that information in a form that supports human judgment rather than replacing it.
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, margin: 0 }}>
+            FAULTLINE is Phoenix Systems’ flagship product and the first in a growing portfolio of decision-intelligence platforms. Each product in the portfolio applies the same core philosophy — probabilistic reasoning, regime awareness, and contextual intelligence — to domains where information asymmetry creates risk and where better awareness leads to better decisions.
+          </p>
+        </div>
+      </section>
+
+      {/* ── About FAULTLINE ── */}
+      <section
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+          padding: "0 24px 72px",
+        }}
+      >
+        <div style={{ marginBottom: "28px" }}>
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              letterSpacing: "0.35em",
+              color: "rgba(0,212,255,0.5)",
+              textTransform: "uppercase",
+              marginBottom: "8px",
+            }}
+          >
+            ◆ About the Platform
+          </div>
+          <h2
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "22px",
+              fontWeight: 700,
+              color: "#F0F4FF",
+              letterSpacing: "0.04em",
+              margin: 0,
+            }}
+          >
+            About FAULTLINE
+          </h2>
+        </div>
+        <div
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "10px",
+            padding: "32px",
+          }}
+        >
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            FAULTLINE is a macroeconomic risk intelligence platform that takes a risk-first approach to market analysis. Rather than beginning with stock selection or trading signals, FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system?
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            The platform continuously monitors systemic financial pressure across seven risk vectors — credit stress, liquidity conditions, volatility, yield curve dynamics, systemic risk indicators, inflation, and geopolitical exposure — and synthesises them into a single, continuously updated composite score: the Pressure Index™. The Pressure Index™ drives the platform’s market regime classification engine, which categorises current conditions into one of five regimes and tracks how those regimes have historically resolved.
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            The Historical Analog Engine identifies historical market periods that most closely resemble current conditions and surfaces their outcome distributions — not as a single prediction, but as a range of historically plausible scenarios. Signal Intelligence provides directional signals across equities, crypto, and macro, always contextualised against the current regime. Symbol Intelligence provides deep-dive analysis for individual stocks and digital assets. The Decision Engine offers a structured framework for evaluating ideas against the current risk environment.
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+            FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Press Release ── */}
+      <section
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+          padding: "0 24px 72px",
+        }}
+      >
+        <div style={{ marginBottom: "28px" }}>
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              letterSpacing: "0.35em",
+              color: "rgba(0,212,255,0.5)",
+              textTransform: "uppercase",
+              marginBottom: "8px",
+            }}
+          >
+            ◆ For Immediate Release
+          </div>
+          <h2
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "22px",
+              fontWeight: 700,
+              color: "#F0F4FF",
+              letterSpacing: "0.04em",
+              margin: 0,
+            }}
+          >
+            Press Release
+          </h2>
+        </div>
+        <div
+          style={{
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "10px",
+            padding: "32px",
+          }}
+        >
+          <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.2em", color: "#64748B", marginBottom: "20px" }}>FOR IMMEDIATE RELEASE · PHOENIX SYSTEMS PRESS TEAM · press@getfaultline.live</p>
+          <h3
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "20px",
+              fontWeight: 700,
+              color: "#F0F4FF",
+              lineHeight: 1.3,
+              marginBottom: "8px",
+              letterSpacing: "0.03em",
+            }}
+          >
+            Phoenix Systems Introduces FAULTLINE, a Risk-First Market Intelligence Platform
+          </h3>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "rgba(0,212,255,0.7)", fontStyle: "italic", marginBottom: "24px", lineHeight: 1.6 }}>
+            New platform gives investors a continuous view of systemic market pressure, macroeconomic regime shifts, and cross-market stress — before conditions reprice
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            Phoenix Systems, an AI-first technology company focused on decision intelligence, today announced the public availability of FAULTLINE, a macroeconomic risk intelligence platform designed to help investors understand the risk environment before making investment decisions.
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            Unlike traditional investing platforms that begin with stock selection or trading signals, FAULTLINE takes a risk-first approach. The platform continuously monitors systemic financial pressure across seven distinct risk vectors — credit stress, liquidity conditions, volatility, yield curve dynamics, systemic risk indicators, inflation, and geopolitical exposure — and synthesises them into a single, continuously updated Pressure Index™.
+          </p>
+          <blockquote
+            style={{
+              borderLeft: "2px solid rgba(0,212,255,0.4)",
+              paddingLeft: "20px",
+              margin: "24px 0",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "15px",
+              color: "#CBD5E1",
+              fontStyle: "italic",
+              lineHeight: 1.7,
+            }}
+          >
+            “Better decisions begin with better awareness. Most retail investors are operating with incomplete situational awareness. They see price action, but they don’t see the underlying structural conditions that drive it. FAULTLINE is designed to close that gap.”
+            <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>PHOENIX SYSTEMS SPOKESPERSON</div>
+          </blockquote>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
+            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Observer (free), Trader, Power, and Founding Member. Observer access provides the live Pressure Index and limited signal previews at no cost.
+          </p>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+            FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Download Center ── */}
+      <section
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+          padding: "0 24px 60px",
+        }}
+      >
+        <div style={{ marginBottom: "24px" }}>
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              letterSpacing: "0.2em",
+              color: "rgba(0,212,255,0.5)",
+              textTransform: "uppercase",
+              marginBottom: "8px",
+            }}
+          >
+            ◆ Download Center
+          </div>
+          <h2
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "22px",
+              fontWeight: 700,
+              color: "#F0F4FF",
+              margin: 0,
+              letterSpacing: "0.04em",
+            }}
+          >
+            Brand Assets
+          </h2>
+          <p
+            style={{
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "13px",
+              color: "#64748B",
+              margin: "8px 0 0",
+              lineHeight: 1.6,
+            }}
+          >
+            Visual assets for editorial use. All assets are cleared for editorial use with attribution. Commercial use requires written permission. Contact{" "}
+            <a href="mailto:press@getfaultline.live" style={{ color: "rgba(0,212,255,0.6)", textDecoration: "none" }}>press@getfaultline.live</a>{" "}
+            to request assets.
+          </p>
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+            gap: "12px",
+          }}
+        >
+          {([
+            { label: "Phoenix Systems Logo", format: "PNG", status: "pending" },
+            { label: "Phoenix Systems Logo", format: "SVG", status: "pending" },
+            { label: "FAULTLINE Wordmark", format: "PNG", status: "pending" },
+            { label: "FAULTLINE Wordmark", format: "SVG", status: "pending" },
+            { label: "FAULTLINE Icon", format: "PNG", status: "pending" },
+            { label: "Dashboard Screenshot", format: "PNG", status: "pending" },
+            { label: "Pressure Index Screenshot", format: "PNG", status: "pending" },
+            { label: "Signal Intelligence Screenshot", format: "PNG", status: "pending" },
+            { label: "Mobile PWA Screenshot", format: "PNG", status: "pending" },
+            { label: "Brand Guidelines", format: "PDF", status: "pending" },
+          ] as Array<{ label: string; format: string; status: string }>).map((asset, i) => (
+            <div
+              key={i}
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "10px",
+                padding: "16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    letterSpacing: "0.15em",
+                    color: "rgba(255,255,255,0.3)",
+                    textTransform: "uppercase",
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "4px",
+                    padding: "2px 6px",
+                  }}
+                >
+                  {asset.format}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    letterSpacing: "0.1em",
+                    color: "rgba(251,191,36,0.7)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  ⏳ Pending
+                </span>
+              </div>
+              <p
+                style={{
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontSize: "12px",
+                  color: "#94A3B8",
+                  margin: 0,
+                  lineHeight: 1.4,
+                }}
+              >
+                {asset.label}
+              </p>
+            </div>
+          ))}
+        </div>
+        <p
+          style={{
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: "11px",
+            color: "#4B5563",
+            marginTop: "16px",
+            lineHeight: 1.6,
+          }}
+        >
+          Visual assets are in preparation. To request assets in advance of publication, contact{" "}
+          <a href="mailto:press@getfaultline.live" style={{ color: "rgba(0,212,255,0.5)", textDecoration: "none" }}>press@getfaultline.live</a>.
+        </p>
+      </section>
       {/* ── Media Contact ── */}
       <section
         style={{
@@ -744,31 +1176,35 @@ export default function Press() {
           {([
             {
               q: "What is FAULTLINE?",
-              a: "FAULTLINE is a macroeconomic risk intelligence platform that monitors systemic financial pressure in real time. It aggregates data across seven risk vectors — credit, liquidity, volatility, yield curve, systemic risk, inflation, and geopolitical — to produce a unified Pressure Index score and regime classification.",
+              a: "FAULTLINE is a macroeconomic risk intelligence platform that monitors systemic financial pressure in real time. The platform aggregates data across seven risk vectors — credit stress, liquidity conditions, volatility, yield curve dynamics, systemic risk indicators, inflation, and geopolitical exposure — and synthesises them into a unified Pressure Index™ score and market regime classification. FAULTLINE is designed to help investors understand the risk environment before making investment decisions.",
             },
             {
-              q: "Who built FAULTLINE?",
-              a: "FAULTLINE is developed by Phoenix Systems, an independent technology studio focused on financial intelligence infrastructure. The platform is designed for retail traders, independent investors, and financial professionals who want institutional-grade risk awareness without institutional overhead.",
+              q: "What makes FAULTLINE different?",
+              a: "Most investing platforms begin with stock selection or trading signals. FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system? Rather than providing buy or sell recommendations, FAULTLINE provides continuous situational awareness — the systemic pressure level, the current market regime, historical analogs to current conditions, and a range of probability-weighted scenarios. This risk-first approach gives investors the structural context that is typically available only to institutional participants.",
             },
             {
-              q: "Is FAULTLINE a financial adviser?",
-              a: "No. FAULTLINE is an information and analysis tool. It does not provide personalised investment advice, portfolio management, or regulated financial services. All content is for informational and educational purposes only. Users should consult a qualified financial adviser before making investment decisions.",
+              q: "What is a risk-first market intelligence platform?",
+              a: "A risk-first platform begins with the state of the system, not with a stock pick or a trade idea. FAULTLINE asks: what is the current level of systemic financial pressure? What regime are markets in? What has historically happened in similar conditions? Those answers form the context within which any investment decision should be evaluated. The platform does not tell users what to buy or sell. It tells them what kind of environment they are operating in.",
             },
             {
-              q: "What data sources does FAULTLINE use?",
-              a: "FAULTLINE aggregates data from public and licensed sources including the Federal Reserve Economic Data (FRED) system, financial market data providers, and macroeconomic databases. All data sources are documented in the platform’s methodology section.",
+              q: "Does FAULTLINE tell users what to buy or sell?",
+              a: "No. FAULTLINE does not generate buy or sell signals. The platform generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods. Users are expected to apply their own judgment to these assessments in the context of their own investment objectives and risk tolerance. FAULTLINE is designed to support informed decision-making, not to replace it.",
             },
             {
-              q: "What subscription tiers are available?",
-              a: "FAULTLINE offers four tiers: Observer (free), Trader ($9.99/mo), Power ($59/mo), and Founding ($49/mo, rate locked for life). Observer provides access to the live Pressure Index and limited signal previews. Trader unlocks the full signals screener, portfolio tracker, and watchlists. Power adds AI diagnostic intelligence, crypto intelligence, and the full institutional suite.",
+              q: "Does FAULTLINE provide investment advice?",
+              a: "No. FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational and educational purposes only. Users should consult a qualified financial adviser before making investment decisions.",
             },
             {
-              q: "How can I request a media briefing or embargo access?",
-              a: "Contact press@getfaultline.live with your publication, deadline, and the specific angle you’re covering. We accommodate embargo requests for product launches and major platform updates. Response time is typically within 24 hours on business days.",
+              q: "How does FAULTLINE use AI?",
+              a: "FAULTLINE uses artificial intelligence and machine learning models for regime classification, signal labelling, diagnostic summaries, historical analog identification, and the Ask Intelligence feature. AI models are used to synthesise and contextualise data — to surface what is happening and what has historically happened in similar conditions. Phoenix Systems does not use AI to generate predictions or investment recommendations. All AI-generated content is clearly labelled within the platform. AI outputs are probabilistic and may contain errors. Users are encouraged to verify AI-generated content against primary sources before making financial decisions.",
             },
             {
-              q: "Are screenshots and brand assets available for editorial use?",
-              a: "Yes. The press kit assets above include platform screenshots, the FAULTLINE wordmark, and company boilerplate. All assets are cleared for editorial use with attribution. Commercial use requires written permission.",
+              q: "What is Phoenix Systems?",
+              a: "Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. The company develops decision-intelligence systems designed to reduce the information asymmetry between institutional and individual decision-makers. FAULTLINE is Phoenix Systems\u2019 flagship product. The company\u2019s products are built on the principle that better decisions begin with better awareness.",
+            },
+            {
+              q: "Why was FAULTLINE created?",
+              a: "FAULTLINE was created because the most consequential information in financial markets is not the information that is most visible. Price action is visible. Earnings reports are visible. What is not easily accessible to individual investors is the underlying structural state of the financial system — the level of systemic stress, the current market regime, the historical precedents for current conditions, and the range of plausible outcomes that those precedents imply. Institutional investors have access to this information as a matter of course. Phoenix Systems created FAULTLINE to give individual investors access to the same quality of situational awareness.",
             },
           ] as Array<{ q: string; a: string }>).map((item, i) => (
             <div
@@ -872,22 +1308,34 @@ export default function Press() {
                   fontSize: "13px",
                   color: "#94A3B8",
                   lineHeight: 1.7,
-                  margin: "0 0 10px",
+                  margin: "0 0 12px",
                 }}
               >
-                FAULTLINE uses artificial intelligence and machine learning models to classify market regimes, generate signal labels, produce diagnostic summaries, and power the Ask Intelligence feature. AI-generated content is clearly labelled within the platform and is intended to augment — not replace — human analysis and judgment.
+                Phoenix Systems uses artificial intelligence as a foundational component of the FAULTLINE platform. The following disclosure explains how AI is used and what it is not designed to do.
               </p>
-              <p
+              <ul
                 style={{
                   fontFamily: "'IBM Plex Sans', sans-serif",
                   fontSize: "13px",
                   color: "#94A3B8",
-                  lineHeight: 1.7,
-                  margin: "0 0 10px",
+                  lineHeight: 1.8,
+                  margin: "0 0 12px",
+                  paddingLeft: "20px",
                 }}
               >
-                AI outputs are probabilistic and may contain errors. FAULTLINE does not represent AI-generated analysis as investment advice. The platform’s AI systems are reviewed periodically for accuracy and bias. Users are encouraged to verify AI-generated content against primary sources before making financial decisions.
-              </p>
+                <li style={{ marginBottom: "8px" }}>
+                  <strong style={{ color: "#CBD5E1" }}>AI assists in software development.</strong> AI-assisted development tools are used to accelerate the engineering process, improve code quality, and identify potential issues before they reach production.
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  <strong style={{ color: "#CBD5E1" }}>AI assists in data synthesis and intelligence generation.</strong> FAULTLINE uses AI models to synthesise large volumes of heterogeneous data, classify market regimes, identify historical analogs, generate signal labels and diagnostic summaries, and power the Ask Intelligence feature. AI models are used to synthesise and contextualise data — not to generate predictions, recommendations, or investment advice.
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  <strong style={{ color: "#CBD5E1" }}>Final outputs are designed to support informed decision-making.</strong> All AI-generated content is clearly labelled within the platform. AI outputs are probabilistic and reflect historical patterns and current conditions. They are intended to augment human judgment, not replace it. Users are encouraged to verify AI-generated content against primary sources before making financial decisions.
+                </li>
+                <li>
+                  <strong style={{ color: "#CBD5E1" }}>FAULTLINE does not guarantee predictions, investment returns, or financial outcomes.</strong> AI-generated analysis is not investment advice. Past performance of any indicator or signal does not guarantee future results. The platform's AI systems are reviewed periodically for accuracy, consistency, and potential bias.
+                </li>
+              </ul>
               <p
                 style={{
                   fontFamily: "'IBM Plex Sans', sans-serif",
