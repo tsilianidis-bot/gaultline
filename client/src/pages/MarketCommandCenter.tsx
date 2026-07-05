@@ -382,7 +382,7 @@ export default function MarketCommandCenter() {
       value: overall.score > 7 ? "RISK-OFF" : overall.score > 5 ? "CAUTIOUS" : overall.score > 3 ? "NEUTRAL" : "RISK-ON",
       color: overall.score > 7 ? "#FF2D55" : overall.score > 5 ? "#FF9500" : overall.score > 3 ? "#00D4FF" : "#00FF88",
       sub: `Bull ${probability.bullProbability}% · Bear ${probability.crashProbability}%`,
-      href: "/app/diagnostic",
+      href: "/app/market-intelligence",
     },
   ], [overall, riskLevel, verdict, verdictColor, aiDomain, cryptoDomain, creditDomain, liquidityDomain, probability]);
 
@@ -644,7 +644,7 @@ export default function MarketCommandCenter() {
             { label: "Analyze a Symbol", icon: Eye, href: "/app/symbol-intelligence", color: "#C084FC" },
             { label: "Check Portfolio", icon: BarChart2, href: "/app/portfolio", color: "#F7931A" },
             { label: "Market Stress Test", icon: Activity, href: "/app/pressure", color: "#FF9500" },
-            { label: "AI Diagnostic", icon: Cpu, href: "/app/diagnostic", color: "#00D4FF" },
+            { label: "Market Intelligence", icon: BarChart2, href: "/app/market-intelligence", color: "#00D4FF" },
             { label: "Signal Outlook", icon: Eye, href: "/app/signal-outlook", color: "#00FF88" },
           ].map(action => {
             const Icon = action.icon;

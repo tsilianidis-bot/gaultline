@@ -125,6 +125,7 @@ const MarketCommandCenter = lazy(() => import("./pages/MarketCommandCenter"));
 const TodaysStory = lazy(() => import("./pages/TodaysStory"));
 const SmartDiscovery = lazy(() => import("./pages/SmartDiscovery"));
 const DecisionLedger = lazy(() => import("./pages/DecisionLedger"));
+const EngineeringDiagnostics = lazy(() => import("./pages/admin/EngineeringDiagnostics"));
 const MarketIntelligence = lazy(() => import("./pages/MarketIntelligence"));
 const CryptoRegimeDashboard = lazy(() => import("./pages/CryptoRegimeDashboard"));
 
@@ -459,6 +460,7 @@ function Router() {
               <Route path="/app/crypto-signals"><Redirect to="/app/crypto" /></Route>
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
+              <Route path="/app/admin/engineering" component={EngineeringDiagnostics} />
               <Route path="/app/admin/blog" component={AdminBlog} />
               <Route path="/app/admin/publishing" component={AdminPublishing} />
               <Route path="/app/admin/chat-inbox">

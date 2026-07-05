@@ -2822,31 +2822,7 @@ export default function SmartDiscovery() {
               </div>
             )}
 
-            {/* Decision Ledger shortcut */}
-            {user && (
-              <button
-                onClick={() => navigate("/app/decision-ledger")}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 16px",
-                  background: "rgba(255,255,255,0.02)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                  ...MONO_SM,
-                  color: "rgba(255,255,255,0.3)",
-                  fontSize: "10px",
-                  letterSpacing: "0.1em",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(0,212,255,0.2)"; e.currentTarget.style.color = ACCENT; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)"; e.currentTarget.style.color = "rgba(255,255,255,0.3)"; }}
-              >
-                <BookOpen size={10} />
-                DECISION LEDGER
-              </button>
-            )}
+
           </div>
         )}
 
@@ -3037,20 +3013,7 @@ export default function SmartDiscovery() {
               >
                 Clear
               </button>
-              <button
-                onClick={() => navigate("/app/decision-ledger")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  ...MONO_SM,
-                  color: "rgba(0,212,255,0.4)",
-                  fontSize: "10px",
-                  padding: 0,
-                }}
-              >
-                Ledger
-              </button>
+
             </div>
           )}
         </div>

@@ -6,13 +6,12 @@
    ============================================================ */
 import { useLocation } from "wouter";
 import { useTickerStore } from "@/contexts/TickerStore";
-import { Eye, Target, Cpu, Shield, X, ChevronRight, Crosshair } from "lucide-react";
+import { Eye, Target, Shield, X, ChevronRight, Crosshair } from "lucide-react";
 
 const ANALYSIS_LINKS = [
   { label: "SIGNAL OUTLOOK",  icon: Eye,       path: (t: string, type: string) => `/app/signal-outlook?symbol=${t}&type=${type}` },
   { label: "DECISION ENGINE", icon: Crosshair,  path: (t: string, type: string) => `/app/decision-engine?symbol=${t}&type=${type}` },
-  { label: "AI DIAGNOSTIC",   icon: Cpu,        path: (t: string, type: string) => `/app/diagnostic?symbol=${t}&type=${type}` },
-  { label: "SITUATION ROOM",  icon: Target,     path: (t: string, type: string) => `/app/situation-room?symbol=${t}&type=${type}` },
+  { label: "SYMBOL INTEL",    icon: Target,     path: (t: string, type: string) => `/app/symbol-intelligence?symbol=${t}&type=${type}` },
   { label: "PRE-FLIGHT",      icon: Shield,     path: (t: string, _type: string) => `/app/pre-flight?symbol=${t}` },
 ];
 

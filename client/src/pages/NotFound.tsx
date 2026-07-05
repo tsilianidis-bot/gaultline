@@ -51,7 +51,7 @@ export default function NotFound() {
               { label: "Market Analogs", href: "/analogs" },
               { label: "AI Bubble Tracker", href: "/ai-bubble-risk-tracker" },
               { label: "Blog", href: "/blog" },
-              { label: "Track Record", href: "/track-record" },
+
             ].map((link) => (
               <a
                 key={link.href}

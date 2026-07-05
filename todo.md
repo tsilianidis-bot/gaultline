@@ -3445,3 +3445,34 @@
 - [x] Write Vitest tests for new helpers (mock updated with dollarPressure, yieldPressure, stablecoinSignal, btcDominanceSignal)
 - [x] TypeScript: 0 errors
 - [x] Save checkpoint
+
+## Engineering Diagnostics Refactor — Customer UI Cleanup (July 5, 2026)
+
+### Phase 1: Nav Cleanup (AppLayout)
+- [x] Remove from MONITOR group: Decision Ledger, Track Record, Validation Lab, Intelligence Validation, FMOS Health
+- [x] Remove from SITUATION group: AI Diagnostic (/app/diagnostic)
+- [x] Keep in customer nav: Alerts, Watchlist, Portfolio, Trade Journal, Guide, Account
+- [x] Add Engineering Diagnostics entry to ADMIN_NAV_ITEMS (admin-only, /app/admin/engineering)
+
+### Phase 2: Engineering Diagnostics Hub
+- [x] Create client/src/pages/admin/EngineeringDiagnostics.tsx — hub page with links to all internal tools
+- [x] Protect route /app/admin/engineering with adminProcedure-style frontend role check (redirect non-admins)
+- [x] Register route in App.tsx (admin-only guard)
+
+### Phase 3: Customer-Facing Page Cleanup
+- [x] CommandSearch.tsx: remove /app/diagnostic and /app/sim-portfolio entries
+- [x] UniversalTickerBar.tsx: remove "AI DIAGNOSTIC" quick-action link
+- [x] MarketCommandCenter.tsx: replace /app/diagnostic href with /app/market-intelligence (INST. RISK METER card) and remove "AI Diagnostic" from quick-actions grid
+- [x] SmartDiscovery.tsx: remove "DECISION LEDGER" and "Ledger" shortcut buttons
+- [x] MarketPreflight.tsx: replace /simulate with /app/pressure and /diagnostic with /app/market-intelligence
+- [x] IntelligenceMode.tsx (dashboard): replace /app/aftershock with /app/market-intelligence and /app/track-record with /app/portfolio
+
+### Phase 4: RouteTracker cleanup
+- [ ] RouteTracker.tsx: keep internal routes in the title map (no functional change, just titles for analytics)
+
+### Phase 5: Verification
+- [x] TypeScript: 0 errors
+- [x] Full test suite: 1157/1179 passing (only pre-existing SendGrid 401, unrelated)
+- [x] Verify admin can still access /app/admin/engineering
+- [x] Verify non-admin cannot see engineering nav entry
+- [x] Save checkpoint

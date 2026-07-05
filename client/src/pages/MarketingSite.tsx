@@ -1016,7 +1016,7 @@ const MODULES = [
     title: "Aftershock Engine™",
     desc: "Contagion pathways mapped before they cascade. The Aftershock Engine identifies which markets fracture next when stress begins propagating — so you’re positioned before the second wave, not reacting to it.",
     tags: ["Contagion Mapping", "Cascade Detection", "Pre-Fracture"],
-    link: "/app/aftershock",
+    link: "/app/market-intelligence",
   },
   {
     badge: "ANALYST+",

@@ -50,7 +50,6 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",        icon: LayoutDashboard, path: "/app/dashboard" },
       { id: "todays-story",   label: "Today's Story",        shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
       { id: "pressure",       label: "Pressure Index",       shortLabel: "Pressure",    icon: Gauge,           path: "/app/pressure" },
-      { id: "diagnostic",     label: "AI Diagnostic",        shortLabel: "Diagnostic",  icon: Cpu,             path: "/app/diagnostic" },
       { id: "report",         label: "Daily Briefing",       shortLabel: "Briefing",    icon: FileText,        path: "/app/report" },
     ],
   },
@@ -88,11 +87,6 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "watchlist",        label: "Watchlist",            shortLabel: "Watch",       icon: Bell,            path: "/app/watchlist" },
       { id: "portfolio",        label: "Portfolio",            shortLabel: "Portfolio",   icon: Briefcase,       path: "/app/portfolio" },
       { id: "trade-journal",    label: "Trade Journal",        shortLabel: "Journal",     icon: BookOpen,        path: "/app/trade-journal" },
-      { id: "decision-ledger",  label: "Decision Ledger",      shortLabel: "Ledger",      icon: Bookmark,        path: "/app/decision-ledger" },
-      { id: "track-record",     label: "Track Record",         shortLabel: "Track Rec",   icon: Trophy,          path: "/app/track-record" },
-      { id: "validation-lab",   label: "Validation Lab",       shortLabel: "Val. Lab",    icon: FlaskConical,    path: "/app/validation-lab" },
-      { id: "intelligence-validation", label: "Intelligence Validation", shortLabel: "Intel Val.", icon: Brain, path: "/app/intelligence-validation" },
-      { id: "fmos-health",      label: "FMOS Health",          shortLabel: "FMOS",        icon: Shield,          path: "/app/fmos-health" },
       { id: "guide",            label: "Guide",                shortLabel: "Guide",       icon: BookOpen,        path: "/app/guide" },
       { id: "account",          label: "Account",              shortLabel: "Account",     icon: User,            path: "/app/account" },
     ],
@@ -111,6 +105,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: "seo-optimizer",    label: "SEO Optimizer",    shortLabel: "SEO",       icon: Search,    path: "/app/seo-optimizer" },
   { id: "analytics",        label: "Site Analytics",   shortLabel: "Analytics", icon: BarChart2, path: "/app/analytics" },
   { id: "chat-inbox",       label: "Chat Inbox",       shortLabel: "Chat",      icon: MessageCircle, path: "/app/admin/chat-inbox" },
+  { id: "engineering",      label: "Engineering Diagnostics", shortLabel: "Eng. Diag", icon: FlaskConical,  path: "/app/admin/engineering" },
 ];
 
 // Flat list for convenience

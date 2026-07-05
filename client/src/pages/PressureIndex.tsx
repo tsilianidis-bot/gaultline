@@ -535,9 +535,7 @@ export default function PressureIndex() {
           <Link href="/blog">
             <span className="hover:text-white/35 transition-colors cursor-pointer">BLOG</span>
           </Link>
-          <Link href="/track-record">
-            <span className="hover:text-white/35 transition-colors cursor-pointer">TRACK RECORD</span>
-          </Link>
+
           <Link href="/">
             <span className="hover:text-white/35 transition-colors cursor-pointer">HOME</span>
           </Link>

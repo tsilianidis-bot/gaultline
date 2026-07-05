@@ -148,11 +148,11 @@ function AftershockSnapshot() {
           </span>
         </div>
         <button
-          onClick={() => navigate("/app/aftershock")}
+          onClick={() => navigate("/app/market-intelligence")}
           className="flex items-center gap-1"
           style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00D4FF", letterSpacing: "0.1em" }}
         >
-          FULL ANALYSIS <ArrowRight size={10} />
+          MARKET INTEL <ArrowRight size={10} />
         </button>
       </div>
 
@@ -250,11 +250,11 @@ function TrackRecordSnippet() {
           </span>
         </div>
         <button
-          onClick={() => navigate("/app/track-record")}
+          onClick={() => navigate("/app/portfolio")}
           className="flex items-center gap-1"
           style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00FF88", letterSpacing: "0.1em" }}
         >
-          FULL RECORD <ArrowRight size={10} />
+          MY PORTFOLIO <ArrowRight size={10} />
         </button>
       </div>
 
