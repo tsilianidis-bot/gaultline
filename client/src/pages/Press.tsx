@@ -64,7 +64,7 @@ Primary metric: Pressure Index (0–100 composite score)
 Data sources: FRED (Federal Reserve), live market feeds, institutional flow data
 Key features: Pressure Index, Regime Detection, Signal Intelligence, Market Scenarios, Symbol Intelligence, Decision Engine
 Availability: Web (getfaultline.live) + Progressive Web App (iOS/Android)
-Pricing tiers: Observer (free), Trader, Institutional
+Pricing tiers: Observer (free), Trader ($9.99/mo), Power ($59/mo), Founding ($49/mo)
 Press contact: press@getfaultline.live`;
 
 const PRESS_RELEASE = `FOR IMMEDIATE RELEASE
@@ -145,7 +145,7 @@ CORE FEATURES
 AVAILABILITY
 Web: getfaultline.live
 PWA: Available on iOS and Android
-Tiers: Observer (free), Trader, Institutional
+Tiers: Observer (free), Trader ($9.99/mo), Power ($59/mo), Founding ($49/mo)
 
 DISCLAIMER
 FAULTLINE provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
@@ -534,7 +534,7 @@ export default function Press() {
             { label: "CATEGORY", value: "Macroeconomic Risk Intelligence" },
             { label: "WEBSITE", value: "getfaultline.live" },
             { label: "AVAILABILITY", value: "Web + PWA (iOS / Android)" },
-            { label: "TIERS", value: "Observer · Trader · Institutional" },
+            { label: "TIERS", value: "Observer · Trader · Power · Founding" },
           ].map((fact) => (
             <div
               key={fact.label}

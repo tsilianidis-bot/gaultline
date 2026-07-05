@@ -178,7 +178,7 @@ export default function MobileAccount() {
           {tier === "founding" && "Founding Member — Rate locked for life"}
           {tier === "premium"  && `FAULTLINE Power — ${PRICING_PLANS.premium.priceLabel}`}
           {tier === "core"     && `FAULTLINE Trader — ${PRICING_PLANS.core.priceLabel}`}
-          {tier === "free"     && "Free tier — limited access"}
+          {tier === "free"     && "Observer — Free access"}
         </div>
       </div>
 
@@ -314,7 +314,7 @@ export default function MobileAccount() {
 
       {/* ── Footer ────────────────────────────────────────── */}
       <div className="text-center pt-2 pb-4">
-        <div className="text-[9px] font-mono text-[#64748B] tracking-widest">FAULTLINE TRADER PWA</div>
+        <div className="text-[9px] font-mono text-[#64748B] tracking-widest">FAULTLINE PWA</div>
         <div className="text-[9px] font-mono text-[#3A4A5C] mt-0.5">
           Subscriptions managed via web checkout
         </div>
