@@ -805,8 +805,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
               background: 'rgba(10, 12, 16, 0.99)',
               borderTop: '1px solid rgba(0, 212, 255, 0.15)',
               borderRadius: '16px 16px 0 0',
-              padding: '16px 16px calc(env(safe-area-inset-bottom) + 80px)',
+              padding: '12px 12px 0',
               animation: 'drawer-up 0.25s cubic-bezier(0.23, 1, 0.32, 1)',
+              maxHeight: '80vh',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             {/* Drawer handle */}
@@ -823,6 +826,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
 
             {/* Groups in drawer */}
+            <div style={{ overflowY: 'auto', flex: 1, paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)', paddingRight: 4 }}>
             {[...NAV_GROUPS, ...(isAdmin ? [{ label: "OWNER PORTAL", items: ADMIN_NAV_ITEMS }] : [])].map(group => {
               const isOwnerPortalGroup = group.label === 'OWNER PORTAL';
               return (
@@ -836,7 +840,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 }}>
                   {group.label}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                   {group.items.filter(tab => !(tab.id === 'sim-portfolio' && !isAdmin)).map(tab => {
                     const Icon = tab.icon;
                     const active = isActive(tab.path);
@@ -847,7 +851,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         onClick={() => handleNavigate(tab.path)}
                         style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                          gap: 6, padding: '12px 8px',
+                          gap: 4, padding: '8px 4px',
                           borderRadius: 8,
                           background: active
                             ? (isTR ? 'rgba(34,197,94,0.12)' : 'rgba(0, 212, 255, 0.1)')
@@ -861,9 +865,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
                           boxShadow: isTR ? '0 0 12px rgba(34,197,94,0.12)' : 'none',
                         }}
                       >
-                        <Icon size={20} />
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', letterSpacing: '0.06em', textTransform: 'uppercase', textAlign: 'center' }}>
-                          {tab.shortLabel}
+                        <Icon size={18} />
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.04em', textTransform: 'uppercase', textAlign: 'center', lineHeight: 1.2, wordBreak: 'break-word' }}>
+                          {tab.label}
                         </span>
                         {isTR && (
                           <span style={{
@@ -889,6 +893,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </div>
               );
             })}
+            </div>
           </div>
         </>
       )}
