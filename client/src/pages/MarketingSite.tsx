@@ -742,6 +742,101 @@ function WhyFaultlineExistsSection() {
   );
 }
 
+// ── Risk-First Philosophy ────────────────────────────────────
+function RiskFirstPhilosophySection() {
+  return (
+    <section style={{
+      background: '#050608',
+      borderTop: '1px solid rgba(255,255,255,0.05)',
+      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      padding: '96px 0',
+    }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 32px' }}>
+        {/* Label */}
+        <div style={{
+          display: 'inline-block',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '10px',
+          letterSpacing: '0.28em',
+          color: 'rgba(0,212,255,0.55)',
+          border: '1px solid rgba(0,212,255,0.18)',
+          padding: '6px 14px',
+          borderRadius: '999px',
+          marginBottom: '40px',
+          textTransform: 'uppercase',
+        }}>The FAULTLINE Approach</div>
+
+        {/* Heading */}
+        <h2 style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: 'clamp(1.6rem, 3vw, 2.25rem)',
+          fontWeight: 700,
+          color: '#F0F4FF',
+          lineHeight: 1.25,
+          marginBottom: '48px',
+          letterSpacing: '-0.01em',
+        }}>
+          Risk-first intelligence.
+          <br />
+          <span style={{ color: '#00D4FF' }}>Before the market reprices it.</span>
+        </h2>
+
+        {/* Three paragraphs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          <p style={{
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: '1.05rem',
+            color: '#94A3B8',
+            lineHeight: 1.8,
+            margin: 0,
+          }}>
+            FAULTLINE takes a different approach to market intelligence. Rather than focusing primarily on finding the next winning trade, it starts with understanding systemic risk.
+          </p>
+          <p style={{
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: '1.05rem',
+            color: '#94A3B8',
+            lineHeight: 1.8,
+            margin: 0,
+          }}>
+            By continuously monitoring the economic, financial, and market fault lines where stress builds beneath the surface, FAULTLINE aims to detect regime shifts before they become obvious.
+          </p>
+          <p style={{
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: '1.05rem',
+            color: '#CBD5E1',
+            lineHeight: 1.8,
+            margin: 0,
+            fontWeight: 500,
+          }}>
+            The philosophy is simple: informed investors make better decisions when they understand the risks before the market reprices them.
+          </p>
+        </div>
+
+        {/* Subtle divider rule */}
+        <div style={{
+          marginTop: '56px',
+          height: '1px',
+          background: 'linear-gradient(90deg, rgba(0,212,255,0.18) 0%, rgba(0,212,255,0.04) 60%, transparent 100%)',
+        }} />
+
+        {/* Disclaimer */}
+        <p style={{
+          marginTop: '24px',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: '11px',
+          color: 'rgba(148,163,184,0.45)',
+          lineHeight: 1.6,
+          letterSpacing: '0.02em',
+          margin: '24px 0 0 0',
+        }}>
+          FAULTLINE provides market intelligence and educational analysis. Nothing on this platform constitutes personalized investment advice, a recommendation to buy or sell any security, or a guarantee of future results.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 // ── Visual Showcase ──────────────────────────────────────────
 function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   return (
@@ -2779,6 +2874,7 @@ export default function MarketingSite() {
       <Nav onRequestAccess={scrollToForm} />
       <Hero onRequestAccess={scrollToForm} onTryDemo={() => setDemoModalOpen(true)} />
       <WhyFaultlineExistsSection />
+      <RiskFirstPhilosophySection />
       <ProofSection />
       <AboutSection />
       <VisualShowcaseSection onRequestAccess={scrollToForm} />
