@@ -43,10 +43,15 @@ export function registerOAuthRoutes(app: Express) {
 
       // Send welcome email on first login (best-effort, non-blocking)
       if (isNewUser && userInfo.email) {
+        const newUserRow = await db.getUserByOpenId(userInfo.openId);
         sendEmail(buildWelcomeEmail({
           name: userInfo.name || "",
           email: userInfo.email,
-        })).catch((err) => {
+        })).then(() => {
+          if (newUserRow) {
+            db.recordOnboardingEmailSent(newUserRow.id, 0).catch(() => {});
+          }
+        }).catch((err) => {
           console.warn('[OAuth] Welcome email failed (non-fatal):', err);
         });
       }

@@ -1452,3 +1452,22 @@ export const regimeAlerts = mysqlTable("regimeAlerts", {
 }));
 export type RegimeAlert = typeof regimeAlerts.$inferSelect;
 export type InsertRegimeAlert = typeof regimeAlerts.$inferInsert;
+
+// ── Onboarding Email Sequence ──────────────────────────────────────────────────
+/**
+ * Tracks which drip emails have been sent to each user.
+ * step: 0 = welcome (sent immediately on signup)
+ *       1 = day-1 pressure index explainer (sent ~24h after signup)
+ *       2 = day-2 upgrade pitch (sent ~48h after signup)
+ */
+export const onboardingEmailSequence = mysqlTable("onboardingEmailSequence", {
+  id:        int("id").autoincrement().primaryKey(),
+  userId:    int("userId").notNull(),
+  step:      int("step").notNull(),            // 0, 1, or 2
+  sentAt:    bigint("sentAt", { mode: "number" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  userStepIdx: index("oes_user_step_idx").on(t.userId, t.step),
+}));
+export type OnboardingEmailSequence = typeof onboardingEmailSequence.$inferSelect;
+export type InsertOnboardingEmailSequence = typeof onboardingEmailSequence.$inferInsert;

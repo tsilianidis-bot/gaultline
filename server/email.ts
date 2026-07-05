@@ -370,3 +370,155 @@ ${requestId ? `<div class="field-row"><div class="field-label">Request ID</div><
     html,
   };
 }
+
+// ── Day 1 Drip: Pressure Index Explainer (sent ~24h after signup) ──────────────
+export function buildDay1PressureEmail(opts: {
+  name: string;
+  email: string;
+  siteUrl?: string;
+}): EmailPayload {
+  const { name, email, siteUrl = "https://getfaultline.live" } = opts;
+  const displayName = name?.trim() || "there";
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><style>
+body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
+.container{max-width:560px;margin:0 auto;padding:40px 24px;}
+.logo{font-family:'Rajdhani',Arial,sans-serif;font-size:28px;font-weight:700;letter-spacing:.12em;color:#00D4FF;margin-bottom:32px;}
+.logo span{color:#E2E8F0;}
+.card{background:#0A1520;border:1px solid rgba(0,212,255,.15);border-radius:12px;padding:32px;margin-bottom:16px;}
+.badge{display:inline-block;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:4px 12px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.14em;color:#00D4FF;text-transform:uppercase;margin-bottom:20px;}
+h1{font-size:22px;font-weight:700;color:#E2E8F0;margin:0 0 12px;line-height:1.3;}
+h2{font-size:15px;font-weight:700;color:#00D4FF;margin:24px 0 8px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;}
+p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
+.vrow{display:flex;gap:14px;margin-bottom:10px;align-items:flex-start;padding:10px;background:rgba(0,212,255,.03);border:1px solid rgba(0,212,255,.08);border-radius:8px;}
+.vnum{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;color:#00D4FF;min-width:22px;line-height:1.2;}
+.vtitle{font-size:13px;font-weight:700;color:#E2E8F0;margin-bottom:2px;}
+.vdesc{font-size:12px;color:#64748B;line-height:1.5;}
+.gauge{height:8px;border-radius:4px;background:linear-gradient(90deg,#00D4FF 0%,#FFA500 50%,#FF4444 100%);margin:16px 0 6px;}
+.glabel{display:flex;justify-content:space-between;font-size:10px;font-family:'IBM Plex Mono',monospace;color:#475569;letter-spacing:.1em;}
+.cta{display:inline-block;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.4);border-radius:8px;padding:14px 28px;font-size:13px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;color:#00D4FF;text-decoration:none;text-transform:uppercase;font-weight:700;margin-top:8px;}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:24px 0;}
+.footer{font-size:11px;color:rgba(100,116,139,.5);font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+.hl{color:#00D4FF;font-weight:700;}
+</style></head><body>
+<div class="container">
+<div class="logo">FAULT<span>LINE</span></div>
+<div class="card">
+<div class="badge">&#x2B21; Day 1 &mdash; Intelligence Brief</div>
+<h1>The one number that tells you everything.</h1>
+<p>Hey ${displayName} &mdash; welcome back. Yesterday you got access. Today, let's make sure you know how to use the most important tool in FAULTLINE.</p>
+<p>It's called the <span class="hl">Pressure Index</span>. Here's what it is and why it matters.</p>
+<h2>What is the Pressure Index?</h2>
+<p>Most market tools show you price. FAULTLINE shows you <em>pressure</em> &mdash; the systemic forces building beneath the surface before they become price moves.</p>
+<p>The Pressure Index is a composite score from <span class="hl">0 to 100</span> that aggregates 8 independent risk vectors in real time. Think of it as a seismograph for the financial system.</p>
+<div class="gauge"></div>
+<div class="glabel"><span>0 &mdash; CALM</span><span>50 &mdash; BUILDING</span><span>100 &mdash; CRITICAL</span></div>
+<h2>The 8 Vectors</h2>
+<div class="vrow"><div class="vnum">1</div><div><div class="vtitle">Credit Stress</div><div class="vdesc">Corporate bond spreads, HY/IG ratio, credit default swap activity.</div></div></div>
+<div class="vrow"><div class="vnum">2</div><div><div class="vtitle">Liquidity Pressure</div><div class="vdesc">Fed balance sheet, bank reserves, repo market stress.</div></div></div>
+<div class="vrow"><div class="vnum">3</div><div><div class="vtitle">Volatility Regime</div><div class="vdesc">VIX level and trend, vol-of-vol, term structure.</div></div></div>
+<div class="vrow"><div class="vnum">4</div><div><div class="vtitle">Dollar Pressure</div><div class="vdesc">DXY trend, EM currency stress, dollar funding.</div></div></div>
+<div class="vrow"><div class="vnum">5</div><div><div class="vtitle">Yield Curve Stress</div><div class="vdesc">2s10s spread, inversion depth, real yield level.</div></div></div>
+<div class="vrow"><div class="vnum">6</div><div><div class="vtitle">Equity Breadth</div><div class="vdesc">% of stocks above 200-day MA, advance/decline, new highs vs lows.</div></div></div>
+<div class="vrow"><div class="vnum">7</div><div><div class="vtitle">Macro Momentum</div><div class="vdesc">ISM, PMI, jobs data, consumer confidence.</div></div></div>
+<div class="vrow"><div class="vnum">8</div><div><div class="vtitle">Systemic Risk</div><div class="vdesc">Bank CDS, financial sector stress, cross-asset correlation spikes.</div></div></div>
+<h2>How to read it</h2>
+<p><span class="hl">0&ndash;30:</span> Low pressure. Risk assets can trend. Momentum strategies work.<br/>
+<span class="hl">30&ndash;55:</span> Building pressure. Watch for regime shifts. Reduce leverage.<br/>
+<span class="hl">55&ndash;75:</span> Elevated. Defensive positioning. Hedge exposure.<br/>
+<span class="hl">75&ndash;100:</span> Critical. Capital preservation mode. Cash is a position.</p>
+<p>Open the Pressure Index now and check today's reading.</p>
+<a href="${siteUrl}/app/pressure" class="cta">View Today's Pressure Index &#x2192;</a>
+</div>
+<div class="card" style="background:rgba(0,0,0,.2);">
+<p style="margin:0;font-size:13px;color:#64748B;">Tomorrow: why the Trader tier unlocks the signals that matter most &mdash; and what you're missing as an Observer.</p>
+</div>
+<hr class="divider"/>
+<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${siteUrl}/app/account" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a></div>
+</div></body></html>`;
+  return { to: email, subject: `FAULTLINE: The one number that tells you everything`, html };
+}
+
+// ── Day 2 Drip: Trader Tier Value Proposition (sent ~48h after signup) ─────────
+export function buildDay2UpgradeEmail(opts: {
+  name: string;
+  email: string;
+  siteUrl?: string;
+}): EmailPayload {
+  const { name, email, siteUrl = "https://getfaultline.live" } = opts;
+  const displayName = name?.trim() || "there";
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><style>
+body{margin:0;padding:0;background:#050A0F;font-family:'IBM Plex Sans',Arial,sans-serif;color:#CBD5E1;}
+.container{max-width:560px;margin:0 auto;padding:40px 24px;}
+.logo{font-family:'Rajdhani',Arial,sans-serif;font-size:28px;font-weight:700;letter-spacing:.12em;color:#00D4FF;margin-bottom:32px;}
+.logo span{color:#E2E8F0;}
+.card{background:#0A1520;border:1px solid rgba(0,212,255,.15);border-radius:12px;padding:32px;margin-bottom:16px;}
+.badge{display:inline-block;background:rgba(255,165,0,.1);border:1px solid rgba(255,165,0,.4);border-radius:6px;padding:4px 12px;font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.14em;color:#FFA500;text-transform:uppercase;margin-bottom:20px;}
+h1{font-size:22px;font-weight:700;color:#E2E8F0;margin:0 0 12px;line-height:1.3;}
+h2{font-size:15px;font-weight:700;color:#FFA500;margin:24px 0 8px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;}
+p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
+.urow{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start;padding:10px;background:rgba(255,165,0,.04);border:1px solid rgba(255,165,0,.1);border-radius:8px;}
+.uicon{font-size:16px;min-width:22px;}
+.utitle{font-size:13px;font-weight:700;color:#FFA500;margin-bottom:2px;}
+.udesc{font-size:12px;color:#64748B;line-height:1.5;}
+table{width:100%;border-collapse:collapse;margin:16px 0;}
+th{font-size:11px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08);}
+th.obs{color:#475569;}th.trd{color:#FFA500;}
+td{font-size:13px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04);color:#94A3B8;vertical-align:top;}
+td.feat{color:#E2E8F0;font-weight:600;}
+td.no{color:#374151;font-family:'IBM Plex Mono',monospace;}
+td.yes{color:#FFA500;font-family:'IBM Plex Mono',monospace;}
+.price{text-align:center;padding:20px;background:rgba(255,165,0,.04);border:1px solid rgba(255,165,0,.15);border-radius:10px;margin:20px 0;}
+.pamount{font-size:36px;font-weight:700;color:#FFA500;font-family:'IBM Plex Mono',monospace;line-height:1;}
+.pperiod{font-size:13px;color:#64748B;margin-top:4px;}
+.pnote{font-size:11px;color:#475569;margin-top:8px;}
+.cta1{display:inline-block;background:linear-gradient(135deg,rgba(255,165,0,.2),rgba(255,165,0,.08));border:1px solid rgba(255,165,0,.6);border-radius:8px;padding:14px 28px;font-size:13px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;color:#FFA500;text-decoration:none;text-transform:uppercase;font-weight:700;margin-top:8px;}
+.cta2{display:inline-block;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:10px 20px;font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;color:#00D4FF;text-decoration:none;text-transform:uppercase;font-weight:600;margin-top:8px;margin-left:12px;}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:24px 0;}
+.footer{font-size:11px;color:rgba(100,116,139,.5);font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+</style></head><body>
+<div class="container">
+<div class="logo">FAULT<span>LINE</span></div>
+<div class="card">
+<div class="badge">&#x25B2; Day 2 &mdash; Upgrade Brief</div>
+<h1>You're using 20% of FAULTLINE.</h1>
+<p>Hey ${displayName} &mdash; you've had two days with the Observer tier. You can see the Pressure Index, the market regime, and the daily briefing.</p>
+<p>Here's what you can't see yet &mdash; and why it matters for every trade you make.</p>
+<h2>What the Trader tier unlocks</h2>
+<div class="urow"><div class="uicon">&#x2B21;</div><div><div class="utitle">Opportunity Radar</div><div class="udesc">AI-ranked opportunities across equities, crypto, and macro &mdash; scored by regime fit, momentum, and risk/reward.</div></div></div>
+<div class="urow"><div class="uicon">&#x2B21;</div><div><div class="utitle">Signal Outlook Center</div><div class="udesc">Forward-looking signal analysis: what the current regime historically produces over the next 5, 10, and 30 days.</div></div></div>
+<div class="urow"><div class="uicon">&#x2B21;</div><div><div class="utitle">Social Intelligence</div><div class="udesc">Institutional sentiment from options flow, dark pool prints, and social signal aggregation.</div></div></div>
+<div class="urow"><div class="uicon">&#x2B21;</div><div><div class="utitle">Insider Intelligence</div><div class="udesc">SEC Form 4 insider transactions, cluster buying signals, and executive conviction scoring.</div></div></div>
+<div class="urow"><div class="uicon">&#x2B21;</div><div><div class="utitle">Unlimited Watchlist</div><div class="udesc">Observer tier is capped at 3 symbols. Trader gives you unlimited watchlist tracking with regime-aware alerts.</div></div></div>
+<div class="urow"><div class="uicon">&#x2B21;</div><div><div class="utitle">Trade Journal</div><div class="udesc">Log trades, track P&amp;L, and get AI-powered post-trade analysis &mdash; what the regime said vs what happened.</div></div></div>
+<h2>Observer vs Trader</h2>
+<table>
+<tr><th></th><th class="obs">Observer</th><th class="trd">Trader</th></tr>
+<tr><td class="feat">Pressure Index</td><td class="yes">&#x2714;</td><td class="yes">&#x2714;</td></tr>
+<tr><td class="feat">Market Regime</td><td class="yes">&#x2714;</td><td class="yes">&#x2714;</td></tr>
+<tr><td class="feat">Daily Briefing</td><td class="yes">&#x2714;</td><td class="yes">&#x2714;</td></tr>
+<tr><td class="feat">Opportunity Radar</td><td class="no">&mdash;</td><td class="yes">&#x2714;</td></tr>
+<tr><td class="feat">Signal Outlook</td><td class="no">&mdash;</td><td class="yes">&#x2714;</td></tr>
+<tr><td class="feat">Social Intelligence</td><td class="no">&mdash;</td><td class="yes">&#x2714;</td></tr>
+<tr><td class="feat">Insider Intelligence</td><td class="no">&mdash;</td><td class="yes">&#x2714;</td></tr>
+<tr><td class="feat">Trade Journal</td><td class="no">&mdash;</td><td class="yes">&#x2714;</td></tr>
+<tr><td class="feat">Watchlist symbols</td><td class="no">3</td><td class="yes">Unlimited</td></tr>
+<tr><td class="feat">Ask FAULTLINE (daily)</td><td class="no">10 questions</td><td class="yes">Unlimited</td></tr>
+</table>
+<div class="price">
+<div class="pamount">$29</div>
+<div class="pperiod">per month &mdash; cancel anytime</div>
+<div class="pnote">No contracts. No annual commitment required. Upgrade in 30 seconds.</div>
+</div>
+<a href="${siteUrl}/app/account" class="cta1">Upgrade to Trader &#x2192;</a>
+<a href="${siteUrl}/app/pressure" class="cta2">Stay on Free</a>
+</div>
+<div class="card" style="background:rgba(0,0,0,.2);">
+<p style="margin:0;font-size:13px;color:#64748B;"><span style="color:#FFA500;font-weight:700;">Not ready yet?</span> No pressure. The Observer tier stays free forever. When the market gets volatile and you need the full picture, you'll know where to find it.</p>
+</div>
+<hr class="divider"/>
+<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${siteUrl}/app/account" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a><br/><br/><span style="color:rgba(100,116,139,.4);">This is not financial advice. FAULTLINE provides market intelligence tools for informational purposes only.</span></div>
+</div></body></html>`;
+  return { to: email, subject: `You're using 20% of FAULTLINE`, html };
+}

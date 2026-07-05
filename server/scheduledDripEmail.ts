@@ -1,0 +1,60 @@
+import type { Request, Response } from "express";
+import { sdk } from "./_core/sdk";
+import { getUsersPendingDripStep, recordOnboardingEmailSent } from "./db";
+import { sendEmail, buildDay1PressureEmail, buildDay2UpgradeEmail } from "./email";
+
+/**
+ * POST /api/scheduled/drip-email
+ *
+ * Heartbeat handler — runs every hour.
+ * Sends Day 1 (Pressure Index explainer) and Day 2 (Trader upgrade) drip emails
+ * to users who signed up 24h / 48h ago and haven't yet received those steps.
+ */
+export async function handleDripEmail(req: Request, res: Response): Promise<void> {
+  try {
+    const user = await sdk.authenticateRequest(req);
+    if (!user.isCron) {
+      res.status(403).json({ error: "cron-only" });
+      return;
+    }
+
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    let sent1 = 0;
+    let sent2 = 0;
+
+    // ── Step 1: Day 1 email (24h after signup) ────────────────────────────────
+    const step1Users = await getUsersPendingDripStep(1, DAY_MS);
+    for (const u of step1Users) {
+      if (!u.email) continue;
+      try {
+        await sendEmail(buildDay1PressureEmail({ name: u.name || "", email: u.email }));
+        await recordOnboardingEmailSent(u.id, 1);
+        sent1++;
+      } catch (err) {
+        console.warn(`[DripEmail] Step 1 failed for user ${u.id}:`, err);
+      }
+    }
+
+    // ── Step 2: Day 2 email (48h after signup) ────────────────────────────────
+    const step2Users = await getUsersPendingDripStep(2, 2 * DAY_MS);
+    for (const u of step2Users) {
+      if (!u.email) continue;
+      try {
+        await sendEmail(buildDay2UpgradeEmail({ name: u.name || "", email: u.email }));
+        await recordOnboardingEmailSent(u.id, 2);
+        sent2++;
+      } catch (err) {
+        console.warn(`[DripEmail] Step 2 failed for user ${u.id}:`, err);
+      }
+    }
+
+    res.json({ ok: true, sent1, sent2, timestamp: new Date().toISOString() });
+  } catch (err) {
+    console.error("[DripEmail] Handler error:", err);
+    res.status(500).json({
+      error: String(err),
+      context: { url: req.url },
+      timestamp: new Date().toISOString(),
+    });
+  }
+}

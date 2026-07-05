@@ -3521,3 +3521,18 @@
 - [ ] TypeScript: 0 errors
 - [ ] Full test suite: all passing
 - [ ] Save checkpoint
+
+## Email Onboarding Sequence
+
+- [x] Add `buildDay1PressureEmail` template to server/email.ts (Pressure Index explainer)
+- [x] Add `buildDay2UpgradeEmail` template to server/email.ts (paid tier value proposition)
+- [x] Add `onboardingEmailSequence` table to drizzle/schema.ts (userId, step, sentAt, scheduledFor)
+- [x] Generate and apply migration for onboardingEmailSequence table
+- [x] Add `recordOnboardingEmailSent`, `hasOnboardingEmailBeenSent`, `getUsersPendingDripStep` helpers to server/db.ts
+- [x] Add `/api/scheduled/drip-email` heartbeat handler to server/scheduledDripEmail.ts, mounted in index.ts
+- [x] Wire Day 1 email to send 24h after signup via heartbeat scheduler
+- [x] Wire Day 2 email to send 48h after signup via heartbeat scheduler
+- [x] Ensure welcome email fires on new user signup and records step 0 (oauth.ts updated)
+- [x] TypeScript: 0 errors
+- [x] Run full test suite (1157/1179 passing — only pre-existing SendGrid 401 failure)
+- [x] Save checkpoint

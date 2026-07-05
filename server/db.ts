@@ -1,6 +1,6 @@
-import { eq, and, desc, count, sql, like, or } from "drizzle-orm";
+import { eq, and, desc, count, sql, like, or, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog } from "../drizzle/schema";
+import { InsertUser, InsertPosition, users, positions, cryptoWatchlist, InsertCryptoWatchlistItem, foundingAccessRequests, InsertFoundingAccessRequest, blogPosts, InsertBlogPost, xPostQueue, pressureHistory, mobileWatchlist, pressureRuns, InsertPressureRun, featureFlags, simPortfolioAccounts, simPortfolioPositions, simPortfolioTrades, simPortfolioJournal, InsertSimPortfolioAccount, InsertSimPortfolioPosition, InsertSimPortfolioTrade, InsertSimPortfolioJournalEntry, sharedReports, InsertSharedReport, mobileUsage, dayTradeWatchlist, InsertDayTradeWatchlistItem, tradeJournal, InsertTradeJournalEntry, chatbotSessions, chatbotMessages, chatbotLeads, InsertChatbotSession, InsertChatbotMessage, InsertChatbotLead, ChatbotSession, dayTradeSnapshot, pipelineHealthLog, onboardingEmailSequence } from "../drizzle/schema";
 import { ENV } from './_core/env';
 import { log } from './logger';
 
@@ -1423,4 +1423,61 @@ export async function incrementAskUsage(userId: number): Promise<number> {
 export async function getAskUsageToday(userId: number): Promise<number> {
   const row = await getMobileUsageToday(userId);
   return row?.askQuestionsToday ?? 0;
+}
+
+// ── Onboarding Email Sequence helpers ─────────────────────────────────────────
+
+/** Record that a drip email step was sent to a user. */
+export async function recordOnboardingEmailSent(userId: number, step: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(onboardingEmailSequence).values({
+    userId,
+    step,
+    sentAt: Date.now(),
+  });
+}
+
+/** Check whether a specific drip step has already been sent to a user. */
+export async function hasOnboardingEmailBeenSent(userId: number, step: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db.select({ id: onboardingEmailSequence.id })
+    .from(onboardingEmailSequence)
+    .where(and(
+      eq(onboardingEmailSequence.userId, userId),
+      eq(onboardingEmailSequence.step, step),
+    ))
+    .limit(1);
+  return result.length > 0;
+}
+
+/**
+ * Return all users who signed up more than `minAgeMs` milliseconds ago
+ * and have NOT yet received drip step `step`.
+ * Used by the heartbeat drip scheduler.
+ */
+export async function getUsersPendingDripStep(step: number, minAgeMs: number): Promise<Array<{ id: number; name: string | null; email: string | null; createdAt: Date }>> {
+  const db = await getDb();
+  if (!db) return [];
+  const cutoff = new Date(Date.now() - minAgeMs);
+  // Get all users created before the cutoff
+  const allUsers = await db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    createdAt: users.createdAt,
+  })
+    .from(users)
+    .where(and(
+      sql`${users.createdAt} <= ${cutoff}`,
+      sql`${users.email} IS NOT NULL`,
+    ));
+  if (allUsers.length === 0) return [];
+  // Get user IDs that already received this step
+  const sentRows = await db.select({ userId: onboardingEmailSequence.userId })
+    .from(onboardingEmailSequence)
+    .where(eq(onboardingEmailSequence.step, step));
+  const sentSet = new Set(sentRows.map(r => r.userId));
+  return allUsers.filter(u => !sentSet.has(u.id));
 }
