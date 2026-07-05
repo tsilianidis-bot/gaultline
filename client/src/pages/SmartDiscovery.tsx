@@ -2228,34 +2228,34 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
         <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>Updated {freshness}</span>
       </div>
       <div style={{ padding: '12px 14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
-        {/* Regime */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>REGIME</span>
+        {/* Regime — clickable */}
+        <button onClick={() => onQuickAction(`What is the ${regime.label} regime and what does it mean for my portfolio?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>REGIME ↗</span>
           <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#F0F4FF', lineHeight: 1.3 }}>{regime.label}</span>
-        </div>
-        {/* Pressure Index */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>PRESSURE INDEX</span>
+        </button>
+        {/* Pressure Index — clickable */}
+        <button onClick={() => onQuickAction(`The Pressure Index is at ${pressureScore}/100. What does this mean and what should I do?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>PRESSURE INDEX ↗</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             <span style={{ ...MONO, fontSize: '13px', fontWeight: 700, color: pressureColor }}>{pressureScore}</span>
             <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.25)', fontSize: '9px' }}>/100</span>
           </div>
-        </div>
-        {/* Institutional Bias */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>INSTITUTIONAL BIAS</span>
+        </button>
+        {/* Institutional Bias — clickable */}
+        <button onClick={() => onQuickAction(`Institutional bias is ${bias}. Explain what this means and how I should position my portfolio.`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>INSTITUTIONAL BIAS ↗</span>
           <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: biasColor }}>{bias}</span>
-        </div>
-        {/* Market Health */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>MARKET HEALTH</span>
+        </button>
+        {/* Market Health — clickable */}
+        <button onClick={() => onQuickAction(`Market health is ${health.label}. What are the key drivers and what should I watch?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>MARKET HEALTH ↗</span>
           <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: health.color }}>{health.label}</span>
-        </div>
-        {/* Bull Probability */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>BULL PROBABILITY</span>
+        </button>
+        {/* Bull Probability — clickable */}
+        <button onClick={() => onQuickAction(`Bull probability is ${probability.bullProbability}%. What are the key factors driving this and what is the outlook?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>BULL PROBABILITY ↗</span>
           <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: probability.bullProbability > 55 ? '#00FF88' : probability.bullProbability > 40 ? '#FFD700' : '#FF4444' }}>{probability.bullProbability}%</span>
-        </div>
+        </button>
       </div>
     </div>
   );
@@ -2315,7 +2315,13 @@ function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => 
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {changes.map((c, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                key={i}
+                onClick={() => onQuickAction(`${c.label}${c.delta ? ' ' + c.delta : ''} — explain what this market change means and what I should do.`)}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '3px 4px', borderRadius: '4px', width: '100%', transition: 'background 0.15s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
                 <span style={{ color: c.direction === 'up' ? '#FF4444' : c.direction === 'down' ? '#00FF88' : '#FFD700', flexShrink: 0 }}>
                   {c.direction === 'up' ? <ArrowUp size={10} /> : c.direction === 'down' ? <ArrowDown size={10} /> : <Minus size={10} />}
                 </span>
@@ -2325,7 +2331,7 @@ function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => 
                 {c.significance === 'high' && (
                   <span style={{ ...MONO_SM, fontSize: '9px', color: '#FF9500', padding: '1px 4px', background: 'rgba(255,149,0,0.1)', borderRadius: '3px', flexShrink: 0 }}>HIGH</span>
                 )}
-              </div>
+              </button>
             ))}
           </div>
         )}
@@ -2506,6 +2512,14 @@ export default function SmartDiscovery() {
       // V3.0: Intercept Full Market Briefing requests
       const isBriefRequest = question.toLowerCase().includes('full market briefing') || question.toLowerCase() === 'daily brief' || question.toLowerCase() === 'market brief';
       if (isBriefRequest) {
+        // generateBrief is a protectedProcedure — require auth before calling
+        if (!user) {
+          stopExecutionSequence();
+          setError('Sign in to generate the Full Market Briefing.');
+          setConversation(prev => prev.slice(0, -1));
+          setIsExecuting(false);
+          return;
+        }
         const { overall, regime, domains, probability } = engineOutput;
         const pressureScore = Math.round(overall.score * 10);
         const liquidityDomain = domains.find(d => d.id === 'liquidity');

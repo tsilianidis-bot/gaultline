@@ -3536,3 +3536,12 @@
 - [x] TypeScript: 0 errors
 - [x] Run full test suite (1157/1179 passing — only pre-existing SendGrid 401 failure)
 - [x] Save checkpoint
+
+## Bug Fixes — July 5, 2026
+
+- [x] BUG 1: Fix inconsistent question tab/card click handlers on SmartDiscovery opening screen
+  - [x] Fix generateBriefMutation auth guard — add user check before calling protectedProcedure
+  - [x] Fix MarketSnapshot cards — add onClick handlers calling handleSubmit/handleQuickAction
+  - [x] Fix SinceLastVisit cards — confirm onClick handlers call handleSubmit/handleQuickAction
+  - [x] Add graceful error handling for all question tab failures
+  - [x] Confirm every tab produces visible response on first page load
