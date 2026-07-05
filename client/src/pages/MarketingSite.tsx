@@ -688,7 +688,8 @@ function WhyFaultlineExistsSection() {
                   </svg>
                 </div>
                 <div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#F0F4FF', letterSpacing: '0.08em' }}>Founder, FAULTLINE</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#F0F4FF', letterSpacing: '0.08em' }}>PHOENIX SYSTEMS</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#64748B', letterSpacing: '0.06em', marginTop: '2px' }}>Creator of FAULTLINE</div>
                 </div>
               </div>
             </div>
@@ -2584,7 +2585,7 @@ function Footer() {
 
         <div className="border-t border-[rgba(255,255,255,0.05)] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-[#4B5563] text-[10px] font-mono">
-            © 2026 FAULTLINE. All rights reserved.
+            © 2026 FAULTLINE · A <a href="/phoenix-systems" className="hover:text-[#00D4FF] transition-colors">Phoenix Systems</a> Platform
           </div>
           <div className="text-[#00D4FF]/40 text-[10px] font-mono tracking-widest">
             MOVE WITHIN THE FAULTLINES. BEFORE THE QUAKE.
@@ -2598,6 +2599,10 @@ function Footer() {
               <a href="/methodology" className="hover:text-[#00D4FF] transition-colors">Methodology</a>
               <span className="opacity-30">·</span>
               <a href="/contact" className="hover:text-[#00D4FF] transition-colors">Contact Us</a>
+              <span className="opacity-30">·</span>
+              <a href="/press" className="hover:text-[#00D4FF] transition-colors">Press</a>
+              <span className="opacity-30">·</span>
+              <a href="/phoenix-systems" className="hover:text-[#00D4FF] transition-colors">Phoenix Systems</a>
               <span className="opacity-30">·</span>
               <a href="mailto:jt@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">jt@getfaultline.live</a>
               <span className="opacity-30">·</span>

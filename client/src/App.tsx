@@ -127,6 +127,8 @@ const DecisionLedger = lazy(() => import("./pages/DecisionLedger"));
 const EngineeringDiagnostics = lazy(() => import("./pages/admin/EngineeringDiagnostics"));
 const MarketIntelligence = lazy(() => import("./pages/MarketIntelligence"));
 const CryptoRegimeDashboard = lazy(() => import("./pages/CryptoRegimeDashboard"));
+const PhoenixSystems = lazy(() => import("./pages/PhoenixSystems"));
+const Press = lazy(() => import("./pages/Press"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -316,6 +318,22 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <ContactUs />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Press page — standalone public page */}
+      <Route path="/press">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <Press />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Phoenix Systems company page — standalone public page */}
+      <Route path="/phoenix-systems">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <PhoenixSystems />
           </Suspense>
         </ErrorBoundary>
       </Route>
