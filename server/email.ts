@@ -522,3 +522,84 @@ td.yes{color:#FFA500;font-family:'IBM Plex Mono',monospace;}
 </div></body></html>`;
   return { to: email, subject: `You're using 20% of FAULTLINE`, html };
 }
+
+// ── Day 3 Drip: Founding Member Urgency (sent ~72h after signup) ─────────────
+export function buildDay3FoundingEmail(opts: {
+  name: string;
+  email: string;
+  siteUrl?: string;
+}): EmailPayload {
+  const { name, email, siteUrl = "https://getfaultline.live" } = opts;
+  const displayName = name ? name.split(" ")[0] : "Trader";
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<style>
+body{margin:0;padding:0;background:#050608;font-family:'IBM Plex Sans',Arial,sans-serif;color:#E2E8F0;}
+.container{max-width:600px;margin:0 auto;padding:32px 16px;}
+.logo{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;letter-spacing:.3em;color:#F0F4FF;margin-bottom:28px;}
+.logo span{color:#00D4FF;}
+.card{background:rgba(10,12,18,.98);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:28px 24px;margin-bottom:16px;}
+.badge{display:inline-block;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.25);border-radius:4px;padding:4px 10px;font-size:9px;font-family:'IBM Plex Mono',monospace;letter-spacing:.12em;color:#FFD700;text-transform:uppercase;margin-bottom:16px;}
+h1{font-size:22px;font-weight:700;color:#F0F4FF;margin:0 0 14px;line-height:1.3;}
+h2{font-size:14px;font-weight:700;color:#00D4FF;margin:20px 0 10px;letter-spacing:.08em;text-transform:uppercase;}
+p{font-size:14px;color:#94A3B8;line-height:1.65;margin:0 0 14px;}
+.scarcity{background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.15);border-radius:8px;padding:16px 18px;margin:20px 0;}
+.scarcity-label{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em;color:#FFD700;text-transform:uppercase;margin-bottom:6px;}
+.scarcity-count{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;color:#FFD700;line-height:1;}
+.scarcity-sub{font-size:12px;color:rgba(255,215,0,.5);margin-top:4px;}
+.compare{display:flex;gap:12px;margin:16px 0;}
+.cbox{flex:1;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:14px 16px;}
+.cbox.gold{background:rgba(255,215,0,.04);border-color:rgba(255,215,0,.2);}
+.ctier{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
+.cprice{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;line-height:1;}
+.csub{font-size:11px;color:#64748B;margin-top:4px;}
+.cfeature{font-size:12px;color:#94A3B8;margin-top:10px;line-height:1.6;}
+.cta1{display:inline-block;background:#FFD700;border-radius:8px;padding:14px 28px;font-size:13px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;color:#050608;text-decoration:none;text-transform:uppercase;font-weight:700;margin-top:20px;}
+.cta2{display:inline-block;background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:8px;padding:10px 20px;font-size:12px;font-family:'IBM Plex Mono',monospace;letter-spacing:.08em;color:#00D4FF;text-decoration:none;text-transform:uppercase;font-weight:600;margin-top:8px;margin-left:12px;}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:24px 0;}
+.footer{font-size:11px;color:rgba(100,116,139,.5);font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+</style></head><body>
+<div class="container">
+<div class="logo">FAULT<span>LINE</span></div>
+<div class="card">
+<div class="badge">&#x25C6; Day 3 &mdash; Founding Brief</div>
+<h1>47 founding spots. Then the rate goes up.</h1>
+<p>Hey ${displayName} &mdash; three days in. You've seen the Pressure Index, the regime engine, and the daily briefing.</p>
+<p>Here's the thing: the Founding Member rate locks your price forever. When we raise prices (and we will), you pay $49/mo regardless. That's the deal.</p>
+<div class="scarcity">
+<div class="scarcity-label">Founding spots remaining</div>
+<div class="scarcity-count">47</div>
+<div class="scarcity-sub">Rate locks at $49/mo forever &mdash; never increases</div>
+</div>
+<h2>Founding vs Trader vs Power</h2>
+<div class="compare">
+<div class="cbox">
+<div class="ctier" style="color:#94A3B8;">Trader</div>
+<div class="cprice" style="color:#22D3EE;">$9.99</div>
+<div class="csub">/month</div>
+<div class="cfeature">Core signals &amp; watchlist. Good entry point.</div>
+</div>
+<div class="cbox">
+<div class="ctier" style="color:#00D4FF;">Power</div>
+<div class="cprice" style="color:#00D4FF;">$59</div>
+<div class="csub">/month</div>
+<div class="cfeature">Full platform. Every engine unlocked.</div>
+</div>
+<div class="cbox gold">
+<div class="ctier" style="color:#FFD700;">Founding</div>
+<div class="cprice" style="color:#FFD700;">$49</div>
+<div class="csub">/month &mdash; locked forever</div>
+<div class="cfeature">Everything in Power. Rate never increases. Limited spots.</div>
+</div>
+</div>
+<p>The Founding rate is $10/mo cheaper than Power &mdash; and it never changes. If you're going to use FAULTLINE long-term, this is the only time you can lock in at this price.</p>
+<a href="${siteUrl}/#access" class="cta1">Lock In Founding &mdash; $49/mo &#x2192;</a>
+<a href="${siteUrl}/app/pressure" class="cta2">Stay on Observer</a>
+</div>
+<div class="card" style="background:rgba(0,0,0,.2);">
+<p style="margin:0;font-size:13px;color:#64748B;"><span style="color:#FFA500;font-weight:700;">No pressure.</span> The Observer tier is free forever. If you upgrade later, the Founding rate will be gone &mdash; but Trader and Power will still be available at their standard prices.</p>
+</div>
+<hr class="divider"/>
+<div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${siteUrl}/app/account" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a><br/><br/><span style="color:rgba(100,116,139,.4);">This is not financial advice. FAULTLINE provides market intelligence tools for informational purposes only.</span></div>
+</div></body></html>`;
+  return { to: email, subject: `47 founding spots left — then the rate goes up`, html };
+}

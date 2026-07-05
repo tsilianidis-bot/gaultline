@@ -1,5 +1,5 @@
 /* ============================================================
-   FAULTLINE Core — Account Tab
+   FAULTLINE Trader — Account Tab
    User profile, tier badge, usage summary, upgrade CTA,
    manage billing, logout, and app version.
    ============================================================ */
@@ -23,8 +23,8 @@ function tierColor(tier: string): string {
 
 function tierLabel(tier: string): string {
   if (tier === "founding") return "FOUNDING";
-  if (tier === "premium")  return "TRADER";
-  if (tier === "core")     return "CORE";
+  if (tier === "premium")  return "POWER";
+  if (tier === "core")     return "TRADER"; // Trader tier
   return "FREE";
 }
 
@@ -176,8 +176,8 @@ export default function MobileAccount() {
         {/* Plan name */}
         <div className="text-[10px] font-mono text-[#64748B]">
           {tier === "founding" && "Founding Member — Rate locked for life"}
-          {tier === "premium"  && `FAULTLINE Trader — ${PRICING_PLANS.premium.priceLabel}`}
-          {tier === "core"     && `FAULTLINE Core — ${PRICING_PLANS.core.priceLabel}`}
+          {tier === "premium"  && `FAULTLINE Power — ${PRICING_PLANS.premium.priceLabel}`}
+          {tier === "core"     && `FAULTLINE Trader — ${PRICING_PLANS.core.priceLabel}`}
           {tier === "free"     && "Free tier — limited access"}
         </div>
       </div>
@@ -231,14 +231,14 @@ export default function MobileAccount() {
           }}
         >
           <div className="text-[10px] font-mono tracking-[0.2em] text-[#00D4FF]/60 mb-1">
-            {isPaid ? "UPGRADE TO TRADER" : "UPGRADE TO CORE"}
+            {isPaid ? "UPGRADE TO POWER" : "UPGRADE TO TRADER"}
           </div>
           <div className="text-[13px] font-bold text-white mb-1">
             {isPaid ? "Unlock unlimited access" : "Unlock the full mobile experience"}
           </div>
           <div className="text-[11px] font-mono text-[#00D4FF]">
             {isPaid
-              ? `${PRICING_PLANS.premium.priceLabel} — Full intelligence suite (Trader)`
+              ? `${PRICING_PLANS.premium.priceLabel} — Full intelligence suite (Power)`
               : `${PRICING_PLANS.core.priceLabel} — Signals, Crypto, Watchlist`}
           </div>
           <div className="flex items-center justify-center gap-1 mt-2 text-[10px] font-mono text-[#00D4FF]/60">
@@ -314,7 +314,7 @@ export default function MobileAccount() {
 
       {/* ── Footer ────────────────────────────────────────── */}
       <div className="text-center pt-2 pb-4">
-        <div className="text-[9px] font-mono text-[#64748B] tracking-widest">FAULTLINE CORE PWA</div>
+        <div className="text-[9px] font-mono text-[#64748B] tracking-widest">FAULTLINE TRADER PWA</div>
         <div className="text-[9px] font-mono text-[#3A4A5C] mt-0.5">
           Subscriptions managed via web checkout
         </div>

@@ -518,7 +518,7 @@ function AlertsInner() {
 // ── Premium Gate Wrapper ──────────────────────────────────────
 export default function Alerts() {
   return (
-    <PremiumGateFull variant="risk">
+    <PremiumGateFull variant="alerts">
       <AlertsInner />
     </PremiumGateFull>
   );

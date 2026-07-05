@@ -205,13 +205,15 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
   }, [phase]);
 
   const handleEnter = useCallback(() => {
-    if (phase !== 'ready') return;
+    // Allow skip at any phase (not just 'ready') so SKIP INTRO always works
+    if (phase === 'exiting') return;
     setPhase('exiting');
     engineRef.current?.triggerShockwave();
+    const delay = phase === 'ready' ? 900 : 300;
     setTimeout(() => {
       engineRef.current?.stop();
       onComplete();
-    }, 900);
+    }, delay);
   }, [phase, onComplete]);
 
   // Typewriter for tagline

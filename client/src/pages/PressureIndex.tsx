@@ -489,9 +489,9 @@ export default function PressureIndex() {
             {/* Tier mini-cards */}
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
               {[
-                { tier: "CORE", price: PRICING_PLANS.core.priceLabel, tagline: "Mobile-first intelligence", color: "#22D3EE", features: ["Signals screener", "Portfolio tracker", "Alt Rotation"] },
-                { tier: "PRO", price: PRICING_PLANS.premium.priceLabel, tagline: "Institutional-grade suite", color: "#00D4FF", features: ["AI Diagnostic™", "Crypto intelligence", "Aftershock Engine™"], badge: "RECOMMENDED" },
-                { tier: "FOUNDING", price: PRICING_PLANS.founding.priceLabel, tagline: "Rate locked for life", color: "#FFD700", features: ["Everything in Pro", "Founder badge", "Early beta access"], badge: "LIMITED" },
+                { tier: "TRADER", price: PRICING_PLANS.core.priceLabel, tagline: "Professional trading intelligence", color: "#22D3EE", features: ["Signals screener", "Portfolio tracker", "Alt Rotation"] },
+                { tier: "POWER", price: PRICING_PLANS.premium.priceLabel, tagline: "Institutional-grade intelligence", color: "#00D4FF", features: ["AI Diagnostic™", "Crypto intelligence", "Aftershock Engine™"], badge: "RECOMMENDED" },
+                { tier: "FOUNDING", price: PRICING_PLANS.founding.priceLabel, tagline: "Rate locked for life", color: "#FFD700", features: ["Everything in Power", "Founder badge", "Early beta access"], badge: "LIMITED" },
               ].map((t) => (
                 <div
                   key={t.tier}

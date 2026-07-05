@@ -706,6 +706,211 @@ export default function Press() {
         </div>
       </section>
 
+      {/* ── FAQ ── */}
+      <section
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+          padding: "0 24px 60px",
+        }}
+      >
+        <div style={{ marginBottom: "28px" }}>
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              letterSpacing: "0.2em",
+              color: "rgba(0,212,255,0.5)",
+              textTransform: "uppercase",
+              marginBottom: "8px",
+            }}
+          >
+            ◆ Press FAQ
+          </div>
+          <h2
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "22px",
+              fontWeight: 700,
+              color: "#F0F4FF",
+              letterSpacing: "0.04em",
+              margin: 0,
+            }}
+          >
+            Frequently Asked Questions
+          </h2>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {([
+            {
+              q: "What is FAULTLINE?",
+              a: "FAULTLINE is a macroeconomic risk intelligence platform that monitors systemic financial pressure in real time. It aggregates data across seven risk vectors — credit, liquidity, volatility, yield curve, systemic risk, inflation, and geopolitical — to produce a unified Pressure Index score and regime classification.",
+            },
+            {
+              q: "Who built FAULTLINE?",
+              a: "FAULTLINE is developed by Phoenix Systems, an independent technology studio focused on financial intelligence infrastructure. The platform is designed for retail traders, independent investors, and financial professionals who want institutional-grade risk awareness without institutional overhead.",
+            },
+            {
+              q: "Is FAULTLINE a financial adviser?",
+              a: "No. FAULTLINE is an information and analysis tool. It does not provide personalised investment advice, portfolio management, or regulated financial services. All content is for informational and educational purposes only. Users should consult a qualified financial adviser before making investment decisions.",
+            },
+            {
+              q: "What data sources does FAULTLINE use?",
+              a: "FAULTLINE aggregates data from public and licensed sources including the Federal Reserve Economic Data (FRED) system, financial market data providers, and macroeconomic databases. All data sources are documented in the platform’s methodology section.",
+            },
+            {
+              q: "What subscription tiers are available?",
+              a: "FAULTLINE offers four tiers: Observer (free), Trader ($9.99/mo), Power ($59/mo), and Founding ($49/mo, rate locked for life). Observer provides access to the live Pressure Index and limited signal previews. Trader unlocks the full signals screener, portfolio tracker, and watchlists. Power adds AI diagnostic intelligence, crypto intelligence, and the full institutional suite.",
+            },
+            {
+              q: "How can I request a media briefing or embargo access?",
+              a: "Contact press@getfaultline.live with your publication, deadline, and the specific angle you’re covering. We accommodate embargo requests for product launches and major platform updates. Response time is typically within 24 hours on business days.",
+            },
+            {
+              q: "Are screenshots and brand assets available for editorial use?",
+              a: "Yes. The press kit assets above include platform screenshots, the FAULTLINE wordmark, and company boilerplate. All assets are cleared for editorial use with attribution. Commercial use requires written permission.",
+            },
+          ] as Array<{ q: string; a: string }>).map((item, i) => (
+            <div
+              key={i}
+              style={{
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: "10px",
+                padding: "20px 22px",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  color: "#E2E8F0",
+                  marginBottom: "8px",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                {item.q}
+              </p>
+              <p
+                style={{
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontSize: "13px",
+                  color: "#94A3B8",
+                  lineHeight: 1.65,
+                  margin: 0,
+                }}
+              >
+                {item.a}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── AI Disclosure ── */}
+      <section
+        style={{
+          maxWidth: "900px",
+          margin: "0 auto",
+          padding: "0 24px 60px",
+        }}
+      >
+        <div
+          style={{
+            background: "rgba(0,212,255,0.03)",
+            border: "1px solid rgba(0,212,255,0.12)",
+            borderRadius: "12px",
+            padding: "28px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "flex-start", gap: "16px" }}>
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                background: "rgba(0,212,255,0.08)",
+                border: "1px solid rgba(0,212,255,0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                fontSize: "16px",
+              }}
+            >
+              ⚡
+            </div>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "9px",
+                  letterSpacing: "0.2em",
+                  color: "rgba(0,212,255,0.6)",
+                  textTransform: "uppercase",
+                  marginBottom: "6px",
+                }}
+              >
+                ◆ AI Disclosure
+              </div>
+              <h3
+                style={{
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontSize: "17px",
+                  fontWeight: 700,
+                  color: "#F0F4FF",
+                  margin: "0 0 12px",
+                  letterSpacing: "0.03em",
+                }}
+              >
+                Use of Artificial Intelligence
+              </h3>
+              <p
+                style={{
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontSize: "13px",
+                  color: "#94A3B8",
+                  lineHeight: 1.7,
+                  margin: "0 0 10px",
+                }}
+              >
+                FAULTLINE uses artificial intelligence and machine learning models to classify market regimes, generate signal labels, produce diagnostic summaries, and power the Ask Intelligence feature. AI-generated content is clearly labelled within the platform and is intended to augment — not replace — human analysis and judgment.
+              </p>
+              <p
+                style={{
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontSize: "13px",
+                  color: "#94A3B8",
+                  lineHeight: 1.7,
+                  margin: "0 0 10px",
+                }}
+              >
+                AI outputs are probabilistic and may contain errors. FAULTLINE does not represent AI-generated analysis as investment advice. The platform’s AI systems are reviewed periodically for accuracy and bias. Users are encouraged to verify AI-generated content against primary sources before making financial decisions.
+              </p>
+              <p
+                style={{
+                  fontFamily: "'IBM Plex Sans', sans-serif",
+                  fontSize: "12px",
+                  color: "#64748B",
+                  lineHeight: 1.6,
+                  margin: 0,
+                }}
+              >
+                For questions about FAULTLINE’s AI systems, methodology, or data practices, contact{" "}
+                <a
+                  href="mailto:press@getfaultline.live"
+                  style={{ color: "rgba(0,212,255,0.6)", textDecoration: "none" }}
+                >
+                  press@getfaultline.live
+                </a>
+                .
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Disclaimer ── */}
       <section
         style={{

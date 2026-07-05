@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import { useTickerStore } from "@/contexts/TickerStore";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Shared styles ─────────────────────────────────────────────
 const CARD: React.CSSProperties = {
@@ -551,7 +552,7 @@ function AIAnalysisTab({ report }: { report: DayTradeReport }) {
 }
 
 // ── Main Page ─────────────────────────────────────────────────
-export default function UniversalSymbolIntelligence() {
+function UniversalSymbolIntelligence() {
   const searchStr = useSearch();
   const urlParams = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
   const urlSymbol = urlParams.get("symbol")?.toUpperCase() ?? null;
@@ -874,3 +875,13 @@ export default function UniversalSymbolIntelligence() {
     </>
   );
 }
+
+export default function UniversalSymbolIntelligenceGated() {
+  return (
+    <PremiumGateFull variant="symbolIntel">
+      <UniversalSymbolIntelligence />
+    </PremiumGateFull>
+  );
+}
+// Re-export inner component for direct use if needed
+export { UniversalSymbolIntelligence };

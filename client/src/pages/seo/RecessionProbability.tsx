@@ -75,7 +75,7 @@ FAULTLINE's recession probability score helps you distinguish between the two sc
         },
         {
           question: "Is recession probability data available for free?",
-          answer: "Yes. FAULTLINE's Pressure Index — which incorporates recession probability as one of its seven risk vectors — is available for free at /pressure-index. Full access to the detailed recession probability breakdown, historical comparisons, and leading indicator data requires a Core or Trader subscription.",
+          answer: "Yes. FAULTLINE's Pressure Index — which incorporates recession probability as one of its seven risk vectors — is available for free at /pressure-index. Full access to the detailed recession probability breakdown, historical comparisons, and leading indicator data requires a Trader or Power subscription.",
         },
       ]}
       internalLinks={[

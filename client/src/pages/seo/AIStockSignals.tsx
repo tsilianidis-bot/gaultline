@@ -86,7 +86,7 @@ Each category is designed to surface different types of opportunities across dif
         },
         {
           question: "Do I need to be a paid subscriber to see AI stock signals?",
-          answer: "FAULTLINE offers free access to a limited set of signals. Full access to all 100+ tracked equities, asymmetry analysis, and real-time regime-aligned signals requires a Core or Trader subscription.",
+          answer: "FAULTLINE offers free access to a limited set of signals. Full access to all 100+ tracked equities, asymmetry analysis, and real-time regime-aligned signals requires a Trader or Power subscription.",
         },
         {
           question: "How does FAULTLINE handle AI bubble risk in stock signals?",

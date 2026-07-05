@@ -90,7 +90,7 @@ function CoreGate() {
         <div className="w-16 h-16 rounded-full border-2 border-[#00D4FF]/30 flex items-center justify-center mb-6">
           <LogIn size={28} className="text-[#00D4FF]" />
         </div>
-        <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">FAULTLINE CORE</div>
+        <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-2">FAULTLINE TRADER</div>
         <h2 className="text-xl font-bold text-white mb-3">Sign In Required</h2>
         <p className="text-[#A8B8CC] text-sm mb-8 leading-relaxed">
           Access the FAULTLINE Core mobile experience. Sign in to continue.
@@ -118,7 +118,7 @@ function CoreGate() {
         <div className="text-[10px] font-mono tracking-[0.3em] text-[#22D3EE]/60 mb-2">CORE ACCESS REQUIRED</div>
         <h2 className="text-xl font-bold text-white mb-3">Upgrade to Core</h2>
         <p className="text-[#A8B8CC] text-sm mb-2 leading-relaxed">
-          The FAULTLINE Core mobile app requires a Core subscription.
+          The FAULTLINE Core mobile app requires a Trader subscription.
         </p>
         <p className="text-[#22D3EE] text-sm font-mono font-bold mb-8">{PRICING_PLANS.core.priceLabel}</p>
         <div className="w-full max-w-xs space-y-3">

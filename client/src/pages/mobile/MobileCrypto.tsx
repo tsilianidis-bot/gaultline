@@ -205,7 +205,7 @@ function UpgradeGate({ remaining, limit, isPaid }: { remaining: number; limit: n
           <div className="text-[12px] font-bold text-white mb-1">Daily limit reached</div>
           <div className="text-[11px] text-[#A8B8CC] mb-3">
             {isPaid
-              ? `You've used all ${limit} crypto signal views today. Upgrade to Pro for unlimited daily access.`
+              ? `You've used all ${limit} crypto signal views today. Upgrade to Power for unlimited daily access.`
               : `Free tier includes ${limit} crypto signal views/day. Upgrade to Core or Pro for more.`}
           </div>
           <a
@@ -214,7 +214,7 @@ function UpgradeGate({ remaining, limit, isPaid }: { remaining: number; limit: n
             style={{ background: "#FF2D55", color: "#fff" }}
           >
             {isPaid ? <Zap size={12} /> : <Crown size={12} />}
-            {isPaid ? "UPGRADE TO PRO" : "UPGRADE NOW"}
+            {isPaid ? "UPGRADE TO POWER" : "UPGRADE NOW"}
             <ChevronRight size={12} />
           </a>
         </div>
@@ -409,7 +409,7 @@ export default function MobileCrypto() {
                 {signals.length - 5} more signals available
               </div>
               <div className="text-[11px] text-[#64748B] mb-3">
-                Upgrade to Pro for the full screener with unlimited access.
+                Upgrade to Power for the full screener with unlimited access.
               </div>
               <a
                 href="/mobile/upgrade"

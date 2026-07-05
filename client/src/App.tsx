@@ -129,6 +129,7 @@ const MarketIntelligence = lazy(() => import("./pages/MarketIntelligence"));
 const CryptoRegimeDashboard = lazy(() => import("./pages/CryptoRegimeDashboard"));
 const PhoenixSystems = lazy(() => import("./pages/PhoenixSystems"));
 const Press = lazy(() => import("./pages/Press"));
+const About = lazy(() => import("./pages/About"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -183,6 +184,8 @@ function Router() {
       <Route path="/demo/watchlist"><Redirect to="/app/watchlist" /></Route>
       <Route path="/demo/portfolio"><Redirect to="/app/portfolio" /></Route>
       <Route path="/demo"><Redirect to="/app/discover" /></Route>
+      {/* Catch-all for any unlisted /demo/* sub-routes — redirect to discover */}
+      <Route path="/demo/:rest*"><Redirect to="/app/discover" /></Route>
       {/* Public Shared Report — no login required, no AppLayout */}
       <Route path="/r/:publicShareId">
         <ErrorBoundary>
@@ -326,6 +329,14 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <Press />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* About page — standalone public page */}
+      <Route path="/about">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <About />
           </Suspense>
         </ErrorBoundary>
       </Route>

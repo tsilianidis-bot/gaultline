@@ -1843,24 +1843,24 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       glowColor: "rgba(100,116,139,0.12)",
     },
     {
-      name: "CORE",
+      name: "TRADER",
       tagline: "Mobile-first market intelligence.",
       price: PRICING_PLANS.core.priceLabel,
       priceSub: "/month — cancel anytime",
       desc: "Fast signals, portfolio tracking, and push alerts on the go. Know the pressure reading before you enter any position.",
       features: [
-        "Limited stock signals (BUY/SELL/HOLD)",
-        "Limited crypto signals",
+        "Unlimited stock signals (BUY/SELL/HOLD)",
+        "Unlimited crypto signals",
         "Portfolio tracker with live P&L",
         "Alt Rotation tracking",
         "Daily market briefings",
         "Volatility monitoring",
         "Push alerts",
-        "Watchlist",
-        "Limited Aftershock alerts",
+        "Unlimited Watchlist",
+        "Aftershock alerts",
         "Macro snapshot feed",
       ],
-      cta: "Get Core — $9.99/mo",
+      cta: "Get Trader — $9.99/mo",
       ctaAction: () => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin }),
       featured: false,
       popularLabel: "MOST POPULAR ENTRY",
@@ -1868,13 +1868,13 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       glowColor: "rgba(34,211,238,0.1)",
     },
     {
-      name: "TRADER",
+      name: "POWER",
       tagline: "Serious trader / portfolio manager.",
       price: PRICING_PLANS.premium.priceLabel,
       priceSub: "/month — cancel anytime",
       desc: "The full intelligence platform. Every engine, every signal, every edge — fully unlocked. AI Diagnostic, Crypto Intelligence, Aftershock Engine, and full macro suite.",
       features: [
-        "Everything in Core",
+        "Everything in Power",
         "Real-time Pressure Index™",
         "Full Signals Engine (all tickers)",
         "AI Diagnostic Intelligence™",
@@ -1885,7 +1885,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         "Advanced watchlists & alerts",
         "Historical analog engine",
       ],
-      cta: "Unlock Trader — $59/mo",
+      cta: "Unlock Power — $59/mo",
       ctaAction: () => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin }),
       featured: true,
       accentColor: "#00D4FF",
@@ -1896,9 +1896,9 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       tagline: "Rate locked for life.",
       price: PRICING_PLANS.founding.priceLabel,
       priceSub: "/month — locked forever",
-      desc: "Everything in Trader at $49/mo — locked forever. Never increases. Join the founding cohort before spots close.",
+      desc: "Everything in Power at $49/mo — locked forever. Never increases. Join the founding cohort before spots close.",
       features: [
-        "Everything in Trader",
+        "Everything in Power",
         "Rate locked at $49/mo forever",
         "Founding member badge",
         "Future feature grandfathering",
@@ -1919,9 +1919,9 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       tagline: "Pay once. Never again.",
       price: PRICING_PLANS.lifetime.priceLabel,
       priceSub: "one-time — lifetime access",
-      desc: "Everything in Trader, forever. One payment of $299. No monthly charges, no renewals. Limited quantity.",
+      desc: "Everything in Power, forever. One payment of $299. No monthly charges, no renewals. Limited quantity.",
       features: [
-        "Everything in Trader",
+        "Everything in Power",
         "Lifetime access — pay once",
         "Founding member badge",
         "Future feature grandfathering",
@@ -2208,14 +2208,14 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 0 20px rgba(34,211,238,0.1)",
                 }}
               >
-                OPEN CORE APP →
+                OPEN TRADER APP →
               </a>
               <button
                 onClick={onRequestAccess}
                 className="px-6 py-3 font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#A8B8CC" }}
               >
-                UPGRADE TO PRO
+                UPGRADE TO POWER
               </button>
             </div>
           </div>
@@ -2250,7 +2250,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                 {/* App top bar */}
                 <div className="px-4 py-2 flex items-center justify-between">
                   <div>
-                    <div className="text-[7px] font-mono tracking-[0.3em] text-[#22D3EE]/50">FAULTLINE CORE</div>
+                    <div className="text-[7px] font-mono tracking-[0.3em] text-[#22D3EE]/50">FAULTLINE TRADER</div>
                     <div className="text-[8px] font-mono text-[#64748B]">PRESSURE ENGINE™</div>
                   </div>
                   <div className="w-6 h-6 rounded-full bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.2)] flex items-center justify-center">
@@ -2318,7 +2318,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                     style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
                   >
                     <div>
-                      <div className="text-[6px] font-mono tracking-widest text-[#64748B]">PRO REQUIRED</div>
+                      <div className="text-[6px] font-mono tracking-widest text-[#64748B]">POWER REQUIRED</div>
                       <div className="text-[8px] font-mono text-[#A8B8CC]">Diagnostic AI™ + Aftershock™</div>
                     </div>
                     <span
@@ -2358,7 +2358,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(34,211,238,0.1)",
                 }}
               >
-                <div className="text-[8px] font-mono tracking-widest text-[#22D3EE]/60 mb-0.5">FAULTLINE CORE</div>
+                <div className="text-[8px] font-mono tracking-widest text-[#22D3EE]/60 mb-0.5">FAULTLINE TRADER</div>
                 <div className="text-xl font-bold text-[#22D3EE]">{PRICING_PLANS.core.priceLabel}</div>
                 <div className="text-[8px] font-mono text-[#64748B]">MOST POPULAR ENTRY</div>
               </div>
@@ -2372,7 +2372,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.1)",
                 }}
               >
-                <div className="text-[8px] font-mono tracking-widest text-[#00D4FF]/60 mb-0.5">FAULTLINE PRO</div>
+                <div className="text-[8px] font-mono tracking-widest text-[#00D4FF]/60 mb-0.5">FAULTLINE POWER</div>
                 <div className="text-xl font-bold text-[#00D4FF]">$59<span className="text-xs font-normal text-[#64748B]">/mo</span></div>
                 <div className="text-[8px] font-mono text-[#64748B]">FULL INTELLIGENCE</div>
               </div>
@@ -2599,6 +2599,8 @@ function Footer() {
               <a href="/methodology" className="hover:text-[#00D4FF] transition-colors">Methodology</a>
               <span className="opacity-30">·</span>
               <a href="/contact" className="hover:text-[#00D4FF] transition-colors">Contact Us</a>
+              <span className="opacity-30">·</span>
+              <a href="/about" className="hover:text-[#00D4FF] transition-colors">About</a>
               <span className="opacity-30">·</span>
               <a href="/press" className="hover:text-[#00D4FF] transition-colors">Press</a>
               <span className="opacity-30">·</span>

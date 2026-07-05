@@ -89,7 +89,7 @@ FAULTLINE's Alt Season Indicator tracks all of these conditions in real time, gi
         },
         {
           question: "Is FAULTLINE's alt season data free?",
-          answer: "FAULTLINE offers free access to the Pressure Index and basic crypto market data. Full access to the Alt Season Indicator, BTC dominance tracking, ETH/BTC ratio monitoring, and sector-level altcoin momentum requires a Core or Trader subscription.",
+          answer: "FAULTLINE offers free access to the Pressure Index and basic crypto market data. Full access to the Alt Season Indicator, BTC dominance tracking, ETH/BTC ratio monitoring, and sector-level altcoin momentum requires a Trader or Power subscription.",
         },
         {
           question: "What is the difference between alt season and a crypto bull market?",

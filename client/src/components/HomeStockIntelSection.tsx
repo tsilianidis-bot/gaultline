@@ -496,7 +496,7 @@ export default function HomeStockIntelSection() {
                 boxShadow: '0 0 20px rgba(0,212,255,0.2)',
                 transition: 'all 0.2s ease',
               }}>
-                Unlock Core Access →
+                Unlock Trader Access →
               </button>
             </a>
           )}

@@ -1319,7 +1319,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)", background: "rgba(255,107,107,0.04)", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "32px", textAlign: "center" }}>
         <AlertCircle size={24} style={{ color: "#FF6B6B" }} />
         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF6B6B" }}>SUBSCRIPTION REQUIRED</div>
-        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6, maxWidth: "400px" }}>Core subscription required to access Day Trade Intelligence™.</div>
+        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6, maxWidth: "400px" }}>Trader subscription required to access Day Trade Intelligence™.</div>
       </div>
     );
   }
@@ -1413,7 +1413,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
       <div style={{ ...CARD, borderColor: "rgba(255,107,107,0.2)", background: "rgba(255,107,107,0.04)", display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", padding: "32px", textAlign: "center" }}>
         <AlertCircle size={24} style={{ color: "#FF6B6B" }} />
         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF6B6B" }}>SUBSCRIPTION REQUIRED</div>
-        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6, maxWidth: "400px" }}>Core subscription required to access Day Trade Intelligence.</div>
+        <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6, maxWidth: "400px" }}>Trader subscription required to access Day Trade Intelligence.</div>
       </div>
     );
   }

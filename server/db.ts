@@ -1457,7 +1457,7 @@ export async function hasOnboardingEmailBeenSent(userId: number, step: number): 
  * and have NOT yet received drip step `step`.
  * Used by the heartbeat drip scheduler.
  */
-export async function getUsersPendingDripStep(step: number, minAgeMs: number): Promise<Array<{ id: number; name: string | null; email: string | null; createdAt: Date }>> {
+export async function getUsersPendingDripStep(step: number, minAgeMs: number): Promise<Array<{ id: number; name: string | null; email: string | null; createdAt: Date; accessTier: string | null }>> {
   const db = await getDb();
   if (!db) return [];
   const cutoff = new Date(Date.now() - minAgeMs);
@@ -1467,6 +1467,7 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
     name: users.name,
     email: users.email,
     createdAt: users.createdAt,
+    accessTier: users.accessTier,
   })
     .from(users)
     .where(and(

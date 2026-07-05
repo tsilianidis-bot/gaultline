@@ -24,6 +24,8 @@ import {
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { toast } from "sonner";
 
 // ── Watchlist tab type ─────────────────────────────────────────
 type WatchlistTab = 'macro' | 'crypto' | 'daytrade';
@@ -616,9 +618,13 @@ function WatchlistTabBar({ active, onChange }: { active: WatchlistTab; onChange:
   );
 }
 
+const FREE_WATCHLIST_LIMIT = 3;
+
 export default function Watchlist() {
   useSEO(PAGE_SEO.watchlist);
+  const { user } = useAuth();
   const { indicators, output } = useEngine();
+  const isFreeUser = !user || ((user as { accessTier?: string }).accessTier ?? 'free') === 'free';
   const [items, setItems] = useState<WatchlistItem[]>(() => loadWatchlist());
   const [editingItem, setEditingItem] = useState<WatchlistItem | null | undefined>(undefined);
   const [filterBreached, setFilterBreached] = useState(false);
@@ -675,14 +681,23 @@ export default function Watchlist() {
     setItems(prev => {
       const idx = prev.findIndex(i => i.id === newItem.id);
       if (idx >= 0) {
+        // Editing existing item — always allowed
         const next = [...prev];
         next[idx] = newItem;
         return next;
       }
+      // Adding new item — check free tier cap
+      if (isFreeUser && prev.length >= FREE_WATCHLIST_LIMIT) {
+        toast.error(`Observer limit reached`, {
+          description: `Observer accounts can track up to ${FREE_WATCHLIST_LIMIT} indicators. Upgrade to Trader ($9.99/mo) for unlimited watchlists.`,
+          duration: 5000,
+        });
+        return prev;
+      }
       return [...prev, newItem];
     });
     setEditingItem(undefined);
-  }, []);
+  }, [isFreeUser]);
 
   const handleDelete = useCallback((id: string) => {
     setItems(prev => prev.filter(i => i.id !== id));

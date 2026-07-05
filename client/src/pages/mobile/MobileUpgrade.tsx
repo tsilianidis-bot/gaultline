@@ -16,7 +16,7 @@ import {
 const PLANS = [
   {
     id: "core" as const,
-    name: "Core",
+    name: "Trader",
     badge: "MOBILE ENTRY",
     price: PRICING_PLANS.core.priceLabel,
     color: "#22D3EE",
@@ -72,7 +72,7 @@ const PLANS = [
     glow: "rgba(255,215,0,0.12)",
     icon: <Crown size={18} />,
     features: [
-      "Everything in Trader",
+      "Everything in Power",
       "Founding Member badge",
       "Rate locked at $49/mo forever",
       "Early access to new features",
@@ -89,7 +89,7 @@ const PLANS = [
     glow: "rgba(255,215,0,0.12)",
     icon: <Crown size={18} />,
     features: [
-      "Everything in Trader",
+      "Everything in Power",
       "Lifetime access — pay once",
       "Founding Member badge",
       "Future feature grandfathering",
@@ -274,7 +274,7 @@ export default function MobileUpgrade() {
         <div className="flex items-start gap-2">
           <Star size={12} className="text-[#64748B] flex-shrink-0 mt-0.5" />
           <div className="text-[10px] font-mono text-[#64748B] leading-relaxed">
-            Core, Trader, and Founding plans are billed monthly and can be cancelled anytime via the billing portal.
+            Observer, Trader, Power, and Founding plans are billed monthly and can be cancelled anytime via the billing portal.
             The Founding Lifetime plan is a one-time payment with no recurring charges.
             Payments are processed securely by Stripe. FAULTLINE is not a registered investment
             adviser. All content is for informational purposes only.

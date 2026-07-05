@@ -77,7 +77,7 @@ Note: Past performance of the indicator does not guarantee future results. The P
         },
         {
           question: "Is the crash indicator available for free?",
-          answer: "Yes. The FAULTLINE Pressure Index — the core of the crash indicator — is available for free at /pressure-index. No login required. Full access to all seven risk vectors, historical data, and regime analysis requires a Core or Trader subscription.",
+          answer: "Yes. The FAULTLINE Pressure Index — the core of the crash indicator — is available for free at /pressure-index. No login required. Full access to all seven risk vectors, historical data, and regime analysis requires a Trader or Power subscription.",
         },
         {
           question: "How often does the crash indicator update?",

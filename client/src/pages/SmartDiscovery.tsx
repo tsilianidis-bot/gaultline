@@ -2639,7 +2639,12 @@ export default function SmartDiscovery() {
         const httpStatus = e.data?.httpStatus;
         const msg = e.message ?? "";
         if (code === "TOO_MANY_REQUESTS" || httpStatus === 429) {
-          errorMsg = "Rate limit reached. Please wait a moment before trying again.";
+          const serverMsg = e.message ?? "";
+          if (serverMsg.includes("Daily limit reached") || serverMsg.includes("Observer")) {
+            errorMsg = serverMsg;
+          } else {
+            errorMsg = "Rate limit reached. Please wait a moment before trying again.";
+          }
         } else if (code === "UNAUTHORIZED" || httpStatus === 401) {
           errorMsg = "Session expired. Please refresh the page and log in again.";
         } else if (code === "TIMEOUT" || httpStatus === 504 || httpStatus === 408) {

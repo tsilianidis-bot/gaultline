@@ -42,13 +42,21 @@ const HEADING: React.CSSProperties = { fontFamily: "'Rajdhani', sans-serif" };
 
 const TIER_COLORS: Record<string, string> = {
   free:     "rgba(100,116,139,0.8)",
-  premium:  "rgba(251,191,36,0.9)",
-  founding: "rgba(0,212,255,0.9)",
+  core:     "rgba(34,211,238,0.9)",
+  premium:  "rgba(0,212,255,0.9)",
+  founding: "rgba(255,215,0,0.9)",
 };
 const TIER_BG: Record<string, string> = {
   free:     "rgba(100,116,139,0.08)",
-  premium:  "rgba(251,191,36,0.08)",
-  founding: "rgba(0,212,255,0.08)",
+  core:     "rgba(34,211,238,0.08)",
+  premium:  "rgba(0,212,255,0.08)",
+  founding: "rgba(255,215,0,0.08)",
+};
+const TIER_DISPLAY: Record<string, string> = {
+  free:     "Observer",
+  core:     "Trader",
+  premium:  "Power",
+  founding: "Founding",
 };
 const STATUS_COLORS: Record<string, string> = {
   pending:  "rgba(251,191,36,0.9)",
@@ -90,7 +98,7 @@ function TierBadge({ tier }: { tier: string }) {
       color: TIER_COLORS[tier] ?? "rgba(148,163,184,0.7)",
       background: TIER_BG[tier] ?? "rgba(148,163,184,0.06)",
       border: `1px solid ${(TIER_COLORS[tier] ?? "rgba(148,163,184,0.7)").replace("0.9", "0.2").replace("0.8", "0.2")}`,
-    }}>{tier}</span>
+    }}>{TIER_DISPLAY[tier] ?? tier}</span>
   );
 }
 
@@ -131,9 +139,10 @@ function OverviewTab() {
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
             <StatCard label="Total Users" value={stats?.users.total ?? 0} sub="registered accounts" />
-            <StatCard label="Founding Tier" value={stats?.users.founding ?? 0} sub="full access" color="rgba(0,212,255,0.9)" />
-            <StatCard label="Premium Tier" value={stats?.users.premium ?? 0} sub="paid access" color="rgba(251,191,36,0.9)" />
-            <StatCard label="Free Tier" value={stats?.users.free ?? 0} sub="limited access" color="rgba(100,116,139,0.7)" />
+            <StatCard label="Founding" value={stats?.users.founding ?? 0} sub="rate locked" color="rgba(255,215,0,0.9)" />
+            <StatCard label="Power" value={stats?.users.premium ?? 0} sub="full access" color="rgba(0,212,255,0.9)" />
+            <StatCard label="Trader" value={stats?.users.core ?? 0} sub="paid access" color="rgba(34,211,238,0.9)" />
+            <StatCard label="Observer" value={stats?.users.free ?? 0} sub="free tier" color="rgba(100,116,139,0.7)" />
             <StatCard label="Waitlist Total" value={stats?.waitlist.total ?? 0} sub="all requests" color="rgba(168,85,247,0.9)" />
             <StatCard label="Pending Review" value={stats?.waitlist.pending ?? 0} sub="awaiting decision" color="rgba(251,191,36,0.9)" />
             <StatCard label="Approved" value={stats?.waitlist.approved ?? 0} sub="granted access" color="rgba(0,212,255,0.9)" />

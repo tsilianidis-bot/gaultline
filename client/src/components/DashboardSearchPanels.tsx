@@ -216,7 +216,7 @@ function PorchOverlay({ color, onUpgrade, onLogin, isLoggedIn }: {
             onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 0 24px ${color}40`; e.currentTarget.style.borderColor = color; }}
             onMouseLeave={e => { e.currentTarget.style.boxShadow = `0 0 16px ${color}20`; e.currentTarget.style.borderColor = `${color}60`; }}
           >
-            Upgrade to Pro
+            Upgrade to Power
           </button>
           {!isLoggedIn && (
             <button

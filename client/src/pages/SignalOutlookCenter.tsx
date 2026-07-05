@@ -24,6 +24,7 @@ import NarrativeLoader from "@/components/NarrativeLoader";
 import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ─────────────────────────────
 type OutlookDirection = "Bullish" | "Bearish" | "Neutral" | "Avoid";
@@ -1418,7 +1419,7 @@ function SignalOutlookUpgradePrompt() {
 }
 
 // ── Main Page ─────────────────────────────────────────────────
-export default function SignalOutlookCenter() {
+function SignalOutlookCenterInner() {
   useSEO({
     title: "Signal Outlook Center™ — FAULTLINE",
     description: "Transform raw signals into actionable market intelligence. Separate stock and crypto outlooks with AI interpretation.",
@@ -1713,5 +1714,13 @@ export default function SignalOutlookCenter() {
 
       </div>
     </div>
+  );
+}
+
+export default function SignalOutlookCenter() {
+  return (
+    <PremiumGateFull variant="signalOutlook">
+      <SignalOutlookCenterInner />
+    </PremiumGateFull>
   );
 }

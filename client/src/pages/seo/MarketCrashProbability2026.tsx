@@ -95,7 +95,7 @@ These are not buy/sell recommendations — they are risk management frameworks b
         },
         {
           question: "Is the crash probability indicator free to access?",
-          answer: "Yes. The FAULTLINE Pressure Index — the core crash probability indicator — is available for free at /pressure-index. No login required. Full access to all seven risk vectors, historical data, regime analysis, and the complete signal intelligence platform requires a Core or Trader subscription.",
+          answer: "Yes. The FAULTLINE Pressure Index — the core crash probability indicator — is available for free at /pressure-index. No login required. Full access to all seven risk vectors, historical data, regime analysis, and the complete signal intelligence platform requires a Trader or Power subscription.",
         },
         {
           question: "How does AI concentration risk contribute to crash probability in 2026?",

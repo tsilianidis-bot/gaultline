@@ -83,7 +83,7 @@ Dollar: Fed rate hikes strengthen the dollar relative to other currencies. A str
         },
         {
           question: "Is Fed policy data available for free on FAULTLINE?",
-          answer: "Yes. The FAULTLINE Pressure Index — which incorporates Fed policy impact through its liquidity and treasury yield vectors — is available for free at /pressure-index. Full access to detailed Fed policy analysis, historical cycle comparisons, and macro regime intelligence requires a Core or Trader subscription.",
+          answer: "Yes. The FAULTLINE Pressure Index — which incorporates Fed policy impact through its liquidity and treasury yield vectors — is available for free at /pressure-index. Full access to detailed Fed policy analysis, historical cycle comparisons, and macro regime intelligence requires a Trader or Power subscription.",
         },
       ]}
       internalLinks={[

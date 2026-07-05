@@ -3356,9 +3356,9 @@
 ## Perplexity QA Audit — July 3, 2026
 
 ### Bug Fixes
-- [ ] Bug 1: SKIP INTRO on /demo leads to 404 — fix demo route so SKIP INTRO loads main demo dashboard
-- [ ] Bug 2: DAILY BRIEFING nav tab links to /app/daily-briefing (404) — fix route or hide tab
-- [ ] Bug 3: /app/social and /app/understand are 404 — hide broken tabs from nav
+- [x] Bug 1: SKIP INTRO on /demo leads to 404 — fixed: SKIP INTRO now works at any phase; added catch-all /demo/:rest* redirect to /app/discover
+- [x] Bug 2: DAILY BRIEFING nav tab links to /app/daily-briefing (404) — already fixed: nav links to /app/report which is registered
+- [x] Bug 3: /app/social and /app/understand are 404 — already fixed: nav does not link to these routes
 - [x] Bug 4: Chatbot FAB overlaps MORE button on mobile (390px) — reposition FAB to bottom: 80px+
 - [x] Bug 5: Cookie banner DECLINE button not visible on mobile — make banner fully responsive
 - [x] Bug 6: Pressure Index sub-tabs broken — convert to in-page state, no navigation away
@@ -3480,42 +3480,42 @@
 ## Tier Refactor & Call AI Receptionist Removal (July 5, 2026)
 
 ### Phase 1: Remove Call AI Receptionist
-- [ ] Remove ChatbotWidget import and <ChatbotWidget /> from App.tsx
-- [ ] Remove AIReceptionistLink import and usage from AppLayout.tsx header
-- [ ] Remove AIReceptionistLink import and usage from MobileLayout.tsx
-- [ ] Remove AIReceptionistLink import and usage from PremiumGate.tsx
-- [ ] Remove AIReceptionistLink import and usage from MarketingSite.tsx (hero + pricing section)
+- [x] Remove ChatbotWidget import and <ChatbotWidget /> from App.tsx
+- [x] Remove AIReceptionistLink import and usage from AppLayout.tsx header
+- [x] Remove AIReceptionistLink import and usage from MobileLayout.tsx
+- [x] Remove AIReceptionistLink import and usage from PremiumGate.tsx
+- [x] Remove AIReceptionistLink import and usage from MarketingSite.tsx (hero + pricing section)
 
 ### Phase 2: Update Tier System (shared/tiers.ts)
-- [ ] Rename marketing names: free→Observer, core→Trader, premium→Power, founding→Founding Member
-- [ ] Update GATE_REQUIRED_TIER: alerts→core, watchlist→free (cap enforced in UI)
-- [ ] Add new GateVariant entries: symbolIntel, decisionEngine, opportunities, tradeJournal, socialIntel, insiderIntel, signalOutlook, preFlight, dayTrade, marketCommandCenter
-- [ ] Update MARKETING_TIER_CARDS to Observer/Trader/Power naming and correct feature lists
+- [x] Rename marketing names: free→Observer, core→Trader, premium→Power, founding→Founding Member
+- [x] Update GATE_REQUIRED_TIER: alerts→core, watchlist→free (cap enforced in UI)
+- [x] Add new GateVariant entries: symbolIntel, decisionEngine, opportunities, tradeJournal, socialIntel, insiderIntel, signalOutlook, preFlight, dayTrade, marketCommandCenter
+- [x] Update MARKETING_TIER_CARDS to Observer/Trader/Power naming and correct feature lists
 
 ### Phase 3: Update PremiumGate.tsx GATE_CONFIGS
-- [ ] Update all GATE_CONFIGS to reference new tier names (Trader/Power) in titles and CTAs
-- [ ] Add new gate configs for: symbolIntel, decisionEngine, opportunities, tradeJournal, socialIntel, insiderIntel, signalOutlook, preFlight, dayTrade, marketCommandCenter
+- [x] Update all GATE_CONFIGS to reference new tier names (Trader/Power) in titles and CTAs
+- [x] Add new gate configs for: symbolIntel, decisionEngine, opportunities, tradeJournal, socialIntel, insiderIntel, signalOutlook, preFlight, dayTrade, marketCommandCenter
 
 ### Phase 4: Apply Gates to Ungated Pages
-- [ ] Opportunities.tsx → add PremiumGateFull variant="opportunities" (Trader/core)
-- [ ] SymbolIntelligence.tsx → add PremiumGateFull variant="symbolIntel" (Trader/core)
-- [ ] DecisionEngine.tsx → add PremiumGateFull variant="decisionEngine" (Trader/premium)
-- [ ] TradeJournal.tsx → add PremiumGateFull variant="tradeJournal" (Trader/core)
-- [ ] SocialIntelligence.tsx → add PremiumGateFull variant="socialIntel" (Trader/core)
-- [ ] InsiderIntelligence.tsx → add PremiumGateFull variant="insiderIntel" (Trader/core)
-- [ ] SignalOutlook.tsx → add PremiumGateFull variant="signalOutlook" (Trader/premium)
-- [ ] PreFlight.tsx → add PremiumGateFull variant="preFlight" (Power/premium)
-- [ ] DayTradeIntelligence.tsx → add PremiumGateFull variant="dayTrade" (Power/premium)
-- [ ] MarketCommandCenter.tsx → add PremiumGateFull variant="marketCommandCenter" (Power/premium)
-- [ ] Alerts.tsx → change gate from "risk" (premium) to new "alerts" (core)
+- [x] Opportunities.tsx → add PremiumGateFull variant="opportunities" (Trader/core)
+- [x] SymbolIntelligence.tsx → add PremiumGateFull variant="symbolIntel" (Trader/core)
+- [x] DecisionEngine.tsx → add PremiumGateFull variant="decisionEngine" (Trader/premium)
+- [x] TradeJournal.tsx → add PremiumGateFull variant="tradeJournal" (Trader/core)
+- [x] SocialIntelligence.tsx → add PremiumGateFull variant="socialIntel" (Trader/core)
+- [x] InsiderIntelligence.tsx → add PremiumGateFull variant="insiderIntel" (Trader/core)
+- [x] SignalOutlook.tsx → add PremiumGateFull variant="signalOutlook" (Trader/premium)
+- [x] PreFlight.tsx → add PremiumGateFull variant="preFlight" (Power/premium)
+- [x] DayTradeIntelligence.tsx → add PremiumGateFull variant="dayTrade" (Power/premium)
+- [x] MarketCommandCenter.tsx → add PremiumGateFull variant="marketCommandCenter" (Power/premium)
+- [x] Alerts.tsx → change gate from "risk" (premium) to new "alerts" (core)
 
 ### Phase 5: Free Tier Enforcement
-- [ ] Watchlist.tsx → enforce 3-symbol cap for free users (show upgrade prompt at limit)
-- [ ] SmartDiscovery.tsx (Ask FAULTLINE) → enforce 10 questions/day cap for free users
+- [x] Watchlist.tsx → enforce 3-symbol cap for free users (show upgrade prompt at limit)
+- [x] SmartDiscovery.tsx (Ask FAULTLINE) → enforce 10 questions/day cap for free users
 
 ### Phase 6: Update Marketing Site
-- [ ] MarketingSite.tsx → update tier names to Observer/Trader/Power in pricing section
-- [ ] MarketingSite.tsx → update feature lists to match new tier definitions
+- [x] MarketingSite.tsx → update tier names to Observer/Trader/Power in pricing section
+- [x] MarketingSite.tsx → update feature lists to match new tier definitions
 
 ### Phase 7: Verification
 - [ ] TypeScript: 0 errors
@@ -3545,3 +3545,26 @@
   - [x] Fix SinceLastVisit cards — confirm onClick handlers call handleSubmit/handleQuickAction
   - [x] Add graceful error handling for all question tab failures
   - [x] Confirm every tab produces visible response on first page load
+
+## Media Readiness — July 5, 2026
+- [x] Add FAQ section to /press page (8 questions covering data sources, AI use, accuracy, pricing, demo access, track record, methodology, contact)
+- [x] Add AI Disclosure section to /press page (model transparency, limitations, human oversight statement)
+- [x] Create standalone /about page (About.tsx) — mission, origin story, Phoenix Systems attribution, team, values
+- [x] Wire /about route in App.tsx
+- [x] Add /about link to MarketingSite footer
+- [x] Add Day 3 email template (buildDay3FoundingEmail) to server/email.ts — social proof / Founding Member urgency
+- [x] Wire Day 3 email into scheduledDripEmail.ts (sends 72h after signup to non-paying users)
+- [x] Update getUsersPendingDripStep in db.ts to return accessTier for Day 3 tier-aware filtering
+
+## Tier Refactor Verification — July 5, 2026
+- [x] TypeScript: 0 errors confirmed
+- [x] All old tier labels removed from public UI (FAULTLINE CORE, FAULTLINE PRO, Upgrade to Pro, Everything in Core, Everything in Trader)
+- [x] MobileAccount.tsx: core→TRADER, premium→POWER display labels
+- [x] MobileCrypto.tsx: "Upgrade to Pro" → "Upgrade to Power"
+- [x] MobileUpgrade.tsx: "Everything in Trader" → "Everything in Power"
+- [x] PressureIndex.tsx: "Everything in Trader" → "Everything in Power"
+- [x] UserAccount.tsx: "Everything in Trader" → "Everything in Power"
+- [x] DashboardSearchPanels.tsx: "Upgrade to Pro" → "Upgrade to Power"
+- [x] MobileLayout.tsx: "FAULTLINE CORE" → "FAULTLINE TRADER"
+- [x] AIReceptionistLink.tsx and ChatbotWidget.tsx files deleted (dead code)
+- [x] receptionist_call_clicked event removed from analytics.ts

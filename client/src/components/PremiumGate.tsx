@@ -36,15 +36,15 @@ interface PremiumGateConfig {
 
 const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
   founding: {
-    title: "Pro Intelligence Required",
+    title: "Power Intelligence Required",
     subtitle: "INSTITUTIONAL INTELLIGENCE PLATFORM",
     description:
-      "This module requires FAULTLINE Pro or Founding Access. Unlock the full institutional intelligence suite — macro, signals, crypto, systemic risk, and AI diagnostics.",
+      "This module requires FAULTLINE Power or Founding Access. Unlock the full institutional intelligence suite — macro, signals, crypto, systemic risk, and AI diagnostics.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
     ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
     features: [
       "Full macro regime intelligence",
@@ -58,13 +58,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Signals Engine Locked",
     subtitle: "CORE SIGNAL ENGINE",
     description:
-      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Unlock with Core at ${PRICING_PLANS.core.priceLabel}.`,
+      `FAULTLINE's proprietary signal engine — RSI, MACD, SMA crossover, regime-weighted scoring, and AI classification. Unlock with Trader at ${PRICING_PLANS.core.priceLabel}.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: "Upgrade to Pro",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
     features: [
       "True RSI / MACD / SMA signals",
       "AI signal classification",
@@ -77,18 +77,18 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Portfolio Monitor Locked",
     subtitle: "LIVE PORTFOLIO INTELLIGENCE",
     description:
-      `Track your positions with live P&L and regime-aware risk scoring. Available from Core at ${PRICING_PLANS.core.priceLabel}. AI guidance requires Pro.`,
+      `Track your positions with live P&L and regime-aware risk scoring. Available from Trader at ${PRICING_PLANS.core.priceLabel}. AI guidance requires Power.`,
     icon: <TrendingUp className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: "Upgrade to Pro",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
     features: [
       "Live P&L tracking",
       "Real-time price quotes",
       "Regime-aware risk scoring",
-      "AI guidance (Pro tier)",
+      "AI guidance (Power tier)",
     ],
     requiredTier: 'core',
   },
@@ -96,13 +96,13 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Alt Rotation Engine Locked",
     subtitle: "ALTERNATIVE ASSET ROTATION",
     description:
-      `Monitor rotation signals across crypto, commodities, and alternative assets. Available from Core at ${PRICING_PLANS.core.priceLabel}.`,
+      `Monitor rotation signals across crypto, commodities, and alternative assets. Available from Trader at ${PRICING_PLANS.core.priceLabel}.`,
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#22D3EE",
     glowColor: "rgba(34,211,238,0.15)",
-    ctaPrimary: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
-    ctaSecondary: "Upgrade to Pro",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
     features: [
       "Crypto rotation signals",
       "Commodity momentum tracking",
@@ -120,7 +120,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-orange-400",
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
-    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
     ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
     features: [
       "FAULTLINE Pressure Index™",
@@ -131,15 +131,15 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     requiredTier: 'premium',
   },
   intelligence: {
-    title: "Premium Intelligence Locked",
+    title: "Power Intelligence Locked",
     subtitle: "INSTITUTIONAL INTELLIGENCE SUITE",
     description:
-      "Full access to FAULTLINE's institutional intelligence suite requires Pro membership. Preview limited metrics below.",
+      "Full access to FAULTLINE's institutional intelligence suite requires Power membership. Preview limited metrics below.",
     icon: <Shield className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
     glowColor: "rgba(0,212,255,0.15)",
-    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
     ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
     features: [
       "Diagnostic AI™ analysis",
@@ -158,7 +158,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-blue-400",
     accentHex: "#60A5FA",
     glowColor: "rgba(96,165,250,0.15)",
-    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
     ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
     features: [
       "Crypto systemic risk score",
@@ -177,7 +177,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     accentColor: "text-orange-400",
     accentHex: "#FB923C",
     glowColor: "rgba(251,146,60,0.15)",
-    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
     ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
     features: [
       "Primary rupture detection",
@@ -638,7 +638,7 @@ export function PremiumGateFull({
                     }}
                   >
                     <Zap className="w-4 h-4" />
-                    {checkoutMutation.isPending ? 'Loading...' : `Unlock Core — ${PRICING_PLANS.core.priceLabel}`}
+                    {checkoutMutation.isPending ? 'Loading...' : `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`}
                   </button>
                 )}
                 <button
@@ -650,7 +650,7 @@ export function PremiumGateFull({
                     : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
                 >
                   <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`}
+                  {checkoutMutation.isPending ? 'Loading...' : `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`}
                 </button>
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
