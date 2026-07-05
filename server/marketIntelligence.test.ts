@@ -63,6 +63,14 @@ vi.mock("./cryptoIntelligence", () => ({
         score: 60, label: "Positive Inflow", direction: "inflow",
         note: "ETF net inflows positive",
       },
+      dollarPressure: {
+        score: 55, label: "Neutral", direction: "neutral",
+        note: "DXY range-bound",
+      },
+      yieldPressure: {
+        score: 50, label: "Stable", direction: "neutral",
+        note: "10Y yields stable",
+      },
       longTermHolderBehavior: {
         score: 65, label: "Accumulating", direction: "accumulating",
         note: "LTH supply increasing",
@@ -77,7 +85,7 @@ vi.mock("./cryptoIntelligence", () => ({
       },
       accumulationAnalysis: null,
     },
-    altcoinRisk: { riskLevel: "Moderate", riskScore: 45, signals: [] },
+    altcoinRisk: { riskLevel: "Moderate", riskScore: 45, signals: [], stablecoinSignal: "Stable — neutral conditions", btcDominanceSignal: "Neutral — range-bound" },
     macroCorrelation: {
       overallMacroSignal: "Neutral",
       correlationSummary: "Moderate macro correlation. No strong divergence.",

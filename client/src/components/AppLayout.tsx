@@ -65,6 +65,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "alt-rotation",    label: "Sector Rotation",      shortLabel: "Rotation",    icon: RotateCcw,       path: "/app/alt-rotation" },
       { id: "crypto",          label: "Crypto Hub",           shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
       { id: "market-intelligence", label: "Market Intelligence",  shortLabel: "Regimes",     icon: BarChart3,       path: "/app/market-intelligence" },
+      { id: "crypto-regime",       label: "Crypto Regime",          shortLabel: "Crypto Regime", icon: Bitcoin,         path: "/app/crypto-regime" },
     ],
   },
   {

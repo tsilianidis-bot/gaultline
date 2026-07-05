@@ -3433,3 +3433,15 @@
 - [x] PROJECT BLACK tests: 7 new tests in marketIntelligence.test.ts (enrichment fields, getRecentAlerts shape, ordering, empty state)
 - [x] Total tests: 1157 passing, 1 pre-existing SendGrid 401 failure (unrelated), 21 skipped
 - [x] TypeScript: 0 errors
+
+## Crypto Market Regime Dashboard (July 4, 2026)
+
+- [x] Enrich `CryptoMarketRegime` interface with `indicators`, `historicalContext`, and `transitionProbabilities` fields
+- [x] Add `buildIndicators()`, `buildHistoricalContext()`, `buildTransitionProbabilities()` helpers to cryptoRegimeEngine.ts
+- [x] Add `getCryptoRegimeDashboard` tRPC procedure that returns enriched CryptoMarketRegime + full CryptoIntelligenceReport fields
+- [x] Create `client/src/pages/CryptoRegimeDashboard.tsx` with 6 sections: Regime Card, Indicator Breakdown, Historical Context, Transition Probabilities, Actionable Interpretation, Cross-Market Comparison
+- [x] Register route `/app/crypto-regime` in App.tsx
+- [x] Add nav entry to UNDERSTAND group in AppLayout.tsx
+- [x] Write Vitest tests for new helpers (mock updated with dollarPressure, yieldPressure, stablecoinSignal, btcDominanceSignal)
+- [x] TypeScript: 0 errors
+- [x] Save checkpoint

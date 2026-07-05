@@ -48,6 +48,23 @@ export const marketIntelligenceRouter = router({
       return rows;
     }),
 
+  // Full enriched crypto regime dashboard — includes indicators, historical context,
+  // transition probabilities, actionable interpretation, and cross-market comparison
+  getCryptoRegimeDashboard: publicProcedure.query(async () => {
+    const [regime, cross] = await Promise.all([
+      computeCryptoMarketRegime(),
+      computeCrossMarketIntelligence(),
+    ]);
+    return {
+      ...regime,
+      stockRegimeLabel:          cross.stockRegime.regime,
+      stockRegimeColor:          cross.stockRegime.color,
+      alignmentStatus:           cross.alignmentStatus,
+      alignmentScore:            cross.alignmentScore,
+      crossMarketInterpretation: cross.plainEnglishSummary,
+    };
+  }),
+
   clearCache: protectedProcedure.mutation(async () => {
     clearStockRegimeCache();
     clearCryptoRegimeCache();
