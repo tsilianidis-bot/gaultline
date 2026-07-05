@@ -13,6 +13,12 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useLocation } from "wouter";
+import Scores from "./Scores";
+import Charts from "./Charts";
+import AftershockEnginePage from "./AftershockEngine";
+import HistoricalAnalogs from "./HistoricalAnalogs";
+import SimulatePressure from "./SimulatePressure";
+import { useEngine } from "@/contexts/EngineContext";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -44,19 +50,6 @@ function StressTabBar({ active, onSelect }: { active: StressTabId; onSelect: (id
   );
 }
 
-// Placeholder panel for tabs not yet fully built
-function ComingSoonPanel({ label }: { label: string }) {
-  return (
-    <div style={{ padding: '48px 24px', textAlign: 'center' }}>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563', letterSpacing: '0.15em', marginBottom: '12px' }}>
-        {label.toUpperCase()} · COMING SOON
-      </div>
-      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#374151' }}>
-        This intelligence module is being built. Check back soon.
-      </div>
-    </div>
-  );
-}
 
 // ── Types (mirror server output) ─────────────────────────────
 type PressureLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
@@ -873,6 +866,92 @@ function PressureSkeleton() {
     </div>
   );
 }
+// ── Domain Analysis Tab ─────────────────────────────────────
+function DomainAnalysisTab() {
+  const { output, isLoading: engineLoading } = useEngine();
+  const domains = output?.domains ?? [];
+
+  if (engineLoading) {
+    return (
+      <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563', letterSpacing: '0.15em' }}>LOADING DOMAIN DATA...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '24px' }}>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', letterSpacing: '0.15em', marginBottom: '20px' }}>DOMAIN RISK ANALYSIS — {domains.length} ACTIVE DOMAINS</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+        {domains.map((domain, i) => {
+          const colors = getLevelColor(domain.riskLevel === 'critical' ? 'Critical' : domain.riskLevel === 'high' ? 'High' : domain.riskLevel === 'elevated' ? 'Elevated' : domain.riskLevel === 'moderate' ? 'Moderate' : 'Low');
+          return (
+            <motion.div
+              key={domain.id}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: i * 0.06, ease: [0.23, 1, 0.32, 1] }}
+              style={{
+                position: 'relative',
+                background: 'rgba(10,12,16,0.85)',
+                border: `1px solid ${colors.primary}22`,
+                borderRadius: '8px',
+                padding: '18px',
+                overflow: 'hidden',
+              }}
+            >
+              <CornerBrackets color={`${colors.primary}33`} size={7} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', letterSpacing: '0.12em', marginBottom: '3px', textTransform: 'uppercase' }}>DOMAIN {String(i + 1).padStart(2, '0')}</div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#E2E8F0', letterSpacing: '0.06em' }}>{domain.label.toUpperCase()}</div>
+                </div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: '28px', color: colors.primary, textShadow: `0 0 12px ${colors.glow}`, lineHeight: 1 }}>
+                  {domain.score.toFixed(1)}
+                </div>
+              </div>
+              <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(domain.score / 10) * 100}%` }}
+                  transition={{ duration: 1.1, ease: [0.23, 1, 0.32, 1], delay: 0.2 + i * 0.06 }}
+                  style={{ height: '100%', background: colors.primary, borderRadius: '2px', boxShadow: `0 0 6px ${colors.glow}` }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: colors.text, background: colors.bg, border: `1px solid ${colors.primary}33`, borderRadius: '3px', padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{domain.riskLevel}</div>
+                {domain.delta !== 0 && (
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: domain.delta > 0 ? '#FF6B00' : '#00FF88', letterSpacing: '0.06em' }}>
+                    {domain.delta > 0 ? '+' : ''}{domain.delta.toFixed(2)} vs baseline
+                  </div>
+                )}
+              </div>
+              {domain.description && (
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#6B7280', lineHeight: 1.5, marginBottom: '8px' }}>{domain.description}</div>
+              )}
+              {domain.drivers && domain.drivers.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {domain.drivers.slice(0, 2).map((d: string, di: number) => (
+                    <div key={di} style={{ display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                      <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: colors.primary, flexShrink: 0, marginTop: '5px' }} />
+                      <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', lineHeight: 1.4 }}>{d}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
+        {domains.length === 0 && (
+          <div style={{ gridColumn: '1/-1', padding: '48px 24px', textAlign: 'center' }}>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563', letterSpacing: '0.15em' }}>NO DOMAIN DATA AVAILABLE</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Pressure Page ────────────────────────────────────────
 export default function Pressure() {
   useSEO(PAGE_SEO.pressure);
@@ -941,9 +1020,12 @@ export default function Pressure() {
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
         <StressTabBar active={activeTab} onSelect={setActiveTab} />
-        {activeTab !== 'pressure' && (
-          <ComingSoonPanel label={STRESS_TABS.find(t => t.id === activeTab)?.label ?? activeTab} />
-        )}
+        {activeTab === 'scores' && <Scores />}
+        {activeTab === 'charts' && <Charts />}
+        {activeTab === 'aftershock' && <AftershockEnginePage />}
+        {activeTab === 'analogs' && <HistoricalAnalogs />}
+        {activeTab === 'scenarios' && <SimulatePressure />}
+        {activeTab === 'domain' && <DomainAnalysisTab />}
         {activeTab === 'pressure' && <div style={{ padding: "24px" }}>
 
         {/* ── Page header ──────────────────────────────────── */}

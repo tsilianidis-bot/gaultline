@@ -564,18 +564,7 @@ function PositionGuidanceSection({ guidance, isLoading }: { guidance: any[] | un
         <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>
           AI-powered add, hold, trim, and exit-bias signals based on market conditions.
         </p>
-        <div style={{
-          marginTop: 8,
-          padding: "6px 10px",
-          background: "rgba(255,215,0,0.06)",
-          border: "1px solid rgba(255,215,0,0.15)",
-          borderRadius: 6,
-          display: "inline-block",
-        }}>
-          <span style={{ fontSize: 10, color: "#FFD700", fontFamily: "'IBM Plex Mono', monospace" }}>
-            DEMO MODE — Placeholder assets for illustration. Connect live data for production use.
-          </span>
-        </div>
+
       </div>
 
       {isLoading && (
