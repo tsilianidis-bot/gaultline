@@ -439,6 +439,11 @@ function Router() {
               <Route path="/app"><Redirect to="/app/discover" /></Route>
               <Route path="/app/dashboard" component={Dashboard} />
               {/* P1 — Deprecated routes redirect to new destinations */}
+              {/* Canonical URL aliases — advertised paths */}
+              <Route path="/app/command-center"><Redirect to="/app/command" /></Route>
+              <Route path="/app/pressure-index"><Redirect to="/app/pressure" /></Route>
+              <Route path="/app/ai-diagnostic"><Redirect to="/app/diagnostic" /></Route>
+              <Route path="/app/daily-briefing"><Redirect to="/app/report" /></Route>
               <Route path="/app/scores"><Redirect to="/app/pressure" /></Route>
               <Route path="/app/charts"><Redirect to="/app/symbol-intelligence" /></Route>
               <Route path="/app/ai-watch"><Redirect to="/app/signals" /></Route>
