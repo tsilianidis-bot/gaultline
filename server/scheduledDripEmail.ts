@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { sdk } from "./_core/sdk";
 import { getUsersPendingDripStep, recordOnboardingEmailSent } from "./db";
 import { sendEmail, buildDay1PressureEmail, buildDay2UpgradeEmail } from "./email";
+import { HttpError } from "../shared/_core/errors";
 
 /**
  * POST /api/scheduled/drip-email
@@ -11,12 +12,24 @@ import { sendEmail, buildDay1PressureEmail, buildDay2UpgradeEmail } from "./emai
  * to users who signed up 24h / 48h ago and haven't yet received those steps.
  */
 export async function handleDripEmail(req: Request, res: Response): Promise<void> {
+  // Authenticate — allow cron triggers and admin users
+  let isCronOrAdmin = false;
   try {
     const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) {
-      res.status(403).json({ error: "cron-only" });
-      return;
+    isCronOrAdmin = !!(user.isCron || user.role === "admin");
+  } catch (authErr) {
+    if (authErr instanceof HttpError) {
+      res.status(authErr.statusCode).json({ error: authErr.message });
+    } else {
+      res.status(403).json({ error: "Authentication failed" });
     }
+    return;
+  }
+  if (!isCronOrAdmin) {
+    res.status(403).json({ error: "cron or admin only" });
+    return;
+  }
+  try {
 
     const DAY_MS = 24 * 60 * 60 * 1000;
     let sent1 = 0;
