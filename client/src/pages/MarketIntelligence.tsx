@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   TrendingUp, TrendingDown, Minus, RefreshCw, AlertTriangle,
   CheckCircle, XCircle, ArrowRight, BarChart3, Bitcoin, Activity,
-  Shield, Zap, Info, ChevronRight, Clock
+  Shield, Zap, Info, ChevronRight, Clock, Eye, Bell
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
@@ -121,11 +121,31 @@ function RegimeCard({ title, icon: Icon, regime, riskLevel, trend, confidence, e
   );
 }
 
+function AssetBadge({ asset }: { asset: string }) {
+  const isStock  = asset === "Stock";
+  const isCrypto = asset === "Crypto";
+  return (
+    <span className={cn(
+      "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-mono font-semibold border",
+      isStock  ? "bg-blue-500/20 text-blue-300 border-blue-500/30" :
+      isCrypto ? "bg-purple-500/20 text-purple-300 border-purple-500/30" :
+                 "bg-slate-500/20 text-slate-300 border-slate-500/30"
+    )}>
+      {isStock ? <BarChart3 className="w-3 h-3" /> : isCrypto ? <Bitcoin className="w-3 h-3" /> : <Activity className="w-3 h-3" />}
+      {asset}
+    </span>
+  );
+}
+
 export default function MarketIntelligence() {
   const { user } = useAuth();
   const { data, isLoading, error, refetch, isFetching } = trpc.marketIntelligence.getAll.useQuery(
     undefined,
     { refetchInterval: 10 * 60 * 1000 }
+  );
+  const { data: persistedAlerts, isLoading: alertsLoading } = trpc.marketIntelligence.getRecentAlerts.useQuery(
+    { limit: 10 },
+    { refetchInterval: 5 * 60 * 1000 }
   );
   const clearCache = trpc.marketIntelligence.clearCache.useMutation({ onSuccess: () => refetch() });
 
@@ -336,6 +356,76 @@ export default function MarketIntelligence() {
             </CardContent>
           </Card>
         )}
+
+        {/* Recent Regime Change Alerts — persisted from DB */}
+        <Card className="bg-black/40 border-white/10">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white/50 text-xs font-mono uppercase tracking-wider">
+                <Bell className="w-3.5 h-3.5" />Recent Regime Change Alerts
+              </div>
+              {persistedAlerts && persistedAlerts.length > 0 && (
+                <span className="text-xs text-white/30 font-mono">{persistedAlerts.length} alert{persistedAlerts.length !== 1 ? "s" : ""}</span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {alertsLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => <div key={i} className="h-24 bg-white/5 rounded-lg animate-pulse" />)}
+              </div>
+            ) : !persistedAlerts || persistedAlerts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <CheckCircle className="w-8 h-8 text-green-400/40 mb-3" />
+                <p className="text-sm text-white/40">No regime changes detected recently.</p>
+                <p className="text-xs text-white/25 mt-1">Alerts appear here when market regimes shift.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {persistedAlerts.map((alert) => (
+                  <div key={alert.id} className="rounded-lg border border-white/10 bg-white/3 overflow-hidden">
+                    {/* Alert header */}
+                    <div className="flex items-start gap-3 px-4 py-3 border-b border-white/8">
+                      <Zap className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <AssetBadge asset={alert.asset} />
+                          <span className="text-xs text-white/40 font-mono">{alert.previous}</span>
+                          <ArrowRight className="w-3 h-3 text-white/30" />
+                          <span className="text-xs text-amber-300 font-mono font-semibold">{alert.current}</span>
+                        </div>
+                        <p className="text-sm text-white/70 leading-relaxed">{alert.message}</p>
+                      </div>
+                      <span className="text-xs text-white/25 font-mono flex-shrink-0 mt-0.5">
+                        {new Date(Number(alert.detectedAt)).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    {/* Why it matters */}
+                    {alert.whyItMatters && (
+                      <div className="flex items-start gap-2.5 px-4 py-2.5 bg-amber-500/5 border-b border-amber-500/10">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-400/70 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-mono text-amber-400/70 uppercase tracking-wider mb-0.5">Why It Matters</p>
+                          <p className="text-xs text-amber-200/70 leading-relaxed">{alert.whyItMatters}</p>
+                        </div>
+                      </div>
+                    )}
+                    {/* What to watch next */}
+                    {alert.whatToWatchNext && (
+                      <div className="flex items-start gap-2.5 px-4 py-2.5 bg-blue-500/5">
+                        <Eye className="w-3.5 h-3.5 text-blue-400/70 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-mono text-blue-400/70 uppercase tracking-wider mb-0.5">What to Watch Next</p>
+                          <p className="text-xs text-blue-200/70 leading-relaxed">{alert.whatToWatchNext}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="text-center text-xs text-white/20 font-mono pb-4">
           Data refreshes every 10 minutes · FAULTLINE Market Intelligence Engine v1.0

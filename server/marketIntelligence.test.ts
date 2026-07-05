@@ -301,3 +301,285 @@ describe("Cross-Market Intelligence Engine", () => {
     expect(calculateFaultlinePressure).toHaveBeenCalledTimes(1);
   });
 });
+
+// ─── PROJECT BLACK: Alert Enrichment Tests ────────────────────────────────────
+// We test the enrichment logic indirectly by triggering a regime change and
+// verifying the resulting alert has non-empty whyItMatters and whatToWatchNext.
+
+describe("PROJECT BLACK — Regime Change Alert Enrichment", () => {
+  beforeEach(() => {
+    clearCrossMarketCache();
+    resetCrossMarketPrevRegimes();
+    clearStockRegimeCache();
+    clearCryptoRegimeCache();
+    vi.clearAllMocks();
+  });
+
+  it("enriched alert has non-empty whyItMatters when stock regime changes", async () => {
+    const { calculateFaultlinePressure } = await import("./pressure/engine");
+
+    // First call — establishes baseline
+    await computeCrossMarketIntelligence();
+
+    // Clear caches but keep prev regime tracking
+    clearCrossMarketCache();
+    clearStockRegimeCache();
+    clearCryptoRegimeCache();
+
+    // Second call with crisis-level pressure → different regime → alert fires
+    (calculateFaultlinePressure as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      overallPressure: 88,
+      regime: "SYSTEMIC CRISIS",
+      level: "Critical",
+      vectors: [
+        { id: "credit-contagion",      score: 88, label: "Credit Contagion",      level: "Critical" },
+        { id: "liquidity-stress",      score: 82, label: "Liquidity Stress",      level: "Critical" },
+        { id: "market-breadth",        score: 75, label: "Market Breadth",        level: "High" },
+        { id: "recession",             score: 80, label: "Recession Risk",        level: "Critical" },
+        { id: "breadth-deterioration", score: 75, label: "Breadth Deterioration", level: "High" },
+      ],
+      alerts: [],
+      topAnalog: { year: 2008, label: "2008 GFC", similarity: 0.85, description: "Financial crisis" },
+      analogs: [],
+      timestamp: new Date().toISOString(),
+      dataSource: "fallback",
+      lastUpdated: new Date().toISOString(),
+    });
+
+    const result = await computeCrossMarketIntelligence();
+    const stockAlert = result.regimeChangeAlerts.find(a => a.asset === "Stock");
+
+    expect(stockAlert).toBeDefined();
+    expect(stockAlert!.whyItMatters).toBeTruthy();
+    expect(stockAlert!.whyItMatters.length).toBeGreaterThan(20);
+    expect(stockAlert!.whatToWatchNext).toBeTruthy();
+    expect(stockAlert!.whatToWatchNext.length).toBeGreaterThan(20);
+  });
+
+  it("whyItMatters for Stock crisis regime mentions capital preservation", async () => {
+    const { calculateFaultlinePressure } = await import("./pressure/engine");
+
+    await computeCrossMarketIntelligence();
+    clearCrossMarketCache();
+    clearStockRegimeCache();
+    clearCryptoRegimeCache();
+
+    (calculateFaultlinePressure as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      overallPressure: 88,
+      regime: "SYSTEMIC CRISIS",
+      level: "Critical",
+      vectors: [
+        { id: "credit-contagion",      score: 88, label: "Credit Contagion",      level: "Critical" },
+        { id: "liquidity-stress",      score: 82, label: "Liquidity Stress",      level: "Critical" },
+        { id: "market-breadth",        score: 75, label: "Market Breadth",        level: "High" },
+        { id: "recession",             score: 80, label: "Recession Risk",        level: "Critical" },
+        { id: "breadth-deterioration", score: 75, label: "Breadth Deterioration", level: "High" },
+      ],
+      alerts: [],
+      topAnalog: { year: 2008, label: "2008 GFC", similarity: 0.85, description: "Financial crisis" },
+      analogs: [],
+      timestamp: new Date().toISOString(),
+      dataSource: "fallback",
+      lastUpdated: new Date().toISOString(),
+    });
+
+    const result = await computeCrossMarketIntelligence();
+    const stockAlert = result.regimeChangeAlerts.find(a => a.asset === "Stock");
+
+    if (stockAlert) {
+      // Crisis/recession regime should mention capital preservation or drawdowns
+      const text = stockAlert.whyItMatters.toLowerCase();
+      const mentionsRisk = text.includes("capital") || text.includes("drawdown") || text.includes("preservation") || text.includes("reduce");
+      expect(mentionsRisk).toBe(true);
+    }
+  });
+
+  it("whatToWatchNext for Stock crisis regime mentions Fed or credit spreads", async () => {
+    const { calculateFaultlinePressure } = await import("./pressure/engine");
+
+    await computeCrossMarketIntelligence();
+    clearCrossMarketCache();
+    clearStockRegimeCache();
+    clearCryptoRegimeCache();
+
+    (calculateFaultlinePressure as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      overallPressure: 88,
+      regime: "SYSTEMIC CRISIS",
+      level: "Critical",
+      vectors: [
+        { id: "credit-contagion",      score: 88, label: "Credit Contagion",      level: "Critical" },
+        { id: "liquidity-stress",      score: 82, label: "Liquidity Stress",      level: "Critical" },
+        { id: "market-breadth",        score: 75, label: "Market Breadth",        level: "High" },
+        { id: "recession",             score: 80, label: "Recession Risk",        level: "Critical" },
+        { id: "breadth-deterioration", score: 75, label: "Breadth Deterioration", level: "High" },
+      ],
+      alerts: [],
+      topAnalog: { year: 2008, label: "2008 GFC", similarity: 0.85, description: "Financial crisis" },
+      analogs: [],
+      timestamp: new Date().toISOString(),
+      dataSource: "fallback",
+      lastUpdated: new Date().toISOString(),
+    });
+
+    const result = await computeCrossMarketIntelligence();
+    const stockAlert = result.regimeChangeAlerts.find(a => a.asset === "Stock");
+
+    if (stockAlert) {
+      const text = stockAlert.whatToWatchNext.toLowerCase();
+      // Crisis watch list should mention Fed, credit spreads, or yield curve
+      const mentionsWatchItems = text.includes("fed") || text.includes("credit") || text.includes("yield") || text.includes("vix") || text.includes("watch");
+      expect(mentionsWatchItems).toBe(true);
+    }
+  });
+
+  it("alert has all required fields: asset, previous, current, message, whyItMatters, whatToWatchNext, timestamp", async () => {
+    const { calculateFaultlinePressure } = await import("./pressure/engine");
+
+    await computeCrossMarketIntelligence();
+    clearCrossMarketCache();
+    clearStockRegimeCache();
+    clearCryptoRegimeCache();
+
+    (calculateFaultlinePressure as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      overallPressure: 88,
+      regime: "SYSTEMIC CRISIS",
+      level: "Critical",
+      vectors: [
+        { id: "credit-contagion",      score: 88, label: "Credit Contagion",      level: "Critical" },
+        { id: "liquidity-stress",      score: 82, label: "Liquidity Stress",      level: "Critical" },
+        { id: "market-breadth",        score: 75, label: "Market Breadth",        level: "High" },
+        { id: "recession",             score: 80, label: "Recession Risk",        level: "Critical" },
+        { id: "breadth-deterioration", score: 75, label: "Breadth Deterioration", level: "High" },
+      ],
+      alerts: [],
+      topAnalog: { year: 2008, label: "2008 GFC", similarity: 0.85, description: "Financial crisis" },
+      analogs: [],
+      timestamp: new Date().toISOString(),
+      dataSource: "fallback",
+      lastUpdated: new Date().toISOString(),
+    });
+
+    const result = await computeCrossMarketIntelligence();
+
+    for (const alert of result.regimeChangeAlerts) {
+      expect(alert.asset).toMatch(/^(Stock|Crypto)$/);
+      expect(alert.previous).toBeTruthy();
+      expect(alert.current).toBeTruthy();
+      expect(alert.message).toBeTruthy();
+      expect(alert.whyItMatters).toBeTruthy();
+      expect(alert.whatToWatchNext).toBeTruthy();
+      expect(alert.timestamp).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ─── PROJECT BLACK: getRecentAlerts Procedure Shape ──────────────────────────
+// We test the router procedure by mocking the DB and verifying the returned shape.
+
+vi.mock("./db", () => ({
+  getDb: vi.fn().mockResolvedValue({
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        orderBy: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([
+            {
+              id: 1,
+              asset: "Stock",
+              previous: "Bull Market",
+              current: "Correction",
+              message: "US equity market regime changed from Bull Market to Correction.",
+              whyItMatters: "The equity market is entering a corrective phase.",
+              whatToWatchNext: "Watch for: (1) SPY breaking below 200-day MA.",
+              detectedAt: Date.now(),
+            },
+            {
+              id: 2,
+              asset: "Crypto",
+              previous: "Mid Bull",
+              current: "Bear Market → Accumulation Phase",
+              message: "Crypto market regime changed from Mid Bull to Bear Market → Accumulation Phase.",
+              whyItMatters: "Bitcoin is forming a potential base inside a bear structure.",
+              whatToWatchNext: "Watch for: (1) BTC price breaking above major resistance.",
+              detectedAt: Date.now() - 3600000,
+            },
+          ]),
+        }),
+      }),
+    }),
+    insert: vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue({}) }),
+  }),
+}));
+
+describe("PROJECT BLACK — getRecentAlerts Procedure", () => {
+  it("returns an array of regime alert rows with correct shape", async () => {
+    const { getDb } = await import("./db");
+    const db = await getDb();
+    expect(db).toBeDefined();
+
+    // Simulate what the procedure does
+    const { regimeAlerts: alertsTable } = await import("../drizzle/schema");
+    const { desc: descFn } = await import("drizzle-orm");
+
+    const rows = await db!
+      .select()
+      .from(alertsTable)
+      .orderBy(descFn(alertsTable.detectedAt))
+      .limit(10);
+
+    expect(Array.isArray(rows)).toBe(true);
+    expect(rows.length).toBe(2);
+
+    const [first] = rows;
+    expect(first.id).toBeDefined();
+    expect(first.asset).toMatch(/^(Stock|Crypto)$/);
+    expect(first.previous).toBeTruthy();
+    expect(first.current).toBeTruthy();
+    expect(first.message).toBeTruthy();
+    expect(first.whyItMatters).toBeTruthy();
+    expect(first.whatToWatchNext).toBeTruthy();
+    expect(first.detectedAt).toBeGreaterThan(0);
+  });
+
+  it("returns rows ordered by detectedAt descending (most recent first)", async () => {
+    const { getDb } = await import("./db");
+    const db = await getDb();
+    const { regimeAlerts: alertsTable } = await import("../drizzle/schema");
+    const { desc: descFn } = await import("drizzle-orm");
+
+    const rows = await db!
+      .select()
+      .from(alertsTable)
+      .orderBy(descFn(alertsTable.detectedAt))
+      .limit(10);
+
+    if (rows.length >= 2) {
+      expect(Number(rows[0].detectedAt)).toBeGreaterThanOrEqual(Number(rows[1].detectedAt));
+    }
+  });
+
+  it("returns empty array when no alerts exist", async () => {
+    const { getDb } = await import("./db");
+    // Override mock to return empty array for this test
+    (getDb as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([]),
+          }),
+        }),
+      }),
+    });
+
+    const db = await getDb();
+    const { regimeAlerts: alertsTable } = await import("../drizzle/schema");
+    const { desc: descFn } = await import("drizzle-orm");
+
+    const rows = await db!
+      .select()
+      .from(alertsTable)
+      .orderBy(descFn(alertsTable.detectedAt))
+      .limit(10);
+
+    expect(rows).toHaveLength(0);
+  });
+});

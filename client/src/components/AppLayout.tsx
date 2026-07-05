@@ -22,6 +22,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { trpc } from "@/lib/trpc";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: command → markets → intelligence → analysis → account
@@ -132,6 +133,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const isAdmin = authUser?.role === "admin";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { isOpen: cmdOpen, open: openCmd, close: closeCmd } = useCommandSearch();
+  // Market regime intelligence — 10-min cache, non-blocking
+  const { data: miData } = trpc.marketIntelligence.getAll.useQuery(undefined, {
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
   const isMobile = useIsMobile();
 
   // Count breached watchlist items for badge
@@ -296,6 +302,56 @@ export default function AppLayout({ children }: AppLayoutProps) {
             ))}
           </div>
         </div>
+
+        {/* ── Regime indicator strip (shows when market intelligence data is loaded) ── */}
+        {miData && !isMobile && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            padding: '3px 16px',
+            background: 'rgba(0,0,0,0.3)',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            overflowX: 'auto',
+          }}>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151', letterSpacing: '0.12em', textTransform: 'uppercase', flexShrink: 0 }}>REGIME</span>
+            {/* Stock regime pill */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '4px',
+              padding: '1px 7px', borderRadius: '3px',
+              background: 'rgba(59,130,246,0.08)',
+              border: '1px solid rgba(59,130,246,0.2)',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.08em' }}>EQ</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#93C5FD', letterSpacing: '0.06em' }}>{miData.stockRegime?.regime ?? '—'}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>{miData.stockRegime?.confidence ? `${miData.stockRegime.confidence}%` : ''}</span>
+            </div>
+            {/* Crypto regime pill */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '4px',
+              padding: '1px 7px', borderRadius: '3px',
+              background: 'rgba(245,158,11,0.08)',
+              border: '1px solid rgba(245,158,11,0.2)',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.08em' }}>BTC</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FCD34D', letterSpacing: '0.06em' }}>{miData.cryptoRegime?.regime ?? '—'}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>{miData.cryptoRegime?.confidence ? `${miData.cryptoRegime.confidence}%` : ''}</span>
+            </div>
+            {/* Alignment pill */}
+            {miData.alignmentStatus && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '4px',
+                padding: '1px 7px', borderRadius: '3px',
+                background: miData.alignmentScore != null && miData.alignmentScore > 65 ? 'rgba(16,185,129,0.08)' : miData.alignmentScore != null && miData.alignmentScore < 35 ? 'rgba(239,68,68,0.08)' : 'rgba(107,114,128,0.08)',
+                border: miData.alignmentScore != null && miData.alignmentScore > 65 ? '1px solid rgba(16,185,129,0.2)' : miData.alignmentScore != null && miData.alignmentScore < 35 ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(107,114,128,0.2)',
+                flexShrink: 0,
+              }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.08em' }}>ALIGN</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: miData.alignmentScore != null && miData.alignmentScore > 65 ? '#6EE7B7' : miData.alignmentScore != null && miData.alignmentScore < 35 ? '#FCA5A5' : '#9CA3AF', letterSpacing: '0.06em' }}>{miData.alignmentStatus}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Logo row + status */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>

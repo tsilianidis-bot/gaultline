@@ -21,6 +21,7 @@ import { getQuote } from "../yahooProxy";
 import { getCoinMarketData } from "../coingeckoProxy";
 import { scanOpportunities } from "../ownerSimulation";
 import { log } from "../logger";
+import { computeCrossMarketIntelligence } from "../crossMarketEngine";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -273,17 +274,20 @@ async function orchestrateAnswer(
 
   // ── Stage 4: Market data fetch ─────────────────────────────────
   // 2. Fetch live market data via FMOS pipeline
-  const [fmosResult, quickOutlook] = await Promise.allSettled([
+  const [fmosResult, quickOutlook, crossMarketResult] = await Promise.allSettled([
     runFMOSPipelineFast({ symbol: ticker ?? undefined }),
     ticker ? getQuickOutlook(ticker, assetType ?? "stock") : Promise.resolve(null),
+    computeCrossMarketIntelligence(),
   ]);
 
   const fmos = fmosResult.status === "fulfilled" ? fmosResult.value : null;
   const pressureData = fmos?.pressure ?? null;
   const outlookData = quickOutlook.status === "fulfilled" ? quickOutlook.value : null;
+  const crossMarket = crossMarketResult.status === "fulfilled" ? crossMarketResult.value : null;
   log.info("[Ask] Stage 4: Market data fetched", {
     fmosStatus: fmosResult.status,
     outlookStatus: quickOutlook.status,
+    crossMarketStatus: crossMarketResult.status,
     latencyMs: Date.now() - t0,
   });
 
@@ -445,9 +449,26 @@ FIELD RULES:
 - suggestedAction: ONE sentence starting with a verb.
 - Dynamic invalidation only — never hardcode prices. Use conditions like "breaks below moving average", "ETF outflows exceed threshold", "credit spreads widen beyond X bps".
 - collectiveReading: REQUIRED in every answer. Do NOT stop at listing signals or scores. After analyzing all evidence, synthesize them into one clear investment reading that answers: (1) Are conditions risk-on, risk-off, or mixed? (2) Which asset types, sectors, or stocks benefit most? (3) What is the strongest single reason for this reading? (4) What could invalidate the reading? (5) What should the investor actually do with this information? The summary field must be a flowing institutional paragraph starting with "Collective Reading:" — like the example: "Collective Reading: Liquidity is improving, volatility is contained, and earnings expectations are supportive. Collectively, this creates a risk-on environment favoring growth equities, AI infrastructure, semiconductors, and high-quality tech. The main risk is a reversal in rates or inflation expectations. The practical takeaway is to favor leading AI names on pullbacks rather than chasing weak speculative stocks."
+DIRECT ANSWER RULE (CRITICAL — applies to ALL questions):
+- Your FIRST sentence must directly answer the question asked. No preamble, no hedging, no "it depends".
+- For regime/market questions: state the regime label first, then explain what it means.
+  Example: "Bitcoin is in a Bear Market Accumulation Phase." | "The stock market is in a Correction regime."
+- For security questions: state the verdict first.
+  Example: "NVDA is a BUY at current levels." | "AAPL should be HELD, not added to."
+- After the direct answer, provide evidence, confidence level, and supporting analysis.
+
 DISCLAIMER INSTRUCTION: All output is for informational and educational purposes only. Nothing constitutes financial advice or a solicitation to buy or sell any security.
 
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
+${crossMarket ? `
+── MARKET REGIME INTELLIGENCE ──
+Stock Market Regime: ${crossMarket.stockRegime.regime} | Risk: ${crossMarket.stockRegime.riskLevel} | Confidence: ${crossMarket.stockRegime.confidence}% | Trend: ${crossMarket.stockRegime.trend}
+Crypto Market Regime: ${crossMarket.cryptoRegime.regime} | Risk: ${crossMarket.cryptoRegime.riskLevel} | Confidence: ${crossMarket.cryptoRegime.confidence}% | Trend: ${crossMarket.cryptoRegime.trend}
+Cross-Market Alignment: ${crossMarket.alignmentStatus} (Score: ${crossMarket.alignmentScore}/100)
+Forward Bias: ${crossMarket.forwardBias}
+Market Summary: ${crossMarket.plainEnglishSummary}
+Key Insights: ${crossMarket.keyInsights.slice(0, 3).join(" | ")}
+${crossMarket.regimeChangeAlerts.length > 0 ? `ACTIVE REGIME ALERTS: ${crossMarket.regimeChangeAlerts.map(a => `${a.asset} regime changed from ${a.previous} to ${a.current}`).join("; ")}` : ""}` : ""}
 ${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
 ${evidenceContext}
 ${outlookSummary}`;
@@ -1074,6 +1095,10 @@ export const smartDiscoveryRouter = router({
       primaryDriver: z.string(),
       expectedTimeframe: z.string(),
       queryType: z.string(),
+      // Regime snapshot fields — captured at time of recommendation
+      stockRegimeAtTime: z.string().nullable().optional(),
+      cryptoRegimeAtTime: z.string().nullable().optional(),
+      alignmentAtTime: z.string().nullable().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -1095,6 +1120,22 @@ export const smartDiscoveryRouter = router({
         }
       }
 
+      // Fetch regime snapshot in parallel with price (non-fatal if fails)
+      let stockRegimeAtTime: string | null = input.stockRegimeAtTime ?? null;
+      let cryptoRegimeAtTime: string | null = input.cryptoRegimeAtTime ?? null;
+      let alignmentAtTime: string | null = input.alignmentAtTime ?? null;
+      if (!stockRegimeAtTime) {
+        try {
+          const { computeCrossMarketIntelligence } = await import("../crossMarketEngine");
+          const cross = await computeCrossMarketIntelligence();
+          stockRegimeAtTime = cross.stockRegime.regime;
+          cryptoRegimeAtTime = cross.cryptoRegime.regime;
+          alignmentAtTime = cross.alignmentStatus;
+        } catch {
+          // Non-fatal — regime snapshot is optional
+        }
+      }
+
       await db.insert(decisionLedger).values({
         userId: ctx.user.id,
         ticker: input.ticker,
@@ -1107,6 +1148,9 @@ export const smartDiscoveryRouter = router({
         queryType: input.queryType,
         outcome: "pending",
         priceAtEntry,
+        stockRegimeAtTime,
+        cryptoRegimeAtTime,
+        alignmentAtTime,
       });
       return { success: true };
     }),

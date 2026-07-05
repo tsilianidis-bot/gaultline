@@ -6,6 +6,10 @@ import { notifyOwner } from "../_core/notification";
 import { computeStockMarketRegime, clearStockRegimeCache } from "../stockRegimeEngine";
 import { computeCryptoMarketRegime, clearCryptoRegimeCache } from "../cryptoRegimeEngine";
 import { computeCrossMarketIntelligence, clearCrossMarketCache } from "../crossMarketEngine";
+import { getDb } from "../db";
+import { regimeAlerts } from "../../drizzle/schema";
+import { desc } from "drizzle-orm";
+import { z } from "zod";
 
 export const marketIntelligenceRouter = router({
   getAll: publicProcedure.query(async () => {
@@ -29,6 +33,20 @@ export const marketIntelligenceRouter = router({
   getCrypto: publicProcedure.query(async () => {
     return computeCryptoMarketRegime();
   }),
+
+  getRecentAlerts: publicProcedure
+    .input(z.object({ limit: z.number().min(1).max(50).default(20) }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const limit = input?.limit ?? 20;
+      const rows = await db
+        .select()
+        .from(regimeAlerts)
+        .orderBy(desc(regimeAlerts.detectedAt))
+        .limit(limit);
+      return rows;
+    }),
 
   clearCache: protectedProcedure.mutation(async () => {
     clearStockRegimeCache();

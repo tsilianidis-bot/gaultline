@@ -2385,6 +2385,10 @@ export default function SmartDiscovery() {
 
   const askMutation = trpc.smartDiscovery.ask.useMutation();
   const logMutation = trpc.smartDiscovery.logRecommendation.useMutation();
+  const { data: marketIntelData } = trpc.marketIntelligence.getAll.useQuery(undefined, {
+    staleTime: 10 * 60 * 1000, // 10 min cache — same as engine TTL
+    retry: false,
+  });
   const recordVisitMutation = trpc.dailyBrief.recordVisit.useMutation();
   const generateBriefMutation = trpc.dailyBrief.generateBrief.useMutation();
   const { output: engineOutput } = useEngine();
@@ -2603,6 +2607,10 @@ export default function SmartDiscovery() {
             primaryDriver: fa.primaryDriver ?? "",
             expectedTimeframe: fa.expectedTimeframe ?? "",
             queryType: fa.queryType ?? "general",
+            // Regime snapshot at time of recommendation
+            stockRegimeAtTime: marketIntelData?.stockRegime?.regime ?? null,
+            cryptoRegimeAtTime: marketIntelData?.cryptoRegime?.regime ?? null,
+            alignmentAtTime: marketIntelData?.alignmentStatus ?? null,
           });
         }
       }

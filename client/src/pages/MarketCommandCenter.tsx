@@ -313,6 +313,12 @@ export default function MarketCommandCenter() {
 
   const updatedAgo = useMemo(() => formatRelTime(lastUpdated), [lastUpdated]);
 
+  // Cross-market regime intelligence
+  const { data: miData } = trpc.marketIntelligence.getAll.useQuery(undefined, {
+    staleTime: 10 * 60 * 1000,
+    retry: false,
+  });
+
   // Map riskLevel → regime attribute for ambient lighting
   const regimeAttr = riskLevel === "low" ? "bullish" : riskLevel === "moderate" ? "moderate" : riskLevel === "elevated" ? "elevated" : "crisis";
 
@@ -514,6 +520,59 @@ export default function MarketCommandCenter() {
       <div style={{ position: "relative", zIndex: 2, padding: "0 20px 8px" }}>
         <MarketSynthesisPanel context="situation" />
       </div>
+
+      {/* ── CROSS-MARKET REGIME INTELLIGENCE ─────────────────────────────── */}
+      {miData && (
+        <div style={{
+          position: "relative", zIndex: 2,
+          display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center",
+          padding: "10px 20px",
+          background: "rgba(0,0,0,0.2)",
+          borderBottom: "1px solid rgba(255,255,255,0.04)",
+        }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.18em", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", flexShrink: 0 }}>CROSS-MARKET</span>
+          {/* Stock regime */}
+          <RegimePill
+            label="EQUITY REGIME"
+            value={miData.stockRegime?.regime ?? '—'}
+            color="#3B82F6"
+            sub={miData.stockRegime?.confidence ? `Confidence: ${miData.stockRegime.confidence}%` : undefined}
+            onClick={() => navigate("/app/market-intelligence")}
+          />
+          {/* Crypto regime */}
+          <RegimePill
+            label="CRYPTO REGIME"
+            value={miData.cryptoRegime?.regime ?? '—'}
+            color="#F59E0B"
+            sub={miData.cryptoRegime?.confidence ? `Confidence: ${miData.cryptoRegime.confidence}%` : undefined}
+            onClick={() => navigate("/app/market-intelligence")}
+          />
+          {/* Alignment */}
+          {miData.alignmentStatus && (
+            <RegimePill
+              label="ALIGNMENT"
+              value={miData.alignmentStatus}
+              color={miData.alignmentScore != null && miData.alignmentScore > 65 ? "#10B981" : miData.alignmentScore != null && miData.alignmentScore < 35 ? "#EF4444" : "#6B7280"}
+              sub={miData.plainEnglishSummary ? miData.plainEnglishSummary.slice(0, 40) + '...' : undefined}
+              onClick={() => navigate("/app/market-intelligence")}
+            />
+          )}
+          {/* Regime change alerts */}
+          {miData.regimeChangeAlerts && miData.regimeChangeAlerts.length > 0 && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: "6px",
+              padding: "6px 10px",
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.25)",
+              borderRadius: "4px",
+              flexShrink: 0,
+            }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#FCA5A5", letterSpacing: "0.12em" }}>⚡ REGIME CHANGE DETECTED</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(252,165,165,0.7)" }}>{miData.regimeChangeAlerts[0].asset}: {miData.regimeChangeAlerts[0].previous} → {miData.regimeChangeAlerts[0].current}</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── 8 REGIME PILLS ──────────────────────────────────────── */}
       <div style={{

@@ -501,22 +501,29 @@ export default function IntelligenceValidation() {
         {/* ── Section 9: Market Regime Analysis ───────────────── */}
         {hasData && (
           <section>
-            <SectionHeader title="Market Regime Analysis" subtitle="Accuracy by market regime at time of recommendation" icon={BarChart3} />
+            <SectionHeader title="Market Regime Analysis" subtitle="Accuracy by stock, crypto, and macro regime at time of recommendation" icon={BarChart3} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {(regimeAnalysis ?? []).slice(0, 8).map(row => (
-                <Card key={row.regime} className="bg-zinc-900/60 border-zinc-800">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-zinc-200 truncate">{row.regime}</span>
-                      <WinRateBadge rate={row.winRate} />
-                    </div>
-                    <OutcomeBar correct={row.correct} partial={row.partial} incorrect={row.incorrect} stillActive={row.stillActive} total={row.total} />
-                    <div className="text-xs text-zinc-600 mt-1">{row.resolved} resolved of {row.total}</div>
-                  </CardContent>
-                </Card>
-              ))}
+              {(regimeAnalysis ?? []).slice(0, 12).map(row => {
+                const regimeType = (row as typeof row & { regimeType?: string }).regimeType ?? "macro";
+                const badgeColor = regimeType === "stock" ? "text-blue-400 border-blue-800 bg-blue-950/40" : regimeType === "crypto" ? "text-amber-400 border-amber-800 bg-amber-950/40" : "text-zinc-400 border-zinc-700 bg-zinc-900/40";
+                return (
+                  <Card key={row.regime} className="bg-zinc-900/60 border-zinc-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border ${badgeColor} shrink-0`}>{regimeType}</span>
+                          <span className="text-sm font-medium text-zinc-200 truncate">{row.regime.replace(/^(Stock|Crypto|Macro): /, "")}</span>
+                        </div>
+                        <WinRateBadge rate={row.winRate} />
+                      </div>
+                      <OutcomeBar correct={row.correct} partial={row.partial} incorrect={row.incorrect} stillActive={row.stillActive} total={row.total} />
+                      <div className="text-xs text-zinc-600 mt-1">{row.resolved} resolved of {row.total}</div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
               {(!regimeAnalysis || regimeAnalysis.length === 0) && (
-                <div className="col-span-2 text-zinc-500 text-sm text-center py-4">No regime data yet. Regime classification requires enriched ledger entries.</div>
+                <div className="col-span-2 text-zinc-500 text-sm text-center py-4">No regime data yet. Log recommendations via Ask Intelligence to populate regime analysis.</div>
               )}
             </div>
           </section>

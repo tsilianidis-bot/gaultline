@@ -1180,6 +1180,12 @@ export const decisionLedger = mysqlTable("decision_ledger", {
   timeToTargetHours: double("timeToTargetHours"),
   /** Market regime label at the time the recommendation was made e.g. Risk-Off, Liquidity Stress */
   regimeAtTime:     varchar("regimeAtTime", { length: 80 }),
+  /** Stock market regime at time of recommendation e.g. Bull Market, Correction, Recession Risk */
+  stockRegimeAtTime: varchar("stockRegimeAtTime", { length: 80 }),
+  /** Crypto market regime at time of recommendation e.g. Bull Market, Bear Market → Accumulation Phase */
+  cryptoRegimeAtTime: varchar("cryptoRegimeAtTime", { length: 100 }),
+  /** Cross-market alignment status at time of recommendation e.g. Strongly Aligned — Risk On */
+  alignmentAtTime:  varchar("alignmentAtTime", { length: 80 }),
   /** Market cap category: Large Cap | Mid Cap | Small Cap | Micro Cap | Mega Cap | N/A */
   marketCapCategory: varchar("marketCapCategory", { length: 20 }),
   createdAt:        timestamp("createdAt").defaultNow().notNull(),
@@ -1414,3 +1420,33 @@ export const demoTokens = mysqlTable("demoTokens", {
 });
 export type DemoToken = typeof demoTokens.$inferSelect;
 export type InsertDemoToken = typeof demoTokens.$inferInsert;
+
+// ── Regime Change Alerts ─────────────────────────────────────
+/**
+ * Persisted regime change alerts from the Cross-Market Intelligence Engine.
+ * Each row captures a detected transition with enriched context:
+ * why it matters and what to watch next.
+ */
+export const regimeAlerts = mysqlTable("regimeAlerts", {
+  id:              int("id").autoincrement().primaryKey(),
+  /** "Stock" or "Crypto" */
+  asset:           varchar("asset", { length: 16 }).notNull(),
+  /** Previous regime label */
+  previous:        varchar("previous", { length: 128 }).notNull(),
+  /** New regime label */
+  current:         varchar("current", { length: 128 }).notNull(),
+  /** Short plain-English description of the transition */
+  message:         text("message").notNull(),
+  /** Why this regime change matters for investors */
+  whyItMatters:    text("whyItMatters").notNull(),
+  /** Key signals/events to monitor following this change */
+  whatToWatchNext: text("whatToWatchNext").notNull(),
+  /** Unix timestamp (ms) when the change was detected */
+  detectedAt:      bigint("detectedAt", { mode: "number" }).notNull(),
+  createdAt:       timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  assetIdx:      index("regime_alerts_asset_idx").on(t.asset),
+  detectedAtIdx: index("regime_alerts_detectedAt_idx").on(t.detectedAt),
+}));
+export type RegimeAlert = typeof regimeAlerts.$inferSelect;
+export type InsertRegimeAlert = typeof regimeAlerts.$inferInsert;

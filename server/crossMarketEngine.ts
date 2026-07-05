@@ -7,6 +7,8 @@
 import { computeStockMarketRegime, StockMarketRegime, StockRegimeLabel } from "./stockRegimeEngine";
 import { computeCryptoMarketRegime, CryptoMarketRegime, CryptoRegimeLabel } from "./cryptoRegimeEngine";
 import { LRUCache } from "./lruCache";
+import { getDb } from "./db";
+import { regimeAlerts } from "../drizzle/schema";
 
 // ── Types ─────────────────────────────────────────────────────
 export type AlignmentStatus =
@@ -20,11 +22,15 @@ export type AlignmentStatus =
   | "Neutral";
 
 export interface RegimeChangeAlert {
-  asset:     "Stock" | "Crypto";
-  previous:  string;
-  current:   string;
-  message:   string;
-  timestamp: number;
+  asset:           "Stock" | "Crypto";
+  previous:        string;
+  current:         string;
+  message:         string;
+  /** Why this regime change matters for investors */
+  whyItMatters:    string;
+  /** Key signals/events to monitor following this change */
+  whatToWatchNext: string;
+  timestamp:       number;
 }
 
 export interface CrossMarketIntelligence {
@@ -181,6 +187,79 @@ function buildForwardBias(ss: RegimeSentiment, cs: RegimeSentiment): string {
   return "Defensive. Capital preservation is the priority. Minimal equity and crypto exposure.";
 }
 
+// ── Alert Enrichment Helpers ─────────────────────────────────
+function buildWhyItMatters(asset: "Stock" | "Crypto", previous: string, current: string): string {
+  const prev = previous.toLowerCase();
+  const curr = current.toLowerCase();
+
+  // Deteriorating transitions
+  if (asset === "Stock") {
+    if (curr.includes("recession") || curr.includes("crisis")) {
+      return "A shift into a recessionary or crisis regime historically precedes significant equity drawdowns (20–50%+). Capital preservation becomes the primary objective. Reduce equity beta, raise cash, and avoid leveraged positions.";
+    }
+    if (curr.includes("correction") || curr.includes("distribution")) {
+      return "The equity market is entering a corrective or distribution phase. Institutional selling often accelerates in this regime. Risk-reward for new long positions deteriorates materially.";
+    }
+    if (curr.includes("bull") || curr.includes("expansion")) {
+      return "The equity market has transitioned to a risk-on regime. Historically, this environment favours growth equities, cyclicals, and momentum strategies. Breadth tends to improve and drawdowns are shallower.";
+    }
+    if (curr.includes("recovery")) {
+      return "The equity market is in early recovery. This regime often offers asymmetric upside as valuations reset and macro conditions stabilise. Selective accumulation in quality names tends to outperform.";
+    }
+    return `The equity market regime has shifted from ${previous} to ${current}. Review your equity allocation and risk exposure accordingly.`;
+  }
+
+  // Crypto
+  if (curr.includes("accumulation")) {
+    return "Bitcoin is forming a potential base inside a bear structure. Long-term holders are accumulating and exchange balances are declining — historically a precursor to the next bull cycle, but confirmation is required before aggressive positioning.";
+  }
+  if (curr.includes("capitulation")) {
+    return "Crypto is in capitulation — the most painful phase of a bear market. While this often marks a long-term bottom, timing is extremely difficult. Avoid catching falling knives; wait for volume confirmation and stabilising price action.";
+  }
+  if (curr.includes("bull") || curr.includes("early bull")) {
+    return "Crypto has transitioned to a bull regime. Historically, early bull phases offer the best risk-adjusted returns. Momentum and on-chain metrics tend to confirm the move. Selective accumulation in quality assets is favoured.";
+  }
+  if (curr.includes("bear")) {
+    return "Crypto has entered a bear market regime. Drawdowns of 50–80%+ are common in this environment. Capital preservation and stablecoin positioning are the priority until macro and on-chain conditions improve.";
+  }
+  return `The crypto market regime has shifted from ${previous} to ${current}. Review your crypto allocation and risk exposure accordingly.`;
+}
+
+function buildWhatToWatchNext(asset: "Stock" | "Crypto", current: string): string {
+  const curr = current.toLowerCase();
+
+  if (asset === "Stock") {
+    if (curr.includes("bull") || curr.includes("expansion")) {
+      return "Watch for: (1) SPY/QQQ holding above 50-day MA, (2) VIX remaining below 20, (3) credit spreads staying tight, (4) earnings revisions trending positive, (5) breadth expanding across sectors.";
+    }
+    if (curr.includes("correction") || curr.includes("distribution")) {
+      return "Watch for: (1) SPY breaking below 200-day MA, (2) VIX spiking above 25, (3) credit spreads widening, (4) defensive sectors (XLP, XLV) outperforming, (5) declining advance/decline line.";
+    }
+    if (curr.includes("recession") || curr.includes("crisis")) {
+      return "Watch for: (1) Fed pivot signals (rate cut expectations), (2) credit spreads peaking and compressing, (3) unemployment claims stabilising, (4) SPY reclaiming 50-day MA on strong volume, (5) yield curve steepening.";
+    }
+    if (curr.includes("recovery")) {
+      return "Watch for: (1) SPY reclaiming 200-day MA, (2) VIX declining below 20, (3) improving PMI data, (4) earnings guidance turning positive, (5) cyclical sectors (XLY, XLK) leading the recovery.";
+    }
+    return "Watch for: (1) price action relative to key moving averages, (2) VIX trend, (3) credit spread direction, (4) sector rotation patterns, (5) macro data surprises.";
+  }
+
+  // Crypto
+  if (curr.includes("accumulation")) {
+    return "Watch for: (1) BTC price breaking above major resistance with strong volume, (2) improving on-chain metrics (MVRV, SOPR), (3) declining exchange balances, (4) risk-on macro confirmation, (5) ETF inflow acceleration.";
+  }
+  if (curr.includes("capitulation")) {
+    return "Watch for: (1) volume spike on a down day followed by reversal, (2) MVRV ratio below 1.0, (3) long-term holder accumulation resuming, (4) funding rates deeply negative, (5) macro risk-on shift.";
+  }
+  if (curr.includes("bull")) {
+    return "Watch for: (1) BTC dominance declining (altcoin season signal), (2) funding rates turning positive but not extreme, (3) ETF inflows sustaining, (4) on-chain SOPR above 1.0, (5) macro liquidity conditions remaining supportive.";
+  }
+  if (curr.includes("bear")) {
+    return "Watch for: (1) BTC holding key support levels, (2) funding rates normalising from extreme negative, (3) long-term holder accumulation signals, (4) macro liquidity improvement, (5) exchange balance decline resuming.";
+  }
+  return "Watch for: (1) price action at key support/resistance, (2) on-chain accumulation signals, (3) funding rate normalisation, (4) macro risk-on/off shifts, (5) exchange balance trends.";
+}
+
 // ── Public API ────────────────────────────────────────────────
 export async function computeCrossMarketIntelligence(): Promise<CrossMarketIntelligence> {
   const cacheKey = "cross-market";
@@ -199,23 +278,51 @@ export async function computeCrossMarketIntelligence(): Promise<CrossMarketIntel
   const { status, score } = computeAlignmentStatus(ss, cs);
 
   const regimeChangeAlerts: RegimeChangeAlert[] = [];
+  const now = Date.now();
+
   if (prevStockRegime !== null && prevStockRegime !== stock.regime) {
-    regimeChangeAlerts.push({
-      asset:     "Stock",
-      previous:  prevStockRegime,
-      current:   stock.regime,
-      message:   `US equity market regime changed from ${prevStockRegime} to ${stock.regime}. Review your equity positioning.`,
-      timestamp: Date.now(),
-    });
+    const alert: RegimeChangeAlert = {
+      asset:           "Stock",
+      previous:        prevStockRegime,
+      current:         stock.regime,
+      message:         `US equity market regime changed from ${prevStockRegime} to ${stock.regime}. Review your equity positioning.`,
+      whyItMatters:    buildWhyItMatters("Stock", prevStockRegime, stock.regime),
+      whatToWatchNext: buildWhatToWatchNext("Stock", stock.regime),
+      timestamp:       now,
+    };
+    regimeChangeAlerts.push(alert);
+    // Persist to DB (fire-and-forget)
+    getDb().then(db => { if (db) return db.insert(regimeAlerts).values({
+      asset:           alert.asset,
+      previous:        alert.previous,
+      current:         alert.current,
+      message:         alert.message,
+      whyItMatters:    alert.whyItMatters,
+      whatToWatchNext: alert.whatToWatchNext,
+      detectedAt:      alert.timestamp,
+    }); }).catch(err => console.error("[CrossMarket] Failed to persist stock regime alert:", err));
   }
   if (prevCryptoRegime !== null && prevCryptoRegime !== crypto.regime) {
-    regimeChangeAlerts.push({
-      asset:     "Crypto",
-      previous:  prevCryptoRegime,
-      current:   crypto.regime,
-      message:   `Crypto market regime changed from ${prevCryptoRegime} to ${crypto.regime}. Review your crypto positioning.`,
-      timestamp: Date.now(),
-    });
+    const alert: RegimeChangeAlert = {
+      asset:           "Crypto",
+      previous:        prevCryptoRegime,
+      current:         crypto.regime,
+      message:         `Crypto market regime changed from ${prevCryptoRegime} to ${crypto.regime}. Review your crypto positioning.`,
+      whyItMatters:    buildWhyItMatters("Crypto", prevCryptoRegime, crypto.regime),
+      whatToWatchNext: buildWhatToWatchNext("Crypto", crypto.regime),
+      timestamp:       now,
+    };
+    regimeChangeAlerts.push(alert);
+    // Persist to DB (fire-and-forget)
+    getDb().then(db => { if (db) return db.insert(regimeAlerts).values({
+      asset:           alert.asset,
+      previous:        alert.previous,
+      current:         alert.current,
+      message:         alert.message,
+      whyItMatters:    alert.whyItMatters,
+      whatToWatchNext: alert.whatToWatchNext,
+      detectedAt:      alert.timestamp,
+    }); }).catch(err => console.error("[CrossMarket] Failed to persist crypto regime alert:", err));
   }
   prevStockRegime  = stock.regime;
   prevCryptoRegime = crypto.regime;

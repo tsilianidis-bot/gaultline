@@ -329,15 +329,34 @@ export const intelligenceValidationRouter = router({
       .from(decisionLedger)
       .where(eq(decisionLedger.userId, ctx.user.id));
 
-    const groups: Record<string, DecisionLedgerEntry[]> = {};
+    // Group by granular stock regime if available, then crypto regime, then legacy regimeAtTime
+    const groups: Record<string, { rows: DecisionLedgerEntry[]; regimeType: string }> = {};
     for (const e of entries as DecisionLedgerEntry[]) {
-      const key = e.regimeAtTime ?? "Unknown Regime";
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(e);
+      // Prefer the new granular regime fields; fall back to legacy regimeAtTime
+      const stockKey = e.stockRegimeAtTime ? `Stock: ${e.stockRegimeAtTime}` : null;
+      const cryptoKey = e.cryptoRegimeAtTime ? `Crypto: ${e.cryptoRegimeAtTime}` : null;
+      const legacyKey = e.regimeAtTime ?? "Unknown Regime";
+
+      // For stock-type entries use stock regime, for crypto use crypto regime, else legacy
+      let key: string;
+      let regimeType: string;
+      if (e.assetType === "stock" && stockKey) {
+        key = stockKey; regimeType = "stock";
+      } else if (e.assetType === "crypto" && cryptoKey) {
+        key = cryptoKey; regimeType = "crypto";
+      } else if (stockKey) {
+        key = stockKey; regimeType = "stock";
+      } else {
+        key = legacyKey; regimeType = "macro";
+      }
+
+      if (!groups[key]) groups[key] = { rows: [], regimeType };
+      groups[key].rows.push(e);
     }
 
-    return Object.entries(groups).map(([regime, rows]) => ({
+    return Object.entries(groups).map(([regime, { rows, regimeType }]) => ({
       regime,
+      regimeType,
       ...computeAccuracy(rows),
     })).sort((a, b) => b.resolved - a.resolved);
     } catch (err) { console.error("[intelligenceValidation] marketRegimeAnalysis error:", err); return []; }

@@ -3414,3 +3414,22 @@
 - [x] Chatbot live context updated with stock/crypto regime and alignment status
 - [x] Tests: 17 new tests all passing (server/marketIntelligence.test.ts)
 - [x] TypeScript: 0 errors
+
+## PROJECT BLACK — Market Intelligence Full Integration (July 4, 2026)
+
+- [x] Ask Intelligence (SmartDiscovery) system prompt updated to inject full Stock/Crypto/Alignment regime context with direct-answer-first rule
+- [x] Decision Ledger DB schema: added `stockRegimeAtTime`, `cryptoRegimeAtTime`, `alignmentAtTime` columns (migration 0040 applied)
+- [x] `logRecommendation` procedure updated to accept and store regime snapshot fields
+- [x] SmartDiscovery frontend updated to pass regime data to logMutation
+- [x] Intelligence Validation Center router updated with granular stock/crypto regime breakdown using new columns
+- [x] IntelligenceValidation.tsx UI updated to show regimeType badge (Stock/Crypto/Macro)
+- [x] AppLayout header: compact regime pill strip added (desktop, below ticker)
+- [x] MarketCommandCenter: cross-market regime strip added with Equity/Crypto/Alignment pills and regime-change alerts
+- [x] RegimeChangeAlert interface enriched with `whyItMatters` and `whatToWatchNext` fields
+- [x] `buildWhyItMatters()` and `buildWhatToWatchNext()` helpers added to crossMarketEngine.ts
+- [x] Alert persistence to DB (fire-and-forget insert into `regimeAlerts` table) — migration 0041 applied
+- [x] `getRecentAlerts` procedure added to marketIntelligence router (returns paginated DB rows ordered by detectedAt DESC)
+- [x] MarketIntelligence.tsx updated with "Recent Regime Change Alerts" section — shows persisted alerts with asset badge, previous→current transition, message, whyItMatters (amber), whatToWatchNext (blue), and formatted timestamp
+- [x] PROJECT BLACK tests: 7 new tests in marketIntelligence.test.ts (enrichment fields, getRecentAlerts shape, ordering, empty state)
+- [x] Total tests: 1157 passing, 1 pre-existing SendGrid 401 failure (unrelated), 21 skipped
+- [x] TypeScript: 0 errors

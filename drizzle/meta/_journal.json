@@ -281,6 +281,20 @@
       "when": 1783111943580,
       "tag": "0039_steep_gamma_corps",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1783210318160,
+      "tag": "0040_thick_bastion",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "5",
+      "when": 1783210865513,
+      "tag": "0041_cloudy_jackal",
+      "breakpoints": true
     }
   ]
 }
