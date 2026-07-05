@@ -3476,3 +3476,48 @@
 - [x] Verify admin can still access /app/admin/engineering
 - [x] Verify non-admin cannot see engineering nav entry
 - [x] Save checkpoint
+
+## Tier Refactor & Call AI Receptionist Removal (July 5, 2026)
+
+### Phase 1: Remove Call AI Receptionist
+- [ ] Remove ChatbotWidget import and <ChatbotWidget /> from App.tsx
+- [ ] Remove AIReceptionistLink import and usage from AppLayout.tsx header
+- [ ] Remove AIReceptionistLink import and usage from MobileLayout.tsx
+- [ ] Remove AIReceptionistLink import and usage from PremiumGate.tsx
+- [ ] Remove AIReceptionistLink import and usage from MarketingSite.tsx (hero + pricing section)
+
+### Phase 2: Update Tier System (shared/tiers.ts)
+- [ ] Rename marketing names: free→Observer, core→Trader, premium→Power, founding→Founding Member
+- [ ] Update GATE_REQUIRED_TIER: alerts→core, watchlist→free (cap enforced in UI)
+- [ ] Add new GateVariant entries: symbolIntel, decisionEngine, opportunities, tradeJournal, socialIntel, insiderIntel, signalOutlook, preFlight, dayTrade, marketCommandCenter
+- [ ] Update MARKETING_TIER_CARDS to Observer/Trader/Power naming and correct feature lists
+
+### Phase 3: Update PremiumGate.tsx GATE_CONFIGS
+- [ ] Update all GATE_CONFIGS to reference new tier names (Trader/Power) in titles and CTAs
+- [ ] Add new gate configs for: symbolIntel, decisionEngine, opportunities, tradeJournal, socialIntel, insiderIntel, signalOutlook, preFlight, dayTrade, marketCommandCenter
+
+### Phase 4: Apply Gates to Ungated Pages
+- [ ] Opportunities.tsx → add PremiumGateFull variant="opportunities" (Trader/core)
+- [ ] SymbolIntelligence.tsx → add PremiumGateFull variant="symbolIntel" (Trader/core)
+- [ ] DecisionEngine.tsx → add PremiumGateFull variant="decisionEngine" (Trader/premium)
+- [ ] TradeJournal.tsx → add PremiumGateFull variant="tradeJournal" (Trader/core)
+- [ ] SocialIntelligence.tsx → add PremiumGateFull variant="socialIntel" (Trader/core)
+- [ ] InsiderIntelligence.tsx → add PremiumGateFull variant="insiderIntel" (Trader/core)
+- [ ] SignalOutlook.tsx → add PremiumGateFull variant="signalOutlook" (Trader/premium)
+- [ ] PreFlight.tsx → add PremiumGateFull variant="preFlight" (Power/premium)
+- [ ] DayTradeIntelligence.tsx → add PremiumGateFull variant="dayTrade" (Power/premium)
+- [ ] MarketCommandCenter.tsx → add PremiumGateFull variant="marketCommandCenter" (Power/premium)
+- [ ] Alerts.tsx → change gate from "risk" (premium) to new "alerts" (core)
+
+### Phase 5: Free Tier Enforcement
+- [ ] Watchlist.tsx → enforce 3-symbol cap for free users (show upgrade prompt at limit)
+- [ ] SmartDiscovery.tsx (Ask FAULTLINE) → enforce 10 questions/day cap for free users
+
+### Phase 6: Update Marketing Site
+- [ ] MarketingSite.tsx → update tier names to Observer/Trader/Power in pricing section
+- [ ] MarketingSite.tsx → update feature lists to match new tier definitions
+
+### Phase 7: Verification
+- [ ] TypeScript: 0 errors
+- [ ] Full test suite: all passing
+- [ ] Save checkpoint

@@ -1,0 +1,1 @@
+ALTER TABLE `mobileUsage` ADD `askQuestionsToday` int DEFAULT 0 NOT NULL;

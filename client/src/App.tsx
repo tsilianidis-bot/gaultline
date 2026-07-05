@@ -13,7 +13,6 @@ import AppLayout from "./components/AppLayout";
 import IntroScreen from "./components/IntroScreen";
 import FREDDebugConsole from "./components/FREDDebugConsole";
 import CookieConsent from './components/CookieConsent';
-import ChatbotWidget from './components/ChatbotWidget';
 import RouteTracker from './components/RouteTracker';
 import { DemoProvider, isDemoPath } from './contexts/DemoContext';
 import DemoBanner from './components/DemoBanner';
@@ -578,9 +577,6 @@ function App() {
 
             {/* GDPR Cookie Consent Banner — hidden in demo mode */}
             {!isDemo && <CookieConsent />}
-
-            {/* AI Market Intelligence Concierge — floating chatbot on all pages */}
-            <ChatbotWidget />
 
           </TooltipProvider>
         </EngineProvider>

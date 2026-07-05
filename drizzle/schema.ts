@@ -252,6 +252,8 @@ export const mobileUsage = mysqlTable("mobileUsage", {
   situationRoomMonth:  varchar("situationRoomMonth", { length: 7 }).notNull(),
   /** Number of Situation Room simulations run this month (limit: 3 for core, unlimited for pro/founding) */
   situationRoomCount:  int("situationRoomCount").default(0).notNull(),
+  /** Number of Ask Intelligence questions asked today (limit: 10 for free/observer, unlimited for paid) */
+  askQuestionsToday:   int("askQuestionsToday").default(0).notNull(),
   createdAt:           timestamp("createdAt").defaultNow().notNull(),
   updatedAt:           timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (t) => ({

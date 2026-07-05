@@ -4,7 +4,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { trackUpgradeClick, trackStripeCheckoutStarted } from "@/hooks/useAnalytics";
-import AIReceptionistLink from "@/components/AIReceptionistLink";
 import {
   tierMeetsRequirement,
   GATE_REQUIRED_TIER,
@@ -189,21 +188,232 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     requiredTier: 'premium',
   },
   watchlist: {
-    title: "Watchlist Locked",
-    subtitle: "CRYPTO WATCHLIST & COMPARISON",
+    title: "Unlimited Watchlist Locked",
+    subtitle: "PROFESSIONAL WATCHLIST",
     description:
-      "Save tokens, monitor live signal labels, and compare assets side-by-side. Available to Pro and Founding members.",
+      `Unlimited symbol watchlists with live signal labels, breach alerts, and side-by-side comparison. Upgrade to Trader at ${PRICING_PLANS.core.priceLabel} to unlock.`,
     icon: <Shield className="w-8 h-8" />,
-    accentColor: "text-blue-400",
-    accentHex: "#60A5FA",
-    glowColor: "rgba(96,165,250,0.15)",
-    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.premium.priceLabel}`,
+    accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
+    features: [
+      "Unlimited symbol tracking",
+      "Live signal label monitoring",
+      "Breach alerts & notifications",
+      "Side-by-side comparison",
+    ],
+    requiredTier: 'core',
+  },
+  // ── Trader-tier gates ──────────────────────────────────────────────────────
+  symbolIntel: {
+    title: "Symbol Intelligence Locked",
+    subtitle: "DEEP SYMBOL ANALYSIS",
+    description:
+      `Full AI-powered symbol intelligence — regime fit, momentum score, signal classification, and factor breakdown. Unlock with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+    icon: <TrendingUp className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
+    features: [
+      "AI signal classification",
+      "Regime fit scoring",
+      "Momentum & factor breakdown",
+      "Bullish/Bearish factor analysis",
+    ],
+    requiredTier: 'core',
+  },
+  opportunities: {
+    title: "Opportunity Radar Locked",
+    subtitle: "COMPLETE OPPORTUNITY RADAR",
+    description:
+      `Full access to FAULTLINE's Opportunity Radar — ranked opportunities, entry zones, and regime-weighted conviction scores. Unlock with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+    icon: <TrendingUp className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
+    features: [
+      "Ranked opportunity list",
+      "Entry zone identification",
+      "Regime-weighted conviction",
+      "Risk/reward scoring",
+    ],
+    requiredTier: 'core',
+  },
+  tradeJournal: {
+    title: "Trade Journal Locked",
+    subtitle: "PROFESSIONAL TRADE JOURNAL",
+    description:
+      `Log trades, track performance, and identify patterns in your decision-making. Available with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+    icon: <BarChart2 className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
+    features: [
+      "Trade logging with context",
+      "Win rate & P&L tracking",
+      "Pattern analysis",
+      "Regime-tagged entries",
+    ],
+    requiredTier: 'core',
+  },
+  socialIntel: {
+    title: "Social Intelligence Locked",
+    subtitle: "SOCIAL SIGNAL INTELLIGENCE",
+    description:
+      `Monitor social sentiment, narrative shifts, and crowd positioning across markets. Available with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+    icon: <Shield className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
+    features: [
+      "Social sentiment tracking",
+      "Narrative shift detection",
+      "Crowd positioning signals",
+      "Viral momentum indicators",
+    ],
+    requiredTier: 'core',
+  },
+  insiderIntel: {
+    title: "Insider Intelligence Locked",
+    subtitle: "INSTITUTIONAL FLOW INTELLIGENCE",
+    description:
+      `Track institutional positioning, options flow, and insider activity signals. Available with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+    icon: <Shield className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
+    features: [
+      "Institutional flow tracking",
+      "Options activity signals",
+      "Dark pool indicators",
+      "Insider transaction monitoring",
+    ],
+    requiredTier: 'core',
+  },
+  alerts: {
+    title: "Advanced Alerts Locked",
+    subtitle: "PROFESSIONAL ALERT SYSTEM",
+    description:
+      `Set unlimited price, signal, and regime-change alerts. Get notified the moment market conditions shift. Available with Trader at ${PRICING_PLANS.core.priceLabel}.`,
+    icon: <Zap className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#22D3EE",
+    glowColor: "rgba(34,211,238,0.15)",
+    ctaPrimary: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaSecondary: `Power Access — ${PRICING_PLANS.premium.priceLabel}`,
+    features: [
+      "Unlimited price alerts",
+      "Signal change notifications",
+      "Regime-change alerts",
+      "Push & email delivery",
+    ],
+    requiredTier: 'core',
+  },
+  // ── Power-tier gates ───────────────────────────────────────────────────────
+  decisionEngine: {
+    title: "Decision Engine Locked",
+    subtitle: "INSTITUTIONAL DECISION INTELLIGENCE",
+    description:
+      "The FAULTLINE Decision Engine synthesizes regime, signals, risk, and macro context into a single actionable recommendation with conviction scoring.",
+    icon: <Shield className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#00D4FF",
+    glowColor: "rgba(0,212,255,0.15)",
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
     ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
     features: [
-      "Save any crypto token",
-      "Live signal label monitoring",
-      "Side-by-side comparison (4 tokens)",
-      "Signal score tracking",
+      "Regime-aware recommendations",
+      "Conviction scoring",
+      "Multi-factor synthesis",
+      "Actionable entry/exit guidance",
+    ],
+    requiredTier: 'premium',
+  },
+  signalOutlook: {
+    title: "Signal Outlook Locked",
+    subtitle: "FORWARD-LOOKING SIGNAL INTELLIGENCE",
+    description:
+      "Full access to FAULTLINE's Signal Outlook engine — forward-looking probability models, scenario analysis, and regime-weighted signal projections.",
+    icon: <TrendingUp className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#00D4FF",
+    glowColor: "rgba(0,212,255,0.15)",
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    features: [
+      "Forward probability models",
+      "Scenario analysis",
+      "Regime-weighted projections",
+      "Signal confidence intervals",
+    ],
+    requiredTier: 'premium',
+  },
+  preFlight: {
+    title: "Market Preflight Locked",
+    subtitle: "INSTITUTIONAL MARKET PREFLIGHT",
+    description:
+      "Run a full institutional-grade market preflight check before every trading session. Regime, liquidity, volatility, and risk conditions in one view.",
+    icon: <Shield className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#00D4FF",
+    glowColor: "rgba(0,212,255,0.15)",
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    features: [
+      "Pre-session risk assessment",
+      "Regime & liquidity check",
+      "Volatility condition scan",
+      "Go/No-go trading decision",
+    ],
+    requiredTier: 'premium',
+  },
+  dayTrade: {
+    title: "Day Trade Intelligence Locked",
+    subtitle: "INTRADAY INTELLIGENCE",
+    description:
+      "Institutional intraday intelligence — session bias, opening range analysis, key levels, and real-time regime shifts for active traders.",
+    icon: <BarChart2 className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#00D4FF",
+    glowColor: "rgba(0,212,255,0.15)",
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    features: [
+      "Session bias analysis",
+      "Opening range intelligence",
+      "Key intraday levels",
+      "Real-time regime shifts",
+    ],
+    requiredTier: 'premium',
+  },
+  marketCommandCenter: {
+    title: "Market Command Center Locked",
+    subtitle: "INSTITUTIONAL COMMAND CENTER",
+    description:
+      "The FAULTLINE Market Command Center — a unified institutional dashboard combining regime status, risk metrics, signal flow, and cross-market intelligence.",
+    icon: <Shield className="w-8 h-8" />,
+    accentColor: "text-cyan-400",
+    accentHex: "#00D4FF",
+    glowColor: "rgba(0,212,255,0.15)",
+    ctaPrimary: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaSecondary: `Founding Access — ${PRICING_PLANS.founding.priceLabel} · Limited spots`,
+    features: [
+      "Unified regime dashboard",
+      "Cross-market intelligence",
+      "Live risk metrics",
+      "Signal flow monitoring",
     ],
     requiredTier: 'premium',
   },
@@ -480,12 +690,6 @@ export function PremiumGateFull({
                 </a>
               </>
             )}
-          </div>
-
-          {/* AI Receptionist nudge */}
-          <div className="mt-6 flex flex-col items-center gap-2">
-            <p className="text-white/30 text-[10px] font-mono tracking-wider">Questions before upgrading?</p>
-            <AIReceptionistLink variant="inline" location="feature_gate" label="Call the AI Receptionist" />
           </div>
 
           {/* Footer note */}

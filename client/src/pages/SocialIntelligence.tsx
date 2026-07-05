@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { TickerChip } from "@/components/TickerActionMenu";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ──────────────────────────────
 type SentimentLabel =
@@ -1122,7 +1123,7 @@ function TickerSearchPanel() {
   );
 }
 
-export default function SocialIntelligence() {
+function SocialIntelligenceInner() {
   useSEO({
     title: "Social Intelligence | FAULTLINE",
     description: "Real-time market narrative tracking, sentiment analysis, and social buzz monitoring.",
@@ -1449,5 +1450,13 @@ export default function SocialIntelligence() {
       </div>
       <DisclaimerBanner variant="default" />
     </div>
+  );
+}
+
+export default function SocialIntelligence() {
+  return (
+    <PremiumGateFull variant="socialIntel">
+      <SocialIntelligenceInner />
+    </PremiumGateFull>
   );
 }

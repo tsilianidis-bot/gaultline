@@ -1395,3 +1395,32 @@ export async function getPipelineHealthSummary() {
     .orderBy(desc(sql`MAX(${pipelineHealthLog.createdAt})`));
   return rows;
 }
+
+// ── Ask Intelligence daily usage helpers ─────────────────────────────────────
+/** Increment the daily Ask Intelligence question counter. Returns the new count. */
+export async function incrementAskUsage(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const month = today.slice(0, 7);
+  await db.insert(mobileUsage).values({
+    userId,
+    usageDate: today,
+    situationRoomMonth: month,
+    stockSignalsViewed: 0,
+    cryptoSignalsViewed: 0,
+    signalOutlooksRun: 0,
+    situationRoomCount: 0,
+    askQuestionsToday: 1,
+  }).onDuplicateKeyUpdate({
+    set: { askQuestionsToday: sql`${mobileUsage.askQuestionsToday} + 1`, updatedAt: sql`NOW()` }
+  });
+  const row = await getMobileUsageToday(userId);
+  return row?.askQuestionsToday ?? 0;
+}
+
+/** Get today's Ask Intelligence question count for a user. Returns 0 if no row. */
+export async function getAskUsageToday(userId: number): Promise<number> {
+  const row = await getMobileUsageToday(userId);
+  return row?.askQuestionsToday ?? 0;
+}

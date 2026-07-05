@@ -21,6 +21,7 @@ import {
   ArrowLeft, TrendingUp as SmallCap,
 } from "lucide-react";
 import React from "react";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types ─────────────────────────────────────────────────────
 interface DiscoveryItem {
@@ -393,7 +394,7 @@ function BucketColumn({ bucket, onAnalyze, onWatchlist, onSituationRoom }: {
 }
 
 // ── Main page ─────────────────────────────────────────────────
-export default function Opportunities() {
+function OpportunitiesInner() {
   useSEO({
     title: "Opportunity Radar — FAULTLINE",
     description: "Score securities most likely to move next using 14+ proprietary signals. All 26 categories ranked by opportunity score.",
@@ -642,5 +643,13 @@ export default function Opportunities() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function Opportunities() {
+  return (
+    <PremiumGateFull variant="opportunities">
+      <OpportunitiesInner />
+    </PremiumGateFull>
   );
 }

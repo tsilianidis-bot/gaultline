@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { useEngine } from "@/contexts/EngineContext";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── DataSourceBanner: shown when data is from snapshot or fallback ────────────
 function DataSourceBanner({ source, snapshotAge }: { source: 'live' | 'snapshot' | 'fallback'; snapshotAge: number | null }) {
@@ -1872,7 +1873,7 @@ const TABS = [
 ];
 
 // ── Main Page ─────────────────────────────────────────────────
-export default function DayTradeIntelligence() {
+function DayTradeIntelligenceInner() {
   const { user, loading: authLoading } = useAuth();
   void authLoading; // used below
   const searchStr = useSearch();
@@ -2286,5 +2287,13 @@ function SymbolSearchTabWithEvent() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function DayTradeIntelligence() {
+  return (
+    <PremiumGateFull variant="dayTrade">
+      <DayTradeIntelligenceInner />
+    </PremiumGateFull>
   );
 }

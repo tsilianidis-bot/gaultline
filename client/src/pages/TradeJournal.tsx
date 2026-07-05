@@ -25,6 +25,7 @@ import {
   TrendingUp, TrendingDown, Plus, Trash2, Edit3, ChevronDown, ChevronUp,
   Target, BookOpen, BarChart2, Award, Filter, X,
 } from "lucide-react";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type JournalEntry = {
@@ -282,7 +283,7 @@ function TradeRow({ entry, onEdit, onDelete }: {
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-export default function TradeJournal() {
+function TradeJournalInner() {
   const { user, loading: authLoading } = useAuth();
   const utils = trpc.useUtils();
 
@@ -690,5 +691,13 @@ export default function TradeJournal() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function TradeJournal() {
+  return (
+    <PremiumGateFull variant="tradeJournal">
+      <TradeJournalInner />
+    </PremiumGateFull>
   );
 }

@@ -35,6 +35,7 @@ import {
   Eye, Brain, Target, BarChart3, Clock, RefreshCw,
   ArrowRight, Info, Minus
 } from "lucide-react";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Types (mirrored from server) ──────────────────────────────
 
@@ -355,7 +356,7 @@ function Skeleton({ h = "20px", w = "100%", mb = "0" }: { h?: string; w?: string
 
 // ── Main page ─────────────────────────────────────────────────
 
-export default function PreFlight() {
+function PreFlightInner() {
   useSEO(PAGE_SEO.preFlight);
 
   const { data, isLoading, error, refetch, isFetching } = trpc.preFlight.getAwarenessData.useQuery(undefined, {
@@ -939,3 +940,11 @@ export default function PreFlight() {
   );
 }
 // Pre-Flight + Situation Room nav update — 2026-06-09T16:38:54Z
+
+export default function PreFlight() {
+  return (
+    <PremiumGateFull variant="preFlight">
+      <PreFlightInner />
+    </PremiumGateFull>
+  );
+}

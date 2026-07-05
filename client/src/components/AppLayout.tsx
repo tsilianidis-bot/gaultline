@@ -13,7 +13,6 @@ import {
   User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle, Command, ScanSearch, FlaskConical, Users, TrendingDown, BellRing,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
-import AIReceptionistLink from "@/components/AIReceptionistLink";
 import MarketContextStrip from "@/components/MarketContextStrip";
 import UniversalTickerBar from "@/components/UniversalTickerBar";
 import CommandSearch, { useCommandSearch } from "@/components/CommandSearch";
@@ -397,9 +396,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 {isLoading ? 'LOADING' : isRefreshing ? 'UPDATING' : isLive ? 'LIVE' : 'SIM'}
               </span>
             </div>
-            {/* ── AI Receptionist phone ── */}
-            <AIReceptionistLink variant={isMobile ? "icon-only" : "button"} location="header" />
-
             {/* ── Cmd+K search button ── */}
             <button
               onClick={openCmd}

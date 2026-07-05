@@ -8,13 +8,15 @@
  * marketing copy MUST derive from this file. Do NOT hardcode tier names,
  * prices, or plan IDs anywhere else.
  *
- * PRICING NOTE (as of June 2026):
+ * TIER NAMES (as of July 2026):
+ * - free     → "Observer"  — free daily market awareness
+ * - core     → "Trader"    — professional decision-making tools
+ * - premium  → "Power"     — institutional-grade intelligence suite
+ * - founding → "Founding Member" — rate locked for life
+ *
+ * PRICING NOTE:
  * - The `founding` plan is a monthly subscription at $49/mo locked for life.
  * - The `lifetime` plan is a one-time payment of $299.
- * - Some UI surfaces previously showed "Founding Access — $199 one-time" (now $299) —
- *   this was a mismatch. The Stripe product ($49/mo) is the source of truth.
- * - PremiumGate previously showed "$79/mo" for Operator — this was a stale
- *   marketing name. The canonical premium plan is $59/mo.
  */
 
 // ─── Canonical Access Tier IDs ────────────────────────────────────────────────
@@ -46,9 +48,9 @@ export function tierMeetsRequirement(userTier: AccessTier, requiredTier: AccessT
 export interface TierMeta {
   /** Canonical DB/API tier ID */
   id: AccessTier;
-  /** Short display label (e.g. "CORE") */
+  /** Short display label (e.g. "TRADER") */
   label: string;
-  /** Marketing display name (e.g. "Core") */
+  /** Marketing display name (e.g. "Trader") */
   displayName: string;
   /** One-line positioning copy */
   sublabel: string;
@@ -67,62 +69,78 @@ export interface TierMeta {
 export const TIER_META: Record<AccessTier, TierMeta> = {
   free: {
     id: 'free',
-    label: 'PREVIEW',
-    displayName: 'Preview Access',
-    sublabel: 'Preview Access',
-    description: 'Start monitoring systemic pressure. Discover what institutional intelligence feels like.',
+    label: 'OBSERVER',
+    displayName: 'Observer',
+    sublabel: 'Free Market Awareness',
+    description: 'Open FAULTLINE every morning and immediately understand the state of the market. No credit card required.',
     color: '#6B7280',
     glow: 'rgba(107,114,128,0.2)',
     border: 'rgba(107,114,128,0.3)',
     features: [
-      { label: 'FAULTLINE Pressure Index™ (live preview)', available: true },
-      { label: 'Limited stock intelligence previews', available: true },
-      { label: 'Limited crypto signal previews', available: true },
-      { label: 'Daily macro snapshot', available: true },
-      { label: 'Signals screener (full)', available: false },
-      { label: 'Portfolio tracker', available: false },
-      { label: 'AI intelligence engines', available: false },
-      { label: 'Premium dashboards', available: false },
+      { label: 'Live FAULTLINE Pressure Index™', available: true },
+      { label: 'Current Stock Market Regime', available: true },
+      { label: 'Current Crypto Market Regime', available: true },
+      { label: 'Cross-Market Intelligence summary', available: true },
+      { label: 'Risk-On / Mixed / Risk-Off reading', available: true },
+      { label: 'Daily Intelligence Brief (summary)', available: true },
+      { label: 'Bull/Bear probabilities', available: true },
+      { label: 'Top 3 Opportunity Radar', available: true },
+      { label: 'Limited Ask Intelligence (10/day)', available: true },
+      { label: 'Limited Watchlist (3 symbols)', available: true },
+      { label: 'Unlimited Ask Intelligence', available: false },
+      { label: 'Full Signal Outlook & Decision Engine', available: false },
+      { label: 'Portfolio Intelligence', available: false },
+      { label: 'Institutional dashboards', available: false },
     ],
   },
   core: {
     id: 'core',
-    label: 'CORE',
-    displayName: 'Core',
-    sublabel: 'Mobile-first Market Intelligence',
-    description: 'Fast, intelligent, connected. Built for traders who want institutional signals without the institutional price.',
+    label: 'TRADER',
+    displayName: 'Trader',
+    sublabel: 'Professional Decision-Making',
+    description: 'Everything you need to answer: "What should I buy, sell, or avoid?" Unlimited signals, portfolio tracking, and AI-guided decisions.',
     color: '#22D3EE',
     glow: 'rgba(34,211,238,0.2)',
     border: 'rgba(34,211,238,0.3)',
     features: [
-      { label: 'Limited stock signals (BUY/SELL/HOLD)', available: true },
-      { label: 'Limited crypto signals', available: true },
-      { label: 'Portfolio tracker with live P&L', available: true },
-      { label: 'Alt Rotation tracking', available: true },
-      { label: 'Daily market briefings', available: true },
-      { label: 'Volatility monitoring & push alerts', available: true },
-      { label: 'AI position guidance', available: false },
-      { label: 'Diagnostic AI™', available: false },
+      { label: 'Everything in Observer', available: true },
+      { label: 'Unlimited Ask Intelligence', available: true },
+      { label: 'Complete Symbol Intelligence', available: true },
+      { label: 'Full Signal Outlook', available: true },
+      { label: 'Unlimited Watchlists', available: true },
+      { label: 'Portfolio Intelligence', available: true },
+      { label: 'Complete Opportunity Radar', available: true },
+      { label: 'Entry/Exit analysis', available: true },
+      { label: 'Sector Intelligence', available: true },
+      { label: 'Advanced Alerts', available: true },
+      { label: 'Trade Journal', available: true },
+      { label: 'Full Daily Intelligence Report', available: true },
+      { label: 'Situation Room & Market Preflight', available: false },
+      { label: 'Institutional dashboards', available: false },
     ],
   },
   premium: {
     id: 'premium',
-    label: 'PRO',
-    displayName: 'Pro',
-    sublabel: 'Institutional-grade Intelligence',
-    description: 'The complete intelligence suite. Every engine, every signal, every edge — fully unlocked.',
+    label: 'POWER',
+    displayName: 'Power',
+    sublabel: 'Institutional-Grade Intelligence',
+    description: 'How would an institutional investment committee analyze today\'s market? Every engine, every signal, every edge — fully unlocked.',
     color: '#00D4FF',
     glow: 'rgba(0,212,255,0.2)',
     border: 'rgba(0,212,255,0.35)',
     features: [
-      { label: 'Everything in Core', available: true },
-      { label: 'AI Diagnostic Intelligence™', available: true },
-      { label: 'Full crypto intelligence engine', available: true },
-      { label: 'Advanced Aftershock Engine™', available: true },
-      { label: 'Full systemic risk analytics', available: true },
-      { label: 'Macro regime analysis', available: true },
-      { label: 'Advanced watchlists & alerts', available: true },
+      { label: 'Everything in Trader', available: true },
+      { label: 'Situation Room', available: true },
+      { label: 'Market Preflight', available: true },
+      { label: 'Institutional dashboards', available: true },
       { label: 'Historical analog engine', available: true },
+      { label: 'Deep macro intelligence', available: true },
+      { label: 'Scenario modeling', available: true },
+      { label: 'Advanced probability models', available: true },
+      { label: 'Priority data refreshes', available: true },
+      { label: 'Premium notifications', available: true },
+      { label: 'Full Crypto Intelligence suite', available: true },
+      { label: 'Decision Engine', available: true },
     ],
   },
   founding: {
@@ -130,12 +148,12 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
     label: 'FOUNDING',
     displayName: 'Founding Member',
     sublabel: 'Early Institutional Access',
-    description: 'Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.',
+    description: 'Everything in Power at the founding rate. Locked forever. Never increases. Limited cohort.',
     color: '#FFD700',
     glow: 'rgba(255,215,0,0.2)',
     border: 'rgba(255,215,0,0.4)',
     features: [
-      { label: 'Everything in Pro', available: true },
+      { label: 'Everything in Power', available: true },
       { label: 'Permanent founding rate ($49/mo locked)', available: true },
       { label: 'Founding member badge', available: true },
       { label: 'Future feature grandfathering', available: true },
@@ -170,37 +188,37 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
   core: {
     planId: 'core',
     tier: 'core',
-    name: 'FAULTLINE Core',
+    name: 'FAULTLINE Trader',
     amountCents: 999,
     priceLabel: '$9.99/mo',
     interval: 'month',
-    description: 'Signals screener, Portfolio tracker, and Alt Rotation — the essential toolkit.',
+    description: 'Signals screener, Portfolio tracker, Symbol Intelligence, and the full decision toolkit.',
     available: true,
   },
   core_annual: {
     planId: 'core_annual',
     tier: 'core',
-    name: 'FAULTLINE Core (Annual)',
+    name: 'FAULTLINE Trader (Annual)',
     amountCents: 9588,
     priceLabel: '$7.99/mo (billed $95.88/yr)',
     interval: 'year',
-    description: 'Core toolkit billed annually — save 20% vs monthly.',
+    description: 'Trader toolkit billed annually — save 20% vs monthly.',
     available: false, // configure STRIPE_CORE_ANNUAL_PRICE_ID to enable
   },
   premium: {
     planId: 'premium',
     tier: 'premium',
-    name: 'FAULTLINE Pro',
+    name: 'FAULTLINE Power',
     amountCents: 5900,
     priceLabel: '$59/mo',
     interval: 'month',
-    description: 'Full intelligence platform — AI guidance, Diagnostic AI, Crypto signals, and all advanced engines.',
+    description: 'Full institutional intelligence — Situation Room, Market Preflight, historical analogs, and all advanced engines.',
     available: true,
   },
   premium_annual: {
     planId: 'premium_annual',
     tier: 'premium',
-    name: 'FAULTLINE Pro (Annual)',
+    name: 'FAULTLINE Power (Annual)',
     amountCents: 56400,
     priceLabel: '$47/mo (billed $564/yr)',
     interval: 'year',
@@ -214,7 +232,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
     amountCents: 4900,
     priceLabel: '$49/mo (locked for life)',
     interval: 'month',
-    description: 'Founding member rate — all Pro features locked at $49/mo forever.',
+    description: 'Founding member rate — all Power features locked at $49/mo forever.',
     available: true,
   },
   lifetime: {
@@ -231,6 +249,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
 
 // ─── Gate Access Requirements ─────────────────────────────────────────────────
 // Maps each PremiumGate variant to the minimum required tier.
+// Trader tier = 'core', Power tier = 'premium'
 export type GateVariant =
   | 'founding'
   | 'signals'
@@ -240,26 +259,52 @@ export type GateVariant =
   | 'intelligence'
   | 'crypto'
   | 'aftershock'
-  | 'watchlist';
+  | 'watchlist'
+  // New Trader-tier gates
+  | 'symbolIntel'
+  | 'opportunities'
+  | 'tradeJournal'
+  | 'socialIntel'
+  | 'insiderIntel'
+  | 'alerts'
+  // New Power-tier gates
+  | 'decisionEngine'
+  | 'signalOutlook'
+  | 'preFlight'
+  | 'dayTrade'
+  | 'marketCommandCenter';
 
 export const GATE_REQUIRED_TIER: Record<GateVariant, AccessTier> = {
-  signals:      'core',
-  portfolio:    'core',
-  altRotation:  'core',
-  founding:     'premium',
-  risk:         'premium',
-  intelligence: 'premium',
-  crypto:       'premium',
-  aftershock:   'premium',
-  watchlist:    'premium',
+  // Trader tier (core)
+  signals:            'core',
+  portfolio:          'core',
+  altRotation:        'core',
+  symbolIntel:        'core',
+  opportunities:      'core',
+  tradeJournal:       'core',
+  socialIntel:        'core',
+  insiderIntel:       'core',
+  alerts:             'core',
+  watchlist:          'core',  // unlimited watchlist requires core; free gets 3 symbols
+  // Power tier (premium)
+  founding:           'premium',
+  risk:               'premium',
+  intelligence:       'premium',
+  crypto:             'premium',
+  aftershock:         'premium',
+  decisionEngine:     'premium',
+  signalOutlook:      'premium',
+  preFlight:          'premium',
+  dayTrade:           'premium',
+  marketCommandCenter: 'premium',
 };
 
 // ─── CTA Label Helpers ────────────────────────────────────────────────────────
 /** Returns the primary upgrade CTA label for a given gate */
 export function getGatePrimaryCtaLabel(variant: GateVariant): string {
   const tier = GATE_REQUIRED_TIER[variant];
-  if (tier === 'core') return `Unlock Core — ${PRICING_PLANS.core.priceLabel}`;
-  return `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`;
+  if (tier === 'core') return `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`;
+  return `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`;
 }
 
 /** Returns the secondary upgrade CTA label (founding upsell) */
@@ -284,50 +329,64 @@ export interface MarketingTierCard {
 export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
   {
     tier: 'free',
-    planId: 'core', // CTA upgrades to core
-    marketingName: 'Preview',
+    planId: 'core', // CTA upgrades to Trader
+    marketingName: 'Observer',
     price: 'Free',
     tagline: 'No credit card required',
     color: '#6B7280',
     features: [
-      'FAULTLINE Pressure Index™',
-      'Limited stock previews',
-      'Limited crypto previews',
-      'Daily macro snapshot',
+      'Live FAULTLINE Pressure Index™',
+      'Stock & Crypto Market Regimes',
+      'Risk-On / Mixed / Risk-Off reading',
+      'Daily Intelligence Brief',
+      'Bull/Bear probabilities',
+      'Top 3 Opportunity Radar',
+      'Ask Intelligence (10/day)',
+      'Watchlist (3 symbols)',
     ],
-    ctaLabel: 'Start Free',
+    ctaLabel: 'Start Free — No Card Required',
   },
   {
     tier: 'core',
     planId: 'core',
-    marketingName: 'Core',
+    marketingName: 'Trader',
     price: PRICING_PLANS.core.priceLabel,
-    tagline: 'Mobile-first intelligence',
+    tagline: 'What should I buy, sell, or avoid?',
     color: '#22D3EE',
-    badge: 'MOST POPULAR ENTRY',
+    badge: 'MOST POPULAR',
     features: [
-      'Signals screener',
-      'Portfolio tracker',
-      'Alt Rotation',
-      'Mobile PWA',
+      'Unlimited Ask Intelligence',
+      'Complete Symbol Intelligence',
+      'Full Signal Outlook',
+      'Unlimited Watchlists',
+      'Portfolio Intelligence',
+      'Complete Opportunity Radar',
+      'Entry/Exit analysis',
+      'Advanced Alerts & Trade Journal',
+      'Full Daily Intelligence Report',
     ],
-    ctaLabel: `Get Core — ${PRICING_PLANS.core.priceLabel}`,
+    ctaLabel: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
   },
   {
     tier: 'premium',
     planId: 'premium',
-    marketingName: 'Pro',
+    marketingName: 'Power',
     price: PRICING_PLANS.premium.priceLabel,
-    tagline: 'Institutional-grade suite',
+    tagline: 'Institutional investment committee intelligence',
     color: '#00D4FF',
-    badge: 'RECOMMENDED',
+    badge: 'INSTITUTIONAL',
     features: [
-      'AI Diagnostic™',
-      'Crypto intelligence',
-      'Aftershock Engine™',
-      'Full macro suite',
+      'Everything in Trader',
+      'Situation Room',
+      'Market Preflight',
+      'Institutional dashboards',
+      'Historical analog engine',
+      'Deep macro intelligence',
+      'Scenario modeling',
+      'Advanced probability models',
+      'Full Crypto Intelligence suite',
     ],
-    ctaLabel: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaLabel: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
   },
   {
     tier: 'founding',
@@ -338,9 +397,10 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
     color: '#FFD700',
     badge: 'LIMITED',
     features: [
-      'Everything in Pro',
+      'Everything in Power',
       'Rate locked forever',
-      'Founder badge',
+      'Founding member badge',
+      'Future feature grandfathering',
       'Early beta access',
     ],
     ctaLabel: `Lock In Founding — ${PRICING_PLANS.founding.priceLabel}`,

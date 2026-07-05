@@ -14,7 +14,7 @@ import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { getQuickOutlook } from "../signalOutlook";
 import { invokeLLM } from "../_core/llm";
 import { resolveIntent, detectQuestionIntent, QuestionIntent } from "../intentResolver";
-import { getDb } from "../db";
+import { getDb, incrementAskUsage, getAskUsageToday } from "../db";
 import { decisionLedger, DecisionLedgerEntry } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { getQuote } from "../yahooProxy";
@@ -1060,6 +1060,7 @@ export const smartDiscoveryRouter = router({
    * One question in → one institutional answer out.
    */
   ask: publicProcedure
+    // Note: publicProcedure still passes ctx.user if the user is authenticated
     .input(z.object({
       query: z.string().min(1).max(500).trim(),
       conversationHistory: z.array(z.object({
@@ -1071,7 +1072,23 @@ export const smartDiscoveryRouter = router({
       contextTicker: z.string().nullable().optional(),
       contextAssetType: z.enum(["stock", "crypto"]).nullable().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Enforce daily Ask Intelligence limit for free/observer users
+      if (ctx.user) {
+        const tier = (ctx.user as { accessTier?: string }).accessTier ?? 'free';
+        const isPaid = tier === 'core' || tier === 'premium' || tier === 'founding';
+        if (!isPaid) {
+          const FREE_ASK_LIMIT = 10;
+          const usedToday = await getAskUsageToday(ctx.user.id);
+          if (usedToday >= FREE_ASK_LIMIT) {
+            throw new TRPCError({
+              code: 'TOO_MANY_REQUESTS',
+              message: `Daily limit reached. Observer accounts can ask ${FREE_ASK_LIMIT} questions per day. Upgrade to Trader or Power for unlimited access.`,
+            });
+          }
+          await incrementAskUsage(ctx.user.id);
+        }
+      }
       const answer = await orchestrateWithRouting(
         input.query,
         input.conversationHistory as ConversationMessage[],

@@ -19,6 +19,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import { useTickerStore } from "@/contexts/TickerStore";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Helpers ───────────────────────────────────────────────────
 function getRiskLabel(riskLevel: string): string {
@@ -293,7 +294,7 @@ function TodaysStoryPanel({ regime, domains, probability, analogs }: {
 }
 
 // ── Main page ─────────────────────────────────────────────────
-export default function MarketCommandCenter() {
+function MarketCommandCenterInner() {
   const [, navigate] = useLocation();
   const { output, isLoading, isLive, lastUpdated, forceRefresh, isRefreshing } = useEngine();
   const { overall, domains, regime, probability, analogs, narrative } = output;
@@ -685,5 +686,13 @@ export default function MarketCommandCenter() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MarketCommandCenter() {
+  return (
+    <PremiumGateFull variant="marketCommandCenter">
+      <MarketCommandCenterInner />
+    </PremiumGateFull>
   );
 }

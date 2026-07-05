@@ -15,6 +15,7 @@ import { useSEO } from "@/hooks/useSEO";
 import SituationRoom from "./SituationRoom";
 import TradePreflight from "./TradePreflight";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 const MONO = "'IBM Plex Mono', monospace";
 const SANS = "'IBM Plex Sans', sans-serif";
@@ -37,7 +38,7 @@ const TABS: { id: DecisionTab; label: string; icon: React.ElementType; descripti
   },
 ];
 
-export default function DecisionEngine() {
+function DecisionEngineInner() {
   const [location] = useLocation();
   const [activeTab, setActiveTab] = useState<DecisionTab>("situation-room");
 
@@ -131,5 +132,13 @@ export default function DecisionEngine() {
       </div>
       <DisclaimerBanner variant="full" />
     </div>
+  );
+}
+
+export default function DecisionEngine() {
+  return (
+    <PremiumGateFull variant="decisionEngine">
+      <DecisionEngineInner />
+    </PremiumGateFull>
   );
 }

@@ -1307,10 +1307,24 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         try {
+          // Enforce 3-symbol watchlist cap for free/observer users
+          const tier = ctx.user.accessTier as string;
+          const isPaid = tier === 'core' || tier === 'premium' || tier === 'founding';
+          if (!isPaid) {
+            const FREE_WATCHLIST_LIMIT = 3;
+            const existing = await getMobileWatchlist(ctx.user.id);
+            if (existing.length >= FREE_WATCHLIST_LIMIT) {
+              throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: `Observer accounts are limited to ${FREE_WATCHLIST_LIMIT} watchlist symbols. Upgrade to Trader or Power for up to 50 symbols.`,
+              });
+            }
+          }
           const result = await addMobileWatchlistItem(ctx.user.id, input.symbol, input.name, input.type);
           if (result.duplicate) return { success: true, duplicate: true, id: null };
           return { success: true, duplicate: false, id: result.id };
         } catch (err) {
+          if (err instanceof TRPCError) throw err;
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to add to watchlist", cause: err });
         }
       }),

@@ -16,6 +16,7 @@ import {
   Clock, ChevronDown, ChevronUp, ArrowRight, Minus,
   RefreshCw, Search, X, History, Brain, Zap,
 } from "lucide-react";
+import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Type aliases (mirrored from backend) ─────────────────────
 type ConvictionBand =
@@ -310,7 +311,7 @@ function CompanyProfileModal({ ticker, onClose }: { ticker: string; onClose: () 
 }
 
 // ── Main page ─────────────────────────────────────────────────
-export default function InsiderIntelligence() {
+function InsiderIntelligenceInner() {
   useSEO(PAGE_SEO.insiderIntelligence);
 
   const { data: radar, isLoading, refetch } = trpc.insider.radar.useQuery(undefined, {
@@ -654,5 +655,13 @@ export default function InsiderIntelligence() {
         <CompanyProfileModal ticker={selectedTicker} onClose={() => setSelectedTicker(null)} />
       )}
     </div>
+  );
+}
+
+export default function InsiderIntelligence() {
+  return (
+    <PremiumGateFull variant="insiderIntel">
+      <InsiderIntelligenceInner />
+    </PremiumGateFull>
   );
 }
