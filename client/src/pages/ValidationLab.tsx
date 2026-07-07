@@ -586,7 +586,7 @@ export default function ValidationLab() {
                     <CardContent className="pt-6 pb-5 text-center">
                       <p className="text-xs text-muted-foreground uppercase tracking-wider mb-3">Calibration Grade</p>
                       <ScoreGrade
-                        score={Math.max(0, 100 - ((calibration as any)?.metrics?.calibrationError ?? 0.5) * 200)}
+                        score={Math.max(0, 100 - ((calibration as any)?.brierScore ?? 0.5) * 200)}
                       />
                       <p className="text-xs text-muted-foreground mt-2">
                         Based on {(calibration as any)?.sampleSize ?? 0} predictions
@@ -600,9 +600,9 @@ export default function ValidationLab() {
                       <div className="space-y-2">
                         {[
                           { label: "Brier Score", value: ((calibration as any)?.brierScore ?? 0).toFixed(3), note: "0 = perfect" },
-                          { label: "Calibration Error", value: (((calibration as any)?.metrics?.calibrationError ?? 0) * 100).toFixed(1) + "%", note: "lower = better" },
-                          { label: "False Positive Rate", value: (((calibration as any)?.metrics?.falsePositiveRate ?? 0) * 100).toFixed(1) + "%", note: "bull miss" },
-                          { label: "False Negative Rate", value: (((calibration as any)?.metrics?.falseNegativeRate ?? 0) * 100).toFixed(1) + "%", note: "bear miss" },
+                          { label: "Calibration Error", value: (((calibration as any)?.metrics?.calibrationError ?? 0) * 100).toFixed(1) + "%", note: "lower = better (ECE)" },
+                          { label: "False Positive Rate", value: ((calibration as any)?.metrics?.falsePositiveRate ?? 0).toFixed(1) + "%", note: "bull miss" },
+                          { label: "False Negative Rate", value: ((calibration as any)?.metrics?.falseNegativeRate ?? 0).toFixed(1) + "%", note: "bear miss" },
                         ].map(m => (
                           <div key={m.label} className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">{m.label}</span>
