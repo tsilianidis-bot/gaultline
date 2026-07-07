@@ -273,21 +273,36 @@ async function orchestrateAnswer(
   const questionIntent: QuestionIntent = detectQuestionIntent(query);
 
   // ── Stage 4: Market data fetch ─────────────────────────────────
-  // 2. Fetch live market data via FMOS pipeline
-  const [fmosResult, quickOutlook, crossMarketResult] = await Promise.allSettled([
+  // 2. Fetch live market data via FMOS pipeline + live price
+  const [fmosResult, quickOutlook, crossMarketResult, livePriceResult] = await Promise.allSettled([
     runFMOSPipelineFast({ symbol: ticker ?? undefined }),
     ticker ? getQuickOutlook(ticker, assetType ?? "stock") : Promise.resolve(null),
     computeCrossMarketIntelligence(),
+    // Fetch live price so the LLM can generate accurate price targets
+    ticker
+      ? (assetType === "crypto"
+          ? getCoinMarketData(ticker).then(d => ({
+              price: d?.currentPrice ?? null,
+              change: d?.priceChangePercent24h ?? null,
+            }))
+          : getQuote(ticker).then(q => ({
+              price: q.price,
+              change: q.changePercent,
+            }))
+        ).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   const fmos = fmosResult.status === "fulfilled" ? fmosResult.value : null;
   const pressureData = fmos?.pressure ?? null;
   const outlookData = quickOutlook.status === "fulfilled" ? quickOutlook.value : null;
   const crossMarket = crossMarketResult.status === "fulfilled" ? crossMarketResult.value : null;
+  const livePrice = livePriceResult.status === "fulfilled" ? livePriceResult.value : null;
   log.info("[Ask] Stage 4: Market data fetched", {
     fmosStatus: fmosResult.status,
     outlookStatus: quickOutlook.status,
     crossMarketStatus: crossMarketResult.status,
+    livePrice: livePrice?.price,
     latencyMs: Date.now() - t0,
   });
 
@@ -300,6 +315,11 @@ async function orchestrateAnswer(
   const evidenceFamilies = fmos?.evidence?.families ?? [];
   const evidenceContext = evidenceFamilies.length > 0
     ? `\nEvidence Families:\n${evidenceFamilies.map(f => `  ${f.label}: ${f.signal} (strength: ${f.strength}/100)`).join("\n")}`
+    : "";
+
+  // Live price context — injected into system prompt so LLM uses current price for all targets
+  const livePriceContext = livePrice?.price != null
+    ? `\n── LIVE MARKET PRICE (MANDATORY — base ALL price targets on this) ──\nCurrent Price of ${ticker}: $${livePrice.price.toFixed(2)}${livePrice.change != null ? ` (${livePrice.change >= 0 ? '+' : ''}${livePrice.change.toFixed(2)}% today)` : ''}\nCRITICAL: Every price target, support/resistance level, entry zone, stop loss, and profit target MUST be calculated relative to the current price of $${livePrice.price.toFixed(2)}. NEVER use historical price levels from training data. The LLM training data is stale — always use the live price above.`
     : "";
 
   const outlookSummary = outlookData ? `
@@ -471,7 +491,7 @@ Key Insights: ${crossMarket.keyInsights.slice(0, 3).join(" | ")}
 ${crossMarket.regimeChangeAlerts.length > 0 ? `ACTIVE REGIME ALERTS: ${crossMarket.regimeChangeAlerts.map(a => `${a.asset} regime changed from ${a.previous} to ${a.current}`).join("; ")}` : ""}` : ""}
 ${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
 ${evidenceContext}
-${outlookSummary}`;
+${outlookSummary}${livePriceContext}`;
 
   // Explicit global mode instruction when no symbol context
   const globalModeInstruction = !ticker
