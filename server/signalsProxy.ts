@@ -41,7 +41,7 @@ const PRIORITY_TICKERS = [
   "XOM", "CVX", "GLD",
   // ── Short squeeze / speculative ──────────────────────────────
   "GME", "UPST", "RIVN", "BYND",
-  "MPW", "NYCB", "DISH",
+  "HOOD", "MSTR", "IBIT",
   // ── Quantum / space speculative ───────────────────────────────
   "QUBT", "IONQ", "RGTI", "FRMI", "SPCE",
 ];

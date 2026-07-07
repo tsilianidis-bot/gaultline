@@ -677,7 +677,7 @@ function CryptoQuickSearch() {
 
   const { data, isLoading, error } = trpc.crypto.getSignal.useQuery(
     { idOrSymbol: submitted },
-    { enabled: submitted.length > 0, retry: 1 }
+    { enabled: submitted.length > 0, retry: 1, refetchInterval: 90_000, staleTime: 60_000 }
   );
 
   const handleSearch = useCallback(() => {
