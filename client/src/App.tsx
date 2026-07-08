@@ -124,6 +124,7 @@ const MarketCommandCenter = lazy(() => import("./pages/MarketCommandCenter"));
 const TodaysStory = lazy(() => import("./pages/TodaysStory"));
 const SmartDiscovery = lazy(() => import("./pages/SmartDiscovery"));
 const DecisionLedger = lazy(() => import("./pages/DecisionLedger"));
+const IntelligenceHub   = lazy(() => import("./pages/IntelligenceHub"));
 const EngineeringDiagnostics = lazy(() => import("./pages/admin/EngineeringDiagnostics"));
 const MarketIntelligence = lazy(() => import("./pages/MarketIntelligence"));
 const CryptoRegimeDashboard = lazy(() => import("./pages/CryptoRegimeDashboard"));
@@ -461,6 +462,7 @@ function Router() {
           <Suspense fallback={<PageLoader />}>
             <Switch>
               <Route path="/app/pressure" component={Pressure} />
+              <Route path="/app/intelligence-hub" component={IntelligenceHub} />
               <Route path="/app/command" component={MarketCommandCenter} />
               <Route path="/app/todays-story" component={TodaysStory} />
               <Route path="/app/discover" component={SmartDiscovery} />

@@ -227,8 +227,19 @@ export function computeProbability(
 ): FMOSProbabilityDistribution {
   const creditScore = getVec(pressure, "credit-contagion");
 
-  // Start with canonical base distribution
-  const base = computeProbabilityDistribution(pressure.overallPressure, creditScore);
+  // Pre-compute evidence quality for shrinkage (before full confidence calc)
+  // Use diversity score and available families as a proxy
+  const preConfidence = clamp(Math.round(
+    40 + Math.abs(evidence.diversityScore - 50) * 0.3 - evidence.contradictions.length * 10
+  ));
+
+  // Start with canonical base distribution — pass evidence quality for shrinkage
+  const base = computeProbabilityDistribution(
+    pressure.overallPressure,
+    creditScore,
+    evidence.diversityScore,
+    preConfidence
+  );
 
   // Adjust for evidence signals
   const adjusted = adjustForEvidence(base, evidence);

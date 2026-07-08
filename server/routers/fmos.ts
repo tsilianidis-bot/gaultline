@@ -31,6 +31,8 @@ import { desc, gte, sql } from "drizzle-orm";
 function sanitizeNumbers(v: unknown): unknown {
   if (typeof v === "number") return isFinite(v) && !isNaN(v) ? v : 0;
   if (v === null || v === undefined) return v;
+  // Preserve Date objects as ISO strings (Object.entries on Date returns {})
+  if (v instanceof Date) return v.toISOString();
   if (Array.isArray(v)) return v.map(sanitizeNumbers);
   if (typeof v === "object") {
     return Object.fromEntries(

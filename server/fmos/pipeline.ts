@@ -130,6 +130,28 @@ export async function runFMOSPipeline(
 
   const executionTimeMs = Date.now() - startTime;
 
+  // ── Completeness check ────────────────────────────────────────
+  // Determine whether the pipeline produced a fully reliable output.
+  // complete=false means the user should see reduced-confidence messaging.
+  const pipelineErrors: string[] = [];
+  const missingFields: string[] = [];
+
+  if (!decision.keyLevels || Object.keys(decision.keyLevels).length === 0) {
+    missingFields.push("keyLevels");
+  }
+  if (evidence.diversityScore === 0) {
+    missingFields.push("evidenceDiversity");
+    pipelineErrors.push("Evidence diversity is zero — only one signal family available");
+  }
+  if (confidence.score < 20) {
+    pipelineErrors.push(`Confidence critically low (${confidence.score}) — insufficient data`);
+  }
+  if (pressure.dataSource === "fallback") {
+    pipelineErrors.push("Pressure engine running on fallback data — live feeds unavailable");
+  }
+
+  const isComplete = missingFields.length === 0 && pipelineErrors.length === 0;
+
   return {
     // Metadata
     symbol: symbol ?? null,
@@ -153,8 +175,8 @@ export async function runFMOSPipeline(
 
     // Metadata
     dataSource: pressure.dataSource,
-    complete: true,
-    errors: [],
+    complete: isComplete,
+    errors: pipelineErrors,
   };
 }
 

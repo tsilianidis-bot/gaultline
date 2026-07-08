@@ -48,15 +48,29 @@ function classifyVerdict(
     return "REDUCE";
   }
 
+  // Confidence gating: low confidence blocks strong directional verdicts
+  // When confidence < 45, cap at WATCH (bullish) or TRIM (bearish) to prevent
+  // false conviction signals from weak evidence
+  const lowConfidence = confidence < 45;
+
   // Normal classification by edge and confidence
   if (edge >= 30 && confidence >= 60) return "STRONG BUY";
   if (edge >= 20 && confidence >= 50) return "BUY";
-  if (edge >= 10) return "ACCUMULATE";
+  if (edge >= 10) {
+    // ACCUMULATE requires at least moderate confidence
+    return lowConfidence ? "WATCH" : "ACCUMULATE";
+  }
   if (edge >= -10) return "HOLD";
   if (edge >= -20) return "WATCH";
-  if (edge >= -30) return "TRIM";
+  if (edge >= -30) {
+    // TRIM is acceptable at low confidence — it's a risk-reduction action
+    return "TRIM";
+  }
   if (edge >= -40) return "REDUCE";
-  if (edge >= -50) return "SELL";
+  if (edge >= -50) {
+    // SELL requires at least moderate confidence to avoid panic exits on weak signals
+    return lowConfidence ? "REDUCE" : "SELL";
+  }
   return "AVOID";
 }
 

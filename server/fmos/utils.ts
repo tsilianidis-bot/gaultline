@@ -197,12 +197,19 @@ export function pressureToBearProbability(pressure: number): number {
  * Compute a full probability distribution (bull/neutral/bear) that sums to 100.
  * This is the canonical FMOS probability distribution.
  *
- * @param pressure    - Overall pressure index (0–100)
- * @param creditScore - Credit contagion vector score (0–100, optional)
+ * Applies shrinkage toward neutral when evidence is weak (evidenceDiversity < 20)
+ * or confidence is low (< 45). Pressure alone cannot create 70%+ conviction.
+ *
+ * @param pressure         - Overall pressure index (0–100)
+ * @param creditScore      - Credit contagion vector score (0–100, optional)
+ * @param evidenceDiversity - Evidence diversity score 0–100 (optional, default 50)
+ * @param confidenceScore   - Overall confidence score 0–100 (optional, default 50)
  */
 export function computeProbabilityDistribution(
   pressure: number,
-  creditScore = 30
+  creditScore = 30,
+  evidenceDiversity = 50,
+  confidenceScore = 50
 ): { bull: number; neutral: number; bear: number } {
   // Bull: inverse of pressure, weighted by credit conditions
   const rawBull = clamp(
@@ -218,15 +225,42 @@ export function computeProbabilityDistribution(
   );
   // Normalize so bull + bear ≤ 95, neutral fills the rest
   const total = rawBull + rawBear;
+  let bull: number, bear: number, neutral: number;
   if (total > 95) {
     const scale = 95 / total;
-    const bull = Math.round(rawBull * scale);
-    const bear = Math.round(rawBear * scale);
-    const neutral = 100 - bull - bear;
-    return { bull, neutral, bear };
+    bull = Math.round(rawBull * scale);
+    bear = Math.round(rawBear * scale);
+    neutral = 100 - bull - bear;
+  } else {
+    bull = rawBull;
+    bear = rawBear;
+    neutral = 100 - rawBull - rawBear;
   }
-  const neutral = 100 - rawBull - rawBear;
-  return { bull: rawBull, neutral, bear: rawBear };
+
+  // ── Evidence-quality shrinkage toward neutral ──────────────────
+  // When evidence is weak or confidence is low, shrink bull/bear toward
+  // neutral. This prevents false conviction from pressure alone.
+  // Shrinkage factor: 0 = no shrinkage, 1 = full collapse to neutral
+  const evidenceQuality = clamp(Math.round((evidenceDiversity + confidenceScore) / 2));
+  if (evidenceQuality < 45) {
+    // Shrinkage is proportional to how weak the evidence is
+    // At evidenceQuality=0: shrink 40% toward neutral
+    // At evidenceQuality=44: shrink ~5% toward neutral
+    const shrinkFactor = clamp((45 - evidenceQuality) / 45 * 0.40, 0, 0.40);
+    const neutralTarget = 33; // full-uncertainty neutral baseline
+    bull = Math.round(bull * (1 - shrinkFactor) + neutralTarget * shrinkFactor);
+    bear = Math.round(bear * (1 - shrinkFactor) + neutralTarget * shrinkFactor);
+    neutral = 100 - bull - bear;
+    // Ensure neutral is at least 10% when evidence is weak
+    if (neutral < 10) {
+      const deficit = 10 - neutral;
+      bull = Math.max(5, bull - Math.ceil(deficit / 2));
+      bear = Math.max(5, bear - Math.floor(deficit / 2));
+      neutral = 100 - bull - bear;
+    }
+  }
+
+  return { bull: clamp(bull, 5, 90), neutral: clamp(neutral, 5, 90), bear: clamp(bear, 5, 90) };
 }
 
 // ── Confidence Utilities ──────────────────────────────────────

@@ -45,6 +45,7 @@ const NAV_GROUPS: NavGroup[] = [
     // Q1 + Q2: What is the market doing right now? Why?
     label: "SITUATION",
     items: [
+      { id: "intelligence-hub", label: "Intelligence Hub",    shortLabel: "Intel Hub",   icon: Brain,           path: "/app/intelligence-hub" },
       { id: "command",        label: "Command Center",       shortLabel: "Command",     icon: Command,         path: "/app/command" },
       { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",        icon: LayoutDashboard, path: "/app/dashboard" },
       { id: "todays-story",   label: "Today's Story",        shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
