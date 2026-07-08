@@ -1471,3 +1471,160 @@ export const onboardingEmailSequence = mysqlTable("onboardingEmailSequence", {
 }));
 export type OnboardingEmailSequence = typeof onboardingEmailSequence.$inferSelect;
 export type InsertOnboardingEmailSequence = typeof onboardingEmailSequence.$inferInsert;
+
+// ── Conversation Intelligence & Analytics ─────────────────────────────────────
+
+/**
+ * One row per conversation session (a user's continuous Q&A session).
+ * Captures session-level metadata for journey analysis and business intelligence.
+ */
+export const conversationLogs = mysqlTable("conversationLogs", {
+  id:                 int("id").autoincrement().primaryKey(),
+  /** Stable session identifier — UUID generated client-side, persisted in localStorage */
+  sessionId:          varchar("sessionId", { length: 64 }).notNull(),
+  /** Null for anonymous / not-logged-in users */
+  userId:             int("userId"),
+  /** Tier at time of conversation — denormalized for analytics */
+  userTier:           mysqlEnum("userTier", ["free", "core", "premium", "founding", "anonymous"]).default("anonymous").notNull(),
+  /** Which module/page initiated the conversation */
+  module:             varchar("module", { length: 64 }),
+  /** URL path where conversation started */
+  pagePath:           varchar("pagePath", { length: 255 }),
+  /** Comma-separated list of ticker symbols mentioned (e.g. "AAPL,BTC,NVDA") */
+  symbolsMentioned:   text("symbolsMentioned"),
+  /** Comma-separated topic cluster keys extracted by LLM */
+  topics:             text("topics"),
+  /** Total messages in this conversation */
+  messageCount:       int("messageCount").default(0).notNull(),
+  /** Whether the user upgraded their tier within 24h of this conversation */
+  upgradedAfter:      boolean("upgradedAfter").default(false).notNull(),
+  /** Tier they upgraded to (if upgradedAfter = true) */
+  upgradedToTier:     varchar("upgradedToTier", { length: 32 }),
+  /** Average confidence score across all assistant messages (0–100) */
+  avgConfidenceScore: double("avgConfidenceScore"),
+  /** Average response latency in ms */
+  avgResponseTimeMs:  double("avgResponseTimeMs"),
+  /** Whether any message in this conversation was flagged as low quality */
+  hasQualityFlag:     boolean("hasQualityFlag").default(false).notNull(),
+  /** GDPR/CCPA: auto-delete after this timestamp */
+  retentionExpiresAt: timestamp("retentionExpiresAt"),
+  startedAt:          timestamp("startedAt").defaultNow().notNull(),
+  endedAt:            timestamp("endedAt"),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  sessionIdx:  index("cl_session_idx").on(t.sessionId),
+  userIdx:     index("cl_user_idx").on(t.userId),
+  startedIdx:  index("cl_started_idx").on(t.startedAt),
+  tierIdx:     index("cl_tier_idx").on(t.userTier),
+}));
+export type ConversationLog = typeof conversationLogs.$inferSelect;
+export type InsertConversationLog = typeof conversationLogs.$inferInsert;
+
+/**
+ * One row per message (both user questions and assistant responses).
+ */
+export const conversationMessages = mysqlTable("conversationMessages", {
+  id:               int("id").autoincrement().primaryKey(),
+  conversationId:   int("conversationId").notNull().references(() => conversationLogs.id, { onDelete: "cascade" }),
+  /** "user" or "assistant" */
+  role:             mysqlEnum("role", ["user", "assistant"]).notNull(),
+  /** Full message content — truncated to 4000 chars for storage efficiency */
+  content:          text("content").notNull(),
+  /** Response latency in ms (assistant messages only) */
+  responseTimeMs:   int("responseTimeMs"),
+  /** Confidence score 0–100 (assistant messages only, if available) */
+  confidenceScore:  double("confidenceScore"),
+  /** Whether the next message in the conversation was a follow-up question */
+  hasFollowUp:      boolean("hasFollowUp").default(false).notNull(),
+  /** LLM-extracted topic cluster key for this message */
+  topicClusterKey:  varchar("topicClusterKey", { length: 64 }),
+  /** Comma-separated symbols mentioned in this message */
+  symbolsMentioned: varchar("symbolsMentioned", { length: 255 }),
+  /** Quality flag type if flagged */
+  qualityFlag:      mysqlEnum("qualityFlag", ["hallucination", "low_confidence", "error", "unanswered", "off_topic"]),
+  /** User feedback rating 1–5 (if user rated this response) */
+  userRating:       tinyint("userRating"),
+  timestamp:        timestamp("timestamp").defaultNow().notNull(),
+}, (t) => ({
+  convIdx:   index("cm_conv_idx").on(t.conversationId),
+  topicIdx:  index("cm_topic_idx").on(t.topicClusterKey),
+  timeIdx:   index("cm_time_idx").on(t.timestamp),
+}));
+export type ConversationMessage = typeof conversationMessages.$inferSelect;
+export type InsertConversationMessage = typeof conversationMessages.$inferInsert;
+
+/**
+ * Aggregated topic clusters — auto-built by the analytics engine.
+ * Each row represents a distinct question topic (e.g. "Bitcoin outlook", "Recession risk").
+ */
+export const topicClusters = mysqlTable("topicClusters", {
+  id:               int("id").autoincrement().primaryKey(),
+  /** Normalized key, e.g. "bitcoin_outlook" */
+  clusterKey:       varchar("clusterKey", { length: 128 }).notNull().unique(),
+  /** Human-readable label, e.g. "Bitcoin Outlook" */
+  label:            varchar("label", { length: 128 }).notNull(),
+  /** JSON array of example questions that map to this cluster */
+  exampleQuestions: text("exampleQuestions"),
+  /** Total times this topic has been asked */
+  count:            int("count").default(0).notNull(),
+  /** Count change over last 7 days (positive = trending up) */
+  trend7d:          int("trend7d").default(0).notNull(),
+  /** Average confidence score for responses to this topic */
+  avgConfidence:    double("avgConfidence"),
+  /** Whether this topic is frequently unanswered (low confidence or error) */
+  isUnanswered:     boolean("isUnanswered").default(false).notNull(),
+  /** Whether this topic has high follow-up rate (users ask again) */
+  hasHighFollowUp:  boolean("hasHighFollowUp").default(false).notNull(),
+  lastSeenAt:       timestamp("lastSeenAt").defaultNow().notNull(),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  keyIdx:   index("tc_key_idx").on(t.clusterKey),
+  countIdx: index("tc_count_idx").on(t.count),
+}));
+export type TopicCluster = typeof topicClusters.$inferSelect;
+export type InsertTopicCluster = typeof topicClusters.$inferInsert;
+
+/**
+ * Feature requests extracted from user conversations.
+ * The analytics engine identifies requests for missing capabilities.
+ */
+export const featureRequests = mysqlTable("featureRequests", {
+  id:              int("id").autoincrement().primaryKey(),
+  /** Raw text of the request */
+  requestText:     text("requestText").notNull(),
+  /** Normalized/deduplicated form for grouping */
+  normalizedText:  varchar("normalizedText", { length: 255 }).notNull(),
+  /** How many times this request has been seen */
+  count:           int("count").default(1).notNull(),
+  /** Computed priority score (count × recency × tier weight) */
+  priorityScore:   double("priorityScore").default(0).notNull(),
+  /** Product team status */
+  status:          mysqlEnum("status", ["new", "under_review", "planned", "in_progress", "shipped", "wont_do"]).default("new").notNull(),
+  /** Category for grouping in the dashboard */
+  category:        varchar("category", { length: 64 }),
+  firstSeenAt:     timestamp("firstSeenAt").defaultNow().notNull(),
+  lastSeenAt:      timestamp("lastSeenAt").defaultNow().notNull(),
+  updatedAt:       timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  priorityIdx: index("fr_priority_idx").on(t.priorityScore),
+  statusIdx:   index("fr_status_idx").on(t.status),
+}));
+export type FeatureRequest = typeof featureRequests.$inferSelect;
+export type InsertFeatureRequest = typeof featureRequests.$inferInsert;
+
+/**
+ * Admin-configurable retention policy settings.
+ * Single-row table (id=1 always).
+ */
+export const conversationRetentionPolicy = mysqlTable("conversationRetentionPolicy", {
+  id:                 int("id").autoincrement().primaryKey(),
+  /** Days to retain conversation data (0 = forever) */
+  retentionDays:      int("retentionDays").default(90).notNull(),
+  /** Whether to anonymize user IDs after retention period instead of deleting */
+  anonymizeOnExpiry:  boolean("anonymizeOnExpiry").default(true).notNull(),
+  /** Whether conversation logging is enabled at all */
+  loggingEnabled:     boolean("loggingEnabled").default(true).notNull(),
+  updatedAt:          timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy:          int("updatedBy"),
+});
+export type ConversationRetentionPolicy = typeof conversationRetentionPolicy.$inferSelect;

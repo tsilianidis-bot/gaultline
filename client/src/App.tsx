@@ -126,6 +126,7 @@ const SmartDiscovery = lazy(() => import("./pages/SmartDiscovery"));
 const DecisionLedger = lazy(() => import("./pages/DecisionLedger"));
 const IntelligenceHub   = lazy(() => import("./pages/IntelligenceHub"));
 const EngineeringDiagnostics = lazy(() => import("./pages/admin/EngineeringDiagnostics"));
+const ConversationIntelligence = lazy(() => import("./pages/admin/ConversationIntelligence"));
 const MarketIntelligence = lazy(() => import("./pages/MarketIntelligence"));
 const CryptoRegimeDashboard = lazy(() => import("./pages/CryptoRegimeDashboard"));
 const PhoenixSystems = lazy(() => import("./pages/PhoenixSystems"));
@@ -496,6 +497,9 @@ function Router() {
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
               <Route path="/app/admin/engineering" component={EngineeringDiagnostics} />
+              <Route path="/app/admin/conversation-intelligence">
+                <ErrorBoundary><Suspense fallback={<PageLoader />}><ConversationIntelligence /></Suspense></ErrorBoundary>
+              </Route>
               <Route path="/app/admin/blog" component={AdminBlog} />
               <Route path="/app/admin/publishing" component={AdminPublishing} />
               <Route path="/app/admin/chat-inbox">

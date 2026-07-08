@@ -3575,3 +3575,51 @@
 - [ ] Upgrade LLM system prompt to enforce 12-section institutional-grade format (Direct Answer, Why This Conclusion, Evidence Panel, Probability Attribution with drivers, What Changed, Actionable Takeaway, Invalidation Triggers, Time Horizon, Confidence Explanation)
 - [ ] Add new JSON schema fields: macroDrivers, whatChangedSinceYesterday, bottomLine, timeHorizon, confidenceExplanation
 - [ ] Render new fields in SmartDiscovery.tsx: MacroDriversSection, WhatChangedSection, BottomLineCard, TimeHorizonBadge, ConfidenceExplanation
+
+## Conversation Intelligence & Analytics System
+
+- [ ] DB: conversation_logs table (session_id, user_id, user_tier, started_at, ended_at, message_count, symbols_mentioned, topics, module, page_path, upgraded_after, retention_expires_at)
+- [ ] DB: conversation_messages table (id, conversation_id, role, content, response_time_ms, confidence_score, has_follow_up, timestamp)
+- [ ] DB: topic_clusters table (cluster_key, label, example_questions, count, trend_7d, last_seen_at, is_unanswered, avg_confidence)
+- [ ] DB: feature_requests table (request_text, normalized_text, count, priority_score, status, first_seen_at, last_seen_at)
+- [ ] DB: conversation_feedback table (message_id, rating, flag_type, flagged_at)
+- [ ] Apply all 5 table migrations via webdev_execute_sql
+- [ ] Server: server/conversationLogger.ts — logConversation(), logMessage(), extractTopics(), extractSymbols()
+- [ ] Server: server/conversationAnalytics.ts — getExecutiveSummary(), getTopQuestions(), getGapAnalysis(), getQualityMetrics(), getBusinessIntelligence(), getUserJourney()
+- [ ] Server: tRPC admin.conversationIntelligence router (all 15 procedures)
+- [ ] Server: async topic extraction via LLM (batch job, non-blocking)
+- [ ] Server: gap analysis — low-confidence + repeated + unanswered query detection
+- [ ] Server: retention policy enforcement (auto-delete rows past retention_expires_at)
+- [ ] Wire logging into smartDiscovery.ts ask procedure (log every Ask Intelligence call)
+- [ ] Wire logging into orchestrateOpportunityRanking (log opportunity scan calls)
+- [ ] Admin UI: /app/admin/conversation-intelligence route + lazy import in App.tsx
+- [ ] Admin UI: Executive Dashboard tab — KPI cards (conversations today, active users, top question, trending topic, upgrade conversion, top unanswered)
+- [ ] Admin UI: Weekly trend sparklines (conversations/day, quality score/day, new topics/day)
+- [ ] Admin UI: Conversation Log tab — paginated table with search/filter (date range, tier, symbol, topic, confidence, keyword)
+- [ ] Admin UI: Conversation detail drawer — full message thread, metadata, journey path
+- [ ] Admin UI: User Journey tab — first question → conversation path → pages visited → upgrade → drop-off
+- [ ] Admin UI: Quality Dashboard tab — avg quality, latency histogram, hallucination flags, error rate, recovery rate
+- [ ] Admin UI: Question Analytics tab — most asked, trending, fastest growing, unanswered, follow-up heavy topics
+- [ ] Admin UI: Gap Analysis tab — prioritized product improvement opportunities list
+- [ ] Admin UI: Business Intelligence tab — top assets, tickers, crypto, features, conversion by topic, retention by topic
+- [ ] Admin UI: Privacy & Retention tab — retention period setting, bulk delete by date/user
+- [ ] Export: CSV download for conversation log
+- [ ] Export: Excel download for analytics summary
+- [ ] Export: PDF download for executive report
+- [ ] Admin route guard — admin role only (403 for non-admins)
+- [ ] Add Conversation Intelligence link to admin nav section in AppLayout
+- [ ] TypeScript: 0 errors after all changes
+- [ ] Write vitest tests for conversationLogger and conversationAnalytics
+
+## Conversation Intelligence & Analytics System
+- [x] Database schema: conversationLogs, conversationMessages, topicClusters, featureRequests, conversationRetentionPolicy tables
+- [x] Apply migration via webdev_execute_sql
+- [x] server/conversationLogger.ts: startConversation(), logMessage(), getExecutiveSummary(), getWeeklyTrend(), getTopTopics(), getGapAnalysis(), getBusinessIntelligence(), enforceRetentionPolicy()
+- [x] server/routers/conversationIntelligence.ts: all admin-only tRPC procedures (logs, topics, gaps, biz intel, feature requests, retention, export)
+- [x] Register conversationIntelligenceRouter in barrel + appRouter
+- [x] Wire conversation logging into smartDiscovery ask procedure (fire-and-forget)
+- [x] client/src/pages/admin/ConversationIntelligence.tsx: full 6-tab admin UI (Executive Dashboard, Conversation Log, Question Analytics, Gap Analysis, Business Intelligence, Privacy & Retention)
+- [x] Add Conversation Intelligence nav item to AppLayout admin section
+- [x] Register /app/admin/conversation-intelligence route in App.tsx
+- [x] Vitest tests for conversationLogger (1,163 tests passing)
+- [x] Save checkpoint

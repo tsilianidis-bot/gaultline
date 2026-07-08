@@ -309,6 +309,13 @@
       "when": 1783245570893,
       "tag": "0043_exotic_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "5",
+      "when": 1783551709972,
+      "tag": "0044_ordinary_franklin_richards",
+      "breakpoints": true
     }
   ]
 }

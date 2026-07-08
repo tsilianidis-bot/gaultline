@@ -22,6 +22,7 @@ import { getCoinMarketData } from "../coingeckoProxy";
 import { scanOpportunities } from "../ownerSimulation";
 import { log } from "../logger";
 import { computeCrossMarketIntelligence } from "../crossMarketEngine";
+import { startConversation, logMessage } from "../conversationLogger";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -1210,12 +1211,36 @@ export const smartDiscoveryRouter = router({
           await incrementAskUsage(ctx.user.id);
         }
       }
+
+      // Start conversation logging (fire-and-forget)
+      const sessionId = `ask_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const userTier = ctx.user ? ((ctx.user as any).accessTier ?? 'free') : 'anonymous';
+      const convIdPromise = startConversation({
+        sessionId,
+        userId: ctx.user?.id,
+        userTier: userTier as any,
+        module: 'ask_intelligence',
+        pagePath: '/app/ask',
+      });
+
+      const startMs = Date.now();
       const answer = await orchestrateWithRouting(
         input.query,
         input.conversationHistory as ConversationMessage[],
         input.contextTicker ?? null,
         input.contextAssetType ?? null,
       );
+      const responseTimeMs = Date.now() - startMs;
+
+      // Log messages asynchronously — never block the response
+      convIdPromise.then(async (convId) => {
+        if (convId < 0) return;
+        await logMessage({ conversationId: convId, role: 'user', content: input.query });
+        const answerText = typeof answer === 'string' ? answer : (answer as any)?.answer ?? JSON.stringify(answer).slice(0, 2000);
+        const confidence = (answer as any)?.confidence ?? (answer as any)?.opportunityScore ?? undefined;
+        await logMessage({ conversationId: convId, role: 'assistant', content: answerText, responseTimeMs, confidenceScore: confidence });
+      }).catch(() => {});
+
       return answer;
     }),
 
