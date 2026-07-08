@@ -278,16 +278,24 @@ async function orchestrateAnswer(
     runFMOSPipelineFast({ symbol: ticker ?? undefined }),
     ticker ? getQuickOutlook(ticker, assetType ?? "stock") : Promise.resolve(null),
     computeCrossMarketIntelligence(),
-    // Fetch live price so the LLM can generate accurate price targets
+    // Fetch live price + OHLV so the LLM can generate accurate price targets
     ticker
       ? (assetType === "crypto"
-          ? getCoinMarketData(ticker).then(d => ({
-              price: d?.currentPrice ?? null,
-              change: d?.priceChangePercent24h ?? null,
-            }))
+          ? getCoinMarketData(ticker).then(d => d ? ({
+              price: d.currentPrice,
+              change: d.priceChangePercent24h,
+              high: d.high24h,
+              low: d.low24h,
+              volume: d.totalVolume,
+              open: null,
+            }) : null)
           : getQuote(ticker).then(q => ({
               price: q.price,
               change: q.changePercent,
+              high: q.high,
+              low: q.low,
+              volume: q.volume,
+              open: q.open,
             }))
         ).catch(() => null)
       : Promise.resolve(null),
@@ -319,7 +327,16 @@ async function orchestrateAnswer(
 
   // Live price context — injected into system prompt so LLM uses current price for all targets
   const livePriceContext = livePrice?.price != null
-    ? `\n── LIVE MARKET PRICE (MANDATORY — base ALL price targets on this) ──\nCurrent Price of ${ticker}: $${livePrice.price.toFixed(2)}${livePrice.change != null ? ` (${livePrice.change >= 0 ? '+' : ''}${livePrice.change.toFixed(2)}% today)` : ''}\nCRITICAL: Every price target, support/resistance level, entry zone, stop loss, and profit target MUST be calculated relative to the current price of $${livePrice.price.toFixed(2)}. NEVER use historical price levels from training data. The LLM training data is stale — always use the live price above.`
+    ? (() => {
+        const p = livePrice.price!;
+        const chg = livePrice.change;
+        const hi = (livePrice as Record<string, unknown>).high as number | null | undefined;
+        const lo = (livePrice as Record<string, unknown>).low as number | null | undefined;
+        const vol = (livePrice as Record<string, unknown>).volume as number | null | undefined;
+        const op = (livePrice as Record<string, unknown>).open as number | null | undefined;
+        const fmtVol = vol != null ? (vol >= 1_000_000 ? `${(vol / 1_000_000).toFixed(2)}M` : vol >= 1_000 ? `${(vol / 1_000).toFixed(0)}K` : vol.toFixed(0)) : null;
+        return `\n── LIVE MARKET DATA (MANDATORY — base ALL price targets on this) ──\nTicker: ${ticker}\nCurrent Price: $${p.toFixed(2)}${chg != null ? ` (${chg >= 0 ? '+' : ''}${chg.toFixed(2)}% today)` : ''}${op != null ? `\nOpen: $${op.toFixed(2)}` : ''}${hi != null ? `\nDay High: $${hi.toFixed(2)}` : ''}${lo != null ? `\nDay Low: $${lo.toFixed(2)}` : ''}${fmtVol != null ? `\nVolume: ${fmtVol}` : ''}\nCRITICAL RULES:\n1. Every price target, support/resistance level, entry zone, stop loss, and profit target MUST be calculated relative to the CURRENT PRICE of $${p.toFixed(2)}.\n2. Use Day High ($${hi?.toFixed(2) ?? 'N/A'}) and Day Low ($${lo?.toFixed(2) ?? 'N/A'}) to establish intraday context and realistic near-term levels.\n3. NEVER use historical price levels from training data. Your training data is stale — always use the live prices above.\n4. All percentage moves must be calculated from $${p.toFixed(2)}.`;
+      })()
     : "";
 
   const outlookSummary = outlookData ? `
@@ -779,13 +796,24 @@ export interface RankedOpportunityItem {
   name: string;
   sector: string;
   assetType: "stock" | "crypto";
-  action: "BUY" | "ACCUMULATE" | "WATCH" | "AVOID";
+  action: "BUY" | "ACCUMULATE" | "WATCH" | "HOLD" | "AVOID";
   convictionScore: number;        // 0–100
+  confidencePercent: number;      // 0–100
+  timeHorizon: string;            // e.g. "1–3 weeks"
+  expectedReward: string;         // e.g. "+8–12%"
   riskLevel: "Low" | "Medium" | "High" | "Extreme";
   primaryDriver: string;          // one sentence
   nearTermCatalyst: string;       // one sentence
   keyRisk: string;                // one sentence
   thesisSummary: string;          // 2 sentences
+  bullDrivers: string[];          // 2–4 items
+  bearDrivers: string[];          // 2–3 items
+  upgradeTriggers: string[];      // 2–3 conditions
+  downgradeTriggers: string[];    // 2–3 conditions
+  macroAlignment: "Aligned" | "Partially Aligned" | "Counter-Trend";
+  sectorStrength: "Strong" | "Moderate" | "Weak" | "Deteriorating";
+  momentum: "Bullish" | "Neutral" | "Bearish" | "Recovering";
+  historicalAnalog: string;       // one sentence
   entryZone: string | null;
   stopLevel: string | null;
   targetOne: string | null;
@@ -809,6 +837,7 @@ export interface OpportunityRankingAnswer {
   avoidList: Array<{ ticker: string; name: string; reason: string; }>;
   sectorLeaderboard: SectorRating[];
   whyTheseRankHighest: string;    // 3-4 sentence narrative
+  portfolioPositioning: string;   // institutional positioning recommendation
   followUpChips: string[];        // 4-5 suggested follow-up questions
   dataFreshness: string;
   deepDiveLinks: Array<{ label: string; path: string; description: string; }>;
@@ -848,6 +877,13 @@ async function orchestrateOpportunityRanking(
   const systemPrompt = `You are FAULTLINE — an elite institutional market intelligence system.
 You are a Chief Investment Strategist presenting a ranked opportunity scan to an investment committee.
 
+========================
+CORE MANDATE — READ FIRST
+========================
+The Opportunity Scan is a RANKING ENGINE. Its sole purpose is to answer: "What are the BEST opportunities RIGHT NOW?"
+You MUST always rank at least 5 opportunities. NEVER return "0 assets scored" or leave topOpportunities empty.
+Institutional portfolio managers ALWAYS rank opportunities — even during bear markets. There is ALWAYS a best opportunity relative to current conditions.
+
 INTENT ROUTING RULES (MUST follow):
 1. Answer the user's ACTUAL question — not the question implied by any currently selected symbol.
 2. This is a BROAD MARKET question. Return a ranked list of the most relevant securities. Do NOT default to any single active ticker.
@@ -858,6 +894,32 @@ INTENT ROUTING RULES (MUST follow):
 Current Market Regime: ${regimeLabel} (Pressure Score: ${pressureScore}/10)
 ${fmos ? `Bull Probability: ${fmos.probability.bull}% | Bear Probability: ${fmos.probability.bear}% | Primary Driver: ${fmos.probability.primaryDriver}` : ""}
 
+========================
+IF NO BUY OPPORTUNITIES EXIST
+========================
+Never stop. Display the Highest Conviction WATCH List instead.
+Example fallback: NVDA (WATCH, 86), MSFT (WATCH, 84), BTC (WATCH, 81), Gold (HOLD, 78), Cash/T-Bills (BUY Defensive, 76).
+There is ALWAYS a best opportunity relative to current conditions.
+If no BUY exists, explain: "There are currently no BUY-rated opportunities because the market regime is reducing conviction across risk assets. The assets below are still the strongest candidates and should be monitored for confirmation."
+
+========================
+OPPORTUNITY SCAN STRUCTURE (ALL SECTIONS REQUIRED)
+========================
+
+1. MARKET SUMMARY — Current Regime, Pressure Index, Opportunity Level, Bull/Bear Probability, Confidence. Briefly explain WHY this environment exists.
+
+2. TOP OPPORTUNITIES — ALWAYS at least 5 ranked assets. Each must include:
+   • Asset + Current Rating (BUY/ACCUMULATE/WATCH/HOLD/AVOID)
+   • Conviction Score (0–100) + Confidence % + Time Horizon
+   • Expected Risk + Expected Reward + Current Trend
+   • Bull Drivers + Bear Drivers + Macro Alignment + Sector Strength + Liquidity Impact + Valuation + Momentum + Catalysts + Historical Analog
+   • Upgrade Triggers + Downgrade Triggers
+   • WHY this asset outranks others
+
+3. ALWAYS RANK SOMETHING — Top Stocks, Top ETFs, Top Crypto, Top Defensive Assets, Top Sectors. Even if every recommendation is WATCH.
+
+4. PORTFOLIO POSITIONING RECOMMENDATION — End every scan with one of: "Remain fully invested" / "Increase exposure gradually" / "Wait for confirmation" / "Favor quality over speculation" / "Increase defensive allocations" / "Raise cash" / "Reduce leverage" / "Rotate into defensive sectors"
+
 WRITING STYLE:
 - Lead with the highest-conviction ideas. Rank by institutional merit, not popularity.
 - Every recommendation must be grounded in the current regime context.
@@ -866,11 +928,23 @@ WRITING STYLE:
 - Use declarative statements. Write like a CIO briefing an investment committee.
 
 FIELD RULES:
-- topOpportunities: Select the 5-8 highest-conviction ideas from the universe scan. Rank by conviction score descending.
+- topOpportunities: Select the 5-8 highest-conviction ideas from the universe scan. Rank by conviction score descending. MINIMUM 5 items — use defensive assets if needed.
 - For each opportunity: primaryDriver = one sentence, nearTermCatalyst = one sentence, keyRisk = one sentence, thesisSummary = exactly 2 sentences.
+- confidencePercent: 0–100 integer representing LLM confidence in this ranking.
+- timeHorizon: e.g. "1–3 weeks", "1–3 months", "3–6 months".
+- expectedReward: e.g. "+8–12%", "+15–25%", "Defensive preservation".
+- bullDrivers: array of 2–4 specific bull driver strings.
+- bearDrivers: array of 2–3 specific bear driver strings.
+- upgradeTriggers: array of 2–3 conditions that would upgrade the rating.
+- downgradeTriggers: array of 2–3 conditions that would downgrade the rating.
+- macroAlignment: "Aligned" | "Partially Aligned" | "Counter-Trend".
+- sectorStrength: "Strong" | "Moderate" | "Weak" | "Deteriorating".
+- momentum: "Bullish" | "Neutral" | "Bearish" | "Recovering".
+- historicalAnalog: one sentence referencing a historical period or analog.
 - avoidList: 3-5 assets to avoid right now with a specific one-sentence reason each.
 - sectorLeaderboard: Rate 8-10 sectors on a 1-5 scale (1=Avoid, 5=Strong Buy) with one-sentence reason.
 - whyTheseRankHighest: 3-4 sentences explaining the macro logic behind the top-ranked opportunities.
+- portfolioPositioning: One of the positioning recommendations listed above.
 - followUpChips: 4-5 natural follow-up questions the user might want to ask next.
 DISCLAIMER INSTRUCTION: All output is for informational and educational purposes only. Nothing constitutes financial advice or a solicitation to buy or sell any security.`;
 
@@ -878,10 +952,12 @@ DISCLAIMER INSTRUCTION: All output is for informational and educational purposes
 User question: "${query}"
 
 Universe scan results (sorted by composite score):
-${universeContext}
+${universeContext || "No universe scan data available — use your knowledge of current market conditions to rank the top 5 opportunities. Default to: NVDA, MSFT, BTC, GLD, T-Bills as a defensive fallback if needed."}
 
 Avoid candidates:
-${avoidContext}
+${avoidContext || "None identified."}
+
+IMPORTANT: You MUST return at least 5 items in topOpportunities. If the universe scan is empty or has fewer than 5 items, supplement with well-known assets appropriate to the current regime.
 
 Respond with a JSON object matching this exact schema:
 {
@@ -892,13 +968,24 @@ Respond with a JSON object matching this exact schema:
     "name": string,
     "sector": string,
     "assetType": "stock" | "crypto",
-    "action": "BUY" | "ACCUMULATE" | "WATCH" | "AVOID",
+    "action": "BUY" | "ACCUMULATE" | "WATCH" | "HOLD" | "AVOID",
     "convictionScore": number (0-100),
+    "confidencePercent": number (0-100),
+    "timeHorizon": string (e.g. "1-3 weeks"),
+    "expectedReward": string (e.g. "+8-12%"),
     "riskLevel": "Low" | "Medium" | "High" | "Extreme",
     "primaryDriver": string (one sentence),
     "nearTermCatalyst": string (one sentence),
     "keyRisk": string (one sentence),
     "thesisSummary": string (exactly 2 sentences),
+    "bullDrivers": string[] (2-4 items),
+    "bearDrivers": string[] (2-3 items),
+    "upgradeTriggers": string[] (2-3 items),
+    "downgradeTriggers": string[] (2-3 items),
+    "macroAlignment": "Aligned" | "Partially Aligned" | "Counter-Trend",
+    "sectorStrength": "Strong" | "Moderate" | "Weak" | "Deteriorating",
+    "momentum": "Bullish" | "Neutral" | "Bearish" | "Recovering",
+    "historicalAnalog": string (one sentence),
     "entryZone": string | null,
     "stopLevel": string | null,
     "targetOne": string | null,
@@ -908,6 +995,7 @@ Respond with a JSON object matching this exact schema:
   "avoidList": Array of { "ticker": string, "name": string, "reason": string (one sentence) },
   "sectorLeaderboard": Array of { "sector": string, "rating": 1|2|3|4|5, "bias": "bullish"|"bearish"|"neutral", "reason": string },
   "whyTheseRankHighest": string (3-4 sentences),
+  "portfolioPositioning": string (one of the positioning recommendations),
   "followUpChips": string[] (4-5 follow-up questions)
 }`;
 
@@ -937,18 +1025,29 @@ Respond with a JSON object matching this exact schema:
                   assetType: { type: "string" },
                   action: { type: "string" },
                   convictionScore: { type: "number" },
+                  confidencePercent: { type: "number" },
+                  timeHorizon: { type: "string" },
+                  expectedReward: { type: "string" },
                   riskLevel: { type: "string" },
                   primaryDriver: { type: "string" },
                   nearTermCatalyst: { type: "string" },
                   keyRisk: { type: "string" },
                   thesisSummary: { type: "string" },
+                  bullDrivers: { type: "array", items: { type: "string" } },
+                  bearDrivers: { type: "array", items: { type: "string" } },
+                  upgradeTriggers: { type: "array", items: { type: "string" } },
+                  downgradeTriggers: { type: "array", items: { type: "string" } },
+                  macroAlignment: { type: "string" },
+                  sectorStrength: { type: "string" },
+                  momentum: { type: "string" },
+                  historicalAnalog: { type: "string" },
                   entryZone: { type: ["string", "null"] },
                   stopLevel: { type: ["string", "null"] },
                   targetOne: { type: ["string", "null"] },
                   riskRewardRatio: { type: ["string", "null"] },
                   dataFreshness: { type: "string" },
                 },
-                required: ["rank","ticker","name","sector","assetType","action","convictionScore","riskLevel","primaryDriver","nearTermCatalyst","keyRisk","thesisSummary","entryZone","stopLevel","targetOne","riskRewardRatio","dataFreshness"],
+                required: ["rank","ticker","name","sector","assetType","action","convictionScore","confidencePercent","timeHorizon","expectedReward","riskLevel","primaryDriver","nearTermCatalyst","keyRisk","thesisSummary","bullDrivers","bearDrivers","upgradeTriggers","downgradeTriggers","macroAlignment","sectorStrength","momentum","historicalAnalog","entryZone","stopLevel","targetOne","riskRewardRatio","dataFreshness"],
                 additionalProperties: false,
               },
             },
@@ -980,9 +1079,10 @@ Respond with a JSON object matching this exact schema:
               },
             },
             whyTheseRankHighest: { type: "string" },
+            portfolioPositioning: { type: "string" },
             followUpChips: { type: "array", items: { type: "string" } },
           },
-          required: ["macroContext","topOpportunities","avoidList","sectorLeaderboard","whyTheseRankHighest","followUpChips"],
+          required: ["macroContext","topOpportunities","avoidList","sectorLeaderboard","whyTheseRankHighest","portfolioPositioning","followUpChips"],
           additionalProperties: false,
         },
       },
@@ -1020,6 +1120,7 @@ Respond with a JSON object matching this exact schema:
     avoidList: raw.avoidList,
     sectorLeaderboard: raw.sectorLeaderboard,
     whyTheseRankHighest: raw.whyTheseRankHighest,
+    portfolioPositioning: raw.portfolioPositioning,
     followUpChips,
     dataFreshness: "Live — updated just now",
     deepDiveLinks: [

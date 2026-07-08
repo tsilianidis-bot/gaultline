@@ -69,9 +69,9 @@
   --fl-green: #00FF88;
   --fl-purple: #C084FC;
   --fl-text-primary: #F4F8FF;
-  --fl-text-secondary: #A8B8CC;
-  --fl-text-muted: #64748B;
-  --fl-text-dim: #4B5563;
+  --fl-text-secondary: #C8D8E8;
+  --fl-text-muted: #94A3B8;
+  --fl-text-dim: #6B7280;
 
   /* shadcn tokens — dark theme */
   --primary: #00D4FF;
@@ -84,9 +84,9 @@
   --popover: #111520;
   --popover-foreground: #F4F8FF;
   --secondary: #111520;
-  --secondary-foreground: #A8B8CC;
+  --secondary-foreground: #C8D8E8;
   --muted: #111520;
-  --muted-foreground: #94A3B8;
+  --muted-foreground: #B0C0D4;
   --accent: rgba(0,212,255,0.08);
   --accent-foreground: #00D4FF;
   --destructive: #FF2D55;
@@ -780,7 +780,7 @@
     font-size: 9px;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: rgba(148, 163, 184, 0.7);
+    color: rgba(203, 213, 225, 0.9);
     font-weight: 500;
   }
 
@@ -807,7 +807,7 @@
     box-shadow: 0 0 0 3px rgba(0,212,255,0.08), 0 0 12px rgba(0,212,255,0.1);
   }
   .terminal-input::placeholder {
-    color: rgba(100,116,139,0.6);
+    color: rgba(148,163,184,0.75);
   }
 
   /* Premium button — Apple-style with terminal glow */
@@ -882,7 +882,7 @@
     font-size: 9px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: rgba(100,116,139,0.8);
+    color: rgba(148,163,184,0.95);
     white-space: nowrap;
   }
 
@@ -903,7 +903,7 @@
   .text-positive { color: #00FF88; }
   .text-negative { color: #FF2D55; }
   .text-warning  { color: #FF9500; }
-  .text-neutral  { color: #94A3B8; }
+  .text-neutral  { color: #CBD5E1; }
   .text-electric { color: #00D4FF; }
 
   /* Background tint utilities */

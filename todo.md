@@ -3568,3 +3568,10 @@
 - [x] MobileLayout.tsx: "FAULTLINE CORE" → "FAULTLINE TRADER"
 - [x] AIReceptionistLink.tsx and ChatbotWidget.tsx files deleted (dead code)
 - [x] receptionist_call_clicked event removed from analytics.ts
+
+## Ask Intelligence Institutional Upgrade (Jul 2026)
+
+- [ ] Add daily high, low, volume to live price context block in smartDiscovery Stage 4 (stocks via YahooQuote.high/low/volume, crypto via CoinMarketData.high24h/low24h/totalVolume)
+- [ ] Upgrade LLM system prompt to enforce 12-section institutional-grade format (Direct Answer, Why This Conclusion, Evidence Panel, Probability Attribution with drivers, What Changed, Actionable Takeaway, Invalidation Triggers, Time Horizon, Confidence Explanation)
+- [ ] Add new JSON schema fields: macroDrivers, whatChangedSinceYesterday, bottomLine, timeHorizon, confidenceExplanation
+- [ ] Render new fields in SmartDiscovery.tsx: MacroDriversSection, WhatChangedSection, BottomLineCard, TimeHorizonBadge, ConfidenceExplanation

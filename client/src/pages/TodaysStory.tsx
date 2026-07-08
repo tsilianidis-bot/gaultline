@@ -216,7 +216,7 @@ export default function TodaysStory() {
             <SectionCard
               icon={<Shield size={12} />}
               label="INVALIDATION THESIS"
-              content={data.invalidationThesis}
+              content={data.invalidationThesis ?? (data.invalidationTriggers ? (data.invalidationTriggers as string[]).join(" | ") : "No invalidation data available.")}
               accentColor="#FF2D55"
             />
 

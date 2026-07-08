@@ -244,9 +244,17 @@ export const outlookRouter = router({
         const topCrypto = topOppData.crypto.slice(0, 3).map(s => `${s.symbol} (score: ${s.outlookScore}, ${s.direction})`).join(", ");
         const topVectors = pressure.vectors.slice(0, 5).map(v => `${v.label}: ${v.score}/100 (${v.driver})`).join("; ");
 
-        const prompt = `You are FAULTLINE, an institutional-grade market intelligence system. Write today's market story in exactly 5 sections. Be specific, data-driven, and institutional in tone. Use the live data below.
+        const topOpportunityTicker = topOppData.stocks[0]?.symbol || topOppData.crypto[0]?.symbol || "SPY";
+        const topOpportunityName = topOppData.stocks[0]?.name || topOppData.crypto[0]?.name || "S&P 500 ETF";
+        const topOpportunityScore = topOppData.stocks[0]?.outlookScore || topOppData.crypto[0]?.outlookScore || 50;
+        const topOpportunityDir = topOppData.stocks[0]?.direction || topOppData.crypto[0]?.direction || "WATCH";
 
-LIVE FAULTLINE DATA:
+        const prompt = `You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist.
+Write today's market story using the STORY INTELLIGENCE 2.0 format. Be specific, data-driven, and institutional in tone.
+
+========================
+LIVE FAULTLINE DATA
+========================
 - Overall Pressure Index: ${pressure.overallPressure}/100
 - Market Regime: ${fmos?.regime?.currentRegime ?? pressure.regime} (${pressure.level})
 - Top Risk Vectors: ${topVectors}
@@ -256,26 +264,49 @@ LIVE FAULTLINE DATA:
 - Bull Probability: ${fmos?.probability?.bull ?? 50}%
 - Bear Probability: ${fmos?.probability?.bear ?? 30}%
 - Transition Risk: ${fmos?.transition?.transitionProbability ?? 0}%
+- Top Opportunity: ${topOpportunityTicker} (${topOpportunityName}) — ${topOpportunityDir}, Score: ${topOpportunityScore}/100
 - Data Source: ${pressure.dataSource}
+
+========================
+STORY INTELLIGENCE 2.0 — ALL 14 SECTIONS REQUIRED
+========================
 
 Write exactly this JSON structure:
 {
-  "headline": "A single punchy 10-15 word headline summarizing today's market story",
-  "whatHappened": "2-3 sentences on what happened in markets today/overnight. Reference the pressure index and regime.",
-  "whatChanged": "2-3 sentences on what changed from yesterday. What shifted in the risk vectors or regime?",
-  "whatInstitutionsAreDoing": "2-3 sentences on institutional positioning signals. Reference the top vectors and historical analog.",
-  "whatMattersNext": "2-3 sentences on the 1-3 most important catalysts or levels to watch in the next 24-72 hours.",
-  "invalidationThesis": "1-2 sentences on what would invalidate the current regime reading and force a reassessment.",
-  "topOpportunity": "${topStocks.split(',')[0]?.split('(')[0]?.trim() || 'SPY'}",
-  "topOpportunityReason": "One sentence on why this is the top opportunity right now.",
-  "riskWarning": "One sentence on the single biggest risk to watch.",
+  "headline": "Concise institutional headline summarizing the regime (10-15 words). Examples: 'Moderate Risk Regime Persists Despite Improving Liquidity' or 'Risk-On Conditions Strengthen as Credit Markets Stabilize'.",
+  "executiveSummary": "2-4 sentences answering: What happened? Why does it matter? What should investors understand immediately? Read like the opening paragraph of an institutional macro report.",
+  "faultlineAction": "One of: 'Maintain existing exposure' / 'Accumulate selectively' / 'Favor quality growth' / 'Increase defensive allocation' / 'Reduce leverage' / 'Raise cash' / 'Wait for confirmation' / 'Rotate into defensive sectors'. Never leave users wondering what FAULTLINE would do.",
+  "topOpportunityTicker": "${topOpportunityTicker}",
+  "topOpportunityName": "${topOpportunityName}",
+  "topOpportunityRating": "${topOpportunityDir}",
+  "topOpportunityScore": ${topOpportunityScore},
+  "topOpportunityConfidence": number (0-100),
+  "topOpportunityTimeHorizon": "e.g. '1-3 weeks' or '1-3 months'",
+  "topOpportunityExpectedRisk": "e.g. 'Medium' or 'Low'",
+  "topOpportunityExpectedReward": "e.g. '+8-12%'",
+  "topOpportunityWhyFirst": "One sentence: why this asset ranked first.",
+  "topOpportunityBullDrivers": ["2-4 specific bull driver strings"],
+  "topOpportunityBearDrivers": ["2-3 specific bear driver strings"],
+  "topOpportunityCatalysts": ["2-3 near-term catalysts"],
+  "topOpportunityUpgradeTriggers": ["2-3 conditions that would upgrade the rating"],
+  "topOpportunityDowngradeTriggers": ["2-3 conditions that would downgrade the rating"],
+  "riskWarning": "One sentence identifying the single biggest macro threat and why it represents the primary downside risk.",
+  "whatHappened": "2-3 sentences on what happened in markets today/overnight. Explain what changed, why it matters, and how it affected the regime.",
+  "whatChanged": "List 4-6 specific variables that moved (e.g. Treasury yields, credit spreads, VIX, liquidity, dollar, oil). Show whether each improved, worsened, or remained stable. NEVER say 'nothing changed'.",
+  "whyFaultlineBelieves": "2-3 sentences on the evidence supporting today's conclusion (e.g. liquidity improving, credit stable, historical analog alignment). Then 1-2 sentences on the evidence arguing against it.",
+  "whatInstitutionsAreDoing": "2-3 sentences on institutional positioning signals suggested by the available evidence. Reference the top vectors and historical analog. Explain why.",
+  "whatMattersNext": "List the 3-5 most important upcoming catalysts ranked by expected market impact (e.g. CPI, FOMC, earnings, GDP, Treasury auction).",
+  "invalidationTriggers": ["3-5 specific conditions that would invalidate the current regime reading and force a reassessment. Each should explain how it would change FAULTLINE's outlook."],
+  "confidenceExplanation": "2-3 sentences explaining WHY the confidence level is what it is. Never just show a number. Example: 'Confidence is moderate because liquidity and credit conditions are supportive, while elevated inflation and concentrated market leadership reduce conviction.'",
+  "pressureIndexExplanation": "Explain why the Pressure Index is at ${pressure.overallPressure}/100. List the top 2-3 drivers that pushed it up or down. Every movement should be traceable to underlying evidence.",
+  "portfolioTakeaway": "One concise institutional recommendation ending the story. Examples: 'Remain selectively bullish. Favor high-quality companies. Maintain cash reserves for opportunities.' This is FAULTLINE's signature closing.",
   "regimeSummary": "${pressure.regime} — Pressure ${pressure.overallPressure}/100",
   "generatedAt": "${new Date().toISOString()}"
 }`;
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist. You synthesize live market data, macro regime analysis, and proprietary signal scoring into clear, confident analysis. Be direct, specific, and institutional in tone. Respond only with valid JSON." },
+            { role: "system", content: "You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist. You synthesize live market data, macro regime analysis, and proprietary signal scoring into clear, confident analysis. Be direct, specific, and institutional in tone. Every conclusion must be explainable. Every probability must be justified. Every recommendation must include supporting evidence. Every thesis must include an invalidation scenario. Respond only with valid JSON." },
             { role: "user", content: prompt },
           ],
           response_format: { type: "json_object" } as any,
@@ -295,14 +326,32 @@ Write exactly this JSON structure:
           generatedAt: new Date().toISOString(),
         }) as {
           headline: string;
+          executiveSummary: string;
+          faultlineAction: string;
+          topOpportunityTicker: string;
+          topOpportunityName: string;
+          topOpportunityRating: string;
+          topOpportunityScore: number;
+          topOpportunityConfidence: number;
+          topOpportunityTimeHorizon: string;
+          topOpportunityExpectedRisk: string;
+          topOpportunityExpectedReward: string;
+          topOpportunityWhyFirst: string;
+          topOpportunityBullDrivers: string[];
+          topOpportunityBearDrivers: string[];
+          topOpportunityCatalysts: string[];
+          topOpportunityUpgradeTriggers: string[];
+          topOpportunityDowngradeTriggers: string[];
+          riskWarning: string;
           whatHappened: string;
           whatChanged: string;
+          whyFaultlineBelieves: string;
           whatInstitutionsAreDoing: string;
           whatMattersNext: string;
-          invalidationThesis: string;
-          topOpportunity: string;
-          topOpportunityReason: string;
-          riskWarning: string;
+          invalidationTriggers: string[];
+          confidenceExplanation: string;
+          pressureIndexExplanation: string;
+          portfolioTakeaway: string;
           regimeSummary: string;
           pressureIndex: number;
           regime: string;
@@ -310,6 +359,10 @@ Write exactly this JSON structure:
           topAnalog: { label: string; similarity: number; description: string };
           dataSource: string;
           generatedAt: string;
+          // Legacy fields for backward compat
+          invalidationThesis?: string;
+          topOpportunity?: string;
+          topOpportunityReason?: string;
         };
       } catch (err) {
         console.error("[outlook.getTodaysStory] Error:", err);

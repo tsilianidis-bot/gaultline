@@ -10,7 +10,7 @@ import {
   Activity, BarChart2, Brain, Clock, AlertTriangle, TrendingUp,
   LayoutDashboard, Zap, FileText, Bell, Radio, Gauge, BookOpen,
   Cpu, MoreHorizontal, X, Briefcase, Shield, Bitcoin, Bookmark, Waves, BarChart3,
-  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle, Command, ScanSearch, FlaskConical, Users, TrendingDown, BellRing,
+  User, LogIn, Crown, ChevronDown, LogOut, RotateCcw, Trophy, Newspaper, Settings, History, Crosshair, Eye, Search, Telescope, MessageSquare, Sparkles, Target, MessageCircle, Command, ScanSearch, FlaskConical, Users, TrendingDown, BellRing, Home,
 } from "lucide-react";
 import { loadWatchlist, evaluateBreach, INDICATOR_MAP } from "@/lib/watchlist";
 import MarketContextStrip from "@/components/MarketContextStrip";
@@ -110,11 +110,11 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 // Flat list for convenience
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
-// Mobile primary tabs (bottom bar — 5 most important)
-// Market Stress replaces Blog as a primary tab
-// Mobile primary tabs: Today (Dashboard), Signals, Portfolio, Search (Symbol Intel), Account
-const MOBILE_PRIMARY_IDS = ["discover", "signals", "portfolio", "symbol-intel", "account"];
-const MOBILE_PRIMARY = ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id));
+// Mobile primary tabs (bottom bar — 5 primary + More)
+// Home (Dashboard), Ask, Signals, Symbol Intel, Account
+const MOBILE_HOME_TAB: NavItem = { id: "home", label: "Home", shortLabel: "Home", icon: Home, path: "/app/dashboard" };
+const MOBILE_PRIMARY_IDS = ["discover", "signals", "symbol-intel", "account"];
+const MOBILE_PRIMARY = [MOBILE_HOME_TAB, ...ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id))];
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -730,7 +730,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 padding: '8px 2px', gap: '3px',
                 background: 'transparent', border: 'none',
-                color: active ? '#00D4FF' : '#4B5563',
+                color: active ? '#00D4FF' : '#8B9BB4',
                 cursor: 'pointer', position: 'relative',
                 transition: 'color 0.15s ease',
               }}
@@ -770,7 +770,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             padding: '8px 2px', gap: '3px',
             background: 'transparent', border: 'none',
-            color: moreOpen ? '#00D4FF' : '#4B5563',
+            color: moreOpen ? '#00D4FF' : '#8B9BB4',
             cursor: 'pointer',
             transition: 'color 0.15s ease',
           }}
