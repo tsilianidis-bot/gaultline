@@ -3677,3 +3677,11 @@
 - [x] Build BrandHero component: asymmetric two-column layout, headline "FAULTLINE doesn't just measure the market. It explains it.", Intelligence Hub visual mockup, dual CTAs, trust statement checklist
 - [x] Insert BrandHero as the very first section above all others (above existing Hero)
 - [x] Update FeaturesSection headline to reinforce "explains it" brand message
+
+## Homepage Briefing Panel
+- [x] Build server/homepageBriefing.ts: computeHomepageBriefing with Market Story, Why Today Is Different, History Says — all from pressureHistory DB + pressureRuns
+- [x] Add tRPC procedure pressure.getHomepageBriefing
+- [x] Build HomepageBriefingPanel.tsx: Today's Market Story, Why Today Is Different, History Says
+- [x] Insert HomepageBriefingPanel above MarketSynthesisPanel in Dashboard.tsx
+- [x] Write vitest tests for homepageBriefing pure helpers (21 tests pass)
+- [x] 0 TypeScript errors

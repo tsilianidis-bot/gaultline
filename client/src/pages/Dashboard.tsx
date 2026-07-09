@@ -28,6 +28,7 @@ import IntelligenceMode from "@/components/dashboard/IntelligenceMode";
 import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/MarketPreflight";
 import PreflightGate from "@/components/PreflightGate";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
+import HomepageBriefingPanel from "@/components/HomepageBriefingPanel";
 import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 type DashboardMode = "pulse" | "signals" | "intelligence";
@@ -921,6 +922,8 @@ export default function Dashboard() {
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
         {/* ── Inline upgrade prompt (free/core tier only) ────────── */}
         <DashboardUpgradePrompt />
+        {/* ── Homepage Briefing: Market Story, Why Today Is Different, History Says ── */}
+        <HomepageBriefingPanel />
         {/* ── What does this mean? synthesis panel ─────────────── */}
         <MarketSynthesisPanel context="dashboard" />
         {/* ── 3-Mode Intelligence Selector ─────────────────────── */}

@@ -10,6 +10,7 @@ import { TRPCError } from "@trpc/server";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
 import { calculateFaultlinePressure } from "./pressure/engine";
 import { computeHistoricalContext } from "./historicalContextEngine";
+import { computeHomepageBriefing } from "./homepageBriefing";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
@@ -310,6 +311,14 @@ export const appRouter = router({
       }
     }),
 
+    // Get the Homepage Briefing (Market Story, Why Today Is Different, History Says, metrics)
+    getHomepageBriefing: publicProcedure.query(async () => {
+      try {
+        return await computeHomepageBriefing();
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Homepage briefing failed", cause: err });
+      }
+    }),
     // Get the Historical Context Engine output for the current pressure reading
     getHistoricalContext: publicProcedure.query(async () => {
       try {
