@@ -243,17 +243,18 @@ function PorchOverlay({ color, onUpgrade, onLogin, isLoggedIn }: {
 // ── CRYPTO SEARCH PANEL ───────────────────────────────────────
 const CRYPTO_EXAMPLES = ["BTC", "ETH", "SOL", "AVAX", "RNDR", "HYPE"];
 
-const CRYPTO_DEMO: Record<string, {
-  name: string; price: string; change: number;
+// Static metadata only — prices come from live tRPC screener
+const CRYPTO_META: Record<string, {
+  name: string;
   score: number; riskLevel: string; bias: string;
   momentum: string; signals: string[]; color: string;
 }> = {
-  BTC:  { name: "Bitcoin",        price: "$97,420", change: +1.84, score: 62, riskLevel: "Elevated", bias: "Bullish",  momentum: "Stable",       signals: ["Macro Sensitive", "Liquidity Fragile"],      color: "#FF9500" },
-  ETH:  { name: "Ethereum",       price: "$3,240",  change: +2.31, score: 55, riskLevel: "Moderate", bias: "Bullish",  momentum: "Accelerating", signals: ["Momentum Breakout", "AI Narrative Exposure"], color: "#00D4FF" },
-  SOL:  { name: "Solana",         price: "$178",    change: -0.92, score: 71, riskLevel: "High",     bias: "Neutral",  momentum: "Decelerating", signals: ["Speculative Acceleration", "Risk-Off Vulnerable"], color: "#FF2D55" },
-  AVAX: { name: "Avalanche",      price: "$38.40",  change: +0.44, score: 58, riskLevel: "Elevated", bias: "Neutral",  momentum: "Stable",       signals: ["Macro Sensitive"],                            color: "#FFD700" },
-  RNDR: { name: "Render",         price: "$8.72",   change: +5.12, score: 78, riskLevel: "High",     bias: "Bullish",  momentum: "Accelerating", signals: ["AI Narrative Exposure", "Speculative Acceleration"], color: "#C084FC" },
-  HYPE: { name: "Hyperliquid",    price: "$24.15",  change: -2.40, score: 82, riskLevel: "Critical", bias: "Bearish",  momentum: "Reversing",    signals: ["Deleveraging Risk", "Liquidity Fragile"],    color: "#FF2D55" },
+  BTC:  { name: "Bitcoin",        score: 62, riskLevel: "Elevated", bias: "Bullish",  momentum: "Stable",       signals: ["Macro Sensitive", "Liquidity Fragile"],      color: "#FF9500" },
+  ETH:  { name: "Ethereum",       score: 55, riskLevel: "Moderate", bias: "Bullish",  momentum: "Accelerating", signals: ["Momentum Breakout", "AI Narrative Exposure"], color: "#00D4FF" },
+  SOL:  { name: "Solana",         score: 71, riskLevel: "High",     bias: "Neutral",  momentum: "Decelerating", signals: ["Speculative Acceleration", "Risk-Off Vulnerable"], color: "#FF2D55" },
+  AVAX: { name: "Avalanche",      score: 58, riskLevel: "Elevated", bias: "Neutral",  momentum: "Stable",       signals: ["Macro Sensitive"],                            color: "#FFD700" },
+  RNDR: { name: "Render",         score: 78, riskLevel: "High",     bias: "Bullish",  momentum: "Accelerating", signals: ["AI Narrative Exposure", "Speculative Acceleration"], color: "#C084FC" },
+  HYPE: { name: "Hyperliquid",    score: 82, riskLevel: "Critical", bias: "Bearish",  momentum: "Reversing",    signals: ["Deleveraging Risk", "Liquidity Fragile"],    color: "#FF2D55" },
 };
 
 const RISK_COLORS: Record<string, string> = {
@@ -268,14 +269,31 @@ export function CryptoPorchPanel() {
   const [active, setActive] = useState("BTC");
   const [hasSearched, setHasSearched] = useState(false);
 
-  const demo = CRYPTO_DEMO[active] ?? CRYPTO_DEMO.BTC;
-  const riskColor = RISK_COLORS[demo.riskLevel] ?? "#FFD700";
-  const biasColor = BIAS_COLORS[demo.bias] ?? "#FFD700";
+  // Fetch live screener data for real prices
+  const { data: screenerData } = trpc.crypto.getScreener.useQuery(
+    { limit: 20 },
+    { staleTime: 60_000, refetchInterval: 90_000 }
+  );
+
+  const meta = CRYPTO_META[active] ?? CRYPTO_META.BTC;
+  const riskColor = RISK_COLORS[meta.riskLevel] ?? "#FFD700";
+  const biasColor = BIAS_COLORS[meta.bias] ?? "#FFD700";
+
+  // Pull live price from screener data
+  const liveSignal = screenerData?.signals?.find(
+    (s: { symbol: string; technicals: { priceChange7d: number | null } }) => s.symbol === active
+  ) as { symbol: string; technicals: { priceChange7d: number | null }; priceLevels: { entryZone: number } } | undefined;
+  const livePrice = liveSignal?.priceLevels?.entryZone;
+  const liveChange = liveSignal?.technicals?.priceChange7d ?? null;
+  const priceDisplay = livePrice != null
+    ? (livePrice >= 1000 ? `$${livePrice.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : `$${livePrice.toFixed(livePrice < 1 ? 4 : 2)}`)
+    : screenerData ? 'N/A' : '...';
+  const lastUpdated = screenerData ? new Date(screenerData.computedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : null;
 
   const handleSearch = useCallback(() => {
     const sym = input.trim().toUpperCase();
     if (!sym) return;
-    const match = Object.keys(CRYPTO_DEMO).find(k => k === sym);
+    const match = Object.keys(CRYPTO_META).find(k => k === sym);
     setActive(match ?? "BTC");
     setHasSearched(true);
   }, [input]);
@@ -381,9 +399,9 @@ export function CryptoPorchPanel() {
         <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
           {/* Arc gauge */}
           <ArcGauge
-            value={demo.score}
+            value={meta.score}
             color={riskColor}
-            label={`${demo.score}`}
+            label={`${meta.score}`}
             sublabel="RISK"
             size={108}
             blurred={true}
@@ -392,24 +410,32 @@ export function CryptoPorchPanel() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
               <span style={{ fontFamily: RAJ, fontWeight: 700, fontSize: '20px', color: '#E2E8F0', filter: 'blur(5px)' }}>{active}</span>
-              <span style={{ fontFamily: SANS, fontSize: '10px', color: '#4B5563', filter: 'blur(5px)' }}>{demo.name}</span>
+              <span style={{ fontFamily: SANS, fontSize: '10px', color: '#4B5563', filter: 'blur(5px)' }}>{meta.name}</span>
             </div>
             <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', filter: 'blur(5px)' }}>
-              <SignalBadge label={demo.bias} color={biasColor} />
-              <SignalBadge label={`${demo.riskLevel} Risk`} color={riskColor} />
+              <SignalBadge label={meta.bias} color={biasColor} />
+              <SignalBadge label={`${meta.riskLevel} Risk`} color={riskColor} />
             </div>
             <div style={{ marginBottom: '8px', filter: 'blur(5px)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                 <span style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Signal Score</span>
-                <span style={{ fontFamily: MONO, fontSize: '11px', color: riskColor }}>{demo.score}/100</span>
+                <span style={{ fontFamily: MONO, fontSize: '11px', color: riskColor }}>{meta.score}/100</span>
               </div>
-              <AnimBar value={demo.score} color={riskColor} />
+              <AnimBar value={meta.score} color={riskColor} />
             </div>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', filter: 'blur(5px)' }}>
-              {demo.signals.map(s => <SignalBadge key={s} label={s} color="#64748B" />)}
+              {meta.signals.map(s => <SignalBadge key={s} label={s} color="#64748B" />)}
             </div>
             <div style={{ marginTop: '8px', fontFamily: MONO, fontSize: '12px', color: '#4B5563', filter: 'blur(5px)' }}>
-              Momentum: <span style={{ color: demo.momentum === 'Accelerating' ? '#00FF88' : demo.momentum === 'Reversing' ? '#FF2D55' : '#94A3B8' }}>{demo.momentum}</span>
+              <span style={{ color: '#94A3B8' }}>{priceDisplay}</span>
+              {liveChange != null && (
+                <span style={{ marginLeft: '8px', color: liveChange >= 0 ? '#00FF88' : '#FF2D55' }}>
+                  {liveChange >= 0 ? '+' : ''}{liveChange.toFixed(2)}% 7D
+                </span>
+              )}
+              {lastUpdated && (
+                <span style={{ marginLeft: '8px', color: '#334155', fontSize: '10px' }}>↻ {lastUpdated}</span>
+              )}
             </div>
           </div>
         </div>
@@ -429,17 +455,18 @@ export function CryptoPorchPanel() {
 // ── STOCK SEARCH PANEL ────────────────────────────────────────
 const STOCK_EXAMPLES = ["NVDA", "AAPL", "TSLA", "SPY", "XLU", "ARKK"];
 
-const STOCK_DEMO: Record<string, {
-  name: string; price: string; change: number;
+// Static metadata only — prices come from live /api/signals/quotes
+const STOCK_META: Record<string, {
+  name: string;
   score: number; action: string; confidence: number;
   signals: string[]; regime: string; color: string;
 }> = {
-  NVDA: { name: "NVIDIA Corp",       price: "$924",  change: +3.42, score: 84, action: "BUY",   confidence: 84, signals: ["Momentum Breakout", "AI Bubble Exposure"],  regime: "Aligned",       color: "#00D4FF" },
-  AAPL: { name: "Apple Inc",         price: "$211",  change: +0.88, score: 61, action: "HOLD",  confidence: 61, signals: ["Macro Beneficiary", "Neutral / Watch"],      regime: "Neutral",       color: "#FFD700" },
-  TSLA: { name: "Tesla Inc",         price: "$248",  change: -1.44, score: 72, action: "WATCH", confidence: 58, signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF9500" },
-  SPY:  { name: "S&P 500 ETF",       price: "$527",  change: +0.61, score: 55, action: "HOLD",  confidence: 65, signals: ["Macro Beneficiary"],                         regime: "Neutral",       color: "#00FF88" },
-  XLU:  { name: "Utilities SPDR",    price: "$68",   change: +0.71, score: 48, action: "WATCH", confidence: 61, signals: ["Recession Defensive", "Macro Beneficiary"],  regime: "Neutral",       color: "#94A3B8" },
-  ARKK: { name: "ARK Innovation ETF",price: "$48",   change: -1.87, score: 77, action: "SELL",  confidence: 77, signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF2D55" },
+  NVDA: { name: "NVIDIA Corp",        score: 84, action: "BUY",   confidence: 84, signals: ["Momentum Breakout", "AI Bubble Exposure"],  regime: "Aligned",       color: "#00D4FF" },
+  AAPL: { name: "Apple Inc",          score: 61, action: "HOLD",  confidence: 61, signals: ["Macro Beneficiary", "Neutral / Watch"],      regime: "Neutral",       color: "#FFD700" },
+  TSLA: { name: "Tesla Inc",          score: 72, action: "WATCH", confidence: 58, signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF9500" },
+  SPY:  { name: "S&P 500 ETF",        score: 55, action: "HOLD",  confidence: 65, signals: ["Macro Beneficiary"],                         regime: "Neutral",       color: "#00FF88" },
+  XLU:  { name: "Utilities SPDR",     score: 48, action: "WATCH", confidence: 61, signals: ["Recession Defensive", "Macro Beneficiary"],  regime: "Neutral",       color: "#94A3B8" },
+  ARKK: { name: "ARK Innovation ETF", score: 77, action: "SELL",  confidence: 77, signals: ["Liquidity Sensitive", "Macro Vulnerable"],   regime: "Counter-Trend", color: "#FF2D55" },
 };
 
 const ACTION_COLORS: Record<string, { text: string; border: string; bg: string }> = {
@@ -458,15 +485,39 @@ export function StockPorchPanel() {
   const { user } = useAuth();
   const [input, setInput] = useState("");
   const [active, setActive] = useState("NVDA");
+  const [liveQuotes, setLiveQuotes] = useState<Record<string, { price: number; changePercent: number }>>({});
+  const [quotesUpdatedAt, setQuotesUpdatedAt] = useState<string | null>(null);
 
-  const demo = STOCK_DEMO[active] ?? STOCK_DEMO.NVDA;
-  const actionStyle = ACTION_COLORS[demo.action] ?? ACTION_COLORS.HOLD;
-  const regimeColor = REGIME_COLORS[demo.regime] ?? "#FFD700";
+  // Fetch live quotes from the signals endpoint
+  useEffect(() => {
+    const fetchQuotes = async () => {
+      try {
+        const res = await fetch('/api/signals/quotes', { signal: AbortSignal.timeout(15000) });
+        if (!res.ok) return;
+        const data = await res.json() as { quotes?: Array<{ ticker: string; price: number; changePercent: number }> };
+        const map: Record<string, { price: number; changePercent: number }> = {};
+        for (const q of data.quotes ?? []) map[q.ticker] = { price: q.price, changePercent: q.changePercent };
+        setLiveQuotes(map);
+        setQuotesUpdatedAt(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      } catch { /* silent — show metadata without price */ }
+    };
+    fetchQuotes();
+    const iv = setInterval(fetchQuotes, 90_000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const meta = STOCK_META[active] ?? STOCK_META.NVDA;
+  const actionStyle = ACTION_COLORS[meta.action] ?? ACTION_COLORS.HOLD;
+  const regimeColor = REGIME_COLORS[meta.regime] ?? "#FFD700";
+  const liveQ = liveQuotes[active];
+  const priceDisplay = liveQ?.price != null
+    ? (liveQ.price >= 1000 ? `$${liveQ.price.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : `$${liveQ.price.toFixed(2)}`)
+    : quotesUpdatedAt ? 'N/A' : '...';
 
   const handleSearch = useCallback(() => {
     const sym = input.trim().toUpperCase();
     if (!sym) return;
-    const match = Object.keys(STOCK_DEMO).find(k => k === sym);
+    const match = Object.keys(STOCK_META).find(k => k === sym);
     setActive(match ?? "NVDA");
   }, [input]);
 
@@ -571,10 +622,10 @@ export function StockPorchPanel() {
         <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
           {/* Arc gauge */}
           <ArcGauge
-            value={demo.confidence}
+            value={meta.confidence}
             color={actionStyle.text}
-            label={demo.action}
-            sublabel={`${demo.confidence}% CONF`}
+            label={meta.action}
+            sublabel={`${meta.confidence}% CONF`}
             size={108}
             blurred={true}
           />
@@ -582,7 +633,7 @@ export function StockPorchPanel() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
               <span style={{ fontFamily: RAJ, fontWeight: 700, fontSize: '20px', color: '#E2E8F0', filter: 'blur(5px)' }}>{active}</span>
-              <span style={{ fontFamily: SANS, fontSize: '10px', color: '#4B5563', filter: 'blur(5px)' }}>{demo.name}</span>
+              <span style={{ fontFamily: SANS, fontSize: '10px', color: '#4B5563', filter: 'blur(5px)' }}>{meta.name}</span>
             </div>
             <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', filter: 'blur(5px)' }}>
               <span style={{
@@ -591,29 +642,34 @@ export function StockPorchPanel() {
                 borderRadius: '3px', padding: '3px 8px', background: actionStyle.bg,
                 textTransform: 'uppercase', fontWeight: 700,
                 boxShadow: `0 0 10px ${actionStyle.text}30`,
-              }}>{demo.action}</span>
+              }}>{meta.action}</span>
               <span style={{
                 fontFamily: MONO, fontSize: '11px', color: regimeColor,
                 border: `1px solid ${regimeColor}40`, borderRadius: '2px',
                 padding: '2px 6px', background: `${regimeColor}10`,
                 textTransform: 'uppercase', letterSpacing: '0.1em',
-              }}>{demo.regime}</span>
+              }}>{meta.regime}</span>
             </div>
             <div style={{ marginBottom: '8px', filter: 'blur(5px)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                 <span style={{ fontFamily: MONO, fontSize: '11px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Confidence</span>
-                <span style={{ fontFamily: MONO, fontSize: '11px', color: actionStyle.text }}>{demo.confidence}%</span>
+                <span style={{ fontFamily: MONO, fontSize: '11px', color: actionStyle.text }}>{meta.confidence}%</span>
               </div>
-              <AnimBar value={demo.confidence} color={actionStyle.text} />
+              <AnimBar value={meta.confidence} color={actionStyle.text} />
             </div>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', filter: 'blur(5px)' }}>
-              {demo.signals.map(s => <SignalBadge key={s} label={s} color="#64748B" />)}
+              {meta.signals.map(s => <SignalBadge key={s} label={s} color="#64748B" />)}
             </div>
             <div style={{ marginTop: '8px', fontFamily: MONO, fontSize: '12px', color: '#4B5563', filter: 'blur(5px)' }}>
-              Price: <span style={{ color: '#94A3B8' }}>{demo.price}</span>
-              <span style={{ marginLeft: '8px', color: demo.change >= 0 ? '#00FF88' : '#FF2D55' }}>
-                {demo.change >= 0 ? '+' : ''}{demo.change.toFixed(2)}%
-              </span>
+              <span style={{ color: '#94A3B8' }}>{priceDisplay}</span>
+              {liveQ?.changePercent != null && (
+                <span style={{ marginLeft: '8px', color: liveQ.changePercent >= 0 ? '#00FF88' : '#FF2D55' }}>
+                  {liveQ.changePercent >= 0 ? '+' : ''}{liveQ.changePercent.toFixed(2)}%
+                </span>
+              )}
+              {quotesUpdatedAt && (
+                <span style={{ marginLeft: '8px', color: '#334155', fontSize: '10px' }}>↻ {quotesUpdatedAt}</span>
+              )}
             </div>
           </div>
         </div>

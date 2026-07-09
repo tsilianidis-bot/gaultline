@@ -9,6 +9,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
 import { calculateFaultlinePressure } from "./pressure/engine";
+import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
@@ -306,6 +307,20 @@ export const appRouter = router({
         return result;
       } catch (err) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Pressure engine failed", cause: err });
+      }
+    }),
+
+    // Get the Historical Context Engine output for the current pressure reading
+    getHistoricalContext: publicProcedure.query(async () => {
+      try {
+        const engineEnabled = await getFeatureFlag("pressure_engine");
+        if (!engineEnabled) {
+          throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Pressure engine is temporarily disabled for maintenance." });
+        }
+        const pressure = await calculateFaultlinePressure();
+        return await computeHistoricalContext(pressure);
+      } catch (err) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Historical Context Engine failed", cause: err });
       }
     }),
   }),

@@ -3623,3 +3623,28 @@
 - [x] Register /app/admin/conversation-intelligence route in App.tsx
 - [x] Vitest tests for conversationLogger (1,163 tests passing)
 - [x] Save checkpoint
+
+## Historical Pattern Engine
+- [ ] Expand analog database to 30+ historical periods with full outcome metadata
+- [ ] Build pattern matching engine with cosine similarity, rarity scoring, outcome distributions
+- [ ] Add tRPC procedure pressure.getHistoricalPatternEngine
+- [ ] Build full Historical Pattern Engine UI page (/app/historical-patterns)
+- [ ] Wire navigation entry in AppLayout
+- [ ] Write vitest tests for pattern engine
+
+## Historical Context Engine (Market Story)
+- [x] server/historicalContextEngine.ts — all computations from pressureHistory DB
+- [x] Percentile calculation (exact rank from N historical months)
+- [x] Regime duration (consecutive months in current regime)
+- [x] Streak tracking (consecutive months above threshold)
+- [x] Trend direction classification (7/30/90-day)
+- [x] Per-vector percentiles with contribution %
+- [x] Analog matching (cosine + Euclidean similarity)
+- [x] Outcome aggregation (drawdown, recovery, sample sizes)
+- [x] LLM-generated Market Story narrative
+- [x] LLM-generated Institutional Interpretation
+- [x] tRPC procedure pressure.getHistoricalContext
+- [x] HistoricalContextEngine.tsx UI page (8 sections)
+- [x] Market Story tab added to Pressure page STRESS_TABS
+- [x] 33 vitest tests — all passing
+- [x] 0 TypeScript errors

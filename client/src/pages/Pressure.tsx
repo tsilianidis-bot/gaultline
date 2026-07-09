@@ -8,7 +8,7 @@ import SOBPanel from "@/components/SOBPanel";
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves, Clock, GitBranch } from "lucide-react";
+import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves, Clock, GitBranch, BookOpen } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
@@ -18,6 +18,7 @@ import Charts from "./Charts";
 import AftershockEnginePage from "./AftershockEngine";
 import HistoricalAnalogs from "./HistoricalAnalogs";
 import SimulatePressure from "./SimulatePressure";
+import HistoricalContextEngine from "./HistoricalContextEngine";
 import { useEngine } from "@/contexts/EngineContext";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
@@ -30,6 +31,7 @@ const STRESS_TABS = [
   { id: 'analogs',    label: 'Analogs',         icon: Clock     },
   { id: 'scenarios',  label: 'Scenarios',       icon: GitBranch },
   { id: 'domain',     label: 'Domain Analysis', icon: Zap       },
+  { id: 'context',    label: 'Market Story',    icon: BookOpen  },
 ];
 
 type StressTabId = typeof STRESS_TABS[number]['id'];
@@ -1026,6 +1028,7 @@ export default function Pressure() {
         {activeTab === 'analogs' && <HistoricalAnalogs />}
         {activeTab === 'scenarios' && <SimulatePressure />}
         {activeTab === 'domain' && <DomainAnalysisTab />}
+        {activeTab === 'context' && <HistoricalContextEngine />}
         {activeTab === 'pressure' && <div style={{ padding: "24px" }}>
 
         {/* ── Page header ──────────────────────────────────── */}
