@@ -3130,8 +3130,8 @@ export default function MarketingSite() {
       <StatusTicker />
       <DemoAccessModal open={demoModalOpen} onClose={() => setDemoModalOpen(false)} />
       <Nav onRequestAccess={scrollToForm} />
-      <BrandHero onRequestAccess={scrollToForm} />
       <Hero onRequestAccess={scrollToForm} onTryDemo={() => setDemoModalOpen(true)} />
+      <BrandHero onRequestAccess={scrollToForm} />
       <WhyFaultlineExistsSection />
       <RiskFirstPhilosophySection />
       <ProofSection />
