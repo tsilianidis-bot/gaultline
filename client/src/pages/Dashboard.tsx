@@ -58,7 +58,7 @@ function DashboardUpgradePrompt() {
       onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.04)'; }}
     >
       <div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(0,212,255,0.5)', marginBottom: '2px' }}>{tier === 'core' ? 'UPGRADE TO POWER' : 'UPGRADE TO TRADER'}</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(0,212,255,0.5)', marginBottom: '2px' }}>{tier === 'core' ? 'UPGRADE TO PRO' : 'UPGRADE TO CORE'}</div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#A8B8CC' }}>
           {tier === 'core' ? 'Situation Room · Market Preflight · Institutional dashboards · Historical analogs' : 'Unlimited Ask Intelligence · Symbol Intelligence · Full Signal Outlook · Portfolio tracker'}
         </div>

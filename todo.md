@@ -3648,3 +3648,27 @@
 - [x] Market Story tab added to Pressure page STRESS_TABS
 - [x] 33 vitest tests — all passing
 - [x] 0 TypeScript errors
+
+## Marketing & Media Update (July 2026)
+- [ ] Update shared/tiers.ts: rename Observer→Free, Trader→Core, Power→Pro
+- [ ] Update MarketingSite.tsx: hero messaging, Core positioning, pricing consistency
+- [ ] Update Press.tsx: tier names, pricing, company overview, press kit
+- [ ] Update PremiumGate.tsx: CTA labels to match new tier names
+- [ ] Update MobileLayout.tsx: tier name references
+- [ ] Update MobileUpgrade.tsx: tier name references
+- [ ] Update UserAccount.tsx: tier name references
+- [ ] Update Watchlist.tsx: tier name references
+- [ ] SEO audit: meta titles, descriptions, OG tags on all public pages
+- [ ] Final audit: no placeholder text, no outdated pricing, no broken links
+
+## Marketing & Branding Update (Jul 2026)
+- [x] Rename all tier names: Observer→Free, Trader→Core, Power→Pro across entire codebase
+- [x] Fix $29 wrong price in drip email (corrected to $9.99 for Core tier)
+- [x] Update hero headline and subheadline in MarketingSite.tsx
+- [x] Update structured data (JSON-LD) in index.html with correct tier names and prices
+- [x] Update Press page: all tier name references corrected
+- [x] Update email.ts: all drip email tier names and prices corrected
+- [x] Update MobileAccount, MobileUpgrade, MobileCrypto mobile pages
+- [x] Update PremiumGate, DashboardSearchPanels, HomeStockIntelSection
+- [x] Update AdminPortal tier labels
+- [x] SEO audit: structured data offers updated (Free/Core $9.99/Pro $59/Founding $49)

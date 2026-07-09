@@ -70,7 +70,7 @@ const TIER_CONFIG = {
     icon: <Zap size={18} />,
     description: 'The complete intelligence suite. Every engine, every signal, every edge — fully unlocked.',
     features: [
-      { label: 'Everything in Power', available: true },
+      { label: 'Everything in Pro', available: true },
       { label: 'AI Diagnostic Intelligence™', available: true },
       { label: 'Full crypto intelligence engine', available: true },
       { label: 'Advanced Aftershock Engine™', available: true },
@@ -87,9 +87,9 @@ const TIER_CONFIG = {
     glow: 'rgba(255,215,0,0.2)',
     border: 'rgba(255,215,0,0.4)',
     icon: <Crown size={18} />,
-    description: 'Everything in Power at the founding rate. Locked forever. Never increases. Limited cohort.',
+    description: 'Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.',
     features: [
-      { label: 'Everything in Power', available: true },
+      { label: 'Everything in Pro', available: true },
       { label: 'Permanent founding rate ($49/mo locked)', available: true },
       { label: 'Founding member badge', available: true },
       { label: 'Future feature grandfathering', available: true },

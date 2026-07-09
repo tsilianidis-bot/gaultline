@@ -689,7 +689,7 @@ export default function Watchlist() {
       // Adding new item — check free tier cap
       if (isFreeUser && prev.length >= FREE_WATCHLIST_LIMIT) {
         toast.error(`Observer limit reached`, {
-          description: `Observer accounts can track up to ${FREE_WATCHLIST_LIMIT} indicators. Upgrade to Trader ($9.99/mo) for unlimited watchlists.`,
+          description: `Observer accounts can track up to ${FREE_WATCHLIST_LIMIT} indicators. Upgrade to Core ($9.99/mo) for unlimited watchlists.`,
           duration: 5000,
         });
         return prev;

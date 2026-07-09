@@ -385,18 +385,18 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" />
             <div className="absolute w-3 h-3 rounded-full bg-[#00FF88]/20 animate-ping" />
           </div>
-          <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">MARKET NAVIGATION SYSTEM — LIVE</span>
+          <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">INSTITUTIONAL MARKET INTELLIGENCE — LIVE</span>
         </div>
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-5 leading-[1.05]">
-          Know what to risk.<br />
-          <span className="text-[#00D4FF]">Know when to step aside.</span>
+          See what's building<br />
+          <span className="text-[#00D4FF]">beneath the surface.</span>
         </h1>
 
         {/* Sub */}
         <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-8 leading-relaxed">
-          FAULTLINE delivers institutional-grade market intelligence in real time — live verdicts, opportunity scores, risk regimes, and actionable signals so you always know whether to press or protect.
+          FAULTLINE explains what the market is doing beneath the surface — what is happening, why it is happening, how long conditions have been developing, and how today compares with history. Institutional market awareness, not price predictions.
         </p>
 
         {/* Live intelligence strip */}
@@ -451,7 +451,7 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
 
         {/* Clarity tags — below CTAs on mobile so they don’t push buttons down */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-8">
-          {["Understand. Adapt. Navigate.", "Regime Shift Detection", "S.O.B.™ Signals of Breakdown", "Changing Tide Early Warning", "The FAULTLINE Method™"].map((item, i) => (
+          {["Market Pressure", "Liquidity Conditions", "Volatility Regime", "Capital Rotation", "Macro Intelligence", "Systemic Risk"].map((item, i) => (
             <span key={i} className="text-[9px] font-mono tracking-[0.2em] text-[#00D4FF]/60 border border-[#00D4FF]/15 px-2.5 py-1 rounded-full bg-[#00D4FF]/5">{item}</span>
           ))}
         </div>
@@ -1843,7 +1843,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       glowColor: "rgba(100,116,139,0.12)",
     },
     {
-      name: "TRADER",
+      name: "CORE",
       tagline: "Mobile-first market intelligence.",
       price: PRICING_PLANS.core.priceLabel,
       priceSub: "/month — cancel anytime",
@@ -1860,7 +1860,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         "Aftershock alerts",
         "Macro snapshot feed",
       ],
-      cta: "Get Trader — $9.99/mo",
+      cta: "Get Core — $9.99/mo",
       ctaAction: () => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin }),
       featured: false,
       popularLabel: "MOST POPULAR ENTRY",
@@ -1868,13 +1868,13 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       glowColor: "rgba(34,211,238,0.1)",
     },
     {
-      name: "POWER",
+      name: "PRO",
       tagline: "Serious trader / portfolio manager.",
       price: PRICING_PLANS.premium.priceLabel,
       priceSub: "/month — cancel anytime",
       desc: "The full intelligence platform. Every engine, every signal, every edge — fully unlocked. AI Diagnostic, Crypto Intelligence, Aftershock Engine, and full macro suite.",
       features: [
-        "Everything in Power",
+        "Everything in Pro",
         "Real-time Pressure Index™",
         "Full Signals Engine (all tickers)",
         "AI Diagnostic Intelligence™",
@@ -1885,7 +1885,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         "Advanced watchlists & alerts",
         "Historical analog engine",
       ],
-      cta: "Unlock Power — $59/mo",
+      cta: "Unlock Pro — $59/mo",
       ctaAction: () => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin }),
       featured: true,
       accentColor: "#00D4FF",
@@ -1896,9 +1896,9 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       tagline: "Rate locked for life.",
       price: PRICING_PLANS.founding.priceLabel,
       priceSub: "/month — locked forever",
-      desc: "Everything in Power at $49/mo — locked forever. Never increases. Join the founding cohort before spots close.",
+      desc: "Everything in Pro at $49/mo — locked forever. Never increases. Join the founding cohort before spots close.",
       features: [
-        "Everything in Power",
+        "Everything in Pro",
         "Rate locked at $49/mo forever",
         "Founding member badge",
         "Future feature grandfathering",
@@ -1919,9 +1919,9 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       tagline: "Pay once. Never again.",
       price: PRICING_PLANS.lifetime.priceLabel,
       priceSub: "one-time — lifetime access",
-      desc: "Everything in Power, forever. One payment of $299. No monthly charges, no renewals. Limited quantity.",
+      desc: "Everything in Pro, forever. One payment of $299. No monthly charges, no renewals. Limited quantity.",
       features: [
-        "Everything in Power",
+        "Everything in Pro",
         "Lifetime access — pay once",
         "Founding member badge",
         "Future feature grandfathering",
@@ -2208,14 +2208,14 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 0 20px rgba(34,211,238,0.1)",
                 }}
               >
-                OPEN TRADER APP →
+                OPEN CORE APP →
               </a>
               <button
                 onClick={onRequestAccess}
                 className="px-6 py-3 font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#A8B8CC" }}
               >
-                UPGRADE TO POWER
+                UPGRADE TO PRO
               </button>
             </div>
           </div>
@@ -2250,7 +2250,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                 {/* App top bar */}
                 <div className="px-4 py-2 flex items-center justify-between">
                   <div>
-                    <div className="text-[7px] font-mono tracking-[0.3em] text-[#22D3EE]/50">FAULTLINE TRADER</div>
+                    <div className="text-[7px] font-mono tracking-[0.3em] text-[#22D3EE]/50">FAULTLINE CORE</div>
                     <div className="text-[8px] font-mono text-[#64748B]">PRESSURE ENGINE™</div>
                   </div>
                   <div className="w-6 h-6 rounded-full bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.2)] flex items-center justify-center">
@@ -2318,7 +2318,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                     style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
                   >
                     <div>
-                      <div className="text-[6px] font-mono tracking-widest text-[#64748B]">POWER REQUIRED</div>
+                      <div className="text-[6px] font-mono tracking-widest text-[#64748B]">PRO REQUIRED</div>
                       <div className="text-[8px] font-mono text-[#A8B8CC]">Diagnostic AI™ + Aftershock™</div>
                     </div>
                     <span
@@ -2358,7 +2358,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(34,211,238,0.1)",
                 }}
               >
-                <div className="text-[8px] font-mono tracking-widest text-[#22D3EE]/60 mb-0.5">FAULTLINE TRADER</div>
+                <div className="text-[8px] font-mono tracking-widest text-[#22D3EE]/60 mb-0.5">FAULTLINE CORE</div>
                 <div className="text-xl font-bold text-[#22D3EE]">{PRICING_PLANS.core.priceLabel}</div>
                 <div className="text-[8px] font-mono text-[#64748B]">MOST POPULAR ENTRY</div>
               </div>
@@ -2372,7 +2372,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.1)",
                 }}
               >
-                <div className="text-[8px] font-mono tracking-widest text-[#00D4FF]/60 mb-0.5">FAULTLINE POWER</div>
+                <div className="text-[8px] font-mono tracking-widest text-[#00D4FF]/60 mb-0.5">FAULTLINE PRO</div>
                 <div className="text-xl font-bold text-[#00D4FF]">$59<span className="text-xs font-normal text-[#64748B]">/mo</span></div>
                 <div className="text-[8px] font-mono text-[#64748B]">FULL INTELLIGENCE</div>
               </div>
@@ -2573,7 +2573,7 @@ function Footer() {
                   Launch Platform →
                 </a>
               </li>
-              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founder Access — $299 · Limited Spots</a></li>
+              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founding Lifetime — $299 · Limited Spots</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
               <li><a href="/methodology" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Methodology</a></li>
               <li><a href="/contact" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Contact Us</a></li>

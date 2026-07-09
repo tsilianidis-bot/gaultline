@@ -491,7 +491,7 @@ export default function PressureIndex() {
               {[
                 { tier: "TRADER", price: PRICING_PLANS.core.priceLabel, tagline: "Professional trading intelligence", color: "#22D3EE", features: ["Signals screener", "Portfolio tracker", "Alt Rotation"] },
                 { tier: "POWER", price: PRICING_PLANS.premium.priceLabel, tagline: "Institutional-grade intelligence", color: "#00D4FF", features: ["AI Diagnostic™", "Crypto intelligence", "Aftershock Engine™"], badge: "RECOMMENDED" },
-                { tier: "FOUNDING", price: PRICING_PLANS.founding.priceLabel, tagline: "Rate locked for life", color: "#FFD700", features: ["Everything in Power", "Founder badge", "Early beta access"], badge: "LIMITED" },
+                { tier: "FOUNDING", price: PRICING_PLANS.founding.priceLabel, tagline: "Rate locked for life", color: "#FFD700", features: ["Everything in Pro", "Founder badge", "Early beta access"], badge: "LIMITED" },
               ].map((t) => (
                 <div
                   key={t.tier}

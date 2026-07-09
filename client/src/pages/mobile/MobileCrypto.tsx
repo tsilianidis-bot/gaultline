@@ -214,7 +214,7 @@ function UpgradeGate({ remaining, limit, isPaid }: { remaining: number; limit: n
             style={{ background: "#FF2D55", color: "#fff" }}
           >
             {isPaid ? <Zap size={12} /> : <Crown size={12} />}
-            {isPaid ? "UPGRADE TO POWER" : "UPGRADE NOW"}
+            {isPaid ? "UPGRADE TO PRO" : "UPGRADE NOW"}
             <ChevronRight size={12} />
           </a>
         </div>

@@ -16,7 +16,7 @@ import {
 const PLANS = [
   {
     id: "core" as const,
-    name: "Trader",
+    name: "Core",
     badge: "MOBILE ENTRY",
     price: PRICING_PLANS.core.priceLabel,
     color: "#22D3EE",
@@ -41,7 +41,7 @@ const PLANS = [
   },
   {
     id: "premium" as const,
-    name: "Trader",
+    name: "Core",
     badge: "RECOMMENDED",
     price: PRICING_PLANS.premium.priceLabel,
     color: "#00D4FF",
@@ -72,7 +72,7 @@ const PLANS = [
     glow: "rgba(255,215,0,0.12)",
     icon: <Crown size={18} />,
     features: [
-      "Everything in Power",
+      "Everything in Pro",
       "Founding Member badge",
       "Rate locked at $49/mo forever",
       "Early access to new features",
@@ -89,7 +89,7 @@ const PLANS = [
     glow: "rgba(255,215,0,0.12)",
     icon: <Crown size={18} />,
     features: [
-      "Everything in Power",
+      "Everything in Pro",
       "Lifetime access — pay once",
       "Founding Member badge",
       "Future feature grandfathering",

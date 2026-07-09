@@ -101,7 +101,7 @@ The Historical Analog Engine identifies historical market periods that most clos
 
 All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
 
-FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Observer (free), Trader, Power, and Founding Member.
+FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Free, Core, Pro, and Founding Member.
 
 Press contact: press@getfaultline.live
 Website: getfaultline.live`;
@@ -153,7 +153,7 @@ Primary metric: Pressure Index (0–100 composite score)
 Data sources: FRED (Federal Reserve), live market feeds, institutional flow data
 Key features: Pressure Index, Regime Detection, Signal Intelligence, Market Scenarios, Symbol Intelligence, Decision Engine
 Availability: Web (getfaultline.live) + Progressive Web App (iOS/Android)
-Pricing tiers: Observer (free), Trader ($9.99/mo), Power ($59/mo), Founding ($49/mo)
+Pricing tiers: Free (free), Core ($9.99/mo), Pro ($59/mo), Founding ($49/mo)
 Press contact: press@getfaultline.live`;
 
 const PRESS_RELEASE = `FOR IMMEDIATE RELEASE
@@ -234,7 +234,7 @@ CORE FEATURES
 AVAILABILITY
 Web: getfaultline.live
 PWA: Available on iOS and Android
-Tiers: Observer (free), Trader ($9.99/mo), Power ($59/mo), Founding ($49/mo)
+Tiers: Free (free), Core ($9.99/mo), Pro ($59/mo), Founding ($49/mo)
 
 DISCLAIMER
 FAULTLINE provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
@@ -627,7 +627,7 @@ export default function Press() {
             { label: "CATEGORY", value: "Macroeconomic Risk Intelligence" },
             { label: "WEBSITE", value: "getfaultline.live" },
             { label: "AVAILABILITY", value: "Web + PWA (iOS / Android)" },
-            { label: "TIERS", value: "Observer · Trader · Power · Founding" },
+            { label: "TIERS", value: "Free · Core · Pro · Founding" },
           ].map((fact) => (
             <div
               key={fact.label}
@@ -860,7 +860,7 @@ export default function Press() {
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>PHOENIX SYSTEMS SPOKESPERSON</div>
           </blockquote>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#94A3B8", lineHeight: 1.8, marginBottom: "16px" }}>
-            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Observer (free), Trader, Power, and Founding Member. Observer access provides the live Pressure Index and limited signal previews at no cost.
+            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Free, Core, Pro, and Founding Member. Free access provides the live Pressure Index and limited signal previews at no cost.
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
             FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.

@@ -24,7 +24,7 @@ function tierColor(tier: string): string {
 function tierLabel(tier: string): string {
   if (tier === "founding") return "FOUNDING";
   if (tier === "premium")  return "POWER";
-  if (tier === "core")     return "TRADER"; // Trader tier
+  if (tier === "core")     return "CORE"; // Core tier
   return "FREE";
 }
 
@@ -231,7 +231,7 @@ export default function MobileAccount() {
           }}
         >
           <div className="text-[10px] font-mono tracking-[0.2em] text-[#00D4FF]/60 mb-1">
-            {isPaid ? "UPGRADE TO POWER" : "UPGRADE TO TRADER"}
+            {isPaid ? "UPGRADE TO PRO" : "UPGRADE TO CORE"}
           </div>
           <div className="text-[13px] font-bold text-white mb-1">
             {isPaid ? "Unlock unlimited access" : "Unlock the full mobile experience"}

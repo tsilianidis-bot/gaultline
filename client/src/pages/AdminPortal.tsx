@@ -53,9 +53,9 @@ const TIER_BG: Record<string, string> = {
   founding: "rgba(255,215,0,0.08)",
 };
 const TIER_DISPLAY: Record<string, string> = {
-  free:     "Observer",
-  core:     "Trader",
-  premium:  "Power",
+  free:     "Free",
+  core:     "Core",
+  premium:  "Pro",
   founding: "Founding",
 };
 const STATUS_COLORS: Record<string, string> = {
@@ -140,9 +140,9 @@ function OverviewTab() {
           <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
             <StatCard label="Total Users" value={stats?.users.total ?? 0} sub="registered accounts" />
             <StatCard label="Founding" value={stats?.users.founding ?? 0} sub="rate locked" color="rgba(255,215,0,0.9)" />
-            <StatCard label="Power" value={stats?.users.premium ?? 0} sub="full access" color="rgba(0,212,255,0.9)" />
-            <StatCard label="Trader" value={stats?.users.core ?? 0} sub="paid access" color="rgba(34,211,238,0.9)" />
-            <StatCard label="Observer" value={stats?.users.free ?? 0} sub="free tier" color="rgba(100,116,139,0.7)" />
+            <StatCard label="Pro" value={stats?.users.premium ?? 0} sub="full access" color="rgba(0,212,255,0.9)" />
+            <StatCard label="Core" value={stats?.users.core ?? 0} sub="paid access" color="rgba(34,211,238,0.9)" />
+            <StatCard label="Free" value={stats?.users.free ?? 0} sub="free tier" color="rgba(100,116,139,0.7)" />
             <StatCard label="Waitlist Total" value={stats?.waitlist.total ?? 0} sub="all requests" color="rgba(168,85,247,0.9)" />
             <StatCard label="Pending Review" value={stats?.waitlist.pending ?? 0} sub="awaiting decision" color="rgba(251,191,36,0.9)" />
             <StatCard label="Approved" value={stats?.waitlist.approved ?? 0} sub="granted access" color="rgba(0,212,255,0.9)" />

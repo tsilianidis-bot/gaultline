@@ -2640,7 +2640,7 @@ export default function SmartDiscovery() {
         const msg = e.message ?? "";
         if (code === "TOO_MANY_REQUESTS" || httpStatus === 429) {
           const serverMsg = e.message ?? "";
-          if (serverMsg.includes("Daily limit reached") || serverMsg.includes("Observer")) {
+          if (serverMsg.includes("Daily limit reached") || serverMsg.includes("Observer") || serverMsg.includes("Free")) {
             errorMsg = serverMsg;
           } else {
             errorMsg = "Rate limit reached. Please wait a moment before trying again.";

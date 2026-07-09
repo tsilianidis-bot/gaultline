@@ -9,10 +9,10 @@
  * prices, or plan IDs anywhere else.
  *
  * TIER NAMES (as of July 2026):
- * - free     → "Observer"  — free daily market awareness
- * - core     → "Trader"    — professional decision-making tools
- * - premium  → "Power"     — institutional-grade intelligence suite
- * - founding → "Founding Member" — rate locked for life
+ * - free     → "Free"           — free daily market awareness
+ * - core     → "Core"           — market intelligence anywhere ($9.99/mo)
+ * - premium  → "Pro"            — institutional-grade intelligence suite ($59/mo)
+ * - founding → "Founding"       — rate locked for life ($49/mo)
  *
  * PRICING NOTE:
  * - The `founding` plan is a monthly subscription at $49/mo locked for life.
@@ -50,7 +50,7 @@ export interface TierMeta {
   id: AccessTier;
   /** Short display label (e.g. "TRADER") */
   label: string;
-  /** Marketing display name (e.g. "Trader") */
+  /** Marketing display name (e.g. "Core") */
   displayName: string;
   /** One-line positioning copy */
   sublabel: string;
@@ -69,8 +69,8 @@ export interface TierMeta {
 export const TIER_META: Record<AccessTier, TierMeta> = {
   free: {
     id: 'free',
-    label: 'OBSERVER',
-    displayName: 'Observer',
+    label: 'FREE',
+    displayName: 'Free',
     sublabel: 'Free Market Awareness',
     description: 'Open FAULTLINE every morning and immediately understand the state of the market. No credit card required.',
     color: '#6B7280',
@@ -95,10 +95,10 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
   },
   core: {
     id: 'core',
-    label: 'TRADER',
-    displayName: 'Trader',
-    sublabel: 'Professional Decision-Making',
-    description: 'Everything you need to answer: "What should I buy, sell, or avoid?" Unlimited signals, portfolio tracking, and AI-guided decisions.',
+    label: 'CORE',
+    displayName: 'Core',
+    sublabel: 'Market Intelligence Anywhere',
+    description: 'The easiest way to experience FAULTLINE. Unlimited signals, portfolio tracking, AI-guided decisions, and the full Core mobile companion — for $9.99/month.',
     color: '#22D3EE',
     glow: 'rgba(34,211,238,0.2)',
     border: 'rgba(34,211,238,0.3)',
@@ -121,8 +121,8 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
   },
   premium: {
     id: 'premium',
-    label: 'POWER',
-    displayName: 'Power',
+    label: 'PRO',
+    displayName: 'Pro',
     sublabel: 'Institutional-Grade Intelligence',
     description: 'How would an institutional investment committee analyze today\'s market? Every engine, every signal, every edge — fully unlocked.',
     color: '#00D4FF',
@@ -146,15 +146,15 @@ export const TIER_META: Record<AccessTier, TierMeta> = {
   founding: {
     id: 'founding',
     label: 'FOUNDING',
-    displayName: 'Founding Member',
-    sublabel: 'Early Institutional Access',
-    description: 'Everything in Power at the founding rate. Locked forever. Never increases. Limited cohort.',
+    displayName: 'Founding',
+    sublabel: 'Early Institutional Access — Rate Locked Forever',
+    description: 'Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.',
     color: '#FFD700',
     glow: 'rgba(255,215,0,0.2)',
     border: 'rgba(255,215,0,0.4)',
     features: [
-      { label: 'Everything in Power', available: true },
-      { label: 'Permanent founding rate ($49/mo locked)', available: true },
+      { label: 'Everything in Pro', available: true },
+      { label: 'Founding rate $49/mo — locked for life', available: true },
       { label: 'Founding member badge', available: true },
       { label: 'Future feature grandfathering', available: true },
       { label: 'Roadmap previews & early beta', available: true },
@@ -188,7 +188,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
   core: {
     planId: 'core',
     tier: 'core',
-    name: 'FAULTLINE Trader',
+    name: 'FAULTLINE Core',
     amountCents: 999,
     priceLabel: '$9.99/mo',
     interval: 'month',
@@ -198,7 +198,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
   core_annual: {
     planId: 'core_annual',
     tier: 'core',
-    name: 'FAULTLINE Trader (Annual)',
+    name: 'FAULTLINE Core (Annual)',
     amountCents: 9588,
     priceLabel: '$7.99/mo (billed $95.88/yr)',
     interval: 'year',
@@ -208,7 +208,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
   premium: {
     planId: 'premium',
     tier: 'premium',
-    name: 'FAULTLINE Power',
+    name: 'FAULTLINE Pro',
     amountCents: 5900,
     priceLabel: '$59/mo',
     interval: 'month',
@@ -218,7 +218,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
   premium_annual: {
     planId: 'premium_annual',
     tier: 'premium',
-    name: 'FAULTLINE Power (Annual)',
+    name: 'FAULTLINE Pro (Annual)',
     amountCents: 56400,
     priceLabel: '$47/mo (billed $564/yr)',
     interval: 'year',
@@ -249,7 +249,7 @@ export const PRICING_PLANS: Record<StripePlanId, PricingPlan> = {
 
 // ─── Gate Access Requirements ─────────────────────────────────────────────────
 // Maps each PremiumGate variant to the minimum required tier.
-// Trader tier = 'core', Power tier = 'premium'
+// Core tier = 'core', Pro tier = 'premium'
 export type GateVariant =
   | 'founding'
   | 'signals'
@@ -275,7 +275,7 @@ export type GateVariant =
   | 'marketCommandCenter';
 
 export const GATE_REQUIRED_TIER: Record<GateVariant, AccessTier> = {
-  // Trader tier (core)
+  // Core tier (core)
   signals:            'core',
   portfolio:          'core',
   altRotation:        'core',
@@ -286,7 +286,7 @@ export const GATE_REQUIRED_TIER: Record<GateVariant, AccessTier> = {
   insiderIntel:       'core',
   alerts:             'core',
   watchlist:          'core',  // unlimited watchlist requires core; free gets 3 symbols
-  // Power tier (premium)
+  // Pro tier (premium)
   founding:           'premium',
   risk:               'premium',
   intelligence:       'premium',
@@ -303,8 +303,8 @@ export const GATE_REQUIRED_TIER: Record<GateVariant, AccessTier> = {
 /** Returns the primary upgrade CTA label for a given gate */
 export function getGatePrimaryCtaLabel(variant: GateVariant): string {
   const tier = GATE_REQUIRED_TIER[variant];
-  if (tier === 'core') return `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`;
-  return `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`;
+  if (tier === 'core') return `Unlock Core — ${PRICING_PLANS.core.priceLabel}`;
+  return `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`;
 }
 
 /** Returns the secondary upgrade CTA label (founding upsell) */
@@ -330,7 +330,7 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
   {
     tier: 'free',
     planId: 'core', // CTA upgrades to Trader
-    marketingName: 'Observer',
+    marketingName: 'Free',
     price: 'Free',
     tagline: 'No credit card required',
     color: '#6B7280',
@@ -349,9 +349,9 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
   {
     tier: 'core',
     planId: 'core',
-    marketingName: 'Trader',
+    marketingName: 'Core',
     price: PRICING_PLANS.core.priceLabel,
-    tagline: 'What should I buy, sell, or avoid?',
+    tagline: 'Market Intelligence Anywhere — $9.99/month',
     color: '#22D3EE',
     badge: 'MOST POPULAR',
     features: [
@@ -365,12 +365,12 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
       'Advanced Alerts & Trade Journal',
       'Full Daily Intelligence Report',
     ],
-    ctaLabel: `Unlock Trader — ${PRICING_PLANS.core.priceLabel}`,
+    ctaLabel: `Unlock Core — ${PRICING_PLANS.core.priceLabel}`,
   },
   {
     tier: 'premium',
     planId: 'premium',
-    marketingName: 'Power',
+    marketingName: 'Pro',
     price: PRICING_PLANS.premium.priceLabel,
     tagline: 'Institutional investment committee intelligence',
     color: '#00D4FF',
@@ -386,7 +386,7 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
       'Advanced probability models',
       'Full Crypto Intelligence suite',
     ],
-    ctaLabel: `Unlock Power — ${PRICING_PLANS.premium.priceLabel}`,
+    ctaLabel: `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`,
   },
   {
     tier: 'founding',
@@ -397,7 +397,7 @@ export const MARKETING_TIER_CARDS: MarketingTierCard[] = [
     color: '#FFD700',
     badge: 'LIMITED',
     features: [
-      'Everything in Power',
+      'Everything in Pro',
       'Rate locked forever',
       'Founding member badge',
       'Future feature grandfathering',
