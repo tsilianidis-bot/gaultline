@@ -342,6 +342,257 @@ function HeroStats() {
   );
 }
 
+// ── Brand Hero (NEW — above all other sections) ─────────────
+function BrandHero({ onRequestAccess }: { onRequestAccess: () => void }) {
+  return (
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#050608]" style={{ borderBottom: '1px solid rgba(0,212,255,0.08)' }}>
+      {/* Background grid */}
+      <div
+        className="absolute inset-0 opacity-[0.025]"
+        style={{
+          backgroundImage: "linear-gradient(rgba(0,212,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,1) 1px, transparent 1px)",
+          backgroundSize: "80px 80px",
+        }}
+      />
+      {/* Radial glow — left side for asymmetric feel */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_70%_at_20%_50%,rgba(0,212,255,0.06)_0%,transparent_70%)]" />
+      {/* Bottom fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#050608] to-transparent" />
+
+      <div
+        className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8"
+        style={{
+          paddingTop: "calc(80px + max(env(safe-area-inset-top, 0px), 24px) + 40px)",
+          paddingBottom: "calc(max(env(safe-area-inset-bottom, 0px), 24px) + 80px)",
+        }}
+      >
+        {/* Two-column layout: text left, visual right */}
+        <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
+
+          {/* ── LEFT: Text column ── */}
+          <div className="flex-1 text-left max-w-xl">
+            {/* Eyebrow */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-[#00D4FF]/20 rounded-full mb-8 bg-[#00D4FF]/5">
+              <div className="relative flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" />
+                <div className="absolute w-3 h-3 rounded-full bg-[#00FF88]/20 animate-ping" />
+              </div>
+              <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">INSTITUTIONAL MARKET INTELLIGENCE</span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-6 leading-[1.05]">
+              FAULTLINE doesn't just<br />
+              <span className="text-[#00D4FF]">measure the market.</span><br />
+              It explains it.
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-base sm:text-lg text-[#A8B8CC] mb-10 leading-relaxed">
+              Most platforms tell you what happened. FAULTLINE helps you understand{" "}
+              <strong className="text-white/80">what is happening beneath the surface</strong>,{" "}
+              why it is happening, how long it has been developing, and how today's market{" "}
+              compares with history — so you can make better-informed investment decisions.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-start gap-3 mb-10">
+              <a
+                href="/app/pressure"
+                onClick={() => trackStartFreeClicked("homepage_hero")}
+                className="flex items-center justify-center gap-2 px-8 py-4 bg-[#00D4FF] hover:bg-[#00BBEE] text-[#050608] font-mono font-black text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
+                style={{ boxShadow: "0 0 32px rgba(0,212,255,0.25)", minHeight: "52px" }}
+              >
+                See Today's Market Story
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#050608" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 7h10M8 3l4 4-4 4" />
+                </svg>
+              </a>
+              <a
+                href="/app/pressure"
+                className="flex items-center justify-center gap-2 px-8 py-4 font-mono font-bold text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
+                style={{ border: "1px solid rgba(0,212,255,0.3)", color: "#00D4FF", background: "rgba(0,212,255,0.05)", minHeight: "52px" }}
+              >
+                Explore the Pressure Index
+              </a>
+            </div>
+
+            {/* Trust statement */}
+            <div className="flex flex-col gap-2">
+              {[
+                "Institutional-grade market intelligence",
+                "Historical context — not just live data",
+                "Transparent methodology",
+                "Real-time analysis",
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2.5">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="6" stroke="rgba(0,212,255,0.3)" strokeWidth="1" />
+                    <path d="M4.5 7l2 2 3-3" stroke="#00D4FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="text-[12px] font-mono text-[#64748B] tracking-wide">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── RIGHT: Intelligence Hub visual ── */}
+          <div className="flex-1 w-full max-w-xl lg:max-w-none">
+            <div
+              className="relative rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(10,14,26,0.95)",
+                border: "1px solid rgba(0,212,255,0.15)",
+                boxShadow: "0 0 60px rgba(0,212,255,0.08), 0 0 120px rgba(0,212,255,0.04), inset 0 1px 0 rgba(0,212,255,0.1)",
+              }}
+            >
+              {/* Window chrome */}
+              <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: "1px solid rgba(0,212,255,0.08)", background: "rgba(0,212,255,0.03)" }}>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
+                </div>
+                <span className="text-[10px] font-mono tracking-[0.2em] text-[#00D4FF]/60">FAULTLINE INTELLIGENCE HUB</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88]" />
+                  <span className="text-[9px] font-mono text-[#00FF88]/70">LIVE</span>
+                </div>
+              </div>
+
+              {/* Intelligence cards grid */}
+              <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  {
+                    label: "TODAY'S MARKET STORY",
+                    value: "Liquidity tightening beneath calm surface",
+                    sub: "Pressure building for 23 days",
+                    color: "#FFD700",
+                    accent: "rgba(255,215,0,0.08)",
+                    border: "rgba(255,215,0,0.2)",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 12 C4 8, 6 10, 8 6 S12 2, 14 4" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+                        <circle cx="8" cy="6" r="2" fill="rgba(255,215,0,0.2)" stroke="#FFD700" strokeWidth="1" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "PRESSURE INDEX",
+                    value: "47 / 100",
+                    sub: "MODERATE RISK — 68th percentile",
+                    color: "#FF9500",
+                    accent: "rgba(255,149,0,0.08)",
+                    border: "rgba(255,149,0,0.2)",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="6" stroke="rgba(255,149,0,0.3)" strokeWidth="1" />
+                        <path d="M8 4v4l3 2" stroke="#FF9500" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "HISTORICAL CONTEXT",
+                    value: "Resembles Q4 2018 (82% match)",
+                    sub: "+ 2015 taper scare, 2011 debt ceiling",
+                    color: "#00D4FF",
+                    accent: "rgba(0,212,255,0.06)",
+                    border: "rgba(0,212,255,0.15)",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="2" width="12" height="12" rx="2" stroke="rgba(0,212,255,0.4)" strokeWidth="1" />
+                        <path d="M5 8h6M5 5h3M5 11h4" stroke="#00D4FF" strokeWidth="1.2" strokeLinecap="round" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "WHY THIS SCORE",
+                    value: "Credit spreads widening",
+                    sub: "Liquidity stress at 91st percentile",
+                    color: "#00FF88",
+                    accent: "rgba(0,255,136,0.06)",
+                    border: "rgba(0,255,136,0.15)",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <circle cx="8" cy="8" r="6" stroke="rgba(0,255,136,0.3)" strokeWidth="1" />
+                        <path d="M8 5v3.5l2.5 1.5" stroke="#00FF88" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "WHAT CHANGED TODAY",
+                    value: "VIX term structure inverted",
+                    sub: "Credit contagion +4pts in 24h",
+                    color: "#FF6B6B",
+                    accent: "rgba(255,107,107,0.06)",
+                    border: "rgba(255,107,107,0.15)",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 3v5l3 3" stroke="#FF6B6B" strokeWidth="1.5" strokeLinecap="round" />
+                        <circle cx="8" cy="8" r="6" stroke="rgba(255,107,107,0.3)" strokeWidth="1" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "INSTITUTIONAL INTERPRETATION",
+                    value: "Risk-off positioning building",
+                    sub: "Consistent with late-cycle compression",
+                    color: "#A78BFA",
+                    accent: "rgba(167,139,250,0.06)",
+                    border: "rgba(167,139,250,0.15)",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M3 13 L8 3 L13 13" stroke="rgba(167,139,250,0.4)" strokeWidth="1" />
+                        <path d="M5 10h6" stroke="#A78BFA" strokeWidth="1.2" strokeLinecap="round" />
+                      </svg>
+                    ),
+                  },
+                ].map((card, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl p-3.5"
+                    style={{
+                      background: card.accent,
+                      border: `1px solid ${card.border}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      {card.icon}
+                      <span className="text-[9px] font-mono tracking-[0.2em] text-white/40">{card.label}</span>
+                    </div>
+                    <div className="text-[13px] font-semibold leading-tight mb-1" style={{ color: card.color }}>
+                      {card.value}
+                    </div>
+                    <div className="text-[10px] font-mono text-white/35 leading-snug">{card.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom bar */}
+              <div
+                className="flex items-center justify-between px-4 py-2.5"
+                style={{ borderTop: "1px solid rgba(0,212,255,0.08)", background: "rgba(0,212,255,0.02)" }}
+              >
+                <span className="text-[9px] font-mono text-[#64748B] tracking-wider">FAULTLINE INTELLIGENCE HUB</span>
+                <div className="flex items-center gap-4">
+                  {["PRESSURE", "CONTEXT", "SIGNALS", "SCENARIOS"].map((tab) => (
+                    <span key={tab} className="text-[9px] font-mono tracking-[0.15em] text-[#00D4FF]/40">{tab}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Caption below visual */}
+            <p className="text-center text-[11px] font-mono text-[#64748B] tracking-wider mt-3">
+              INTELLIGENCE HUB — ILLUSTRATIVE PREVIEW
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ── Hero ──────────────────────────────────────────────────────
 function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onTryDemo: () => void }) {
   return (
@@ -937,10 +1188,10 @@ function FeaturesSection() {
             INTELLIGENCE ENGINE
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            The intelligence top funds use<br /><span className="text-[#00D4FF]">before the quake hits.</span>
+            Six engines. One answer:<br /><span className="text-[#00D4FF]">what is the market doing right now?</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-2xl mx-auto text-base leading-relaxed">
-            Top macro funds don’t react to collapses — they’re already positioned before them. FAULTLINE gives self-directed traders the same systemic intelligence layer: pressure detection, regime shifts, and faultline mapping in real time.
+            FAULTLINE doesn't just show you prices. It explains the forces driving them — systemic pressure, liquidity conditions, volatility regime, capital rotation, macro sensitivity, and AI speculation — all in one unified intelligence layer.
           </p>
         </div>
 
@@ -2879,6 +3130,7 @@ export default function MarketingSite() {
       <StatusTicker />
       <DemoAccessModal open={demoModalOpen} onClose={() => setDemoModalOpen(false)} />
       <Nav onRequestAccess={scrollToForm} />
+      <BrandHero onRequestAccess={scrollToForm} />
       <Hero onRequestAccess={scrollToForm} onTryDemo={() => setDemoModalOpen(true)} />
       <WhyFaultlineExistsSection />
       <RiskFirstPhilosophySection />

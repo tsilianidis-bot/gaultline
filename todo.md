@@ -3672,3 +3672,8 @@
 - [x] Update PremiumGate, DashboardSearchPanels, HomeStockIntelSection
 - [x] Update AdminPortal tier labels
 - [x] SEO audit: structured data offers updated (Free/Core $9.99/Pro $59/Founding $49)
+
+## Brand Hero Section (Jul 2026)
+- [x] Build BrandHero component: asymmetric two-column layout, headline "FAULTLINE doesn't just measure the market. It explains it.", Intelligence Hub visual mockup, dual CTAs, trust statement checklist
+- [x] Insert BrandHero as the very first section above all others (above existing Hero)
+- [x] Update FeaturesSection headline to reinforce "explains it" brand message
