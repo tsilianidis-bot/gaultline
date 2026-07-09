@@ -640,14 +640,19 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
         </div>
 
         {/* Headline */}
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-5 leading-[1.05]">
-          See what's building<br />
-          <span className="text-[#00D4FF]">beneath the surface.</span>
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-3 leading-[1.05]">
+          Understand the market<br />
+          <span className="text-[#00D4FF]">before everyone else does.</span>
         </h1>
+        {/* Secondary headline */}
+        <p className="text-lg sm:text-xl font-semibold text-white/70 mb-4 leading-snug">
+          FAULTLINE doesn't just measure the market.<br />
+          <span className="text-white/90">It explains it.</span>
+        </p>
 
         {/* Sub */}
         <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-8 leading-relaxed">
-          FAULTLINE explains what the market is doing beneath the surface — what is happening, why it is happening, how long conditions have been developing, and how today compares with history. Institutional market awareness, not price predictions.
+          Understand what is happening, why it is happening, how long it has been developing, and how today's market compares with history — all through institutional-grade market intelligence.
         </p>
 
         {/* Live intelligence strip */}
@@ -677,7 +682,7 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-[#00D4FF] hover:bg-[#00BBEE] text-[#050608] font-mono font-black text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97] shadow-lg"
             style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px", boxShadow: "0 0 32px rgba(0,212,255,0.25)" }}
           >
-            START FREE
+            See Today's Market Story
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#050608" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 7h10M8 3l4 4-4 4" />
             </svg>
@@ -691,7 +696,7 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
               <circle cx="6.5" cy="6.5" r="5" />
               <path d="M6.5 4v3.5l2 1" />
             </svg>
-            TRY DEMO
+            Explore the Pressure Index
           </button>
         </div>
 
