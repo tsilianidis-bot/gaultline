@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Mail, MessageSquare, Send, CheckCircle2, ArrowLeft, MapPin, Phone } from "lucide-react";
+import { Mail, MessageSquare, Send, ArrowLeft, MapPin, Phone, RotateCcw, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 
 const CATEGORIES = [
@@ -21,9 +21,118 @@ const CATEGORIES = [
   "Other",
 ] as const;
 
+// ── Animated checkmark SVG ─────────────────────────────────────────────────────
+function AnimatedCheckmark() {
+  return (
+    <div className="relative flex items-center justify-center w-24 h-24 mx-auto mb-8">
+      {/* Outer pulse ring */}
+      <span className="absolute inset-0 rounded-full bg-emerald-400/10 animate-ping" style={{ animationDuration: "1.6s" }} />
+      {/* Mid ring */}
+      <span className="absolute inset-2 rounded-full bg-emerald-400/10 animate-ping" style={{ animationDuration: "1.6s", animationDelay: "0.2s" }} />
+      {/* Static circle */}
+      <div className="relative w-20 h-20 rounded-full bg-emerald-400/10 border-2 border-emerald-400/40 flex items-center justify-center">
+        <svg
+          viewBox="0 0 52 52"
+          className="w-10 h-10"
+          style={{ animation: "checkDraw 0.6s cubic-bezier(0.23, 1, 0.32, 1) 0.2s both" }}
+        >
+          <style>{`
+            @keyframes checkDraw {
+              from { stroke-dashoffset: 48; opacity: 0; }
+              to   { stroke-dashoffset: 0;  opacity: 1; }
+            }
+          `}</style>
+          <polyline
+            points="14,27 22,36 38,18"
+            fill="none"
+            stroke="#34d399"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="48"
+            strokeDashoffset="0"
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+// ── Success state ──────────────────────────────────────────────────────────────
+function SuccessState({
+  name,
+  onReset,
+}: {
+  name: string;
+  onReset: () => void;
+}) {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Slight delay so the transition fires after mount
+    const t = setTimeout(() => setVisible(true), 30);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div
+      className="bg-[#0A1520] border border-emerald-400/25 rounded-xl p-12 h-full flex flex-col items-center justify-center text-center"
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(12px)",
+        transition: "opacity 0.45s cubic-bezier(0.23,1,0.32,1), transform 0.45s cubic-bezier(0.23,1,0.32,1)",
+      }}
+    >
+      <AnimatedCheckmark />
+
+      {/* Badge */}
+      <div className="inline-flex items-center gap-2 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-4 py-1.5 text-xs font-mono tracking-widest text-emerald-400 uppercase mb-5">
+        ⬡ Message Received
+      </div>
+
+      {/* Heading */}
+      <h2 className="text-3xl font-bold text-slate-100 mb-3 font-['Rajdhani'] tracking-wide">
+        Thank You{name ? `, ${name.split(" ")[0]}` : ""}
+      </h2>
+
+      {/* Body */}
+      <p className="text-slate-300 text-base mb-2 max-w-sm leading-relaxed">
+        Your message has been sent successfully.
+      </p>
+      <p className="text-slate-500 text-sm mb-2 max-w-sm">
+        We've sent a confirmation to your email. Our team typically responds within{" "}
+        <span className="text-amber-400 font-mono">24–48 hours</span>.
+      </p>
+
+      {/* Divider */}
+      <div className="w-16 h-px bg-white/10 my-6" />
+
+      {/* Actions */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button
+          variant="outline"
+          onClick={onReset}
+          className="border-white/10 text-slate-300 hover:bg-white/5 gap-2"
+        >
+          <RotateCcw className="w-4 h-4" />
+          Send Another
+        </Button>
+        <Link href="/">
+          <Button className="bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/20 gap-2">
+            <ExternalLink className="w-4 h-4" />
+            Back to FAULTLINE
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function ContactUs() {
   useSEO(PAGE_SEO.contact);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedName, setSubmittedName] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -34,6 +143,7 @@ export default function ContactUs() {
 
   const submitMutation = trpc.contact.submit.useMutation({
     onSuccess: () => {
+      setSubmittedName(form.name);
       setSubmitted(true);
     },
     onError: (err) => {
@@ -56,6 +166,12 @@ export default function ContactUs() {
       message: form.message,
       category: form.category as typeof CATEGORIES[number],
     });
+  };
+
+  const handleReset = () => {
+    setSubmitted(false);
+    setSubmittedName("");
+    setForm({ name: "", email: "", subject: "", message: "", category: "" });
   };
 
   const isLoading = submitMutation.isPending;
@@ -152,40 +268,10 @@ export default function ContactUs() {
             </div>
           </div>
 
-          {/* Contact Form */}
+          {/* Contact Form / Success */}
           <div className="lg:col-span-2">
             {submitted ? (
-              <div className="bg-[#0A1520] border border-emerald-400/20 rounded-xl p-12 text-center h-full flex flex-col items-center justify-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-400/10 border border-emerald-400/20 flex items-center justify-center mb-6">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-100 mb-3 font-['Rajdhani'] tracking-wide">
-                  Message Sent
-                </h2>
-                <p className="text-slate-400 mb-2 max-w-sm">
-                  Your inquiry has been received. We've also sent a confirmation to your email.
-                </p>
-                <p className="text-slate-500 text-sm mb-8">
-                  Expect a reply within 24–48 hours.
-                </p>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSubmitted(false);
-                      setForm({ name: "", email: "", subject: "", message: "", category: "" });
-                    }}
-                    className="border-white/10 text-slate-300 hover:bg-white/5"
-                  >
-                    Send Another
-                  </Button>
-                  <Link href="/">
-                    <Button className="bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/20">
-                      Back to FAULTLINE
-                    </Button>
-                  </Link>
-                </div>
-              </div>
+              <SuccessState name={submittedName} onReset={handleReset} />
             ) : (
               <form onSubmit={handleSubmit} className="bg-[#0A1520] border border-white/5 rounded-xl p-8 space-y-6">
                 <div>
@@ -280,6 +366,7 @@ export default function ContactUs() {
                     type="submit"
                     disabled={isLoading}
                     className="bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/20 gap-2 min-w-[140px]"
+                    style={{ transition: "transform 0.16s cubic-bezier(0.23,1,0.32,1)" }}
                   >
                     {isLoading ? (
                       <>
