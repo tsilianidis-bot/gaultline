@@ -117,6 +117,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
   const NAV_ITEMS = [
     { label: "Platform", href: "#platform", desc: "Signals & pressure engine" },
     { label: "Intelligence", href: "#intelligence", desc: "Macro & crypto analytics" },
+    { label: "Blog", href: "/blog", desc: "Market intelligence articles" },
     { label: "Access", href: "#access", desc: "Pricing & founding tiers" },
     { label: "How It Works", href: "#how-it-works", desc: "The FAULTLINE method" },
   ];
@@ -2810,6 +2811,7 @@ function Footer() {
                 { label: "Track Record", href: "/track-record" },
                 { label: "Daily Intelligence Brief", href: "/daily-brief" },
                 { label: "Intelligence Library", href: "/intelligence-library" },
+                { label: "Blog", href: "/blog" },
               ].map((item) => (
                 <li key={item.href}>
                   <a href={item.href} className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">
