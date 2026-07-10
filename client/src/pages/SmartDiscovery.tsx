@@ -30,6 +30,8 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import OnboardingFlow from "@/components/OnboardingFlow";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
+import { HistoricalContextPanel } from "@/components/HistoricalContextPanel";
+import type { HistoricalIntelligenceData } from "@/components/HistoricalContextPanel";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -142,6 +144,8 @@ interface FaultlineAnswer {
     practicalAction: string;
     summary: string;
   } | null;
+  // Historical Intelligence — server-computed, not from LLM
+  historicalIntelligence?: HistoricalIntelligenceData | null;
 }
 
 // ── Opportunity Ranking Types (mirrors server OpportunityRankingAnswer) ──
@@ -1526,6 +1530,14 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>{answer.collectiveReading.practicalAction}</span>
           </div>
         </div>
+      )}
+
+      {/* ── Historical Intelligence Panel ── */}
+      {answer.historicalIntelligence && (
+        <HistoricalContextPanel
+          data={answer.historicalIntelligence}
+          defaultExpanded={false}
+        />
       )}
 
       {/* ── Follow-up Action Chips ── */}

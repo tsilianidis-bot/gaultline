@@ -23,6 +23,8 @@ import { scanOpportunities } from "../ownerSimulation";
 import { log } from "../logger";
 import { computeCrossMarketIntelligence } from "../crossMarketEngine";
 import { startConversation, logMessage } from "../conversationLogger";
+import { computeHistoricalIntelligence } from "../historicalIntelligenceEngine";
+import type { HistoricalIntelligenceResult } from "../historicalIntelligenceEngine";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -307,6 +309,11 @@ async function orchestrateAnswer(
   const outlookData = quickOutlook.status === "fulfilled" ? quickOutlook.value : null;
   const crossMarket = crossMarketResult.status === "fulfilled" ? crossMarketResult.value : null;
   const livePrice = livePriceResult.status === "fulfilled" ? livePriceResult.value : null;
+
+  // ── Stage 4a: Historical intelligence (non-blocking, runs after pressureData is available) ──
+  const historicalIntelligence: HistoricalIntelligenceResult | null = pressureData
+    ? await computeHistoricalIntelligence(pressureData).catch(() => null)
+    : null;
   log.info("[Ask] Stage 4: Market data fetched", {
     fmosStatus: fmosResult.status,
     outlookStatus: quickOutlook.status,
@@ -508,8 +515,8 @@ Market Summary: ${crossMarket.plainEnglishSummary}
 Key Insights: ${crossMarket.keyInsights.slice(0, 3).join(" | ")}
 ${crossMarket.regimeChangeAlerts.length > 0 ? `ACTIVE REGIME ALERTS: ${crossMarket.regimeChangeAlerts.map(a => `${a.asset} regime changed from ${a.previous} to ${a.current}`).join("; ")}` : ""}` : ""}
 ${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
-${evidenceContext}
-${outlookSummary}${livePriceContext}`;
+  ${evidenceContext}
+${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalIntelligence.promptBlock : ""}`;  // ← Historical Intelligence injected here
 
   // Explicit global mode instruction when no symbol context
   const globalModeInstruction = !ticker
@@ -786,6 +793,8 @@ JSON schema:
     regimeColor,
     collectiveReading: collectiveReadingFallback,
     deepDiveLinks: buildDeepDiveLinks(ticker, assetType, queryType, query),
+    // Historical Intelligence — server-computed, not from LLM
+    historicalIntelligence: historicalIntelligence ?? null,
   }) as FaultlineAnswer;
 }
 

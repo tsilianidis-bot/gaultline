@@ -3685,3 +3685,15 @@
 - [x] Insert HomepageBriefingPanel above MarketSynthesisPanel in Dashboard.tsx
 - [x] Write vitest tests for homepageBriefing pure helpers (21 tests pass)
 - [x] 0 TypeScript errors
+
+## Historical Intelligence Engine (Jul 2026)
+
+- [x] Build server/historicalIntelligenceEngine.ts — pure functions: percentileRank, countConsecutiveStreak, classifyFrequency, extractDrawdownFromOutcome, extractRecoveryFromOutcome, computeOutcomeDistribution, buildTimeline, buildRegimeComparison, buildMarketEvolution, formatPromptBlock
+- [x] Export computeHistoricalIntelligence() — orchestrates all pure functions, queries pressureHistory DB, returns HistoricalIntelligenceResult
+- [x] Export formatPromptBlock() — formats historical context as a structured LLM prompt block
+- [x] Integrate into SmartDiscovery ask procedure (server/routers/smartDiscovery.ts) — historical intelligence computed after pressureData is available, injected into LLM system prompt, returned alongside every AI answer
+- [x] Build client/src/components/HistoricalContextPanel.tsx — 6-section collapsible panel: percentile gauge, frequency badge, analog cards (expandable), pressure timeline sparkline, outcome distribution bars, regime comparison, market evolution
+- [x] Wire HistoricalContextPanel into SmartDiscovery.tsx — added to FaultlineAnswer type, rendered after Collective Reading section in InstitutionalAnswer
+- [x] Write 64 vitest tests for all pure functions (server/historicalIntelligenceEngine.test.ts) — all passing
+- [x] TypeScript check: 0 errors (npx tsc --noEmit)
+- [x] Save checkpoint
