@@ -97,6 +97,45 @@ const CryptoSignalsIntelligence = lazy(() => import("./pages/seo/CryptoSignalsIn
 const PublicCryptoSignals  = lazy(() => import("./pages/PublicCryptoSignals"));
 const DynamicStockPage     = lazy(() => import("./pages/seo/DynamicStockPage"));
 const DynamicCryptoPage    = lazy(() => import("./pages/seo/DynamicCryptoPage"));
+// New SEO pages — macro
+const BullOrBearMarket     = lazy(() => import("./pages/seo/BullOrBearMarket"));
+const BullBearConditions   = lazy(() => import("./pages/seo/BullBearConditions"));
+const TreasuryYieldStress  = lazy(() => import("./pages/seo/TreasuryYieldStress"));
+const CreditMarketStress   = lazy(() => import("./pages/seo/CreditMarketStress"));
+const StockMarketRiskToday = lazy(() => import("./pages/seo/StockMarketRiskToday"));
+const IsNowGoodTimeToBuyStocks = lazy(() => import("./pages/seo/IsNowGoodTimeToBuyStocks"));
+const BestMarketRiskIndicators = lazy(() => import("./pages/seo/BestMarketRiskIndicators"));
+const BestStockMarketRiskDashboard = lazy(() => import("./pages/seo/BestStockMarketRiskDashboard"));
+// New SEO pages — crypto
+const CryptoBullOrBear     = lazy(() => import("./pages/seo/CryptoBullOrBear"));
+const CryptoMarketRegime   = lazy(() => import("./pages/seo/CryptoMarketRegime"));
+const BitcoinVsStockMarket = lazy(() => import("./pages/seo/BitcoinVsStockMarket"));
+// New SEO pages — stocks/ETFs
+const AAPLSignal           = lazy(() => import("./pages/seo/AAPLSignal"));
+const AMZNSignal           = lazy(() => import("./pages/seo/AMZNSignal"));
+const MSFTSignal           = lazy(() => import("./pages/seo/MSFTSignal"));
+const SPYSignal            = lazy(() => import("./pages/seo/SPYSignal"));
+const QQQSignal            = lazy(() => import("./pages/seo/QQQSignal"));
+const IWMSignal            = lazy(() => import("./pages/seo/IWMSignal"));
+const DIASignal            = lazy(() => import("./pages/seo/DIASignal"));
+// New SEO pages — learn
+const LearnBullAndBearMarkets = lazy(() => import("./pages/seo/learn/LearnBullAndBearMarkets"));
+const LearnCreditSpreads   = lazy(() => import("./pages/seo/learn/LearnCreditSpreads"));
+const LearnCryptoCycles    = lazy(() => import("./pages/seo/learn/LearnCryptoCycles"));
+const LearnFedPolicy       = lazy(() => import("./pages/seo/learn/LearnFedPolicy"));
+const LearnHowToReadStockMarket = lazy(() => import("./pages/seo/learn/LearnHowToReadStockMarket"));
+const LearnInflationAndStocks = lazy(() => import("./pages/seo/learn/LearnInflationAndStocks"));
+const LearnMacroInvesting  = lazy(() => import("./pages/seo/learn/LearnMacroInvesting"));
+const LearnRiskOnRiskOff   = lazy(() => import("./pages/seo/learn/LearnRiskOnRiskOff"));
+const LearnTreasuryYields  = lazy(() => import("./pages/seo/learn/LearnTreasuryYields"));
+const LearnWhatCausesMarketCrash = lazy(() => import("./pages/seo/learn/LearnWhatCausesMarketCrash"));
+const LearnWhatIsLiquidity = lazy(() => import("./pages/seo/learn/LearnWhatIsLiquidity"));
+const LearnWhatIsMarketRegime = lazy(() => import("./pages/seo/learn/LearnWhatIsMarketRegime"));
+// New SEO pages — vs
+const VsBloomberg          = lazy(() => import("./pages/seo/vs/VsBloomberg"));
+const VsFinviz             = lazy(() => import("./pages/seo/vs/VsFinviz"));
+const VsKoyfin             = lazy(() => import("./pages/seo/vs/VsKoyfin"));
+const VsTradingView        = lazy(() => import("./pages/seo/vs/VsTradingView"));
 const PublicStockMarketRisk = lazy(() => import("./pages/PublicStockMarketRisk"));
 const PublicCryptoMarketRisk = lazy(() => import("./pages/PublicCryptoMarketRisk"));
 const PublicSituationRoom  = lazy(() => import("./pages/PublicSituationRoom"));
@@ -447,6 +486,113 @@ function Router() {
       </Route>
       <Route path="/market-regime-tracker">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><MarketRegimeTracker /></Suspense></ErrorBoundary>
+      </Route>
+      {/* New SEO pages — macro */}
+      <Route path="/bull-or-bear-market">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><BullOrBearMarket /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/bull-bear-conditions">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><BullBearConditions /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/treasury-yield-stress">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><TreasuryYieldStress /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/credit-market-stress">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><CreditMarketStress /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock-market-risk-today">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><StockMarketRiskToday /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/is-now-good-time-to-buy-stocks">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><IsNowGoodTimeToBuyStocks /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/best-market-risk-indicators">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><BestMarketRiskIndicators /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/best-stock-market-risk-dashboard">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><BestStockMarketRiskDashboard /></Suspense></ErrorBoundary>
+      </Route>
+      {/* New SEO pages — crypto */}
+      <Route path="/crypto-bull-or-bear">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><CryptoBullOrBear /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/crypto-market-regime">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><CryptoMarketRegime /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/bitcoin-vs-stock-market">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><BitcoinVsStockMarket /></Suspense></ErrorBoundary>
+      </Route>
+      {/* New SEO pages — stocks/ETFs */}
+      <Route path="/stock/aapl">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><AAPLSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/amzn">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><AMZNSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/msft">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><MSFTSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/spy">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><SPYSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/qqq">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><QQQSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/iwm">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><IWMSignal /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/stock/dia">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><DIASignal /></Suspense></ErrorBoundary>
+      </Route>
+      {/* New SEO pages — learn */}
+      <Route path="/learn/bull-and-bear-markets">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnBullAndBearMarkets /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/credit-spreads">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnCreditSpreads /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/crypto-cycles">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnCryptoCycles /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/fed-policy">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnFedPolicy /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/how-to-read-stock-market">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnHowToReadStockMarket /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/inflation-and-stocks">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnInflationAndStocks /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/macro-investing">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnMacroInvesting /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/risk-on-or-risk-off">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnRiskOnRiskOff /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/treasury-yields">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnTreasuryYields /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/what-causes-market-crash">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnWhatCausesMarketCrash /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/what-is-liquidity">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnWhatIsLiquidity /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/learn/what-is-market-regime">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><LearnWhatIsMarketRegime /></Suspense></ErrorBoundary>
+      </Route>
+      {/* New SEO pages — vs */}
+      <Route path="/vs/bloomberg">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><VsBloomberg /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/vs/finviz">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><VsFinviz /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/vs/koyfin">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><VsKoyfin /></Suspense></ErrorBoundary>
+      </Route>
+      <Route path="/vs/tradingview">
+        <ErrorBoundary><Suspense fallback={<PageLoader />}><VsTradingView /></Suspense></ErrorBoundary>
       </Route>
       {/* Marketing site at root — standalone, no AppLayout */}
       <Route path="/">

@@ -112,7 +112,7 @@ These are not buy/sell recommendations — they are risk management frameworks b
       ]}
       schemaType="Article"
       datePublished="2026-01-01"
-      dateModified={new Date().toISOString().split("T")[0]}
+      dateModified="2026-07-10"
     />
   );
 }

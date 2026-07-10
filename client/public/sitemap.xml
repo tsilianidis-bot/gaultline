@@ -68,6 +68,50 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- ── Tier 2b: SEO landing pages — macro ───────────────────── -->
+  <url><loc>https://getfaultline.live/bull-or-bear-market</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/bull-bear-conditions</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/treasury-yield-stress</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/credit-market-stress</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/stock-market-risk-today</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://getfaultline.live/is-now-good-time-to-buy-stocks</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/best-market-risk-indicators</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/best-stock-market-risk-dashboard</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Tier 2c: SEO landing pages — crypto ──────────────────── -->
+  <url><loc>https://getfaultline.live/crypto-bull-or-bear</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/crypto-market-regime</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/bitcoin-vs-stock-market</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Tier 2d: SEO landing pages — stocks/ETFs ──────────────── -->
+  <url><loc>https://getfaultline.live/stock/aapl</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/stock/amzn</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/stock/msft</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/stock/spy</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://getfaultline.live/stock/qqq</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/stock/iwm</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/stock/dia</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Tier 2e: SEO landing pages — learn ────────────────────── -->
+  <url><loc>https://getfaultline.live/learn/bull-and-bear-markets</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/credit-spreads</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/crypto-cycles</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/fed-policy</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/how-to-read-stock-market</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/inflation-and-stocks</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/macro-investing</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/risk-on-or-risk-off</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/treasury-yields</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/what-causes-market-crash</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/what-is-liquidity</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/learn/what-is-market-regime</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- ── Tier 2f: SEO landing pages — vs/comparison ────────────── -->
+  <url><loc>https://getfaultline.live/vs/bloomberg</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://getfaultline.live/vs/finviz</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://getfaultline.live/vs/koyfin</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://getfaultline.live/vs/tradingview</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
   <!-- ── Tier 3: Informational / legal ──────────────────────── -->
   <url>
     <loc>https://getfaultline.live/methodology</loc>

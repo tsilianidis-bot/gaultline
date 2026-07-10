@@ -3697,3 +3697,76 @@
 - [x] Write 64 vitest tests for all pure functions (server/historicalIntelligenceEngine.test.ts) — all passing
 - [x] TypeScript check: 0 errors (npx tsc --noEmit)
 - [x] Save checkpoint
+
+## SEO Architecture Expansion (Jul 2026)
+
+### Infrastructure
+- [x] Enhance SEOLandingPage.tsx: add BreadcrumbList schema, mid-page CTA, bottom CTA, last-updated freshness signal, data source badge
+- [x] Add EducationalPillarPage.tsx template for long-form evergreen content
+- [x] Add ComparisonPage.tsx template for FAULTLINE vs competitor pages
+- [x] Update robots.txt with all new page paths
+- [x] Update sitemap.xml with all new pages (macro, crypto, stock, daily-brief, educational, comparison)
+
+### Macro SEO Pages (new or missing)
+- [x] /stock-market-risk-today — Stock Market Risk Today
+- [x] /bull-or-bear-market — Bull Market or Bear Market?
+- [x] /is-now-good-time-to-buy-stocks — Is Now a Good Time to Buy Stocks?
+- [x] /treasury-yield-stress — Treasury Yield Stress Tracker
+- [x] /credit-market-stress — Credit Market Stress Index
+- [ ] /ai-bubble-monitor — AI Bubble Monitor (alias/redirect to /ai-bubble-risk-tracker or new page)
+- [x] Wire existing: /federal-reserve-tracker, /liquidity-monitor, /market-regime-tracker, /recession-probability, /market-crash-probability-2026 (already exist)
+
+### Crypto SEO Pages (new or missing)
+- [x] /crypto-bull-or-bear — Crypto Bull or Bear Market?
+- [ ] /altcoin-season-index — Altcoin Season Index (alias/redirect to /alt-season-indicator)
+- [x] /crypto-market-regime — Crypto Market Regime Tracker
+- [x] /bitcoin-vs-stock-market — Bitcoin vs Stock Market Risk
+- [x] Wire existing: /bitcoin-risk-dashboard, /ethereum-risk-dashboard (already exist)
+
+### Stock/ETF SEO Pages (new or missing)
+- [x] /stock/aapl — AAPL Stock Outlook
+- [x] /stock/msft — MSFT Stock Outlook
+- [x] /stock/amzn — AMZN Stock Outlook
+- [x] /stock/qqq — QQQ Outlook
+- [x] /stock/spy — SPY Outlook
+- [x] /stock/iwm — IWM Outlook
+- [x] /stock/dia — DIA Outlook
+- [x] Wire existing: /stock/nvda, /stock/tsla, /stock/pltr, /stock/meta, /stock/amd (already exist)
+
+### Daily Brief SEO Pages
+- [ ] /daily-brief — Daily Brief index page (list of recent briefs, SEO-optimized)
+- [ ] /daily-brief/:date — Individual daily brief pages (e.g. /daily-brief/2026-07-09)
+- [ ] /market-briefing — Market Briefing hub page (redirect or alias)
+- [ ] /stock-market-today — Stock Market Today page
+
+### Educational Pillar Pages
+- [x] /learn/how-to-read-stock-market
+- [x] /learn/what-causes-market-crash
+- [x] /learn/what-is-market-regime
+- [x] /learn/what-is-liquidity
+- [x] /learn/credit-spreads
+- [x] /learn/treasury-yields
+- [x] /learn/inflation-and-stocks
+- [x] /learn/fed-policy
+- [x] /learn/macro-investing
+- [x] /learn/risk-on-or-risk-off
+- [x] /learn/bull-and-bear-markets
+- [x] /learn/crypto-cycles
+- [ ] /learn — Educational hub index page (future)
+
+### Comparison Pages
+- [x] /vs/bloomberg — FAULTLINE vs Bloomberg
+- [x] /vs/tradingview — FAULTLINE vs TradingView
+- [x] /vs/finviz — FAULTLINE vs Finviz
+- [x] /vs/koyfin — FAULTLINE vs Koyfin
+- [x] /best-market-risk-indicators
+- [x] /best-stock-market-risk-dashboard
+- [ ] /best-macro-intelligence-platform (future)
+
+### QA
+- [x] TypeScript check: 0 errors
+- [x] All new routes load without login
+- [x] Sitemap includes all new pages
+- [x] robots.txt allows all new pages
+- [x] No duplicate H1s
+- [x] Save checkpoint
