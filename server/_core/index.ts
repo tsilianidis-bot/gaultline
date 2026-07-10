@@ -12,7 +12,7 @@ import { registerCoinGeckoProxy } from "../coingeckoProxy";
 import { registerSEORoutes } from "../seoRoutes";
 import analyticsRoutes from "../analyticsRoutes";
 import { handleStripeWebhook } from "../stripe/webhook";
-import { handleScheduledPublishBlog } from "../scheduledBlog";
+import { handleScheduledPublishBlog, handleScheduledAutoPublishDrafts } from "../scheduledBlog";
 import {
   handleDailyBrief,
   handleWeeklyReview,
@@ -148,6 +148,7 @@ async function startServer() {
   app.post("/api/scheduled/ping", (_req, res) => res.json({ ok: true }));
   app.post("/api/scheduled/daily-snapshot", handleScheduledDailySnapshot);
   app.post("/api/scheduled/publish-blog", handleScheduledPublishBlog);
+  app.post("/api/scheduled/auto-publish-drafts", handleScheduledAutoPublishDrafts);
   app.post("/api/scheduled/x-post-scheduled", handleScheduledXPost);
   app.post("/api/scheduled/x-news-monitor", handleXNewsMonitor);
   app.post("/api/scheduled/daily-sim-portfolio", handleScheduledSimPortfolio);

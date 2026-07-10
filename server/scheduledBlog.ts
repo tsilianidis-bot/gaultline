@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, lte, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { blogPosts } from "../drizzle/schema";
 import { sdk } from "./_core/sdk";
@@ -128,6 +128,64 @@ export async function handleScheduledPublishBlog(req: Request, res: Response) {
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
     console.error("[ScheduledBlog] Error:", message);
+    return res.status(500).json({
+      error: message,
+      stack,
+      context: { url: req.url, taskUid: (req as any).taskUid },
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+/**
+ * POST /api/scheduled/auto-publish-drafts
+ * Runs daily at 08:00 UTC. Finds all draft posts (published=0) whose
+ * publishedAt date is <= now and flips them to published=1.
+ * Auth: isCron === true (Manus heartbeat)
+ */
+export async function handleScheduledAutoPublishDrafts(req: Request, res: Response) {
+  try {
+    const user = await sdk.authenticateRequest(req);
+    if (!user.isCron) {
+      return res.status(403).json({ error: "cron-only endpoint" });
+    }
+
+    const db = await getDb();
+    if (!db) return res.status(503).json({ error: "database unavailable" });
+
+    const now = new Date();
+
+    // Find drafts whose scheduled publishedAt has passed
+    const dueDrafts = await db
+      .select({ id: blogPosts.id, slug: blogPosts.slug, title: blogPosts.title, publishedAt: blogPosts.publishedAt })
+      .from(blogPosts)
+      .where(
+        and(
+          eq(blogPosts.published, 0),
+          lte(blogPosts.publishedAt, now)
+        )
+      );
+
+    if (dueDrafts.length === 0) {
+      console.log("[AutoPublishDrafts] No drafts due for publishing.");
+      return res.json({ ok: true, published: 0, posts: [] });
+    }
+
+    const publishedSlugs: string[] = [];
+    for (const draft of dueDrafts) {
+      await db
+        .update(blogPosts)
+        .set({ published: 1 })
+        .where(eq(blogPosts.id, draft.id));
+      publishedSlugs.push(draft.slug);
+      console.log(`[AutoPublishDrafts] Published: "${draft.title}" → /blog/${draft.slug}`);
+    }
+
+    return res.json({ ok: true, published: publishedSlugs.length, posts: publishedSlugs });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[AutoPublishDrafts] Error:", message);
     return res.status(500).json({
       error: message,
       stack,
