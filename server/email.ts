@@ -49,9 +49,14 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
     console.log(`[Email] Sent "${payload.subject}" to ${payload.to}`);
     return { success: true };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[Email] SendGrid error:", msg);
-    return { success: false, error: msg };
+    const raw = err instanceof Error ? err.message : String(err);
+    console.error("[Email] SendGrid error:", raw);
+    // Return a user-friendly error — never expose raw API errors like "Unauthorized" to end users
+    const isAuthError = raw.toLowerCase().includes('unauthorized') || raw.includes('401') || raw.includes('403');
+    const userMsg = isAuthError
+      ? 'Email service configuration error. Please email us directly at jt@getfaultline.live'
+      : 'Failed to send message. Please try again or email us directly at jt@getfaultline.live';
+    return { success: false, error: userMsg };
   }
 }
 
