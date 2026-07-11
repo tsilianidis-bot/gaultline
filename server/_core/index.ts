@@ -113,8 +113,10 @@ async function startServer() {
         "font-src 'self' https://fonts.gstatic.com data:",
         // Allow manus storage CDN for OG image and uploaded assets
         "img-src 'self' data: blob: https://d2xsxph8kpxj0f.cloudfront.net https://assets.coingecko.com https://*.manus.space https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com",
-        // Allow connections to manus analytics, storage, and GA4 collect endpoints
-        "connect-src 'self' https://manus-analytics.com https://us.umami.is https://*.manus.space https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://www.googletagmanager.com",
+        // Allow video/audio from manus storage CDN — required for <video> elements pointing to /manus-storage/ paths
+        "media-src 'self' blob: https://*.manus.space https://*.cloudfront.net",
+        // Allow connections to manus analytics, storage CDN, and GA4 collect endpoints
+        "connect-src 'self' https://manus-analytics.com https://us.umami.is https://*.manus.space https://*.cloudfront.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://www.googletagmanager.com",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",
