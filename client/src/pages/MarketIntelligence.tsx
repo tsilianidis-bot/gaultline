@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 
 function TrendIcon({ trend }: { trend: string }) {
   if (trend === "Improving")     return <TrendingUp   className="w-4 h-4 text-green-400" />;
@@ -183,6 +184,8 @@ export default function MarketIntelligence() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        {/* Seismograph Narrative Banner */}
+        <SeismographNarrativeBanner context="regime" defaultExpanded={false} />
         {/* Error */}
         {error && (
           <div className="flex items-center gap-3 p-4 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">

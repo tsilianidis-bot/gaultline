@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves, Clock, GitBranch, BookOpen } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useLocation } from "wouter";
 import Scores from "./Scores";
@@ -1022,6 +1023,9 @@ export default function Pressure() {
           badgeColor={data.dataSource === 'live' ? 'green' : 'amber'}
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
+        <div style={{ padding: '0 16px' }}>
+          <SeismographNarrativeBanner context="pressure" defaultExpanded={false} />
+        </div>
         <StressTabBar active={activeTab} onSelect={setActiveTab} />
         {activeTab === 'scores' && <Scores />}
         {activeTab === 'charts' && <Charts />}

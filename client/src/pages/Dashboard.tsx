@@ -29,6 +29,7 @@ import { AwarenessDashboardCard, MarketPreflightModal } from "@/components/Marke
 import PreflightGate from "@/components/PreflightGate";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import HomepageBriefingPanel from "@/components/HomepageBriefingPanel";
+import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import ScoreExplainer from "@/components/ScoreExplainer";
@@ -923,6 +924,8 @@ export default function Dashboard() {
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
         {/* ── Inline upgrade prompt (free/core tier only) ────────── */}
         <DashboardUpgradePrompt />
+        {/* ── Seismograph Narrative Banner: what is happening, why, how long, what to watch ── */}
+        <SeismographNarrativeBanner context="dashboard" defaultExpanded={false} />
         {/* ── Homepage Briefing: Market Story, Why Today Is Different, History Says ── */}
         <HomepageBriefingPanel />
         {/* ── What does this mean? synthesis panel ─────────────── */}

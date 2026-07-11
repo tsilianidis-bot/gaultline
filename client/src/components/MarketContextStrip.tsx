@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { ChevronDown, ChevronUp, Activity, TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
+import { trpc } from "@/lib/trpc";
 
 // Pages that should NOT show the strip (landing, auth, public pages)
 const EXCLUDED_PATHS = [
@@ -42,6 +43,11 @@ function ProbBar({ value, color, label }: { value: number; color: string; label:
 export default function MarketContextStrip() {
   const [location] = useLocation();
   const { output, isLoading } = useEngine();
+  // Seismograph assembled output — enriches the strip with analog + transition data
+  const { data: seismographOutput } = trpc.seismograph.getAssembledOutput.useQuery(undefined, {
+    staleTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("faultline_ctx_strip_collapsed") === "true"; } catch { return false; }
   });
@@ -223,6 +229,25 @@ export default function MarketContextStrip() {
               </div>
             )}
 
+            {/* Seismograph: Active Analog + Transition Probability */}
+            {seismographOutput && (seismographOutput.analogMatches?.[0] || seismographOutput.transitionProbabilities) && (
+              <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", marginBottom: "1px" }}>SEISMOGRAPH</div>
+                {seismographOutput.analogMatches?.[0] && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)" }}>ANALOG</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FF", fontWeight: 600 }}>{seismographOutput.analogMatches[0].period}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)" }}>{seismographOutput.analogMatches[0].similarity}%</span>
+                  </div>
+                )}
+                {seismographOutput.transitionProbabilities && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)" }}>TRANSITION RISK</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: seismographOutput.transitionProbabilities.transitionToCrisis >= 50 ? "#EF4444" : seismographOutput.transitionProbabilities.transitionToCrisis >= 30 ? "#F59E0B" : "#10B981", fontWeight: 600 }}>{seismographOutput.transitionProbabilities.transitionToCrisis}%</span>
+                  </div>
+                )}
+              </div>
+            )}
             {/* Continue the conversation CTA */}
             <button
               onClick={() => navigate("/app/discover")}

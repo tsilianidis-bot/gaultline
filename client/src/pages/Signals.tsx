@@ -21,6 +21,7 @@ import { Link, useLocation } from 'wouter';
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { ShareReportButton } from "@/components/ShareReportButton";
 import { SizingCalculator } from "@/components/SizingCalculator";
@@ -1612,8 +1613,12 @@ function SignalsInner() {
       {/* ── Signals Module Sub-Nav: navigate between Stocks, Crypto, Signal Outlook ── */}
       <SignalsSubNav />
 
+      {/* ── Seismograph Narrative Banner ── */}
+      <div style={{ padding: '0 16px', marginTop: '8px' }}>
+        <SeismographNarrativeBanner context="signals" defaultExpanded={false} />
+      </div>
       {/* ── What does this mean? synthesis panel ── */}
-      <div style={{ padding: '0 16px', marginBottom: '8px', marginTop: '8px' }}>
+      <div style={{ padding: '0 16px', marginBottom: '8px' }}>
         <MarketSynthesisPanel context="signals" />
       </div>
 

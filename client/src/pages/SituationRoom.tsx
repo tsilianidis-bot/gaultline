@@ -8,6 +8,7 @@ import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import PageHeader from "@/components/PageHeader";
+import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { trackSituationRoomUse, trackSituationRoomUsed } from "@/hooks/useAnalytics";
 import {
@@ -634,6 +635,7 @@ export default function SituationRoom() {
           subtitle="Stress-test your next move before risking capital"
           badge="COMMAND CENTER"
         />
+        <SeismographNarrativeBanner context="situation" defaultExpanded={false} />
 
         {/* ══════════════════════════════════════════════════════
             SECTION A — MARKET STATUS
