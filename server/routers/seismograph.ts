@@ -20,6 +20,7 @@ import {
   marketMemory,
 } from "../../drizzle/schema";
 import { desc, eq, and } from "drizzle-orm";
+import { getLatestSeismographOutput } from "../scheduledSeismograph";
 
 export const seismographRouter = router({
   /**
@@ -99,6 +100,15 @@ export const seismographRouter = router({
     .query(async ({ input }) => {
       return memoryGet(input.key);
     }),
+
+  /**
+   * Get the fully assembled SeismographOutput (the canonical Market OS output).
+   * This is what all consumer surfaces (dashboard, ASHA, stock pages, crypto pages) should read.
+   * Returns null if no daily job has run yet.
+   */
+  getAssembledOutput: publicProcedure.query(async () => {
+    return getLatestSeismographOutput();
+  }),
 
   /**
    * Manually trigger a pattern analysis run (admin use).

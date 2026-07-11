@@ -32,6 +32,7 @@ import { notifyOwner } from "./_core/notification";
 import { sendEmail } from "./email";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
 import { getDiagnosticReport, type DiagnosticReport } from "./diagnosticAI";
+import { getLatestSeismographOutput } from "./scheduledSeismograph";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -491,7 +492,24 @@ async function runPublishingPipeline(
   }
 
   // ── Step 3: Build context string ─────────────────────────────────────────
-  const ctx = [
+  // Try to get the assembled Seismograph context for richer Daily Brief content
+  const seismographOutput = await getLatestSeismographOutput().catch(() => null);
+  const briefCtx = seismographOutput?.forDailyBrief;
+
+  const ctx = briefCtx ? [
+    `FAULTLINE Pressure Index™: ${briefCtx.pressureScore}/100`,
+    `Market Regime: ${briefCtx.regime}`,
+    `Stress Level: ${briefCtx.stressLevel}`,
+    `Direction: ${briefCtx.direction}`,
+    `Bull Probability: ${briefCtx.probabilities.bull}% | Neutral: ${briefCtx.probabilities.neutral}% | Bear: ${briefCtx.probabilities.bear}%`,
+    briefCtx.topAnalog ? `Closest Historical Analog: ${briefCtx.topAnalog.label} (${briefCtx.topAnalog.similarity}% similarity)` : null,
+    briefCtx.activePatterns.length > 0 ? `Active Patterns: ${briefCtx.activePatterns.map((p: { name: string }) => p.name).join(", ")}` : null,
+    briefCtx.keyDevelopments.length > 0 ? `Key Developments: ${briefCtx.keyDevelopments.join(" | ")}` : null,
+    `Evidence Consensus: ${seismographOutput?.evidenceConsensus ?? "unknown"}`,
+    `Transition Risk: Remain=${briefCtx.transitionProbabilities.remainInRegime}% | Crisis=${briefCtx.transitionProbabilities.transitionToCrisis}%`,
+    `Market Memory: ${briefCtx.marketMemory.streakDays} days ${briefCtx.marketMemory.streakDirection}`,
+    `Date: ${dateStr}`,
+  ].filter(Boolean).join(". ") : [
     `FAULTLINE Pressure Index™: ${engineData.pressureScore}/100`,
     `Market Regime: ${engineData.regime}`,
     `Stress Level: ${engineData.stressLevel}`,

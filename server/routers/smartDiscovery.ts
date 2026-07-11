@@ -26,6 +26,7 @@ import { startConversation, logMessage } from "../conversationLogger";
 import { computeHistoricalIntelligence } from "../historicalIntelligenceEngine";
 import type { HistoricalIntelligenceResult } from "../historicalIntelligenceEngine";
 import { getSeismographState } from "../seismographEngine";
+import { getLatestSeismographOutput } from "../scheduledSeismograph";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -278,8 +279,12 @@ async function orchestrateAnswer(
 
   // ── Stage 4: Market data fetch ─────────────────────────────────
   // 2. Fetch live market data via FMOS pipeline + live price
-  // Seismograph state — non-blocking, best-effort
-  const seismographState = await getSeismographState().catch(() => null);
+  // Seismograph — prefer assembled SeismographOutput (forASHA context block),
+  // fall back to raw SeismographState if no daily job has run yet
+  const [seismographOutput, seismographState] = await Promise.all([
+    getLatestSeismographOutput().catch(() => null),
+    getSeismographState().catch(() => null),
+  ]);
   const [fmosResult, quickOutlook, crossMarketResult, livePriceResult] = await Promise.allSettled([
     runFMOSPipelineFast({ symbol: ticker ?? undefined }),
     ticker ? getQuickOutlook(ticker, assetType ?? "stock") : Promise.resolve(null),
@@ -518,7 +523,7 @@ Market Summary: ${crossMarket.plainEnglishSummary}
 Key Insights: ${crossMarket.keyInsights.slice(0, 3).join(" | ")}
 ${crossMarket.regimeChangeAlerts.length > 0 ? `ACTIVE REGIME ALERTS: ${crossMarket.regimeChangeAlerts.map(a => `${a.asset} regime changed from ${a.previous} to ${a.current}`).join("; ")}` : ""}` : ""}
 ${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
-${seismographState ? `\n── SEISMOGRAPH INTELLIGENCE (PERSISTENT MARKET MEMORY) ──\nCurrent Pressure Score: ${seismographState.today.pressureScore} | Regime: ${seismographState.today.regime} | Stress Level: ${seismographState.today.stressLevel}\nDirection: ${seismographState.today.direction} for ${seismographState.today.streakDays} consecutive days | Historical Percentile: ${seismographState.today.historicalPercentile}th\n7-Day Trend: ${seismographState.evolution.sevenDayTrend} | 30-Day Trend: ${seismographState.evolution.thirtyDayTrend}${seismographState.evolution.accelerating ? " | ACCELERATING" : ""}\nRegime Transition Probabilities: Remain=${seismographState.transitionProbabilities.remainInRegime}% | Elevated=${seismographState.transitionProbabilities.transitionToElevated}% | Low=${seismographState.transitionProbabilities.transitionToLow}% | Crisis=${seismographState.transitionProbabilities.transitionToCrisis}%\nActive Patterns: ${seismographState.activePatterns.length > 0 ? seismographState.activePatterns.map((p: { patternName: string }) => p.patternName).join(", ") : "None detected"}\nMarket Memory: ${seismographState.marketMemorySummary.observationCount} observations | ${seismographState.marketMemorySummary.currentStreakDescription}\nNote: Seismograph probabilities are historical base rates, not predictions.` : ""}
+${seismographOutput ? `\n${seismographOutput.forASHA.systemPromptBlock}` : seismographState ? `\n── SEISMOGRAPH INTELLIGENCE (PERSISTENT MARKET MEMORY) ──\nCurrent Pressure Score: ${seismographState.today.pressureScore} | Regime: ${seismographState.today.regime} | Stress Level: ${seismographState.today.stressLevel}\nDirection: ${seismographState.today.direction} for ${seismographState.today.streakDays} consecutive days | Historical Percentile: ${seismographState.today.historicalPercentile}th\n7-Day Trend: ${seismographState.evolution.sevenDayTrend} | 30-Day Trend: ${seismographState.evolution.thirtyDayTrend}${seismographState.evolution.accelerating ? " | ACCELERATING" : ""}\nRegime Transition Probabilities: Remain=${seismographState.transitionProbabilities.remainInRegime}% | Elevated=${seismographState.transitionProbabilities.transitionToElevated}% | Low=${seismographState.transitionProbabilities.transitionToLow}% | Crisis=${seismographState.transitionProbabilities.transitionToCrisis}%\nActive Patterns: ${seismographState.activePatterns.length > 0 ? seismographState.activePatterns.map((p: { patternName: string }) => p.patternName).join(", ") : "None detected"}\nMarket Memory: ${seismographState.marketMemorySummary.observationCount} observations | ${seismographState.marketMemorySummary.currentStreakDescription}\nNote: Seismograph probabilities are historical base rates, not predictions.` : ""}
   ${evidenceContext}
 ${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalIntelligence.promptBlock : ""}`;  // ← Historical Intelligence injected here
 

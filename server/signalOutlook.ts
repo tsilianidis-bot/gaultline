@@ -23,6 +23,7 @@ import { getPreFlightData } from "./preFlight";
 import { LRUCache } from "./lruCache";
 import { getDb } from "./db";
 import { outlookHistory } from "../drizzle/schema";
+import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import { desc, eq, and, gte } from "drizzle-orm";
 import { getQuote } from "./yahooProxy";
 import { getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
@@ -1171,6 +1172,13 @@ async function generateOutlookInterpretation(
   const topFactors = [...scoreBreakdown.factors].sort((a, b) => b.score - a.score);
   const bottomFactors = [...scoreBreakdown.factors].sort((a, b) => a.score - b.score);
 
+  // Seismograph context — best-effort, non-blocking
+  const seismographOutput = await getLatestSeismographOutput().catch(() => null);
+  const seismographCtx = seismographOutput ? `
+- Seismograph Evidence Consensus: ${seismographOutput.evidenceConsensus}
+- Active Historical Analog: ${seismographOutput.analogMatches[0]?.label ?? 'None'} (${seismographOutput.analogMatches[0]?.similarity ?? 0}% similarity)
+- Market Direction: ${seismographOutput.direction} for ${seismographOutput.marketMemory.streakDays} days
+- Transition Probability (stay in regime): ${seismographOutput.transitionProbabilities.remainInRegime}%` : '';
   const prompt = `You are FAULTLINE's Signal Outlook AI. Provide plain-English market intelligence for ${symbol} (${assetType.toUpperCase()}).
 
 CURRENT DATA:

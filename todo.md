@@ -3801,3 +3801,16 @@
 - [x] TypeScript check: 0 errors
 - [x] Test suite: 1280/1281 tests passing (pre-existing SendGrid key failure unrelated)
 - [x] Save checkpoint
+
+## Market Operating System Architecture Refactor
+
+- [x] Audit all existing engines, data sources, and frontend pages
+- [x] Produce architectural dependency map (Markdown + Mermaid diagram + PDF)
+- [x] Design SeismographCore integration interface (EvidenceContributor contract + SeismographOutput distribution schema)
+- [x] Write seismographAdapters.ts — toEvidencePacket() adapters for all contributing engines (Pressure, FMOS, CrossMarket, SOB, Aftershock, HistoricalIntelligence)
+- [x] Rewrite scheduledSeismograph.ts — collect all evidence, assemble canonical SeismographOutput, persist to Market Memory
+- [x] Add getLatestSeismographOutput() — retrieves assembled SeismographOutput from Market Memory
+- [x] Add seismograph.getAssembledOutput tRPC procedure — exposes canonical output to all frontend consumers
+- [x] Wire ASHA/SmartDiscovery to consume SeismographOutput.forASHA.systemPromptBlock (falls back to raw SeismographState)
+- [x] Wire Daily Brief (autonomousPublishing.ts) to consume SeismographOutput.forDailyBrief for richer context
+- [x] Wire Signal Intelligence (signalOutlook.ts) to consume SeismographOutput for macro context injection
