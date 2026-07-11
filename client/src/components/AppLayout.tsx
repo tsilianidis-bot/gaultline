@@ -57,6 +57,7 @@ const NAV_GROUPS: NavGroup[] = [
     // Q3 + Q4: What does it mean? What is the highest probability outcome?
     label: "UNDERSTAND",
     items: [
+      { id: "seismograph",     label: "Seismograph",          shortLabel: "Seismograph", icon: Activity,        path: "/app/seismograph" },
       { id: "signal-outlook",  label: "Signal Outlook",       shortLabel: "Outlook",     icon: Eye,             path: "/app/signal-outlook" },
       { id: "pre-flight",      label: "Pre-Flight Check",     shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
       { id: "social-intel",    label: "Social Intelligence",  shortLabel: "Social Intel",icon: Users,           path: "/app/social-intelligence" },

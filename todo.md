@@ -3713,12 +3713,12 @@
 - [x] /is-now-good-time-to-buy-stocks — Is Now a Good Time to Buy Stocks?
 - [x] /treasury-yield-stress — Treasury Yield Stress Tracker
 - [x] /credit-market-stress — Credit Market Stress Index
-- [ ] /ai-bubble-monitor — AI Bubble Monitor (alias/redirect to /ai-bubble-risk-tracker or new page)
+- [x] /ai-bubble-monitor — AI Bubble Monitor (alias/redirect to /ai-bubble-risk-tracker or new page)
 - [x] Wire existing: /federal-reserve-tracker, /liquidity-monitor, /market-regime-tracker, /recession-probability, /market-crash-probability-2026 (already exist)
 
 ### Crypto SEO Pages (new or missing)
 - [x] /crypto-bull-or-bear — Crypto Bull or Bear Market?
-- [ ] /altcoin-season-index — Altcoin Season Index (alias/redirect to /alt-season-indicator)
+- [x] /altcoin-season-index — Altcoin Season Index (alias/redirect to /alt-season-indicator)
 - [x] /crypto-market-regime — Crypto Market Regime Tracker
 - [x] /bitcoin-vs-stock-market — Bitcoin vs Stock Market Risk
 - [x] Wire existing: /bitcoin-risk-dashboard, /ethereum-risk-dashboard (already exist)
@@ -3736,8 +3736,8 @@
 ### Daily Brief SEO Pages
 - [ ] /daily-brief — Daily Brief index page (list of recent briefs, SEO-optimized)
 - [ ] /daily-brief/:date — Individual daily brief pages (e.g. /daily-brief/2026-07-09)
-- [ ] /market-briefing — Market Briefing hub page (redirect or alias)
-- [ ] /stock-market-today — Stock Market Today page
+- [x] /market-briefing — Market Briefing hub page (redirect or alias)
+- [x] /stock-market-today — Stock Market Today page
 
 ### Educational Pillar Pages
 - [x] /learn/how-to-read-stock-market
@@ -3783,4 +3783,21 @@
 - [x] Integrate into Signals.tsx (Opportunity Score)
 - [x] Integrate into DailyReport.tsx (Bull Probability, Crash Risk)
 - [x] TypeScript check: 0 errors
+- [x] Save checkpoint
+
+## Seismograph Intelligence Engine (Jul 11, 2026)
+- [x] Build server/seismographEngine.ts — persistent market memory, pattern detection, analog matching, regime transition probabilities
+- [x] Fix all TypeScript errors in seismographEngine.ts (requireDb helper, correct schema columns)
+- [x] Build server/routers/seismograph.ts — tRPC router with getState, getHistory, getPatterns, getAnalogs, getMemory procedures
+- [x] Wire seismographRouter into server/routers.ts and server/routers/index.ts
+- [x] Build server/scheduledSeismograph.ts — Heartbeat handler for daily recording and pattern analysis
+- [x] Register seismograph scheduled handler in server/_core/index.ts
+- [x] Build client/src/pages/SeismographIntelligence.tsx — full page with pattern timeline, regime matrix, analog matches, Market Memory feed
+- [x] Add SeismographIntelligence route to App.tsx (/app/seismograph)
+- [x] Add Seismograph nav item to AppLayout UNDERSTAND section
+- [x] Import getSeismographState into smartDiscovery.ts and inject seismograph context block into AI system prompt
+- [x] Add SEO alias routes: /ai-bubble-monitor, /altcoin-season-index, /stock-market-today, /market-briefing
+- [x] Add all new routes to sitemap.xml
+- [x] TypeScript check: 0 errors
+- [x] Test suite: 1280/1281 tests passing (pre-existing SendGrid key failure unrelated)
 - [x] Save checkpoint

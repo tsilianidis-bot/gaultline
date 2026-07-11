@@ -163,6 +163,7 @@ const MarketCommandCenter = lazy(() => import("./pages/MarketCommandCenter"));
 const TodaysStory = lazy(() => import("./pages/TodaysStory"));
 const SmartDiscovery = lazy(() => import("./pages/SmartDiscovery"));
 const DecisionLedger = lazy(() => import("./pages/DecisionLedger"));
+const SeismographIntelligence = lazy(() => import("./pages/SeismographIntelligence"));
 const IntelligenceHub   = lazy(() => import("./pages/IntelligenceHub"));
 const EngineeringDiagnostics = lazy(() => import("./pages/admin/EngineeringDiagnostics"));
 const ConversationIntelligence = lazy(() => import("./pages/admin/ConversationIntelligence"));
@@ -594,6 +595,11 @@ function Router() {
       <Route path="/vs/tradingview">
         <ErrorBoundary><Suspense fallback={<PageLoader />}><VsTradingView /></Suspense></ErrorBoundary>
       </Route>
+      {/* SEO alias/redirect routes */}
+      <Route path="/ai-bubble-monitor"><Redirect to="/ai-bubble-risk-tracker" /></Route>
+      <Route path="/altcoin-season-index"><Redirect to="/alt-season-indicator" /></Route>
+      <Route path="/stock-market-today"><Redirect to="/stock-market-risk-today" /></Route>
+      <Route path="/market-briefing"><Redirect to="/app/report" /></Route>
       {/* Marketing site at root — standalone, no AppLayout */}
       <Route path="/">
         <ErrorBoundary>
@@ -639,6 +645,7 @@ function Router() {
               <Route path="/app/diagnostic" component={DiagnosticAI} />
               <Route path="/app/portfolio" component={Portfolio} />
               <Route path="/app/aftershock" component={AftershockEngine} />
+              <Route path="/app/seismograph" component={SeismographIntelligence} />
               <Route path="/app/crypto-signals"><Redirect to="/app/crypto" /></Route>
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />

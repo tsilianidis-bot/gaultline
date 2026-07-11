@@ -316,6 +316,13 @@
       "when": 1783551709972,
       "tag": "0044_ordinary_franklin_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "5",
+      "when": 1783774275545,
+      "tag": "0045_public_cassandra_nova",
+      "breakpoints": true
     }
   ]
 }

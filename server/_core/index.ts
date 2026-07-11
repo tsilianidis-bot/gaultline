@@ -30,6 +30,7 @@ import { handleGenerateOrganicContent, handleRefreshSignalPages } from "../organ
 import { handleScheduledLedgerEvaluation } from "../scheduledLedgerEvaluation";
 import { weeklyImprovementReportHandler } from "../scheduledWeeklyImprovementReport";
 import { handleDripEmail } from "../scheduledDripEmail";
+import { handleScheduledSeismograph } from "../scheduledSeismograph";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -159,6 +160,7 @@ async function startServer() {
   app.post("/api/scheduled/ledger-evaluation", handleScheduledLedgerEvaluation);
   app.post("/api/scheduled/weekly-improvement-report", weeklyImprovementReportHandler);
   app.post("/api/scheduled/drip-email", handleDripEmail);
+  app.post("/api/scheduled/seismograph-daily", handleScheduledSeismograph);
   // Autonomous publishing pipeline
   app.post("/api/scheduled/daily-brief", handleDailyBrief);
   app.post("/api/scheduled/weekly-review", handleWeeklyReview);

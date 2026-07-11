@@ -1628,3 +1628,105 @@ export const conversationRetentionPolicy = mysqlTable("conversationRetentionPoli
   updatedBy:          int("updatedBy"),
 });
 export type ConversationRetentionPolicy = typeof conversationRetentionPolicy.$inferSelect;
+
+// ─── Market Operating System — Seismograph Intelligence ──────────────────────
+
+/**
+ * seismographReadings
+ * One row per day. Full multi-dimensional pressure reading for pattern detection.
+ */
+export const seismographReadings = mysqlTable("seismographReadings", {
+  id:                   int("id").autoincrement().primaryKey(),
+  readingDate:          varchar("readingDate", { length: 10 }).notNull().unique(),
+  pressureScore:        int("pressureScore").notNull(),
+  stressLevel:          varchar("stressLevel", { length: 20 }).notNull(),
+  regime:               varchar("regime", { length: 80 }).notNull(),
+  subScoresJson:        text("subScoresJson").notNull(),
+  bullProbability:      int("bullProbability"),
+  crashProbability:     int("crashProbability"),
+  direction:            varchar("direction", { length: 10 }).notNull().default("stable"),
+  deltaFromPrior:       int("deltaFromPrior").notNull().default(0),
+  streakDays:           int("streakDays").notNull().default(0),
+  historicalPercentile: int("historicalPercentile"),
+  pressureDriversJson:  text("pressureDriversJson").notNull().default("[]"),
+  activeAlertsJson:     text("activeAlertsJson").notNull().default("[]"),
+  createdAt:            timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:            timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  dateIdx:  index("seismo_readings_date_idx").on(t.readingDate),
+  scoreIdx: index("seismo_readings_score_idx").on(t.pressureScore),
+}));
+export type SeismographReading = typeof seismographReadings.$inferSelect;
+export type InsertSeismographReading = typeof seismographReadings.$inferInsert;
+
+/**
+ * seismographPatterns
+ * Detected recurring patterns with analog matches and outcome distributions.
+ */
+export const seismographPatterns = mysqlTable("seismographPatterns", {
+  id:                      int("id").autoincrement().primaryKey(),
+  detectedAt:              varchar("detectedAt", { length: 10 }).notNull(),
+  patternType:             varchar("patternType", { length: 60 }).notNull(),
+  patternName:             varchar("patternName", { length: 120 }).notNull(),
+  patternDescription:      text("patternDescription").notNull(),
+  confidence:              int("confidence").notNull(),
+  frequency:               varchar("frequency", { length: 20 }).notNull(),
+  historicalCount:         int("historicalCount").notNull().default(0),
+  analogMatchesJson:       text("analogMatchesJson").notNull().default("[]"),
+  outcomeDistributionJson: text("outcomeDistributionJson").notNull().default("{}"),
+  invalidationConditions:  text("invalidationConditions"),
+  isActive:                boolean("isActive").notNull().default(true),
+  resolvedAt:              varchar("resolvedAt", { length: 10 }),
+  actualOutcome:           varchar("actualOutcome", { length: 20 }),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:               timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  detectedIdx: index("seismo_patterns_detected_idx").on(t.detectedAt),
+  typeIdx:     index("seismo_patterns_type_idx").on(t.patternType),
+  activeIdx:   index("seismo_patterns_active_idx").on(t.isActive),
+}));
+export type SeismographPattern = typeof seismographPatterns.$inferSelect;
+export type InsertSeismographPattern = typeof seismographPatterns.$inferInsert;
+
+/**
+ * seismographTransitions
+ * Every regime change event detected by the Seismograph Engine.
+ */
+export const seismographTransitions = mysqlTable("seismographTransitions", {
+  id:                   int("id").autoincrement().primaryKey(),
+  transitionDate:       varchar("transitionDate", { length: 10 }).notNull(),
+  fromRegime:           varchar("fromRegime", { length: 80 }).notNull(),
+  toRegime:             varchar("toRegime", { length: 80 }).notNull(),
+  pressureAtTransition: int("pressureAtTransition").notNull(),
+  confidence:           int("confidence").notNull(),
+  priorRegimeDuration:  int("priorRegimeDuration").notNull().default(0),
+  explanation:          text("explanation"),
+  driversJson:          text("driversJson").notNull().default("[]"),
+  historicalBaseRate:   int("historicalBaseRate"),
+  confirmed:            boolean("confirmed"),
+  createdAt:            timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  dateIdx:       index("seismo_transitions_date_idx").on(t.transitionDate),
+  fromRegimeIdx: index("seismo_transitions_from_idx").on(t.fromRegime),
+  toRegimeIdx:   index("seismo_transitions_to_idx").on(t.toRegime),
+}));
+export type SeismographTransition = typeof seismographTransitions.$inferSelect;
+export type InsertSeismographTransition = typeof seismographTransitions.$inferInsert;
+
+/**
+ * marketMemory
+ * Persistent key-value store for the Market Operating System.
+ * Stores system-wide state that persists across engine runs.
+ */
+export const marketMemory = mysqlTable("marketMemory", {
+  id:          int("id").autoincrement().primaryKey(),
+  memoryKey:   varchar("memoryKey", { length: 120 }).notNull().unique(),
+  memoryValue: text("memoryValue").notNull(),
+  description: varchar("description", { length: 255 }),
+  writtenBy:   varchar("writtenBy", { length: 60 }),
+  updatedAt:   timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  keyIdx: index("market_memory_key_idx").on(t.memoryKey),
+}));
+export type MarketMemory = typeof marketMemory.$inferSelect;
+export type InsertMarketMemory = typeof marketMemory.$inferInsert;

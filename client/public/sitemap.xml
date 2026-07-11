@@ -106,6 +106,12 @@
   <url><loc>https://getfaultline.live/learn/what-is-liquidity</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://getfaultline.live/learn/what-is-market-regime</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
 
+  <!-- ── Tier 2g: SEO alias/redirect pages ───────────────────── -->
+  <url><loc>https://getfaultline.live/ai-bubble-monitor</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/altcoin-season-index</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+  <url><loc>https://getfaultline.live/stock-market-today</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
+  <url><loc>https://getfaultline.live/market-briefing</loc><changefreq>daily</changefreq><priority>0.7</priority></url>
+
   <!-- ── Tier 2f: SEO landing pages — vs/comparison ────────────── -->
   <url><loc>https://getfaultline.live/vs/bloomberg</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://getfaultline.live/vs/finviz</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
