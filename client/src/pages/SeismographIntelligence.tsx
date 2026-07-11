@@ -727,6 +727,15 @@ export default function SeismographIntelligence() {
     { days: 30 },
     { staleTime: 3 * 60 * 1000 }
   );
+  const utils = trpc.useUtils();
+  const seedNow = trpc.seismograph.seedNow.useMutation({
+    onSuccess: () => {
+      void utils.seismograph.getState.invalidate();
+      void utils.seismograph.getReadingHistory.invalidate();
+      void utils.seismograph.getActivePatterns.invalidate();
+      void utils.seismograph.getAssembledOutput.invalidate();
+    },
+  });
 
   if (isLoading) {
     return (
@@ -745,23 +754,47 @@ export default function SeismographIntelligence() {
     return (
       <div className="min-h-screen bg-[#050508] flex items-center justify-center p-6">
         <Card className="border-white/8 bg-black/40 max-w-md w-full">
-          <CardContent className="pt-6 text-center space-y-4">
-            <Activity className="w-8 h-8 text-gray-600 mx-auto" />
+          <CardContent className="pt-8 text-center space-y-6">
+            <Activity className="w-10 h-10 text-cyan-400/30 mx-auto" />
             <div>
-              <p className="text-[13px] font-mono text-gray-300 font-semibold">
+              <p className="text-[14px] font-mono text-gray-200 font-semibold tracking-wide">
                 No Seismograph Data Yet
               </p>
               <p className="text-[11px] font-mono text-gray-500 mt-2 leading-relaxed">
-                The Seismograph records daily pressure readings automatically after market close. The first reading will appear after the daily Heartbeat job runs.
+                The Seismograph runs automatically after market close each day.
+                Generate today’s first reading now.
               </p>
             </div>
-            <button
-              onClick={() => refetch()}
-              className="flex items-center gap-2 mx-auto text-[11px] font-mono text-cyan-400 hover:text-cyan-300 transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Refresh
-            </button>
+
+            {seedNow.isError && (
+              <p className="text-[10px] font-mono text-red-400">
+                {seedNow.error?.message ?? "Pipeline failed. Check server logs."}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => seedNow.mutate()}
+                disabled={seedNow.isPending}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-[12px] font-mono text-cyan-300 hover:bg-cyan-500/20 hover:border-cyan-400/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {seedNow.isPending ? (
+                  <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Running pipeline… (30–60s)</>
+                ) : (
+                  <><Activity className="w-3.5 h-3.5" />Generate Today’s Reading Now</>
+                )}
+              </button>
+              <button
+                onClick={() => refetch()}
+                className="flex items-center justify-center gap-2 text-[11px] font-mono text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                <RefreshCw className="w-3 h-3" />Refresh
+              </button>
+            </div>
+
+            <p className="text-[10px] font-mono text-gray-600 leading-relaxed">
+              Runs: Pressure Engine → FMOS → Cross-Market → SOB → Evidence Assembly → Pattern Analysis
+            </p>
           </CardContent>
         </Card>
       </div>

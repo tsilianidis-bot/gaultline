@@ -49,105 +49,104 @@ export async function getLatestSeismographOutput(): Promise<SeismographOutput | 
   return memoryGetJson<SeismographOutput | null>(SEISMOGRAPH_OUTPUT_KEY, null);
 }
 
+/**
+ * Core pipeline — runs the full Seismograph evidence collection and assembly.
+ * Can be called from the scheduled handler OR from an on-demand tRPC mutation.
+ */
+export async function runSeismographPipeline(): Promise<SeismographOutput> {
+  const today = new Date().toISOString().split("T")[0];
+  console.log(`[Seismograph] Pipeline starting for ${today}`);
+
+  // Step 1: Collect evidence from all contributors in parallel
+  const [pressureResult, fmosResult, crossMarketResult] =
+    await Promise.allSettled([
+      calculateFaultlinePressure(),
+      runFMOSPipeline({ skipAIInterpretation: false }),
+      computeCrossMarketIntelligence(),
+    ]);
+  const pressureOutput =
+    pressureResult.status === "fulfilled" ? pressureResult.value : null;
+  const fmosOutput =
+    fmosResult.status === "fulfilled" ? fmosResult.value : null;
+  const crossMarketOutput =
+    crossMarketResult.status === "fulfilled" ? crossMarketResult.value : null;
+  if (!pressureOutput) {
+    throw new Error("Pressure engine failed — cannot proceed without core data");
+  }
+  const sobResult = await Promise.allSettled([
+    computeSOB({
+      regime: pressureOutput.regime,
+      pressureIndex: pressureOutput.overallPressure,
+    }),
+  ]);
+  const sobOutput =
+    sobResult[0].status === "fulfilled" ? sobResult[0].value : null;
+
+  // Step 2: Record the daily pressure reading
+  const subScores: Record<string, number> = {};
+  for (const v of pressureOutput.vectors ?? []) {
+    if (v.id && typeof v.score === "number") subScores[v.id] = v.score;
+  }
+  const pressureDrivers: string[] = (pressureOutput.alerts ?? [])
+    .filter((a: PressureAlert) => a.severity === "high" || a.severity === "critical")
+    .map((a: PressureAlert) => a.title)
+    .filter(Boolean)
+    .slice(0, 5);
+  await recordSeismographReading({
+    date: today,
+    pressureScore: pressureOutput.overallPressure,
+    stressLevel: pressureOutput.level,
+    regime: pressureOutput.regime,
+    subScores,
+    pressureDrivers,
+    activeAlerts: (pressureOutput.alerts ?? [])
+      .map((a: PressureAlert) => `${a.title}: ${a.detail}`)
+      .filter(Boolean),
+  });
+  console.log(`[Seismograph] Reading recorded: score=${pressureOutput.overallPressure}, regime=${pressureOutput.regime}`);
+
+  // Step 3: Run pattern analysis
+  await runPatternAnalysis();
+  console.log("[Seismograph] Pattern analysis complete");
+
+  // Step 4: Collect all evidence packets
+  const packets = await collectAllEvidence({
+    pressureOutput,
+    fmosOutput: fmosOutput ?? undefined,
+    crossMarketOutput: crossMarketOutput ?? undefined,
+    sobOutput: sobOutput ?? undefined,
+  });
+  console.log(`[Seismograph] Collected ${packets.length} evidence packets`);
+
+  // Step 5: Get the current Seismograph state
+  const state = await getSeismographState();
+
+  // Step 6: Build the state shape for assembleSeismographOutput
+  const stateForAssembly = buildStateForAssembly(pressureOutput, fmosOutput, state);
+
+  // Step 7: Assemble the canonical SeismographOutput
+  const seismographOutput = assembleSeismographOutput(stateForAssembly, packets);
+  console.log(
+    `[Seismograph] Output assembled: pressure=${seismographOutput.pressureScore}, regime=${seismographOutput.regime}, ` +
+    `evidence=${seismographOutput.activeContributors.length} contributors, consensus=${seismographOutput.evidenceConsensus}`
+  );
+
+  // Step 8: Persist to Market Memory
+  await memorySetJson(SEISMOGRAPH_OUTPUT_KEY, seismographOutput);
+  console.log("[Seismograph] Output persisted to Market Memory");
+
+  return seismographOutput;
+}
+
 export async function handleScheduledSeismograph(
   _req: Request,
   res: Response
 ): Promise<void> {
-  const today = new Date().toISOString().split("T")[0];
-  console.log(`[Seismograph] Daily job starting for ${today}`);
-
   try {
-    // ── Step 1: Collect evidence from all contributors in parallel ──
-    console.log("[Seismograph] Collecting evidence from all contributors...");
-    const [pressureResult, fmosResult, crossMarketResult] =
-      await Promise.allSettled([
-        calculateFaultlinePressure(),
-        runFMOSPipeline({ skipAIInterpretation: false }),
-        computeCrossMarketIntelligence(),
-      ]);
-
-    const pressureOutput =
-      pressureResult.status === "fulfilled" ? pressureResult.value : null;
-    const fmosOutput =
-      fmosResult.status === "fulfilled" ? fmosResult.value : null;
-    const crossMarketOutput =
-      crossMarketResult.status === "fulfilled" ? crossMarketResult.value : null;
-
-    if (!pressureOutput) {
-      throw new Error("Pressure engine failed — cannot proceed without core data");
-    }
-
-    // SOB needs pressure data — run after pressure resolves
-    const sobResult = await Promise.allSettled([
-      computeSOB({
-        regime: pressureOutput.regime,
-        pressureIndex: pressureOutput.overallPressure,
-      }),
-    ]);
-    const sobOutput =
-      sobResult[0].status === "fulfilled" ? sobResult[0].value : null;
-
-    // ── Step 2: Record the daily pressure reading ──────────────────
-    const subScores: Record<string, number> = {};
-    for (const v of pressureOutput.vectors ?? []) {
-      if (v.id && typeof v.score === "number") {
-        subScores[v.id] = v.score;
-      }
-    }
-    const pressureDrivers: string[] = (pressureOutput.alerts ?? [])
-      .filter((a: PressureAlert) => a.severity === "high" || a.severity === "critical")
-      .map((a: PressureAlert) => a.title)
-      .filter(Boolean)
-      .slice(0, 5);
-
-    await recordSeismographReading({
-      date: today,
-      pressureScore: pressureOutput.overallPressure,
-      stressLevel: pressureOutput.level,
-      regime: pressureOutput.regime,
-      subScores,
-      pressureDrivers,
-      activeAlerts: (pressureOutput.alerts ?? [])
-        .map((a: PressureAlert) => `${a.title}: ${a.detail}`)
-        .filter(Boolean),
-    });
-    console.log(
-      `[Seismograph] Reading recorded: score=${pressureOutput.overallPressure}, regime=${pressureOutput.regime}`
-    );
-
-    // ── Step 3: Run pattern analysis ───────────────────────────────
-    await runPatternAnalysis();
-    console.log("[Seismograph] Pattern analysis complete");
-
-    // ── Step 4: Collect all evidence packets ──────────────────────
-    const packets = await collectAllEvidence({
-      pressureOutput,
-      fmosOutput: fmosOutput ?? undefined,
-      crossMarketOutput: crossMarketOutput ?? undefined,
-      sobOutput: sobOutput ?? undefined,
-    });
-    console.log(`[Seismograph] Collected ${packets.length} evidence packets`);
-
-    // ── Step 5: Get the current Seismograph state ─────────────────
-    const state = await getSeismographState();
-
-    // ── Step 6: Build the state shape for assembleSeismographOutput ─
-    const stateForAssembly = buildStateForAssembly(pressureOutput, fmosOutput, state);
-
-    // ── Step 7: Assemble the canonical SeismographOutput ──────────
-    const seismographOutput = assembleSeismographOutput(stateForAssembly, packets);
-    console.log(
-      `[Seismograph] Output assembled: pressure=${seismographOutput.pressureScore}, regime=${seismographOutput.regime}, ` +
-      `evidence=${seismographOutput.activeContributors.length} contributors, consensus=${seismographOutput.evidenceConsensus}`
-    );
-
-    // ── Step 8: Persist to Market Memory ──────────────────────────
-    await memorySetJson(SEISMOGRAPH_OUTPUT_KEY, seismographOutput);
-    console.log("[Seismograph] Output persisted to Market Memory");
-
+    const seismographOutput = await runSeismographPipeline();
     res.json({
       ok: true,
-      date: today,
+      date: new Date().toISOString().split("T")[0],
       pressureScore: seismographOutput.pressureScore,
       regime: seismographOutput.regime,
       stressLevel: seismographOutput.stressLevel,

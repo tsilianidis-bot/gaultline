@@ -20,7 +20,7 @@ import {
   marketMemory,
 } from "../../drizzle/schema";
 import { desc, eq, and } from "drizzle-orm";
-import { getLatestSeismographOutput } from "../scheduledSeismograph";
+import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
 
 export const seismographRouter = router({
   /**
@@ -108,6 +108,24 @@ export const seismographRouter = router({
    */
   getAssembledOutput: publicProcedure.query(async () => {
     return getLatestSeismographOutput();
+  }),
+
+  /**
+   * Seed the Seismograph on-demand by running the full pipeline immediately.
+   * Use this when no daily readings exist yet (first run / new deployment).
+   * This is the same pipeline the Heartbeat job runs daily at market close.
+   */
+  seedNow: publicProcedure.mutation(async () => {
+    const output = await runSeismographPipeline();
+    return {
+      success: true,
+      pressureScore: output.pressureScore,
+      regime: output.regime,
+      stressLevel: output.stressLevel,
+      direction: output.direction,
+      evidenceConsensus: output.evidenceConsensus,
+      activePatterns: output.activePatterns.length,
+    };
   }),
 
   /**
