@@ -20,6 +20,7 @@ import HistoricalAnalogs from "./HistoricalAnalogs";
 import SimulatePressure from "./SimulatePressure";
 import HistoricalContextEngine from "./HistoricalContextEngine";
 import { useEngine } from "@/contexts/EngineContext";
+import ScoreExplainer from "@/components/ScoreExplainer";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -1140,10 +1141,19 @@ export default function Pressure() {
                 textShadow: `0 0 8px ${levelColors.glow}`,
               }}
             >
-              {data.level.toUpperCase()}
+                            {data.level.toUpperCase()}
             </motion.div>
+            {/* Score Explainer: Pressure Index */}
+            <div style={{ marginTop: '12px' }}>
+              <ScoreExplainer
+                scoreKey="pressureIndex"
+                value={data.overallPressure}
+                trend={data.overallPressure > 60 ? 'rising' : data.overallPressure < 40 ? 'falling' : 'stable'}
+                historicalPercentile={data.overallPressure}
+                defaultExpanded={false}
+              />
+            </div>
           </motion.div>
-
           {/* Regime banner + alerts */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
 

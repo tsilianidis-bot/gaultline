@@ -22,6 +22,7 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
+import ScoreExplainer from "@/components/ScoreExplainer";
 
 // ── Typewriter hook ──────────────────────────────────────────
 function useTypewriter(text: string, speed = 18): { displayed: string; done: boolean } {
@@ -343,7 +344,7 @@ export default function DailyReport() {
           </div>
 
           {/* Bull vs Crash bar */}
-          <div style={{ marginBottom: '14px' }}>
+          <div style={{ marginBottom: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#00FF88' }}>{probability.bullProbability}% <span style={{ fontSize: '10px', fontFamily: "'IBM Plex Mono', monospace", color: '#4B5563' }}>BULL</span></span>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#FF2D55' }}>{probability.crashProbability}% <span style={{ fontSize: '10px', fontFamily: "'IBM Plex Mono', monospace", color: '#4B5563' }}>CRASH/BEAR</span></span>
@@ -351,6 +352,12 @@ export default function DailyReport() {
             <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${probability.bullProbability}%`, background: 'linear-gradient(90deg, #00FF88, #FFD700)', borderRadius: '3px', boxShadow: '0 0 8px rgba(0,255,136,0.4)' }} />
             </div>
+          </div>
+
+          {/* Score Explainers */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px' }}>
+            <ScoreExplainer scoreKey="bullProbability" value={probability.bullProbability} trend="stable" compact />
+            <ScoreExplainer scoreKey="crashRisk" value={probability.crashProbability} trend="stable" compact />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>

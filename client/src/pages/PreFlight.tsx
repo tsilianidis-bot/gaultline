@@ -36,6 +36,7 @@ import {
   ArrowRight, Info, Minus
 } from "lucide-react";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import ScoreExplainer from "@/components/ScoreExplainer";
 
 // ── Types (mirrored from server) ──────────────────────────────
 
@@ -627,6 +628,11 @@ function PreFlightInner() {
                       <span style={{ fontSize: "13px", fontWeight: "700", color: "#FF0000" }}>{data.crashProbability}%</span>
                     </div>
                     <ScoreBar value={data.crashProbability} color="#FF0000" />
+                  </div>
+                  {/* Score Explainers */}
+                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <ScoreExplainer scoreKey="bullProbability" value={data.bullProbability} trend="stable" compact />
+                    <ScoreExplainer scoreKey="crashRisk" value={data.crashProbability} trend="stable" compact />
                   </div>
                 </div>
               </PanelCard>

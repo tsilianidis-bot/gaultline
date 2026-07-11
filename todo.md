@@ -3770,3 +3770,17 @@
 - [x] robots.txt allows all new pages
 - [x] No duplicate H1s
 - [x] Save checkpoint
+
+## Score Explanation Framework (Jul 11, 2026)
+- [x] Build shared ScoreExplainer component (client/src/components/ScoreExplainer.tsx)
+- [x] Build score metadata registry: 15 ScoreKeys, all 8 explanation fields per score (statusLabel, meaning, measures, howCalculated, whyItMatters, ranges, watchNext, historicalContext, color)
+- [x] Full-size ScoreExplainer: plain-English status, one-sentence meaning, drivers, trend indicator, historical context, what-to-watch, Learn More link
+- [x] Compact ScoreExplainer: collapsible single-line with expand-to-full capability
+- [x] Integrate into Dashboard.tsx (Pressure Index, Bull Probability, Crash Risk, Regime)
+- [x] Integrate into Pressure.tsx (Pressure Index after level badge)
+- [x] Integrate into SituationRoom.tsx (Pressure Index, Bull Probability, Crash Risk)
+- [x] Integrate into PreFlight.tsx (Bull Probability, Crash Risk)
+- [x] Integrate into Signals.tsx (Opportunity Score)
+- [x] Integrate into DailyReport.tsx (Bull Probability, Crash Risk)
+- [x] TypeScript check: 0 errors
+- [x] Save checkpoint

@@ -28,6 +28,7 @@ import { trackStockSignalViewed } from "@/hooks/useAnalytics";
 import { TickerChip } from "@/components/TickerActionMenu";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
+import ScoreExplainer from "@/components/ScoreExplainer";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {

@@ -31,6 +31,7 @@ import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import HomepageBriefingPanel from "@/components/HomepageBriefingPanel";
 import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
+import ScoreExplainer from "@/components/ScoreExplainer";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -1093,6 +1094,24 @@ export default function Dashboard() {
             <ProbBar label="Recession" value={probability.recessionProbability} color="#FF9500" />
             <ProbBar label="Stagflation" value={probability.stagflationProbability} color="#FFD700" />
             <ProbBar label="Soft Landing" value={probability.softLandingProbability} color="#00D4FF" />
+          </div>
+          {/* Score Explainer: Bull Probability */}
+          <div style={{ marginTop: '12px' }}>
+            <ScoreExplainer
+              scoreKey="bullProbability"
+              value={probability.bullProbability}
+              trend={probability.bullProbability > 55 ? 'rising' : probability.bullProbability < 45 ? 'falling' : 'stable'}
+              historicalPercentile={probability.bullProbability}
+            />
+          </div>
+          {/* Score Explainer: Crash Risk */}
+          <div style={{ marginTop: '8px' }}>
+            <ScoreExplainer
+              scoreKey="crashRisk"
+              value={probability.crashProbability}
+              trend={probability.crashProbability > 35 ? 'rising' : 'stable'}
+              historicalPercentile={probability.crashProbability}
+            />
           </div>
         </div>
 

@@ -17,6 +17,7 @@ import {
   DollarSign, History, FlaskConical, ArrowRight,
 } from "lucide-react";
 import FaultlineTerm from "@/components/FaultlineTerm";
+import ScoreExplainer from "@/components/ScoreExplainer";
 import { UniversalTickerHeader } from "@/components/UniversalTickerHeader";
 import { useTickerStore } from "@/contexts/TickerStore";
 import DecisionConfidencePanel, { type ConfidenceData } from "@/components/DecisionConfidencePanel";
@@ -686,6 +687,12 @@ export default function SituationRoom() {
             </div>
           </div>
 
+          {/* Score Explainers */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+            <ScoreExplainer scoreKey="pressureIndex" value={pressureScore} trend={pressureScore > 60 ? 'rising' : pressureScore < 40 ? 'falling' : 'stable'} historicalPercentile={pressureScore} compact />
+            <ScoreExplainer scoreKey="bullProbability" value={output.probability.bullProbability} trend="stable" compact />
+            <ScoreExplainer scoreKey="crashRisk" value={output.probability.crashProbability} trend="stable" compact />
+          </div>
           {/* Condition chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
             {output.domains.map(d => {
