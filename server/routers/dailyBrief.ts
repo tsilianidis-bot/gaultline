@@ -402,4 +402,18 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
         generatedAt: Date.now(),
       };
     }),
+
+  // ── Reset onboarding (restart First Briefing) ─────────────────────────────
+  resetOnboarding: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const existing = await db.select({ id: userPreferences.id }).from(userPreferences).where(eq(userPreferences.userId, ctx.user.id)).limit(1);
+      if (existing.length) {
+        await db.update(userPreferences).set({ onboardingComplete: false }).where(eq(userPreferences.userId, ctx.user.id));
+      } else {
+        await db.insert(userPreferences).values({ userId: ctx.user.id, onboardingComplete: false });
+      }
+      return { success: true };
+    }),
 });

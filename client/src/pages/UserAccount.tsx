@@ -4,7 +4,7 @@
    and founding access request form.
    ============================================================ */
 import { useState, useEffect } from 'react';
-import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, CheckCircle, Send, AlertCircle, CreditCard, Share2, Eye, Trash2, ExternalLink } from 'lucide-react';
+import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, CheckCircle, Send, AlertCircle, CreditCard, Share2, Eye, Trash2, ExternalLink, RotateCcw, BookOpen } from 'lucide-react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
 import { getLoginUrl } from '@/const';
@@ -1022,6 +1022,58 @@ function SharedReportsPanel() {
           })}
         </div>
       )}
+
+      {/* ── Restart First Briefing ── */}
+      <div style={{
+        marginTop: '24px',
+        background: 'rgba(99,102,241,0.04)',
+        border: '1px solid rgba(99,102,241,0.15)',
+        borderRadius: '12px',
+        padding: '24px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+          <BookOpen size={16} style={{ color: '#818CF8' }} />
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#818CF8', letterSpacing: '0.12em' }}>
+            FIRST BRIEFING
+          </div>
+        </div>
+        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, marginBottom: '16px' }}>
+          Restart the First Briefing to re-personalize your FAULTLINE experience, review how to read core market signals, or walk a new team member through the platform.
+        </p>
+        <RestartFirstBriefingButton />
+      </div>
     </div>
+  );
+}
+
+function RestartFirstBriefingButton() {
+  const resetMutation = trpc.dailyBrief.resetOnboarding.useMutation({
+    onSuccess: () => {
+      toast.success('First Briefing reset — reload the page to start.');
+      setTimeout(() => window.location.reload(), 1200);
+    },
+    onError: () => toast.error('Failed to reset. Please try again.'),
+  });
+  return (
+    <button
+      onClick={() => resetMutation.mutate()}
+      disabled={resetMutation.isPending}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: '8px',
+        padding: '10px 18px',
+        background: 'rgba(99,102,241,0.1)',
+        border: '1px solid rgba(99,102,241,0.35)',
+        borderRadius: '8px',
+        color: '#818CF8',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '11px', letterSpacing: '0.08em',
+        cursor: resetMutation.isPending ? 'not-allowed' : 'pointer',
+        opacity: resetMutation.isPending ? 0.6 : 1,
+        transition: 'all 0.2s ease',
+      }}
+    >
+      <RotateCcw size={13} style={{ animation: resetMutation.isPending ? 'spin 1s linear infinite' : 'none' }} />
+      {resetMutation.isPending ? 'Resetting...' : 'Restart First Briefing'}
+    </button>
   );
 }
