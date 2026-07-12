@@ -3830,3 +3830,17 @@
 - [x] Move Seismograph to top of SITUATION nav group (first item)
 - [x] TypeScript check: 0 errors
 - [x] Save checkpoint
+
+## Seismograph Single Source of Truth Rebuild
+- [ ] Audit all existing FAULTLINE data tables: pressureHistory, dailyReports, blog posts, signal history, macro outputs
+- [ ] Build getUnifiedSeismographIntelligence tRPC procedure consuming ALL existing historical data (no separate seismograph DB)
+- [ ] Compute 30/90/365-day trend analysis from pressureHistory (317 months)
+- [ ] Compute historical analog matching from pressureHistory using multi-factor similarity scoring
+- [ ] Compute regime transition history from pressureHistory regime column changes
+- [ ] Compute evidence family consensus from pressureHistory sub-scores (liquidity, credit, volatility, macro, breadth)
+- [ ] Compute what-happened-next outcomes for each analog period using pressureHistory forward returns
+- [ ] Compute engine agreement/disagreement from sub-scores
+- [ ] Never show "Insufficient Data", "1 Day Recorded", or "Waiting for Observations"
+- [ ] Rebuild SeismographIntelligence.tsx to consume unified historical synthesis
+- [ ] TypeScript check: 0 errors
+- [ ] Save checkpoint

@@ -22,6 +22,7 @@ import {
 import { desc, eq, and } from "drizzle-orm";
 import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
 import { runSeismographBackfill } from "../seismographBackfill";
+import { getUnifiedSeismographIntelligence } from "../seismographUnified";
 
 export const seismographRouter = router({
   /**
@@ -136,6 +137,17 @@ export const seismographRouter = router({
   backfillHistory: publicProcedure.mutation(async () => {
     const result = await runSeismographBackfill();
     return result;
+  }),
+
+  /**
+   * Get unified seismograph intelligence synthesized from ALL historical data.
+   * Primary data source for the Seismograph Intelligence page.
+   * Consumes pressureHistory (317+ months), pressureRuns, dailyReadingSnapshots,
+   * and the latest assembled SeismographOutput.
+   * Never returns placeholder states — always has full institutional memory.
+   */
+  getUnifiedIntelligence: publicProcedure.query(async () => {
+    return getUnifiedSeismographIntelligence();
   }),
 
   /**
