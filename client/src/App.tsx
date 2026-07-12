@@ -16,6 +16,7 @@ import CookieConsent from './components/CookieConsent';
 import RouteTracker from './components/RouteTracker';
 import { DemoProvider, isDemoPath } from './contexts/DemoContext';
 import DemoBanner from './components/DemoBanner';
+import { OnboardingVideoModal } from './components/OnboardingVideoModal';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -768,6 +769,8 @@ function App() {
               <FREDDebugConsole />
             </div>
 
+            {/* Onboarding Getting Started video — shown once to new users */}
+            {!isDemo && <OnboardingVideoModal />}
             {/* GDPR Cookie Consent Banner — hidden in demo mode */}
             {!isDemo && <CookieConsent />}
 

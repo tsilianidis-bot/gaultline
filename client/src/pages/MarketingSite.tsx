@@ -1617,79 +1617,45 @@ function PromoVideoSection() {
             SEE IT IN ACTION
           </div>
           <h2 style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 700, color: "#E2E8F0", letterSpacing: "-0.02em", lineHeight: 1.1, margin: 0 }}>
-            FAULTLINE IN 15 SECONDS
+            GET STARTED IN 2 MINUTES
           </h2>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "16px", color: "rgba(148,163,184,0.7)", marginTop: "12px", maxWidth: "480px", marginLeft: "auto", marginRight: "auto" }}>
-            Market risk intelligence. Know before it breaks.
+            Watch how FAULTLINE reads the market — what is happening, why it is happening, and what to watch next.
           </p>
         </div>
 
-        {/* Video container — phone mockup style */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-          <div style={{
-            position: "relative",
-            width: "min(320px, 85vw)",
-            borderRadius: "28px",
-            overflow: "hidden",
-            boxShadow: "0 0 0 1px rgba(0,212,255,0.15), 0 0 60px rgba(0,212,255,0.12), 0 32px 80px rgba(0,0,0,0.7)",
-            background: "#000",
-          }}>
-            {/* Notch bar */}
-            <div style={{ height: "28px", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: "80px", height: "6px", borderRadius: "3px", background: "rgba(255,255,255,0.12)" }} />
-            </div>
-
-            {/* Video */}
-            <video
-              ref={videoRef}
-              src="/manus-storage/faultline_tiktok_promo_ad78cf98.mp4"
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="auto"
-              controls={showControls}
-              style={{ width: "100%", display: "block", aspectRatio: "9/16", objectFit: "cover" }}
-            />
-
-            {/* Bottom bar */}
-            <div style={{ height: "20px", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: "100px", height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.2)" }} />
-            </div>
-
-            {/* Cyan glow overlay at bottom */}
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "80px", background: "linear-gradient(to top, rgba(0,212,255,0.08), transparent)", pointerEvents: "none" }} />
-          </div>
-
-          {/* Side text — desktop only */}
-          <div style={{ marginLeft: "clamp(24px, 5vw, 64px)", maxWidth: "280px", display: "flex", flexDirection: "column", gap: "24px" }} className="hidden md:flex">
-            {[
-              { glyph: "◈", title: "Real-Time Risk Scoring", desc: "Systemic pressure tracked across 14 market vectors, updated continuously." },
-              { glyph: "⚡", title: "Know Before It Breaks", desc: "FAULTLINE detects fault lines forming before they become crises." },
-              { glyph: "→", title: "Enter Free Preview", desc: "No account required. See the live dashboard instantly." },
-            ].map(({ glyph, title, desc }) => (
-              <div key={title} style={{ display: "flex", gap: "14px", alignItems: "flex-start" }}>
-                <div style={{ width: "32px", height: "32px", borderRadius: "6px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", color: "#00D4FF" }}>{glyph}</div>
-                <div>
-                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", fontWeight: 600, color: "#E2E8F0", marginBottom: "4px" }}>{title}</div>
-                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "rgba(148,163,184,0.65)", lineHeight: 1.5 }}>{desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Widescreen video container */}
+        <div style={{ position: "relative", maxWidth: "860px", margin: "0 auto", borderRadius: "16px", overflow: "hidden", boxShadow: "0 0 0 1px rgba(0,212,255,0.15), 0 0 80px rgba(0,212,255,0.10), 0 40px 100px rgba(0,0,0,0.8)" }}>
+          <video
+            ref={videoRef}
+            src="/manus-storage/faultline-getting-started_90489fa6.mp4"
+            playsInline
+            preload="metadata"
+            controls
+            style={{ width: "100%", display: "block", aspectRatio: "16/9", objectFit: "cover", background: "#000" }}
+          />
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "80px", background: "linear-gradient(to top, rgba(0,212,255,0.06), transparent)", pointerEvents: "none" }} />
         </div>
-
-        {/* TikTok badge */}
-        <div style={{ textAlign: "center", marginTop: "32px" }}>
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.15em", textTransform: "uppercase" }}>
-            Follow @faultline on TikTok
-          </span>
+        {/* Three key points below video */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "24px", maxWidth: "860px", margin: "40px auto 0" }}>
+          {[
+            { glyph: "◈", title: "One Unified Intelligence Layer", desc: "Every engine feeds one source of truth — the FAULTLINE Seismograph™." },
+            { glyph: "⚡", title: "Know Before It Breaks", desc: "Systemic pressure tracked across 14 market vectors, updated continuously." },
+            { glyph: "→", title: "Ask ASHA Anything", desc: "FAULTLINE's AI reads the full market context before answering your question." },
+          ].map(({ glyph, title, desc }) => (
+            <div key={title} style={{ display: "flex", gap: "14px", alignItems: "flex-start", padding: "20px", borderRadius: "10px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.1)" }}>
+              <div style={{ width: "32px", height: "32px", borderRadius: "6px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", color: "#00D4FF" }}>{glyph}</div>
+              <div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", fontWeight: 600, color: "#E2E8F0", marginBottom: "4px" }}>{title}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "rgba(148,163,184,0.65)", lineHeight: 1.5 }}>{desc}</div>
+              </div>
+            </div>
+                    ))}
         </div>
       </div>
     </section>
   );
 }
-
 function ProofSection() {
   const CRISIS_PROOF = [
     {
@@ -3140,6 +3106,7 @@ export default function MarketingSite() {
       <Hero onRequestAccess={scrollToForm} onTryDemo={() => setDemoModalOpen(true)} />
       <BrandHero onRequestAccess={scrollToForm} />
       <WhyFaultlineExistsSection />
+      <PromoVideoSection />
       <RiskFirstPhilosophySection />
       <ProofSection />
       <AboutSection />
@@ -3149,7 +3116,6 @@ export default function MarketingSite() {
       <ModulesSection />
       <RiskEngineSection onRequestAccess={scrollToForm} />
       <HowItWorksSection />
-      <PromoVideoSection />
       <AudienceSection />
       <IWantInSection onRequestAccess={scrollToForm} />
       <PricingSection onRequestAccess={scrollToForm} />

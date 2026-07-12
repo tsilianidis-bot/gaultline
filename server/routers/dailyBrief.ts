@@ -196,8 +196,22 @@ export const dailyBriefRouter = router({
       interests:          row.interests ? (JSON.parse(row.interests) as string[]) : [],
       watchlistTickers:   row.watchlistTickers ? (JSON.parse(row.watchlistTickers) as string[]) : [],
       notificationPrefs:  row.notificationPrefs ? JSON.parse(row.notificationPrefs) : null,
+      hasSeenGettingStartedVideo: row.hasSeenGettingStartedVideo,
       lastVisitAt:        row.lastVisitAt?.getTime() ?? null,
     };
+  }),
+
+  // ── Mark Getting Started video as seen ───────────────────────────────────────────
+  markVideoSeen: protectedProcedure.mutation(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database unavailable");
+    const existing = await db.select({ id: userPreferences.id }).from(userPreferences).where(eq(userPreferences.userId, ctx.user.id)).limit(1);
+    if (existing.length) {
+      await db.update(userPreferences).set({ hasSeenGettingStartedVideo: true }).where(eq(userPreferences.userId, ctx.user.id));
+    } else {
+      await db.insert(userPreferences).values({ userId: ctx.user.id, onboardingComplete: false, hasSeenGettingStartedVideo: true });
+    }
+    return { success: true };
   }),
 
   // ── Preferences: save ─────────────────────────────────────────────────────

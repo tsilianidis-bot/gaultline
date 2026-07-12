@@ -1221,6 +1221,8 @@ export const userPreferences = mysqlTable("user_preferences", {
   watchlistTickers:   text("watchlistTickers"),
   /** JSON object of notification preferences */
   notificationPrefs:  text("notificationPrefs"),
+  /** Whether the user has seen the Getting Started onboarding video */
+  hasSeenGettingStartedVideo: boolean("hasSeenGettingStartedVideo").default(false).notNull(),
   /** Snapshot of last engine state for "Since Your Last Visit" diff — JSON */
   lastVisitSnapshot:  text("lastVisitSnapshot"),
   /** Timestamp of last visit */
