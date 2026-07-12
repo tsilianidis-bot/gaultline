@@ -12,7 +12,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { X, Play, SkipForward, AlertTriangle, CheckCircle } from "lucide-react";
 
-const VIDEO_URL = "/manus-storage/faultline-getting-started_90489fa6.mp4";
+const VIDEO_URL = "/manus-storage/faultline-getting-started-v2_d7d0b436.mp4";
 
 export function OnboardingVideoModal() {
   const { user } = useAuth();
