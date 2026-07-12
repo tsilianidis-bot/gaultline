@@ -6,7 +6,7 @@
  * Every section answers: What? Why? Evidence? Historical comparisons?
  * What next? What would invalidate this?
  */
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import {
@@ -15,8 +15,8 @@ import {
 } from "recharts";
 import {
   Activity, AlertTriangle, ArrowRight, BarChart2, BookOpen, Brain,
-  ChevronDown, ChevronUp, Clock, Compass, GitBranch, History,
-  Info, Layers, RefreshCw, Shield, Target, TrendingDown, TrendingUp,
+  Calendar, ChevronDown, ChevronUp, Clock, Compass, GitBranch, History,
+  Info, Layers, RefreshCw, Shield, SlidersHorizontal, Target, TrendingDown, TrendingUp,
   Zap,
 } from "lucide-react";
 
@@ -439,34 +439,178 @@ function TimelineChart({ data, annotations }: {
   );
 }
 
-// ─── 90-day sparkline ─────────────────────────────────────────────────────────
-function Sparkline90d({ data }: { data: Array<{ month: string; score: number; regime: string }> }) {
-  const last90 = data.slice(-90);
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { month: string; score: number } }> }) => {
+// ─── Preset windows ───────────────────────────────────────────────────────────
+const PRESETS = [
+  { label: "7D",  months: 1,   desc: "7 days" },
+  { label: "30D", months: 1,   desc: "30 days" },
+  { label: "90D", months: 3,   desc: "90 days" },
+  { label: "6M",  months: 6,   desc: "6 months" },
+  { label: "1Y",  months: 12,  desc: "1 year" },
+  { label: "3Y",  months: 36,  desc: "3 years" },
+  { label: "5Y",  months: 60,  desc: "5 years" },
+  { label: "All", months: 999, desc: "Full history" },
+] as const;
+
+// Compute trend summary from a slice of timeline data
+function computeCustomTrend(slice: Array<{ month: string; score: number; regime: string }>) {
+  if (slice.length < 2) return null;
+  const scores = slice.map((s) => s.score);
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const first = scores[0]!;
+  const last = scores[scores.length - 1]!;
+  const delta = last - first;
+  const max = Math.max(...scores);
+  const min = Math.min(...scores);
+  const regimes = new Set(slice.map((s) => s.regime));
+  const direction = delta >= 5 ? "Rising" : delta <= -5 ? "Declining" : "Stable";
+  const dirColor = delta >= 5 ? "#ef4444" : delta <= -5 ? "#22c55e" : "#94a3b8";
+  return { avg: Math.round(avg), delta: Math.round(delta * 10) / 10, max, min, direction, dirColor, regimeCount: regimes.size, months: slice.length };
+}
+
+// ─── Evolution chart with date-range selector ─────────────────────────────────
+function EvolutionChart({ timeline }: {
+  timeline: Array<{ month: string; score: number; regime: string; isAnnotated: boolean; annotation?: string }>;
+}) {
+  const [preset, setPreset] = useState<string>("90D");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+  const [showCustom, setShowCustom] = useState(false);
+  const startRef = useRef<HTMLInputElement>(null);
+  const endRef = useRef<HTMLInputElement>(null);
+
+  // Derive the visible slice
+  const slice = useMemo(() => {
+    if (showCustom && customStart && customEnd) {
+      return timeline.filter((t) => t.month >= customStart && t.month <= customEnd);
+    }
+    const p = PRESETS.find((x) => x.label === preset);
+    const n = p ? p.months : 3;
+    return timeline.slice(-Math.min(n, timeline.length));
+  }, [timeline, preset, customStart, customEnd, showCustom]);
+
+  const trend = useMemo(() => computeCustomTrend(slice), [slice]);
+
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { month: string; score: number; regime: string; annotation?: string } }> }) => {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     return (
-      <div className="bg-slate-900 border border-slate-700 rounded p-1.5 text-xs">
-        <div className="text-slate-300">{formatMonth(d.month)}</div>
-        <div style={{ color: pressureColor(d.score) }}>{d.score}/100</div>
+      <div className="bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs max-w-xs shadow-xl">
+        <div className="font-bold text-slate-200 mb-0.5">{formatMonth(d.month)}</div>
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <div className="w-2 h-2 rounded-full" style={{ background: pressureColor(d.score) }} />
+          <span style={{ color: pressureColor(d.score) }}>{d.score}/100</span>
+          <span className="text-slate-500">·</span>
+          <span className="text-slate-400">{regimeLabel(d.regime)}</span>
+        </div>
+        {d.annotation && <div className="text-amber-300 mt-1 leading-relaxed border-t border-slate-700 pt-1">{d.annotation}</div>}
       </div>
     );
   };
+
+  // Determine tick interval based on slice length
+  const tickInterval = slice.length <= 12 ? 0 : slice.length <= 36 ? 2 : slice.length <= 72 ? 5 : Math.floor(slice.length / 12);
+
   return (
-    <ResponsiveContainer width="100%" height={60}>
-      <AreaChart data={last90} margin={{ top: 2, right: 2, bottom: 0, left: -30 }}>
-        <defs>
-          <linearGradient id="spark90" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <XAxis dataKey="month" hide />
-        <YAxis domain={[0, 100]} hide />
-        <RTooltip content={<CustomTooltip />} />
-        <Area type="monotone" dataKey="score" stroke="#0ea5e9" strokeWidth={1.5} fill="url(#spark90)" dot={false} />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className="space-y-3">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-800/80 border border-slate-700">
+          {PRESETS.map((p) => (
+            <button key={p.label}
+              onClick={() => { setPreset(p.label); setShowCustom(false); }}
+              className="px-2.5 py-1 rounded-md text-xs font-semibold transition-all"
+              style={{
+                background: preset === p.label && !showCustom ? "#0ea5e9" : "transparent",
+                color: preset === p.label && !showCustom ? "#fff" : "#64748b",
+              }}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setShowCustom(!showCustom)}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border"
+          style={{
+            background: showCustom ? "#0ea5e920" : "transparent",
+            color: showCustom ? "#0ea5e9" : "#64748b",
+            borderColor: showCustom ? "#0ea5e940" : "#334155",
+          }}>
+          <Calendar className="w-3 h-3" />
+          Custom Range
+        </button>
+      </div>
+
+      {/* Custom date inputs */}
+      {showCustom && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400">From</span>
+              <input ref={startRef} type="month" value={customStart}
+                min={timeline[0]?.month ?? "2000-01"}
+                max={(customEnd || timeline[timeline.length - 1]?.month) ?? "2025-12"}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="text-xs rounded bg-slate-900 border border-slate-600 text-slate-200 px-2 py-1 focus:outline-none focus:border-sky-500" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400">To</span>
+              <input ref={endRef} type="month" value={customEnd}
+                min={(customStart || timeline[0]?.month) ?? "2000-01"}
+                max={timeline[timeline.length - 1]?.month ?? "2025-12"}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="text-xs rounded bg-slate-900 border border-slate-600 text-slate-200 px-2 py-1 focus:outline-none focus:border-sky-500" />
+            </div>
+            {customStart && customEnd && (
+              <button onClick={() => { setCustomStart(""); setCustomEnd(""); }}
+                className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Clear</button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Chart */}
+      <ResponsiveContainer width="100%" height={140}>
+        <AreaChart data={slice} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+          <defs>
+            <linearGradient id="evolGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="month" tickFormatter={formatMonth} tick={{ fontSize: 9, fill: "#475569" }}
+            interval={tickInterval} axisLine={false} tickLine={false} />
+          <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: "#475569" }} axisLine={false} tickLine={false} />
+          <RTooltip content={<CustomTooltip />} />
+          <ReferenceLine y={65} stroke="#f97316" strokeDasharray="3 3" strokeOpacity={0.3} />
+          <ReferenceLine y={45} stroke="#eab308" strokeDasharray="3 3" strokeOpacity={0.3} />
+          <ReferenceLine y={30} stroke="#84cc16" strokeDasharray="3 3" strokeOpacity={0.3} />
+          <Area type="monotone" dataKey="score" stroke="#0ea5e9" strokeWidth={1.5} fill="url(#evolGrad)" dot={false} />
+        </AreaChart>
+      </ResponsiveContainer>
+
+      {/* Dynamic trend summary */}
+      {trend && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { label: "Direction", value: trend.direction, color: trend.dirColor },
+            { label: "Net Change", value: `${trend.delta >= 0 ? "+" : ""}${trend.delta} pts`, color: trend.dirColor },
+            { label: "Avg Pressure", value: `${trend.avg}/100`, color: pressureColor(trend.avg) },
+            { label: "Range", value: `${trend.min}–${trend.max}`, color: "#94a3b8" },
+          ].map((m) => (
+            <div key={m.label} className="rounded-lg bg-slate-800/60 p-2.5 text-center">
+              <div className="text-xs text-slate-500 mb-0.5">{m.label}</div>
+              <div className="text-xs font-bold" style={{ color: m.color }}>{m.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {trend && trend.regimeCount >= 2 && (
+        <div className="text-xs text-slate-500">
+          <span className="text-slate-400 font-medium">{trend.regimeCount} regimes</span> observed across this {trend.months}-month window
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -752,25 +896,25 @@ export default function SeismographIntelligence() {
         {/* ── 6: Evolution Analysis ── */}
         <Section id="evolution" icon={<BarChart2 className="w-4 h-4" />}
           title="Evolution Analysis"
-          subtitle="How conditions have changed over 7, 30, and 90 days — trend acceleration and what to watch"
+          subtitle="How conditions have changed across any time window — select a preset or define a custom date range"
           accentColor="#22c55e">
           <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-            <div>
-              <div className="text-xs font-semibold text-slate-400 mb-2">90-Day Pressure Trend</div>
-              <Sparkline90d data={intel.evolution.sparkline90d} />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {[
-                { label: "7-Day", value: intel.evolution.sevenDayTrend, color: "#0ea5e9" },
-                { label: "30-Day", value: intel.evolution.thirtyDayTrend, color: "#8b5cf6" },
-                { label: "90-Day", value: intel.evolution.ninetyDayTrend, color: "#f59e0b" },
-                { label: "12-Month", value: intel.evolution.yearTrend, color: "#22c55e" },
-              ].map((t) => (
-                <div key={t.label} className="rounded-lg bg-slate-800/60 p-3">
-                  <div className="text-xs font-semibold mb-0.5" style={{ color: t.color }}>{t.label}</div>
-                  <div className="text-xs text-slate-300">{t.value}</div>
-                </div>
-              ))}
+            <EvolutionChart timeline={intel.timeline} />
+            <div className="border-t border-slate-800 pt-3">
+              <div className="text-xs font-semibold text-slate-400 mb-2">Standard Trend Windows</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {[
+                  { label: "7-Day", value: intel.evolution.sevenDayTrend, color: "#0ea5e9" },
+                  { label: "30-Day", value: intel.evolution.thirtyDayTrend, color: "#8b5cf6" },
+                  { label: "90-Day", value: intel.evolution.ninetyDayTrend, color: "#f59e0b" },
+                  { label: "12-Month", value: intel.evolution.yearTrend, color: "#22c55e" },
+                ].map((t) => (
+                  <div key={t.label} className="rounded-lg bg-slate-800/60 p-3">
+                    <div className="text-xs font-semibold mb-0.5" style={{ color: t.color }}>{t.label}</div>
+                    <div className="text-xs text-slate-300">{t.value}</div>
+                  </div>
+                ))}
+              </div>
             </div>
             {(intel.evolution.accelerating || intel.evolution.buildingPressure) && (
               <div className="flex items-start gap-2 rounded-lg bg-orange-500/10 border border-orange-500/20 p-3">
