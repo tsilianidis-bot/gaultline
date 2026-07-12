@@ -21,6 +21,7 @@ import {
 } from "../../drizzle/schema";
 import { desc, eq, and } from "drizzle-orm";
 import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
+import { runSeismographBackfill } from "../seismographBackfill";
 
 export const seismographRouter = router({
   /**
@@ -126,6 +127,15 @@ export const seismographRouter = router({
       evidenceConsensus: output.evidenceConsensus,
       activePatterns: output.activePatterns.length,
     };
+  }),
+
+  /**
+   * Backfill seismograph readings from pressureHistory (317 months of data).
+   * Safe to call multiple times — uses ON DUPLICATE KEY UPDATE.
+   */
+  backfillHistory: publicProcedure.mutation(async () => {
+    const result = await runSeismographBackfill();
+    return result;
   }),
 
   /**
