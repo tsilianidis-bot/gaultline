@@ -27,11 +27,11 @@ import {
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 function pressureColor(score: number): string {
-  if (score >= 80) return "#FF4444";
-  if (score >= 65) return "#FF9500";
-  if (score >= 50) return "#FFD700";
-  if (score >= 35) return "#7ecf7e";
-  return "#00D4FF";
+  if (score >= 80) return "#FF2222"; // Crisis — deep red
+  if (score >= 65) return "#FF6600"; // High — orange-red
+  if (score >= 50) return "#FFB300"; // Elevated — amber
+  if (score >= 35) return "#7ecf7e"; // Moderate — green
+  return "#00E676";                  // Low — bright green
 }
 function regimeColor(regime: string): string {
   const r = regime.toLowerCase();
@@ -80,13 +80,13 @@ function PressureGauge({ score }: { score: number }) {
         <svg viewBox="0 0 120 120" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
           <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="7" />
           <circle cx="60" cy="60" r="52" fill="none" stroke={`${color}20`} strokeWidth="12" />
-          {/* Color zone bands */}
+          {/* Color zone bands: green (safe) → amber → orange → red (danger) */}
           {[
-            { color: "#00D4FF", start: 0, span: 0.35 },
-            { color: "#7ecf7e", start: 0.35, span: 0.15 },
-            { color: "#FFD700", start: 0.50, span: 0.15 },
-            { color: "#FF9500", start: 0.65, span: 0.15 },
-            { color: "#FF4444", start: 0.80, span: 0.20 },
+            { color: "#00E676", start: 0, span: 0.35 },    // 0–35 bright green
+            { color: "#7ecf7e", start: 0.35, span: 0.15 }, // 35–50 green
+            { color: "#FFB300", start: 0.50, span: 0.15 }, // 50–65 amber
+            { color: "#FF6600", start: 0.65, span: 0.15 }, // 65–80 orange-red
+            { color: "#FF2222", start: 0.80, span: 0.20 }, // 80–100 deep red
           ].map((z, i) => (
             <circle key={i} cx="60" cy="60" r="52" fill="none" stroke={z.color} strokeWidth="4" strokeOpacity="0.18"
               strokeDasharray={`${circumference * z.span} ${circumference * (1 - z.span)}`}
