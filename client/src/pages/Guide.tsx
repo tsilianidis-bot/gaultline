@@ -11,7 +11,9 @@ import {
   BookOpen, Gauge, LayoutDashboard, Activity, BarChart2, Brain,
   Radio, Bell, AlertTriangle, Clock, Zap, FileText, TrendingUp,
   ChevronDown, ChevronRight, Search, Shield, Cpu, Database,
-  Target, Eye, Layers, Info, ArrowRight,
+  Target, Eye, Layers, Info, ArrowRight, Command, BarChart3,
+  Bitcoin, Users, TrendingDown, RotateCcw, Sparkles, Telescope,
+  Crosshair, Briefcase, Newspaper, GitBranch, Map,
 } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
@@ -873,10 +875,708 @@ const SECTIONS: Section[] = [
       </div>
     ),
   },
+
+  // ─── MARKET OPERATING SYSTEM ─────────────────────────────────────────────
+  {
+    id: "market-os",
+    icon: GitBranch,
+    title: "Market Operating System",
+    subtitle: "How every engine connects to the Seismograph — the single source of truth",
+    color: "#00D4FF",
+    keywords: ["architecture", "seismograph core", "evidence", "market os", "intelligence layer", "unified"],
+    content: (
+      <div className="space-y-4">
+        <Panel>
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            FAULTLINE is built as a <span className="text-cyan-400 font-bold">Market Operating System</span> — not a collection of independent dashboards. Every engine in the platform contributes evidence to a single central intelligence layer: the <span className="text-cyan-400">FAULTLINE Seismograph™</span>. The Seismograph synthesises all evidence into one continuously evolving market understanding and distributes that intelligence to every user-facing surface.
+          </p>
+        </Panel>
+        <div className="space-y-2">
+          <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Evidence Contributors → Seismograph</p>
+          <div className="space-y-1">
+            {[
+              { name: "Pressure Index", role: "Measures systemic financial stress across 6 risk vectors. Feeds a weighted evidence packet to the Seismograph every cycle." },
+              { name: "Regime Engine (FMOS)", role: "Classifies the current macro regime and transition probabilities. Feeds regime label, confidence, and transition risk." },
+              { name: "Risk Vector Engine", role: "Identifies causal risk factors driving the current environment. Feeds causation evidence." },
+              { name: "Historical Analog Engine", role: "Matches the current environment to historical crisis eras. Feeds the best-match analog and similarity score." },
+              { name: "Aftershock Engine", role: "Analyses post-transition market behaviour. Feeds recovery and continuation patterns." },
+              { name: "Cross-Market Intelligence", role: "Monitors correlations and divergences across equities, bonds, crypto, and commodities." },
+              { name: "SOB Framework", role: "Signals of Breakdown — tracks accumulation of stress across 6 independent pillars." },
+            ].map(({ name, role }) => (
+              <Panel key={name} className="!p-3">
+                <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
+                <p className="text-[10px] text-white/50 leading-relaxed">{role}</p>
+              </Panel>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Seismograph → Consumer Surfaces</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { name: "Dashboard", desc: "Receives the Seismograph Narrative Banner — current state, drivers, duration, analog, and what to watch." },
+              { name: "ASHA (Ask FAULTLINE)", desc: "Receives the full forASHA context block — evidence consensus, probabilities, analog, and transition risk — before generating every response." },
+              { name: "Daily Brief", desc: "Generated directly from the Seismograph's forDailyBrief context — direction, probabilities, analog, and key developments." },
+              { name: "Signal Intelligence", desc: "Injects Seismograph evidence consensus and analog into every symbol interpretation prompt." },
+              { name: "Stock & Crypto Pages", desc: "Consume the Seismograph's macro assessment, probabilities, and historical analogs rather than generating separate macro conclusions." },
+              { name: "Alerts", desc: "Seismograph transition risk and regime change evidence trigger alert conditions." },
+            ].map(({ name, desc }) => (
+              <Panel key={name} className="!p-3" accentColor="rgba(0,212,255,0.2)">
+                <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
+                <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+              </Panel>
+            ))}
+          </div>
+        </div>
+        <Panel accentColor="rgba(255,200,0,0.2)">
+          <p className="text-[10px] font-mono text-yellow-400/80 leading-relaxed">
+            <span className="text-yellow-400 font-bold">PRINCIPLE</span> — No engine independently determines market state, probabilities, or user-facing conclusions. Every engine contributes evidence. The Seismograph synthesises. All consumer surfaces read from one canonical output.
+          </p>
+        </Panel>
+      </div>
+    ),
+  },
+  // ─── SEISMOGRAPH INTELLIGENCE ─────────────────────────────────────────────
+  {
+    id: "seismograph",
+    icon: Activity,
+    title: "Seismograph Intelligence",
+    subtitle: "The central intelligence layer — pattern recognition, market memory, and regime transitions",
+    color: "#A78BFA",
+    keywords: ["seismograph", "market memory", "pattern", "analog", "regime transition", "evidence", "probability"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(167,139,250,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            The <span className="text-purple-400 font-bold">FAULTLINE Seismograph™</span> is the central intelligence layer of the platform. It continuously collects evidence from every engine, detects recurring market patterns, matches the current environment to historical analogs, calculates regime transition probabilities, and maintains a persistent Market Memory of how conditions have evolved over time.
+          </p>
+        </Panel>
+        <div className="space-y-2">
+          <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Core Capabilities</p>
+          <div className="space-y-1">
+            {[
+              { name: "Evidence Assembly", desc: "Collects evidence packets from all contributing engines — Pressure, Regime, Risk Vectors, Analogs, Aftershock, Cross-Market, and SOB — and weighs them by confidence and recency to produce a single synthesised market assessment." },
+              { name: "Pattern Recognition", desc: "Identifies recurring market patterns in the evidence stream: Pressure Buildup, Regime Transition, Liquidity Squeeze, Credit Contagion, Volatility Spike, and Breadth Collapse. Each pattern is tracked with duration, intensity, and historical frequency." },
+              { name: "Historical Analog Matching", desc: "Matches the current evidence profile to historical crisis eras using multi-dimensional similarity scoring. Shows the best-match analog, similarity percentage, what happened next, and where the current period diverges." },
+              { name: "Regime Transition Probabilities", desc: "Calculates the probability of transitioning to Bull, Soft Landing, Stagflation, Recession, or Crisis within the next 30–90 days, based on the current evidence consensus and historical transition rates from similar environments." },
+              { name: "Market Memory", desc: "Maintains a persistent daily record of Seismograph readings, pattern detections, and regime states. Shows how long the current conditions have been developing and how they compare to the historical distribution." },
+            ].map(({ name, desc }) => (
+              <Panel key={name} className="!p-3">
+                <p className="text-[11px] font-mono text-purple-400 font-bold mb-1">{name}</p>
+                <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+              </Panel>
+            ))}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Seismograph Page Sections</p>
+          <div className="space-y-1">
+            {[
+              { name: "Current State", desc: "The synthesised market direction (Bullish / Cautious / Bearish / Crisis), evidence consensus score, dominant regime, and active analog." },
+              { name: "Pattern Timeline", desc: "A chronological view of all detected patterns with their start date, duration, intensity, and current status (active / resolved)." },
+              { name: "Regime Matrix", desc: "A probability matrix showing the current regime and the likelihood of transitioning to each alternative regime within 30, 60, and 90 days." },
+              { name: "Analog Matches", desc: "The top 3 historical analog matches with similarity scores, divergence indicators, and outcome context." },
+              { name: "Market Memory Feed", desc: "A daily log of Seismograph readings showing how the evidence consensus, direction, and pattern activity have evolved over time." },
+              { name: "Generate Today's Reading", desc: "If no reading exists for today, click this button to run the full pipeline on demand and populate the Seismograph immediately." },
+            ].map(({ name, desc }) => (
+              <Panel key={name} className="!p-3" accentColor="rgba(167,139,250,0.2)">
+                <p className="text-[11px] font-mono text-purple-400 font-bold mb-1">{name}</p>
+                <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+              </Panel>
+            ))}
+          </div>
+        </div>
+      </div>
+    ),
+  },
+  // ─── INTELLIGENCE HUB ────────────────────────────────────────────────────
+  {
+    id: "intelligence-hub",
+    icon: Brain,
+    title: "Intelligence Hub",
+    subtitle: "The unified entry point for all market intelligence",
+    color: "#00D4FF",
+    keywords: ["intelligence hub", "overview", "entry point", "summary", "hub"],
+    content: (
+      <div className="space-y-4">
+        <Panel>
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            The <span className="text-cyan-400 font-bold">Intelligence Hub</span> is the unified entry point for the FAULTLINE platform. It surfaces the most important intelligence from across all engines in a single view — current regime, Seismograph state, top signals, active alerts, and the daily brief — so you can orient quickly before diving into any specific section.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Market State Summary", desc: "The current Seismograph direction, regime label, pressure score, and evidence consensus — the four numbers that define the current environment." },
+            { name: "Active Alerts", desc: "Any alerts that have triggered since your last visit, surfaced immediately so nothing is missed." },
+            { name: "Top Signals", desc: "The highest-scoring signal opportunities given the current regime, updated automatically." },
+            { name: "Daily Brief Preview", desc: "A condensed version of the latest Daily Briefing — the most important developments in two to three sentences." },
+            { name: "Quick Navigation", desc: "Direct links to the most relevant sections based on the current market state — the platform guides you to what matters most right now." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── COMMAND CENTER ──────────────────────────────────────────────────────
+  {
+    id: "command-center",
+    icon: Command,
+    title: "Command Center",
+    subtitle: "Real-time macro command view — all critical indicators in one screen",
+    color: "#00D4FF",
+    keywords: ["command", "command center", "macro", "live", "real-time", "indicators"],
+    content: (
+      <div className="space-y-4">
+        <Panel>
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            The <span className="text-cyan-400 font-bold">Command Center</span> is a dense, real-time macro overview designed for users who want all critical indicators visible simultaneously without navigating between sections. It is the operator's view of the market — everything important on one screen.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Live Ticker Strip", desc: "A scrolling marquee showing real-time values for 10Y yield, HY spread, VIX, DXY, BTC dominance, Fed cut probability, market breadth, and Fear & Greed Index." },
+            { name: "Regime & Pressure Panel", desc: "Current regime label, pressure score, and probability distribution — the three core outputs of the FMOS pipeline." },
+            { name: "Risk Domain Grid", desc: "All 6 risk domains displayed simultaneously with colour-coded severity and trend direction." },
+            { name: "Cross-Market Snapshot", desc: "Key readings across equities, bonds, crypto, and commodities — showing whether markets are moving in concert or diverging." },
+            { name: "Alert Status", desc: "Active alert count and the most recently triggered alert condition." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── TODAY'S STORY ───────────────────────────────────────────────────────
+  {
+    id: "todays-story",
+    icon: Newspaper,
+    title: "Today's Story",
+    subtitle: "The narrative behind today's market — what happened, why, and what it means",
+    color: "#F59E0B",
+    keywords: ["today's story", "narrative", "daily", "story", "what happened", "why"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(245,158,11,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-amber-400 font-bold">Today's Story</span> translates the day's market data into a clear, readable narrative. Rather than presenting raw numbers, it explains what happened in the market today, what was driving it, how it connects to the current regime, and what to watch next. It is written in institutional language, not financial media hype.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "The Headline", desc: "A single sentence capturing the most important development of the day — the thing that matters most given the current regime." },
+            { name: "What Happened", desc: "A factual summary of the key market moves: which assets moved, by how much, and in what direction." },
+            { name: "Why It Happened", desc: "The causal explanation — which macro forces, data releases, or regime dynamics drove today's moves." },
+            { name: "How Long It Has Been Developing", desc: "Context on whether today's move is a new development or the continuation of a trend that has been building for days, weeks, or months." },
+            { name: "What to Watch Next", desc: "The two or three indicators or events that will determine whether today's conditions continue, reverse, or escalate." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-amber-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── SIGNAL OUTLOOK ──────────────────────────────────────────────────────
+  {
+    id: "signal-outlook",
+    icon: Eye,
+    title: "Signal Outlook",
+    subtitle: "Forward-looking signal assessment — what the current regime means for each signal type",
+    color: "#34D399",
+    keywords: ["signal outlook", "outlook", "forward", "regime fit", "signal type"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(52,211,153,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-emerald-400 font-bold">Signal Outlook</span> answers the question: given the current macro regime and Seismograph state, which types of signals have the highest historical follow-through? It maps the current environment to signal categories and shows which strategies are most aligned with the prevailing conditions.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Regime-Signal Alignment", desc: "For each signal category (momentum, mean reversion, breakout, defensive, speculative), Signal Outlook shows how well that category has historically performed in the current regime." },
+            { name: "Seismograph Context", desc: "The Seismograph's current evidence consensus and transition probability are injected into every outlook interpretation — so the assessment reflects not just the regime label but the full evidence picture." },
+            { name: "Historical Follow-Through Rates", desc: "For the current regime, shows the historical percentage of signals in each category that resulted in positive outcomes over 5, 10, and 20 trading days." },
+            { name: "What to Avoid", desc: "Explicitly flags which signal types have historically underperformed in the current environment — helping users avoid strategies that are misaligned with prevailing conditions." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-emerald-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── SOCIAL INTELLIGENCE ─────────────────────────────────────────────────
+  {
+    id: "social-intel",
+    icon: Users,
+    title: "Social Intelligence",
+    subtitle: "Market sentiment from social media and crowd behaviour analysis",
+    color: "#60A5FA",
+    keywords: ["social", "sentiment", "twitter", "x", "crowd", "social intelligence", "social media"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(96,165,250,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-blue-400 font-bold">Social Intelligence</span> monitors crowd sentiment and social media activity to identify when retail sentiment is diverging from or confirming institutional signals. It is a contrarian and confirmation tool — not a primary signal source.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Sentiment Tracking", desc: "Monitors social media sentiment across key tickers and macro topics. Identifies when crowd sentiment is at extremes — historically a contrarian indicator." },
+            { name: "Trend Detection", desc: "Surfaces emerging topics and tickers gaining unusual social attention before they appear in mainstream financial media." },
+            { name: "Regime Context", desc: "Social sentiment readings are interpreted in the context of the current Seismograph state — extreme bullish sentiment in a high-pressure regime is a different signal than the same reading in an expansion regime." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-blue-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+        <Panel accentColor="rgba(255,200,0,0.2)">
+          <p className="text-[10px] font-mono text-yellow-400/80 leading-relaxed">
+            <span className="text-yellow-400 font-bold">NOTE</span> — Social sentiment is one input among many. It is most useful as a contrarian indicator at extremes and as a confirmation tool when aligned with institutional signals. Never use social sentiment as a standalone signal.
+          </p>
+        </Panel>
+      </div>
+    ),
+  },
+  // ─── INSIDER INTELLIGENCE ────────────────────────────────────────────────
+  {
+    id: "insider-intel",
+    icon: TrendingDown,
+    title: "Insider Intelligence",
+    subtitle: "Institutional and insider activity — who is buying and selling",
+    color: "#F87171",
+    keywords: ["insider", "institutional", "buying", "selling", "insider intelligence", "smart money"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(248,113,113,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-red-400 font-bold">Insider Intelligence</span> tracks reported insider transactions and institutional positioning changes to identify when smart money is accumulating or distributing. It is a confirmation and divergence tool — most powerful when insider activity diverges from price action.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Insider Transaction Tracking", desc: "Monitors SEC Form 4 filings for significant insider buys and sells across key tickers. Flags clusters of insider activity that historically precede price moves." },
+            { name: "Institutional Flow Analysis", desc: "Tracks changes in institutional ownership and positioning. Large increases or decreases in institutional ownership relative to the prior quarter are flagged." },
+            { name: "Regime Context", desc: "Insider activity is interpreted in the context of the current macro regime. Insider buying during a high-pressure regime is a stronger contrarian signal than the same activity during an expansion." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-red-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── SECTOR ROTATION ─────────────────────────────────────────────────────
+  {
+    id: "sector-rotation",
+    icon: RotateCcw,
+    title: "Sector Rotation",
+    subtitle: "Which sectors are leading, lagging, and rotating — and why",
+    color: "#A78BFA",
+    keywords: ["sector", "rotation", "sector rotation", "leading", "lagging", "cyclical", "defensive"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(167,139,250,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-purple-400 font-bold">Sector Rotation</span> maps the current macro regime to the historical sector rotation model — showing which sectors typically lead and lag in the current environment, and whether current sector performance is confirming or diverging from the expected pattern.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Regime-Sector Alignment", desc: "For the current regime, shows which sectors have historically outperformed and underperformed. Compares historical expectations to current relative performance." },
+            { name: "Rotation Signals", desc: "Identifies when money is actively rotating between sectors — a leading indicator of regime transitions. Unusual rotation patterns are flagged with historical context." },
+            { name: "Defensive vs Cyclical Balance", desc: "Tracks the ratio of defensive sector performance (utilities, healthcare, consumer staples) to cyclical performance (technology, consumer discretionary, industrials) as a regime health indicator." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-purple-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── CRYPTO HUB ──────────────────────────────────────────────────────────
+  {
+    id: "crypto-hub",
+    icon: Bitcoin,
+    title: "Crypto Hub",
+    subtitle: "Crypto market intelligence — macro context, dominance, and regime alignment",
+    color: "#F59E0B",
+    keywords: ["crypto", "bitcoin", "ethereum", "crypto hub", "dominance", "altcoin", "defi"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(245,158,11,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            The <span className="text-amber-400 font-bold">Crypto Hub</span> provides macro-contextualised crypto market intelligence. Unlike standalone crypto dashboards, every reading in the Crypto Hub is interpreted through the lens of the current Seismograph state and macro regime — because crypto does not exist in isolation from the broader financial system.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "BTC Dominance", desc: "Bitcoin's share of total crypto market capitalisation. Rising dominance = risk-off within crypto (capital consolidating into BTC). Falling dominance = risk-on (capital rotating into altcoins)." },
+            { name: "Crypto Regime Alignment", desc: "Shows how the current crypto market conditions align with the macro regime. In a high-pressure macro environment, crypto typically behaves as a risk asset — this section makes that relationship explicit." },
+            { name: "Altcoin Season Indicator", desc: "Tracks whether altcoins are outperforming Bitcoin — a classic signal of speculative excess or risk appetite in the crypto market." },
+            { name: "Macro-Crypto Correlation", desc: "Shows the rolling correlation between crypto and equities, bonds, and the dollar. High correlation = crypto is trading as a macro risk asset. Low correlation = crypto is trading on its own dynamics." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-amber-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── CRYPTO REGIME ───────────────────────────────────────────────────────
+  {
+    id: "crypto-regime",
+    icon: Bitcoin,
+    title: "Crypto Regime",
+    subtitle: "The macro regime as it applies specifically to crypto markets",
+    color: "#F59E0B",
+    keywords: ["crypto regime", "bitcoin regime", "crypto macro", "crypto environment"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(245,158,11,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-amber-400 font-bold">Crypto Regime</span> applies the FAULTLINE regime framework specifically to crypto markets. It classifies the current crypto market environment — Accumulation, Expansion, Distribution, or Contraction — and maps it to the broader macro regime to show whether the two are aligned or diverging.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Crypto Regime Classification", desc: "Accumulation (smart money building positions quietly), Expansion (broad participation, rising prices), Distribution (smart money selling into strength), or Contraction (declining participation, falling prices)." },
+            { name: "Macro Alignment Score", desc: "How well the current crypto regime aligns with the macro regime. Misalignment — for example, crypto in Expansion while macro is in Late Cycle Stress — is historically a warning sign." },
+            { name: "Regime Transition Signals", desc: "Early indicators of a crypto regime transition, drawn from on-chain data, dominance shifts, and correlation changes." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-amber-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── MARKET INTELLIGENCE (REGIMES) ───────────────────────────────────────
+  {
+    id: "market-intelligence",
+    icon: BarChart3,
+    title: "Market Intelligence",
+    subtitle: "Regime classification, probability distributions, and macro scenario analysis",
+    color: "#00D4FF",
+    keywords: ["market intelligence", "regime", "probability", "scenario", "FMOS", "macro regime"],
+    content: (
+      <div className="space-y-4">
+        <Panel>
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-cyan-400 font-bold">Market Intelligence</span> is the regime analysis layer of FAULTLINE. It shows the current macro regime classification, the probability distribution across all possible regimes, and the historical context for the current environment — answering the question: what kind of market are we in, and how likely is it to change?
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Regime Classification", desc: "The current macro regime label (e.g. Late Cycle Stress, Expansion, Stagflation, Crisis Mode) with a confidence score and the key evidence supporting the classification." },
+            { name: "Probability Distribution", desc: "The probability of being in each of the five possible regimes — Bull, Soft Landing, Stagflation, Recession, and Crash — expressed as percentages that sum to 100." },
+            { name: "Transition Risk", desc: "The probability of transitioning to a different regime within the next 30, 60, and 90 days, based on the current evidence and historical transition rates." },
+            { name: "Regime History", desc: "A timeline showing how the regime classification has evolved over the past 12 months — useful for understanding whether the current regime is new or well-established." },
+            { name: "Scenario Analysis", desc: "For each possible regime transition, shows the historical market outcomes — what typically happens to equities, bonds, and crypto in each scenario." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── OPPORTUNITIES ───────────────────────────────────────────────────────
+  {
+    id: "opportunities",
+    icon: Sparkles,
+    title: "Opportunities",
+    subtitle: "Regime-aligned opportunities — what the current environment favours",
+    color: "#34D399",
+    keywords: ["opportunities", "regime opportunities", "what to buy", "what to avoid", "regime aligned"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(52,211,153,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-emerald-400 font-bold">Opportunities</span> surfaces asset classes, sectors, and strategies that have historically performed well in the current macro regime. It is not a buy list — it is a regime-aligned awareness tool that helps users understand which types of opportunities are most supported by the current environment.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Regime-Favoured Asset Classes", desc: "Which asset classes (equities, bonds, commodities, cash, crypto) have historically outperformed in the current regime, with historical return data." },
+            { name: "Sector Opportunities", desc: "Which sectors are most aligned with the current regime based on historical sector rotation patterns." },
+            { name: "Strategy Alignment", desc: "Which investment strategies (momentum, value, defensive, speculative) have the highest historical success rate in the current environment." },
+            { name: "What to Avoid", desc: "Asset classes, sectors, and strategies that have historically underperformed in the current regime — equally important as what to favour." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-emerald-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+        <Panel accentColor="rgba(255,200,0,0.2)">
+          <p className="text-[10px] font-mono text-yellow-400/80 leading-relaxed">
+            <span className="text-yellow-400 font-bold">DISCLAIMER</span> — Opportunities are based on historical regime patterns. Past performance in a given regime does not guarantee future results. This is not investment advice.
+          </p>
+        </Panel>
+      </div>
+    ),
+  },
+  // ─── SYMBOL INTELLIGENCE ─────────────────────────────────────────────────
+  {
+    id: "symbol-intelligence",
+    icon: Telescope,
+    title: "Symbol Intelligence",
+    subtitle: "Deep macro-contextualised analysis for any stock or crypto ticker",
+    color: "#60A5FA",
+    keywords: ["symbol", "ticker", "stock", "crypto", "symbol intelligence", "stock analysis", "macro context"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(96,165,250,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-blue-400 font-bold">Symbol Intelligence</span> provides deep, macro-contextualised analysis for any stock or crypto ticker. Unlike standalone stock screeners, every analysis in Symbol Intelligence is grounded in the current Seismograph state — so you understand not just what a ticker is doing, but whether the macro environment supports or undermines it.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Regime Fit Score", desc: "A 0–10 score indicating how well the ticker's characteristics align with the current macro regime. High fit = the ticker is well-positioned for the current environment." },
+            { name: "Seismograph Context", desc: "The Seismograph's evidence consensus, active analog, and transition probability are injected into every ticker analysis — so the assessment reflects the full macro picture." },
+            { name: "Risk Vector Exposure", desc: "Which of the 6 FAULTLINE risk vectors (Liquidity, Credit, Volatility, Macro, Breadth, AI Bubble) the ticker is most exposed to given its sector, size, and characteristics." },
+            { name: "Historical Regime Performance", desc: "How the ticker has historically performed in the current regime type — based on available historical data." },
+            { name: "AI Interpretation", desc: "An AI-generated narrative explaining the ticker's current macro positioning, key risks, and what the Seismograph's assessment means for this specific asset." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-blue-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── DECISION ENGINE ─────────────────────────────────────────────────────
+  {
+    id: "decision-engine",
+    icon: Crosshair,
+    title: "Decision Engine",
+    subtitle: "Structured decision support — before you act, check the engine",
+    color: "#F87171",
+    keywords: ["decision", "decision engine", "before acting", "structured decision", "risk check"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(248,113,113,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            The <span className="text-red-400 font-bold">Decision Engine</span> is a structured pre-decision framework. Before acting on any signal or opportunity, the Decision Engine checks the current macro regime, Seismograph state, and risk vectors against the proposed action — and surfaces any conflicts, risks, or alignment issues.
+          </p>
+        </Panel>
+        <div className="space-y-2">
+          <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">How to Use</p>
+          <div className="space-y-2">
+            <StepCard num={1} title="Enter your proposed action" desc="Describe what you are considering — buying, selling, or holding a specific asset or position." />
+            <StepCard num={2} title="Engine checks the macro context" desc="The Decision Engine evaluates your proposed action against the current regime, Seismograph state, risk vectors, and active alerts." />
+            <StepCard num={3} title="Review the assessment" desc="The engine surfaces any conflicts (e.g. buying a high-beta growth stock in a Late Cycle Stress regime), alignment signals, and key risks to consider." />
+            <StepCard num={4} title="Make an informed decision" desc="The engine does not tell you what to do — it ensures you have considered the full macro context before acting." />
+          </div>
+        </div>
+        <Panel accentColor="rgba(255,200,0,0.2)">
+          <p className="text-[10px] font-mono text-yellow-400/80 leading-relaxed">
+            <span className="text-yellow-400 font-bold">NOTE</span> — The Decision Engine is a structured awareness tool. It does not provide investment advice or guarantee outcomes. All decisions remain the user's responsibility.
+          </p>
+        </Panel>
+      </div>
+    ),
+  },
+  // ─── DAY TRADE INTELLIGENCE ──────────────────────────────────────────────
+  {
+    id: "day-trade",
+    icon: Target,
+    title: "Day Trade Intelligence",
+    subtitle: "Intraday macro context for active traders",
+    color: "#F59E0B",
+    keywords: ["day trade", "intraday", "active trading", "day trading", "short term"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(245,158,11,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-amber-400 font-bold">Day Trade Intelligence</span> provides intraday macro context for active traders. It surfaces the key macro factors that are most likely to drive intraday volatility on any given day — so traders understand the macro backdrop before entering positions.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Today's Macro Catalysts", desc: "Economic data releases, Fed communications, and other macro events scheduled for today that could drive intraday volatility." },
+            { name: "Regime Volatility Profile", desc: "How the current macro regime typically affects intraday volatility — whether to expect trending or mean-reverting conditions." },
+            { name: "Risk-On / Risk-Off Bias", desc: "The current macro bias — whether the environment favours risk-on (buy dips, momentum) or risk-off (sell rallies, defensive) intraday strategies." },
+            { name: "Key Levels to Watch", desc: "Critical technical and macro levels that, if breached, would change the intraday macro narrative." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-amber-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── PORTFOLIO ───────────────────────────────────────────────────────────
+  {
+    id: "portfolio",
+    icon: Briefcase,
+    title: "Portfolio",
+    subtitle: "Track your positions and see how the macro regime affects your portfolio",
+    color: "#34D399",
+    keywords: ["portfolio", "positions", "holdings", "track", "portfolio tracker"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(52,211,153,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            The <span className="text-emerald-400 font-bold">Portfolio</span> section lets you track your positions and see how the current macro regime and Seismograph state affect your overall portfolio exposure. It is a macro-contextualised portfolio awareness tool — not a brokerage or trading platform.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Position Tracking", desc: "Add your holdings manually. The platform tracks each position's current price, gain/loss, and regime fit score." },
+            { name: "Macro Exposure Analysis", desc: "Shows your portfolio's aggregate exposure to each of the 6 FAULTLINE risk vectors — so you can see at a glance whether your portfolio is concentrated in areas of elevated macro risk." },
+            { name: "Regime Alignment Score", desc: "An overall score showing how well your current portfolio is aligned with the current macro regime, based on the regime fit scores of your individual positions." },
+            { name: "Risk Concentration Alerts", desc: "Flags if your portfolio has excessive concentration in a single risk vector or sector given the current macro environment." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-emerald-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── TRADE JOURNAL ───────────────────────────────────────────────────────
+  {
+    id: "trade-journal",
+    icon: BookOpen,
+    title: "Trade Journal",
+    subtitle: "Log your trades with macro context — learn from every decision",
+    color: "#60A5FA",
+    keywords: ["trade journal", "journal", "log", "trades", "review", "learn"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(96,165,250,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            The <span className="text-blue-400 font-bold">Trade Journal</span> lets you log every trade with the macro context that existed at the time — regime, pressure score, Seismograph state, and active alerts. Over time, it builds a record of your decisions and the macro environment they were made in, helping you identify patterns in your own decision-making.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Trade Logging", desc: "Log any trade — entry, exit, size, and notes — with the current FAULTLINE macro context automatically attached." },
+            { name: "Macro Context Snapshot", desc: "Each journal entry automatically captures the regime, pressure score, Seismograph direction, and active alerts at the time of the trade." },
+            { name: "Performance Review", desc: "Review your trade history filtered by regime — see which macro environments your decisions have performed best and worst in." },
+            { name: "Decision Quality Analysis", desc: "Over time, the journal helps you identify whether your best trades were made with high Complete Market Awareness scores and whether poor trades correlated with low awareness." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-blue-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+      </div>
+    ),
+  },
+  // ─── ASK FAULTLINE (ASHA) ────────────────────────────────────────────────
+  {
+    id: "ask-faultline",
+    icon: Brain,
+    title: "Ask FAULTLINE (ASHA)",
+    subtitle: "The AI intelligence interface — ask anything about the current market",
+    color: "#A78BFA",
+    keywords: ["ask faultline", "asha", "ai", "chat", "ask", "question", "intelligence"],
+    content: (
+      <div className="space-y-4">
+        <Panel accentColor="rgba(167,139,250,0.3)">
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            <span className="text-purple-400 font-bold">ASHA</span> (Ask FAULTLINE) is the AI intelligence interface. Ask any question about the current market, a specific ticker, the current regime, historical analogs, or what the Seismograph is detecting — and ASHA will answer using the full context of the FAULTLINE platform, including the Seismograph's current evidence consensus.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "Seismograph-Grounded Responses", desc: "Every ASHA response is grounded in the Seismograph's current forASHA context block — evidence consensus, active analog, transition probability, and market direction. ASHA never answers in a macro vacuum." },
+            { name: "What to Ask", desc: "What is the current macro regime and why? What does the Seismograph say about transition risk? Which sectors are most aligned with the current environment? What does the current analog suggest about the next 90 days?" },
+            { name: "Ticker Analysis", desc: "Ask about any specific ticker — ASHA will analyse it in the context of the current regime, Seismograph state, and risk vectors." },
+            { name: "Historical Context", desc: "Ask about historical analogs, past regimes, or how similar environments have resolved — ASHA has access to the full FAULTLINE historical knowledge base." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3">
+              <p className="text-[11px] font-mono text-purple-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+        <Panel accentColor="rgba(255,200,0,0.2)">
+          <p className="text-[10px] font-mono text-yellow-400/80 leading-relaxed">
+            <span className="text-yellow-400 font-bold">NOTE</span> — ASHA is an AI assistant grounded in FAULTLINE's analytical framework. It does not provide personalised financial advice. All responses are for informational and educational purposes only.
+          </p>
+        </Panel>
+      </div>
+    ),
+  },
+  // ─── NARRATIVE BANNER ────────────────────────────────────────────────────
+  {
+    id: "narrative-banner",
+    icon: Map,
+    title: "Seismograph Narrative Banner",
+    subtitle: "The persistent context thread — what, why, how long, and what to watch",
+    color: "#00D4FF",
+    keywords: ["narrative banner", "context", "what is happening", "why", "how long", "what to watch", "banner"],
+    content: (
+      <div className="space-y-4">
+        <Panel>
+          <p className="text-[11px] text-white/70 leading-relaxed font-mono">
+            The <span className="text-cyan-400 font-bold">Seismograph Narrative Banner</span> appears at the top of every major page in FAULTLINE. It is the cohesion thread of the platform — a collapsible panel that answers the seven most important understanding questions from the Seismograph's current output.
+          </p>
+        </Panel>
+        <div className="space-y-1">
+          {[
+            { name: "What is happening", desc: "The current market direction and regime label in plain language." },
+            { name: "Why it is happening", desc: "The dominant evidence drivers — which risk vectors and macro forces are most responsible for the current state." },
+            { name: "How long it has been developing", desc: "The number of days the current conditions have been active, drawn from Market Memory." },
+            { name: "Historical percentile", desc: "Where the current pressure score sits relative to the full historical distribution — e.g. 'higher than 78% of all days since 2000'." },
+            { name: "Active analog", desc: "The historical era that most closely resembles the current environment, with similarity score." },
+            { name: "Transition probability", desc: "The probability of a regime transition within the next 30 days." },
+            { name: "What to watch next", desc: "The two or three indicators or events that will determine whether conditions continue, reverse, or escalate." },
+          ].map(({ name, desc }) => (
+            <Panel key={name} className="!p-3" accentColor="rgba(0,212,255,0.15)">
+              <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
+              <p className="text-[10px] text-white/50 leading-relaxed">{desc}</p>
+            </Panel>
+          ))}
+        </div>
+        <Panel className="!p-3">
+          <p className="text-[10px] font-mono text-white/50 leading-relaxed">
+            The banner is <span className="text-cyan-400">expanded by default on the Dashboard</span> and collapsed by default on all other pages. Click the banner header to expand or collapse it at any time.
+          </p>
+        </Panel>
+      </div>
+    ),
+  },
   {
     id: "glossary",
     icon: Layers,
     title: "Glossary",
+
     subtitle: "Key terms and concepts used throughout FAULTLINE",
     color: "#6B7280",
     content: (
