@@ -3814,3 +3814,19 @@
 - [x] Wire ASHA/SmartDiscovery to consume SeismographOutput.forASHA.systemPromptBlock (falls back to raw SeismographState)
 - [x] Wire Daily Brief (autonomousPublishing.ts) to consume SeismographOutput.forDailyBrief for richer context
 - [x] Wire Signal Intelligence (signalOutlook.ts) to consume SeismographOutput for macro context injection
+
+## Seismograph as Default Landing Page — Command Center Redesign
+- [x] Redesign SeismographIntelligence.tsx as full executive briefing with 7 sections in correct narrative order
+- [x] Section 1: Today's Market Story (headline + narrative from assembledOutput.forDailyBrief)
+- [x] Section 2: Pressure Index (score, stress level, direction, streak, percentile, drivers)
+- [x] Section 3: Current Regime (regime name, probabilities bull/neutral/bear, evidence consensus)
+- [x] Section 4: Active Patterns (what is developing beneath the surface)
+- [x] Section 5: Regime Transition Probabilities (where market is most likely heading)
+- [x] Section 6: Evolution Analysis (7-day/30-day trends, what changed, what to watch)
+- [x] Section 7: Historical Memory (analogs, regime history, observation count)
+- [x] Add "Next Steps" navigation strip at bottom linking to Signal Outlook, Symbol Intelligence, Daily Briefing, Pressure Index, Pre-Flight, Ask FAULTLINE
+- [x] Change default /app redirect from /app/discover to /app/seismograph in App.tsx
+- [x] Update mobile home tab to point to /app/seismograph
+- [x] Move Seismograph to top of SITUATION nav group (first item)
+- [x] TypeScript check: 0 errors
+- [x] Save checkpoint

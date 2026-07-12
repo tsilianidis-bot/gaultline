@@ -45,6 +45,7 @@ const NAV_GROUPS: NavGroup[] = [
     // Q1 + Q2: What is the market doing right now? Why?
     label: "SITUATION",
     items: [
+      { id: "seismograph",     label: "Seismograph",          shortLabel: "Seismograph", icon: Activity,        path: "/app/seismograph" },
       { id: "intelligence-hub", label: "Intelligence Hub",    shortLabel: "Intel Hub",   icon: Brain,           path: "/app/intelligence-hub" },
       { id: "command",        label: "Command Center",       shortLabel: "Command",     icon: Command,         path: "/app/command" },
       { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",        icon: LayoutDashboard, path: "/app/dashboard" },
@@ -57,7 +58,6 @@ const NAV_GROUPS: NavGroup[] = [
     // Q3 + Q4: What does it mean? What is the highest probability outcome?
     label: "UNDERSTAND",
     items: [
-      { id: "seismograph",     label: "Seismograph",          shortLabel: "Seismograph", icon: Activity,        path: "/app/seismograph" },
       { id: "signal-outlook",  label: "Signal Outlook",       shortLabel: "Outlook",     icon: Eye,             path: "/app/signal-outlook" },
       { id: "pre-flight",      label: "Pre-Flight Check",     shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
       { id: "social-intel",    label: "Social Intelligence",  shortLabel: "Social Intel",icon: Users,           path: "/app/social-intelligence" },
@@ -116,7 +116,7 @@ const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
 // Mobile primary tabs (bottom bar — 5 primary + More)
 // Home (Dashboard), Ask, Signals, Symbol Intel, Account
-const MOBILE_HOME_TAB: NavItem = { id: "home", label: "Home", shortLabel: "Home", icon: Home, path: "/app/dashboard" };
+const MOBILE_HOME_TAB: NavItem = { id: "home", label: "Home", shortLabel: "Home", icon: Activity, path: "/app/seismograph" };
 const MOBILE_PRIMARY_IDS = ["discover", "signals", "symbol-intel", "account"];
 const MOBILE_PRIMARY = [MOBILE_HOME_TAB, ...ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id))];
 

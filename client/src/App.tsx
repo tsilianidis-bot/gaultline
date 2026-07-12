@@ -621,7 +621,7 @@ function Router() {
               <Route path="/app/todays-story" component={TodaysStory} />
               <Route path="/app/discover" component={SmartDiscovery} />
               <Route path="/app/decision-ledger" component={DecisionLedger} />
-              <Route path="/app"><Redirect to="/app/discover" /></Route>
+              <Route path="/app"><Redirect to="/app/seismograph" /></Route>
               <Route path="/app/dashboard" component={Dashboard} />
               {/* P1 — Deprecated routes redirect to new destinations */}
               {/* Canonical URL aliases — advertised paths */}
