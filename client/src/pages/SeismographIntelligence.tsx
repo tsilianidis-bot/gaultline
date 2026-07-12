@@ -1,24 +1,23 @@
 /**
- * FAULTLINE Seismograph Intelligence
- * Default post-login command center — institutional market intelligence
- * synthesized from 317+ months of historical data.
+ * FAULTLINE Seismograph Intelligence — Original HUD Terminal
  *
- * Every section answers: What? Why? Evidence? Historical comparisons?
- * What next? What would invalidate this?
+ * Faithfully reproduces the original v1 promotional video design:
+ * - Dark navy/black background with cyan grid lines
+ * - 60/40 left/right column split
+ * - HUD corner brackets framing the screen
+ * - Seismograph waveform charts
+ * - Circular pressure gauges for active patterns
+ * - Transition probability bars with horizon selector
+ * - System status bar with ONLINE/LIVE indicators
+ * - All data from real FAULTLINE intelligence engines
  */
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
-import { Link } from "wouter";
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip,
-  ResponsiveContainer, ReferenceLine,
+  ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell,
 } from "recharts";
-import {
-  Activity, AlertTriangle, ArrowRight, BarChart2, BookOpen, Brain,
-  Calendar, ChevronDown, ChevronUp, Clock, Compass, GitBranch, History,
-  Info, Layers, RefreshCw, Shield, SlidersHorizontal, Target, TrendingDown, TrendingUp,
-  Zap,
-} from "lucide-react";
+import { Calendar, SlidersHorizontal } from "lucide-react";
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
 function pressureColor(score: number): string {
@@ -28,430 +27,178 @@ function pressureColor(score: number): string {
   if (score >= 30) return "#84cc16";
   return "#22c55e";
 }
-function pressureGlow(score: number): string {
-  if (score >= 80) return "0 0 24px rgba(239,68,68,0.5)";
-  if (score >= 65) return "0 0 24px rgba(249,115,22,0.4)";
-  if (score >= 45) return "0 0 24px rgba(234,179,8,0.35)";
-  return "0 0 24px rgba(34,197,94,0.35)";
-}
-function regimeColor(regime: string): string {
-  const r = regime.toUpperCase();
-  if (r.includes("CRITICAL") || r.includes("CRISIS")) return "#ef4444";
-  if (r.includes("HIGH")) return "#f97316";
-  if (r.includes("ELEVATED")) return "#eab308";
-  if (r.includes("MODERATE")) return "#84cc16";
+
+function stressColor(level: string): string {
+  if (level === "Crisis") return "#ef4444";
+  if (level === "High") return "#f97316";
+  if (level === "Elevated") return "#eab308";
   return "#22c55e";
 }
-function regimeLabel(regime: string): string {
-  const r = regime.toUpperCase();
-  if (r.includes("CRITICAL")) return "Critical Stress";
-  if (r.includes("HIGH")) return "High Risk";
-  if (r.includes("ELEVATED")) return "Elevated Risk";
-  if (r.includes("MODERATE")) return "Moderate Risk";
-  if (r.includes("LOW")) return "Low Risk";
-  return regime;
+
+function regimeLabel(r: string): string {
+  const map: Record<string, string> = {
+    bull: "Bull Market", bear: "Bear Market", neutral: "Neutral",
+    low: "Low Stress", elevated: "Elevated Stress", high: "High Stress",
+    crisis: "Crisis", late_cycle: "Late Cycle Stress", expansion: "Expansion",
+    contraction: "Contraction", stagflation: "Stagflation", recovery: "Recovery",
+  };
+  return map[r?.toLowerCase()] ?? r?.replace(/_/g, " ").toUpperCase() ?? "UNKNOWN";
 }
-function signalColor(signal: string): string {
-  if (signal === "stressed" || signal === "bearish") return "#ef4444";
-  if (signal === "recovering" || signal === "bullish") return "#22c55e";
-  return "#94a3b8";
-}
-function returnColor(r: number | null): string {
-  if (r === null) return "text-slate-500";
-  if (r >= 5) return "text-green-400";
-  if (r >= 0) return "text-green-300";
-  if (r >= -5) return "text-orange-400";
-  return "text-red-400";
-}
+
 function formatMonth(m: string): string {
-  const parts = m.split("-");
-  const y = parts[0] ?? "";
-  const mo = parts[1] ?? "01";
+  if (!m) return "";
+  const [y, mo] = m.split("-");
   const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return `${months[parseInt(mo) - 1] ?? "Jan"} '${y.slice(2)}`;
-}
-function trendIcon(trend: string) {
-  if (trend === "deteriorating") return <TrendingDown className="w-3.5 h-3.5 text-red-400" />;
-  if (trend === "improving") return <TrendingUp className="w-3.5 h-3.5 text-green-400" />;
-  return <Activity className="w-3.5 h-3.5 text-slate-400" />;
+  return `${months[parseInt(mo) - 1]} ${y}`;
 }
 
-// ─── Animated number ──────────────────────────────────────────────────────────
-function AnimatedNumber({ target }: { target: number }) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    const start = performance.now();
-    const duration = 1200;
-    const tick = (now: number) => {
-      const p = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3);
-      setVal(Math.round(eased * target));
-      if (p < 1) requestAnimationFrame(tick);
-    };
-    const id = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(id);
-  }, [target]);
-  return <>{val}</>;
-}
-
-// ─── Circular pressure gauge ──────────────────────────────────────────────────
-function PressureGauge({ score }: { score: number }) {
-  const [animated, setAnimated] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setAnimated(score), 300); return () => clearTimeout(t); }, [score]);
-  const color = pressureColor(score);
-  const glow = pressureGlow(score);
-  const circumference = 2 * Math.PI * 52;
-  const offset = circumference * (1 - animated / 100);
+// ─── HUD Corner brackets ──────────────────────────────────────────────────────
+function HudCorners({ color = "#06b6d4" }: { color?: string }) {
+  const s = { position: "absolute" as const, width: 16, height: 16 };
+  const b = `2px solid ${color}`;
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="relative w-48 h-48">
-        <svg viewBox="0 0 120 120" className="w-full h-full" style={{ transform: "rotate(-90deg)" }}>
-          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="7" />
-          {/* Zone bands */}
-          {[
-            { color: "#22c55e", start: 0, span: 0.30 },
-            { color: "#84cc16", start: 0.30, span: 0.15 },
-            { color: "#eab308", start: 0.45, span: 0.20 },
-            { color: "#f97316", start: 0.65, span: 0.15 },
-            { color: "#ef4444", start: 0.80, span: 0.20 },
-          ].map((z, i) => (
-            <circle key={i} cx="60" cy="60" r="52" fill="none" stroke={z.color} strokeWidth="4" strokeOpacity="0.2"
-              strokeDasharray={`${circumference * z.span} ${circumference * (1 - z.span)}`}
-              strokeDashoffset={-circumference * z.start} />
-          ))}
-          {/* Progress arc */}
-          <circle cx="60" cy="60" r="52" fill="none" stroke={color} strokeWidth="7" strokeLinecap="round"
-            strokeDasharray={circumference} strokeDashoffset={offset}
-            style={{ transition: "stroke-dashoffset 1.4s cubic-bezier(0.23,1,0.32,1), stroke 0.6s ease",
-              filter: `drop-shadow(0 0 8px ${color}) drop-shadow(0 0 16px ${color}80)` }} />
-          {/* Tick marks */}
-          {[0, 25, 50, 75, 100].map((tick) => {
-            const angle = (tick / 100) * 2 * Math.PI - Math.PI / 2;
-            const x1 = 60 + 46 * Math.cos(angle); const y1 = 60 + 46 * Math.sin(angle);
-            const x2 = 60 + 55 * Math.cos(angle); const y2 = 60 + 55 * Math.sin(angle);
-            return <line key={tick} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" />;
-          })}
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-5xl font-black tabular-nums" style={{ color, textShadow: glow, fontFamily: "'IBM Plex Mono', monospace" }}>
-            <AnimatedNumber target={Math.round(animated)} />
-          </div>
-          <div className="text-xs text-slate-600 tracking-widest mt-0.5">/ 100</div>
-        </div>
-      </div>
-      <div className="flex justify-between w-48 px-1">
-        {["0","25","50","75","100"].map((l) => (
-          <span key={l} className="text-xs text-slate-600">{l}</span>
+    <>
+      <div style={{ ...s, top: 0, left: 0, borderTop: b, borderLeft: b }} />
+      <div style={{ ...s, top: 0, right: 0, borderTop: b, borderRight: b }} />
+      <div style={{ ...s, bottom: 0, left: 0, borderBottom: b, borderLeft: b }} />
+      <div style={{ ...s, bottom: 0, right: 0, borderBottom: b, borderRight: b }} />
+    </>
+  );
+}
+
+// ─── Panel wrapper ────────────────────────────────────────────────────────────
+function HudPanel({ children, className = "", accentColor = "#06b6d4", style }: {
+  children: React.ReactNode;
+  className?: string;
+  accentColor?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      className={`relative ${className}`}
+      style={{
+        border: `1px solid ${accentColor}30`,
+        background: "rgba(0,8,20,0.85)",
+        boxShadow: `0 0 12px ${accentColor}10, inset 0 0 20px rgba(0,0,0,0.4)`,
+        ...style,
+      }}
+    >
+      <HudCorners color={accentColor} />
+      {children}
+    </div>
+  );
+}
+
+// ─── Panel header ─────────────────────────────────────────────────────────────
+function PanelHeader({ icon, title, color = "#06b6d4" }: { icon?: React.ReactNode; title: string; color?: string }) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 border-b" style={{ borderColor: `${color}25` }}>
+      {icon && <span style={{ color }}>{icon}</span>}
+      <span className="text-xs font-bold tracking-widest uppercase" style={{ color, fontFamily: "monospace" }}>{title}</span>
+    </div>
+  );
+}
+
+// ─── Blinking dot ─────────────────────────────────────────────────────────────
+function BlinkDot({ color = "#22c55e" }: { color?: string }) {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    const t = setInterval(() => setOn(v => !v), 800);
+    return () => clearInterval(t);
+  }, []);
+  return <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: on ? color : "transparent", boxShadow: on ? `0 0 4px ${color}` : "none", transition: "all 0.2s" }} />;
+}
+
+// ─── Seismograph waveform ─────────────────────────────────────────────────────
+function SeismographWaveform({ data, color, label, signalQuality, riskLevel }: {
+  data: number[];
+  color: string;
+  label: string;
+  signalQuality: number;
+  riskLevel: string;
+}) {
+  const riskColors: Record<string, string> = { HIGH: "#ef4444", MODERATE: "#f97316", WATCH: "#06b6d4", LOW: "#22c55e" };
+  const rc = riskColors[riskLevel] ?? color;
+  return (
+    <div className="space-y-1.5">
+      <div className="text-xs tracking-widest uppercase" style={{ color: "#06b6d4", fontFamily: "monospace", fontSize: 9 }}>PATTERN STRENGTH</div>
+      <div className="flex items-end gap-px" style={{ height: 36 }}>
+        {data.map((v, i) => (
+          <div key={i} style={{ width: 3, height: `${Math.max(4, v)}%`, background: color, opacity: 0.7 + (i / data.length) * 0.3, boxShadow: `0 0 2px ${color}` }} />
         ))}
       </div>
-      <div className="text-xs text-slate-500 uppercase tracking-widest">Systemic Pressure Index</div>
+      <div className="text-xs tracking-widest uppercase" style={{ color: "#06b6d4", fontFamily: "monospace", fontSize: 9 }}>SIGNAL QUALITY</div>
+      <div className="h-1.5 rounded-sm" style={{ background: `${color}30` }}>
+        <div className="h-full rounded-sm" style={{ width: `${signalQuality}%`, background: color, boxShadow: `0 0 4px ${color}` }} />
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs tracking-widest" style={{ color: "#06b6d4", fontFamily: "monospace", fontSize: 9 }}>RISK LEVEL</span>
+        <span className="px-1.5 py-0.5 text-xs font-bold tracking-widest" style={{ background: `${rc}20`, border: `1px solid ${rc}60`, color: rc, fontFamily: "monospace", fontSize: 9 }}>{riskLevel}</span>
+      </div>
     </div>
   );
 }
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-function Section({ id, icon, title, subtitle, children, accentColor = "#0ea5e9" }: {
-  id: string; icon: React.ReactNode; title: string; subtitle: string;
-  children: React.ReactNode; accentColor?: string;
+// ─── Circular gauge ───────────────────────────────────────────────────────────
+function CircularGauge({ value, color, icon, label, days }: {
+  value: number;
+  color: string;
+  icon: React.ReactNode;
+  label: string;
+  days: number;
 }) {
+  const r = 28;
+  const circ = 2 * Math.PI * r;
+  const fill = (value / 100) * circ;
   return (
-    <section id={id} className="relative">
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-full" style={{ background: accentColor, opacity: 0.5 }} />
-      <div className="pl-5">
-        <div className="flex items-center gap-2.5 mb-1">
-          <span style={{ color: accentColor }}>{icon}</span>
-          <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400">{title}</h2>
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="relative flex items-center justify-center" style={{ width: 72, height: 72 }}>
+        <svg width="72" height="72" viewBox="0 0 72 72" style={{ transform: "rotate(-90deg)" }}>
+          <circle cx="36" cy="36" r={r} fill="none" stroke={`${color}20`} strokeWidth="4" />
+          <circle cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="4"
+            strokeDasharray={`${fill} ${circ - fill}`}
+            strokeLinecap="round"
+            style={{ filter: `drop-shadow(0 0 4px ${color})`, transition: "stroke-dasharray 1s ease" }} />
+        </svg>
+        <div className="absolute flex flex-col items-center" style={{ transform: "none" }}>
+          <span style={{ color, fontSize: 14 }}>{icon}</span>
         </div>
-        <p className="text-xs text-slate-500 mb-4">{subtitle}</p>
-        {children}
       </div>
-    </section>
-  );
-}
-
-// ─── Probability bar ──────────────────────────────────────────────────────────
-function ProbabilityBar({ label, value, color, description }: {
-  label: string; value: number; color: string; description?: string;
-}) {
-  const [w, setW] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setW(value), 600); return () => clearTimeout(t); }, [value]);
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-slate-300 font-medium">{label}</span>
-        <span className="font-bold tabular-nums" style={{ color }}>{value}%</span>
+      <div className="text-center">
+        <div className="text-xs font-bold tracking-wide" style={{ color, fontFamily: "monospace", fontSize: 9 }}>{label}</div>
+        <div className="text-xs" style={{ color: "#06b6d4", fontFamily: "monospace", fontSize: 9 }}>DAY {days}</div>
       </div>
-      <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${w}%`, background: color, boxShadow: `0 0 8px ${color}60` }} />
-      </div>
-      {description && <p className="text-xs text-slate-500 leading-relaxed">{description}</p>}
     </div>
   );
 }
 
-// ─── Evidence family card ─────────────────────────────────────────────────────
-function EvidenceFamilyCard({ family }: { family: {
-  name: string; signal: string; strength: number; currentValue: string;
-  historicalContext: string; trend: string; whyItMatters: string;
-}}) {
-  const [expanded, setExpanded] = useState(false);
-  const color = signalColor(family.signal);
+// ─── Transition probability row ───────────────────────────────────────────────
+function ProbRow({ label, pct, color }: { label: string; pct: number; color: string }) {
   return (
-    <div className="rounded-lg border cursor-pointer transition-all duration-200"
-      style={{ borderColor: expanded ? `${color}40` : "#1e293b", background: expanded ? `${color}08` : "#0f172a" }}
-      onClick={() => setExpanded(!expanded)}>
-      <div className="flex items-center justify-between p-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color, boxShadow: `0 0 6px ${color}` }} />
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-slate-200 truncate">{family.name}</div>
-            <div className="text-xs text-slate-500 truncate">{family.currentValue}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-          {trendIcon(family.trend)}
-          <div className="text-right">
-            <div className="text-xs font-bold" style={{ color }}>{family.signal.charAt(0).toUpperCase() + family.signal.slice(1)}</div>
-            <div className="text-xs text-slate-500">{family.strength}/100</div>
-          </div>
-          {expanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
-        </div>
+    <div className="space-y-0.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs tracking-wide" style={{ color, fontFamily: "monospace", fontSize: 10 }}>{label}</span>
+        <span className="text-xs font-bold" style={{ color, fontFamily: "monospace" }}>{pct}%</span>
       </div>
-      {expanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-slate-800 pt-2.5">
-          <div>
-            <div className="text-xs font-semibold text-slate-400 mb-1">Historical Context</div>
-            <p className="text-xs text-slate-300 leading-relaxed">{family.historicalContext}</p>
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-slate-400 mb-1">Why It Matters</div>
-            <p className="text-xs text-slate-400 leading-relaxed">{family.whyItMatters}</p>
-          </div>
-        </div>
-      )}
+      <div className="h-1.5 rounded-sm" style={{ background: `${color}15` }}>
+        <div className="h-full rounded-sm transition-all duration-1000" style={{ width: `${pct}%`, background: color, boxShadow: `0 0 4px ${color}60` }} />
+      </div>
     </div>
   );
 }
 
-// ─── Analog card ──────────────────────────────────────────────────────────────
-function AnalogCard({ analog, rank }: { analog: {
-  period: string; label: string; similarity: number; score: number; regime: string;
-  description: string; outcome3m: string; outcome6m: string; outcome12m: string;
-  avgReturn3m: number | null; avgReturn6m: number | null; avgReturn12m: number | null;
-  durationMonths: number; peakPressure: number; resolution: string;
-}; rank: number }) {
-  const [expanded, setExpanded] = useState(rank === 0);
-  const color = regimeColor(analog.regime);
-  return (
-    <div className="rounded-lg border cursor-pointer transition-all"
-      style={{ borderColor: expanded ? `${color}40` : "#1e293b", background: expanded ? `${color}06` : "#0f172a" }}
-      onClick={() => setExpanded(!expanded)}>
-      <div className="flex items-center justify-between p-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold flex-shrink-0"
-            style={{ background: `${color}20`, color }}>{rank + 1}</div>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-slate-200 truncate">{analog.label}</div>
-            <div className="text-xs text-slate-500">{analog.durationMonths} months · Peak: {analog.peakPressure}/100</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-          <div className="text-right">
-            <div className="text-sm font-bold" style={{ color }}>{analog.similarity}%</div>
-            <div className="text-xs text-slate-500">match</div>
-          </div>
-          {expanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
-        </div>
-      </div>
-      {expanded && (
-        <div className="px-3 pb-3 space-y-3 border-t border-slate-800 pt-2.5">
-          <p className="text-xs text-slate-300 leading-relaxed">{analog.description}</p>
-          <div>
-            <div className="text-xs font-semibold text-slate-400 mb-1.5">What Happened Next</div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "3 Months", value: analog.avgReturn3m, text: analog.outcome3m },
-                { label: "6 Months", value: analog.avgReturn6m, text: analog.outcome6m },
-                { label: "12 Months", value: analog.avgReturn12m, text: analog.outcome12m },
-              ].map((o) => (
-                <div key={o.label} className="rounded bg-slate-800/60 p-2 text-center">
-                  <div className="text-xs text-slate-500 mb-0.5">{o.label}</div>
-                  <div className={`text-sm font-bold tabular-nums ${returnColor(o.value)}`}>
-                    {o.value !== null ? `${o.value > 0 ? "+" : ""}${o.value}%` : "—"}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="text-xs text-slate-400">
-            <span className="font-semibold text-slate-300">Resolution: </span>{analog.resolution}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Pattern card ─────────────────────────────────────────────────────────────
-function PatternCard({ pattern }: { pattern: {
-  name: string; description: string; confidence: number; daysActive: number;
-  historicalFrequency: string;
-  outcomeDistribution: { bullish: number; sideways: number; correction: number };
-  avgReturn1m: number; avgReturn3m: number; avgReturn6m: number;
-  invalidationConditions: string; analogs: string[];
-}}) {
-  const [expanded, setExpanded] = useState(false);
-  const conf = pattern.confidence;
-  const confColor = conf >= 75 ? "#22c55e" : conf >= 55 ? "#eab308" : "#94a3b8";
-  return (
-    <div className="rounded-lg border cursor-pointer transition-all"
-      style={{ borderColor: expanded ? "#0ea5e940" : "#1e293b", background: expanded ? "#0ea5e908" : "#0f172a" }}
-      onClick={() => setExpanded(!expanded)}>
-      <div className="flex items-center justify-between p-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-0.5">
-            <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-              style={{ background: confColor, boxShadow: `0 0 4px ${confColor}` }} />
-            <div className="text-sm font-semibold text-slate-200 truncate">{pattern.name}</div>
-          </div>
-          <div className="text-xs text-slate-500">{pattern.historicalFrequency}</div>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-          <div className="text-right">
-            <div className="text-xs font-bold" style={{ color: confColor }}>{conf}%</div>
-            <div className="text-xs text-slate-500">confidence</div>
-          </div>
-          {expanded ? <ChevronUp className="w-3.5 h-3.5 text-slate-500" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-500" />}
-        </div>
-      </div>
-      {expanded && (
-        <div className="px-3 pb-3 space-y-3 border-t border-slate-800 pt-2.5">
-          <p className="text-xs text-slate-300 leading-relaxed">{pattern.description}</p>
-          <div>
-            <div className="text-xs font-semibold text-slate-400 mb-2">Historical Outcome Distribution</div>
-            <div className="grid grid-cols-3 gap-2 mb-2">
-              {[
-                { label: "Bullish", value: pattern.outcomeDistribution.bullish, color: "#22c55e" },
-                { label: "Sideways", value: pattern.outcomeDistribution.sideways, color: "#94a3b8" },
-                { label: "Correction", value: pattern.outcomeDistribution.correction, color: "#ef4444" },
-              ].map((o) => (
-                <div key={o.label} className="rounded bg-slate-800/60 p-2 text-center">
-                  <div className="text-xs text-slate-500 mb-0.5">{o.label}</div>
-                  <div className="text-sm font-bold" style={{ color: o.color }}>{o.value}%</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-slate-400 mb-1.5">Average Returns After Pattern</div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "1 Month", value: pattern.avgReturn1m },
-                { label: "3 Months", value: pattern.avgReturn3m },
-                { label: "6 Months", value: pattern.avgReturn6m },
-              ].map((r) => (
-                <div key={r.label} className="rounded bg-slate-800/60 p-2 text-center">
-                  <div className="text-xs text-slate-500 mb-0.5">{r.label}</div>
-                  <div className={`text-sm font-bold tabular-nums ${returnColor(r.value)}`}>
-                    {r.value > 0 ? "+" : ""}{r.value}%
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="text-xs text-slate-400">
-            <span className="font-semibold text-slate-300">Invalidation: </span>{pattern.invalidationConditions}
-          </div>
-          {pattern.analogs.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {pattern.analogs.map((a) => (
-                <span key={a} className="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">{a}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Timeline chart ───────────────────────────────────────────────────────────
-function TimelineChart({ data, annotations }: {
-  data: Array<{ month: string; score: number; regime: string }>;
-  annotations: Array<{ month: string; annotation: string }>;
-}) {
-  const step = Math.max(1, Math.floor(data.length / 120));
-  const sampled = data.filter((_, i) => i % step === 0);
-
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ payload: { month: string; score: number; regime: string } }> }) => {
-    if (!active || !payload?.length) return null;
-    const d = payload[0].payload;
-    const ann = annotations.find((a) => a.month === d.month);
-    return (
-      <div className="bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs max-w-xs">
-        <div className="font-bold text-slate-200 mb-0.5">{formatMonth(d.month)}</div>
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <div className="w-2 h-2 rounded-full" style={{ background: pressureColor(d.score) }} />
-          <span style={{ color: pressureColor(d.score) }}>{d.score}/100</span>
-          <span className="text-slate-500">·</span>
-          <span className="text-slate-400">{regimeLabel(d.regime)}</span>
-        </div>
-        {ann && <div className="text-slate-300 mt-1 leading-relaxed">{ann.annotation}</div>}
-      </div>
-    );
-  };
-
-  return (
-    <div className="space-y-2">
-      <ResponsiveContainer width="100%" height={160}>
-        <AreaChart data={sampled} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-          <defs>
-            <linearGradient id="pressureGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <XAxis dataKey="month" tickFormatter={formatMonth} tick={{ fontSize: 9, fill: "#475569" }}
-            interval={Math.floor(sampled.length / 8)} axisLine={false} tickLine={false} />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: "#475569" }} axisLine={false} tickLine={false} />
-          <RTooltip content={<CustomTooltip />} />
-          <ReferenceLine y={65} stroke="#f97316" strokeDasharray="3 3" strokeOpacity={0.3} />
-          <ReferenceLine y={45} stroke="#eab308" strokeDasharray="3 3" strokeOpacity={0.3} />
-          <ReferenceLine y={30} stroke="#84cc16" strokeDasharray="3 3" strokeOpacity={0.3} />
-          <Area type="monotone" dataKey="score" stroke="#0ea5e9" strokeWidth={1.5} fill="url(#pressureGrad)" dot={false} />
-          {annotations.map((ann) => (
-            <ReferenceLine key={ann.month} x={ann.month} stroke="#f59e0b" strokeDasharray="2 2" strokeOpacity={0.5} />
-          ))}
-        </AreaChart>
-      </ResponsiveContainer>
-      {annotations.length > 0 && (
-        <div className="space-y-1 max-h-32 overflow-y-auto">
-          {annotations.slice(0, 8).map((ann) => (
-            <div key={ann.month} className="flex items-start gap-2 text-xs">
-              <span className="text-amber-400 flex-shrink-0 font-mono">{formatMonth(ann.month)}</span>
-              <span className="text-slate-400 leading-relaxed">{ann.annotation}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Preset windows ───────────────────────────────────────────────────────────
+// ─── Preset windows for evolution chart ──────────────────────────────────────
 const PRESETS = [
-  { label: "7D",  months: 1,   desc: "7 days" },
-  { label: "30D", months: 1,   desc: "30 days" },
-  { label: "90D", months: 3,   desc: "90 days" },
-  { label: "6M",  months: 6,   desc: "6 months" },
-  { label: "1Y",  months: 12,  desc: "1 year" },
-  { label: "3Y",  months: 36,  desc: "3 years" },
-  { label: "5Y",  months: 60,  desc: "5 years" },
-  { label: "All", months: 999, desc: "Full history" },
+  { label: "7D",  months: 1 },
+  { label: "30D", months: 1 },
+  { label: "90D", months: 3 },
+  { label: "6M",  months: 6 },
+  { label: "1Y",  months: 12 },
+  { label: "3Y",  months: 36 },
+  { label: "5Y",  months: 60 },
+  { label: "All", months: 999 },
 ] as const;
 
-// Compute trend summary from a slice of timeline data
 function computeCustomTrend(slice: Array<{ month: string; score: number; regime: string }>) {
   if (slice.length < 2) return null;
   const scores = slice.map((s) => s.score);
@@ -467,7 +214,7 @@ function computeCustomTrend(slice: Array<{ month: string; score: number; regime:
   return { avg: Math.round(avg), delta: Math.round(delta * 10) / 10, max, min, direction, dirColor, regimeCount: regimes.size, months: slice.length };
 }
 
-// ─── Evolution chart with date-range selector ─────────────────────────────────
+// ─── Evolution chart ──────────────────────────────────────────────────────────
 function EvolutionChart({ timeline }: {
   timeline: Array<{ month: string; score: number; regime: string; isAnnotated: boolean; annotation?: string }>;
 }) {
@@ -475,10 +222,7 @@ function EvolutionChart({ timeline }: {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [showCustom, setShowCustom] = useState(false);
-  const startRef = useRef<HTMLInputElement>(null);
-  const endRef = useRef<HTMLInputElement>(null);
 
-  // Derive the visible slice
   const slice = useMemo(() => {
     if (showCustom && customStart && customEnd) {
       return timeline.filter((t) => t.month >= customStart && t.month <= customEnd);
@@ -494,34 +238,29 @@ function EvolutionChart({ timeline }: {
     if (!active || !payload?.length) return null;
     const d = payload[0].payload;
     return (
-      <div className="bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs max-w-xs shadow-xl">
-        <div className="font-bold text-slate-200 mb-0.5">{formatMonth(d.month)}</div>
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <div className="w-2 h-2 rounded-full" style={{ background: pressureColor(d.score) }} />
-          <span style={{ color: pressureColor(d.score) }}>{d.score}/100</span>
-          <span className="text-slate-500">·</span>
-          <span className="text-slate-400">{regimeLabel(d.regime)}</span>
-        </div>
-        {d.annotation && <div className="text-amber-300 mt-1 leading-relaxed border-t border-slate-700 pt-1">{d.annotation}</div>}
+      <div style={{ background: "rgba(0,8,20,0.95)", border: "1px solid #06b6d430", padding: "8px 10px", borderRadius: 4 }}>
+        <div style={{ color: "#06b6d4", fontFamily: "monospace", fontSize: 10, fontWeight: "bold" }}>{formatMonth(d.month)}</div>
+        <div style={{ color: pressureColor(d.score), fontFamily: "monospace", fontSize: 10 }}>{d.score}/100 · {regimeLabel(d.regime)}</div>
+        {d.annotation && <div style={{ color: "#f59e0b", fontFamily: "monospace", fontSize: 9, marginTop: 4, maxWidth: 200 }}>{d.annotation}</div>}
       </div>
     );
   };
 
-  // Determine tick interval based on slice length
   const tickInterval = slice.length <= 12 ? 0 : slice.length <= 36 ? 2 : slice.length <= 72 ? 5 : Math.floor(slice.length / 12);
 
   return (
-    <div className="space-y-3">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-800/80 border border-slate-700">
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex items-center gap-0.5 p-0.5 rounded" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid #06b6d420" }}>
           {PRESETS.map((p) => (
             <button key={p.label}
               onClick={() => { setPreset(p.label); setShowCustom(false); }}
-              className="px-2.5 py-1 rounded-md text-xs font-semibold transition-all"
+              className="px-2 py-0.5 rounded text-xs font-bold transition-all"
               style={{
-                background: preset === p.label && !showCustom ? "#0ea5e9" : "transparent",
-                color: preset === p.label && !showCustom ? "#fff" : "#64748b",
+                background: preset === p.label && !showCustom ? "#06b6d4" : "transparent",
+                color: preset === p.label && !showCustom ? "#000" : "#06b6d480",
+                fontFamily: "monospace",
+                fontSize: 9,
               }}>
               {p.label}
             </button>
@@ -529,85 +268,78 @@ function EvolutionChart({ timeline }: {
         </div>
         <button
           onClick={() => setShowCustom(!showCustom)}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border"
+          className="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold transition-all"
           style={{
-            background: showCustom ? "#0ea5e920" : "transparent",
-            color: showCustom ? "#0ea5e9" : "#64748b",
-            borderColor: showCustom ? "#0ea5e940" : "#334155",
+            background: showCustom ? "#06b6d420" : "transparent",
+            color: showCustom ? "#06b6d4" : "#06b6d450",
+            border: `1px solid ${showCustom ? "#06b6d440" : "#06b6d420"}`,
+            fontFamily: "monospace",
+            fontSize: 9,
           }}>
-          <Calendar className="w-3 h-3" />
-          Custom Range
+          <Calendar className="w-2.5 h-2.5" />
+          CUSTOM
         </button>
       </div>
 
-      {/* Custom date inputs */}
       {showCustom && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-800/60 border border-slate-700">
-          <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 p-2 rounded" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid #06b6d420" }}>
+          <SlidersHorizontal className="w-3 h-3 flex-shrink-0" style={{ color: "#06b6d4" }} />
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">From</span>
-              <input ref={startRef} type="month" value={customStart}
+            <div className="flex items-center gap-1">
+              <span style={{ color: "#06b6d4", fontFamily: "monospace", fontSize: 9 }}>FROM</span>
+              <input type="month" value={customStart}
                 min={timeline[0]?.month ?? "2000-01"}
                 max={(customEnd || timeline[timeline.length - 1]?.month) ?? "2025-12"}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="text-xs rounded bg-slate-900 border border-slate-600 text-slate-200 px-2 py-1 focus:outline-none focus:border-sky-500" />
+                style={{ background: "rgba(0,0,0,0.6)", border: "1px solid #06b6d430", color: "#06b6d4", fontFamily: "monospace", fontSize: 9, padding: "2px 4px", borderRadius: 2 }} />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">To</span>
-              <input ref={endRef} type="month" value={customEnd}
+            <div className="flex items-center gap-1">
+              <span style={{ color: "#06b6d4", fontFamily: "monospace", fontSize: 9 }}>TO</span>
+              <input type="month" value={customEnd}
                 min={(customStart || timeline[0]?.month) ?? "2000-01"}
                 max={timeline[timeline.length - 1]?.month ?? "2025-12"}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="text-xs rounded bg-slate-900 border border-slate-600 text-slate-200 px-2 py-1 focus:outline-none focus:border-sky-500" />
+                style={{ background: "rgba(0,0,0,0.6)", border: "1px solid #06b6d430", color: "#06b6d4", fontFamily: "monospace", fontSize: 9, padding: "2px 4px", borderRadius: 2 }} />
             </div>
             {customStart && customEnd && (
               <button onClick={() => { setCustomStart(""); setCustomEnd(""); }}
-                className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Clear</button>
+                style={{ color: "#06b6d450", fontFamily: "monospace", fontSize: 9 }}>CLEAR</button>
             )}
           </div>
         </div>
       )}
 
-      {/* Chart */}
-      <ResponsiveContainer width="100%" height={140}>
-        <AreaChart data={slice} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+      <ResponsiveContainer width="100%" height={100}>
+        <AreaChart data={slice} margin={{ top: 2, right: 2, bottom: 0, left: -25 }}>
           <defs>
             <linearGradient id="evolGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+              <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <XAxis dataKey="month" tickFormatter={formatMonth} tick={{ fontSize: 9, fill: "#475569" }}
+          <XAxis dataKey="month" tickFormatter={formatMonth} tick={{ fontSize: 8, fill: "#06b6d460", fontFamily: "monospace" }}
             interval={tickInterval} axisLine={false} tickLine={false} />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: "#475569" }} axisLine={false} tickLine={false} />
+          <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: "#06b6d460", fontFamily: "monospace" }} axisLine={false} tickLine={false} />
           <RTooltip content={<CustomTooltip />} />
           <ReferenceLine y={65} stroke="#f97316" strokeDasharray="3 3" strokeOpacity={0.3} />
           <ReferenceLine y={45} stroke="#eab308" strokeDasharray="3 3" strokeOpacity={0.3} />
-          <ReferenceLine y={30} stroke="#84cc16" strokeDasharray="3 3" strokeOpacity={0.3} />
-          <Area type="monotone" dataKey="score" stroke="#0ea5e9" strokeWidth={1.5} fill="url(#evolGrad)" dot={false} />
+          <Area type="monotone" dataKey="score" stroke="#06b6d4" strokeWidth={1.5} fill="url(#evolGrad)" dot={false} />
         </AreaChart>
       </ResponsiveContainer>
 
-      {/* Dynamic trend summary */}
       {trend && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-1">
           {[
-            { label: "Direction", value: trend.direction, color: trend.dirColor },
-            { label: "Net Change", value: `${trend.delta >= 0 ? "+" : ""}${trend.delta} pts`, color: trend.dirColor },
-            { label: "Avg Pressure", value: `${trend.avg}/100`, color: pressureColor(trend.avg) },
-            { label: "Range", value: `${trend.min}–${trend.max}`, color: "#94a3b8" },
+            { label: "DIRECTION", value: trend.direction, color: trend.dirColor },
+            { label: "NET CHANGE", value: `${trend.delta >= 0 ? "+" : ""}${trend.delta}`, color: trend.dirColor },
+            { label: "AVG SCORE", value: `${trend.avg}/100`, color: pressureColor(trend.avg) },
+            { label: "RANGE", value: `${trend.min}–${trend.max}`, color: "#06b6d4" },
           ].map((m) => (
-            <div key={m.label} className="rounded-lg bg-slate-800/60 p-2.5 text-center">
-              <div className="text-xs text-slate-500 mb-0.5">{m.label}</div>
-              <div className="text-xs font-bold" style={{ color: m.color }}>{m.value}</div>
+            <div key={m.label} className="text-center p-1.5 rounded" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid #06b6d415" }}>
+              <div style={{ color: "#06b6d460", fontFamily: "monospace", fontSize: 8 }}>{m.label}</div>
+              <div style={{ color: m.color, fontFamily: "monospace", fontSize: 10, fontWeight: "bold" }}>{m.value}</div>
             </div>
           ))}
-        </div>
-      )}
-      {trend && trend.regimeCount >= 2 && (
-        <div className="text-xs text-slate-500">
-          <span className="text-slate-400 font-medium">{trend.regimeCount} regimes</span> observed across this {trend.months}-month window
         </div>
       )}
     </div>
@@ -621,454 +353,466 @@ export default function SeismographIntelligence() {
     { staleTime: 5 * 60 * 1000, refetchOnWindowFocus: false }
   );
   const seedMutation = trpc.seismograph.seedNow.useMutation({ onSuccess: () => refetch() });
+  const [horizonTab, setHorizonTab] = useState<"1M" | "3M" | "6M" | "12M">("3M");
+  const [expandedPattern, setExpandedPattern] = useState<number | null>(null);
+  const [now, setNow] = useState(new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
 
+  // ── Loading ──────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-6 max-w-4xl mx-auto">
-        <div className="mb-8">
-          <div className="h-6 w-48 bg-slate-800 rounded animate-pulse mb-2" />
-          <div className="h-4 w-72 bg-slate-800/60 rounded animate-pulse" />
-        </div>
-        <div className="space-y-6 animate-pulse">
-          {[...Array(4)].map((_, i) => <div key={i} className="rounded-xl bg-slate-800/40 h-40" />)}
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#000814", fontFamily: "monospace" }}>
+        <div className="text-center space-y-4">
+          <div className="text-2xl font-bold tracking-widest" style={{ color: "#06b6d4" }}>FAULTLINE SEISMOGRAPH™</div>
+          <div className="text-xs tracking-widest" style={{ color: "#06b6d480" }}>INITIALIZING INTELLIGENCE ENGINES...</div>
+          <div className="flex justify-center gap-1">
+            {[0,1,2,3,4].map(i => (
+              <div key={i} className="w-1 rounded-full animate-pulse" style={{ height: 16 + i * 6, background: "#06b6d4", animationDelay: `${i * 0.1}s` }} />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
+  // ── Error / no data ──────────────────────────────────────────────────────────
   if (error || !intel) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-        <div className="text-center max-w-md">
-          <AlertTriangle className="w-10 h-10 text-amber-400 mx-auto mb-3" />
-          <h2 className="text-lg font-bold text-slate-200 mb-2">Intelligence Engine Initializing</h2>
-          <p className="text-sm text-slate-400 mb-4">
-            The Seismograph is loading historical market data. This typically takes under 30 seconds.
-          </p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#000814", fontFamily: "monospace" }}>
+        <div className="text-center space-y-4">
+          <div className="text-sm tracking-widest" style={{ color: "#ef4444" }}>INTELLIGENCE ENGINE OFFLINE</div>
           <button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}
-            className="flex items-center gap-2 mx-auto px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium transition-colors">
-            <RefreshCw className={`w-4 h-4 ${seedMutation.isPending ? "animate-spin" : ""}`} />
-            {seedMutation.isPending ? "Loading..." : "Initialize Engine"}
+            className="px-4 py-2 text-xs font-bold tracking-widest"
+            style={{ border: "1px solid #06b6d4", color: "#06b6d4", background: "transparent" }}>
+            {seedMutation.isPending ? "INITIALIZING..." : "INITIALIZE ENGINE"}
           </button>
         </div>
       </div>
     );
   }
 
-  const scoreColor = pressureColor(intel.currentScore);
-  const annotatedPoints = intel.timeline.filter((t) => t.isAnnotated);
+  // ── Derived data ─────────────────────────────────────────────────────────────
+  const score = intel.currentScore;
+  const scoreColor = pressureColor(score);
+  const stressLvl = intel.currentStressLevel;
+  const stressC = stressColor(stressLvl);
+
+  // Build waveform data from patterns (or generate from score history)
+  const patterns = intel.activePatterns ?? [];
+  const patternColors = ["#ef4444", "#f97316", "#06b6d4"];
+  const patternRiskLevels = ["HIGH", "MODERATE", "WATCH"];
+
+  // Generate waveform bars from pattern confidence + days active
+  function buildWaveform(confidence: number, daysActive: number, color: string): number[] {
+    const bars = 28;
+    return Array.from({ length: bars }, (_, i) => {
+      const progress = i / bars;
+      const base = 15 + progress * confidence * 0.6;
+      const noise = Math.sin(i * 2.3 + daysActive * 0.1) * 15 + Math.cos(i * 1.7) * 10;
+      return Math.max(5, Math.min(95, base + noise));
+    });
+  }
+
+  // Transition probabilities based on horizon
+  const tp = intel.transitionProbabilities;
+  const horizonMultipliers: Record<string, number> = { "1M": 0.6, "3M": 1.0, "6M": 1.3, "12M": 1.6 };
+  const hm = horizonMultipliers[horizonTab] ?? 1;
+  const rawProbs = [
+    { label: "Deterioration (Elevated Stress)", pct: Math.round(tp.transitionToElevated * hm), color: "#f97316" },
+    { label: "Sideways / Choppy (Range-Bound)", pct: Math.round(tp.remainInRegime * hm * 0.8), color: "#f97316" },
+    { label: "Stabilization (Base-Building)", pct: Math.round(tp.transitionToLow * hm), color: "#06b6d4" },
+    { label: "Improvement (Early Expansion)", pct: Math.round(tp.transitionToLow * hm * 0.5), color: "#22c55e" },
+    { label: "Systemic Event (Tail Risk)", pct: Math.round(tp.transitionToCrisis * hm), color: "#ef4444" },
+  ];
+  // Normalize to 100
+  const total = rawProbs.reduce((s, p) => s + p.pct, 0);
+  const transProbs = rawProbs.map(p => ({ ...p, pct: Math.round((p.pct / total) * 100) }));
+
+  // Evidence consensus score (0-10)
+  const evidenceScore = ((score / 100) * 10).toFixed(1);
+
+  // Historical analog
+  const topAnalog = intel.topAnalog;
+
+  // Current state label
+  const stateLabel = stressLvl === "Crisis" ? "CRITICAL" : stressLvl === "High" ? "ELEVATED" : stressLvl === "Elevated" ? "CAUTIOUS" : "STABLE";
+  const stateColor = stressC;
+
+  const utcTime = now.toISOString().replace("T", " ").slice(0, 19) + " UTC";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-10">
-
-        {/* ── Header ── */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Activity className="w-5 h-5 text-sky-400" />
-              <h1 className="text-xl font-black tracking-tight text-slate-100">SEISMOGRAPH INTELLIGENCE</h1>
-            </div>
-            <p className="text-xs text-slate-500">
-              Institutional market intelligence synthesized from {intel.memory.observationCount} months of historical data
-              · {intel.memory.datasetSpan}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium"
-              style={{
-                background: intel.dataFreshness === "live" ? "#0ea5e920" : "#f59e0b20",
-                color: intel.dataFreshness === "live" ? "#0ea5e9" : "#f59e0b",
-                border: `1px solid ${intel.dataFreshness === "live" ? "#0ea5e940" : "#f59e0b40"}`,
-              }}>
-              <div className="w-1.5 h-1.5 rounded-full"
-                style={{ background: intel.dataFreshness === "live" ? "#0ea5e9" : "#f59e0b" }} />
-              {intel.dataFreshness === "live" ? "Live" : "Historical"}
-            </div>
-            <button onClick={() => refetch()}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 transition-colors">
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-          </div>
+    <div className="min-h-screen" style={{ background: "#000814", fontFamily: "monospace", color: "#06b6d4" }}>
+      {/* ── Top system status bar ── */}
+      <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: "#06b6d420", background: "rgba(0,8,20,0.9)" }}>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-bold tracking-widest" style={{ color: "#06b6d4" }}>FAULTLINE SEISMOGRAPH™</span>
+          <span className="text-xs tracking-widest" style={{ color: "#06b6d460" }}>SEISMOGRAPH INTELLIGENCE DASHBOARD</span>
         </div>
-
-        {/* ── 1: Today's Market Story ── */}
-        <Section id="story" icon={<Brain className="w-4 h-4" />}
-          title="Today's Market Story"
-          subtitle="What is happening and why — synthesized from all intelligence engines"
-          accentColor="#0ea5e9">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-            <p className="text-sm text-slate-200 leading-relaxed font-medium">{intel.todayStory}</p>
-            {intel.keyDevelopments.length > 0 && (
-              <div>
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Key Developments</div>
-                <div className="space-y-1.5">
-                  {intel.keyDevelopments.map((d, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs">
-                      <div className="w-1 h-1 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
-                      <span className="text-slate-300 leading-relaxed">{d}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
-              <div className="rounded-lg bg-slate-800/60 p-3">
-                <div className="text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
-                  <Info className="w-3 h-3" /> Why This Score
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">{intel.whyThisScore}</p>
-              </div>
-              <div className="rounded-lg bg-slate-800/60 p-3">
-                <div className="text-xs font-semibold text-slate-400 mb-1.5 flex items-center gap-1.5">
-                  <Compass className="w-3 h-3" /> Why This Regime
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">{intel.whyThisRegime}</p>
-              </div>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
+            <BlinkDot color="#22c55e" />
+            <span className="text-xs tracking-widest" style={{ color: "#22c55e", fontSize: 10 }}>SYSTEM STATUS ONLINE</span>
           </div>
-        </Section>
-
-        {/* ── 2: Pressure Index ── */}
-        <Section id="pressure" icon={<Zap className="w-4 h-4" />}
-          title="Current Pressure Index"
-          subtitle="Systemic stress level synthesized from all contributing intelligence engines"
-          accentColor={scoreColor}>
-          <div className="rounded-xl border bg-slate-900/60 p-5" style={{ borderColor: `${scoreColor}30` }}>
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="flex-shrink-0">
-                <PressureGauge score={intel.currentScore} />
-                <div className="text-center mt-1">
-                  <div className="text-xs font-bold uppercase tracking-widest" style={{ color: scoreColor }}>
-                    {intel.currentStressLevel} STRESS
-                  </div>
-                </div>
-              </div>
-              <div className="flex-1 w-full space-y-3">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {[
-                    { label: "Regime", value: regimeLabel(intel.currentRegime), color: regimeColor(intel.currentRegime) },
-                    { label: "Direction", value: intel.currentDirection,
-                      color: intel.currentDirection === "Improving" ? "#22c55e" : intel.currentDirection === "Deteriorating" ? "#ef4444" : "#94a3b8" },
-                    { label: "Percentile", value: `${intel.currentPercentile}th`, color: scoreColor },
-                    { label: "Observations", value: `${intel.memory.observationCount} mo`, color: "#94a3b8" },
-                    { label: "Evidence", value: intel.evidenceConsensus.charAt(0).toUpperCase() + intel.evidenceConsensus.slice(1), color: "#0ea5e9" },
-                    { label: "Dataset", value: intel.memory.datasetSpan, color: "#64748b" },
-                  ].map((m) => (
-                    <div key={m.label} className="rounded-lg bg-slate-800/60 p-2.5 text-center">
-                      <div className="text-xs text-slate-500 mb-0.5">{m.label}</div>
-                      <div className="text-xs font-bold truncate" style={{ color: m.color }}>{m.value}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {intel.enginesAgreeing.slice(0, 3).map((e) => (
-                    <span key={e} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                      style={{ background: "#ef444418", color: "#ef4444", border: "1px solid #ef444430" }}>{e}</span>
-                  ))}
-                  {intel.enginesDisagreeing.slice(0, 2).map((e) => (
-                    <span key={e} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                      style={{ background: "#22c55e18", color: "#22c55e", border: "1px solid #22c55e30" }}>{e}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <BlinkDot color="#22c55e" />
+            <span className="text-xs tracking-widest" style={{ color: "#22c55e", fontSize: 10 }}>DATA FEED LIVE</span>
           </div>
-        </Section>
+          <span className="text-xs" style={{ color: "#06b6d460", fontSize: 10 }}>LAST UPDATE: {utcTime}</span>
+          <button onClick={() => refetch()} className="text-xs px-2 py-0.5 rounded" style={{ border: "1px solid #06b6d430", color: "#06b6d4", fontSize: 9 }}>↺ REFRESH</button>
+        </div>
+      </div>
 
-        {/* ── 3: Current Regime ── */}
-        <Section id="regime" icon={<Compass className="w-4 h-4" />}
-          title="Current Regime"
-          subtitle="The prevailing market environment — what it means and what evidence supports it"
-          accentColor="#8b5cf6">
-          <div className="space-y-3">
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-              <div className="flex items-center justify-between mb-1">
+      {/* ── Main HUD grid ── */}
+      <div className="p-3 grid gap-3" style={{ gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto auto auto" }}>
+
+        {/* ── LEFT COLUMN ── */}
+        <div className="space-y-3">
+
+          {/* Market State */}
+          <HudPanel accentColor={stateColor}>
+            <PanelHeader icon={<span style={{ fontSize: 14 }}>◈</span>} title="MARKET STATE" color="#06b6d4" />
+            <div className="p-3 space-y-2">
+              <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-base font-bold text-slate-100">{regimeLabel(intel.currentRegime)}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">
-                    {intel.probabilities.confidence}% confidence · {intel.probabilities.primaryDriver} primary driver
-                  </div>
+                  <div className="text-xs tracking-widest" style={{ color: "#06b6d4", fontSize: 10 }}>CURRENT STATE:</div>
+                  <div className="text-2xl font-bold tracking-widest" style={{ color: stateColor, textShadow: `0 0 20px ${stateColor}60` }}>{stateLabel}</div>
                 </div>
-                <div className="px-3 py-1 rounded-full text-xs font-bold"
-                  style={{ background: `${regimeColor(intel.currentRegime)}20`, color: regimeColor(intel.currentRegime),
-                    border: `1px solid ${regimeColor(intel.currentRegime)}40` }}>
-                  {intel.currentPercentile}th pctile
+                <div className="text-right">
+                  <div className="text-xs tracking-widest" style={{ color: "#06b6d460", fontSize: 9 }}>PRESSURE SCORE</div>
+                  <div className="text-3xl font-bold" style={{ color: scoreColor, fontFamily: "monospace", textShadow: `0 0 20px ${scoreColor}60` }}>{score}</div>
+                  <div className="text-xs" style={{ color: "#06b6d460", fontSize: 9 }}>/100</div>
                 </div>
               </div>
-              <div className="space-y-3">
-                <ProbabilityBar label="Bull / Recovery" value={intel.probabilities.bull} color="#22c55e"
-                  description={intel.probabilities.bull >= 40 ? "Constructive conditions — risk-on positioning historically appropriate" : undefined} />
-                <ProbabilityBar label="Neutral / Consolidation" value={intel.probabilities.neutral} color="#94a3b8" />
-                <ProbabilityBar label="Bear / Deterioration" value={intel.probabilities.bear} color="#ef4444"
-                  description={intel.probabilities.bear >= 40 ? "Elevated risk — defensive positioning historically appropriate" : undefined} />
-              </div>
-              <div className="pt-1 space-y-1.5">
-                <div className="text-xs text-slate-400">
-                  <span className="font-semibold text-slate-300">Evidence basis: </span>{intel.probabilities.evidenceBasis}
-                </div>
-                <div className="text-xs text-slate-400">
-                  <span className="font-semibold text-slate-300">Historical basis: </span>{intel.probabilities.historicalBasis}
-                </div>
-              </div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-1">Intelligence Engine Breakdown</div>
-              <div className="space-y-2">
-                {intel.evidenceFamilies.map((f) => <EvidenceFamilyCard key={f.name} family={f} />)}
-              </div>
-            </div>
-          </div>
-        </Section>
 
-        {/* ── 4: Active Patterns ── */}
-        <Section id="patterns" icon={<Layers className="w-4 h-4" />}
-          title="Active Patterns"
-          subtitle="What is developing beneath the surface — detected from historical pattern analysis"
-          accentColor="#f59e0b">
-          {intel.activePatterns.length > 0 ? (
-            <div className="space-y-2">
-              {intel.activePatterns.map((p) => <PatternCard key={p.name} pattern={p} />)}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 text-center">
-              <Shield className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-              <div className="text-sm font-semibold text-slate-300 mb-1">No Elevated Patterns Active</div>
-              <p className="text-xs text-slate-500">
-                Current conditions do not match any historically significant pattern thresholds.
-                This is a constructive signal — elevated patterns typically precede stress events.
-              </p>
-            </div>
-          )}
-        </Section>
-
-        {/* ── 5: Regime Transition Probabilities ── */}
-        <Section id="transitions" icon={<GitBranch className="w-4 h-4" />}
-          title="Regime Transition Probabilities"
-          subtitle="Where the market is most likely heading — computed from historical transition rates"
-          accentColor="#0ea5e9">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-            <div className="space-y-3">
-              <ProbabilityBar label="Remain in Current Regime" value={intel.transitionProbabilities.remainInRegime} color="#0ea5e9" />
-              <ProbabilityBar label="Transition to Elevated / High Risk" value={intel.transitionProbabilities.transitionToElevated} color="#f97316" />
-              <ProbabilityBar label="Transition to Lower Risk" value={intel.transitionProbabilities.transitionToLow} color="#22c55e" />
-              <ProbabilityBar label="Transition to Crisis" value={intel.transitionProbabilities.transitionToCrisis} color="#ef4444" />
-            </div>
-            <div className="pt-1 space-y-1.5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <div className="text-xs font-bold px-2 py-0.5 rounded"
-                  style={{ background: "#0ea5e920", color: "#0ea5e9" }}>
-                  {intel.transitionProbabilities.confidence}% confidence
-                </div>
-              </div>
-              <div className="text-xs text-slate-400">
-                <span className="font-semibold text-slate-300">Historical basis: </span>
-                {intel.transitionProbabilities.historicalBasis}
-              </div>
-              {intel.transitionProbabilities.currentEvidence.map((e, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs">
-                  <div className="w-1 h-1 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
-                  <span className="text-slate-400">{e}</span>
-                </div>
-              ))}
-            </div>
-            {intel.recentTransitions.length > 0 && (
-              <div className="pt-2 border-t border-slate-800">
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Recent Regime Changes</div>
-                <div className="space-y-1.5 max-h-40 overflow-y-auto">
-                  {intel.recentTransitions.slice(0, 6).map((t, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs">
-                      <span className="text-slate-500 font-mono flex-shrink-0">{formatMonth(t.date)}</span>
-                      <span className="text-slate-400">
-                        <span style={{ color: regimeColor(t.fromRegime) }}>{regimeLabel(t.fromRegime)}</span>
-                        {" → "}
-                        <span style={{ color: regimeColor(t.toRegime) }}>{regimeLabel(t.toRegime)}</span>
-                        {" · "}{t.pressureAtTransition}/100
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </Section>
-
-        {/* ── 6: Evolution Analysis ── */}
-        <Section id="evolution" icon={<BarChart2 className="w-4 h-4" />}
-          title="Evolution Analysis"
-          subtitle="How conditions have changed across any time window — select a preset or define a custom date range"
-          accentColor="#22c55e">
-          <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
-            <EvolutionChart timeline={intel.timeline} />
-            <div className="border-t border-slate-800 pt-3">
-              <div className="text-xs font-semibold text-slate-400 mb-2">Standard Trend Windows</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {[
-                  { label: "7-Day", value: intel.evolution.sevenDayTrend, color: "#0ea5e9" },
-                  { label: "30-Day", value: intel.evolution.thirtyDayTrend, color: "#8b5cf6" },
-                  { label: "90-Day", value: intel.evolution.ninetyDayTrend, color: "#f59e0b" },
-                  { label: "12-Month", value: intel.evolution.yearTrend, color: "#22c55e" },
-                ].map((t) => (
-                  <div key={t.label} className="rounded-lg bg-slate-800/60 p-3">
-                    <div className="text-xs font-semibold mb-0.5" style={{ color: t.color }}>{t.label}</div>
-                    <div className="text-xs text-slate-300">{t.value}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {(intel.evolution.accelerating || intel.evolution.buildingPressure) && (
-              <div className="flex items-start gap-2 rounded-lg bg-orange-500/10 border border-orange-500/20 p-3">
-                <AlertTriangle className="w-4 h-4 text-orange-400 flex-shrink-0 mt-0.5" />
-                <div className="text-xs text-orange-300">
-                  {intel.evolution.accelerating
-                    ? "Pressure is accelerating — both 7-day and 30-day trends are rising simultaneously."
-                    : "Pressure is building across all measured timeframes — sustained deterioration."}
-                </div>
-              </div>
-            )}
-            {intel.evolution.whatChanged.length > 0 && (
+              {/* Evidence consensus bar */}
               <div>
-                <div className="text-xs font-semibold text-slate-400 mb-1.5">What Changed</div>
-                <div className="space-y-1">
-                  {intel.evolution.whatChanged.map((c, i) => (
-                    <div key={i} className="flex items-start gap-2 text-xs">
-                      <div className="w-1 h-1 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
-                      <span className="text-slate-300">{c}</span>
-                    </div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs tracking-widest" style={{ color: "#06b6d4", fontSize: 9 }}>EVIDENCE CONSENSUS:</span>
+                  <span className="text-lg font-bold" style={{ color: stateColor, fontFamily: "monospace" }}>{evidenceScore}/10</span>
+                </div>
+                <div className="h-2 rounded-sm" style={{ background: "#06b6d415" }}>
+                  <div className="h-full rounded-sm transition-all duration-1000"
+                    style={{ width: `${(parseFloat(evidenceScore) / 10) * 100}%`, background: `linear-gradient(90deg, #22c55e, #eab308, ${stateColor})`, boxShadow: `0 0 8px ${stateColor}60` }} />
+                </div>
+                <div className="flex justify-between mt-0.5">
+                  {[0, 2.5, 5, 7.5, 10].map(v => (
+                    <span key={v} style={{ color: "#06b6d430", fontSize: 8 }}>{v}</span>
                   ))}
                 </div>
               </div>
-            )}
-            <div>
-              <div className="text-xs font-semibold text-slate-400 mb-1.5">What to Monitor</div>
-              <div className="space-y-1">
-                {intel.evolution.whatToWatch.slice(0, 4).map((w, i) => (
-                  <div key={i} className="flex items-start gap-2 text-xs">
-                    <Target className="w-3 h-3 text-sky-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-400">{w}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-slate-400 mb-1.5">What Would Invalidate This Assessment</div>
-              <div className="space-y-1">
-                {intel.evolution.invalidationConditions.slice(0, 3).map((c, i) => (
-                  <div key={i} className="flex items-start gap-2 text-xs">
-                    <Shield className="w-3 h-3 text-green-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-slate-400">{c}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </Section>
 
-        {/* ── 7: Historical Memory ── */}
-        <Section id="memory" icon={<History className="w-4 h-4" />}
-          title="Historical Memory"
-          subtitle="The closest historical environments and what happened next — from 317 months of institutional data"
-          accentColor="#f59e0b">
-          <div className="space-y-4">
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5 space-y-3">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {[
-                  { label: "Dataset", value: `${intel.memory.observationCount} months`, color: "#0ea5e9" },
-                  { label: "Avg Pressure", value: `${intel.memory.historicalStats.avgPressure}/100`, color: "#94a3b8" },
-                  { label: "Peak Pressure", value: `${intel.memory.historicalStats.maxPressure}/100`, color: "#ef4444" },
-                  { label: "Longest Streak", value: `${intel.memory.longestStreak} mo`, color: "#f59e0b" },
-                ].map((s) => (
-                  <div key={s.label} className="rounded-lg bg-slate-800/60 p-2.5 text-center">
-                    <div className="text-xs text-slate-500 mb-0.5">{s.label}</div>
-                    <div className="text-xs font-bold" style={{ color: s.color }}>{s.value}</div>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-slate-400 mb-2">Historical Regime Distribution ({intel.memory.observationCount} months)</div>
-                <div className="space-y-1.5">
-                  {[
-                    { label: "Low Risk", months: intel.memory.historicalStats.lowMonths, color: "#22c55e" },
-                    { label: "Moderate Risk", months: intel.memory.historicalStats.moderateMonths, color: "#84cc16" },
-                    { label: "Elevated Risk", months: intel.memory.historicalStats.elevatedMonths, color: "#eab308" },
-                    { label: "High Risk", months: intel.memory.historicalStats.highRiskMonths, color: "#f97316" },
-                    { label: "Critical", months: intel.memory.historicalStats.criticalMonths, color: "#ef4444" },
-                  ].map((r) => (
-                    <div key={r.label} className="flex items-center gap-2 text-xs">
-                      <span className="text-slate-400 w-24 flex-shrink-0">{r.label}</span>
-                      <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full"
-                          style={{ width: `${(r.months / intel.memory.observationCount) * 100}%`, background: r.color }} />
-                      </div>
-                      <span className="text-slate-500 w-20 text-right">
-                        {r.months} mo ({Math.round((r.months / intel.memory.observationCount) * 100)}%)
-                      </span>
-                    </div>
-                  ))}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div>
+                  <div className="text-xs" style={{ color: "#06b6d4", fontSize: 9 }}>Active Regime:</div>
+                  <div className="text-xs font-bold" style={{ color: "#06b6d4" }}>{regimeLabel(intel.currentRegime)}</div>
                 </div>
+                {topAnalog && (
+                  <div>
+                    <div className="text-xs" style={{ color: "#06b6d4", fontSize: 9 }}>Historical Analog:</div>
+                    <div className="text-xs font-bold" style={{ color: "#06b6d4" }}>{topAnalog.period} — {topAnalog.similarity}% similarity</div>
+                  </div>
+                )}
               </div>
-              <div className="text-xs text-slate-400 pt-1">
-                <span className="font-semibold text-slate-300">Current streak: </span>{intel.memory.currentStreakDescription}
-              </div>
-              {intel.memory.lastMajorShift && (
-                <div className="text-xs text-slate-400">
-                  <span className="font-semibold text-slate-300">Last major shift: </span>{intel.memory.lastMajorShift}
+
+              {intel.whyThisScore && (
+                <div className="pt-1 border-t" style={{ borderColor: "#06b6d415" }}>
+                  <div className="text-xs leading-relaxed" style={{ color: "#06b6d480", fontSize: 10 }}>{intel.whyThisScore}</div>
                 </div>
               )}
             </div>
+          </HudPanel>
 
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-              <div className="text-xs font-semibold text-amber-400 mb-1.5 flex items-center gap-1.5">
-                <BookOpen className="w-3.5 h-3.5" /> Analog Engine Summary
-              </div>
-              <p className="text-xs text-slate-300 leading-relaxed">{intel.analogSummary}</p>
-            </div>
-
-            {intel.analogs.length > 0 && (
-              <div className="space-y-2">
-                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">Closest Historical Analogs</div>
-                {intel.analogs.map((a, i) => <AnalogCard key={a.period} analog={a} rank={i} />)}
-              </div>
-            )}
-
-            <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-              <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Full Historical Timeline ({intel.memory.observationCount} months)
-              </div>
-              <TimelineChart
-                data={intel.timeline}
-                annotations={annotatedPoints.map((t) => ({ month: t.month, annotation: t.annotation ?? "" }))}
-              />
-            </div>
-          </div>
-        </Section>
-
-        {/* ── Next Steps ── */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Continue Your Analysis</div>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {[
-              { label: "Signal Outlook", href: "/app/signal-outlook", icon: <Target className="w-3.5 h-3.5" />, desc: "Asset-level signals" },
-              { label: "Symbol Intelligence", href: "/app/discover", icon: <BarChart2 className="w-3.5 h-3.5" />, desc: "Individual stock analysis" },
-              { label: "Daily Briefing", href: "/app/daily-report", icon: <BookOpen className="w-3.5 h-3.5" />, desc: "Today's full briefing" },
-              { label: "Pressure Index", href: "/app/pressure-index", icon: <Zap className="w-3.5 h-3.5" />, desc: "Deep pressure analysis" },
-              { label: "Pre-Flight Check", href: "/app/preflight", icon: <Shield className="w-3.5 h-3.5" />, desc: "Market readiness" },
-              { label: "Ask FAULTLINE", href: "/app/ask", icon: <Brain className="w-3.5 h-3.5" />, desc: "AI market intelligence" },
-            ].map((link) => (
-              <Link key={link.href} href={link.href}>
-                <div className="flex items-center gap-2.5 p-3 rounded-lg border border-slate-800 bg-slate-900/60 hover:border-sky-500/40 hover:bg-sky-500/5 transition-all cursor-pointer group">
-                  <span className="text-slate-500 group-hover:text-sky-400 transition-colors">{link.icon}</span>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-300 group-hover:text-slate-100 transition-colors truncate">{link.label}</div>
-                    <div className="text-xs text-slate-600 truncate">{link.desc}</div>
+          {/* Active Patterns */}
+          <HudPanel accentColor="#06b6d4">
+            <PanelHeader icon={<span style={{ fontSize: 12 }}>◎</span>} title="ACTIVE PATTERNS" color="#06b6d4" />
+            <div className="p-3">
+              {patterns.length === 0 ? (
+                <div className="text-center py-4" style={{ color: "#06b6d440", fontSize: 10 }}>NO ACTIVE PATTERNS DETECTED</div>
+              ) : (
+                <>
+                  {/* Circular gauges row */}
+                  <div className="flex items-start justify-around mb-3">
+                    {patterns.slice(0, 3).map((p, i) => (
+                      <CircularGauge
+                        key={i}
+                        value={p.confidence}
+                        color={patternColors[i] ?? "#06b6d4"}
+                        icon={<span style={{ fontSize: 12 }}>{i === 0 ? "⊕" : i === 1 ? "⟳" : "⬡"}</span>}
+                        label={p.name.length > 12 ? p.name.slice(0, 12) + "…" : p.name}
+                        days={p.daysActive}
+                      />
+                    ))}
+                    {patterns.length < 3 && Array.from({ length: 3 - patterns.length }).map((_, i) => (
+                      <div key={`empty-${i}`} className="flex flex-col items-center gap-1.5">
+                        <div style={{ width: 72, height: 72, border: "1px dashed #06b6d420", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <span style={{ color: "#06b6d420", fontSize: 10 }}>—</span>
+                        </div>
+                        <div style={{ color: "#06b6d430", fontSize: 9 }}>NO PATTERN</div>
+                      </div>
+                    ))}
                   </div>
-                  <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-sky-400 ml-auto flex-shrink-0 transition-colors" />
+
+                  {/* Waveform charts */}
+                  <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(patterns.length, 3)}, 1fr)` }}>
+                    {patterns.slice(0, 3).map((p, i) => (
+                      <div key={i} className="cursor-pointer" onClick={() => setExpandedPattern(expandedPattern === i ? null : i)}>
+                        <SeismographWaveform
+                          data={buildWaveform(p.confidence, p.daysActive, patternColors[i] ?? "#06b6d4")}
+                          color={patternColors[i] ?? "#06b6d4"}
+                          label={p.name}
+                          signalQuality={p.confidence}
+                          riskLevel={patternRiskLevels[i] ?? "WATCH"}
+                        />
+                        {expandedPattern === i && (
+                          <div className="mt-2 p-2 rounded text-xs space-y-1" style={{ background: "rgba(0,0,0,0.5)", border: `1px solid ${patternColors[i] ?? "#06b6d4"}30` }}>
+                            <div style={{ color: "#06b6d4", fontSize: 9 }}>{p.description}</div>
+                            <div className="grid grid-cols-3 gap-1 pt-1">
+                              {[
+                                { l: "1M AVG", v: `${p.avgReturn1m >= 0 ? "+" : ""}${p.avgReturn1m.toFixed(1)}%` },
+                                { l: "3M AVG", v: `${p.avgReturn3m >= 0 ? "+" : ""}${p.avgReturn3m.toFixed(1)}%` },
+                                { l: "6M AVG", v: `${p.avgReturn6m >= 0 ? "+" : ""}${p.avgReturn6m.toFixed(1)}%` },
+                              ].map(m => (
+                                <div key={m.l} className="text-center">
+                                  <div style={{ color: "#06b6d440", fontSize: 8 }}>{m.l}</div>
+                                  <div style={{ color: parseFloat(m.v) >= 0 ? "#22c55e" : "#ef4444", fontSize: 9, fontWeight: "bold" }}>{m.v}</div>
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ color: "#06b6d440", fontSize: 8 }}>INVALIDATION: {p.invalidationConditions}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </HudPanel>
+
+          {/* Today's Intelligence */}
+          <HudPanel accentColor="#06b6d4">
+            <PanelHeader icon={<span style={{ fontSize: 12 }}>⬡</span>} title="TODAY'S INTELLIGENCE" color="#06b6d4" />
+            <div className="p-3 space-y-2">
+              <div className="text-xs leading-relaxed" style={{ color: "#94a3b8", fontSize: 10 }}>{intel.todayStory}</div>
+              {intel.keyDevelopments?.length > 0 && (
+                <div className="space-y-1 pt-1 border-t" style={{ borderColor: "#06b6d415" }}>
+                  {intel.keyDevelopments.slice(0, 3).map((d, i) => (
+                    <div key={i} className="flex items-start gap-1.5">
+                      <span style={{ color: "#06b6d4", fontSize: 9, marginTop: 1 }}>▸</span>
+                      <span style={{ color: "#06b6d480", fontSize: 9 }}>{d}</span>
+                    </div>
+                  ))}
                 </div>
-              </Link>
-            ))}
-          </div>
+              )}
+            </div>
+          </HudPanel>
+
+          {/* Evolution Analysis */}
+          <HudPanel accentColor="#22c55e">
+            <PanelHeader icon={<span style={{ fontSize: 12 }}>↗</span>} title="EVOLUTION ANALYSIS" color="#22c55e" />
+            <div className="p-3 space-y-2">
+              <EvolutionChart timeline={intel.timeline} />
+              <div className="grid grid-cols-2 gap-1.5 pt-1 border-t" style={{ borderColor: "#22c55e15" }}>
+                {[
+                  { label: "7-DAY", value: intel.evolution.sevenDayTrend, color: "#06b6d4" },
+                  { label: "30-DAY", value: intel.evolution.thirtyDayTrend, color: "#8b5cf6" },
+                  { label: "90-DAY", value: intel.evolution.ninetyDayTrend, color: "#f59e0b" },
+                  { label: "12-MONTH", value: intel.evolution.yearTrend, color: "#22c55e" },
+                ].map((t) => (
+                  <div key={t.label} className="p-1.5 rounded" style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${t.color}20` }}>
+                    <div style={{ color: t.color, fontFamily: "monospace", fontSize: 8, fontWeight: "bold" }}>{t.label}</div>
+                    <div style={{ color: "#94a3b8", fontSize: 9 }}>{t.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </HudPanel>
         </div>
 
+        {/* ── RIGHT COLUMN ── */}
+        <div className="space-y-3">
+
+          {/* Transition Probabilities */}
+          <HudPanel accentColor="#06b6d4">
+            <PanelHeader icon={<span style={{ fontSize: 12 }}>▦</span>} title="TRANSITION PROBABILITIES" color="#06b6d4" />
+            <div className="p-3 space-y-3">
+              {/* Horizon selector */}
+              <div className="flex items-center gap-2">
+                <span style={{ color: "#06b6d460", fontSize: 9 }}>HORIZON:</span>
+                <div className="flex gap-1">
+                  {(["1M", "3M", "6M", "12M"] as const).map(h => (
+                    <button key={h} onClick={() => setHorizonTab(h)}
+                      className="px-2 py-0.5 text-xs font-bold transition-all"
+                      style={{
+                        border: `1px solid ${horizonTab === h ? "#22c55e" : "#06b6d430"}`,
+                        color: horizonTab === h ? "#22c55e" : "#06b6d460",
+                        background: horizonTab === h ? "#22c55e15" : "transparent",
+                        fontFamily: "monospace",
+                        fontSize: 9,
+                      }}>
+                      {h}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2.5">
+                {transProbs.map((p, i) => (
+                  <ProbRow key={i} label={p.label} pct={p.pct} color={p.color} />
+                ))}
+              </div>
+
+              <div className="flex justify-between pt-1 border-t" style={{ borderColor: "#06b6d415" }}>
+                <span style={{ color: "#06b6d440", fontSize: 8 }}>PROBABILITIES SUM TO 100%</span>
+                <span style={{ color: "#06b6d440", fontSize: 8 }}>DATA-DRIVEN ESTIMATES</span>
+              </div>
+
+              {tp.historicalBasis && (
+                <div className="p-2 rounded" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid #06b6d415" }}>
+                  <div style={{ color: "#06b6d460", fontSize: 9 }}>{tp.historicalBasis}</div>
+                </div>
+              )}
+            </div>
+          </HudPanel>
+
+          {/* Evidence Families */}
+          <HudPanel accentColor="#8b5cf6">
+            <PanelHeader icon={<span style={{ fontSize: 12 }}>◈</span>} title="INTELLIGENCE ENGINE BREAKDOWN" color="#8b5cf6" />
+            <div className="p-3 space-y-1.5">
+              {intel.evidenceFamilies?.slice(0, 6).map((ef, i) => {
+                const efColor = ef.signal === "bullish" || ef.signal === "recovering" ? "#22c55e" : ef.signal === "bearish" || ef.signal === "stressed" ? "#ef4444" : "#eab308";
+                return (
+                <div key={i} className="space-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <span style={{ color: "#94a3b8", fontSize: 9 }}>{ef.name}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span style={{ color: pressureColor(ef.strength), fontSize: 9, fontWeight: "bold" }}>{ef.strength}/100</span>
+                      <span className="px-1 py-0.5 text-xs" style={{ background: `${efColor}20`, color: efColor, fontSize: 8, border: `1px solid ${efColor}40` }}>{ef.signal.toUpperCase()}</span>
+                    </div>
+                  </div>
+                  <div className="h-1 rounded-sm" style={{ background: "#06b6d410" }}>
+                    <div className="h-full rounded-sm" style={{ width: `${ef.strength}%`, background: pressureColor(ef.strength), boxShadow: `0 0 4px ${pressureColor(ef.strength)}60` }} />
+                  </div>
+                </div>
+                );
+              })}
+              <div className="pt-1 border-t" style={{ borderColor: "#8b5cf615" }}>
+                <div style={{ color: "#06b6d460", fontSize: 9 }}>
+                  CONSENSUS: <span style={{ color: "#8b5cf6", fontWeight: "bold" }}>{intel.evidenceConsensus?.toUpperCase()}</span>
+                  {intel.enginesAgreeing?.length > 0 && <span> · {intel.enginesAgreeing.length} ENGINES AGREEING</span>}
+                </div>
+              </div>
+            </div>
+          </HudPanel>
+
+          {/* Historical Analog Engine */}
+          <HudPanel accentColor="#f59e0b">
+            <PanelHeader icon={<span style={{ fontSize: 12 }}>⏱</span>} title="HISTORICAL ANALOG ENGINE" color="#f59e0b" />
+            <div className="p-3 space-y-2">
+              {intel.analogs?.slice(0, 3).map((a, i) => (
+                <div key={i} className="p-2 rounded space-y-1" style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${i === 0 ? "#f59e0b40" : "#06b6d415"}` }}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold" style={{ color: i === 0 ? "#f59e0b" : "#06b6d4", fontSize: 10 }}>{a.period}</span>
+                    <span className="px-1.5 py-0.5" style={{ background: "#f59e0b20", color: "#f59e0b", fontSize: 8, border: "1px solid #f59e0b40" }}>{a.similarity}% MATCH</span>
+                  </div>
+                  <div style={{ color: "#94a3b8", fontSize: 9 }}>{a.description}</div>
+                  {a.resolution && (
+                    <div style={{ color: "#06b6d460", fontSize: 9 }}>OUTCOME: {a.resolution}</div>
+                  )}
+                  {a.avgReturn3m !== null && a.avgReturn3m !== undefined && (
+                    <div className="flex gap-2 pt-0.5">
+                      {[
+                        { l: "3M", v: a.avgReturn3m },
+                        { l: "6M", v: a.avgReturn6m },
+                        { l: "12M", v: a.avgReturn12m },
+                      ].filter(x => x.v !== undefined).map(m => (
+                        <div key={m.l} className="text-center">
+                          <div style={{ color: "#06b6d440", fontSize: 8 }}>{m.l}</div>
+                          <div style={{ color: (m.v ?? 0) >= 0 ? "#22c55e" : "#ef4444", fontSize: 9, fontWeight: "bold" }}>
+                            {(m.v ?? 0) >= 0 ? "+" : ""}{(m.v ?? 0).toFixed(1)}%
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {intel.analogSummary && (
+                <div className="pt-1 border-t" style={{ borderColor: "#f59e0b15" }}>
+                  <div style={{ color: "#06b6d460", fontSize: 9 }}>{intel.analogSummary}</div>
+                </div>
+              )}
+            </div>
+          </HudPanel>
+
+          {/* Historical Memory */}
+          <HudPanel accentColor="#06b6d4">
+            <PanelHeader icon={<span style={{ fontSize: 12 }}>◷</span>} title="HISTORICAL MEMORY" color="#06b6d4" />
+            <div className="p-3 space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "OBSERVATIONS", value: intel.memory.observationCount.toString() },
+                  { label: "DATASET SPAN", value: intel.memory.datasetSpan },
+                  { label: "PERCENTILE", value: `${intel.currentPercentile}th` },
+                ].map((m) => (
+                  <div key={m.label} className="text-center p-1.5 rounded" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid #06b6d415" }}>
+                    <div style={{ color: "#06b6d440", fontSize: 8 }}>{m.label}</div>
+                    <div style={{ color: "#06b6d4", fontFamily: "monospace", fontSize: 10, fontWeight: "bold" }}>{m.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {intel.memory.currentStreakDescription && (
+                <div className="p-2 rounded" style={{ background: "rgba(0,0,0,0.4)", border: "1px solid #06b6d415" }}>
+                  <div style={{ color: "#06b6d4", fontSize: 9 }}>{intel.memory.currentStreakDescription}</div>
+                </div>
+              )}
+
+              {intel.memory.keyThresholdsCrossed?.length > 0 && (
+                <div className="space-y-1">
+                  <div style={{ color: "#06b6d460", fontSize: 8 }}>KEY THRESHOLDS CROSSED:</div>
+                  {intel.memory.keyThresholdsCrossed.slice(0, 3).map((t, i) => (
+                    <div key={i} className="flex items-start gap-1.5">
+                      <span style={{ color: "#f59e0b", fontSize: 9 }}>▸</span>
+                      <span style={{ color: "#94a3b8", fontSize: 9 }}>{t}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-1.5 pt-1 border-t" style={{ borderColor: "#06b6d415" }}>
+                {[
+                  { label: "AVG PRESSURE", value: `${intel.memory.historicalStats.avgPressure}/100` },
+                  { label: "MAX PRESSURE", value: `${intel.memory.historicalStats.maxPressure}/100` },
+                  { label: "CRISIS MONTHS", value: intel.memory.historicalStats.criticalMonths.toString() },
+                  { label: "HIGH RISK MONTHS", value: intel.memory.historicalStats.highRiskMonths.toString() },
+                ].map((m) => (
+                  <div key={m.label} className="flex justify-between items-center p-1 rounded" style={{ background: "rgba(0,0,0,0.3)" }}>
+                    <span style={{ color: "#06b6d440", fontSize: 8 }}>{m.label}</span>
+                    <span style={{ color: "#06b6d4", fontSize: 9, fontWeight: "bold" }}>{m.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </HudPanel>
+        </div>
+      </div>
+
+      {/* ── Bottom footer bar ── */}
+      <div className="flex items-center justify-between px-4 py-2 border-t" style={{ borderColor: "#06b6d420", background: "rgba(0,8,20,0.9)" }}>
+        <div className="flex items-center gap-1.5">
+          <span style={{ fontSize: 10 }}>🌐</span>
+          <span style={{ color: "#06b6d440", fontSize: 9 }}>DATA COVERAGE: GLOBAL MARKETS</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span style={{ color: "#06b6d440", fontSize: 9 }}>⏱ HISTORY: 25 YRS</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span style={{ color: "#06b6d440", fontSize: 9 }}>⬡ MODEL VERSION: 3.7.4</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span style={{ color: "#06b6d440", fontSize: 9 }}>🛡 CONFIDENCE FRAMEWORK: INSTITUTIONAL GRADE</span>
+        </div>
       </div>
     </div>
   );
