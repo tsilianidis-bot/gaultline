@@ -3844,3 +3844,8 @@
 - [ ] Rebuild SeismographIntelligence.tsx to consume unified historical synthesis
 - [ ] TypeScript check: 0 errors
 - [ ] Save checkpoint
+
+## Seismograph Intelligence — Permanent Sections Architecture (Jul 2026)
+- [x] Rebuild SeismographIntelligence.tsx: compact card at top + 9 permanently visible sections below (no accordions)
+- [x] Fix all TypeScript errors: engines (not enginesDetected), engine (not engineName), similarity (not similarityScore), yearTrend (not twelveMonthTrend), sparkline90d as {month,score,regime} objects, transitionProbabilities for Section 7, probabilities.primaryDriver / evidenceBasis for Section 7
+- [x] TypeScript: 0 errors (npx tsc --noEmit, exit code 0)
