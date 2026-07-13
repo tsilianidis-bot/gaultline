@@ -529,40 +529,129 @@ export default function SeismographIntelligence() {
             </div>
           )}
 
-          {/* Expanded: additional intelligence */}
+          {/* Expanded: full intelligence briefing */}
           {expanded && intel && (
             <div style={{ marginTop: "12px" }}>
-              {/* Today's story */}
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "rgba(6,182,212,0.65)",
-                  lineHeight: 1.6,
-                  marginBottom: "12px",
-                  padding: "10px 12px",
-                  background: "rgba(6,182,212,0.03)",
-                  borderRadius: "6px",
-                  borderLeft: "2px solid rgba(6,182,212,0.3)",
-                }}
-              >
-                {intel.todayStory}
-              </div>
 
-              {/* Key developments */}
+              {/* ── MARKET INTELLIGENCE BRIEFING (6 questions) ── */}
+              {intel.marketNarrative && (
+                <div style={{ marginBottom: "14px" }}>
+                  <div style={{
+                    fontSize: "9px",
+                    letterSpacing: "0.12em",
+                    color: "rgba(6,182,212,0.4)",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    fontFamily: "'JetBrains Mono','Courier New',monospace",
+                  }}>MARKET INTELLIGENCE BRIEFING</div>
+                  {[
+                    { q: "WHAT IS HAPPENING", a: intel.marketNarrative.whatIsHappening, accent: "rgba(6,182,212,0.25)" },
+                    { q: "WHY IS IT HAPPENING", a: intel.marketNarrative.whyIsItHappening, accent: "rgba(6,182,212,0.25)" },
+                    { q: "WHAT HAS CHANGED", a: intel.marketNarrative.whatHasChanged, accent: "rgba(6,182,212,0.25)" },
+                    { q: "WHAT IS BUILDING BENEATH THE SURFACE", a: intel.marketNarrative.whatIsBuildingBeneathSurface, accent: "rgba(245,158,11,0.45)" },
+                    { q: "HIGHEST-PROBABILITY PATH FORWARD", a: intel.marketNarrative.highestProbabilityPath, accent: "rgba(6,182,212,0.25)" },
+                    { q: "WHAT WOULD INVALIDATE THIS OUTLOOK", a: intel.marketNarrative.whatWouldInvalidate, accent: "rgba(239,68,68,0.35)" },
+                  ].map(({ q, a, accent }, i) => (
+                    <div key={i} style={{
+                      marginBottom: "6px",
+                      padding: "8px 10px",
+                      background: "rgba(6,182,212,0.03)",
+                      borderRadius: "5px",
+                      borderLeft: `2px solid ${accent}`,
+                    }}>
+                      <div style={{
+                        fontSize: "8px",
+                        letterSpacing: "0.1em",
+                        color: i === 3 ? "rgba(245,158,11,0.65)" : i === 5 ? "rgba(239,68,68,0.6)" : "rgba(6,182,212,0.45)",
+                        fontWeight: 700,
+                        marginBottom: "3px",
+                        fontFamily: "'JetBrains Mono','Courier New',monospace",
+                      }}>{q}</div>
+                      <div style={{ fontSize: "10px", color: "rgba(6,182,212,0.72)", lineHeight: 1.55 }}>{a}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── DEVELOPING CONDITIONS ── */}
+              {intel.developingConditions && intel.developingConditions.length > 0 && (
+                <div style={{ marginBottom: "14px" }}>
+                  <div style={{
+                    fontSize: "9px",
+                    letterSpacing: "0.12em",
+                    color: "rgba(6,182,212,0.4)",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    fontFamily: "'JetBrains Mono','Courier New',monospace",
+                  }}>DEVELOPING CONDITIONS</div>
+                  {intel.developingConditions.map((c, i) => {
+                    const sevColor = c.severity === "Critical" ? "#ef4444" : c.severity === "High" ? "#f97316" : c.severity === "Moderate" ? "#f59e0b" : "#22c55e";
+                    const trendIcon = c.trend === "building" ? "▲" : c.trend === "easing" ? "▼" : "─";
+                    const trendColor = c.trend === "building" ? "#f97316" : c.trend === "easing" ? "#22c55e" : "rgba(6,182,212,0.5)";
+                    return (
+                      <div key={i} style={{
+                        marginBottom: "6px",
+                        padding: "8px 10px",
+                        background: "rgba(6,182,212,0.03)",
+                        borderRadius: "5px",
+                        borderLeft: `2px solid ${sevColor}55`,
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "3px" }}>
+                          <div style={{ fontSize: "10px", fontWeight: 700, color: sevColor, fontFamily: "'JetBrains Mono','Courier New',monospace", letterSpacing: "0.04em" }}>{c.title}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontSize: "8px", color: trendColor, fontWeight: 700 }}>{trendIcon} {c.trend.toUpperCase()}</span>
+                            <span style={{ fontSize: "8px", padding: "1px 5px", borderRadius: "3px", background: `${sevColor}18`, color: sevColor, fontWeight: 700, letterSpacing: "0.06em" }}>{c.severity.toUpperCase()}</span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "10px", color: "rgba(6,182,212,0.65)", lineHeight: 1.5, marginBottom: "4px" }}>{c.description}</div>
+                        <div style={{ fontSize: "9px", color: "rgba(6,182,212,0.42)", marginBottom: "3px" }}>Engines: {c.engines.join(" · ")}</div>
+                        <div style={{ fontSize: "9px", color: "rgba(6,182,212,0.5)", lineHeight: 1.4, fontStyle: "italic" }}>Impact: {c.expectedImpact}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── ENGINE CONTRIBUTIONS ── */}
+              {intel.engineContributions && intel.engineContributions.length > 0 && (
+                <div style={{ marginBottom: "14px" }}>
+                  <div style={{
+                    fontSize: "9px",
+                    letterSpacing: "0.12em",
+                    color: "rgba(6,182,212,0.4)",
+                    fontWeight: 700,
+                    marginBottom: "8px",
+                    fontFamily: "'JetBrains Mono','Courier New',monospace",
+                  }}>ENGINE CONTRIBUTIONS</div>
+                  {intel.engineContributions.map((e, i) => {
+                    const dirColor = e.direction === "bullish" ? "#22c55e" : e.direction === "bearish" ? "#f97316" : "rgba(6,182,212,0.5)";
+                    return (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "5px" }}>
+                        <div style={{ width: "110px", fontSize: "9px", color: "rgba(6,182,212,0.6)", fontFamily: "'JetBrains Mono','Courier New',monospace", flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.engine}</div>
+                        <div style={{ flex: 1, height: "4px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${e.contributionWeight}%`, background: dirColor, borderRadius: "2px", boxShadow: `0 0 4px ${dirColor}60`, transition: "width 0.6s ease" }} />
+                        </div>
+                        <div style={{ width: "28px", textAlign: "right", fontSize: "9px", color: dirColor, fontWeight: 700, fontFamily: "'JetBrains Mono','Courier New',monospace" }}>{e.contributionWeight}%</div>
+                        <div style={{ fontSize: "8px", padding: "1px 4px", borderRadius: "2px", background: `${dirColor}15`, color: dirColor, fontWeight: 700, letterSpacing: "0.05em", flexShrink: 0, width: "52px", textAlign: "center" }}>{e.confidence}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── KEY DEVELOPMENTS ── */}
               {intel.keyDevelopments.length > 0 && (
                 <div style={{ marginBottom: "12px" }}>
-                  {intel.keyDevelopments.slice(0, 3).map((d, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        fontSize: "10px",
-                        color: "rgba(6,182,212,0.6)",
-                        marginBottom: "4px",
-                        lineHeight: 1.4,
-                      }}
-                    >
+                  <div style={{
+                    fontSize: "9px",
+                    letterSpacing: "0.12em",
+                    color: "rgba(6,182,212,0.4)",
+                    fontWeight: 700,
+                    marginBottom: "6px",
+                    fontFamily: "'JetBrains Mono','Courier New',monospace",
+                  }}>KEY DEVELOPMENTS</div>
+                  {intel.keyDevelopments.slice(0, 4).map((d, i) => (
+                    <div key={i} style={{ display: "flex", gap: "8px", fontSize: "10px", color: "rgba(6,182,212,0.6)", marginBottom: "4px", lineHeight: 1.4 }}>
                       <span style={{ color: "#06b6d4", flexShrink: 0 }}>›</span>
                       <span>{d}</span>
                     </div>

@@ -203,6 +203,34 @@ export interface UnifiedSeismographIntelligence {
     crash: number;
   };
 
+  // ── Developing Conditions ────────────────────────────────
+  developingConditions: Array<{
+    title: string;
+    description: string;
+    engines: string[];
+    evidence: string;
+    severity: "Low" | "Moderate" | "High" | "Critical";
+    durationDescription: string;
+    trend: "building" | "stable" | "easing";
+    expectedImpact: string;
+  }>;
+  // ── Engine Contributions ────────────────────────────────────
+  engineContributions: Array<{
+    engine: string;
+    contributionWeight: number;
+    direction: "bullish" | "bearish" | "neutral";
+    confidence: "High" | "Moderate" | "Low";
+    currentStatus: string;
+  }>;
+  // ── Market Narrative (6 questions) ──────────────────────────
+  marketNarrative: {
+    whatIsHappening: string;
+    whyIsItHappening: string;
+    whatHasChanged: string;
+    whatIsBuildingBeneathSurface: string;
+    highestProbabilityPath: string;
+    whatWouldInvalidate: string;
+  };
   // ── Active Patterns ────────────────────────────────────────
   activePatterns: Array<{
     name: string;
@@ -497,6 +525,9 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     activePatterns,
     macroTicker: buildMacroTicker(latest),
     regimeProbabilities5way: compute5WayRegimeProbabilities(currentScore, currentRegime, evidenceFamilies, history),
+    developingConditions: buildDevelopingConditions(evidenceFamilies, currentScore, currentRegime, evolution, history),
+    engineContributions: buildEngineContributions(evidenceFamilies, currentScore),
+    marketNarrative: buildMarketNarrative(currentScore, currentRegime, currentDirection, currentPercentile, evidenceFamilies, evolution, analogs, transitionProbabilities),
   };
 }
 
@@ -1391,4 +1422,218 @@ function buildAnalogSummary(analogs: HistoricalAnalog[], currentScore: number): 
       ? `Across ${analogs.length} analog periods, the average S&P 500 return 3 months later was ${avgReturn3m > 0 ? "+" : ""}${avgReturn3m}%.`
       : ""
   }`;
+}
+
+// ─── Developing Conditions ────────────────────────────────────────────────────
+
+function buildDevelopingConditions(
+  evidenceFamilies: EvidenceFamily[],
+  currentScore: number,
+  currentRegime: string,
+  evolution: EvolutionAnalysis,
+  history: HistoricalMonth[]
+): UnifiedSeismographIntelligence["developingConditions"] {
+  const conditions: UnifiedSeismographIntelligence["developingConditions"] = [];
+
+  // Group engines by signal type
+  const stressed = evidenceFamilies.filter(
+    (f) => f.signal === "stressed" || f.signal === "bearish"
+  );
+  const deteriorating = evidenceFamilies.filter((f) => f.trend === "deteriorating");
+  const recovering = evidenceFamilies.filter(
+    (f) => f.signal === "recovering" || f.signal === "bullish"
+  );
+
+  // Condition 1: Systemic stress building
+  if (stressed.length >= 2) {
+    const severity: "Low" | "Moderate" | "High" | "Critical" =
+      stressed.length >= 5 ? "Critical" : stressed.length >= 4 ? "High" : stressed.length >= 3 ? "Moderate" : "Low";
+    const trend: "building" | "stable" | "easing" = evolution.buildingPressure
+      ? "building"
+      : evolution.accelerating
+      ? "building"
+      : "stable";
+    conditions.push({
+      title: "Systemic Stress Accumulation",
+      description: `${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress or deterioration simultaneously. Multi-engine agreement of this magnitude historically precedes regime transitions.`,
+      engines: stressed.map((f) => f.name),
+      evidence: stressed.map((f) => `${f.name}: ${f.currentValue}`).join("; "),
+      severity,
+      durationDescription: evolution.buildingPressure ? "Pressure has been building over the past 30 days" : "Current stress level has been stable for several weeks",
+      trend,
+      expectedImpact: severity === "Critical"
+        ? "Elevated probability of regime deterioration within 30–60 days if conditions persist"
+        : severity === "High"
+        ? "Moderate risk of continued pressure; monitor for additional engine deterioration"
+        : "Manageable stress level; watch for confirmation from additional engines",
+    });
+  }
+
+  // Condition 2: Deteriorating trend momentum
+  if (deteriorating.length >= 2) {
+    conditions.push({
+      title: "Deteriorating Trend Momentum",
+      description: `${deteriorating.length} engines are showing worsening conditions on a trend basis. Trend deterioration often leads score deterioration by 4–8 weeks, making this an early-warning signal.`,
+      engines: deteriorating.map((f) => f.name),
+      evidence: deteriorating.map((f) => `${f.name} trending ${f.trend}: ${f.currentValue}`).join("; "),
+      severity: deteriorating.length >= 4 ? "High" : deteriorating.length >= 3 ? "Moderate" : "Low",
+      durationDescription: "Trend deterioration detected over the past 30-day window",
+      trend: "building",
+      expectedImpact: "If trend deterioration continues, expect the composite pressure score to follow higher within 4–8 weeks",
+    });
+  }
+
+  // Condition 3: Divergence between engines
+  const bullEngines = evidenceFamilies.filter(
+    (f) => f.signal === "bullish" || f.signal === "recovering"
+  );
+  if (stressed.length >= 2 && bullEngines.length >= 2) {
+    conditions.push({
+      title: "Cross-Engine Signal Divergence",
+      description: `The intelligence engines are sending contradictory signals — ${stressed.length} engines indicate stress while ${bullEngines.length} engines indicate strength. Divergence of this type often resolves with a sharp directional move as one set of signals proves dominant.`,
+      engines: [...stressed.map((f) => f.name), ...bullEngines.map((f) => f.name)],
+      evidence: `Bearish: ${stressed.map((f) => f.name).join(", ")}. Bullish: ${bullEngines.map((f) => f.name).join(", ")}`,
+      severity: "Moderate",
+      durationDescription: "Divergence has been present across the current measurement window",
+      trend: "stable",
+      expectedImpact: "Resolution of divergence typically produces a 5–15% directional move in the dominant direction within 60 days",
+    });
+  }
+
+  // Condition 4: Score at historical inflection zone
+  const last = history[history.length - 1];
+  const prev6 = history.slice(-7, -1);
+  const avgPrev6 = prev6.length > 0 ? prev6.reduce((s, h) => s + h.score, 0) / prev6.length : currentScore;
+  const scoreDelta = currentScore - avgPrev6;
+  if (Math.abs(scoreDelta) >= 8) {
+    const rising = scoreDelta > 0;
+    conditions.push({
+      title: rising ? "Rapid Pressure Escalation" : "Rapid Pressure Decompression",
+      description: rising
+        ? `The composite pressure score has risen ${scoreDelta.toFixed(1)} points over the past 6 months — a pace that historically signals a regime transition is underway rather than a temporary fluctuation.`
+        : `The composite pressure score has fallen ${Math.abs(scoreDelta).toFixed(1)} points over the past 6 months — a decompression rate that historically precedes a sustained regime improvement.`,
+      engines: evidenceFamilies.map((f) => f.name),
+      evidence: `Score moved from ${avgPrev6.toFixed(1)} to ${currentScore} over the past 6 months (${rising ? "+" : ""}${scoreDelta.toFixed(1)} pts)`,
+      severity: Math.abs(scoreDelta) >= 15 ? "High" : "Moderate",
+      durationDescription: "Velocity of change observed over the past 6-month window",
+      trend: rising ? "building" : "easing",
+      expectedImpact: rising
+        ? "Rapid escalation increases the probability of a regime shift to a higher stress classification"
+        : "Rapid decompression increases the probability of a regime improvement within 60–90 days",
+    });
+  }
+
+  // Condition 5: Recovery signal
+  if (recovering.length >= 3 && currentScore <= 45) {
+    conditions.push({
+      title: "Broad Recovery Signal",
+      description: `${recovering.length} engines are signaling recovery or bullish conditions. Broad multi-engine recovery at this pressure level has historically been a reliable early indicator of a sustained risk-on environment.`,
+      engines: recovering.map((f) => f.name),
+      evidence: recovering.map((f) => `${f.name}: ${f.currentValue}`).join("; "),
+      severity: "Low",
+      durationDescription: "Recovery signals detected across the current measurement window",
+      trend: "easing",
+      expectedImpact: "If recovery signals persist, expect continued pressure decompression and improving risk-adjusted return environment",
+    });
+  }
+
+  return conditions.slice(0, 5);
+}
+
+// ─── Engine Contributions ─────────────────────────────────────────────────────
+
+function buildEngineContributions(
+  evidenceFamilies: EvidenceFamily[],
+  currentScore: number
+): UnifiedSeismographIntelligence["engineContributions"] {
+  // Assign contribution weights based on engine strength and signal type
+  const totalStrength = evidenceFamilies.reduce((s, f) => s + f.strength, 0) || 1;
+
+  return evidenceFamilies.map((f) => {
+    const weight = Math.round((f.strength / totalStrength) * 100);
+    const direction: "bullish" | "bearish" | "neutral" =
+      f.signal === "bullish" || f.signal === "recovering"
+        ? "bullish"
+        : f.signal === "bearish" || f.signal === "stressed"
+        ? "bearish"
+        : "neutral";
+    const confidence: "High" | "Moderate" | "Low" =
+      f.strength >= 7 ? "High" : f.strength >= 4 ? "Moderate" : "Low";
+
+    return {
+      engine: f.name,
+      contributionWeight: weight,
+      direction,
+      confidence,
+      currentStatus: `${f.currentValue} — ${f.historicalContext}`,
+    };
+  }).sort((a, b) => b.contributionWeight - a.contributionWeight);
+}
+
+// ─── Market Narrative (6 questions) ──────────────────────────────────────────
+
+function buildMarketNarrative(
+  currentScore: number,
+  currentRegime: string,
+  currentDirection: string,
+  currentPercentile: number,
+  evidenceFamilies: EvidenceFamily[],
+  evolution: EvolutionAnalysis,
+  analogs: HistoricalAnalog[],
+  transitionProbabilities: UnifiedSeismographIntelligence["transitionProbabilities"]
+): UnifiedSeismographIntelligence["marketNarrative"] {
+  const stressLevel = currentScore >= 80 ? "crisis" : currentScore >= 65 ? "high" : currentScore >= 45 ? "elevated" : "moderate";
+  const stressed = evidenceFamilies.filter((f) => f.signal === "stressed" || f.signal === "bearish");
+  const bullish = evidenceFamilies.filter((f) => f.signal === "bullish" || f.signal === "recovering");
+  const deteriorating = evidenceFamilies.filter((f) => f.trend === "deteriorating");
+  const improving = evidenceFamilies.filter((f) => f.trend === "improving");
+
+  // 1. What is happening?
+  const whatIsHappening = currentScore >= 65
+    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), placing current conditions in the ${currentPercentile}th percentile of all observations since 2000. ${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress, with ${currentRegime} as the prevailing regime classification.`
+    : currentScore >= 45
+    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${currentPercentile}th percentile historically. Conditions are mixed — ${stressed.length} engines signal stress while ${bullish.length} signal strength, producing a divergent environment that requires careful monitoring.`
+    : `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${currentPercentile}th percentile historically. ${bullish.length} of ${evidenceFamilies.length} intelligence engines are signaling strength or recovery, consistent with a constructive risk environment.`;
+
+  // 2. Why is it happening?
+  const topStressed = stressed.slice(0, 3).map((f) => `${f.name} (${f.currentValue})`).join(", ");
+  const topBullish = bullish.slice(0, 2).map((f) => `${f.name} (${f.currentValue})`).join(", ");
+  const whyIsItHappening = stressed.length > bullish.length
+    ? `The primary drivers of elevated pressure are ${topStressed || "multiple engines"}. ${stressed.length > 2 ? "The breadth of stress across multiple independent engines reduces the probability that this is noise — it suggests a structural condition rather than a temporary disruption." : "This is partially offset by strength in " + (topBullish || "other areas") + "."}`
+    : `The primary drivers of current strength are ${topBullish || "multiple engines"}. ${bullish.length > 2 ? "Broad-based strength across independent engines suggests the current environment has structural support." : stressed.length > 0 ? `This is partially offset by stress in ${topStressed}.` : ""}`;
+
+  // 3. What has changed?
+  const whatHasChanged = evolution.whatChanged.length > 0
+    ? evolution.whatChanged.slice(0, 3).join(" ") + (deteriorating.length > 0 ? ` Additionally, ${deteriorating.map((f) => f.name).join(" and ")} ${deteriorating.length === 1 ? "is" : "are"} showing a deteriorating trend over the past 30 days.` : improving.length > 0 ? ` ${improving.map((f) => f.name).join(" and ")} ${improving.length === 1 ? "is" : "are"} showing improvement.` : "")
+    : `Over the past 30 days, the composite pressure score has ${currentDirection === "Improving" ? "declined" : currentDirection === "Deteriorating" ? "risen" : "remained relatively stable"}. ${deteriorating.length > 0 ? `${deteriorating.map((f) => f.name).join(", ")} ${deteriorating.length === 1 ? "has" : "have"} shown the most notable deterioration.` : "No single engine has shown dramatic change."}`;
+
+  // 4. What is building beneath the surface?
+  const buildingSignals = evidenceFamilies.filter((f) => f.trend === "deteriorating" && (f.signal === "neutral" || f.signal === "recovering"));
+  const whatIsBuildingBeneathSurface = buildingSignals.length > 0
+    ? `Beneath the headline score, ${buildingSignals.map((f) => f.name).join(" and ")} ${buildingSignals.length === 1 ? "is" : "are"} showing early deterioration while still registering as neutral or recovering. This leading indicator pattern — where trend precedes signal — has historically preceded composite score increases by 4–8 weeks. ${evolution.buildingPressure ? "The overall pressure trend is accelerating, suggesting the headline score may understate developing risk." : ""}`
+    : evolution.buildingPressure
+    ? `The composite pressure score is accelerating to the upside, suggesting that conditions are building faster than the headline number reflects. Watch for additional engines to shift from neutral to stressed in the coming weeks.`
+    : `No clear sub-surface pressure is building at this time. The current reading appears to reflect conditions accurately across all monitored engines.`;
+
+  // 5. Highest probability path forward
+  const topAnalog = analogs[0];
+  const highestProbabilityPath = transitionProbabilities.remainInRegime >= 50
+    ? `The highest-probability outcome (${transitionProbabilities.remainInRegime}% historical frequency) is continuation of the current ${currentRegime} regime over the next 30–60 days. ${topAnalog ? `The closest historical analog — ${topAnalog.label} (${topAnalog.similarity}% similarity) — ${topAnalog.resolution}.` : ""} ${transitionProbabilities.historicalBasis}`
+    : transitionProbabilities.transitionToElevated > transitionProbabilities.transitionToLow
+    ? `The highest-probability outcome is a transition toward elevated or higher stress (${transitionProbabilities.transitionToElevated}% historical frequency), driven by ${transitionProbabilities.currentEvidence.slice(0, 2).join(" and ")}. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`
+    : `The highest-probability outcome is a transition toward lower pressure (${transitionProbabilities.transitionToLow}% historical frequency), consistent with the current ${currentDirection.toLowerCase()} direction. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`;
+
+  // 6. What would invalidate the current assessment?
+  const whatWouldInvalidate = evolution.invalidationConditions.length > 0
+    ? evolution.invalidationConditions.slice(0, 3).join(" ") + ` A score move above ${Math.round(currentScore + 15)} or below ${Math.round(currentScore - 15)} would signal a regime change and require reassessment of the current outlook.`
+    : `The current assessment would be invalidated by: (1) a rapid score increase above ${Math.round(currentScore + 15)} driven by multiple new engine deteriorations, (2) a credit event or liquidity shock not yet reflected in the current data, or (3) a Federal Reserve policy surprise that materially changes the macro backdrop. Conversely, a score decline below ${Math.round(currentScore - 15)} would confirm a regime improvement.`;
+
+  return {
+    whatIsHappening,
+    whyIsItHappening,
+    whatHasChanged,
+    whatIsBuildingBeneathSurface,
+    highestProbabilityPath,
+    whatWouldInvalidate,
+  };
 }
