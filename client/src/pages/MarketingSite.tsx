@@ -1628,7 +1628,7 @@ function PromoVideoSection() {
         <div style={{ position: "relative", maxWidth: "860px", margin: "0 auto", borderRadius: "16px", overflow: "hidden", boxShadow: "0 0 0 1px rgba(0,212,255,0.15), 0 0 80px rgba(0,212,255,0.10), 0 40px 100px rgba(0,0,0,0.8)" }}>
           <video
             ref={videoRef}
-            src="/manus-storage/faultline-getting-started-v3_1a39038f.mp4"
+            src="/manus-storage/faultline-video-silent_42167480.mp4"
             playsInline
             preload="metadata"
             controls
