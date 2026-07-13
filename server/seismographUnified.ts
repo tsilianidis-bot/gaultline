@@ -184,6 +184,25 @@ export interface UnifiedSeismographIntelligence {
     annotation?: string;
   }>;
 
+  // ── Macro Ticker ──────────────────────────────────────────
+  macroTicker: {
+    tsy10y: number | null;
+    tsy10yChange: number | null;
+    hySpread: number | null;
+    hySpreadBps: number | null;
+    btcPrice: number | null;
+    btcChange24h: number | null;
+    dataMonth: string;
+  };
+  // ── 5-Way Regime Probabilities ────────────────────────────
+  regimeProbabilities5way: {
+    bull: number;
+    softLanding: number;
+    stagflation: number;
+    recession: number;
+    crash: number;
+  };
+
   // ── Active Patterns ────────────────────────────────────────
   activePatterns: Array<{
     name: string;
@@ -476,11 +495,60 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     memory,
     timeline,
     activePatterns,
+    macroTicker: buildMacroTicker(latest),
+    regimeProbabilities5way: compute5WayRegimeProbabilities(currentScore, currentRegime, evidenceFamilies, history),
   };
 }
 
 // ─── Evidence families ────────────────────────────────────────────────────────
 
+
+// ─── Macro ticker ─────────────────────────────────────────────────────────────
+function buildMacroTicker(latest: HistoricalMonth): UnifiedSeismographIntelligence["macroTicker"] {
+  const tsy10y = latest.tsy10y ?? null;
+  const hySpread = latest.hySpread ?? null;
+  const hySpreadBps = hySpread !== null ? Math.round(hySpread * 100) : null;
+  return {
+    tsy10y,
+    tsy10yChange: null,
+    hySpread,
+    hySpreadBps,
+    btcPrice: null,
+    btcChange24h: null,
+    dataMonth: latest.month,
+  };
+}
+
+// ─── 5-Way regime probabilities ───────────────────────────────────────────────
+function compute5WayRegimeProbabilities(
+  score: number,
+  regime: string,
+  families: EvidenceFamily[],
+  history: HistoricalMonth[]
+): UnifiedSeismographIntelligence["regimeProbabilities5way"] {
+  const creditFam = families.find((f) => f.name.toLowerCase().includes("credit"));
+  const macroFam = families.find((f) => f.name.toLowerCase().includes("macro") || f.name.toLowerCase().includes("fed"));
+  const volFam = families.find((f) => f.name.toLowerCase().includes("volatility"));
+  const breadthFam = families.find((f) => f.name.toLowerCase().includes("breadth"));
+  const aiBubbleFam = families.find((f) => f.name.toLowerCase().includes("ai") || f.name.toLowerCase().includes("bubble"));
+  let bull = score <= 35 ? 55 : score <= 50 ? 40 : score <= 65 ? 25 : 12;
+  let softLanding = score <= 40 ? 35 : score <= 55 ? 30 : score <= 70 ? 20 : 10;
+  let stagflation = (macroFam?.signal === "bearish" ? 15 : 8) + (score >= 50 ? 8 : 0);
+  let recession = score >= 65 ? 25 : score >= 50 ? 15 : score >= 35 ? 8 : 4;
+  let crash = score >= 80 ? 20 : score >= 70 ? 10 : score >= 55 ? 5 : 2;
+  if (creditFam?.signal === "stressed" || creditFam?.signal === "bearish") { recession += 8; crash += 4; bull -= 8; }
+  if (volFam?.signal === "stressed") { crash += 6; bull -= 6; }
+  if (breadthFam?.signal === "bullish" || breadthFam?.signal === "recovering") { bull += 8; softLanding += 5; recession -= 5; }
+  if (aiBubbleFam?.signal === "stressed" || aiBubbleFam?.signal === "bearish") { stagflation += 5; crash += 3; }
+  const total = bull + softLanding + stagflation + recession + crash;
+  return {
+    bull: Math.round((bull / total) * 100),
+    softLanding: Math.round((softLanding / total) * 100),
+    stagflation: Math.round((stagflation / total) * 100),
+    recession: Math.round((recession / total) * 100),
+    crash: Math.round((crash / total) * 100),
+  };
+}
 function buildEvidenceFamilies(
   latest: HistoricalMonth,
   history: HistoricalMonth[]
