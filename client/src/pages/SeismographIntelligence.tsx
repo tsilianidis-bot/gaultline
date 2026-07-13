@@ -20,19 +20,22 @@ import {
 import { Calendar, SlidersHorizontal } from "lucide-react";
 
 // ─── Color helpers ────────────────────────────────────────────────────────────
+// Disciplined color hierarchy:
+// cyan/white = structure & neutral  |  green = constructive  |  amber = caution
+// orange = elevated risk  |  red = CRITICAL ONLY (rare)
 function pressureColor(score: number): string {
-  if (score >= 80) return "#ef4444";
-  if (score >= 65) return "#f97316";
-  if (score >= 45) return "#eab308";
-  if (score >= 30) return "#84cc16";
-  return "#22c55e";
+  if (score >= 80) return "#ef4444";   // Critical — red reserved for true crisis
+  if (score >= 65) return "#f97316";   // Elevated risk — orange
+  if (score >= 45) return "#eab308";   // Building pressure — amber
+  if (score >= 30) return "#84cc16";   // Moderate — light green
+  return "#22c55e";                    // Stable — green
 }
 
 function stressColor(level: string): string {
-  if (level === "Crisis") return "#ef4444";
-  if (level === "High") return "#f97316";
-  if (level === "Elevated") return "#eab308";
-  return "#22c55e";
+  if (level === "Crisis") return "#ef4444";   // Red — ONLY for true crisis
+  if (level === "High") return "#f97316";     // Orange — elevated risk
+  if (level === "Elevated") return "#eab308"; // Amber — building pressure
+  return "#22c55e";                          // Green — stable/constructive
 }
 
 function regimeLabel(r: string): string {
@@ -117,7 +120,8 @@ function SeismographWaveform({ data, color, label, signalQuality, riskLevel }: {
   signalQuality: number;
   riskLevel: string;
 }) {
-  const riskColors: Record<string, string> = { HIGH: "#ef4444", MODERATE: "#f97316", WATCH: "#06b6d4", LOW: "#22c55e" };
+  // Risk level colors: HIGH=orange (not red — red reserved for CRITICAL), MODERATE=amber, WATCH=cyan, LOW=green
+  const riskColors: Record<string, string> = { HIGH: "#f97316", MODERATE: "#eab308", WATCH: "#06b6d4", LOW: "#22c55e" };
   const rc = riskColors[riskLevel] ?? color;
   return (
     <div className="space-y-1.5">
@@ -210,7 +214,8 @@ function computeCustomTrend(slice: Array<{ month: string; score: number; regime:
   const min = Math.min(...scores);
   const regimes = new Set(slice.map((s) => s.regime));
   const direction = delta >= 5 ? "Rising" : delta <= -5 ? "Declining" : "Stable";
-  const dirColor = delta >= 5 ? "#ef4444" : delta <= -5 ? "#22c55e" : "#94a3b8";
+  // Rising pressure = orange (not red), declining = green, stable = muted
+  const dirColor = delta >= 5 ? "#f97316" : delta <= -5 ? "#22c55e" : "#94a3b8";
   return { avg: Math.round(avg), delta: Math.round(delta * 10) / 10, max, min, direction, dirColor, regimeCount: regimes.size, months: slice.length };
 }
 
@@ -380,7 +385,7 @@ export default function SeismographIntelligence() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "#000814", fontFamily: "monospace" }}>
         <div className="text-center space-y-4">
-          <div className="text-sm tracking-widest" style={{ color: "#ef4444" }}>INTELLIGENCE ENGINE OFFLINE</div>
+          <div className="text-sm tracking-widest" style={{ color: "#f97316" }}>INTELLIGENCE ENGINE OFFLINE</div>
           <button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}
             className="px-4 py-2 text-xs font-bold tracking-widest"
             style={{ border: "1px solid #06b6d4", color: "#06b6d4", background: "transparent" }}>
@@ -399,8 +404,9 @@ export default function SeismographIntelligence() {
 
   // Build waveform data from patterns (or generate from score history)
   const patterns = intel.activePatterns ?? [];
-  const patternColors = ["#ef4444", "#f97316", "#06b6d4"];
-  const patternRiskLevels = ["HIGH", "MODERATE", "WATCH"];
+  // Pattern colors: first pattern uses orange (not red), second amber, third cyan
+  const patternColors = ["#f97316", "#eab308", "#06b6d4"];
+  const patternRiskLevels = ["HIGH", "MODERATE", "WATCH"]; // HIGH=orange, MODERATE=amber, WATCH=cyan
 
   // Generate waveform bars from pattern confidence + days active
   function buildWaveform(confidence: number, daysActive: number, color: string): number[] {
@@ -418,8 +424,8 @@ export default function SeismographIntelligence() {
   const horizonMultipliers: Record<string, number> = { "1M": 0.6, "3M": 1.0, "6M": 1.3, "12M": 1.6 };
   const hm = horizonMultipliers[horizonTab] ?? 1;
   const rawProbs = [
-    { label: "Deterioration (Elevated Stress)", pct: Math.round(tp.transitionToElevated * hm), color: "#f97316" },
-    { label: "Sideways / Choppy (Range-Bound)", pct: Math.round(tp.remainInRegime * hm * 0.8), color: "#f97316" },
+    { label: "Deterioration (Elevated Stress)", pct: Math.round(tp.transitionToElevated * hm), color: "#eab308" },
+    { label: "Sideways / Choppy (Range-Bound)", pct: Math.round(tp.remainInRegime * hm * 0.8), color: "#94a3b8" },
     { label: "Stabilization (Base-Building)", pct: Math.round(tp.transitionToLow * hm), color: "#06b6d4" },
     { label: "Improvement (Early Expansion)", pct: Math.round(tp.transitionToLow * hm * 0.5), color: "#22c55e" },
     { label: "Systemic Event (Tail Risk)", pct: Math.round(tp.transitionToCrisis * hm), color: "#ef4444" },
@@ -469,7 +475,8 @@ export default function SeismographIntelligence() {
         <div className="space-y-3">
 
           {/* Market State */}
-          <HudPanel accentColor={stateColor}>
+          {/* Market State panel: border uses cyan always; only the state badge uses stateColor */}
+          <HudPanel accentColor="#06b6d4">
             <PanelHeader icon={<span style={{ fontSize: 14 }}>◈</span>} title="MARKET STATE" color="#06b6d4" />
             <div className="p-3 space-y-2">
               <div className="flex items-center justify-between">
@@ -574,7 +581,7 @@ export default function SeismographIntelligence() {
                               ].map(m => (
                                 <div key={m.l} className="text-center">
                                   <div style={{ color: "#06b6d440", fontSize: 8 }}>{m.l}</div>
-                                  <div style={{ color: parseFloat(m.v) >= 0 ? "#22c55e" : "#ef4444", fontSize: 9, fontWeight: "bold" }}>{m.v}</div>
+                                  <div style={{ color: parseFloat(m.v) >= 0 ? "#22c55e" : "#f97316", fontSize: 9, fontWeight: "bold" }}>{m.v}</div>
                                 </div>
                               ))}
                             </div>
@@ -608,15 +615,15 @@ export default function SeismographIntelligence() {
           </HudPanel>
 
           {/* Evolution Analysis */}
-          <HudPanel accentColor="#22c55e">
-            <PanelHeader icon={<span style={{ fontSize: 12 }}>↗</span>} title="EVOLUTION ANALYSIS" color="#22c55e" />
+          <HudPanel accentColor="#06b6d4">
+            <PanelHeader icon={<span style={{ fontSize: 12 }}>↗</span>} title="EVOLUTION ANALYSIS" color="#06b6d4" />
             <div className="p-3 space-y-2">
               <EvolutionChart timeline={intel.timeline} />
-              <div className="grid grid-cols-2 gap-1.5 pt-1 border-t" style={{ borderColor: "#22c55e15" }}>
+              <div className="grid grid-cols-2 gap-1.5 pt-1 border-t" style={{ borderColor: "#06b6d415" }}>
                 {[
                   { label: "7-DAY", value: intel.evolution.sevenDayTrend, color: "#06b6d4" },
-                  { label: "30-DAY", value: intel.evolution.thirtyDayTrend, color: "#8b5cf6" },
-                  { label: "90-DAY", value: intel.evolution.ninetyDayTrend, color: "#f59e0b" },
+                  { label: "30-DAY", value: intel.evolution.thirtyDayTrend, color: "#06b6d4" },
+                  { label: "90-DAY", value: intel.evolution.ninetyDayTrend, color: "#eab308" },
                   { label: "12-MONTH", value: intel.evolution.yearTrend, color: "#22c55e" },
                 ].map((t) => (
                   <div key={t.label} className="p-1.5 rounded" style={{ background: "rgba(0,0,0,0.4)", border: `1px solid ${t.color}20` }}>
@@ -680,7 +687,8 @@ export default function SeismographIntelligence() {
             <PanelHeader icon={<span style={{ fontSize: 12 }}>◈</span>} title="INTELLIGENCE ENGINE BREAKDOWN" color="#8b5cf6" />
             <div className="p-3 space-y-1.5">
               {intel.evidenceFamilies?.slice(0, 6).map((ef, i) => {
-                const efColor = ef.signal === "bullish" || ef.signal === "recovering" ? "#22c55e" : ef.signal === "bearish" || ef.signal === "stressed" ? "#ef4444" : "#eab308";
+                // Evidence family signal colors: bearish/stressed = orange (not red — red reserved for critical)
+                const efColor = ef.signal === "bullish" || ef.signal === "recovering" ? "#22c55e" : ef.signal === "bearish" || ef.signal === "stressed" ? "#f97316" : "#eab308";
                 return (
                 <div key={i} className="space-y-0.5">
                   <div className="flex items-center justify-between">
@@ -728,7 +736,7 @@ export default function SeismographIntelligence() {
                       ].filter(x => x.v !== undefined).map(m => (
                         <div key={m.l} className="text-center">
                           <div style={{ color: "#06b6d440", fontSize: 8 }}>{m.l}</div>
-                          <div style={{ color: (m.v ?? 0) >= 0 ? "#22c55e" : "#ef4444", fontSize: 9, fontWeight: "bold" }}>
+                          <div style={{ color: (m.v ?? 0) >= 0 ? "#22c55e" : "#f97316", fontSize: 9, fontWeight: "bold" }}>
                             {(m.v ?? 0) >= 0 ? "+" : ""}{(m.v ?? 0).toFixed(1)}%
                           </div>
                         </div>
