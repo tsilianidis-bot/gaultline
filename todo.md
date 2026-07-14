@@ -3849,3 +3849,21 @@
 - [x] Rebuild SeismographIntelligence.tsx: compact card at top + 9 permanently visible sections below (no accordions)
 - [x] Fix all TypeScript errors: engines (not enginesDetected), engine (not engineName), similarity (not similarityScore), yearTrend (not twelveMonthTrend), sparkline90d as {month,score,regime} objects, transitionProbabilities for Section 7, probabilities.primaryDriver / evidenceBasis for Section 7
 - [x] TypeScript: 0 errors (npx tsc --noEmit, exit code 0)
+
+## Seismograph Intelligence — Institutional Briefing Refinement (Jul 2026)
+- [x] Rewrite SeismographIntelligence.tsx as continuous institutional intelligence briefing
+- [x] Section 1: Current Market Assessment — score, regime, stress level, trend, confidence, regime duration, macro ticker, executive briefing paragraph, key developments
+- [x] Section 2: What Is Building Beneath the Surface — marketNarrative.whatIsBuildingBeneathSurface + developingConditions with severity/trend/engines/duration
+- [x] Section 3: Why FAULTLINE Believes This — whyIsItHappening, whyThisScore, whyThisRegime, engine consensus (agreeing/diverging)
+- [x] Section 4: Supporting Evidence — 5-way regime probabilities, evidence families with strength bars and whyItMatters, engine contributions
+- [x] Section 5: Highest Probability Path Forward — highestProbabilityPath, primaryDriver, transition probabilities, historicalBasis, evidenceBasis
+- [x] Section 6: Historical Comparison — 90-day sparkline, 4-period trend summaries, top 3 analogs with forward returns, dataset context stats
+- [x] Section 7: What Could Change the Outlook — whatHasChanged, recent shifts, whatToWatch
+- [x] Section 8: Invalidation Conditions — whatWouldInvalidate, invalidationConditions list
+- [x] Section 9: Ask FAULTLINE — ASHA link
+- [x] Single source of truth: all data from getUnifiedSeismographIntelligence() only
+- [x] Sticky header with live indicator, observation count, UTC clock, refresh button
+- [x] Institutional typography: IBM Plex Sans body, JetBrains Mono labels
+- [x] Color logic: green=constructive, blue=informational, amber=caution, red=confirmed danger only
+- [x] Mobile-optimized: flex-wrap everywhere, responsive grid, no fixed widths that overflow
+- [x] TypeScript: 0 errors (exit code 0)
