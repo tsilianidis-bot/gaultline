@@ -8,6 +8,7 @@ import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
+import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import PageHeader from "@/components/PageHeader";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
@@ -646,6 +647,11 @@ export default function SituationRoom() {
           badge="COMMAND CENTER"
         />
         <SeismographNarrativeBanner context="situation" defaultExpanded={false} />
+
+        {/* ASHA Command Narrator */}
+        <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 60ms both' }}>
+          <AshaIntelligenceBrief variant="command-narrator" />
+        </div>
 
         {/* ══════════════════════════════════════════════════════
             SECTION A — MARKET STATUS

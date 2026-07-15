@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import { useTickerStore } from "@/contexts/TickerStore";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
+import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Shared styles ─────────────────────────────────────────────
@@ -875,6 +876,11 @@ function UniversalSymbolIntelligence() {
                   {tab.label}
                 </button>
               ))}
+            </div>
+
+            {/* ASHA Symbol Interpretation */}
+            <div style={{ marginBottom: '20px' }}>
+              <AshaIntelligenceBrief variant="symbol-interpretation" />
             </div>
 
             {/* Tab content */}

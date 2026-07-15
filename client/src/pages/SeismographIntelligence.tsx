@@ -13,6 +13,7 @@ import { trpc } from "@/lib/trpc";
 import { RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
+import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 
 // ── Color utilities ────────────────────────────────────────────────────────────
 
@@ -616,6 +617,13 @@ export default function SeismographIntelligence() {
         )}
 
         <Divider />
+
+        {/* ══════════════════════════════════════════════════════
+            ASHA SEISMIC REPORT — inline intelligence brief
+        ══════════════════════════════════════════════════════ */}
+        <div style={{ marginBottom: '24px' }}>
+          <AshaIntelligenceBrief variant="seismic-report" />
+        </div>
 
         {/* ══════════════════════════════════════════════════════
             SECTION 9 — ASK FAULTLINE

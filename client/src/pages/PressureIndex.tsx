@@ -7,6 +7,7 @@ import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
+import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
@@ -452,6 +453,11 @@ export default function PressureIndex() {
                 accentColor="#00E5FF"
               />
             </div>
+          </div>
+
+          {/* ASHA Pressure Brief */}
+          <div className="mb-12">
+            <AshaIntelligenceBrief variant="pressure-brief" />
           </div>
 
           {/* CTA section */}

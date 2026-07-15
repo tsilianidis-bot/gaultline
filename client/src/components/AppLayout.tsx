@@ -50,10 +50,10 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "seismograph",     label: "Seismograph",          shortLabel: "Seismograph", icon: Activity,        path: "/app/seismograph" },
       { id: "intelligence-hub", label: "Intelligence Hub",    shortLabel: "Intel Hub",   icon: Brain,           path: "/app/intelligence-hub" },
       { id: "command",        label: "Command Center",       shortLabel: "Command",     icon: Command,         path: "/app/command" },
-      { id: "dashboard",      label: "Dashboard",            shortLabel: "Dash",        icon: LayoutDashboard, path: "/app/dashboard" },
+      { id: "dashboard",      label: "Dashboard Briefing",   shortLabel: "Briefing",    icon: LayoutDashboard, path: "/app/dashboard" },
       { id: "todays-story",   label: "Today's Story",        shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
       { id: "pressure",       label: "Pressure Index",       shortLabel: "Pressure",    icon: Gauge,           path: "/app/pressure" },
-      { id: "report",         label: "Daily Briefing",       shortLabel: "Briefing",    icon: FileText,        path: "/app/report" },
+      { id: "report",         label: "ASHA Intelligence",    shortLabel: "Intel",       icon: FileText,        path: "/app/report" },
     ],
   },
   {
@@ -66,7 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "insider-intel",   label: "Insider Intelligence", shortLabel: "Insider",     icon: TrendingDown,    path: "/app/insider-intelligence" },
       { id: "alt-rotation",    label: "Sector Rotation",      shortLabel: "Rotation",    icon: RotateCcw,       path: "/app/alt-rotation" },
       { id: "crypto",          label: "Crypto Hub",           shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
-      { id: "market-intelligence", label: "Market Intelligence",  shortLabel: "Regimes",     icon: BarChart3,       path: "/app/market-intelligence" },
+      { id: "market-intelligence", label: "ASHA Market Intel",    shortLabel: "Regimes",     icon: BarChart3,       path: "/app/market-intelligence" },
       { id: "crypto-regime",       label: "Crypto Regime",          shortLabel: "Crypto Regime", icon: Bitcoin,         path: "/app/crypto-regime" },
       { id: "blog",                label: "Blog",                   shortLabel: "Blog",        icon: Newspaper,       path: "/blog" },
     ],
@@ -75,9 +75,9 @@ const NAV_GROUPS: NavGroup[] = [
     // Q5 + Q6: What could change the outlook? How do I capitalize?
     label: "OPPORTUNITIES",
     items: [
-      { id: "discover",        label: "Ask FAULTLINE",        shortLabel: "Ask",         icon: Search,          path: "/app/discover" },
+      { id: "discover",        label: "Ask ASHA",             shortLabel: "Ask ASHA",    icon: Search,          path: "/app/discover" },
       { id: "opportunities",   label: "Opportunities",        shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
-      { id: "signals",         label: "Signals",              shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
+      { id: "signals",         label: "ASHA Signals",         shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
       { id: "symbol-intel",    label: "Symbol Intelligence",  shortLabel: "Symbol Intel",icon: Telescope,       path: "/app/symbol-intelligence" },
       { id: "decision-engine", label: "Decision Engine",      shortLabel: "Decide",      icon: Crosshair,       path: "/app/decision-engine" },
       { id: "day-trade",       label: "Day Trade Intel",      shortLabel: "Day Trade",   icon: Target,          path: "/app/day-trade-intelligence" },

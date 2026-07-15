@@ -6,6 +6,7 @@
 import { useMemo, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
+import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import type {
   CryptoAssetSignal,
   CryptoSignal,
@@ -844,6 +845,11 @@ function CryptoIntelligenceInner() {
               </p>
             </div>
           ) : null}
+        </section>
+
+        {/* ASHA Crypto Risk Brief */}
+        <section className="mb-8">
+          <AshaIntelligenceBrief variant="crypto-brief" />
         </section>
 
         {/* ── CTA ── */}
