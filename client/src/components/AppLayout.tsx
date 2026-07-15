@@ -260,7 +260,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#050608', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#080A0F', fontFamily: "'IBM Plex Sans', sans-serif" }}>
 
       {/* ── Top header bar ── */}
       <header style={{
@@ -289,16 +289,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
           }}>
             {liveTickerItems.map((item, i) => (
               <span key={i} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em' }}>
-                <span style={{ color: '#6B7280' }}>{item.label} </span>
-                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#94A3B8' }}>{item.value}</span>
-                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#94A3B8', marginLeft: '2px' }}>{item.direction === 'up' ? '▲' : item.direction === 'down' ? '▼' : '—'}</span>
+                <span style={{ color: '#8A9AB0' }}>{item.label} </span>
+                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8' }}>{item.value}</span>
+                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8', marginLeft: '2px' }}>{item.direction === 'up' ? '▲' : item.direction === 'down' ? '▼' : '—'}</span>
               </span>
             ))}
             {liveTickerItems.slice(0, 5).map((item, i) => (
               <span key={`dup-${i}`} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em' }}>
-                <span style={{ color: '#6B7280' }}>{item.label} </span>
-                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#94A3B8' }}>{item.value}</span>
-                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#94A3B8', marginLeft: '2px' }}>{item.direction === 'up' ? '▲' : item.direction === 'down' ? '▼' : '—'}</span>
+                <span style={{ color: '#8A9AB0' }}>{item.label} </span>
+                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8' }}>{item.value}</span>
+                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8', marginLeft: '2px' }}>{item.direction === 'up' ? '▲' : item.direction === 'down' ? '▼' : '—'}</span>
               </span>
             ))}
           </div>
@@ -310,7 +310,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             display: 'flex', alignItems: 'center', gap: '6px',
             padding: '3px 16px',
             background: 'rgba(0,0,0,0.3)',
-            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            borderBottom: '1px solid rgba(255,255,255,0.14)',
             overflowX: 'auto',
           }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151', letterSpacing: '0.12em', textTransform: 'uppercase', flexShrink: 0 }}>REGIME</span>
@@ -322,7 +322,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               border: '1px solid rgba(59,130,246,0.2)',
               flexShrink: 0,
             }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.08em' }}>EQ</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#8A9AB0', letterSpacing: '0.08em' }}>EQ</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#93C5FD', letterSpacing: '0.06em' }}>{miData.stockRegime?.regime ?? '—'}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>{miData.stockRegime?.confidence ? `${miData.stockRegime.confidence}%` : ''}</span>
             </div>
@@ -334,7 +334,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               border: '1px solid rgba(245,158,11,0.2)',
               flexShrink: 0,
             }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.08em' }}>BTC</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#8A9AB0', letterSpacing: '0.08em' }}>BTC</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FCD34D', letterSpacing: '0.06em' }}>{miData.cryptoRegime?.regime ?? '—'}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>{miData.cryptoRegime?.confidence ? `${miData.cryptoRegime.confidence}%` : ''}</span>
             </div>
@@ -347,7 +347,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 border: miData.alignmentScore != null && miData.alignmentScore > 65 ? '1px solid rgba(16,185,129,0.2)' : miData.alignmentScore != null && miData.alignmentScore < 35 ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(107,114,128,0.2)',
                 flexShrink: 0,
               }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#6B7280', letterSpacing: '0.08em' }}>ALIGN</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#8A9AB0', letterSpacing: '0.08em' }}>ALIGN</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: miData.alignmentScore != null && miData.alignmentScore > 65 ? '#6EE7B7' : miData.alignmentScore != null && miData.alignmentScore < 35 ? '#FCA5A5' : '#9CA3AF', letterSpacing: '0.06em' }}>{miData.alignmentStatus}</span>
               </div>
             )}
@@ -355,12 +355,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
         )}
 
         {/* Logo row + status */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '24px', height: '24px',
-              background: 'linear-gradient(135deg, #00D4FF 0%, #0066FF 100%)',
+              background: 'linear-gradient(135deg, #00E5FF 0%, #0066FF 100%)',
               borderRadius: '4px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               boxShadow: '0 0 12px rgba(0, 212, 255, 0.4)',
@@ -372,11 +372,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </svg>
             </div>
             <div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#F0F4FF', letterSpacing: '0.08em', lineHeight: 1 }}>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#FFFFFF', letterSpacing: '0.08em', lineHeight: 1 }}>
                 FAULTLINE
               </div>
               {!isMobile && (
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#6B7280', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#8A9AB0', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                   Systemic Risk Intelligence
                 </div>
               )}
@@ -409,20 +409,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: isMobile ? '4px 8px' : '4px 10px',
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'rgba(255,255,255,0.14)',
+                border: '1px solid rgba(255,255,255,0.14)',
                 borderRadius: '4px',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,212,255,0.3)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,229,255,0.45)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.14)'; }}
             >
-              <Search size={11} style={{ color: '#6B7280' }} />
+              <Search size={11} style={{ color: '#8A9AB0' }} />
               {!isMobile && (
                 <>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#6B7280', letterSpacing: '0.08em' }}>Search</span>
-                  <kbd style={{ padding: '1px 4px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '2px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>⌘K</kbd>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#8A9AB0', letterSpacing: '0.08em' }}>Search</span>
+                  <kbd style={{ padding: '1px 4px', background: 'rgba(255,255,255,0.11)', border: '1px solid rgba(255,255,255,0.18)', borderRadius: '2px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>⌘K</kbd>
                 </>
               )}
             </button>
@@ -432,7 +432,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 onClick={forceRefresh}
                 title="Force refresh FRED data"
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px', color: '#374151', transition: 'color 0.15s ease' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#00D4FF')}
+                onMouseEnter={e => (e.currentTarget.style.color = '#00E5FF')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#374151')}
               >
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -449,28 +449,28 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px',
                     padding: '4px 10px 4px 6px',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
+                    background: 'rgba(255,255,255,0.14)',
+                    border: '1px solid rgba(255,255,255,0.14)',
                     borderRadius: '20px',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(0,212,255,0.3)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(0,229,255,0.45)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)')}
                 >
                   <div style={{
                     width: '20px', height: '20px', borderRadius: '50%',
-                    background: 'linear-gradient(135deg, rgba(0,212,255,0.3) 0%, rgba(0,102,255,0.3) 100%)',
-                    border: '1px solid rgba(0,212,255,0.4)',
+                    background: 'linear-gradient(135deg, rgba(0,229,255,0.45) 0%, rgba(0,102,255,0.3) 100%)',
+                    border: '1px solid rgba(0,229,255,0.55)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
                   }}>
-                    <User size={10} style={{ color: '#00D4FF' }} />
+                    <User size={10} style={{ color: '#00E5FF' }} />
                   </div>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: '#9CA3AF', letterSpacing: '0.08em', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {authUser.name?.split(' ')[0] ?? 'USER'}
                   </span>
-                  <ChevronDown size={10} style={{ color: '#6B7280', flexShrink: 0 }} />
+                  <ChevronDown size={10} style={{ color: '#8A9AB0', flexShrink: 0 }} />
                 </button>
 
                 {/* Dropdown */}
@@ -480,7 +480,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     <div style={{
                       position: 'absolute', right: 0, top: 'calc(100% + 8px)', zIndex: 100,
                       background: 'rgba(10,12,18,0.98)',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.18)',
                       borderRadius: '10px',
                       padding: '8px',
                       minWidth: '180px',
@@ -488,11 +488,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       backdropFilter: 'blur(12px)',
                     }}>
                       {/* User info */}
-                      <div style={{ padding: '8px 10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: '6px' }}>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#E2E8F0', fontWeight: 600 }}>
+                      <div style={{ padding: '8px 10px 12px', borderBottom: '1px solid rgba(255,255,255,0.11)', marginBottom: '6px' }}>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#F0F6FF', fontWeight: 600 }}>
                           {authUser.name ?? 'FAULTLINE USER'}
                         </div>
-                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
+                        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#8A9AB0', marginTop: '2px' }}>
                           {authUser.email ?? ''}
                         </div>
                       </div>
@@ -507,7 +507,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                           fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em',
                           textAlign: 'left', transition: 'all 0.12s ease',
                         }}
-                        onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(255,255,255,0.06)'); (e.currentTarget.style.color = '#E2E8F0'); }}
+                        onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(255,255,255,0.11)'); (e.currentTarget.style.color = '#F0F6FF'); }}
                         onMouseLeave={e => { (e.currentTarget.style.background = 'transparent'); (e.currentTarget.style.color = '#9CA3AF'); }}
                       >
                         <User size={12} /> MY ACCOUNT
@@ -537,14 +537,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         style={{
                           display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
                           padding: '8px 10px', background: 'transparent', border: 'none',
-                          borderRadius: '6px', color: '#6B7280', cursor: 'pointer',
+                          borderRadius: '6px', color: '#8A9AB0', cursor: 'pointer',
                           fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.08em',
                           textAlign: 'left', transition: 'all 0.12s ease',
-                          marginTop: '4px', borderTop: '1px solid rgba(255,255,255,0.05)',
+                          marginTop: '4px', borderTop: '1px solid rgba(255,255,255,0.09)',
                           paddingTop: '12px',
                         }}
                         onMouseEnter={e => { (e.currentTarget.style.color = '#FF4444'); }}
-                        onMouseLeave={e => { (e.currentTarget.style.color = '#6B7280'); }}
+                        onMouseLeave={e => { (e.currentTarget.style.color = '#8A9AB0'); }}
                       >
                         <LogOut size={12} /> SIGN OUT
                       </button>
@@ -558,17 +558,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
                   padding: '5px 12px',
-                  background: 'rgba(0,212,255,0.08)',
-                  border: '1px solid rgba(0,212,255,0.25)',
+                  background: 'rgba(0,229,255,0.14)',
+                  border: '1px solid rgba(0,229,255,0.38)',
                   borderRadius: '20px',
-                  color: '#00D4FF',
+                  color: '#00E5FF',
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: '13px', letterSpacing: '0.1em',
                   textDecoration: 'none',
                   transition: 'all 0.15s ease',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.15)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,212,255,0.08)'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,229,255,0.25)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(0,229,255,0.14)'; }}
               >
                 <LogIn size={11} /> SIGN IN
               </a>
@@ -593,7 +593,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <div style={{
                   width: '1px',
                   height: '28px',
-                  background: isOwnerPortal ? 'rgba(255,170,0,0.35)' : 'rgba(255,255,255,0.07)',
+                  background: isOwnerPortal ? 'rgba(255,170,0,0.35)' : 'rgba(255,255,255,0.12)',
                   margin: isOwnerPortal ? '0 12px' : '0 8px',
                   flexShrink: 0,
                 }} />
@@ -622,10 +622,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 const isSitRoom = tab.id === 'situation-room';
                 const isFlagship = isPreFlight || isSitRoom;
                 // Flagship colors: Pre-Flight = cyan, Situation Room = amber
-                const flagshipColor = isPreFlight ? '#00D4FF' : '#FFAA00';
-                const flagshipBg = isPreFlight ? 'rgba(0,212,255,0.08)' : 'rgba(255,170,0,0.08)';
-                const flagshipBgActive = isPreFlight ? 'rgba(0,212,255,0.15)' : 'rgba(255,170,0,0.15)';
-                const flagshipBorder = isPreFlight ? 'rgba(0,212,255,0.3)' : 'rgba(255,170,0,0.3)';
+                const flagshipColor = isPreFlight ? '#00E5FF' : '#FFAA00';
+                const flagshipBg = isPreFlight ? 'rgba(0,229,255,0.14)' : 'rgba(255,170,0,0.08)';
+                const flagshipBgActive = isPreFlight ? 'rgba(0,229,255,0.25)' : 'rgba(255,170,0,0.15)';
+                const flagshipBorder = isPreFlight ? 'rgba(0,229,255,0.45)' : 'rgba(255,170,0,0.3)';
                 return (
                   <button
                     key={tab.id}
@@ -639,11 +639,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
                         : (isFlagship ? flagshipBg : isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent'),
                       border: isFlagship ? `1px solid ${active ? flagshipColor + '66' : flagshipBorder}` : 'none',
                       borderBottom: !isFlagship ? (active
-                        ? `2px solid ${isTrackRecord ? trackGreen : '#00D4FF'}`
+                        ? `2px solid ${isTrackRecord ? trackGreen : '#00E5FF'}`
                         : (isTrackRecord ? `2px solid rgba(34,197,94,0.3)` : '2px solid transparent')) : undefined,
                       color: active
-                        ? (isFlagship ? flagshipColor : isTrackRecord ? trackGreen : '#00D4FF')
-                        : (isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : '#6B7280'),
+                        ? (isFlagship ? flagshipColor : isTrackRecord ? trackGreen : '#00E5FF')
+                        : (isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : '#8A9AB0'),
                       fontFamily: "'IBM Plex Mono', monospace",
                       fontSize: isFlagship ? '11px' : '10px',
                       fontWeight: isFlagship ? '600' : 'normal',
@@ -660,13 +660,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     }}
                     onMouseEnter={e => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#4ADE80' : '#94A3B8';
-                        (e.currentTarget as HTMLElement).style.background = isFlagship ? flagshipBgActive : isTrackRecord ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)';
+                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#4ADE80' : '#B0C4D8';
+                        (e.currentTarget as HTMLElement).style.background = isFlagship ? flagshipBgActive : isTrackRecord ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.14)';
                       }
                     }}
                     onMouseLeave={e => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : '#6B7280';
+                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : '#8A9AB0';
                         (e.currentTarget as HTMLElement).style.background = isFlagship ? flagshipBg : isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent';
                       }
                     }}
@@ -704,7 +704,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* Cinematic refresh flash overlay */}
       {isRefreshing && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 9999, background: 'rgba(0,212,255,0.03)', animation: 'data-refresh-flash 0.8s ease-out forwards' }} />
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none', zIndex: 9999, background: 'rgba(0,229,255,0.08)', animation: 'data-refresh-flash 0.8s ease-out forwards' }} />
       )}
 
       {/* ── Main content ── */}
@@ -736,7 +736,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 padding: '8px 2px', gap: '3px',
                 background: 'transparent', border: 'none',
-                color: active ? '#00D4FF' : '#8B9BB4',
+                color: active ? '#00E5FF' : '#8B9BB4',
                 cursor: 'pointer', position: 'relative',
                 transition: 'color 0.15s ease',
               }}
@@ -745,7 +745,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <div style={{
                   position: 'absolute', top: 0, left: '20%', right: '20%',
                   height: '2px',
-                  background: 'linear-gradient(90deg, transparent, #00D4FF, transparent)',
+                  background: 'linear-gradient(90deg, transparent, #00E5FF, transparent)',
                   borderRadius: '0 0 2px 2px',
                 }} />
               )}
@@ -776,7 +776,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             padding: '8px 2px', gap: '3px',
             background: 'transparent', border: 'none',
-            color: moreOpen ? '#00D4FF' : '#8B9BB4',
+            color: moreOpen ? '#00E5FF' : '#8B9BB4',
             cursor: 'pointer',
             transition: 'color 0.15s ease',
           }}
@@ -816,12 +816,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
           >
             {/* Drawer handle */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#6B7280', letterSpacing: '0.15em' }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#8A9AB0', letterSpacing: '0.15em' }}>
                 ALL MODULES
               </span>
               <button
                 onClick={() => setMoreOpen(false)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#6B7280', padding: 4 }}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#8A9AB0', padding: 4 }}
               >
                 <X size={16} />
               </button>
@@ -857,11 +857,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
                           borderRadius: 8,
                           background: active
                             ? (isTR ? 'rgba(34,197,94,0.12)' : 'rgba(0, 212, 255, 0.1)')
-                            : (isTR ? 'rgba(34,197,94,0.07)' : 'rgba(255,255,255,0.04)'),
+                            : (isTR ? 'rgba(34,197,94,0.07)' : 'rgba(255,255,255,0.14)'),
                           border: active
                             ? `1px solid ${isTR ? 'rgba(34,197,94,0.4)' : 'rgba(0, 212, 255, 0.3)'}`
-                            : (isTR ? '1px solid rgba(34,197,94,0.25)' : '1px solid rgba(255,255,255,0.06)'),
-                          color: active ? (isTR ? '#22C55E' : '#00D4FF') : (isTR ? '#22C55E' : '#94A3B8'),
+                            : (isTR ? '1px solid rgba(34,197,94,0.25)' : '1px solid rgba(255,255,255,0.11)'),
+                          color: active ? (isTR ? '#22C55E' : '#00E5FF') : (isTR ? '#22C55E' : '#B0C4D8'),
                           cursor: 'pointer',
                           position: 'relative',
                           boxShadow: isTR ? '0 0 12px rgba(34,197,94,0.12)' : 'none',

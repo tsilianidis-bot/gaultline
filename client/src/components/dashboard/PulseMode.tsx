@@ -123,7 +123,7 @@ function PressureHero() {
             <div
               key={stat.label}
               className="rounded-xl p-3 text-center"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.11)" }}
             >
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 4 }}>
                 {stat.label}
@@ -163,7 +163,7 @@ function WhatChangedToday() {
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.12)" }}
     >
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.3em", color: "rgba(100,116,139,0.6)" }}>
@@ -179,7 +179,7 @@ function WhatChangedToday() {
           <div
             key={u.label}
             className="flex items-center justify-between rounded-xl px-3 py-2.5"
-            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.04)" }}
+            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.14)" }}
           >
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: u.color, flexShrink: 0, boxShadow: `0 0 6px ${u.color}60` }} />
@@ -251,7 +251,7 @@ function DailyBriefSummary() {
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.12)" }}
     >
       <div className="flex items-center justify-between mb-3">
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.3em", color: "rgba(100,116,139,0.6)" }}>
@@ -297,7 +297,7 @@ function CompactSignalFooter() {
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.12)" }}
     >
       <div className="flex items-center justify-between mb-3">
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.3em", color: "rgba(100,116,139,0.6)" }}>
@@ -306,7 +306,7 @@ function CompactSignalFooter() {
         <button
           onClick={() => navigate("/app/signals")}
           className="flex items-center gap-1"
-          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00D4FF", letterSpacing: "0.1em" }}
+          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00E5FF", letterSpacing: "0.1em" }}
         >
           VIEW ALL <ArrowRight size={10} />
         </button>

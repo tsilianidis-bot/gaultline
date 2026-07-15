@@ -24,7 +24,7 @@ function FilterBar({ active, onChange }: { active: FilterTab; onChange: (t: Filt
   return (
     <div
       className="flex items-center gap-1 p-1 rounded-xl"
-      style={{ background: "rgba(5,6,8,0.9)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "rgba(5,6,8,0.9)", border: "1px solid rgba(255,255,255,0.12)" }}
     >
       {tabs.map((tab) => {
         const active_ = active === tab.id;
@@ -34,9 +34,9 @@ function FilterBar({ active, onChange }: { active: FilterTab; onChange: (t: Filt
             onClick={() => onChange(tab.id)}
             className="flex-1 py-2 rounded-lg transition-all duration-200 active:scale-[0.97]"
             style={{
-              background: active_ ? "rgba(0,212,255,0.12)" : "transparent",
-              border: active_ ? "1px solid rgba(0,212,255,0.25)" : "1px solid transparent",
-              color: active_ ? "#00D4FF" : "rgba(100,116,139,0.7)",
+              background: active_ ? "rgba(0,229,255,0.20)" : "transparent",
+              border: active_ ? "1px solid rgba(0,229,255,0.38)" : "1px solid transparent",
+              color: active_ ? "#00E5FF" : "rgba(100,116,139,0.7)",
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 9,
               letterSpacing: "0.2em",
@@ -63,7 +63,7 @@ function CryptoSignalGrid() {
     return (
       <div className="flex flex-col gap-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
+          <div key={i} className="h-14 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.14)" }} />
         ))}
       </div>
     );
@@ -78,7 +78,7 @@ function CryptoSignalGrid() {
         <button
           onClick={() => navigate("/app/crypto-signals")}
           className="flex items-center gap-1"
-          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00D4FF", letterSpacing: "0.1em" }}
+          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00E5FF", letterSpacing: "0.1em" }}
         >
           DEEP SCAN <ArrowRight size={10} />
         </button>
@@ -94,7 +94,7 @@ function CryptoSignalGrid() {
             <div
               key={coin.id}
               className="flex items-center justify-between rounded-xl px-3 py-2.5"
-              style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.04)" }}
+              style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.14)" }}
             >
               <div className="flex items-center gap-2.5 flex-1 min-w-0">
                 {coin.image && (
@@ -150,7 +150,7 @@ function StocksSection() {
         <button
           onClick={() => navigate("/app/signals")}
           className="flex items-center gap-1"
-          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00D4FF", letterSpacing: "0.1em" }}
+          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00E5FF", letterSpacing: "0.1em" }}
         >
           STOCK SCREENER <ArrowRight size={10} />
         </button>
@@ -164,7 +164,7 @@ function StocksSection() {
             <div
               key={d.id}
               className="rounded-xl px-3 py-2.5"
-              style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.04)" }}
+              style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.14)" }}
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#CBD5E1" }}>
@@ -185,7 +185,7 @@ function StocksSection() {
                   </span>
                 </div>
               </div>
-              <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
+              <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.09)" }}>
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -204,7 +204,7 @@ function StocksSection() {
       <button
         onClick={() => navigate("/app/signals")}
         className="w-full rounded-xl py-3 flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98]"
-        style={{ background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)", color: "#00D4FF" }}
+        style={{ background: "rgba(0,229,255,0.14)", border: "1px solid rgba(0,229,255,0.32)", color: "#00E5FF" }}
       >
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: "0.2em" }}>
           OPEN STOCK SCREENER
@@ -226,7 +226,7 @@ function RotationTracker() {
     return (
       <div className="flex flex-col gap-2">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.04)" }} />
+          <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: "rgba(255,255,255,0.14)" }} />
         ))}
       </div>
     );
@@ -238,7 +238,7 @@ function RotationTracker() {
       ? "#00FF88"
       : data.regimeKey === "early_rotation"
       ? "#FB923C"
-      : "#00D4FF"
+      : "#00E5FF"
     : "#94A3B8";
 
   return (
@@ -250,7 +250,7 @@ function RotationTracker() {
         <button
           onClick={() => navigate("/app/alt-rotation")}
           className="flex items-center gap-1"
-          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00D4FF", letterSpacing: "0.1em" }}
+          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00E5FF", letterSpacing: "0.1em" }}
         >
           FULL ENGINE <ArrowRight size={10} />
         </button>
@@ -261,7 +261,7 @@ function RotationTracker() {
           {/* BTC Dominance */}
           <div
             className="rounded-xl p-3"
-            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}
+            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.11)" }}
           >
             <div className="flex items-center justify-between mb-2">
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.2em", color: "rgba(100,116,139,0.6)" }}>
@@ -301,12 +301,12 @@ function RotationTracker() {
 
           {/* Sector momentum — top 3 */}
           {data.sectors?.slice(0, 3).map((sector) => {
-            const sColor = sector.color ?? "#00D4FF";
+            const sColor = sector.color ?? "#00E5FF";
             return (
               <div
                 key={sector.name}
                 className="flex items-center justify-between rounded-xl px-3 py-2"
-                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.14)" }}
               >
                 <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 12, color: "#CBD5E1" }}>
                   {sector.name}
@@ -326,7 +326,7 @@ function RotationTracker() {
       ) : (
         <div
           className="rounded-xl p-4 text-center"
-          style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}
+          style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.11)" }}
         >
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "rgba(100,116,139,0.5)" }}>
             Rotation data unavailable
@@ -334,7 +334,7 @@ function RotationTracker() {
           <button
             onClick={() => navigate("/app/alt-rotation")}
             className="mt-2 flex items-center gap-1 mx-auto"
-            style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00D4FF" }}
+            style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00E5FF" }}
           >
             OPEN ALT ROTATION ENGINE <ArrowRight size={10} />
           </button>

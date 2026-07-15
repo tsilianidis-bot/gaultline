@@ -90,7 +90,7 @@ export default function HomepageBriefingPanel() {
     return (
       <div style={{
         background: "rgba(12,15,22,0.95)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.11)",
         borderRadius: "6px",
         padding: "20px",
         marginBottom: "10px",
@@ -171,7 +171,7 @@ export default function HomepageBriefingPanel() {
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           {[
             { label: "PRESSURE", value: `${metrics.pressureIndex.current}/100`, color: metrics.pressureIndex.current >= 65 ? "#FF2D55" : metrics.pressureIndex.current >= 45 ? "#FF9500" : "#00FF88" },
-            { label: "REGIME", value: metrics.regime, color: "#00D4FF" },
+            { label: "REGIME", value: metrics.regime, color: "#00E5FF" },
             { label: "BULL PROB", value: `${metrics.bullProbability}%`, color: "#00FF88" },
             { label: "BEAR PROB", value: `${metrics.bearProbability}%`, color: "#FF2D55" },
           ].map(m => (
@@ -203,7 +203,7 @@ export default function HomepageBriefingPanel() {
       {whyTodayIsDifferent && (
         <div style={{
           background: "rgba(12,15,22,0.95)",
-          border: "1px solid rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.11)",
           borderRadius: "6px",
           padding: "14px 16px",
           marginBottom: "8px",
@@ -256,10 +256,10 @@ export default function HomepageBriefingPanel() {
               marginTop: "10px",
               padding: "10px 12px",
               background: "rgba(0,212,255,0.04)",
-              border: "1px solid rgba(0,212,255,0.12)",
+              border: "1px solid rgba(0,229,255,0.20)",
               borderRadius: "4px",
             }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.12em", marginBottom: "5px", textTransform: "uppercase" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00E5FF", letterSpacing: "0.12em", marginBottom: "5px", textTransform: "uppercase" }}>
                 Institutional Interpretation
               </div>
               <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.6, margin: 0 }}>
@@ -274,7 +274,7 @@ export default function HomepageBriefingPanel() {
       {historySays && (
         <div style={{
           background: "rgba(12,15,22,0.95)",
-          border: "1px solid rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.11)",
           borderRadius: "6px",
           padding: "14px 16px",
           marginBottom: "8px",
@@ -300,17 +300,17 @@ export default function HomepageBriefingPanel() {
                 {historySays.percentileLabel}
               </span>
             </div>
-            <div style={{ width: "1px", background: "rgba(255,255,255,0.06)", alignSelf: "stretch" }} />
+            <div style={{ width: "1px", background: "rgba(255,255,255,0.11)", alignSelf: "stretch" }} />
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>REGIME DURATION</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "16px", color: "#00D4FF", fontWeight: 700 }}>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "16px", color: "#00E5FF", fontWeight: 700 }}>
                 {historySays.currentRegimeDuration}mo
               </span>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "10px", color: "#64748B" }}>in current regime</span>
             </div>
             {historySays.consecutiveElevatedStreak > 0 && (
               <>
-                <div style={{ width: "1px", background: "rgba(255,255,255,0.06)", alignSelf: "stretch" }} />
+                <div style={{ width: "1px", background: "rgba(255,255,255,0.11)", alignSelf: "stretch" }} />
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>ELEVATED STREAK</span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "16px", color: "#FF9500", fontWeight: 700 }}>
@@ -353,11 +353,11 @@ export default function HomepageBriefingPanel() {
                     gap: "10px",
                     padding: "8px 10px",
                     background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.09)",
                     borderRadius: "4px",
                   }}>
                     <div style={{ minWidth: "36px", textAlign: "center" }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", fontWeight: 600 }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00E5FF", fontWeight: 600 }}>
                         {analog.similarity}%
                       </div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#475569", letterSpacing: "0.08em" }}>SIM</div>
@@ -383,7 +383,7 @@ export default function HomepageBriefingPanel() {
                 { label: "Bull Continuation", value: historySays.historicalBullContinuationRate, color: "#00FF88" },
                 { label: "Correction Risk", value: historySays.historicalCorrectionProbability, color: "#FF2D55" },
                 { label: "Elevated Volatility", value: historySays.historicalElevatedVolatilityRate, color: "#FF9500" },
-                { label: "Recovery Probability", value: historySays.historicalRecoveryProbability, color: "#00D4FF" },
+                { label: "Recovery Probability", value: historySays.historicalRecoveryProbability, color: "#00E5FF" },
               ].filter(p => p.value !== null).map(p => (
                 <div key={p.label} style={{
                   background: `${p.color}08`,
@@ -398,7 +398,7 @@ export default function HomepageBriefingPanel() {
                     {p.value}%
                   </div>
                   {/* Mini bar */}
-                  <div style={{ height: "2px", background: "rgba(255,255,255,0.06)", borderRadius: "1px", marginTop: "5px" }}>
+                  <div style={{ height: "2px", background: "rgba(255,255,255,0.11)", borderRadius: "1px", marginTop: "5px" }}>
                     <div style={{ height: "100%", width: `${p.value}%`, background: p.color, borderRadius: "1px", transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
                   </div>
                 </div>
@@ -425,7 +425,7 @@ export default function HomepageBriefingPanel() {
       {timeline && timeline.length >= 3 && (
         <div style={{
           background: "rgba(12,15,22,0.95)",
-          border: "1px solid rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.11)",
           borderRadius: "6px",
           padding: "14px 16px",
           marginBottom: "8px",

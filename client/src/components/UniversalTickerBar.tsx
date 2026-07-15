@@ -21,7 +21,7 @@ export default function UniversalTickerBar() {
 
   if (!current) return null;
 
-  const accent = current.assetType === "crypto" ? "#F7931A" : "#00D4FF";
+  const accent = current.assetType === "crypto" ? "#F7931A" : "#00E5FF";
 
   return (
     <div style={{
@@ -39,7 +39,7 @@ export default function UniversalTickerBar() {
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: `${accent}80`, textTransform: "uppercase" }}>ACTIVE</span>
         <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "14px", color: accent, letterSpacing: "0.06em", textShadow: `0 0 10px ${accent}60` }}>{current.ticker}</span>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{current.name}</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", background: "rgba(255,255,255,0.04)", padding: "1px 4px", borderRadius: "2px" }}>{current.assetType.toUpperCase()}</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.4)", background: "rgba(255,255,255,0.14)", padding: "1px 4px", borderRadius: "2px" }}>{current.assetType.toUpperCase()}</span>
       </div>
 
       {/* Divider */}

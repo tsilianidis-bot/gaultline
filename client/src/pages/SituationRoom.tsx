@@ -328,14 +328,14 @@ const THESIS_OPTIONS: { value: ThesisType; label: string; icon: string; sub: str
 
 const VERDICT_CONFIG: Record<VerdictType, { label: string; color: string; glow: string; borderColor: string }> = {
   HIGH_CONVICTION: { label: "HIGH CONVICTION", color: "#00FF88", glow: "rgba(0,255,136,0.25)", borderColor: "rgba(0,255,136,0.5)" },
-  APPROVED:        { label: "APPROVED",         color: "#00D4FF", glow: "rgba(0,212,255,0.20)", borderColor: "rgba(0,212,255,0.45)" },
+  APPROVED:        { label: "APPROVED",         color: "#00E5FF", glow: "rgba(0,212,255,0.20)", borderColor: "rgba(0,212,255,0.45)" },
   CAUTION:         { label: "CAUTION",          color: "#FF9500", glow: "rgba(255,149,0,0.20)",  borderColor: "rgba(255,149,0,0.45)" },
   WAIT:            { label: "WAIT",             color: "#A78BFA", glow: "rgba(167,139,250,0.18)", borderColor: "rgba(167,139,250,0.40)" },
   DEFENSIVE:       { label: "DEFENSIVE",        color: "#FF2D55", glow: "rgba(255,45,85,0.22)",  borderColor: "rgba(255,45,85,0.45)" },
 };
 
 const GRADE_COLOR: Record<string, string> = {
-  "A+": "#00FF88", "A": "#00D4FF", "A-": "#00D4FF",
+  "A+": "#00FF88", "A": "#00E5FF", "A-": "#00E5FF",
   "B+": "#FF9500", "B": "#FF9500", "B-": "#FF6B35",
   "C":  "#FF2D55",
 };
@@ -343,7 +343,7 @@ const GRADE_COLOR: Record<string, string> = {
 // ── Color helpers ─────────────────────────────────────────────
 function favColor(score: number) {
   if (score >= 70) return "#00FF88";
-  if (score >= 50) return "#00D4FF";
+  if (score >= 50) return "#00E5FF";
   if (score >= 35) return "#FF9500";
   return "#FF2D55";
 }
@@ -366,7 +366,7 @@ function sevColor(sev: string) {
 function pressureColor(score: number) {
   if (score >= 65) return "#FF2D55";
   if (score >= 45) return "#FF9500";
-  if (score >= 25) return "#00D4FF";
+  if (score >= 25) return "#00E5FF";
   return "#00FF88";
 }
 function returnColor(v: number) { return v > 0 ? "#00FF88" : v < 0 ? "#FF2D55" : "#94A3B8"; }
@@ -382,7 +382,7 @@ function ScoreRing({ score, color, size = 130, label }: { score: number; color: 
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={9} />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.11)" strokeWidth={9} />
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={9}
           strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
           style={{ transition: "stroke-dasharray 1.4s cubic-bezier(0.23,1,0.32,1)", filter: `drop-shadow(0 0 8px ${color}80)` }} />
@@ -405,7 +405,7 @@ function ProbBar({ value, color, label }: { value: number; color: string; label:
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.75)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{label}</span>
         <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color }}>{value}%</span>
       </div>
-      <div style={{ height: "5px", background: "rgba(255,255,255,0.05)", borderRadius: "3px", overflow: "hidden" }}>
+      <div style={{ height: "5px", background: "rgba(255,255,255,0.09)", borderRadius: "3px", overflow: "hidden" }}>
         <div style={{ height: "100%", width: `${anim}%`, background: `linear-gradient(90deg, ${color}50, ${color})`, borderRadius: "3px", boxShadow: `0 0 8px ${color}50`, transition: "width 1.4s cubic-bezier(0.23,1,0.32,1)" }} />
       </div>
     </div>
@@ -413,7 +413,7 @@ function ProbBar({ value, color, label }: { value: number; color: string; label:
 }
 
 // ── Section label ─────────────────────────────────────────────
-function SectionLabel({ icon, title, color = "#00D4FF" }: { icon: React.ReactNode; title: string; color?: string }) {
+function SectionLabel({ icon, title, color = "#00E5FF" }: { icon: React.ReactNode; title: string; color?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
       <div style={{ color, opacity: 0.9 }}>{icon}</div>
@@ -437,7 +437,7 @@ function MetricChip({ label, value }: { label: string; value: string }) {
 // ── List row ──────────────────────────────────────────────────
 function ListRow({ text, color, icon, sub }: { text: string; color: string; icon: React.ReactNode; sub?: string }) {
   return (
-    <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+    <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", padding: "8px 0", borderBottom: "1px solid rgba(255,255,255,0.14)" }}>
       <div style={{ color, flexShrink: 0, marginTop: "2px" }}>{icon}</div>
       <div>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#CBD5E1", lineHeight: 1.5 }}>{text}</div>
@@ -680,7 +680,7 @@ export default function SituationRoom() {
             </div>
 
             {/* Regime */}
-            <div style={{ padding: "3px 10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "3px" }}>
+            <div style={{ padding: "3px 10px", background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "3px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.1em" }}>{output.regime.label}</span>
             </div>
           </div>
@@ -720,13 +720,13 @@ export default function SituationRoom() {
         ══════════════════════════════════════════════════════ */}
         <div style={{
           background: "rgba(12,15,22,0.98)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.14)",
           borderRadius: "6px",
           padding: "18px",
           marginBottom: "10px",
           animation: "cinematic-reveal 0.55s cubic-bezier(0.23,1,0.32,1) 60ms both",
         }}>
-          <SectionLabel icon={<Crosshair size={14} />} title="Decision Engine" color="#00D4FF" />
+          <SectionLabel icon={<Crosshair size={14} />} title="Decision Engine" color="#00E5FF" />
 
           {/* ── Wizard step indicator ── */}
           <div style={{ display: "flex", alignItems: "center", gap: "0", marginBottom: "20px" }}>
@@ -739,17 +739,17 @@ export default function SituationRoom() {
                   <div key={step} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", flex: 1 }}>
                     <div style={{
                       width: "26px", height: "26px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                      background: done ? "#00D4FF" : active ? "rgba(0,212,255,0.18)" : "rgba(255,255,255,0.04)",
-                      border: done ? "1px solid #00D4FF" : active ? "1px solid rgba(0,212,255,0.6)" : "1px solid rgba(255,255,255,0.10)",
+                      background: done ? "#00E5FF" : active ? "rgba(0,212,255,0.18)" : "rgba(255,255,255,0.14)",
+                      border: done ? "1px solid #00E5FF" : active ? "1px solid rgba(0,212,255,0.6)" : "1px solid rgba(255,255,255,0.10)",
                       transition: "all 0.2s ease",
                     }}>
                       {done
                         ? <span style={{ fontSize: "12px", color: "#050608" }}>✓</span>
-                        : <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: active ? "#00D4FF" : "#475569", fontWeight: 700 }}>{step}</span>}
+                        : <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: active ? "#00E5FF" : "#475569", fontWeight: 700 }}>{step}</span>}
                     </div>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: active ? "#00D4FF" : done ? "rgba(0,212,255,0.5)" : "rgba(100,116,139,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center", lineHeight: 1.3 }}>{labels[i]}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: active ? "#00E5FF" : done ? "rgba(0,229,255,0.65)" : "rgba(100,116,139,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "center", lineHeight: 1.3 }}>{labels[i]}</span>
                   </div>
-                  {i < 2 && <div style={{ height: "1px", width: "20px", background: wizardStep > step + 1 ? "#00D4FF" : "rgba(255,255,255,0.08)", flexShrink: 0, marginBottom: "16px", transition: "background 0.2s ease" }} />}
+                  {i < 2 && <div style={{ height: "1px", width: "20px", background: wizardStep > step + 1 ? "#00E5FF" : "rgba(255,255,255,0.14)", flexShrink: 0, marginBottom: "16px", transition: "background 0.2s ease" }} />}
                 </>
               );
             })}
@@ -765,15 +765,15 @@ export default function SituationRoom() {
                     style={{
                       display: "flex", flexDirection: "column", gap: "4px", padding: "12px 14px",
                       background: "rgba(255,255,255,0.025)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.14)",
                       borderRadius: "6px", cursor: "pointer", textAlign: "left",
                       transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.08)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.35)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.14)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.50)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.14)"; }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", color: "#00D4FF", width: "16px", flexShrink: 0 }}>{opt.glyph}</span>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", color: "#00E5FF", width: "16px", flexShrink: 0 }}>{opt.glyph}</span>
                       <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0", letterSpacing: "0.04em" }}>{opt.label}</span>
                     </div>
                     <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "rgba(100,116,139,0.6)", lineHeight: 1.4, paddingLeft: "24px" }}>{opt.sub}</div>
@@ -788,7 +788,7 @@ export default function SituationRoom() {
             <div style={{ animation: "cinematic-reveal 0.3s cubic-bezier(0.23,1,0.32,1) both" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
-                  <span style={{ color: "#00D4FF" }}>{MOVE_OPTIONS.find(m => m.value === selectedMove)?.label}</span> — select exposure type
+                  <span style={{ color: "#00E5FF" }}>{MOVE_OPTIONS.find(m => m.value === selectedMove)?.label}</span> — select exposure type
                 </div>
                 <button onClick={() => { setWizardStep(1); setSelectedMove(null); }}
                   style={{ background: "none", border: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", letterSpacing: "0.1em" }}>← Back</button>
@@ -799,12 +799,12 @@ export default function SituationRoom() {
                     style={{
                       display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px",
                       background: "rgba(255,255,255,0.025)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.14)",
                       borderRadius: "5px", cursor: "pointer", textAlign: "left",
                       transition: "all 0.15s cubic-bezier(0.23,1,0.32,1)",
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.08)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.35)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.08)"; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.14)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.50)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.025)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.14)"; }}
                   >
                     <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: "#CBD5E1" }}>{opt.label}</span>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
@@ -818,9 +818,9 @@ export default function SituationRoom() {
           {wizardStep === 3 && selectedMove && (
             <div style={{ animation: "cinematic-reveal 0.3s cubic-bezier(0.23,1,0.32,1) both" }}>
               {/* Summary bar */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", padding: "8px 12px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: "5px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", padding: "8px 12px", background: "rgba(0,229,255,0.10)", border: "1px solid rgba(0,229,255,0.25)", borderRadius: "5px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", textTransform: "uppercase", letterSpacing: "0.1em" }}>{MOVE_OPTIONS.find(m => m.value === selectedMove)?.label}</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00E5FF", textTransform: "uppercase", letterSpacing: "0.1em" }}>{MOVE_OPTIONS.find(m => m.value === selectedMove)?.label}</span>
                   {selectedExposure && <>
                     <span style={{ color: "rgba(100,116,139,0.4)", fontSize: "10px" }}>›</span>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(0,212,255,0.7)", textTransform: "uppercase", letterSpacing: "0.08em" }}>{EXPOSURE_STEP2[selectedMove]?.find(e => e.value === selectedExposure)?.label}</span>
@@ -844,7 +844,7 @@ export default function SituationRoom() {
                   maxLength={10}
                   style={{
                     width: "100%", padding: "10px 14px",
-                    background: "rgba(0,212,255,0.05)",
+                    background: "rgba(0,229,255,0.10)",
                     border: ticker.trim() ? "1px solid rgba(0,212,255,0.40)" : "1px solid rgba(255,45,85,0.35)",
                     borderRadius: "4px", color: "#E2E8F0",
                     fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px",
@@ -860,7 +860,7 @@ export default function SituationRoom() {
                   <div>
                     <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Rotate From <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
                     <select value={rotateFrom} onChange={e => setRotateFrom(e.target.value)}
-                      style={{ width: "100%", padding: "10px 12px", background: "rgba(12,15,22,0.98)", border: rotateFrom ? "1px solid rgba(0,212,255,0.35)" : "1px solid rgba(255,45,85,0.35)", borderRadius: "4px", color: rotateFrom ? "#E2E8F0" : "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", outline: "none", cursor: "pointer" }}>
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(12,15,22,0.98)", border: rotateFrom ? "1px solid rgba(0,229,255,0.50)" : "1px solid rgba(255,45,85,0.35)", borderRadius: "4px", color: rotateFrom ? "#E2E8F0" : "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", outline: "none", cursor: "pointer" }}>
                       <option value="">Select sector / asset…</option>
                       {ROTATE_FROM_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
@@ -868,7 +868,7 @@ export default function SituationRoom() {
                   <div>
                     <label style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em", display: "block", marginBottom: "6px" }}>Rotate To <span style={{ color: "#FF2D55", fontSize: "9px" }}>* required</span></label>
                     <select value={rotateTo} onChange={e => setRotateTo(e.target.value)}
-                      style={{ width: "100%", padding: "10px 12px", background: "rgba(12,15,22,0.98)", border: rotateTo ? "1px solid rgba(0,212,255,0.35)" : "1px solid rgba(255,45,85,0.35)", borderRadius: "4px", color: rotateTo ? "#E2E8F0" : "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", outline: "none", cursor: "pointer" }}>
+                      style={{ width: "100%", padding: "10px 12px", background: "rgba(12,15,22,0.98)", border: rotateTo ? "1px solid rgba(0,229,255,0.50)" : "1px solid rgba(255,45,85,0.35)", borderRadius: "4px", color: rotateTo ? "#E2E8F0" : "rgba(100,116,139,0.5)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", outline: "none", cursor: "pointer" }}>
                       <option value="">Select sector / asset…</option>
                       {ROTATE_TO_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
@@ -883,8 +883,8 @@ export default function SituationRoom() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
                     {RAISE_CASH_REASONS.map(opt => (
                       <button key={opt.value} onClick={() => setRaiseCashReason(opt.value)}
-                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: raiseCashReason === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: raiseCashReason === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: raiseCashReason === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: raiseCashReason === opt.value ? "rgba(0,229,255,0.20)" : "rgba(255,255,255,0.025)", border: raiseCashReason === opt.value ? "1px solid rgba(0,229,255,0.65)" : "1px solid rgba(255,255,255,0.14)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: raiseCashReason === opt.value ? "#00E5FF" : "#CBD5E1" }}>{opt.label}</span>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
                       </button>
                     ))}
@@ -899,8 +899,8 @@ export default function SituationRoom() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "6px" }}>
                     {DEPLOY_CASH_TARGETS.map(opt => (
                       <button key={opt.value} onClick={() => setDeployCashTarget(opt.value)}
-                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: deployCashTarget === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: deployCashTarget === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: deployCashTarget === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: deployCashTarget === opt.value ? "rgba(0,229,255,0.20)" : "rgba(255,255,255,0.025)", border: deployCashTarget === opt.value ? "1px solid rgba(0,229,255,0.65)" : "1px solid rgba(255,255,255,0.14)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: deployCashTarget === opt.value ? "#00E5FF" : "#CBD5E1" }}>{opt.label}</span>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
                       </button>
                     ))}
@@ -915,8 +915,8 @@ export default function SituationRoom() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
                     {POSITION_SIZE_OPTIONS.map(opt => (
                       <button key={opt.value} onClick={() => setPositionSize(opt.value)}
-                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: positionSize === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: positionSize === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: positionSize === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: positionSize === opt.value ? "rgba(0,229,255,0.20)" : "rgba(255,255,255,0.025)", border: positionSize === opt.value ? "1px solid rgba(0,229,255,0.65)" : "1px solid rgba(255,255,255,0.14)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: positionSize === opt.value ? "#00E5FF" : "#CBD5E1" }}>{opt.label}</span>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
                       </button>
                     ))}
@@ -931,8 +931,8 @@ export default function SituationRoom() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
                     {EXIT_TYPE_OPTIONS.map(opt => (
                       <button key={opt.value} onClick={() => setExitType(opt.value)}
-                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: exitType === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: exitType === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: exitType === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: exitType === opt.value ? "rgba(0,229,255,0.20)" : "rgba(255,255,255,0.025)", border: exitType === opt.value ? "1px solid rgba(0,229,255,0.65)" : "1px solid rgba(255,255,255,0.14)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: exitType === opt.value ? "#00E5FF" : "#CBD5E1" }}>{opt.label}</span>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
                       </button>
                     ))}
@@ -947,8 +947,8 @@ export default function SituationRoom() {
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: "6px" }}>
                     {HOLD_CONCERN_OPTIONS.map(opt => (
                       <button key={opt.value} onClick={() => setHoldConcern(opt.value)}
-                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: holdConcern === opt.value ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.025)", border: holdConcern === opt.value ? "1px solid rgba(0,212,255,0.5)" : "1px solid rgba(255,255,255,0.08)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: holdConcern === opt.value ? "#00D4FF" : "#CBD5E1" }}>{opt.label}</span>
+                        style={{ display: "flex", flexDirection: "column", gap: "3px", padding: "10px 12px", background: holdConcern === opt.value ? "rgba(0,229,255,0.20)" : "rgba(255,255,255,0.025)", border: holdConcern === opt.value ? "1px solid rgba(0,229,255,0.65)" : "1px solid rgba(255,255,255,0.14)", borderRadius: "5px", cursor: "pointer", textAlign: "left", transition: "all 0.15s ease" }}>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: holdConcern === opt.value ? "#00E5FF" : "#CBD5E1" }}>{opt.label}</span>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{opt.sub}</span>
                       </button>
                     ))}
@@ -964,8 +964,8 @@ export default function SituationRoom() {
                     const sel = selectedTimeframe === tf.value;
                     return (
                       <button key={tf.value} onClick={() => setSelectedTimeframe(tf.value)}
-                        style={{ padding: "10px 8px", background: sel ? "rgba(0,212,255,0.10)" : "rgba(255,255,255,0.02)", border: sel ? "1px solid rgba(0,212,255,0.45)" : "1px solid rgba(255,255,255,0.07)", borderRadius: "4px", cursor: "pointer", textAlign: "center", transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)" }}>
-                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: sel ? "#00D4FF" : "#94A3B8" }}>{tf.label}</div>
+                        style={{ padding: "10px 8px", background: sel ? "rgba(0,212,255,0.10)" : "rgba(255,255,255,0.02)", border: sel ? "1px solid rgba(0,212,255,0.45)" : "1px solid rgba(255,255,255,0.12)", borderRadius: "4px", cursor: "pointer", textAlign: "center", transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)" }}>
+                        <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: sel ? "#00E5FF" : "#94A3B8" }}>{tf.label}</div>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", marginTop: "2px" }}>{tf.sub}</div>
                       </button>
                     );
@@ -975,7 +975,7 @@ export default function SituationRoom() {
 
               {/* FAULTLINE interprets banner */}
               <div style={{ marginBottom: "16px", padding: "10px 14px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.10)", borderRadius: "5px", display: "flex", alignItems: "center", gap: "10px" }}>
-                <Zap size={13} color="#00D4FF" style={{ flexShrink: 0 }} />
+                <Zap size={13} color="#00E5FF" style={{ flexShrink: 0 }} />
                 <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "rgba(100,116,139,0.7)", lineHeight: 1.5 }}>FAULTLINE reads current market structure, macro regime, and volatility — then tells you what the market is signalling about your move, what to watch for, and what would invalidate the setup.</span>
               </div>
 
@@ -990,7 +990,7 @@ export default function SituationRoom() {
                 style={{
                   width: "100%", padding: "14px",
                   background: isLoading ? "rgba(255,255,255,0.03)" : isReadyToSimulate() ? "linear-gradient(135deg, rgba(0,212,255,0.18) 0%, rgba(0,212,255,0.07) 100%)" : "rgba(255,255,255,0.02)",
-                  border: isLoading ? "1px solid rgba(255,255,255,0.06)" : isReadyToSimulate() ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.06)",
+                  border: isLoading ? "1px solid rgba(255,255,255,0.11)" : isReadyToSimulate() ? "1px solid rgba(0,212,255,0.50)" : "1px solid rgba(255,255,255,0.11)",
                   borderRadius: "4px", cursor: (isLoading || !isReadyToSimulate()) ? "not-allowed" : "pointer",
                   opacity: (!isLoading && !isReadyToSimulate()) ? 0.45 : 1,
                   transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
@@ -998,13 +998,13 @@ export default function SituationRoom() {
                 }}>
                 {isLoading ? (
                   <>
-                    <div style={{ width: "14px", height: "14px", border: "2px solid rgba(0,212,255,0.3)", borderTopColor: "#00D4FF", borderRadius: "50%", animation: "fl-spin 0.8s linear infinite" }} />
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: "#00D4FF", letterSpacing: "0.15em" }}>FAULTLINE READING MARKET…</span>
+                    <div style={{ width: "14px", height: "14px", border: "2px solid rgba(0,229,255,0.45)", borderTopColor: "#00E5FF", borderRadius: "50%", animation: "fl-spin 0.8s linear infinite" }} />
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: "#00E5FF", letterSpacing: "0.15em" }}>FAULTLINE READING MARKET…</span>
                   </>
                 ) : (
                   <>
-                    <Zap size={14} color={isReadyToSimulate() ? "#00D4FF" : "#64748B"} />
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: isReadyToSimulate() ? "#00D4FF" : "#64748B", letterSpacing: "0.15em" }}>RUN FAULTLINE ANALYSIS</span>
+                    <Zap size={14} color={isReadyToSimulate() ? "#00E5FF" : "#64748B"} />
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: isReadyToSimulate() ? "#00E5FF" : "#64748B", letterSpacing: "0.15em" }}>RUN FAULTLINE ANALYSIS</span>
                   </>
                 )}
               </button>
@@ -1115,7 +1115,7 @@ export default function SituationRoom() {
                           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Confidence</span>
                           <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: vc.color }}>{result.verdict.confidence}%</span>
                         </div>
-                        <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }}>
+                        <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px" }}>
                           <div style={{ height: "100%", width: `${result.verdict.confidence}%`, background: vc.color, borderRadius: "2px", transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)" }} />
                         </div>
                       </div>
@@ -1125,7 +1125,7 @@ export default function SituationRoom() {
                           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Opportunity Score</span>
                           <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: favColor(oppScore) }}>{oppScore}</span>
                         </div>
-                        <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }}>
+                        <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px" }}>
                           <div style={{ height: "100%", width: `${oppScore}%`, background: favColor(oppScore), borderRadius: "2px", transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)" }} />
                         </div>
                       </div>
@@ -1135,21 +1135,21 @@ export default function SituationRoom() {
                           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Risk Score</span>
                           <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: riskColor(result.riskLevel) }}>{riskScore}</span>
                         </div>
-                        <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }}>
+                        <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px" }}>
                           <div style={{ height: "100%", width: `${riskScore}%`, background: riskColor(result.riskLevel), borderRadius: "2px", transition: "width 1.2s cubic-bezier(0.23,1,0.32,1)" }} />
                         </div>
                       </div>
                       {/* Expected Holding Period */}
-                      <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "4px", borderTop: "1px solid rgba(255,255,255,0.11)" }}>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Holding Period</span>
-                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#00D4FF", fontWeight: 600 }}>{result.timeframeLabel}</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#00E5FF", fontWeight: 600 }}>{result.timeframeLabel}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Reset button */}
-                  <div style={{ marginTop: "18px", paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", justifyContent: "flex-end" }}>
-                    <button onClick={handleReset} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 14px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "4px", cursor: "pointer", color: "#64748B", transition: "all 0.15s ease" }}>
+                  <div style={{ marginTop: "18px", paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.11)", display: "flex", justifyContent: "flex-end" }}>
+                    <button onClick={handleReset} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 14px", background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "4px", cursor: "pointer", color: "#64748B", transition: "all 0.15s ease" }}>
                       <RefreshCw size={11} />
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.12em" }}>NEW SIMULATION</span>
                     </button>
@@ -1161,16 +1161,16 @@ export default function SituationRoom() {
             {/* ═══════════════════════════════════════════════════════
                 SECTION 2 — WHY
             ═══════════════════════════════════════════════════════ */}
-            <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
+            <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: "10px" }}>WHY</div>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "14px", color: "#CBD5E1", lineHeight: 1.7 }}>{result.verdict.reason}</div>
               {result.marketInterpretation && (
-                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
                   <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "14px", color: "#F0F4FF", marginBottom: "6px" }}>{result.marketInterpretation.headline}</div>
                   <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.65 }}>{result.marketInterpretation.setupContext}</div>
                   {result.marketInterpretation.opportunityWindow && (
-                    <div style={{ marginTop: "8px", padding: "8px 12px", background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.12)", borderRadius: "4px" }}>
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", textTransform: "uppercase", letterSpacing: "0.12em" }}>OPPORTUNITY WINDOW: </span>
+                    <div style={{ marginTop: "8px", padding: "8px 12px", background: "rgba(0,229,255,0.10)", border: "1px solid rgba(0,229,255,0.20)", borderRadius: "4px" }}>
+                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00E5FF", textTransform: "uppercase", letterSpacing: "0.12em" }}>OPPORTUNITY WINDOW: </span>
                       <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8" }}>{result.marketInterpretation.opportunityWindow}</span>
                     </div>
                   )}
@@ -1235,7 +1235,7 @@ export default function SituationRoom() {
                       <>
                         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "28px", color: "#00FF88", marginBottom: "4px" }}>{returnSign(bull.expectedReturn)}</div>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(0,255,136,0.7)", marginBottom: "10px" }}>Probability: {bull.probability}%</div>
-                        <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", marginBottom: "12px" }}>
+                        <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px", marginBottom: "12px" }}>
                           <div style={{ height: "100%", width: `${bull.probability}%`, background: "#00FF88", borderRadius: "2px" }} />
                         </div>
                       </>
@@ -1252,7 +1252,7 @@ export default function SituationRoom() {
                       </div>
                     )}
                     {base && (
-                      <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                      <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", letterSpacing: "0.1em" }}>BASE CASE: </span>
                         <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: "13px", color: "#94A3B8" }}>{returnSign(base.expectedReturn)} ({base.probability}%)</span>
                       </div>
@@ -1269,7 +1269,7 @@ export default function SituationRoom() {
                       <>
                         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "28px", color: "#FF2D55", marginBottom: "4px" }}>{returnSign(bear.expectedReturn)}</div>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(255,45,85,0.7)", marginBottom: "10px" }}>Probability: {bear.probability}%</div>
-                        <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", marginBottom: "12px" }}>
+                        <div style={{ height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px", marginBottom: "12px" }}>
                           <div style={{ height: "100%", width: `${bear.probability}%`, background: "#FF2D55", borderRadius: "2px" }} />
                         </div>
                       </>
@@ -1304,7 +1304,7 @@ export default function SituationRoom() {
             {/* ═══════════════════════════════════════════════════════
                 SECTION 5 — ACTION PLAN
             ═══════════════════════════════════════════════════════ */}
-            <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
+            <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
                 <Crosshair size={14} color="#00FF88" />
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00FF88", textTransform: "uppercase", letterSpacing: "0.18em" }}>ACTION PLAN</span>
@@ -1332,7 +1332,7 @@ export default function SituationRoom() {
               )}
               {/* Areas to avoid */}
               {result.avoidAreas && result.avoidAreas.length > 0 && (
-                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(255,45,85,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "6px" }}>AVOID</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                     {result.avoidAreas.map((a: string, i: number) => (
@@ -1351,18 +1351,18 @@ export default function SituationRoom() {
               const tickerOpp = allOpps.find((o: any) => o.ticker?.toUpperCase() === result.ticker?.toUpperCase());
               if (!tickerOpp) return null;
               return (
-                <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(0,212,255,0.15)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
+                <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(0,229,255,0.25)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
-                    <Target size={14} color="#00D4FF" />
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", textTransform: "uppercase", letterSpacing: "0.18em" }}>KEY LEVELS — {result.ticker}</span>
+                    <Target size={14} color="#00E5FF" />
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00E5FF", textTransform: "uppercase", letterSpacing: "0.18em" }}>KEY LEVELS — {result.ticker}</span>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
                     {[
-                      { label: "Entry Zone", value: `$${tickerOpp.entryZoneLow?.toFixed(2)} – $${tickerOpp.entryZoneHigh?.toFixed(2)}`, color: "#00D4FF" },
+                      { label: "Entry Zone", value: `$${tickerOpp.entryZoneLow?.toFixed(2)} – $${tickerOpp.entryZoneHigh?.toFixed(2)}`, color: "#00E5FF" },
                       { label: "Stop Loss", value: `$${tickerOpp.stopLoss?.toFixed(2)}`, color: "#FF2D55" },
                       { label: "Risk / Reward", value: `${tickerOpp.riskRewardRatio?.toFixed(1)}:1`, color: "#00FF88" },
                     ].map(({ label, value, color }) => (
-                      <div key={label} style={{ padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "5px", textAlign: "center" }}>
+                      <div key={label} style={{ padding: "12px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: "5px", textAlign: "center" }}>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "5px" }}>{label}</div>
                         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color }}>{value}</div>
                       </div>
@@ -1386,7 +1386,7 @@ export default function SituationRoom() {
             {/* ═══════════════════════════════════════════════════════
                 SECTION 7 — TIMEFRAME + POSITION SIZING
             ═══════════════════════════════════════════════════════ */}
-            <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
+            <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: "6px", padding: "20px 22px", marginBottom: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
                 <Activity size={14} color="#A78BFA" />
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#A78BFA", textTransform: "uppercase", letterSpacing: "0.18em" }}>TIMEFRAME</span>
@@ -1396,7 +1396,7 @@ export default function SituationRoom() {
                   const labels: Record<string, string> = { today: "Intraday", this_week: "Swing", one_three_months: "Position", six_twelve_months: "Long-Term" };
                   const isActive = result.timeframe === tf;
                   return (
-                    <div key={tf} style={{ padding: "6px 14px", background: isActive ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.03)", border: `1px solid ${isActive ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.06)"}`, borderRadius: "4px" }}>
+                    <div key={tf} style={{ padding: "6px 14px", background: isActive ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.03)", border: `1px solid ${isActive ? "rgba(167,139,250,0.4)" : "rgba(255,255,255,0.11)"}`, borderRadius: "4px" }}>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: isActive ? "#A78BFA" : "#64748B", fontWeight: isActive ? 700 : 400 }}>{labels[tf]}</span>
                     </div>
                   );
@@ -1407,11 +1407,11 @@ export default function SituationRoom() {
               </div>
               {/* Position sizing */}
               {result.positionSizing && (
-                <div style={{ paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ paddingTop: "14px", borderTop: "1px solid rgba(255,255,255,0.09)" }}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px" }}>POSITION SIZING</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", marginBottom: "8px" }}>
                     {result.positionSizing.tiers.map((tier: any) => (
-                      <div key={tier.label} style={{ padding: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "4px", textAlign: "center" }}>
+                      <div key={tier.label} style={{ padding: "10px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.11)", borderRadius: "4px", textAlign: "center" }}>
                         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "4px" }}>{tier.label}</div>
                         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#F0F4FF" }}>{tier.allocation}%</div>
                       </div>
@@ -1448,16 +1448,16 @@ export default function SituationRoom() {
                 SECTION 9 — TOP OPPORTUNITIES (condensed)
             ═══════════════════════════════════════════════════════ */}
             {result.recommendedMoves && (result.recommendedMoves.topStocks?.length > 0 || result.recommendedMoves.topCrypto?.length > 0) && (
-              <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(0,212,255,0.12)", borderRadius: "6px", padding: "18px 22px", marginBottom: "10px" }}>
+              <div style={{ background: "rgba(10,13,20,0.95)", border: "1px solid rgba(0,229,255,0.20)", borderRadius: "6px", padding: "18px 22px", marginBottom: "10px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                  <Zap size={14} color="#00D4FF" />
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF", textTransform: "uppercase", letterSpacing: "0.18em" }}>TOP OPPORTUNITIES</span>
+                  <Zap size={14} color="#00E5FF" />
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00E5FF", textTransform: "uppercase", letterSpacing: "0.18em" }}>TOP OPPORTUNITIES</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   {[...result.recommendedMoves.topStocks.slice(0, 3), ...result.recommendedMoves.topCrypto.slice(0, 2)].map((opp: any, i: number) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 14px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.10)", borderRadius: "5px" }}>
                       <div style={{ display: "flex", flexDirection: "column", minWidth: "60px" }}>
-                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00D4FF" }}>{opp.ticker}</span>
+                        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00E5FF" }}>{opp.ticker}</span>
                         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64748B" }}>{opp.assetType?.toUpperCase()}</span>
                       </div>
                       <div style={{ flex: 1 }}>
@@ -1502,7 +1502,7 @@ export default function SituationRoom() {
             {/* ═══════════════════════════════════════════════════════
                 COMPLIANCE DISCLAIMER
             ═══════════════════════════════════════════════════════ */}
-            <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "4px", marginTop: "4px" }}>
+            <div style={{ padding: "12px 16px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: "4px", marginTop: "4px" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.5)", lineHeight: 1.6, textAlign: "center", letterSpacing: "0.04em" }}>
                 FAULTLINE simulations are market-regime guidance, not personalized financial advice or guaranteed predictions.
                 All readings are probability-weighted estimates derived from macroeconomic data and should not be the sole basis for any investment decision.
@@ -1514,7 +1514,7 @@ export default function SituationRoom() {
 
         {/* Pre-simulation disclaimer */}
         {!showResult && (
-          <div style={{ padding: "10px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)", borderRadius: "4px", marginTop: "4px" }}>
+          <div style={{ padding: "10px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: "4px", marginTop: "4px" }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.4)", lineHeight: 1.6, textAlign: "center" }}>
               FAULTLINE simulations are market-regime guidance, not personalized financial advice or guaranteed predictions.
             </div>

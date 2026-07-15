@@ -74,7 +74,7 @@ export default function AshaDailyGreeting() {
       gap: "12px",
       padding: "14px 16px",
       background: "rgba(0,212,255,0.04)",
-      border: "1px solid rgba(0,212,255,0.12)",
+      border: "1px solid rgba(0,229,255,0.20)",
       borderRadius: "8px",
       marginBottom: "16px",
       position: "relative",
@@ -90,7 +90,7 @@ export default function AshaDailyGreeting() {
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: "7px",
             letterSpacing: "0.2em",
-            color: "rgba(0,212,255,0.5)",
+            color: "rgba(0,229,255,0.65)",
             textTransform: "uppercase",
           }}>ASHA · Daily Briefing</span>
         </div>
@@ -102,7 +102,7 @@ export default function AshaDailyGreeting() {
                 width: "4px",
                 height: "4px",
                 borderRadius: "50%",
-                background: "#00D4FF",
+                background: "#00E5FF",
                 opacity: 0.5,
                 animation: `asha-dot-bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
               }} />

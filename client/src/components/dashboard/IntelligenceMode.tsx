@@ -32,7 +32,7 @@ function MacroRegimePanel() {
       }}
     >
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.09)" }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.3em", color: "rgba(100,116,139,0.6)", marginBottom: 4 }}>
             MACRO REGIME
@@ -70,7 +70,7 @@ function MacroRegimePanel() {
                   {d.score.toFixed(1)}
                 </span>
               </div>
-              <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+              <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.11)" }}>
                 <div
                   className="h-full rounded-full"
                   style={{
@@ -138,7 +138,7 @@ function AftershockSnapshot() {
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.12)" }}
     >
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -150,7 +150,7 @@ function AftershockSnapshot() {
         <button
           onClick={() => navigate("/app/market-intelligence")}
           className="flex items-center gap-1"
-          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00D4FF", letterSpacing: "0.1em" }}
+          style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "#00E5FF", letterSpacing: "0.1em" }}
         >
           MARKET INTEL <ArrowRight size={10} />
         </button>
@@ -159,7 +159,7 @@ function AftershockSnapshot() {
       {isLoading ? (
         <div className="px-4 pb-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-12 rounded-xl animate-pulse mb-2" style={{ background: "rgba(255,255,255,0.04)" }} />
+            <div key={i} className="h-12 rounded-xl animate-pulse mb-2" style={{ background: "rgba(255,255,255,0.14)" }} />
           ))}
         </div>
       ) : data ? (
@@ -167,7 +167,7 @@ function AftershockSnapshot() {
           {/* Overall risk */}
           <div
             className="flex items-center justify-between rounded-xl px-3 py-2.5"
-            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}
+            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.11)" }}
           >
             <div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
@@ -190,12 +190,12 @@ function AftershockSnapshot() {
 
           {/* Top 3 active ruptures */}
           {data.activeRuptures?.slice(0, 3).map((r) => {
-            const rColor = r.strength >= 70 ? "#FF2D55" : r.strength >= 40 ? "#F59E0B" : "#00D4FF";
+            const rColor = r.strength >= 70 ? "#FF2D55" : r.strength >= 40 ? "#F59E0B" : "#00E5FF";
             return (
               <div
                 key={r.id}
                 className="flex items-center justify-between rounded-xl px-3 py-2"
-                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.14)" }}
               >
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <div style={{ width: 5, height: 5, borderRadius: "50%", background: rColor, flexShrink: 0 }} />
@@ -240,7 +240,7 @@ function TrackRecordSnippet() {
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.12)" }}
     >
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -308,7 +308,7 @@ function StructuralRiskSummary() {
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.07)" }}
+      style={{ background: "rgba(7,9,16,0.8)", border: "1px solid rgba(255,255,255,0.12)" }}
     >
       <div className="flex items-center justify-between mb-3">
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.3em", color: "rgba(100,116,139,0.6)" }}>
@@ -322,7 +322,7 @@ function StructuralRiskSummary() {
           <div
             key={i}
             className="flex items-start gap-2.5 rounded-xl px-3 py-2"
-            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.04)" }}
+            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.14)" }}
           >
             <div
               style={{
@@ -352,10 +352,10 @@ function StructuralRiskSummary() {
               <div
                 key={a.id}
                 className="flex items-center justify-between rounded-xl px-3 py-2"
-                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.14)" }}
               >
                 <div>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#00D4FF", fontWeight: 600 }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#00E5FF", fontWeight: 600 }}>
                     {a.era}
                   </span>
                   <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: 10, color: "rgba(100,116,139,0.6)", marginLeft: 6 }}>
@@ -364,9 +364,9 @@ function StructuralRiskSummary() {
                 </div>
                 <div
                   className="rounded-lg px-2 py-0.5"
-                  style={{ background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.2)" }}
+                  style={{ background: "rgba(0,229,255,0.14)", border: "1px solid rgba(0,229,255,0.32)" }}
                 >
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#00D4FF" }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#00E5FF" }}>
                     {a.similarity}% match
                   </span>
                 </div>

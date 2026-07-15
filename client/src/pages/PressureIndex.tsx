@@ -36,7 +36,7 @@ function pressureColor(score: number) {
   if (score >= 75) return "#FF4444";
   if (score >= 50) return "#FF9500";
   if (score >= 30) return "#FFD700";
-  return "#00D4FF";
+  return "#00E5FF";
 }
 
 // ── Circular gauge ────────────────────────────────────────────
@@ -62,7 +62,7 @@ function PressureGauge({ score, regime }: { score: number; regime: string }) {
         />
         <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
           {/* Background track */}
-          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6" />
+          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="6" />
           {/* Glow track */}
           <circle cx="60" cy="60" r="52" fill="none" stroke={`${color}20`} strokeWidth="10" />
           {/* Progress arc */}
@@ -288,7 +288,7 @@ export default function PressureIndex() {
               {/* Scale legend */}
               <div className="grid grid-cols-4 gap-2 mt-8 w-full max-w-xs">
                 {[
-                  { range: "0–30", label: "LOW", color: "#00D4FF" },
+                  { range: "0–30", label: "LOW", color: "#00E5FF" },
                   { range: "30–50", label: "MOD", color: "#FFD700" },
                   { range: "50–75", label: "HIGH", color: "#FF9500" },
                   { range: "75+", label: "CRIT", color: "#FF4444" },
@@ -334,7 +334,7 @@ export default function PressureIndex() {
                 className="rounded-xl p-5"
                 style={{
                   background: "rgba(8,10,16,0.8)",
-                  border: "1px solid rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.09)",
                 }}
               >
                 <div className="text-[9px] font-mono tracking-[0.3em] text-white/30 mb-4">RISK VECTORS</div>
@@ -382,7 +382,7 @@ export default function PressureIndex() {
                   icon: "◈",
                   title: "Multi-Vector Composite",
                   desc: "Aggregates 12+ macro risk signals including credit spreads, yield curve dynamics, VIX regimes, and liquidity conditions into a single 0–100 score.",
-                  color: "#00D4FF",
+                  color: "#00E5FF",
                 },
                 {
                   icon: "◉",
@@ -439,17 +439,17 @@ export default function PressureIndex() {
               <LockedCard
                 title="DIAGNOSTIC AI™ — PRO"
                 description="Full institutional diagnostic report. Identifies the top 3 systemic risks, regime probability, and actionable intelligence for the next 30 days."
-                accentColor="#00D4FF"
+                accentColor="#00E5FF"
               />
               <LockedCard
                 title="CRYPTO INTELLIGENCE — PRO"
                 description="Systemic risk scoring for BTC, ETH, and top altcoins. Narrative tracking, contagion analysis, and crypto regime classification."
-                accentColor="#00D4FF"
+                accentColor="#00E5FF"
               />
               <LockedCard
                 title="AFTERSHOCK ENGINE™ — PRO"
                 description="Contagion chain analysis. Maps how stress propagates across asset classes and identifies second-order shock vectors before they materialize."
-                accentColor="#00D4FF"
+                accentColor="#00E5FF"
               />
             </div>
           </div>
@@ -489,7 +489,7 @@ export default function PressureIndex() {
               <a
                 href="/#access"
                 className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm tracking-widest text-white/50 hover:text-white transition-all"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.14)" }}
               >
                 VIEW ALL PLANS
               </a>
@@ -499,7 +499,7 @@ export default function PressureIndex() {
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
               {[
                 { tier: "TRADER", price: PRICING_PLANS.core.priceLabel, tagline: "Professional trading intelligence", color: "#22D3EE", features: ["Signals screener", "Portfolio tracker", "Alt Rotation"] },
-                { tier: "POWER", price: PRICING_PLANS.premium.priceLabel, tagline: "Institutional-grade intelligence", color: "#00D4FF", features: ["AI Diagnostic™", "Crypto intelligence", "Aftershock Engine™"], badge: "RECOMMENDED" },
+                { tier: "POWER", price: PRICING_PLANS.premium.priceLabel, tagline: "Institutional-grade intelligence", color: "#00E5FF", features: ["AI Diagnostic™", "Crypto intelligence", "Aftershock Engine™"], badge: "RECOMMENDED" },
                 { tier: "FOUNDING", price: PRICING_PLANS.founding.priceLabel, tagline: "Rate locked for life", color: "#FFD700", features: ["Everything in Pro", "Founder badge", "Early beta access"], badge: "LIMITED" },
               ].map((t) => (
                 <div

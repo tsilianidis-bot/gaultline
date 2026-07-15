@@ -54,21 +54,21 @@ function DashboardUpgradePrompt() {
         marginBottom: '12px',
         borderRadius: '6px',
         background: 'rgba(0,212,255,0.04)',
-        border: '1px solid rgba(0,212,255,0.15)',
+        border: '1px solid rgba(0,229,255,0.25)',
         textDecoration: 'none',
         transition: 'background 0.15s ease',
         cursor: 'pointer',
       }}
-      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.08)'; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,229,255,0.14)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.04)'; }}
     >
       <div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(0,212,255,0.5)', marginBottom: '2px' }}>{tier === 'core' ? 'UPGRADE TO PRO' : 'UPGRADE TO CORE'}</div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#A8B8CC' }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(0,229,255,0.65)', marginBottom: '2px' }}>{tier === 'core' ? 'UPGRADE TO PRO' : 'UPGRADE TO CORE'}</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#C0D0E0' }}>
           {tier === 'core' ? 'Situation Room · Market Preflight · Institutional dashboards · Historical analogs' : 'Unlimited Ask Intelligence · Symbol Intelligence · Full Signal Outlook · Portfolio tracker'}
         </div>
       </div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: '#00D4FF', flexShrink: 0, marginLeft: '12px' }}>UPGRADE →</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', color: '#00E5FF', flexShrink: 0, marginLeft: '12px' }}>UPGRADE →</div>
     </a>
   );
 }
@@ -217,7 +217,7 @@ function SeismicWave({ color, score }: { color: string; score: number }) {
       ctx.beginPath();
       ctx.moveTo(0, h / 2);
       ctx.lineTo(w, h / 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.14)';
       ctx.lineWidth = 1;
       ctx.stroke();
 
@@ -275,7 +275,7 @@ function PressureRing({ score, color, size = 96 }: { score: number; color: strin
         </>
       )}
       <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="5" />
+        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="5" />
         <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth="5"
           strokeLinecap="round"
           strokeDasharray={`${(anim / 10) * circ} ${circ}`}
@@ -298,7 +298,7 @@ function ProbBar({ label, value, color }: { label: string; value: number; color:
   return (
     <div style={{ flex: 1, minWidth: '72px' }}>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
-      <div style={{ position: 'relative', height: '4px', background: 'rgba(255,255,255,0.04)', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
+      <div style={{ position: 'relative', height: '4px', background: 'rgba(255,255,255,0.14)', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${anim}%`, background: `linear-gradient(90deg, ${color}70, ${color})`, boxShadow: `0 0 6px ${color}60`, borderRadius: '2px', transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color, fontWeight: 600 }}>{value}%</div>
@@ -333,7 +333,7 @@ function NarrativePanel({ narrative, regime }: {
             {regime.label}
           </span>
         </div>
-        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#94A3B8', lineHeight: 1.75, marginBottom: '14px' }}>
+        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#B0C4D8', lineHeight: 1.75, marginBottom: '14px' }}>
           {words.slice(0, revealed).join(' ')}
           {revealed < words.length && <span className="narrative-cursor" />}
         </p>
@@ -341,7 +341,7 @@ function NarrativePanel({ narrative, regime }: {
           {narrative.keyRisks.slice(0, 3).map((risk, i) => (
             <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', animation: `fade-slide-up 0.4s cubic-bezier(0.23,1,0.32,1) ${i * 80 + 600}ms both` }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: regime.color, flexShrink: 0, marginTop: '3px' }}>{String(i + 1).padStart(2, '0')}</span>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#94A3B8', lineHeight: 1.55 }}>{risk}</span>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#B0C4D8', lineHeight: 1.55 }}>{risk}</span>
             </div>
           ))}
         </div>
@@ -388,7 +388,7 @@ function MiniWidget({ label, value, unit, color, seed, trend }: {
   label: string; value: string; unit?: string; color: string; seed: number; trend: 'up' | 'down' | 'flat';
 }) {
   const data = useMemo(() => buildMiniSeries(seed, 20, 5, 1.2), [seed]);
-  const trendColor = trend === 'up' ? '#FF9500' : trend === 'down' ? '#00FF88' : '#6B7280';
+  const trendColor = trend === 'up' ? '#FF9500' : trend === 'down' ? '#00FF88' : '#8A9AB0';
   const trendChar = trend === 'up' ? '▲' : trend === 'down' ? '▼' : '—';
   return (
     <div style={{
@@ -407,7 +407,7 @@ function MiniWidget({ label, value, unit, color, seed, trend }: {
           <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color, textShadow: `0 0 12px ${color}60`, lineHeight: 1 }}>
             {value}
           </span>
-          {unit && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#94A3B8' }}>{unit}</span>}
+          {unit && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#B0C4D8' }}>{unit}</span>}
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: trendColor, marginLeft: 'auto' }}>{trendChar}</span>
         </div>
         <ResponsiveContainer width="100%" height={28}>
@@ -425,11 +425,11 @@ function MiniWidget({ label, value, unit, color, seed, trend }: {
 function ChangeItem({ label, delta, color, detail }: { label: string; delta: number; color: string; detail: string }) {
   const sign = delta > 0 ? '+' : '';
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
       <div style={{ width: '3px', height: '30px', background: color, borderRadius: '2px', boxShadow: `0 0 8px ${color}60`, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '13px', color: '#D1D5DB', marginBottom: '2px' }}>{label}</div>
-        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</div>
+        <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</div>
       </div>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', fontWeight: 600, color, background: `${color}12`, border: `1px solid ${color}25`, borderRadius: '3px', padding: '3px 8px', flexShrink: 0 }}>
         {sign}{delta.toFixed(1)}
@@ -460,8 +460,8 @@ function MetricCardItem({ metric, index }: { metric: MetricCard; index: number }
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{metric.category}</span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color, background: `${color}12`, border: `1px solid ${color}25`, borderRadius: '2px', padding: '1px 5px', textTransform: 'uppercase' }}>{metric.riskLevel}</span>
           </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '14px', color: '#E2E8F0', marginBottom: '3px' }}>{metric.label}</div>
-          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{metric.interpretation}</div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '14px', color: '#F0F6FF', marginBottom: '3px' }}>{metric.label}</div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.45 }}>{metric.interpretation}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px', flexShrink: 0 }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '18px', fontWeight: 700, color, textShadow: `0 0 12px ${color}60`, lineHeight: 1 }}>{metric.value}</div>
@@ -470,11 +470,11 @@ function MetricCardItem({ metric, index }: { metric: MetricCard; index: number }
         </div>
       </div>
       {expanded && (
-        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)', animation: 'fade-slide-up 0.25s ease both' }}>
+        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.09)', animation: 'fade-slide-up 0.25s ease both' }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '6px' }}>Signal Drivers</div>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '4px' }}>
               <span style={{ color, fontSize: '13px', flexShrink: 0, marginTop: '2px' }}>›</span>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{metric.historicalComparison}</span>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.45 }}>{metric.historicalComparison}</span>
             </div>
         </div>
       )}
@@ -490,7 +490,7 @@ function IntelTicker({ items }: { items: { label: string; value: string; color: 
     <div className="intel-ticker" style={{ height: '26px', display: 'flex', alignItems: 'center', position: 'relative', zIndex: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0', animation: 'ticker-scroll 28s linear infinite', whiteSpace: 'nowrap', willChange: 'transform' }}>
         {doubled.map((item, i) => (
-          <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.04)' }}>
+          <div key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0 20px', borderRight: '1px solid rgba(255,255,255,0.14)' }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{item.label}</span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: item.color, fontWeight: 600, letterSpacing: '0.05em' }}>{item.value}</span>
           </div>
@@ -577,7 +577,7 @@ export default function Dashboard() {
   const regimeAttr = overall.riskLevel === 'low' ? 'bullish' : overall.riskLevel === 'moderate' ? 'moderate' : overall.riskLevel === 'elevated' ? 'elevated' : 'crisis';
 
   return (
-    <div data-regime={regimeAttr} style={{ background: '#050608', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
+    <div data-regime={regimeAttr} style={{ background: '#080A0F', minHeight: '100vh', position: 'relative' }} className="ambient-bg">
       {/* Market Preflight Gate — first-login daily preflight prompt (zIndex 1000, above HUD shell) */}
       <PreflightGate />
       {/* SEO: Visually hidden H1 for search engine crawlers */}
@@ -595,7 +595,7 @@ export default function Dashboard() {
         { label: 'BULL', value: `${probability.bullProbability}%`, color: '#00FF88' },
         { label: 'CRASH', value: `${probability.crashProbability}%`, color: '#FF2D55' },
         { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
-        { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00D4FF' },
+        { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00E5FF' },
         { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, color },
         { label: 'STATUS', value: isLive ? 'LIVE FEED' : 'SIMULATED', color: isLive ? '#00FF88' : '#FF9500' },
       ]} />
@@ -626,7 +626,7 @@ export default function Dashboard() {
 
         {/* Help + Share buttons */}
         <div style={{ position: 'absolute', top: '14px', right: '14px', display: 'flex', gap: '8px', zIndex: 10 }}>
-          <button onClick={() => setShowOnboarding(true)} style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50%', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#94A3B8', backdropFilter: 'blur(8px)', minHeight: 'unset' }}>
+          <button onClick={() => setShowOnboarding(true)} style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '50%', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#B0C4D8', backdropFilter: 'blur(8px)', minHeight: 'unset' }}>
             <HelpCircle size={14} />
           </button>
           <button onClick={() => setShowShare(true)} style={{ background: 'rgba(0,0,0,0.6)', border: `1px solid ${color}40`, borderRadius: '50%', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color, backdropFilter: 'blur(8px)', minHeight: 'unset', boxShadow: `0 0 14px ${color}25` }}>
@@ -673,7 +673,7 @@ export default function Dashboard() {
                   return (
                     <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', width: '44px', textAlign: 'right', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.label.split(' ')[0]}</div>
-                      <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.09)', borderRadius: '2px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${d.score * 10}%`, background: `linear-gradient(90deg, ${dc}80, ${dc})`, boxShadow: `0 0 4px ${dc}60`, transition: 'width 1.2s cubic-bezier(0.23,1,0.32,1)' }} />
                       </div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: dc, width: '20px', flexShrink: 0 }}>{d.score.toFixed(1)}</div>
@@ -705,7 +705,7 @@ export default function Dashboard() {
               <div style={{ background: 'rgba(255,45,85,0.06)', border: '1px solid rgba(255,45,85,0.18)', borderRadius: '6px', padding: '10px 12px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(255,45,85,0.3)', borderRight: '1px solid rgba(255,45,85,0.3)' }} />
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>TOP THREAT</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topThreat.label}</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topThreat.label}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
                   <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.7)', lineHeight: 1 }}>{topThreat.score.toFixed(1)}</span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(255,45,85,0.5)' }}>/10</span>
@@ -714,12 +714,12 @@ export default function Dashboard() {
 
               {/* Closest Analog */}
               <div style={{ background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.14)', borderRadius: '6px', padding: '10px 12px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(0,212,255,0.25)', borderRight: '1px solid rgba(0,212,255,0.25)' }} />
+                <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(0,229,255,0.38)', borderRight: '1px solid rgba(0,229,255,0.38)' }} />
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(0,212,255,0.55)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>CLOSEST ANALOG</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '3px' }}>{analogs[0]?.era ?? '—'}</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', marginBottom: '3px' }}>{analogs[0]?.era ?? '—'}</div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#00D4FF', textShadow: '0 0 16px rgba(0,212,255,0.6)', lineHeight: 1 }}>{analogs[0]?.similarity ?? 0}%</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(0,212,255,0.5)' }}>{analogs[0]?.year ?? ''}</span>
+                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#00E5FF', textShadow: '0 0 16px rgba(0,212,255,0.6)', lineHeight: 1 }}>{analogs[0]?.similarity ?? 0}%</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(0,229,255,0.65)' }}>{analogs[0]?.year ?? ''}</span>
                 </div>
               </div>
             </div>
@@ -750,7 +750,7 @@ export default function Dashboard() {
             { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, c: color, sub: 'vs baseline' },
             { label: 'UPDATED', value: isLoading ? '...' : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), c: isLive ? '#00FF88' : '#FF9500', sub: isLive ? 'live feed' : 'simulated' },
           ].map(({ label, value, c, sub }, i) => (
-            <div key={label} style={{ padding: '12px 10px', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
+            <div key={label} style={{ padding: '12px 10px', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.09)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.15em', marginBottom: '3px' }}>{label}</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color: c, textShadow: `0 0 14px ${c}70`, lineHeight: 1 }}>{value}</div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>{sub}</div>
@@ -772,7 +772,7 @@ export default function Dashboard() {
           verdictSub = 'Regime supports risk-on positioning — momentum window open';
         } else if (riskLevel === 'moderate' || score <= 5.5) {
           verdict = 'STAY SELECTIVE';
-          verdictColor = '#00D4FF';
+          verdictColor = '#00E5FF';
           verdictSub = 'Mixed signals — favor high-conviction setups with tight stops';
         } else if (riskLevel === 'elevated' || score <= 7.5) {
           verdict = 'REDUCE EXPOSURE';
@@ -829,7 +829,7 @@ export default function Dashboard() {
             label: 'HIGHEST CONVICTION OPP',
             value: overall.riskLevel === 'low' ? 'BREAKOUTS' : overall.riskLevel === 'moderate' ? 'REVERSALS' : 'HEDGES',
             sub: overall.riskLevel === 'low' ? 'Momentum + macro aligned' : overall.riskLevel === 'moderate' ? 'Oversold bounces forming' : 'Inverse ETFs + puts',
-            color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#00D4FF' : '#FF9500',
+            color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#00E5FF' : '#FF9500',
             href: '/app/signals',
           },
           {
@@ -857,7 +857,7 @@ export default function Dashboard() {
             label: 'LARGEST ROTATION',
             value: biggestShift ? `${biggestShift.label.split(' ')[0]} ${biggestShift.delta > 0 ? '↑' : '↓'}` : '—',
             sub: biggestShift ? `Δ${biggestShift.delta >= 0 ? '+' : ''}${biggestShift.delta.toFixed(2)} vs baseline` : 'No major shifts',
-            color: biggestShift ? (biggestShift.delta > 0 ? '#FF9500' : '#00FF88') : '#94A3B8',
+            color: biggestShift ? (biggestShift.delta > 0 ? '#FF9500' : '#00FF88') : '#B0C4D8',
             href: '/app/pressure',
           },
           {
@@ -871,7 +871,7 @@ export default function Dashboard() {
             label: 'MOST UNDERVALUED',
             value: overall.riskLevel === 'low' ? 'SMALL CAPS' : overall.riskLevel === 'moderate' ? 'VALUE' : 'TREASURIES',
             sub: overall.riskLevel === 'low' ? 'IWM lagging SPX — catch-up trade' : overall.riskLevel === 'moderate' ? 'Value vs growth spread widening' : 'Flight to safety premium',
-            color: '#00D4FF',
+            color: '#00E5FF',
             href: '/app/signals',
           },
           {
@@ -894,7 +894,7 @@ export default function Dashboard() {
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(5, 1fr)',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid rgba(255,255,255,0.09)',
           }}>
             {cards.map((card, i) => (
               <a
@@ -903,8 +903,8 @@ export default function Dashboard() {
                 style={{
                   display: 'block',
                   padding: '10px 12px',
-                  borderRight: i % 4 < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                  borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  borderRight: i % 4 < 3 ? '1px solid rgba(255,255,255,0.09)' : 'none',
+                  borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.09)' : 'none',
                   background: i % 2 === 0 ? 'rgba(255,255,255,0.008)' : 'transparent',
                   textDecoration: 'none',
                   transition: 'background 0.15s ease',
@@ -948,7 +948,7 @@ export default function Dashboard() {
         {/* ── Quick Actions bar ──────────────────────────────────── */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
           {([
-            { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00D4FF' },
+            { label: 'Pre-Flight',      path: '/app/pre-flight',              color: '#00E5FF' },
             { label: 'Decision Engine', path: '/app/decision-engine',          color: '#FF9500' },
             { label: 'Day Trade',       path: '/app/day-trade-intelligence',  color: '#00FF88' },
             { label: 'Signal Outlook',  path: '/app/signal-outlook',          color: '#C084FC' },
@@ -970,19 +970,19 @@ export default function Dashboard() {
         <DashboardAwarenessSection />
 
         {/* ── PRE-FLIGHT ENTRY CARD ──────────────────────────────────────── */}
-        <div style={{ background: 'linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(0,212,255,0.22)', borderLeft: '3px solid #00D4FF', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 38ms both' }}>
+        <div style={{ background: 'linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(12,15,22,0.98) 60%)', border: '1px solid rgba(0,212,255,0.22)', borderLeft: '3px solid #00E5FF', borderRadius: '6px', padding: '16px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 38ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00D4FF', boxShadow: '0 0 8px #00D4FF', animation: 'blink-alert 2s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00D4FF', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Pre-Flight</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.55)', border: '1px solid rgba(0,212,255,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 1 — MARKET AWARENESS</span>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00E5FF', boxShadow: '0 0 8px #00E5FF', animation: 'blink-alert 2s ease-in-out infinite' }} />
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00E5FF', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Pre-Flight</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.55)', border: '1px solid rgba(0,229,255,0.45)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 1 — MARKET AWARENESS</span>
               </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#94A3B8', lineHeight: 1.55, maxWidth: '500px' }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#B0C4D8', lineHeight: 1.55, maxWidth: '500px' }}>
                 Understand current market conditions before risking capital. Awareness Score, Pressure Index, Bull/Bear probability, Regime Analysis, and Daily Intelligence Brief.
               </div>
             </div>
-            <a href="/app/pre-flight" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(0,212,255,0.10)', border: '1px solid rgba(0,212,255,0.45)', borderRadius: '4px', color: '#00D4FF', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(0,212,255,0.08)' }}
+            <a href="/app/pre-flight" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: 'rgba(0,212,255,0.10)', border: '1px solid rgba(0,212,255,0.45)', borderRadius: '4px', color: '#00E5FF', textDecoration: 'none', fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.15em', fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.18s cubic-bezier(0.23,1,0.32,1)', boxShadow: '0 0 20px rgba(0,229,255,0.14)' }}
               onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.18)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,212,255,0.7)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(0,212,255,0.10)'; (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(0,212,255,0.45)'; }}
             >
@@ -1000,7 +1000,7 @@ export default function Dashboard() {
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#FFAA00', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Decision Engine</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,170,0,0.55)', border: '1px solid rgba(255,170,0,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 2 — DECISION ENGINE</span>
               </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#94A3B8', lineHeight: 1.55, maxWidth: '500px' }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#B0C4D8', lineHeight: 1.55, maxWidth: '500px' }}>
                 Simulate your next move. Move Favorability Score, Final Verdict, Green Lights, Threat Board, Historical Analogs, Position Sizing, and Thesis Stress Test.
               </div>
             </div>
@@ -1024,7 +1024,7 @@ export default function Dashboard() {
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Insider Intelligence™</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,255,136,0.55)', border: '1px solid rgba(0,255,136,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>SMART MONEY</span>
               </div>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#94A3B8', lineHeight: 1.55, maxWidth: '500px' }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#B0C4D8', lineHeight: 1.55, maxWidth: '500px' }}>
                 Track where corporate insiders show conviction before the market notices. Conviction Score, Cluster Buy Alerts, and AI-powered analysis.
               </div>
             </div>
@@ -1056,11 +1056,11 @@ export default function Dashboard() {
             </div>
           </div>
           {/* Regime name */}
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#F0F4FF', marginBottom: '6px', lineHeight: 1.2 }}>{regime.label}</div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#FFFFFF', marginBottom: '6px', lineHeight: 1.2 }}>{regime.label}</div>
           {/* Narrative sentence */}
-          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#94A3B8', lineHeight: 1.65, marginBottom: '12px' }}>{regime.description}</div>
+          <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#B0C4D8', lineHeight: 1.65, marginBottom: '12px' }}>{regime.description}</div>
           {/* Key Shifts */}
-          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '10px' }}>
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.11)', paddingTop: '10px' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: '7px' }}>Key Shifts</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {keyShifts.map(shift => (
@@ -1103,7 +1103,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <ProbBar label="Recession" value={probability.recessionProbability} color="#FF9500" />
             <ProbBar label="Stagflation" value={probability.stagflationProbability} color="#FFD700" />
-            <ProbBar label="Soft Landing" value={probability.softLandingProbability} color="#00D4FF" />
+            <ProbBar label="Soft Landing" value={probability.softLandingProbability} color="#00E5FF" />
           </div>
           {/* Score Explainer: Bull Probability */}
           <div style={{ marginTop: '12px' }}>
@@ -1195,7 +1195,7 @@ export default function Dashboard() {
               const pct = Math.abs(Math.round(topMover.delta * 10));
               return (
                 <div style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', marginBottom: '10px', borderLeft: `2px solid ${getRiskColor(topMover.riskLevel)}40` }}>
-                  <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.5, fontStyle: 'italic' }}>
+                  <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.5, fontStyle: 'italic' }}>
                     {topMover.label.split(' ')[0]} pressure {direction}{pct > 0 ? ` ${pct}% since last reading` : ''}.{' '}
                     {topMover.delta > 0.2 ? 'Sustained directional moves of this magnitude often precede regime reclassification.' : 'Monitor for continuation.'}
                   </span>
@@ -1212,15 +1212,15 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 400ms both' }}>
           <div className="intel-module" style={{ padding: '14px', borderLeft: '3px solid #FF2D55' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Top Threat</div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '4px' }}>{topThreat.label}</div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', marginBottom: '4px' }}>{topThreat.label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.6)', marginBottom: '5px', lineHeight: 1 }}>{topThreat.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#64748B' }}>/10</span></div>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{topThreat.drivers[0] ?? topThreat.description}</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.45 }}>{topThreat.drivers[0] ?? topThreat.description}</div>
           </div>
           <div className="intel-module" style={{ padding: '14px', borderLeft: '3px solid #00FF88' }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '7px' }}>Stabilizer</div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#E2E8F0', marginBottom: '4px' }}>{topStabilizer.label}</div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', marginBottom: '4px' }}>{topStabilizer.label}</div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '22px', color: '#00FF88', textShadow: '0 0 16px rgba(0,255,136,0.6)', marginBottom: '5px', lineHeight: 1 }}>{topStabilizer.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#64748B' }}>/10</span></div>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.45 }}>{topStabilizer.drivers[0] ?? topStabilizer.description}</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.45 }}>{topStabilizer.drivers[0] ?? topStabilizer.description}</div>
           </div>
         </div>
 
@@ -1238,21 +1238,21 @@ export default function Dashboard() {
           {/* What Changed — Market Stress */}
           {indicators.hySpread > 400 && (
             <div style={{ padding: '7px 10px', background: 'rgba(255,45,85,0.04)', borderLeft: '2px solid rgba(255,45,85,0.3)', borderRadius: '3px', marginBottom: '10px' }}>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', fontStyle: 'italic', lineHeight: 1.5 }}>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#B0C4D8', fontStyle: 'italic', lineHeight: 1.5 }}>
                 Credit spreads widened while equities remain elevated — a divergence historically associated with deteriorating credit conditions.
               </span>
             </div>
           )}
           {indicators.yield10Y > 4.5 && indicators.hySpread <= 400 && (
             <div style={{ padding: '7px 10px', background: 'rgba(255,149,0,0.04)', borderLeft: '2px solid rgba(255,149,0,0.3)', borderRadius: '3px', marginBottom: '10px' }}>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', fontStyle: 'italic', lineHeight: 1.5 }}>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#B0C4D8', fontStyle: 'italic', lineHeight: 1.5 }}>
                 Elevated long-end yields continue to pressure rate-sensitive sectors and increase the cost of refinancing.
               </span>
             </div>
           )}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-            <MiniWidget label="10Y Treasury" value={(rawFred['DGS10'] ?? indicators.yield10Y).toFixed(2)} unit="%" color="#00D4FF" seed={11} trend={(rawFred['DGS10'] ?? indicators.yield10Y) > 4.5 ? 'up' : 'flat'} />
-            <MiniWidget label="SOFR Rate" value={(rawFred['SOFR'] ?? indicators.fedFundsRate).toFixed(2)} unit="%" color="#00D4FF" seed={66} trend={(rawFred['SOFR'] ?? indicators.fedFundsRate) > 5 ? 'up' : 'flat'} />
+            <MiniWidget label="10Y Treasury" value={(rawFred['DGS10'] ?? indicators.yield10Y).toFixed(2)} unit="%" color="#00E5FF" seed={11} trend={(rawFred['DGS10'] ?? indicators.yield10Y) > 4.5 ? 'up' : 'flat'} />
+            <MiniWidget label="SOFR Rate" value={(rawFred['SOFR'] ?? indicators.fedFundsRate).toFixed(2)} unit="%" color="#00E5FF" seed={66} trend={(rawFred['SOFR'] ?? indicators.fedFundsRate) > 5 ? 'up' : 'flat'} />
             <MiniWidget
               label="HY Spread"
               value={(() => { const v = rawFred['BAMLH0A0HYM2']; return v != null ? (v > 20 ? Math.round(v) : Math.round(v * 100)).toString() : indicators.hySpread.toString(); })()}
@@ -1262,7 +1262,7 @@ export default function Dashboard() {
             />
             <MiniWidget label="CPI YoY" value={indicators.cpi.toFixed(1)} unit="%" color={indicators.cpi > 3.5 ? '#FF9500' : '#FFD700'} seed={44} trend={indicators.cpi > 3 ? 'up' : 'down'} />
             <MiniWidget label="Unemployment" value={(rawFred['UNRATE'] ?? indicators.unemployment).toFixed(1)} unit="%" color={indicators.unemployment > 4.5 ? '#FF9500' : '#00FF88'} seed={77} trend={indicators.unemployment > 4.5 ? 'up' : 'flat'} />
-            <MiniWidget label="30Y Treasury" value={(rawFred['DGS30'] ?? indicators.yield30Y).toFixed(2)} unit="%" color="#00D4FF" seed={88} trend={(rawFred['DGS30'] ?? indicators.yield30Y) > 4.8 ? 'up' : 'flat'} />
+            <MiniWidget label="30Y Treasury" value={(rawFred['DGS30'] ?? indicators.yield30Y).toFixed(2)} unit="%" color="#00E5FF" seed={88} trend={(rawFred['DGS30'] ?? indicators.yield30Y) > 4.8 ? 'up' : 'flat'} />
           </div>
         </div>
 
@@ -1274,15 +1274,15 @@ export default function Dashboard() {
           </div>
           {/* What Changed — Analog context */}
           {analogs[0] && (
-            <div style={{ padding: '7px 10px', background: 'rgba(0,212,255,0.04)', borderLeft: '2px solid rgba(0,212,255,0.2)', borderRadius: '3px', marginBottom: '10px' }}>
-              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#94A3B8', fontStyle: 'italic', lineHeight: 1.5 }}>
+            <div style={{ padding: '7px 10px', background: 'rgba(0,212,255,0.04)', borderLeft: '2px solid rgba(0,229,255,0.32)', borderRadius: '3px', marginBottom: '10px' }}>
+              <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#B0C4D8', fontStyle: 'italic', lineHeight: 1.5 }}>
                 Structural alignment with {analogs[0].era} ({analogs[0].year.slice(0, 4)}) at {analogs[0].similarity}% similarity. {analogs[0].matchReasons?.[0] ?? 'Pattern overlap across multiple pressure domains.'}
               </span>
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
             {analogs.slice(0, 3).map((analog, i) => {
-              const aColor = i === 0 ? '#00D4FF' : i === 1 ? '#FFD700' : '#FF9500';
+              const aColor = i === 0 ? '#00E5FF' : i === 1 ? '#FFD700' : '#FF9500';
               return (
                 <div key={analog.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '9px', background: 'rgba(255,255,255,0.02)', borderRadius: '4px', animation: `fade-slide-up 0.4s cubic-bezier(0.23,1,0.32,1) ${i * 80}ms both` }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '4px', background: `${aColor}15`, border: `1px solid ${aColor}30`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -1290,7 +1290,7 @@ export default function Dashboard() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '13px', color: '#D1D5DB', marginBottom: '4px' }}>{analog.era}</div>
-                    <div style={{ position: 'relative', height: '3px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px' }}>
+                    <div style={{ position: 'relative', height: '3px', background: 'rgba(255,255,255,0.11)', borderRadius: '2px' }}>
                       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${analog.similarity}%`, background: `linear-gradient(90deg, ${aColor}60, ${aColor})`, borderRadius: '2px', boxShadow: `0 0 6px ${aColor}60`, transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
                     </div>
                   </div>
@@ -1310,9 +1310,9 @@ export default function Dashboard() {
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '7px' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '30px', color: '#C084FC', textShadow: '0 0 20px rgba(192,132,252,0.6)', lineHeight: 1 }}>{aiDomain.score.toFixed(1)}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#94A3B8' }}>/10 — {aiDomain.riskLevel.toUpperCase()}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#B0C4D8' }}>/10 — {aiDomain.riskLevel.toUpperCase()}</span>
             </div>
-            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#94A3B8', lineHeight: 1.65 }}>
+            <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#B0C4D8', lineHeight: 1.65 }}>
               {aiDomain.description} {aiDomain.drivers.slice(0, 2).join('. ')}.
             </p>
           </div>
@@ -1335,8 +1335,8 @@ export default function Dashboard() {
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.15em' }}>How FAULTLINE Works</span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#374151', marginLeft: 'auto' }}>tap to expand</span>
           </summary>
-          <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.7, marginBottom: '10px' }}>
+          <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.09)', paddingTop: '12px' }}>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.7, marginBottom: '10px' }}>
               FAULTLINE monitors six distinct sources of systemic stress and converts them into a real-time Pressure Index designed to identify elevated market risk before broader instability becomes obvious.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -1349,7 +1349,7 @@ export default function Dashboard() {
                 ['Macro Regime Pressure', 'Inflation trajectory, Fed policy stance, and recession risk'],
               ].map(([label, desc]) => (
                 <div key={label} style={{ display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00D4FF', marginTop: '2px', flexShrink: 0 }}>›</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00E5FF', marginTop: '2px', flexShrink: 0 }}>›</span>
                   <div>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#D1D5DB' }}>{label}</span>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563' }}> — {desc}</span>
@@ -1383,17 +1383,17 @@ export default function Dashboard() {
           aria-label="Platform Intelligence Overview"
           style={{
             padding: '48px 24px 32px',
-            borderTop: '1px solid rgba(255,255,255,0.04)',
+            borderTop: '1px solid rgba(255,255,255,0.14)',
             maxWidth: '900px',
             margin: '0 auto',
           }}
         >
-          <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '11px', fontWeight: 600, color: 'rgba(0,212,255,0.5)', letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '32px', textAlign: 'center' }}>
+          <h2 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '11px', fontWeight: 600, color: 'rgba(0,229,255,0.65)', letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '32px', textAlign: 'center' }}>
             Platform Intelligence Architecture
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
             {/* FAULTLINE Pressure Index */}
-            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', padding: '20px' }}>
               <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(0,212,255,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
                 FAULTLINE Pressure Index™
               </h3>
@@ -1402,7 +1402,7 @@ export default function Dashboard() {
               </p>
             </article>
             {/* Aftershock Engine */}
-            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', padding: '20px' }}>
               <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(255,149,0,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
                 Aftershock Engine™
               </h3>
@@ -1411,7 +1411,7 @@ export default function Dashboard() {
               </p>
             </article>
             {/* Stock Intelligence */}
-            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', padding: '20px' }}>
               <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(0,255,136,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
                 Stock Intelligence Engine
               </h3>
@@ -1420,7 +1420,7 @@ export default function Dashboard() {
               </p>
             </article>
             {/* Crypto Intelligence */}
-            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', padding: '20px' }}>
               <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(139,92,246,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
                 Crypto Intelligence System
               </h3>
@@ -1429,7 +1429,7 @@ export default function Dashboard() {
               </p>
             </article>
             {/* Market Regime Analysis */}
-            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', padding: '20px' }}>
               <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(255,215,0,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
                 Market Regime Analysis
               </h3>
@@ -1438,7 +1438,7 @@ export default function Dashboard() {
               </p>
             </article>
             {/* AI Market Analytics */}
-            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '8px', padding: '20px' }}>
+            <article style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '8px', padding: '20px' }}>
               <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: '13px', fontWeight: 700, color: 'rgba(255,45,85,0.8)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '10px' }}>
                 AI-Powered Macro Analytics
               </h3>

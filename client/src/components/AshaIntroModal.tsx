@@ -100,7 +100,7 @@ export default function AshaIntroModal({ onDismiss }: AshaIntroModalProps) {
           background: "rgba(6,10,20,0.95)",
           border: "1px solid rgba(0,212,255,0.18)",
           borderRadius: "12px",
-          boxShadow: "0 0 80px rgba(0,212,255,0.08), 0 32px 64px rgba(0,0,0,0.6)",
+          boxShadow: "0 0 80px rgba(0,229,255,0.14), 0 32px 64px rgba(0,0,0,0.6)",
           position: "relative",
           animation: "asha-modal-rise 0.7s cubic-bezier(0.23,1,0.32,1) 0.2s both",
         }}
@@ -114,7 +114,7 @@ export default function AshaIntroModal({ onDismiss }: AshaIntroModalProps) {
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700,
               fontSize: "22px",
-              color: "#00D4FF",
+              color: "#00E5FF",
               letterSpacing: "0.05em",
               lineHeight: 1,
               marginBottom: "4px",
@@ -123,7 +123,7 @@ export default function AshaIntroModal({ onDismiss }: AshaIntroModalProps) {
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "8px",
               letterSpacing: "0.2em",
-              color: "rgba(0,212,255,0.5)",
+              color: "rgba(0,229,255,0.65)",
               textTransform: "uppercase",
             }}>The Spirit of FAULTLINE</div>
           </div>
@@ -159,7 +159,7 @@ export default function AshaIntroModal({ onDismiss }: AshaIntroModalProps) {
                 display: "inline-block",
                 width: "2px",
                 height: "14px",
-                background: "#00D4FF",
+                background: "#00E5FF",
                 marginLeft: "2px",
                 verticalAlign: "text-bottom",
                 animation: "asha-cursor-blink 0.8s step-end infinite",
@@ -176,24 +176,24 @@ export default function AshaIntroModal({ onDismiss }: AshaIntroModalProps) {
               style={{
                 width: "100%",
                 padding: "12px",
-                background: "rgba(0,212,255,0.08)",
-                border: "1px solid rgba(0,212,255,0.3)",
+                background: "rgba(0,229,255,0.14)",
+                border: "1px solid rgba(0,229,255,0.45)",
                 borderRadius: "6px",
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: "10px",
                 letterSpacing: "0.2em",
-                color: "#00D4FF",
+                color: "#00E5FF",
                 cursor: "pointer",
                 textTransform: "uppercase",
                 transition: "all 0.15s ease",
               }}
               onMouseEnter={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.15)";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.5)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.25)";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.65)";
               }}
               onMouseLeave={e => {
-                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.08)";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.3)";
+                (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.14)";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.45)";
               }}
             >
               Enter FAULTLINE

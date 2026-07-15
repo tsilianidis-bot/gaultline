@@ -83,7 +83,7 @@ function TransparencyPanel({ msg }: { msg: Message }) {
       marginTop: "8px",
       padding: "10px 12px",
       background: "rgba(0,212,255,0.04)",
-      border: "1px solid rgba(0,212,255,0.1)",
+      border: "1px solid rgba(0,229,255,0.18)",
       borderRadius: "5px",
       fontSize: "9px",
       fontFamily: "'IBM Plex Mono', monospace",
@@ -232,24 +232,24 @@ export default function AshaPanel({}: AshaPanelProps) {
             onClick={() => setOpen(true)}
             style={{
               background: "rgba(6,10,20,0.92)",
-              border: "1px solid rgba(0,212,255,0.25)",
+              border: "1px solid rgba(0,229,255,0.38)",
               borderRadius: "50px",
               padding: "8px 14px 8px 10px",
               display: "flex",
               alignItems: "center",
               gap: "8px",
               cursor: "pointer",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.08)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(0,229,255,0.14)",
               transition: "all 0.2s ease",
               backdropFilter: "blur(12px)",
             }}
             onMouseEnter={e => {
               (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.45)";
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.5), 0 0 30px rgba(0,212,255,0.15)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.5), 0 0 30px rgba(0,229,255,0.25)";
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.25)";
-              (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(0,212,255,0.08)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.38)";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(0,229,255,0.14)";
             }}
           >
             <AshaOrb regimeState={regimeState} size={28} />
@@ -257,7 +257,7 @@ export default function AshaPanel({}: AshaPanelProps) {
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "9px",
               letterSpacing: "0.15em",
-              color: "#00D4FF",
+              color: "#00E5FF",
               textTransform: "uppercase",
             }}>Ask ASHA</span>
           </button>
@@ -291,13 +291,13 @@ export default function AshaPanel({}: AshaPanelProps) {
             alignItems: "center",
             gap: "10px",
             padding: "12px 14px",
-            borderBottom: "1px solid rgba(0,212,255,0.1)",
+            borderBottom: "1px solid rgba(0,229,255,0.18)",
             background: "rgba(0,0,0,0.3)",
           }}>
             <AshaOrb regimeState={regimeState} size={28} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00D4FF", lineHeight: 1 }}>ASHA</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.15em", color: "rgba(0,212,255,0.4)", textTransform: "uppercase" }}>Spirit of FAULTLINE</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00E5FF", lineHeight: 1 }}>ASHA</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.15em", color: "rgba(0,229,255,0.55)", textTransform: "uppercase" }}>Spirit of FAULTLINE</div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               {messages.length > 0 && (
@@ -338,7 +338,7 @@ export default function AshaPanel({}: AshaPanelProps) {
                         textAlign: "left",
                         padding: "7px 10px",
                         background: "rgba(0,212,255,0.04)",
-                        border: "1px solid rgba(0,212,255,0.1)",
+                        border: "1px solid rgba(0,229,255,0.18)",
                         borderRadius: "5px",
                         fontFamily: "'IBM Plex Sans', sans-serif",
                         fontSize: "11px",
@@ -347,14 +347,14 @@ export default function AshaPanel({}: AshaPanelProps) {
                         transition: "all 0.12s ease",
                       }}
                       onMouseEnter={e => {
-                        (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.08)";
+                        (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.14)";
                         (e.currentTarget as HTMLButtonElement).style.color = "#E2E8F0";
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.2)";
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.32)";
                       }}
                       onMouseLeave={e => {
                         (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.04)";
                         (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.7)";
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,212,255,0.1)";
+                        (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.18)";
                       }}
                     >
                       {s}
@@ -370,8 +370,8 @@ export default function AshaPanel({}: AshaPanelProps) {
                   maxWidth: "88%",
                   padding: "9px 12px",
                   borderRadius: msg.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px",
-                  background: msg.role === "user" ? "rgba(0,212,255,0.1)" : "rgba(255,255,255,0.04)",
-                  border: msg.role === "user" ? "1px solid rgba(0,212,255,0.2)" : "1px solid rgba(255,255,255,0.06)",
+                  background: msg.role === "user" ? "rgba(0,229,255,0.18)" : "rgba(255,255,255,0.14)",
+                  border: msg.role === "user" ? "1px solid rgba(0,229,255,0.32)" : "1px solid rgba(255,255,255,0.11)",
                   fontFamily: "'IBM Plex Sans', sans-serif",
                   fontSize: "12px",
                   lineHeight: 1.65,
@@ -401,7 +401,7 @@ export default function AshaPanel({}: AshaPanelProps) {
                         padding: "2px 0",
                         transition: "color 0.12s ease",
                       }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,212,255,0.5)"; }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,229,255,0.65)"; }}
                       onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(100,116,139,0.4)"; }}
                     >
                       <Eye size={9} />
@@ -428,7 +428,7 @@ export default function AshaPanel({}: AshaPanelProps) {
                       width: "5px",
                       height: "5px",
                       borderRadius: "50%",
-                      background: "#00D4FF",
+                      background: "#00E5FF",
                       animation: `asha-dot-bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
                     }} />
                   ))}
@@ -441,7 +441,7 @@ export default function AshaPanel({}: AshaPanelProps) {
           {/* Input */}
           <div style={{
             padding: "10px 12px",
-            borderTop: "1px solid rgba(0,212,255,0.08)",
+            borderTop: "1px solid rgba(0,229,255,0.14)",
             background: "rgba(0,0,0,0.2)",
             display: "flex",
             gap: "8px",
@@ -456,8 +456,8 @@ export default function AshaPanel({}: AshaPanelProps) {
               disabled={loading}
               style={{
                 flex: 1,
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(0,212,255,0.15)",
+                background: "rgba(255,255,255,0.14)",
+                border: "1px solid rgba(0,229,255,0.25)",
                 borderRadius: "5px",
                 padding: "8px 10px",
                 fontFamily: "'IBM Plex Sans', sans-serif",
@@ -466,19 +466,19 @@ export default function AshaPanel({}: AshaPanelProps) {
                 outline: "none",
                 transition: "border-color 0.15s ease",
               }}
-              onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = "rgba(0,212,255,0.35)"; }}
-              onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = "rgba(0,212,255,0.15)"; }}
+              onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = "rgba(0,229,255,0.50)"; }}
+              onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = "rgba(0,229,255,0.25)"; }}
             />
             <button
               onClick={() => sendMessage(input)}
               disabled={!input.trim() || loading}
               style={{
-                background: input.trim() && !loading ? "rgba(0,212,255,0.12)" : "rgba(255,255,255,0.03)",
-                border: `1px solid ${input.trim() && !loading ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.06)"}`,
+                background: input.trim() && !loading ? "rgba(0,229,255,0.20)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${input.trim() && !loading ? "rgba(0,229,255,0.45)" : "rgba(255,255,255,0.11)"}`,
                 borderRadius: "5px",
                 padding: "8px 10px",
                 cursor: input.trim() && !loading ? "pointer" : "not-allowed",
-                color: input.trim() && !loading ? "#00D4FF" : "rgba(100,116,139,0.3)",
+                color: input.trim() && !loading ? "#00E5FF" : "rgba(100,116,139,0.3)",
                 transition: "all 0.15s ease",
               }}
             >
@@ -494,7 +494,7 @@ export default function AshaPanel({}: AshaPanelProps) {
             alignItems: "center",
             gap: "5px",
           }}>
-            <Zap size={8} color="rgba(0,212,255,0.3)" />
+            <Zap size={8} color="rgba(0,229,255,0.45)" />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.1em", color: "rgba(100,116,139,0.35)", textTransform: "uppercase" }}>
               Context: {fullPageContext.page}
             </span>

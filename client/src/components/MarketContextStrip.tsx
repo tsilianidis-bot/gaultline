@@ -32,7 +32,7 @@ function ProbBar({ value, color, label }: { value: number; color: string; label:
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", minWidth: "52px" }}>
       <div style={{ fontSize: "7px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.12em", color: "rgba(148,163,184,0.5)", textTransform: "uppercase" }}>{label}</div>
-      <div style={{ width: "100%", height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px", overflow: "hidden" }}>
+      <div style={{ width: "100%", height: "3px", background: "rgba(255,255,255,0.11)", borderRadius: "2px", overflow: "hidden" }}>
         <div style={{ width: `${value}%`, height: "100%", background: color, borderRadius: "2px", transition: "width 0.6s ease" }} />
       </div>
       <div style={{ fontSize: "9px", fontFamily: "'IBM Plex Mono', monospace", color, fontWeight: 600 }}>{value}%</div>
@@ -71,7 +71,7 @@ export default function MarketContextStrip() {
   // Pick the dominant probability for the "most likely outcome" pill
   const probs = [
     { label: "BULL", value: probability.bullProbability, color: "#10B981" },
-    { label: "SOFT LAND", value: probability.softLandingProbability, color: "#00D4FF" },
+    { label: "SOFT LAND", value: probability.softLandingProbability, color: "#00E5FF" },
     { label: "STAGFLATION", value: probability.stagflationProbability, color: "#F59E0B" },
     { label: "RECESSION", value: probability.recessionProbability, color: "#EF4444" },
     { label: "CRASH", value: probability.crashProbability, color: "#DC2626" },
@@ -191,12 +191,12 @@ export default function MarketContextStrip() {
               style={{
                 marginLeft: "auto", display: "flex", alignItems: "center", gap: "3px",
                 padding: "2px 6px", borderRadius: "3px",
-                background: "transparent", border: "1px solid rgba(255,255,255,0.06)",
+                background: "transparent", border: "1px solid rgba(255,255,255,0.11)",
                 cursor: "pointer", color: "rgba(100,116,139,0.5)",
                 transition: "all 0.15s ease",
               }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.15)"; (e.currentTarget as HTMLElement).style.color = "rgba(148,163,184,0.8)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLElement).style.color = "rgba(100,116,139,0.5)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.11)"; (e.currentTarget as HTMLElement).style.color = "rgba(100,116,139,0.5)"; }}
             >
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.1em" }}>COLLAPSE</span>
               <ChevronUp size={9} />
@@ -236,7 +236,7 @@ export default function MarketContextStrip() {
                 {seismographOutput.analogMatches?.[0] && (
                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)" }}>ANALOG</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FF", fontWeight: 600 }}>{seismographOutput.analogMatches[0].period}</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00E5FF", fontWeight: 600 }}>{seismographOutput.analogMatches[0].period}</span>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)" }}>{seismographOutput.analogMatches[0].similarity}%</span>
                   </div>
                 )}

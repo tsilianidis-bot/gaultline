@@ -49,9 +49,9 @@ function fmtMktCap(v: number | null): string {
 function SectionHeader({ label, sub, icon }: { label: string; sub?: string; icon?: React.ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px" }}>
-      {icon && <span style={{ color: "#00D4FF", opacity: 0.7 }}>{icon}</span>}
+      {icon && <span style={{ color: "#00E5FF", opacity: 0.7 }}>{icon}</span>}
       <div>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "#00D4FF", textTransform: "uppercase" }}>{label}</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "#00E5FF", textTransform: "uppercase" }}>{label}</div>
         {sub && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(148,163,184,0.45)", marginTop: "1px" }}>{sub}</div>}
       </div>
     </div>
@@ -64,7 +64,7 @@ function TickerRibbon({ quotes }: { quotes: Array<{ ticker: string; price: numbe
   const items = [...quotes, ...quotes]; // double for seamless loop
 
   return (
-    <div style={{ overflow: "hidden", borderBottom: "1px solid rgba(0,212,255,0.08)", background: "rgba(0,0,0,0.3)", position: "relative" }}>
+    <div style={{ overflow: "hidden", borderBottom: "1px solid rgba(0,229,255,0.14)", background: "rgba(0,0,0,0.3)", position: "relative" }}>
       <div
         ref={ribbonRef}
         style={{
@@ -83,7 +83,7 @@ function TickerRibbon({ quotes }: { quotes: Array<{ ticker: string; price: numbe
               alignItems: "center",
               gap: "6px",
               padding: "5px 14px",
-              borderRight: "1px solid rgba(255,255,255,0.04)",
+              borderRight: "1px solid rgba(255,255,255,0.14)",
               textDecoration: "none",
               transition: "background 0.15s ease",
               cursor: "pointer",
@@ -162,13 +162,13 @@ function UniversalSearch() {
         display: "flex",
         alignItems: "center",
         gap: "8px",
-        background: "rgba(255,255,255,0.04)",
+        background: "rgba(255,255,255,0.14)",
         border: "1px solid rgba(0,212,255,0.18)",
         borderRadius: "6px",
         padding: "8px 12px",
         transition: "border-color 0.15s ease",
       }}>
-        <Search size={13} color="rgba(0,212,255,0.5)" />
+        <Search size={13} color="rgba(0,229,255,0.65)" />
         <input
           ref={inputRef}
           value={query}
@@ -189,7 +189,7 @@ function UniversalSearch() {
           }}
         />
         {loading && (
-          <div style={{ width: "10px", height: "10px", border: "1.5px solid rgba(0,212,255,0.3)", borderTopColor: "#00D4FF", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+          <div style={{ width: "10px", height: "10px", border: "1.5px solid rgba(0,229,255,0.45)", borderTopColor: "#00E5FF", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
         )}
       </div>
       {open && results.length > 0 && (
@@ -217,7 +217,7 @@ function UniversalSearch() {
                 padding: "9px 12px",
                 background: "transparent",
                 border: "none",
-                borderBottom: "1px solid rgba(255,255,255,0.04)",
+                borderBottom: "1px solid rgba(255,255,255,0.14)",
                 cursor: "pointer",
                 textAlign: "left",
                 transition: "background 0.12s ease",
@@ -226,7 +226,7 @@ function UniversalSearch() {
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", fontWeight: 700, color: "#00D4FF", minWidth: "52px" }}>{r.ticker}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", fontWeight: 700, color: "#00E5FF", minWidth: "52px" }}>{r.ticker}</span>
                 <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#94A3B8" }}>{r.name}</span>
               </div>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: "rgba(100,116,139,0.5)", textTransform: "uppercase" }}>{r.type}</span>
@@ -247,7 +247,7 @@ function SnapshotTile({ label, price, changePct, sub }: { label: string; price: 
       flex: "1 1 120px",
       padding: "10px 12px",
       background: changeBg(changePct),
-      border: `1px solid ${changePct > 0 ? "rgba(0,255,136,0.12)" : changePct < 0 ? "rgba(255,45,85,0.12)" : "rgba(255,255,255,0.06)"}`,
+      border: `1px solid ${changePct > 0 ? "rgba(0,255,136,0.12)" : changePct < 0 ? "rgba(255,45,85,0.12)" : "rgba(255,255,255,0.11)"}`,
       borderRadius: "6px",
       minWidth: "100px",
     }}>
@@ -275,7 +275,7 @@ function MoverRow({ ticker, name, price, changePct, volume, marketCap, rank }: {
         display: "flex",
         alignItems: "center",
         padding: "7px 0",
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        borderBottom: "1px solid rgba(255,255,255,0.14)",
         textDecoration: "none",
         transition: "background 0.12s ease",
         gap: "8px",
@@ -325,7 +325,7 @@ function CryptoRow({ rank, symbol, name, price, changePct24h, volume, marketCap 
         display: "flex",
         alignItems: "center",
         padding: "7px 0",
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        borderBottom: "1px solid rgba(255,255,255,0.14)",
         textDecoration: "none",
         gap: "8px",
         cursor: "pointer",
@@ -373,7 +373,7 @@ function WatchlistRow({ symbol, name, type, quote }: {
         display: "flex",
         alignItems: "center",
         padding: "7px 0",
-        borderBottom: "1px solid rgba(255,255,255,0.04)",
+        borderBottom: "1px solid rgba(255,255,255,0.14)",
         textDecoration: "none",
         gap: "8px",
         cursor: "pointer",
@@ -413,7 +413,7 @@ function WatchlistRow({ symbol, name, type, quote }: {
 // ── Tab selector ──────────────────────────────────────────────
 function TabBar({ tabs, active, onChange }: { tabs: string[]; active: string; onChange: (t: string) => void }) {
   return (
-    <div style={{ display: "flex", gap: "0", marginBottom: "10px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+    <div style={{ display: "flex", gap: "0", marginBottom: "10px", borderBottom: "1px solid rgba(255,255,255,0.11)" }}>
       {tabs.map(t => (
         <button
           key={t}
@@ -422,11 +422,11 @@ function TabBar({ tabs, active, onChange }: { tabs: string[]; active: string; on
             padding: "5px 10px",
             background: "transparent",
             border: "none",
-            borderBottom: active === t ? "2px solid #00D4FF" : "2px solid transparent",
+            borderBottom: active === t ? "2px solid #00E5FF" : "2px solid transparent",
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: "8px",
             letterSpacing: "0.15em",
-            color: active === t ? "#00D4FF" : "rgba(148,163,184,0.45)",
+            color: active === t ? "#00E5FF" : "rgba(148,163,184,0.45)",
             cursor: "pointer",
             textTransform: "uppercase",
             transition: "color 0.15s ease",
@@ -505,8 +505,8 @@ export default function MarketOverview() {
         flexWrap: "wrap",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Activity size={13} color="#00D4FF" />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "#00D4FF", textTransform: "uppercase" }}>Market Overview</span>
+          <Activity size={13} color="#00E5FF" />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.2em", color: "#00E5FF", textTransform: "uppercase" }}>Market Overview</span>
         </div>
         <UniversalSearch />
         <a
@@ -517,18 +517,18 @@ export default function MarketOverview() {
             gap: "4px",
             padding: "7px 12px",
             background: "rgba(0,212,255,0.06)",
-            border: "1px solid rgba(0,212,255,0.2)",
+            border: "1px solid rgba(0,229,255,0.32)",
             borderRadius: "5px",
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: "8px",
             letterSpacing: "0.12em",
-            color: "#00D4FF",
+            color: "#00E5FF",
             textDecoration: "none",
             textTransform: "uppercase",
             whiteSpace: "nowrap",
             transition: "all 0.15s ease",
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,212,255,0.12)"; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,229,255,0.20)"; }}
           onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,212,255,0.06)"; }}
         >
           Symbol Intel <ChevronRight size={9} />
@@ -588,7 +588,7 @@ export default function MarketOverview() {
             ))
           )}
           {!user && (
-            <a href="/app/account" style={{ display: "block", marginTop: "10px", padding: "8px 10px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,212,255,0.12)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", textDecoration: "none", textAlign: "center", letterSpacing: "0.1em" }}>
+            <a href="/app/account" style={{ display: "block", marginTop: "10px", padding: "8px 10px", background: "rgba(0,212,255,0.04)", border: "1px solid rgba(0,229,255,0.20)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00E5FF", textDecoration: "none", textAlign: "center", letterSpacing: "0.1em" }}>
               SIGN IN TO VIEW MOVERS →
             </a>
           )}
@@ -621,9 +621,9 @@ export default function MarketOverview() {
               />
             ))
           )}
-          <a href="/app/crypto" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", marginTop: "10px", padding: "7px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.08)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.5)", textDecoration: "none", letterSpacing: "0.1em", transition: "all 0.15s ease" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#00D4FF"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(0,212,255,0.5)"; }}
+          <a href="/app/crypto" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", marginTop: "10px", padding: "7px", background: "rgba(0,229,255,0.08)", border: "1px solid rgba(0,229,255,0.14)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,229,255,0.65)", textDecoration: "none", letterSpacing: "0.1em", transition: "all 0.15s ease" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#00E5FF"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(0,229,255,0.65)"; }}
           >
             FULL CRYPTO INTELLIGENCE <ChevronRight size={9} />
           </a>
@@ -635,7 +635,7 @@ export default function MarketOverview() {
           {!user ? (
             <div style={{ padding: "16px 0", textAlign: "center" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.4)", marginBottom: "10px" }}>Sign in to view your watchlist</div>
-              <a href="/app/account" style={{ display: "inline-block", padding: "7px 14px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", textDecoration: "none", letterSpacing: "0.1em" }}>SIGN IN →</a>
+              <a href="/app/account" style={{ display: "inline-block", padding: "7px 14px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00E5FF", textDecoration: "none", letterSpacing: "0.1em" }}>SIGN IN →</a>
             </div>
           ) : watchlistQ.isLoading ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -646,7 +646,7 @@ export default function MarketOverview() {
           ) : watchlistItems.length === 0 ? (
             <div style={{ padding: "16px 0", textAlign: "center" }}>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.4)", marginBottom: "10px" }}>No symbols in watchlist yet</div>
-              <a href="/app/watchlist" style={{ display: "inline-block", padding: "7px 14px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", textDecoration: "none", letterSpacing: "0.1em" }}>ADD SYMBOLS →</a>
+              <a href="/app/watchlist" style={{ display: "inline-block", padding: "7px 14px", background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00E5FF", textDecoration: "none", letterSpacing: "0.1em" }}>ADD SYMBOLS →</a>
             </div>
           ) : (
             <>
@@ -659,9 +659,9 @@ export default function MarketOverview() {
                   quote={item.type === "stock" ? (quoteMap.get(item.symbol) ?? null) : null}
                 />
               ))}
-              <a href="/app/watchlist" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", marginTop: "10px", padding: "7px", background: "rgba(0,212,255,0.03)", border: "1px solid rgba(0,212,255,0.08)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.5)", textDecoration: "none", letterSpacing: "0.1em", transition: "all 0.15s ease" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#00D4FF"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(0,212,255,0.5)"; }}
+              <a href="/app/watchlist" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "4px", marginTop: "10px", padding: "7px", background: "rgba(0,229,255,0.08)", border: "1px solid rgba(0,229,255,0.14)", borderRadius: "4px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,229,255,0.65)", textDecoration: "none", letterSpacing: "0.1em", transition: "all 0.15s ease" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = "#00E5FF"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = "rgba(0,229,255,0.65)"; }}
               >
                 MANAGE WATCHLIST <ChevronRight size={9} />
               </a>

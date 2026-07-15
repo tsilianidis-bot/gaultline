@@ -159,8 +159,8 @@ export default function SeismographNarrativeBanner({
   if (isLoading) {
     return (
       <div style={{
-        background: "rgba(0,212,255,0.03)",
-        border: "1px solid rgba(0,212,255,0.08)",
+        background: "rgba(0,229,255,0.08)",
+        border: "1px solid rgba(0,229,255,0.14)",
         borderRadius: "6px",
         padding: "10px 14px",
         marginBottom: "16px",
@@ -168,10 +168,10 @@ export default function SeismographNarrativeBanner({
         alignItems: "center",
         gap: "10px",
       }}>
-        <Activity size={13} style={{ color: "rgba(0,212,255,0.4)", flexShrink: 0 }} />
+        <Activity size={13} style={{ color: "rgba(0,229,255,0.55)", flexShrink: 0 }} />
         <div style={{ flex: 1 }}>
-          <div style={{ height: "8px", width: "60%", background: "rgba(255,255,255,0.05)", borderRadius: "2px", marginBottom: "6px" }} />
-          <div style={{ height: "7px", width: "40%", background: "rgba(255,255,255,0.04)", borderRadius: "2px" }} />
+          <div style={{ height: "8px", width: "60%", background: "rgba(255,255,255,0.09)", borderRadius: "2px", marginBottom: "6px" }} />
+          <div style={{ height: "7px", width: "40%", background: "rgba(255,255,255,0.14)", borderRadius: "2px" }} />
         </div>
       </div>
     );
@@ -190,12 +190,12 @@ export default function SeismographNarrativeBanner({
         alignItems: "center",
         gap: "10px",
       }}>
-        <Activity size={13} style={{ color: "rgba(0,212,255,0.3)", flexShrink: 0 }} />
+        <Activity size={13} style={{ color: "rgba(0,229,255,0.45)", flexShrink: 0 }} />
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(148,163,184,0.5)" }}>
           Seismograph reading not yet available — runs automatically after market close.
         </span>
         {context === "seismograph" && (
-          <Link href="/app/seismograph" style={{ marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FF", textDecoration: "none", flexShrink: 0 }}>
+          <Link href="/app/seismograph" style={{ marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00E5FF", textDecoration: "none", flexShrink: 0 }}>
             Generate now →
           </Link>
         )}
@@ -266,7 +266,7 @@ export default function SeismographNarrativeBanner({
       </span>
 
       {/* Expand toggle */}
-      <span style={{ color: "rgba(0,212,255,0.5)", flexShrink: 0 }}>
+      <span style={{ color: "rgba(0,229,255,0.65)", flexShrink: 0 }}>
         {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
       </span>
     </button>
@@ -294,7 +294,7 @@ export default function SeismographNarrativeBanner({
         </div>
 
         {/* Q2: Why is it happening? */}
-        <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,212,255,0.3)" }}>
+        <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>WHY IT IS HAPPENING</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
             Primary driver: <strong style={{ color: "#E2E8F0" }}>{output.probabilities.primaryDriver}</strong>.
@@ -305,7 +305,7 @@ export default function SeismographNarrativeBanner({
         </div>
 
         {/* Q3: How long has it been developing? */}
-        <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,212,255,0.3)" }}>
+        <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>HOW LONG DEVELOPING</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
             {getStreakLabel(output.marketMemory)} · {output.marketMemory.daysSinceLastTransition} days since last regime transition.
@@ -350,7 +350,7 @@ export default function SeismographNarrativeBanner({
         )}
 
         {/* Q6: Historical percentile */}
-        <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,212,255,0.3)" }}>
+        <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>HOW THIS COMPARES TO HISTORY</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
             This reading is at the <strong style={{ color: "#E2E8F0" }}>{output.historicalPercentile}th percentile</strong> — {getHistoricalPercentileLabel(output.historicalPercentile)}.
@@ -358,7 +358,7 @@ export default function SeismographNarrativeBanner({
         </div>
 
         {/* Q7: What to watch next */}
-        <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,212,255,0.3)" }}>
+        <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>WHAT TO MONITOR NEXT</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
             {output.transitionProbabilities.transitionToCrisis > 20 && (
@@ -381,18 +381,18 @@ export default function SeismographNarrativeBanner({
           <button
             onClick={() => refetch()}
             disabled={isRefetching}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", color: "rgba(0,212,255,0.3)", display: "flex", alignItems: "center" }}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", color: "rgba(0,229,255,0.45)", display: "flex", alignItems: "center" }}
           >
             <RefreshCw size={10} style={{ animation: isRefetching ? "spin 1s linear infinite" : "none" }} />
           </button>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {showSeismographLink && context !== "seismograph" && (
-            <Link href="/app/seismograph" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(0,212,255,0.5)", textDecoration: "none" }}>
+            <Link href="/app/seismograph" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(0,229,255,0.65)", textDecoration: "none" }}>
               Full Seismograph
             </Link>
           )}
-          <Link href={nextStep.path} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FF", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
+          <Link href={nextStep.path} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00E5FF", textDecoration: "none", display: "flex", alignItems: "center", gap: "4px" }}>
             {nextStep.label} <ArrowRight size={10} />
           </Link>
         </div>
@@ -403,7 +403,7 @@ export default function SeismographNarrativeBanner({
   return (
     <div style={{
       background: "rgba(0,212,255,0.02)",
-      border: `1px solid rgba(0,212,255,0.08)`,
+      border: `1px solid rgba(0,229,255,0.14)`,
       borderTop: `2px solid ${stressColor}40`,
       borderRadius: "6px",
       marginBottom: "16px",

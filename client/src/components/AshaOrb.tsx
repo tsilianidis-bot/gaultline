@@ -23,7 +23,7 @@ function getOrbColors(state: AshaRegimeState) {
     case "rising":
       return { core: "#FFB347", ring1: "#FFB34740", ring2: "#FFB34720", glow: "#FFB34750" };
     default:
-      return { core: "#00D4FF", ring1: "#00D4FF40", ring2: "#00D4FF20", glow: "#00D4FF50" };
+      return { core: "#00E5FF", ring1: "#00E5FF40", ring2: "#00E5FF20", glow: "#00E5FF50" };
   }
 }
 
