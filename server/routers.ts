@@ -71,6 +71,7 @@ import { getDayTradeWatchlist, addDayTradeWatchlistItem, removeDayTradeWatchlist
 import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntry, deleteTradeJournalEntry, getTradeJournalStats } from './db';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { computeSOB } from './sobEngine';
+import { askAsha, generateAshaDailyGreeting, ASHA_FIRST_INTRODUCTION } from './ashaEngine';
 import { generateBotResponse, detectIntent, aggregateLeadScore } from './chatbotEngine';
 import {
   createChatbotSession, updateChatbotSession, addChatbotMessage, getChatbotMessages,
@@ -3154,6 +3155,66 @@ export const appRouter = router({
           .orderBy(demoTokens.createdAt);
         return rows;
       }),
+  }),
+
+  // ── ASHA — Spirit of FAULTLINE ──────────────────────────────────────────
+  asha: router({
+    // Ask ASHA a question with page context
+    ask: publicProcedure
+      .input(z.object({
+        userMessage: z.string().min(1).max(2000),
+        history: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+        })).max(20).default([]),
+        pageContext: z.object({
+          page: z.string(),
+          pressureScore: z.number().optional(),
+          regime: z.string().optional(),
+          regimeConfidence: z.number().optional(),
+          narrative: z.string().optional(),
+          trend: z.string().optional(),
+          keyDrivers: z.array(z.string()).optional(),
+          historicalAnalog: z.string().optional(),
+          transitionProbability: z.number().optional(),
+          additionalContext: z.record(z.string(), z.unknown()).optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        const response = await askAsha({
+          userMessage: input.userMessage,
+          history: input.history,
+          pageContext: input.pageContext,
+        });
+        return response;
+      }),
+
+    // Generate personalized daily greeting
+    dailyGreeting: publicProcedure
+      .input(z.object({
+        userName: z.string().optional(),
+        engineContext: z.object({
+          pressureScore: z.number(),
+          regime: z.string(),
+          regimeConfidence: z.number(),
+          narrative: z.string(),
+          trend: z.string(),
+          keyDrivers: z.array(z.string()),
+          previousPressureScore: z.number().optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        const greeting = await generateAshaDailyGreeting({
+          userName: input.userName,
+          engineContext: input.engineContext,
+        });
+        return { greeting };
+      }),
+
+    // Get ASHA's first-login introduction text
+    getIntroduction: publicProcedure.query(() => {
+      return { introduction: ASHA_FIRST_INTRODUCTION };
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

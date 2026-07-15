@@ -5,6 +5,7 @@
    ============================================================ */
 import { useMemo, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import type {
   CryptoAssetSignal,
   CryptoSignal,
@@ -448,6 +449,19 @@ function CryptoIntelligenceInner() {
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+
+  // Register ASHA page context
+  useRegisterAshaContext({
+    page: "crypto",
+    pressureScore: data?.pressureIndex,
+    regime: data?.regime,
+    keyDrivers: data?.signals?.slice(0, 3).map(s => `${s.ticker}: ${s.signal} (${s.signalScore})`),
+    additionalContext: {
+      btcSignal: data?.btcDashboard?.overallBtcBias,
+      altcoinRisk: data?.altcoinRisk?.overallRisk,
+    },
+  });
+
   const pressureLabel = useMemo(() => {
     const p = data?.pressureIndex ?? 0;
     if (p >= 80) return { label: "CRITICAL", color: "text-red-400" };

@@ -22,6 +22,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
+import AshaIntroModal from "@/components/AshaIntroModal";
+import AshaPanel from "@/components/AshaPanel";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: command → markets → intelligence → analysis → account
@@ -908,6 +910,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       {/* ── Universal Command Search (Cmd+K) ── */}
       <CommandSearch isOpen={cmdOpen} onClose={closeCmd} />
+
+      {/* ── ASHA — Spirit of FAULTLINE ── */}
+      <AshaIntroModal />
+      <AshaPanel />
     </div>
   );
 }

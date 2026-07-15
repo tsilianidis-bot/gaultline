@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import { useTickerStore } from "@/contexts/TickerStore";
+import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Shared styles ─────────────────────────────────────────────
@@ -600,6 +601,18 @@ function UniversalSymbolIntelligence() {
   const report = data as DayTradeReport | null | undefined;
 
   const { setTicker } = useTickerStore();
+
+  // Register ASHA page context with active symbol data
+  useRegisterAshaContext({
+    page: "symbol-intelligence",
+    additionalContext: {
+      activeSymbol: submitted?.symbol,
+      assetType: submitted?.assetType,
+      direction: report?.direction,
+      setupType: report?.setupType,
+      confidence: report?.confidence,
+    },
+  });
 
   const handleSearch = useCallback(() => {
     const sym = query.trim().toUpperCase();

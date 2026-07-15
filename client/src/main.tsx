@@ -7,6 +7,7 @@ import superjson from "superjson";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import { TickerStoreProvider } from "./contexts/TickerStore";
+import { AshaProvider } from "./contexts/AshaContext";
 import "./index.css";
 
 /**
@@ -131,7 +132,9 @@ createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
       <TickerStoreProvider>
-        <App />
+        <AshaProvider>
+          <App />
+        </AshaProvider>
       </TickerStoreProvider>
     </QueryClientProvider>
   </trpc.Provider>

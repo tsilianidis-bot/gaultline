@@ -34,6 +34,7 @@ import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import MarketOverview from "@/components/MarketOverview";
+import AshaDailyGreeting from "@/components/AshaDailyGreeting";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -926,6 +927,8 @@ export default function Dashboard() {
 
             {/* ── Main content ────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
+        {/* ── ASHA Daily Greeting ──────────────────────────────── */}
+        <AshaDailyGreeting />
         {/* ── Inline upgrade prompt (free/core tier only) ────────── */}
         <DashboardUpgradePrompt />
         {/* ── Seismograph Narrative Banner: what is happening, why, how long, what to watch ── */}

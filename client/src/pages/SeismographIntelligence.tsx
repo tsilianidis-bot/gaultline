@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { RefreshCw } from "lucide-react";
 import { Link } from "wouter";
+import { useRegisterAshaContext } from "@/contexts/AshaContext";
 
 // ── Color utilities ────────────────────────────────────────────────────────────
 
@@ -152,6 +153,25 @@ export default function SeismographIntelligence() {
 
   const regimeProbs = regimeProbabilities5way;
   const topEngines = [...engineContributions].sort((a, b) => b.contributionWeight - a.contributionWeight).slice(0, 5);
+
+  // Register ASHA page context
+  useRegisterAshaContext({
+    page: "seismograph",
+    pressureScore: currentScore,
+    regime: currentRegime,
+    narrative: todayStory,
+    trend: currentDirection,
+    keyDrivers: keyDevelopments?.slice(0, 3),
+    historicalAnalog: analogs?.[0] ? `${analogs[0].period} (similarity: ${(analogs[0].similarity * 100).toFixed(0)}%)` : undefined,
+    transitionProbability: transitionProbabilities?.transitionToElevated,
+    additionalContext: {
+      stressLevel: currentStressLevel,
+      percentile: currentPercentile,
+      enginesAgreeing,
+      enginesDisagreeing,
+      dataFreshness,
+    },
+  });
 
   return (
     <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px" }}>

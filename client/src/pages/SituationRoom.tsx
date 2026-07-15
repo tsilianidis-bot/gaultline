@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
+import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import PageHeader from "@/components/PageHeader";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
@@ -472,6 +473,15 @@ function CollapsiblePanel({
 export default function SituationRoom() {
   useSEO(PAGE_SEO.situationRoom);
   const { output } = useEngine();
+
+  // Register ASHA page context
+  useRegisterAshaContext({
+    page: "situation-room",
+    pressureScore: output?.overall?.score !== undefined ? output.overall.score * 10 : undefined,
+    regime: output?.regime?.label,
+    narrative: output?.narrative?.summary,
+    keyDrivers: output?.narrative?.keyRisks,
+  });
 
   // URL param auto-execution (Smart Discovery dispatch)
   const searchStr = useSearch();

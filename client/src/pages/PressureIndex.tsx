@@ -6,6 +6,7 @@
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
@@ -194,6 +195,14 @@ export default function PressureIndex() {
 
   // Build vector bars from real data if available
   const vectors = data?.vectors?.slice(0, 5) ?? [];
+
+  // Register ASHA page context
+  useRegisterAshaContext({
+    page: "pressure",
+    pressureScore: score,
+    regime,
+    keyDrivers: vectors.map(v => `${v.label}: ${v.score?.toFixed(1) ?? '—'}`),
+  });
 
   return (
     <div
