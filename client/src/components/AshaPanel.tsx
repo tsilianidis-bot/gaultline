@@ -19,10 +19,10 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
     "What should I pay attention to next?",
   ],
   seismograph: [
-    "Why did the Pressure Index rise?",
     "How long has this condition been building?",
-    "Is this similar to 2000, 2008, 2020, or 2022?",
     "What could trigger a regime change?",
+    "Is this similar to 2000, 2008, 2020, or 2022?",
+    "What would invalidate the current seismic reading?",
   ],
   pressure: [
     "Why is pressure at this level?",
@@ -31,9 +31,9 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
     "What is the historical range for this reading?",
   ],
   "symbol-intelligence": [
-    "Why is this stock signal bullish when the market is under pressure?",
+    "What is the primary driver of this setup?",
+    "How does this asset perform in the current regime?",
     "What would invalidate this outlook?",
-    "How does this stock perform in the current regime?",
     "What are the key risks for this position?",
   ],
   crypto: [
@@ -43,10 +43,22 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
     "Compare this with the 2022 crypto bear market.",
   ],
   "situation-room": [
-    "Explain this analysis simply.",
     "What is the highest-probability outcome?",
     "What evidence supports this conclusion?",
     "What would change this assessment?",
+    "What is the market not pricing in right now?",
+  ],
+  "market-intel": [
+    "What regime are we in and how long has it lasted?",
+    "What is the current probability of a regime transition?",
+    "Which sectors are most exposed to the current regime?",
+    "What historical period most closely resembles today?",
+  ],
+  signals: [
+    "What signals are most significant right now?",
+    "Which signals are confirming the current regime?",
+    "Are any signals diverging from the consensus?",
+    "What would a regime reversal look like in the signals?",
   ],
   default: [
     "What is building beneath the surface?",

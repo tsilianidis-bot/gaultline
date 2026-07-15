@@ -3160,7 +3160,7 @@ export const appRouter = router({
   // ── ASHA — Spirit of FAULTLINE ──────────────────────────────────────────
   asha: router({
     // Ask ASHA a question with page context
-    ask: publicProcedure
+    ask: protectedProcedure
       .input(z.object({
         userMessage: z.string().min(1).max(2000),
         history: z.array(z.object({
@@ -3190,7 +3190,7 @@ export const appRouter = router({
       }),
 
     // Generate personalized daily greeting
-    dailyGreeting: publicProcedure
+    dailyGreeting: protectedProcedure
       .input(z.object({
         userName: z.string().optional(),
         engineContext: z.object({
@@ -3212,7 +3212,7 @@ export const appRouter = router({
       }),
 
     // Get ASHA's first-login introduction text
-    getIntroduction: publicProcedure.query(() => {
+    getIntroduction: protectedProcedure.query(() => {
       return { introduction: ASHA_FIRST_INTRODUCTION };
     }),
   }),
