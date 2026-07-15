@@ -3867,3 +3867,14 @@
 - [x] Color logic: green=constructive, blue=informational, amber=caution, red=confirmed danger only
 - [x] Mobile-optimized: flex-wrap everywhere, responsive grid, no fixed widths that overflow
 - [x] TypeScript: 0 errors (exit code 0)
+
+## Market Overview (Home Page) — Jul 15, 2026
+- [x] Scrolling ticker ribbon (all priority tickers, links to Symbol Intelligence)
+- [x] Universal search with autocomplete (/api/signals/search, navigates to Symbol Intelligence)
+- [x] Market snapshot tiles (SPY, QQQ, IWM, GLD, XOM, IBIT)
+- [x] Market movers panel: gainers / losers / most active tabs
+- [x] Crypto markets panel: top 10 by market cap
+- [x] Watchlist preview panel with live quotes
+- [x] Integrated above Intelligence Layer in Dashboard.tsx
+- [x] /api/signals/search endpoint added to signalsProxy.ts
+- [x] TypeScript: 0 errors

@@ -1030,5 +1030,39 @@ export function registerSignalsProxy(app: Express) {
     }
   });
 
+  // GET /api/signals/search?q=NVDA — autocomplete ticker search via Polygon
+  app.get("/api/signals/search", async (req: Request, res: Response) => {
+    const apiKey = process.env.POLYGON_API_KEY;
+    if (!apiKey) {
+      res.status(503).json({ error: "Market data service not configured", results: [] });
+      return;
+    }
+    const q = ((req.query.q as string) ?? "").trim().toUpperCase();
+    if (!q || q.length < 1) {
+      res.json({ results: [] });
+      return;
+    }
+    try {
+      const url = `${POLYGON_BASE}/v3/reference/tickers?search=${encodeURIComponent(q)}&active=true&limit=10&apiKey=${apiKey}`;
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) {
+        res.status(r.status).json({ error: "Search failed", results: [] });
+        return;
+      }
+      const data = await r.json() as { results?: Array<{ ticker: string; name: string; market: string; type: string }> };
+      const results = (data.results ?? []).slice(0, 10).map(item => ({
+        ticker: item.ticker,
+        name: item.name,
+        market: item.market,
+        type: item.type,
+      }));
+      res.json({ results });
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      log.error("[Signals Proxy] Ticker search error", { errMsg });
+      res.status(502).json({ error: "Search temporarily unavailable", results: [] });
+    }
+  });
+
   // routes registered (startup log removed for production)
 }

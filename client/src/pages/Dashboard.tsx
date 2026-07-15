@@ -33,6 +33,7 @@ import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner"
 import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import ScoreExplainer from "@/components/ScoreExplainer";
+import MarketOverview from "@/components/MarketOverview";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -919,6 +920,9 @@ export default function Dashboard() {
           </div>
         );
       })()}
+
+            {/* ── Market Overview: ticker ribbon, search, snapshot, movers, crypto, watchlist ── */}
+      <MarketOverview />
 
             {/* ── Main content ────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
