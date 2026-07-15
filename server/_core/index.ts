@@ -95,6 +95,10 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // Trust the Cloud Run / load-balancer proxy so express-rate-limit can
+  // correctly identify client IPs from X-Forwarded-For in production.
+  app.set("trust proxy", 1);
+
   // Security: minimal response headers
   app.disable("x-powered-by");
   app.use((_req, res, next) => {

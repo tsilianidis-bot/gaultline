@@ -362,7 +362,7 @@ export default function IntelligenceLibraryPost() {
             Apply This Research
           </div>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '0.5rem' }}>
-            Ask FAULTLINE About {catLabel}
+            Ask ASHA About {catLabel}
           </h3>
           <p style={{ color: '#94A3B8', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.25rem', maxWidth: 400, margin: '0 auto 1.25rem' }}>
             Get real-time analysis grounded in live engine data and this research library.
@@ -381,7 +381,7 @@ export default function IntelligenceLibraryPost() {
               textTransform: 'uppercase',
               transition: 'all 0.15s ease',
             }}>
-              Ask FAULTLINE →
+              Ask ASHA →
             </button>
           </Link>
         </div>

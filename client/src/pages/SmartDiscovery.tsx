@@ -2761,7 +2761,7 @@ export default function SmartDiscovery() {
               lineHeight: 1.7,
             }}>
               {user
-                ? "Ask anything. FAULTLINE synthesizes live market data, macro regime analysis, and institutional signal scoring into one clear recommendation."
+                ? "Ask ASHA anything. She synthesizes every FAULTLINE engine — regime, pressure, liquidity, credit, volatility, crypto, and more — before responding."
                 : "Sign in to access FAULTLINE's institutional intelligence. One question. One answer."
               }
             </div>

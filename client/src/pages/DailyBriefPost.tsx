@@ -306,7 +306,7 @@ export default function DailyBriefPost() {
               textTransform: 'uppercase',
               transition: 'all 0.15s ease',
             }}>
-              Ask FAULTLINE →
+              Ask ASHA →
             </button>
           </Link>
         </div>

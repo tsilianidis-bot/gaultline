@@ -915,7 +915,7 @@ const SECTIONS: Section[] = [
           <div className="grid grid-cols-2 gap-2">
             {[
               { name: "Dashboard", desc: "Receives the Seismograph Narrative Banner — current state, drivers, duration, analog, and what to watch." },
-              { name: "ASHA (Ask FAULTLINE)", desc: "Receives the full forASHA context block — evidence consensus, probabilities, analog, and transition risk — before generating every response." },
+              { name: "ASHA — Spirit of FAULTLINE", desc: "Receives the full forASHA context block — evidence consensus, probabilities, analog, and transition risk — before generating every response." },
               { name: "Daily Brief", desc: "Generated directly from the Seismograph's forDailyBrief context — direction, probabilities, analog, and key developments." },
               { name: "Signal Intelligence", desc: "Injects Seismograph evidence consensus and analog into every symbol interpretation prompt." },
               { name: "Stock & Crypto Pages", desc: "Consume the Seismograph's macro assessment, probabilities, and historical analogs rather than generating separate macro conclusions." },
@@ -1501,15 +1501,15 @@ const SECTIONS: Section[] = [
   {
     id: "ask-faultline",
     icon: Brain,
-    title: "Ask FAULTLINE (ASHA)",
-    subtitle: "The AI intelligence interface — ask anything about the current market",
+    title: "Ask ASHA",
+    subtitle: "The AI intelligence interface — ask ASHA anything about the market",
     color: "#A78BFA",
     keywords: ["ask faultline", "asha", "ai", "chat", "ask", "question", "intelligence"],
     content: (
       <div className="space-y-4">
         <Panel accentColor="rgba(167,139,250,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            <span className="text-purple-400 font-bold">ASHA</span> (Ask FAULTLINE) is the AI intelligence interface. Ask any question about the current market, a specific ticker, the current regime, historical analogs, or what the Seismograph is detecting — and ASHA will answer using the full context of the FAULTLINE platform, including the Seismograph's current evidence consensus.
+            <span className="text-purple-400 font-bold">ASHA</span> is the AI intelligence interface. Ask any question about the current market, a specific ticker, the current regime, historical analogs, or what the Seismograph is detecting — and ASHA will answer using the full context of the FAULTLINE platform, including the Seismograph's current evidence consensus.
           </p>
         </Panel>
         <div className="space-y-1">

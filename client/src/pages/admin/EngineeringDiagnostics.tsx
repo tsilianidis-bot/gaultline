@@ -38,7 +38,7 @@ const DIAG_TOOLS: DiagTool[] = [
   {
     id: "intelligence-validation",
     label: "Intelligence Validation",
-    description: "Validate Ask FAULTLINE and AI recommendation outputs against realized outcomes. Tracks accuracy, precision, and recall by regime.",
+    description: "Validate ASHA and AI recommendation outputs against realized outcomes. Tracks accuracy, precision, and recall by regime.",
     path: "/app/intelligence-validation",
     icon: Brain,
     category: "validation",

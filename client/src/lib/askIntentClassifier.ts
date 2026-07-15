@@ -468,24 +468,24 @@ export function getAskPlaceholder(
   activeSymbol: string | null,
 ): string {
   if (activeSymbol) {
-    return `Ask about ${activeSymbol}, or ask anything about the markets...`;
+    return `Ask ASHA about ${activeSymbol}…`;
   }
   switch (mode) {
     case "macro":
-      return "Ask about macro conditions, Fed policy, inflation...";
+      return "Ask ASHA about macro conditions, Fed policy, inflation…";
     case "portfolio":
-      return "Ask about your portfolio...";
+      return "Ask ASHA about your portfolio…";
     case "sector":
-      return "Ask about sectors, rotation, industry trends...";
+      return "Ask ASHA about sectors, rotation, industry trends…";
     case "crypto":
-      return "Ask about crypto markets, DeFi, opportunities...";
+      return "Ask ASHA about crypto markets, DeFi, opportunities…";
     case "trading":
-      return "Ask about trade setups, technicals, momentum...";
+      return "Ask ASHA about trade setups, technicals, momentum…";
     case "risk":
-      return "Ask about market risk, hedging, downside protection...";
+      return "Ask ASHA about market risk, hedging, downside protection…";
     case "economic":
-      return "Ask about the economy, recession risk, cycles...";
+      return "Ask ASHA about the economy, recession risk, cycles…";
     default:
-      return "Ask anything about the markets...";
+      return "Ask ASHA…";
   }
 }

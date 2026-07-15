@@ -264,7 +264,7 @@ export default function MarketContextStrip() {
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${regimeColor}20`; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = `${regimeColor}10`; }}
             >
-              ASK FAULTLINE
+              ASK ASHA
               <ArrowRight size={9} />
             </button>
           </div>

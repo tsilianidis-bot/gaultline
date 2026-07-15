@@ -133,9 +133,9 @@ const NEXT_STEPS: Record<string, { label: string; path: string }> = {
   pressure:     { label: "See the Regime Analysis →", path: "/app/market-intelligence" },
   regime:       { label: "Check the Situation Room →", path: "/app/situation-room" },
   signals:      { label: "Run a Pre-Flight Check →", path: "/app/pre-flight" },
-  situation:    { label: "Ask FAULTLINE about this environment →", path: "/app/discover" },
+  situation:    { label: "Ask ASHA about this environment →", path: "/app/discover" },
   "daily-brief":{ label: "See what signals are active →", path: "/app/signals" },
-  seismograph:  { label: "Ask FAULTLINE about this reading →", path: "/app/discover" },
+  seismograph:  { label: "Ask ASHA about this reading →", path: "/app/discover" },
   default:      { label: "View the full Seismograph →", path: "/app/seismograph" },
 };
 

@@ -135,6 +135,7 @@ export default function AshaPanel({}: AshaPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -264,7 +265,7 @@ export default function AshaPanel({}: AshaPanelProps) {
               (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(0,229,255,0.14)";
             }}
           >
-            <AshaOrb regimeState={regimeState} size={28} />
+            <AshaOrb regimeState={regimeState} size={28} isListening={false} />
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "9px",
@@ -306,7 +307,7 @@ export default function AshaPanel({}: AshaPanelProps) {
             borderBottom: "1px solid rgba(0,229,255,0.18)",
             background: "rgba(0,0,0,0.3)",
           }}>
-            <AshaOrb regimeState={regimeState} size={28} />
+            <AshaOrb regimeState={regimeState} size={28} isListening={isListening} />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00E5FF", lineHeight: 1 }}>ASHA</div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.15em", color: "rgba(0,229,255,0.55)", textTransform: "uppercase" }}>Spirit of FAULTLINE</div>
@@ -433,7 +434,7 @@ export default function AshaPanel({}: AshaPanelProps) {
 
             {loading && (
               <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0" }}>
-                <AshaOrb regimeState={regimeState} size={18} />
+                <AshaOrb regimeState={regimeState} size={18} isListening={true} />
                 <div style={{ display: "flex", gap: "4px" }}>
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{
@@ -478,8 +479,14 @@ export default function AshaPanel({}: AshaPanelProps) {
                 outline: "none",
                 transition: "border-color 0.15s ease",
               }}
-              onFocus={e => { (e.currentTarget as HTMLInputElement).style.borderColor = "rgba(0,229,255,0.50)"; }}
-              onBlur={e => { (e.currentTarget as HTMLInputElement).style.borderColor = "rgba(0,229,255,0.25)"; }}
+              onFocus={e => {
+                (e.currentTarget as HTMLInputElement).style.borderColor = "rgba(0,229,255,0.50)";
+                setIsListening(true);
+              }}
+              onBlur={e => {
+                (e.currentTarget as HTMLInputElement).style.borderColor = "rgba(0,229,255,0.25)";
+                setIsListening(false);
+              }}
             />
             <button
               onClick={() => sendMessage(input)}

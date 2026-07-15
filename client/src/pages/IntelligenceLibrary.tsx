@@ -350,7 +350,7 @@ export default function IntelligenceLibrary() {
             Apply This Research in Real Time
           </h2>
           <p style={{ color: '#94A3B8', maxWidth: 480, margin: '0 auto 1.5rem', lineHeight: 1.7, fontSize: '0.9rem' }}>
-            Ask FAULTLINE any market question and get an institutional-grade answer grounded in live engine data and this research library.
+            Ask ASHA any market question and get an institutional-grade answer grounded in live engine data and this research library.
           </p>
           <Link href="/app/discover">
             <button style={{
@@ -366,7 +366,7 @@ export default function IntelligenceLibrary() {
               textTransform: 'uppercase',
               transition: 'all 0.15s ease',
             }}>
-              Ask FAULTLINE →
+              Ask ASHA →
             </button>
           </Link>
         </div>

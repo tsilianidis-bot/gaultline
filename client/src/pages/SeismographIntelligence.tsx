@@ -630,9 +630,9 @@ export default function SeismographIntelligence() {
         </div>
 
         {/* ══════════════════════════════════════════════════════
-            SECTION 9 — ASK FAULTLINE
+            SECTION 9 — ASK ASHA
         ══════════════════════════════════════════════════════ */}
-        <SectionLabel text="Ask FAULTLINE" />
+        <SectionLabel text="Ask ASHA" />
 
         <div style={{ padding: "20px", background: "rgba(6,182,212,0.03)", borderRadius: "8px", border: "1px solid rgba(6,182,212,0.12)", textAlign: "center" }}>
           <p style={{ fontSize: "13px", color: "rgba(226,232,240,0.55)", lineHeight: 1.65, margin: "0 0 16px", fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>

@@ -79,7 +79,7 @@ function getSynthesis(
       body: isStressed
         ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, the highest-probability opportunities are in defensive sectors, volatility plays, and assets with strong institutional backing. Avoid high-beta momentum plays without strong catalyst support.`
         : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull probability environment supports growth and momentum opportunities. Focus on assets with strong earnings momentum, institutional accumulation, and clear technical breakout setups.`,
-      nextLabel: "Ask FAULTLINE about a specific opportunity →",
+      nextLabel: "Ask ASHA about a specific opportunity →",
       nextPath: "/app/discover",
     },
     dashboard: {
@@ -91,7 +91,7 @@ function getSynthesis(
     "daily-brief": {
       headline: `Today's briefing in context: ${regime}`,
       body: `${pageInsight ? pageInsight + " " : ""}The current ${regime} environment shapes how today's news and events should be interpreted. ${isStressed ? "In elevated stress, negative catalysts have amplified impact. Stay defensive." : `With ${bullProb}% bull probability, positive catalysts are more likely to drive sustained moves.`}`,
-      nextLabel: "Ask FAULTLINE about today's market →",
+      nextLabel: "Ask ASHA about today's market →",
       nextPath: "/app/discover",
     },
     diagnostic: {
@@ -107,7 +107,7 @@ function getSynthesis(
       body: isStressed
         ? `${pageInsight ? pageInsight + " " : ""}In ${regime} environments, crypto typically experiences amplified volatility and correlation with risk assets. Bitcoin dominance tends to rise as capital rotates to quality. Monitor BTC as the leading indicator.`
         : `${pageInsight ? pageInsight + " " : ""}The current macro environment supports risk assets including crypto. ${bullProb}% bull probability suggests institutional appetite is present. Look for breakout setups in leading assets with strong on-chain fundamentals.`,
-      nextLabel: "Ask FAULTLINE about crypto opportunities →",
+      nextLabel: "Ask ASHA about crypto opportunities →",
       nextPath: "/app/discover",
     },
     situation: {

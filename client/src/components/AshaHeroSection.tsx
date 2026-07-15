@@ -417,7 +417,7 @@ function AshaIntelPanel() {
             (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(0,229,255,0.28)";
           }}
         >
-          ASK FAULTLINE →
+          ASK ASHA →
         </div>
       </Link>
     </div>

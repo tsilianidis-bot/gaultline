@@ -924,19 +924,23 @@ export default function Dashboard() {
         );
       })()}
 
-            {/* ── ASHA Hero: 13-instrument ticker strip + intelligence panel + ASHA figure ── */}
-      <AshaHeroSection />
-
-            {/* ── Main content ────────────────────────────────────────── */}
+            {/* ── 1. ASHA Intelligence First — Greeting + Market Brief above the fold ── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
-        {/* ── ASHA Daily Greeting ──────────────────────────────── */}
+        {/* ASHA Daily Greeting — first thing the user sees on every session */}
         <SectionErrorBoundary label="ASHA Greeting"><AshaDailyGreeting /></SectionErrorBoundary>
-        {/* ── ASHA Market Brief ────────────────────────────────── */}
+        {/* ASHA Market Brief — 30-60 second synthesis from all 10 engines */}
         <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 80ms both' }}>
           <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="market-brief" /></SectionErrorBoundary>
         </div>
-        {/* ── Inline upgrade prompt (free/core tier only) ────────── */}
+        {/* Inline upgrade prompt (free/core tier only) */}
         <DashboardUpgradePrompt />
+      </div>
+
+            {/* ── 2. ASHA Hero: 13-instrument ticker strip + intelligence panel + ASHA figure ── */}
+      <AshaHeroSection />
+
+            {/* ── 3. Supporting intelligence panels ───────────────────────── */}
+      <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
         {/* ── Seismograph Narrative Banner: what is happening, why, how long, what to watch ── */}
         <SeismographNarrativeBanner context="dashboard" defaultExpanded={false} />
         {/* ── Homepage Briefing: Market Story, Why Today Is Different, History Says ── */}
