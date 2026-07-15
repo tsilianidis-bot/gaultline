@@ -18,6 +18,7 @@ import DataFreshnessBadge from "@/components/DataFreshnessBadge";
 import { useTickerStore } from "@/contexts/TickerStore";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
+import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import { PremiumGateFull } from "@/components/PremiumGate";
 
 // ── Shared styles ─────────────────────────────────────────────
@@ -603,9 +604,9 @@ function UniversalSymbolIntelligence() {
 
   const { setTicker } = useTickerStore();
 
-  // Register ASHA page context with active symbol data
-  useRegisterAshaContext({
-    page: "symbol-intelligence",
+  // Register ASHA page context — memoized to prevent infinite render loop
+  const ashaCtx = useMemo(() => ({
+    page: "symbol-intelligence" as const,
     additionalContext: {
       activeSymbol: submitted?.symbol,
       assetType: submitted?.assetType,
@@ -613,7 +614,9 @@ function UniversalSymbolIntelligence() {
       setupType: report?.setupType,
       confidence: report?.confidence,
     },
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [submitted?.symbol, submitted?.assetType, report?.direction, report?.setupType, report?.confidence]);
+  useRegisterAshaContext(ashaCtx);
 
   const handleSearch = useCallback(() => {
     const sym = query.trim().toUpperCase();
@@ -880,7 +883,7 @@ function UniversalSymbolIntelligence() {
 
             {/* ASHA Symbol Interpretation */}
             <div style={{ marginBottom: '20px' }}>
-              <AshaIntelligenceBrief variant="symbol-interpretation" />
+              <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="symbol-interpretation" /></SectionErrorBoundary>
             </div>
 
             {/* Tab content */}

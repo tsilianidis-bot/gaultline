@@ -9,11 +9,13 @@
  */
 
 import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
+import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 
 // ── Color utilities ────────────────────────────────────────────────────────────
 
@@ -155,9 +157,9 @@ export default function SeismographIntelligence() {
   const regimeProbs = regimeProbabilities5way;
   const topEngines = [...engineContributions].sort((a, b) => b.contributionWeight - a.contributionWeight).slice(0, 5);
 
-  // Register ASHA page context
-  useRegisterAshaContext({
-    page: "seismograph",
+  // Register ASHA page context — memoized to prevent infinite render loop
+  const ashaCtx = useMemo(() => ({
+    page: "seismograph" as const,
     pressureScore: currentScore,
     regime: currentRegime,
     narrative: todayStory,
@@ -172,7 +174,9 @@ export default function SeismographIntelligence() {
       enginesDisagreeing,
       dataFreshness,
     },
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [currentScore, currentRegime, todayStory, currentDirection, currentStressLevel, currentPercentile, transitionProbabilities?.transitionToElevated]);
+  useRegisterAshaContext(ashaCtx);
 
   return (
     <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px" }}>
@@ -622,7 +626,7 @@ export default function SeismographIntelligence() {
             ASHA SEISMIC REPORT — inline intelligence brief
         ══════════════════════════════════════════════════════ */}
         <div style={{ marginBottom: '24px' }}>
-          <AshaIntelligenceBrief variant="seismic-report" />
+          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="seismic-report" /></SectionErrorBoundary>
         </div>
 
         {/* ══════════════════════════════════════════════════════

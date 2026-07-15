@@ -36,6 +36,7 @@ import ScoreExplainer from "@/components/ScoreExplainer";
 import MarketOverview from "@/components/MarketOverview";
 import AshaDailyGreeting from "@/components/AshaDailyGreeting";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
+import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -929,10 +930,10 @@ export default function Dashboard() {
             {/* ── Main content ────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
         {/* ── ASHA Daily Greeting ──────────────────────────────── */}
-        <AshaDailyGreeting />
+        <SectionErrorBoundary label="ASHA Greeting"><AshaDailyGreeting /></SectionErrorBoundary>
         {/* ── ASHA Market Brief ────────────────────────────────── */}
         <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 80ms both' }}>
-          <AshaIntelligenceBrief variant="market-brief" />
+          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="market-brief" /></SectionErrorBoundary>
         </div>
         {/* ── Inline upgrade prompt (free/core tier only) ────────── */}
         <DashboardUpgradePrompt />

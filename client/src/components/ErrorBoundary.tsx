@@ -83,3 +83,29 @@ class ErrorBoundary extends Component<Props, State> {
 }
 
 export default ErrorBoundary;
+export { ErrorBoundary };
+
+// ── Section-level boundary with FAULTLINE styling ─────────────
+interface SectionProps {
+  children: ReactNode;
+  label?: string;
+}
+
+export function SectionErrorBoundary({ children, label }: SectionProps) {
+  return (
+    <ErrorBoundary
+      inline
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}
+
+// ── Full-page boundary (used at App.tsx level) ─────────────────
+export function AppErrorBoundary({ children }: { children: ReactNode }) {
+  return (
+    <ErrorBoundary>
+      {children}
+    </ErrorBoundary>
+  );
+}

@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
+import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import PageHeader from "@/components/PageHeader";
 import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
@@ -475,14 +476,16 @@ export default function SituationRoom() {
   useSEO(PAGE_SEO.situationRoom);
   const { output } = useEngine();
 
-  // Register ASHA page context
-  useRegisterAshaContext({
-    page: "situation-room",
+  // Register ASHA page context — memoized to prevent infinite render loop
+  const ashaCtx = useMemo(() => ({
+    page: "situation-room" as const,
     pressureScore: output?.overall?.score !== undefined ? output.overall.score * 10 : undefined,
     regime: output?.regime?.label,
     narrative: output?.narrative?.summary,
     keyDrivers: output?.narrative?.keyRisks,
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [output?.overall?.score, output?.regime?.label, output?.narrative?.summary]);
+  useRegisterAshaContext(ashaCtx);
 
   // URL param auto-execution (Smart Discovery dispatch)
   const searchStr = useSearch();
@@ -650,7 +653,7 @@ export default function SituationRoom() {
 
         {/* ASHA Command Narrator */}
         <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 60ms both' }}>
-          <AshaIntelligenceBrief variant="command-narrator" />
+          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="command-narrator" /></SectionErrorBoundary>
         </div>
 
         {/* ══════════════════════════════════════════════════════

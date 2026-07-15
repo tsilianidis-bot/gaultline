@@ -7,6 +7,7 @@ import { useMemo, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
+import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import type {
   CryptoAssetSignal,
   CryptoSignal,
@@ -451,9 +452,9 @@ function CryptoIntelligenceInner() {
     refetchOnWindowFocus: false,
   });
 
-  // Register ASHA page context
-  useRegisterAshaContext({
-    page: "crypto",
+  // Register ASHA page context — memoized to prevent infinite render loop
+  const ashaCtx = useMemo(() => ({
+    page: "crypto" as const,
     pressureScore: data?.pressureIndex,
     regime: data?.regime,
     keyDrivers: data?.signals?.slice(0, 3).map(s => `${s.ticker}: ${s.signal} (${s.signalScore})`),
@@ -461,7 +462,9 @@ function CryptoIntelligenceInner() {
       btcSignal: data?.btcDashboard?.overallBtcBias,
       altcoinRisk: data?.altcoinRisk?.overallRisk,
     },
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [data?.pressureIndex, data?.regime, data?.btcDashboard?.overallBtcBias, data?.altcoinRisk?.overallRisk]);
+  useRegisterAshaContext(ashaCtx);
 
   const pressureLabel = useMemo(() => {
     const p = data?.pressureIndex ?? 0;
@@ -849,7 +852,7 @@ function CryptoIntelligenceInner() {
 
         {/* ASHA Crypto Risk Brief */}
         <section className="mb-8">
-          <AshaIntelligenceBrief variant="crypto-brief" />
+          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="crypto-brief" /></SectionErrorBoundary>
         </section>
 
         {/* ── CTA ── */}

@@ -6,8 +6,10 @@
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useMemo } from "react";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
+import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
@@ -197,13 +199,15 @@ export default function PressureIndex() {
   // Build vector bars from real data if available
   const vectors = data?.vectors?.slice(0, 5) ?? [];
 
-  // Register ASHA page context
-  useRegisterAshaContext({
-    page: "pressure",
+  // Register ASHA page context — memoized to prevent infinite render loop
+  const ashaCtx = useMemo(() => ({
+    page: "pressure" as const,
     pressureScore: score,
     regime,
     keyDrivers: vectors.map(v => `${v.label}: ${v.score?.toFixed(1) ?? '—'}`),
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [score, regime, vectors.length]);
+  useRegisterAshaContext(ashaCtx);
 
   return (
     <div
@@ -457,7 +461,7 @@ export default function PressureIndex() {
 
           {/* ASHA Pressure Brief */}
           <div className="mb-12">
-            <AshaIntelligenceBrief variant="pressure-brief" />
+            <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="pressure-brief" /></SectionErrorBoundary>
           </div>
 
           {/* CTA section */}
