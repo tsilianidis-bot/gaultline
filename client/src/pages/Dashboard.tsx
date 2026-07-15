@@ -33,7 +33,7 @@ import SeismographNarrativeBanner from "@/components/SeismographNarrativeBanner"
 import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import ScoreExplainer from "@/components/ScoreExplainer";
-import MarketOverview from "@/components/MarketOverview";
+import AshaHeroSection from "@/components/AshaHeroSection";
 import AshaDailyGreeting from "@/components/AshaDailyGreeting";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
@@ -924,8 +924,8 @@ export default function Dashboard() {
         );
       })()}
 
-            {/* ── Market Overview: ticker ribbon, search, snapshot, movers, crypto, watchlist ── */}
-      <MarketOverview />
+            {/* ── ASHA Hero: 13-instrument ticker strip + intelligence panel + ASHA figure ── */}
+      <AshaHeroSection />
 
             {/* ── Main content ────────────────────────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
