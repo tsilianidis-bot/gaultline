@@ -39,6 +39,7 @@ import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
 import SeismicWaveShared from "@/components/SeismicWave";
+import { Activity } from "lucide-react";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -727,57 +728,79 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Seismic waveform */}
+          {/* Seismic waveform — hero element */}
           <div style={{ margin: '0 -20px' }}>
             <SeismicWave color={color} score={overall.score} />
           </div>
         </div>
 
-        {/* ── Seven focused intelligence panels ── */}
-        <div style={{ position: 'relative', zIndex: 2 }}>
-          {/* Row 1: Pressure Index + Verdict + Bull/Bear */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: `1px solid ${color}22` }}>
-            {/* Pressure Index */}
-            <div style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.01)' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.12em', marginBottom: '4px' }}>PRESSURE</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color, textShadow: `0 0 14px ${color}70`, lineHeight: 1 }}>{overall.score.toFixed(1)}</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>/ 10</div>
+        {/* ── Live Intelligence Strip — 8 cells, Bloomberg-terminal style ── */}
+        {(() => {
+          const directionColor = overall.delta > 0.2 ? '#FF9500' : overall.delta < -0.2 ? '#00FF88' : '#B0C4D8';
+          const directionLabel = overall.delta > 0.2 ? 'RISING ▲' : overall.delta < -0.2 ? 'FALLING ▼' : 'STABLE —';
+          const analogLabel = analogs[0]?.era?.split(' ').slice(0, 3).join(' ') ?? '—';
+          const analogSim = analogs[0]?.similarity ?? 0;
+          const verdictColor = overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55';
+          const verdictLabel = overall.riskLevel === 'low' ? 'TAKE RISK' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE';
+          const cells = [
+            { label: 'PRESSURE INDEX', value: overall.score.toFixed(1), sub: '/ 10', valueColor: color },
+            { label: 'REGIME', value: regime.label.split(' ').slice(0, 2).join(' '), sub: regime.sublabel.slice(0, 18), valueColor: color },
+            { label: 'BULL', value: `${probability.bullProbability}%`, sub: 'probability', valueColor: '#00FF88' },
+            { label: 'CRASH RISK', value: `${probability.crashProbability}%`, sub: 'probability', valueColor: '#FF2D55' },
+            { label: 'DIRECTION', value: directionLabel, sub: `Δ${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)} vs baseline`, valueColor: directionColor },
+            { label: 'CLOSEST ANALOG', value: analogLabel, sub: `${analogSim}% match`, valueColor: '#00E5FF' },
+            { label: 'TOP THREAT', value: topThreat?.label?.split(' ').slice(0, 2).join(' ') ?? '—', sub: `${topThreat?.score.toFixed(1) ?? '—'}/10`, valueColor: '#FF2D55' },
+            { label: "TODAY'S VERDICT", value: verdictLabel, sub: 'FAULTLINE signal', valueColor: verdictColor },
+          ];
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: `1px solid ${color}22`, position: 'relative', zIndex: 2 }}>
+              {cells.map((cell, i) => (
+                <div key={cell.label} style={{
+                  padding: '11px 10px',
+                  textAlign: 'center',
+                  borderRight: i % 4 < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none',
+                  borderBottom: i < 4 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  background: i % 2 === 0 ? 'rgba(255,255,255,0.008)' : 'transparent',
+                  transition: 'background 0.2s ease',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${cell.valueColor}08`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? 'rgba(255,255,255,0.008)' : 'transparent'; }}
+                >
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.55)', letterSpacing: '0.14em', marginBottom: '4px', textTransform: 'uppercase' }}>{cell.label}</div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: cell.valueColor, textShadow: `0 0 10px ${cell.valueColor}50`, lineHeight: 1.1, marginBottom: '3px' }}>{cell.value}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.4)', lineHeight: 1.3 }}>{cell.sub}</div>
+                </div>
+              ))}
             </div>
-            {/* Bull probability */}
-            <div style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.09)' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.12em', marginBottom: '4px' }}>BULL</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#00FF88', textShadow: '0 0 14px rgba(0,255,136,0.7)', lineHeight: 1 }}>{probability.bullProbability}%</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>probability</div>
-            </div>
-            {/* Crash probability */}
-            <div style={{ padding: '12px 10px', textAlign: 'center' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.12em', marginBottom: '4px' }}>CRASH</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#FF2D55', textShadow: '0 0 14px rgba(255,45,85,0.7)', lineHeight: 1 }}>{probability.crashProbability}%</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>probability</div>
-            </div>
-          </div>
+          );
+        })()}
 
-          {/* Row 2: Top Threat + Analog + Delta */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            {/* Top Threat */}
-            <div style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,45,85,0.02)' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,45,85,0.55)', letterSpacing: '0.12em', marginBottom: '4px' }}>TOP THREAT</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topThreat?.label?.split(' ').slice(0, 2).join(' ') ?? '—'}</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FF2D55', marginTop: '3px' }}>{topThreat?.score.toFixed(1)}/10</div>
-            </div>
-            {/* Historical Analog */}
-            <div style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.09)', background: 'rgba(0,212,255,0.01)' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(0,212,255,0.55)', letterSpacing: '0.12em', marginBottom: '4px' }}>ANALOG</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', lineHeight: 1.2 }}>{analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—'}</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00E5FF', marginTop: '3px' }}>{analogs[0]?.similarity ?? 0}% match</div>
-            </div>
-            {/* Delta */}
-            <div style={{ padding: '12px 10px', textAlign: 'center' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.12em', marginBottom: '4px' }}>DELTA</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color, textShadow: `0 0 14px ${color}70`, lineHeight: 1 }}>{overall.delta >= 0 ? '+' : ''}{overall.delta.toFixed(1)}</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>vs baseline</div>
-            </div>
-          </div>
+        {/* ── ASHA Executive Summary — 2-sentence briefing beneath the strip ── */}
+        <div style={{
+          position: 'relative', zIndex: 2,
+          padding: '12px 16px',
+          background: `linear-gradient(90deg, ${color}08 0%, transparent 70%)`,
+          borderTop: `1px solid ${color}14`,
+          display: 'flex', alignItems: 'flex-start', gap: '10px',
+        }}>
+          <Activity size={12} style={{ color: `${color}80`, flexShrink: 0, marginTop: '2px', animation: 'blink-alert 2.5s ease-in-out infinite' }} />
+          <p style={{
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: '12px',
+            color: 'rgba(176,196,216,0.85)',
+            lineHeight: 1.65,
+            margin: 0,
+          }}>
+            <span style={{ color, fontWeight: 600 }}>ASHA:</span>{' '}
+            {overall.riskLevel === 'low'
+              ? `Systemic pressure is low at ${overall.score.toFixed(1)}/10 — conditions favor risk-taking with bull probability at ${probability.bullProbability}%. The closest historical analog is ${analogs[0]?.era ?? 'a low-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
+              : overall.riskLevel === 'moderate'
+              ? `Systemic pressure is building at ${overall.score.toFixed(1)}/10 — mixed signals favor selective positioning with crash risk at ${probability.crashProbability}%. The closest analog is ${analogs[0]?.era ?? 'a moderate-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
+              : overall.riskLevel === 'elevated'
+              ? `Systemic pressure is elevated at ${overall.score.toFixed(1)}/10 — reduce exposure and tighten stops with crash risk at ${probability.crashProbability}%. The closest analog is ${analogs[0]?.era ?? 'an elevated-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
+              : `Systemic pressure is at crisis levels — ${overall.score.toFixed(1)}/10 with crash probability at ${probability.crashProbability}%. Capital preservation is the trade. Closest analog: ${analogs[0]?.era ?? 'a crisis period'} at ${analogs[0]?.similarity ?? 0}% match.`
+            }
+          </p>
         </div>
       </div>
 
