@@ -707,49 +707,52 @@ function Router() {
   );
 }
 
+// ── Session key: show ASHA briefing once per session for returning users ──
+const ASHA_BRIEFING_KEY = 'faultline_asha_briefing_seen';
+
+// ── Determine first-time status synchronously at module level ─────────────
+// This must be evaluated before ANY component renders so the initial state
+// is correct on the very first frame — no re-render, no flicker.
+function isFirstTimeUser(): boolean {
+  try {
+    const isDemo = isDemoPath();
+    if (isDemo) return false;
+    const path = window.location.pathname;
+    // Deep links into the app skip the cinematic
+    if (path.startsWith('/app/') && path !== '/app/dashboard' && path !== '/app/') return false;
+    return localStorage.getItem(CINEMATIC_SEEN_KEY) !== '1';
+  } catch { return false; }
+}
+
+const FIRST_TIME = isFirstTimeUser();
+
 function App() {
   const isDemo = isDemoPath();
   const { user, loading: authLoading } = useAuth();
 
-  // First-time users see the full CinematicIntro (localStorage — once ever).
-  // Returning users see the short IntroScreen (sessionStorage — once per session).
-  // Deep links and demo mode always skip both.
-  const isFirstTime = (() => {
-    try {
-      if (isDemo) return false;
-      return localStorage.getItem(CINEMATIC_SEEN_KEY) !== '1';
-    } catch { return false; }
-  })();
+  // ── ARCHITECTURAL RULE ─────────────────────────────────────────────────────
+  // CinematicIntro is the ABSOLUTE ROOT render for first-time users.
+  // Nothing else mounts until it completes or is skipped.
+  //
+  // Render order:
+  //   1. CinematicIntro          (first-time only, localStorage gate)
+  //   2. CinematicAuthGate       (if user is not authenticated after cinematic)
+  //   3. AshaLiveBriefing        (once per session, after auth confirmed)
+  //   4. Dashboard / Router      (fades in after briefing)
+  //
+  // IntroScreen (legacy loading screen) is NEVER shown as a first impression.
+  // It is only available as an internal fallback if needed post-cinematic.
+  // ──────────────────────────────────────────────────────────────────────────
 
-  const [cinematicDone, setCinematicDone] = useState<boolean>(() => {
-    try {
-      if (isDemo) return true;
-      if (!isFirstTime) return true; // returning user — skip cinematic
-      const path = window.location.pathname;
-      if (path.startsWith('/app/') && path !== '/app/dashboard' && path !== '/app/') return true;
-      return false;
-    } catch { return false; }
-  });
+  // cinematicDone: true if user has already seen the cinematic (returning user)
+  // or if they are in demo mode or deep-linking into the app.
+  const [cinematicDone, setCinematicDone] = useState<boolean>(() => !FIRST_TIME);
 
-  const [introComplete, setIntroComplete] = useState<boolean>(() => {
-    try {
-      if (isDemo) return true; // skip intro in demo mode
-      if (!cinematicDone) return true; // cinematic handles the intro for first-timers
-      if (sessionStorage.getItem(INTRO_SEEN_KEY) === '1') return true;
-      const path = window.location.pathname;
-      // Skip intro for any deep app link that isn't the root dashboard
-      if (path.startsWith('/app/') && path !== '/app/dashboard' && path !== '/app/') {
-        sessionStorage.setItem(INTRO_SEEN_KEY, '1');
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
-  });
+  // introComplete: always true for first-time users (cinematic IS the intro)
+  // and always true for returning users (IntroScreen is no longer a session gate).
+  const [introComplete, setIntroComplete] = useState<boolean>(true);
 
-  // ASHA Live Briefing — shown once per session, immediately after intro
-  const ASHA_BRIEFING_KEY = 'faultline_asha_briefing_seen';
+  // ASHA Live Briefing — shown once per session after auth is confirmed
   const [ashaBriefingDone, setAshaBriefingDone] = useState<boolean>(() => {
     try { return isDemo || sessionStorage.getItem(ASHA_BRIEFING_KEY) === '1'; } catch { return false; }
   });
@@ -758,39 +761,35 @@ function App() {
     setAshaBriefingDone(true);
   }, []);
 
-  // Auth gate — shown when user reaches ASHA greeting but is not authenticated.
+  // Auth gate — shown after cinematic when user is not authenticated.
   // ASHA must never greet by name before identity is confirmed.
   const [authGateDone, setAuthGateDone] = useState<boolean>(() => {
-    // Already authenticated, or demo mode, or post-auth redirect flag present
     try {
       if (isDemo) return true;
       if (sessionStorage.getItem('fl_post_auth_asha') === '1') {
         sessionStorage.removeItem('fl_post_auth_asha');
         return true;
       }
-      return false; // will be resolved by auth check in render
+      return false; // resolved by auth check in useEffect below
     } catch { return true; }
   });
   const handleAuthGateComplete = useCallback(() => {
     setAuthGateDone(true);
   }, []);
-  // Dashboard fade-in after intro
-  const [dashVisible, setDashVisible] = useState(introComplete && ashaBriefingDone);
-  const handleIntroComplete = useCallback(() => {
-    try { sessionStorage.setItem(INTRO_SEEN_KEY, '1'); } catch {}
-    setIntroComplete(true);
-    // Small delay to let intro exit animation finish
-    setTimeout(() => setDashVisible(true), 100);
-  }, []);
 
+  // Dashboard visibility — fades in once all gates are cleared
+  const [dashVisible, setDashVisible] = useState(() => !FIRST_TIME && isDemo
+    ? true
+    : !FIRST_TIME // returning users see dashboard immediately after ASHA
+  );
+
+  // Cinematic complete handler — called when CinematicIntro Scene 6 finishes
   const handleCinematicComplete = useCallback(() => {
     try {
       localStorage.setItem(CINEMATIC_SEEN_KEY, '1');
-      sessionStorage.setItem(INTRO_SEEN_KEY, '1');
       sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
     } catch {}
     setCinematicDone(true);
-    setIntroComplete(true);
     // CinematicIntro Scene 6 already showed ASHA briefing — skip it
     setAshaBriefingDone(true);
     setTimeout(() => setDashVisible(true), 300);
@@ -802,10 +801,13 @@ function App() {
       setAuthGateDone(true);
     }
   }, [authLoading, user, authGateDone]);
-  // If already seen, show dashboard immediately
+
+  // Show dashboard once all post-cinematic gates are cleared
   useEffect(() => {
-    if (introComplete && authGateDone && ashaBriefingDone) setDashVisible(true);
-  }, [introComplete, authGateDone, ashaBriefingDone]);
+    if (cinematicDone && authGateDone && ashaBriefingDone) {
+      setDashVisible(true);
+    }
+  }, [cinematicDone, authGateDone, ashaBriefingDone]);
 
   const appContent = (
     <ErrorBoundary>
@@ -817,35 +819,40 @@ function App() {
             {/* Demo mode banner — shown at top of every page in demo mode */}
             {isDemo && <DemoBanner />}
 
-            {/* CinematicIntro — shown ONCE EVER to first-time users (localStorage gate) */}
+            {/* ── RENDER GATE 1: CinematicIntro ─────────────────────────────
+                 First-time users: this is the ONLY thing that renders.
+                 Nothing below this block mounts until cinematicDone = true.
+                 No IntroScreen. No loading bar. No dashboard. No auth UI.
+                 The very first rendered frame is the opening Earth scene. */}
             {!cinematicDone && (
               <CinematicIntro onComplete={handleCinematicComplete} />
             )}
-            {/* IntroScreen — shown once per session to returning users */}
-            {cinematicDone && !introComplete && (
-              <IntroScreen onComplete={handleIntroComplete} />
-            )}
-            {/* Auth gate — shown when intro is done but auth is not yet confirmed.
-                 Cinematic-styled sign-in screen. ASHA never greets by name before
-                 identity is confirmed. Authenticated users pass through instantly. */}
-            {introComplete && !authGateDone && (
+
+            {/* ── RENDER GATE 2: Auth gate ───────────────────────────────────
+                 Only mounts after cinematic is done.
+                 Shown when user is not authenticated after cinematic.
+                 Cinematic-styled sign-in — never a white page or redirect. */}
+            {cinematicDone && !authGateDone && (
               <CinematicAuthGate onAuthenticated={handleAuthGateComplete} />
             )}
 
-            {/* ASHA Live Briefing — shown once per session, after auth is confirmed */}
-            {introComplete && authGateDone && !ashaBriefingDone && (
+            {/* ── RENDER GATE 3: ASHA Live Briefing ─────────────────────────
+                 Only mounts after cinematic + auth are both done.
+                 Shown once per session. ASHA greets by confirmed name. */}
+            {cinematicDone && authGateDone && !ashaBriefingDone && (
               <AshaLiveBriefing onContinue={handleAshaBriefingComplete} />
             )}
 
-            {/* Main app — fades in after intro */}
+            {/* ── MAIN APP ──────────────────────────────────────────────────
+                 Fades in after all gates are cleared.
+                 Kept in DOM during cinematic so engine/data loads in background.
+                 visibility:hidden prevents any flash of dashboard content. */}
             <div
               style={{
                 opacity: dashVisible ? 1 : 0,
                 transition: 'opacity 0.8s cubic-bezier(0.23,1,0.32,1)',
-                // Keep in DOM so engine/data loads during intro
-                visibility: introComplete ? 'visible' : 'hidden',
-                pointerEvents: introComplete ? 'auto' : 'none',
-                // Push content below demo banner in demo mode
+                visibility: cinematicDone ? 'visible' : 'hidden',
+                pointerEvents: cinematicDone ? 'auto' : 'none',
                 paddingTop: isDemo ? '30px' : undefined,
               }}
             >
@@ -855,9 +862,9 @@ function App() {
             </div>
 
             {/* Onboarding Getting Started video — shown once to new users */}
-            {!isDemo && <OnboardingVideoModal />}
-            {/* GDPR Cookie Consent Banner — hidden in demo mode */}
-            {!isDemo && <CookieConsent />}
+            {!isDemo && cinematicDone && <OnboardingVideoModal />}
+            {/* GDPR Cookie Consent Banner — hidden in demo mode, deferred until after cinematic */}
+            {!isDemo && cinematicDone && <CookieConsent />}
 
           </TooltipProvider>
         </EngineProvider>
