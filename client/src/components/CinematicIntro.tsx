@@ -713,38 +713,9 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
   const { user } = useAuth();
   const { output, isLoading } = useEngine();
   const canvasRef = useParticles(120, true);
+  // engineCanvasRef and engineRef live in CinematicIntroInner (where the canvas element is rendered)
   const engineCanvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<CinematicEngine | null>(null);
-
-  // ── Initialize CinematicEngine on mount ──────────────────────
-  useEffect(() => {
-    const canvas = engineCanvasRef.current;
-    if (!canvas) return;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
-    const eng = new CinematicEngine({
-      canvas,
-      width: w,
-      height: h,
-      pressureScore: output.overall.score,
-      regime: output.regime.label,
-    });
-    eng.start();
-    engineRef.current = eng;
-
-    const onResize = () => eng.resize(window.innerWidth, window.innerHeight);
-    window.addEventListener('resize', onResize);
-    return () => {
-      eng.stop();
-      window.removeEventListener('resize', onResize);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Keep engine pressure in sync ─────────────────────────────
-  useEffect(() => {
-    engineRef.current?.setPressureScore(output.overall.score);
-  }, [output.overall.score]);
 
   // ── Global audio unlock on first interaction ──────────────────
   // Unlocks Web Audio on the very first touch/click/key anywhere in the cinematic
@@ -885,6 +856,33 @@ function CinematicIntroInner({
   const [currentNarrator, setCurrentNarrator] = useState("");
   const [narratorVisible, setNarratorVisible] = useState(false);
   const [glitching, setGlitching] = useState(false);
+
+  // ── Initialize CinematicEngine (runs here where the canvas element is mounted) ──
+  useEffect(() => {
+    const canvas = engineCanvasRef.current;
+    if (!canvas) return;
+    const eng = new CinematicEngine({
+      canvas,
+      width: window.innerWidth,
+      height: window.innerHeight,
+      pressureScore: output.overall.score,
+      regime: output.regime.label,
+    });
+    eng.start();
+    engineRef.current = eng;
+    const onResize = () => eng.resize(window.innerWidth, window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => {
+      eng.stop();
+      window.removeEventListener('resize', onResize);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep engine pressure in sync
+  useEffect(() => {
+    engineRef.current?.setPressureScore(output.overall.score);
+  }, [output.overall.score]);
 
   // ── Upgrade 5: Fire onSceneEnter/onSceneExit hooks ────────────
   const fireHook = useCallback((hook: typeof onSceneEnter, s: Scene) => {
