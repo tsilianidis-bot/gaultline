@@ -17,6 +17,7 @@ import RouteTracker from './components/RouteTracker';
 import { DemoProvider, isDemoPath } from './contexts/DemoContext';
 import DemoBanner from './components/DemoBanner';
 import { OnboardingVideoModal } from './components/OnboardingVideoModal';
+import AshaLiveBriefing from './components/AshaLiveBriefing';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -727,20 +728,27 @@ function App() {
     }
   });
 
+    // ASHA Live Briefing — shown once per session, immediately after intro
+  const ASHA_BRIEFING_KEY = 'faultline_asha_briefing_seen';
+  const [ashaBriefingDone, setAshaBriefingDone] = useState<boolean>(() => {
+    try { return isDemo || sessionStorage.getItem(ASHA_BRIEFING_KEY) === '1'; } catch { return false; }
+  });
+  const handleAshaBriefingComplete = useCallback(() => {
+    try { sessionStorage.setItem(ASHA_BRIEFING_KEY, '1'); } catch {}
+    setAshaBriefingDone(true);
+  }, []);
   // Dashboard fade-in after intro
-  const [dashVisible, setDashVisible] = useState(introComplete);
-
+  const [dashVisible, setDashVisible] = useState(introComplete && ashaBriefingDone);
   const handleIntroComplete = useCallback(() => {
     try { sessionStorage.setItem(INTRO_SEEN_KEY, '1'); } catch {}
     setIntroComplete(true);
     // Small delay to let intro exit animation finish
     setTimeout(() => setDashVisible(true), 100);
   }, []);
-
   // If already seen, show dashboard immediately
   useEffect(() => {
-    if (introComplete) setDashVisible(true);
-  }, [introComplete]);
+    if (introComplete && ashaBriefingDone) setDashVisible(true);
+  }, [introComplete, ashaBriefingDone]);
 
   const appContent = (
     <ErrorBoundary>
@@ -755,6 +763,10 @@ function App() {
             {/* Cinematic intro — shown once per session (skipped in demo mode) */}
             {!introComplete && (
               <IntroScreen onComplete={handleIntroComplete} />
+            )}
+            {/* ASHA Live Briefing — shown once per session, immediately after intro */}
+            {introComplete && !ashaBriefingDone && (
+              <AshaLiveBriefing onContinue={handleAshaBriefingComplete} />
             )}
 
             {/* Main app — fades in after intro */}
