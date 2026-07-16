@@ -856,6 +856,7 @@ function CinematicIntroInner({
   const [currentNarrator, setCurrentNarrator] = useState("");
   const [narratorVisible, setNarratorVisible] = useState(false);
   const [glitching, setGlitching] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
   // ── Initialize CinematicEngine (runs here where the canvas element is mounted) ──
   useEffect(() => {
@@ -870,7 +871,10 @@ function CinematicIntroInner({
     });
     eng.start();
     engineRef.current = eng;
-    const onResize = () => eng.resize(window.innerWidth, window.innerHeight);
+    const onResize = () => {
+      eng.resize(window.innerWidth, window.innerHeight);
+      setCanvasSize({ w: window.innerWidth, h: window.innerHeight });
+    };
     window.addEventListener('resize', onResize);
     return () => {
       eng.stop();
@@ -1061,7 +1065,9 @@ function CinematicIntroInner({
       <canvas
         ref={engineCanvasRef}
         aria-hidden="true"
-        style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}
+        width={canvasSize.w}
+        height={canvasSize.h}
+        style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1, width: "100%", height: "100%" }}
       />
 
       {/* Legacy particle field — kept as supplemental layer */}
