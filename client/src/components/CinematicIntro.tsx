@@ -28,6 +28,7 @@ import AshaOrb from "./AshaOrb";
 import SeismicWave from "./SeismicWave";
 import { useLocation } from "wouter";
 import { useCinematicAudio } from "../hooks/useCinematicAudio";
+import { useNarrationAudio } from "../hooks/useNarrationAudio";
 
 // ── Types ──────────────────────────────────────────────────────
 type Scene = 1 | 2 | 3 | 4 | 5 | 6;
@@ -703,6 +704,7 @@ export const CINEMATIC_SEEN_KEY = "fl_cinematic_intro_v1";
 export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }: CinematicIntroProps) {
   // ── Sound design layer ────────────────────────────────────────
   const audio = useCinematicAudio();
+  const narration = useNarrationAudio();
   const [scene, setScene] = useState<Scene>(1);
   const [exiting, setExiting] = useState(false);
   const [sceneVisible, setSceneVisible] = useState(true);
@@ -719,6 +721,8 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
       if (audioUnlockedRef.current) return;
       audioUnlockedRef.current = true;
       audio.unlockAndPlay();
+      // Also unlock narration — play scene 1 narration on first gesture
+      narration.unlockNarration(1);
     };
     window.addEventListener('pointerdown', unlock, { once: true, passive: true });
     window.addEventListener('keydown', unlock, { once: true });
@@ -811,6 +815,7 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
     onSceneExit={onSceneExit}
     entrySnapshot={entrySnapshotRef.current}
     audio={audio}
+    narration={narration}
   />;
 }
 
@@ -818,7 +823,7 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
 function CinematicIntroInner({
   scene, setScene, exiting, setExiting, sceneVisible, setSceneVisible,
   timerRef, user, output, canvasRef, narratorLines, sceneDurations,
-  onComplete, onSceneEnter, onSceneExit, entrySnapshot, audio,
+  onComplete, onSceneEnter, onSceneExit, entrySnapshot, audio, narration,
 }: {
   scene: Scene;
   setScene: React.Dispatch<React.SetStateAction<Scene>>;
@@ -837,6 +842,7 @@ function CinematicIntroInner({
   onSceneExit?: (payload: SceneHookPayload) => void;
   entrySnapshot: PressureSnapshot | null;
   audio: ReturnType<typeof useCinematicAudio>;
+  narration: ReturnType<typeof import('../hooks/useNarrationAudio').useNarrationAudio>;
 }) {
   const [narratorIdx, setNarratorIdx] = useState(0);
   const [currentNarrator, setCurrentNarrator] = useState("");
@@ -855,11 +861,17 @@ function CinematicIntroInner({
       if (scene === 1) {
         // First scene — start the audio engine (handles autoplay unlock)
         audio.startAudio(1);
+        // Play scene 1 narration immediately (will be unlocked by first gesture)
+        narration.playNarration(1);
       } else {
         audio.playScene(scene as 1 | 2 | 3 | 4 | 5 | 6);
+        // Play narration for scenes 2–5
+        narration.playNarration(scene);
       }
     } else if (scene === 6) {
       audio.playScene(6);
+      // No narration in scene 6 (ASHA awakening)
+      narration.stopNarration();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene]);
@@ -1306,7 +1318,10 @@ function CinematicIntroInner({
         }}>
           {/* Mute / unmute */}
           <button
-            onClick={audio.toggleMute}
+            onClick={() => {
+              audio.toggleMute();
+              narration.setNarrationMuted(!audio.isMuted);
+            }}
             aria-label={audio.isMuted ? "Unmute sound" : "Mute sound"}
             title={audio.isMuted ? "Unmute" : "Mute"}
             style={{
