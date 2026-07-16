@@ -27,6 +27,7 @@ import { useAuth } from "../_core/hooks/useAuth";
 import AshaOrb from "./AshaOrb";
 import SeismicWave from "./SeismicWave";
 import { useLocation } from "wouter";
+import { useCinematicAudio } from "../hooks/useCinematicAudio";
 
 // ── Types ──────────────────────────────────────────────────────
 type Scene = 1 | 2 | 3 | 4 | 5 | 6;
@@ -703,6 +704,8 @@ function StaticIntroFallback({ onComplete }: { onComplete: () => void }) {
 export const CINEMATIC_SEEN_KEY = "fl_cinematic_intro_v1";
 
 export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }: CinematicIntroProps) {
+  // ── Sound design layer ────────────────────────────────────────
+  const audio = useCinematicAudio();
   const [scene, setScene] = useState<Scene>(1);
   const [exiting, setExiting] = useState(false);
   const [sceneVisible, setSceneVisible] = useState(true);
@@ -739,6 +742,10 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
   if (reducedMotion) {
     return <StaticIntroFallback onComplete={onComplete} />;
   }
+
+  // ── Audio: start on mount, play scene on change ───────────────
+  // (These are called inside the outer component so they fire once,
+  //  before the inner component mounts.)
 
   // Narrator lines per scene — compressed for 25–35 second total runtime
   // Scene 1: 5s  Scene 2: 7s  Scene 3: 7s  Scene 4: 8s  Scene 5: 5s  = ~32s
@@ -788,6 +795,7 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
     onSceneEnter={onSceneEnter}
     onSceneExit={onSceneExit}
     entrySnapshot={entrySnapshotRef.current}
+    audio={audio}
   />;
 }
 
@@ -795,7 +803,7 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
 function CinematicIntroInner({
   scene, setScene, exiting, setExiting, sceneVisible, setSceneVisible,
   timerRef, user, output, canvasRef, narratorLines, sceneDurations,
-  onComplete, onSceneEnter, onSceneExit, entrySnapshot,
+  onComplete, onSceneEnter, onSceneExit, entrySnapshot, audio,
 }: {
   scene: Scene;
   setScene: React.Dispatch<React.SetStateAction<Scene>>;
@@ -813,6 +821,7 @@ function CinematicIntroInner({
   onSceneEnter?: (payload: SceneHookPayload) => void;
   onSceneExit?: (payload: SceneHookPayload) => void;
   entrySnapshot: PressureSnapshot | null;
+  audio: ReturnType<typeof useCinematicAudio>;
 }) {
   const [narratorIdx, setNarratorIdx] = useState(0);
   const [currentNarrator, setCurrentNarrator] = useState("");
@@ -823,6 +832,21 @@ function CinematicIntroInner({
     if (!hook) return;
     hook({ scene: s, pressureScore: output.overall.score, regime: output.regime.label });
   }, [output, onSceneEnter]);
+
+  // ── Audio: start on scene 1 mount, then change per scene ────────
+  useEffect(() => {
+    if (scene >= 1 && scene <= 5) {
+      if (scene === 1) {
+        // First scene — start the audio engine (handles autoplay unlock)
+        audio.startAudio(1);
+      } else {
+        audio.playScene(scene as 1 | 2 | 3 | 4 | 5 | 6);
+      }
+    } else if (scene === 6) {
+      audio.playScene(6);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene]);
 
   // Advance narrator lines within a scene
   useEffect(() => {
@@ -923,6 +947,14 @@ function CinematicIntroInner({
     28,
     narratorVisible && scene < 6
   );
+
+  // ── Audio: duck when narrator is speaking ─────────────────────
+  useEffect(() => {
+    if (scene < 6) {
+      audio.duckForNarration(narratorVisible);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [narratorVisible, scene]);
 
   const pressureColor = output.overall.riskLevel === "critical" ? "#FF3B5C"
     : output.overall.riskLevel === "high" ? "#FF6B35"
@@ -1162,33 +1194,99 @@ function CinematicIntroInner({
         </div>
       )}
 
-      {/* Skip button */}
+      {/* Skip button + Mute toggle */}
       {scene < 6 && (
+        <div style={{
+          position: "absolute", top: "20px", right: "20px",
+          display: "flex", gap: "8px", alignItems: "center",
+        }}>
+          {/* Mute / unmute */}
+          <button
+            onClick={audio.toggleMute}
+            aria-label={audio.isMuted ? "Unmute sound" : "Mute sound"}
+            title={audio.isMuted ? "Unmute" : "Mute"}
+            style={{
+              background: "rgba(0,0,0,0.4)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: "4px",
+              padding: "8px 12px",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "10px", letterSpacing: "0.1em",
+              color: audio.isMuted ? "rgba(255,255,255,0.25)" : "rgba(0,229,255,0.5)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.7)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.3)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = audio.isMuted ? "rgba(255,255,255,0.25)" : "rgba(0,229,255,0.5)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.15)";
+            }}
+          >
+            {audio.isMuted ? "■■" : "▶■"}
+          </button>
+
+          {/* Skip */}
+          <button
+            onClick={handleSkip}
+            aria-label="Skip introduction"
+            style={{
+              background: "rgba(0,0,0,0.4)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: "4px",
+              padding: "8px 16px",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "10px", letterSpacing: "0.15em",
+              color: "rgba(255,255,255,0.4)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.7)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.3)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.4)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.15)";
+            }}
+          >
+            SKIP INTRO
+          </button>
+        </div>
+      )}
+
+      {/* Enable Sound prompt — shown when browser blocked autoplay */}
+      {audio.needsGesture && scene < 6 && (
         <button
-          onClick={handleSkip}
-          aria-label="Skip introduction"
+          onClick={audio.unlockAndPlay}
+          aria-label="Enable sound"
           style={{
-            position: "absolute", top: "20px", right: "20px",
-            background: "rgba(0,0,0,0.4)",
-            border: "1px solid rgba(255,255,255,0.15)",
+            position: "absolute",
+            bottom: "clamp(80px, 12vh, 140px)",
+            right: "20px",
+            background: "rgba(0,0,0,0.5)",
+            border: "1px solid rgba(0,229,255,0.2)",
             borderRadius: "4px",
-            padding: "8px 16px",
+            padding: "6px 12px",
             fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: "10px", letterSpacing: "0.15em",
-            color: "rgba(255,255,255,0.4)",
+            fontSize: "9px", letterSpacing: "0.15em",
+            color: "rgba(0,229,255,0.4)",
             cursor: "pointer",
             transition: "all 0.2s ease",
+            display: "flex", alignItems: "center", gap: "6px",
           }}
           onMouseEnter={e => {
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.7)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.3)";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,229,255,0.8)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.5)";
           }}
           onMouseLeave={e => {
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.4)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.15)";
+            (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,229,255,0.4)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.2)";
           }}
         >
-          SKIP INTRO
+          <span style={{ fontSize: "8px" }}>▶</span> SOUND ON
         </button>
       )}
 
