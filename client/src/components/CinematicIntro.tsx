@@ -1,29 +1,60 @@
 /* ============================================================
-   FAULTLINE — Cinematic Introduction
-   Five-scene documentary teaching the geological pressure
-   philosophy, followed by a seamless ASHA awakening transition.
+   FAULTLINE — Cinematic Introduction v2
+   Five-scene documentary + ASHA Awakening transition.
+
+   Architectural upgrades (v2):
+   1. Live pressure snapshot captured at cinematic START
+   2. ASHA greeting generated from real delta between entry and exit
+   3. Real SeismicWave component mounted in Scene 5 (stays alive)
+   4. Skip behavior captures live state at skip moment
+   5. onSceneEnter / onSceneExit hooks for future sound design
+   6. aria-live regions for accessibility
+   7. prefers-reduced-motion static fallback
 
    First-time only (localStorage). Skippable. Replayable from Help.
    Scene flow:
-     1. Earth / Tectonic Pressure (0–10s)
-     2. Scientific Seismograph → FAULTLINE Seismograph (10–20s)
-     3. Market Forces (20–30s)
-     4. Platform Introduction (30–42s)
-     5. Final Declaration + ENTER FAULTLINE (42–55s)
-     6. ASHA Awakening Transition (55s → onComplete)
+     1. Earth / Tectonic Pressure (0–11s)
+     2. Scientific Seismograph → FAULTLINE Seismograph (9s)
+     3. Market Forces (10s)
+     4. Platform Introduction (10s)
+     5. Final Declaration + ENTER FAULTLINE (8s)
+     6. ASHA Awakening Transition (stays until user acts)
    ============================================================ */
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useEngine } from "../contexts/EngineContext";
 import { trpc } from "../lib/trpc";
 import { useAuth } from "../_core/hooks/useAuth";
 import AshaOrb from "./AshaOrb";
+import SeismicWave from "./SeismicWave";
 import { useLocation } from "wouter";
 
 // ── Types ──────────────────────────────────────────────────────
 type Scene = 1 | 2 | 3 | 4 | 5 | 6;
 
+export interface SceneHookPayload {
+  scene: Scene;
+  pressureScore: number;
+  regime: string;
+}
+
 interface CinematicIntroProps {
   onComplete: () => void;
+  /** Optional callbacks for sound design integration */
+  onSceneEnter?: (payload: SceneHookPayload) => void;
+  onSceneExit?: (payload: SceneHookPayload) => void;
+}
+
+// ── Snapshot of engine state at a point in time ───────────────
+interface PressureSnapshot {
+  score: number;
+  riskLevel: string;
+  regime: string;
+  narrative: string;
+  bullProbability: number;
+  crashProbability: number;
+  topDriver: string;
+  analog: string;
+  capturedAt: number; // Date.now()
 }
 
 // ── Particle field ─────────────────────────────────────────────
@@ -87,10 +118,8 @@ function useParticles(count: number, active: boolean) {
   return canvasRef;
 }
 
-// ── Seismograph wave ───────────────────────────────────────────
-function SeismicLine({ intensity = 1, color = "#00E5FF", scientific = false }: {
-  intensity?: number; color?: string; scientific?: boolean;
-}) {
+// ── Scientific seismograph line (for Scene 2 only) ─────────────
+function ScientificSeismicLine({ color = "rgba(200,200,200,0.6)" }: { color?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
   const offsetRef = useRef(0);
@@ -111,25 +140,15 @@ function SeismicLine({ intensity = 1, color = "#00E5FF", scientific = false }: {
 
       ctx.beginPath();
       ctx.strokeStyle = color;
-      ctx.lineWidth = scientific ? 1.5 : 2;
-      ctx.shadowBlur = scientific ? 4 : 12;
+      ctx.lineWidth = 1.5;
+      ctx.shadowBlur = 4;
       ctx.shadowColor = color;
 
       for (let x = 0; x < w; x++) {
         const t = (x + offsetRef.current) / w;
-        let y = mid;
-        if (scientific) {
-          // Scientific seismograph — small irregular tremors
-          y = mid + Math.sin(t * 80) * 3 * intensity
-            + Math.sin(t * 130 + 1.2) * 2 * intensity
-            + Math.sin(t * 200 + 2.4) * 1 * intensity;
-        } else {
-          // FAULTLINE seismograph — dramatic pressure waves
-          y = mid + Math.sin(t * 25) * 18 * intensity
-            + Math.sin(t * 60 + 0.8) * 8 * intensity
-            + Math.sin(t * 110 + 1.6) * 4 * intensity
-            + Math.sin(t * 180 + 2.4) * 2 * intensity;
-        }
+        const y = mid + Math.sin(t * 80) * 3
+          + Math.sin(t * 130 + 1.2) * 2
+          + Math.sin(t * 200 + 2.4) * 1;
         if (x === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
@@ -138,7 +157,7 @@ function SeismicLine({ intensity = 1, color = "#00E5FF", scientific = false }: {
     };
     draw();
     return () => cancelAnimationFrame(animRef.current);
-  }, [intensity, color, scientific]);
+  }, [color]);
 
   return (
     <canvas
@@ -178,12 +197,10 @@ function TectonicPlates({ visible }: { visible: boolean }) {
       transition: "opacity 2s ease",
       display: "flex", alignItems: "center", justifyContent: "center",
     }}>
-      {/* Deep earth gradient */}
       <div style={{
         position: "absolute", inset: 0,
         background: "radial-gradient(ellipse at 50% 70%, rgba(180,80,20,0.15) 0%, rgba(100,40,10,0.08) 40%, transparent 70%)",
       }} />
-      {/* Tectonic plates */}
       {[
         { top: "55%", left: "-10%", width: "60%", height: "12px", rotate: "-3deg", color: "rgba(120,60,20,0.6)", delay: "0s" },
         { top: "58%", left: "45%", width: "65%", height: "12px", rotate: "2deg", color: "rgba(140,70,25,0.5)", delay: "0.3s" },
@@ -201,7 +218,6 @@ function TectonicPlates({ visible }: { visible: boolean }) {
           animationDelay: plate.delay,
         }} />
       ))}
-      {/* Pressure accumulation glow */}
       <div style={{
         position: "absolute",
         top: "52%", left: "30%",
@@ -209,7 +225,6 @@ function TectonicPlates({ visible }: { visible: boolean }) {
         background: "radial-gradient(ellipse, rgba(255,120,0,0.12) 0%, transparent 70%)",
         animation: "fl-pulse 3s ease-in-out infinite",
       }} />
-      {/* Earth surface line */}
       <div style={{
         position: "absolute",
         top: "50%", left: 0, right: 0,
@@ -260,11 +275,10 @@ function MarketStreams({ visible }: { visible: boolean }) {
               flex: 1, height: "24px",
               position: "relative", overflow: "hidden",
             }}>
-              <SeismicLine intensity={0.4 + Math.random() * 0.6} color={s.color} scientific />
+              <ScientificSeismicLine color={s.color} />
             </div>
           </div>
         ))}
-        {/* Convergence arrow */}
         <div style={{
           display: "flex", alignItems: "center", justifyContent: "center",
           marginTop: "8px", gap: "8px",
@@ -286,26 +300,10 @@ function MarketStreams({ visible }: { visible: boolean }) {
 // ── Platform preview cards ─────────────────────────────────────
 function PlatformCards({ visible }: { visible: boolean }) {
   const cards = [
-    {
-      name: "PRESSURE INDEX™",
-      desc: "Measures systemic market pressure across 10 engines.",
-      color: "#00E5FF", delay: 0,
-    },
-    {
-      name: "SEISMOGRAPH™",
-      desc: "Visualizes how pressure changes over time.",
-      color: "#FFAA00", delay: 0.3,
-    },
-    {
-      name: "ASHA",
-      desc: "Continuously interprets thousands of market signals in clear language.",
-      color: "#00FF88", delay: 0.6,
-    },
-    {
-      name: "AFTERSHOCK™",
-      desc: "Tracks how markets react after major structural shifts.",
-      color: "#C084FC", delay: 0.9,
-    },
+    { name: "PRESSURE INDEX™", desc: "Measures systemic market pressure across 10 engines.", color: "#00E5FF", delay: 0 },
+    { name: "SEISMOGRAPH™", desc: "Visualizes how pressure changes over time.", color: "#FFAA00", delay: 0.3 },
+    { name: "ASHA", desc: "Continuously interprets thousands of market signals in clear language.", color: "#00FF88", delay: 0.6 },
+    { name: "AFTERSHOCK™", desc: "Tracks how markets react after major structural shifts.", color: "#C084FC", delay: 0.9 },
   ];
 
   return (
@@ -355,14 +353,17 @@ function AshaAwakeningScene({
   visible,
   onEnter,
   userName,
+  entrySnapshot,
 }: {
   visible: boolean;
   onEnter: () => void;
   userName?: string;
+  entrySnapshot: PressureSnapshot | null;
 }) {
   const { output, isLoading } = useEngine();
   const [, navigate] = useLocation();
 
+  // Build engine context using CURRENT live state for the greeting
   const engineContext = useMemo(() => ({
     pressureScore: output.overall.score,
     regime: output.regime.label,
@@ -381,23 +382,44 @@ function AshaAwakeningScene({
   const [isListening, setIsListening] = useState(false);
   const hasStarted = useRef(false);
 
-  // Generate greeting when scene becomes visible
+  // Generate greeting when scene becomes visible, using delta from entry snapshot
   useEffect(() => {
     if (!visible || hasStarted.current || isLoading) return;
     hasStarted.current = true;
     setIsListening(true);
 
     const name = userName || "there";
-    const fallback = `Welcome, ${name}.\n\nI'm ASHA — the intelligence layer of FAULTLINE.\n\nWhile you were watching, I was monitoring the markets.\n\nCurrent systemic pressure is ${output.overall.riskLevel.toUpperCase()} at ${output.overall.score.toFixed(1)}.\n\n${output.narrative.summary}\n\nLet me show you what is building beneath the surface today.`;
+    const currentScore = output.overall.score;
+    const currentRisk = output.overall.riskLevel;
+
+    // Build delta context if we have an entry snapshot
+    let deltaContext = "";
+    if (entrySnapshot) {
+      const scoreDelta = currentScore - entrySnapshot.score;
+      const elapsed = Math.round((Date.now() - entrySnapshot.capturedAt) / 1000);
+      if (Math.abs(scoreDelta) >= 0.2) {
+        const direction = scoreDelta > 0 ? "increased" : "decreased";
+        deltaContext = ` Pressure has ${direction} by ${Math.abs(scoreDelta).toFixed(1)} points since you began watching.`;
+      } else if (elapsed > 30) {
+        deltaContext = ` Conditions have remained stable during the introduction.`;
+      }
+    }
+
+    const fallback = `Welcome, ${name}.\n\nI'm ASHA — the intelligence layer of FAULTLINE.\n\nWhile you were watching, I was monitoring the markets.${deltaContext}\n\nCurrent systemic pressure is ${currentRisk.toUpperCase()} at ${currentScore.toFixed(1)}.\n\n${output.narrative.summary}\n\nLet me show you what is building beneath the surface today.`;
 
     greetingMutation.mutateAsync({
       userName: name,
-      engineContext,
+      engineContext: {
+        ...engineContext,
+        // Inject delta note into the narrative context
+        narrative: engineContext.narrative + (deltaContext ? ` [Note: ${deltaContext.trim()}]` : ""),
+      },
     }).then(res => {
       setGreeting(res.greeting || fallback);
     }).catch(() => {
       setGreeting(fallback);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, isLoading]);
 
   // Typewriter for greeting
@@ -444,28 +466,32 @@ function AshaAwakeningScene({
     }
   };
 
-  const pressureColor = output.overall.riskLevel === 'critical' ? '#FF3B5C'
-    : output.overall.riskLevel === 'high' ? '#FF6B35'
-    : output.overall.riskLevel === 'elevated' ? '#FFAA00'
-    : output.overall.riskLevel === 'moderate' ? '#FFDD00'
-    : '#00E5FF';
+  const pressureColor = output.overall.riskLevel === "critical" ? "#FF3B5C"
+    : output.overall.riskLevel === "high" ? "#FF6B35"
+    : output.overall.riskLevel === "elevated" ? "#FFAA00"
+    : output.overall.riskLevel === "moderate" ? "#FFDD00"
+    : "#00E5FF";
 
-  const regimeState = output.overall.riskLevel === 'critical' || output.overall.riskLevel === 'high'
-    ? 'critical' as const
-    : output.overall.riskLevel === 'elevated' || output.overall.riskLevel === 'moderate'
-    ? 'rising' as const
-    : 'calm' as const;
+  const regimeState = output.overall.riskLevel === "critical" || output.overall.riskLevel === "high"
+    ? "critical" as const
+    : output.overall.riskLevel === "elevated" || output.overall.riskLevel === "moderate"
+    ? "rising" as const
+    : "calm" as const;
 
   return (
-    <div style={{
-      position: "absolute", inset: 0,
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center",
-      padding: "24px",
-      opacity: visible ? 1 : 0,
-      transition: "opacity 1.5s cubic-bezier(0.23,1,0.32,1)",
-      pointerEvents: visible ? "auto" : "none",
-    }}>
+    <div
+      role="region"
+      aria-label="ASHA Intelligence Briefing"
+      style={{
+        position: "absolute", inset: 0,
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        padding: "24px",
+        opacity: visible ? 1 : 0,
+        transition: "opacity 1.5s cubic-bezier(0.23,1,0.32,1)",
+        pointerEvents: visible ? "auto" : "none",
+      }}
+    >
       {/* Background glow */}
       <div style={{
         position: "absolute", inset: 0,
@@ -493,18 +519,22 @@ function AshaAwakeningScene({
           />
         </div>
 
-        {/* Greeting text */}
-        <div style={{
-          fontFamily: "'IBM Plex Sans', sans-serif",
-          fontSize: "clamp(14px, 2.5vw, 16px)",
-          lineHeight: 1.8,
-          color: "rgba(255,255,255,0.88)",
-          textAlign: "center",
-          whiteSpace: "pre-wrap",
-          minHeight: "120px",
-          opacity: visible ? 1 : 0,
-          transition: "opacity 0.8s ease 0.6s",
-        }}>
+        {/* Greeting text — aria-live so screen readers announce it */}
+        <div
+          aria-live="polite"
+          aria-atomic="false"
+          style={{
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: "clamp(14px, 2.5vw, 16px)",
+            lineHeight: 1.8,
+            color: "rgba(255,255,255,0.88)",
+            textAlign: "center",
+            whiteSpace: "pre-wrap",
+            minHeight: "120px",
+            opacity: visible ? 1 : 0,
+            transition: "opacity 0.8s ease 0.6s",
+          }}
+        >
           {displayedGreeting}
           {!greetingDone && greeting && (
             <span style={{
@@ -512,7 +542,7 @@ function AshaAwakeningScene({
               background: pressureColor, marginLeft: "2px",
               animation: "fl-pulse 0.8s ease-in-out infinite",
               verticalAlign: "text-bottom",
-            }} />
+            }} aria-hidden="true" />
           )}
         </div>
 
@@ -521,7 +551,6 @@ function AshaAwakeningScene({
           <div style={{
             display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
             gap: "8px", width: "100%",
-            opacity: statsVisible ? 1 : 0,
             animation: "fl-fade-in 0.6s ease forwards",
           }}>
             {[
@@ -555,7 +584,6 @@ function AshaAwakeningScene({
           <div style={{
             display: "grid", gridTemplateColumns: "1fr 1fr",
             gap: "8px", width: "100%",
-            opacity: actionsVisible ? 1 : 0,
             animation: "fl-fade-in 0.6s ease forwards",
           }}>
             {actions.map((action, i) => (
@@ -616,16 +644,101 @@ function AshaAwakeningScene({
   );
 }
 
+// ── Static fallback for prefers-reduced-motion ─────────────────
+function StaticIntroFallback({ onComplete }: { onComplete: () => void }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      background: "#000",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      gap: "24px",
+      padding: "40px",
+    }}>
+      <div style={{
+        fontFamily: "'Rajdhani', sans-serif",
+        fontSize: "clamp(32px, 7vw, 64px)",
+        fontWeight: 700,
+        letterSpacing: "0.2em",
+        background: "linear-gradient(135deg, #00E5FF, rgba(0,229,255,0.6))",
+        WebkitBackgroundClip: "text",
+        WebkitTextFillColor: "transparent",
+      }}>FAULTLINE</div>
+      <div style={{
+        fontFamily: "'IBM Plex Sans', sans-serif",
+        fontSize: "clamp(14px, 2vw, 18px)",
+        lineHeight: 1.7,
+        color: "rgba(255,255,255,0.75)",
+        textAlign: "center",
+        maxWidth: "560px",
+      }}>
+        Markets communicate long before they move.<br />
+        FAULTLINE reveals what is building beneath the surface.
+      </div>
+      <button
+        onClick={() => {
+          try { localStorage.setItem(CINEMATIC_SEEN_KEY, "1"); } catch {}
+          onComplete();
+        }}
+        style={{
+          background: "transparent",
+          border: "1px solid rgba(0,229,255,0.4)",
+          borderRadius: "4px",
+          padding: "14px 40px",
+          fontFamily: "'Rajdhani', sans-serif",
+          fontSize: "14px",
+          fontWeight: 700,
+          letterSpacing: "0.3em",
+          color: "rgba(0,229,255,0.9)",
+          cursor: "pointer",
+        }}
+      >
+        ENTER FAULTLINE
+      </button>
+    </div>
+  );
+}
+
 // ── Main CinematicIntro ────────────────────────────────────────
 export const CINEMATIC_SEEN_KEY = "fl_cinematic_intro_v1";
 
-export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
+export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }: CinematicIntroProps) {
   const [scene, setScene] = useState<Scene>(1);
   const [exiting, setExiting] = useState(false);
   const [sceneVisible, setSceneVisible] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { user } = useAuth();
+  const { output, isLoading } = useEngine();
   const canvasRef = useParticles(80, true);
+
+  // ── Upgrade 1: Capture live pressure snapshot at cinematic START ──
+  const entrySnapshotRef = useRef<PressureSnapshot | null>(null);
+  useEffect(() => {
+    if (!isLoading && !entrySnapshotRef.current) {
+      entrySnapshotRef.current = {
+        score: output.overall.score,
+        riskLevel: output.overall.riskLevel,
+        regime: output.regime.label,
+        narrative: output.narrative.summary,
+        bullProbability: output.probability.bullProbability,
+        crashProbability: output.probability.crashProbability,
+        topDriver: output.domains[0]?.label ?? "Unknown",
+        analog: output.analogs?.[0]?.era ?? "None",
+        capturedAt: Date.now(),
+      };
+    }
+  }, [isLoading, output]);
+
+  // ── Upgrade 7: prefers-reduced-motion ─────────────────────────
+  const [reducedMotion] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      : false
+  );
+
+  if (reducedMotion) {
+    return <StaticIntroFallback onComplete={onComplete} />;
+  }
 
   // Narrator lines per scene
   const narratorLines: Record<Scene, string[]> = {
@@ -665,12 +778,61 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     3: 10000,
     4: 10000,
     5: 8000,
-    6: 0, // stays until user acts
+    6: 0,
   };
 
+  return <CinematicIntroInner
+    scene={scene}
+    setScene={setScene}
+    exiting={exiting}
+    setExiting={setExiting}
+    sceneVisible={sceneVisible}
+    setSceneVisible={setSceneVisible}
+    timerRef={timerRef}
+    user={user}
+    output={output}
+    canvasRef={canvasRef}
+    narratorLines={narratorLines}
+    sceneDurations={sceneDurations}
+    onComplete={onComplete}
+    onSceneEnter={onSceneEnter}
+    onSceneExit={onSceneExit}
+    entrySnapshot={entrySnapshotRef.current}
+  />;
+}
+
+// ── Inner component (separated to allow hooks before early return) ─
+function CinematicIntroInner({
+  scene, setScene, exiting, setExiting, sceneVisible, setSceneVisible,
+  timerRef, user, output, canvasRef, narratorLines, sceneDurations,
+  onComplete, onSceneEnter, onSceneExit, entrySnapshot,
+}: {
+  scene: Scene;
+  setScene: React.Dispatch<React.SetStateAction<Scene>>;
+  exiting: boolean;
+  setExiting: React.Dispatch<React.SetStateAction<boolean>>;
+  sceneVisible: boolean;
+  setSceneVisible: React.Dispatch<React.SetStateAction<boolean>>;
+  timerRef: React.MutableRefObject<ReturnType<typeof setTimeout>[]>;
+  user: { name?: string | null } | null | undefined;
+  output: ReturnType<typeof useEngine>["output"];
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  narratorLines: Record<Scene, string[]>;
+  sceneDurations: Record<Scene, number>;
+  onComplete: () => void;
+  onSceneEnter?: (payload: SceneHookPayload) => void;
+  onSceneExit?: (payload: SceneHookPayload) => void;
+  entrySnapshot: PressureSnapshot | null;
+}) {
   const [narratorIdx, setNarratorIdx] = useState(0);
   const [currentNarrator, setCurrentNarrator] = useState("");
   const [narratorVisible, setNarratorVisible] = useState(false);
+
+  // ── Upgrade 5: Fire onSceneEnter/onSceneExit hooks ────────────
+  const fireHook = useCallback((hook: typeof onSceneEnter, s: Scene) => {
+    if (!hook) return;
+    hook({ scene: s, pressureScore: output.overall.score, regime: output.regime.label });
+  }, [output, onSceneEnter]);
 
   // Advance narrator lines within a scene
   useEffect(() => {
@@ -679,6 +841,9 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     setNarratorIdx(0);
     setCurrentNarrator(lines[0]);
     setNarratorVisible(true);
+
+    // Fire onSceneEnter
+    fireHook(onSceneEnter, scene);
 
     const timers: ReturnType<typeof setTimeout>[] = [];
     let delay = 0;
@@ -698,6 +863,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     }
     timerRef.current.push(...timers);
     return () => timers.forEach(clearTimeout);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene]);
 
   // Auto-advance scenes
@@ -709,9 +875,12 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     }, duration);
     timerRef.current.push(t);
     return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene]);
 
   const advanceScene = useCallback(() => {
+    // Fire onSceneExit for current scene
+    fireHook(onSceneExit, scene);
     setSceneVisible(false);
     setTimeout(() => {
       setScene(s => {
@@ -720,25 +889,30 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
       });
       setSceneVisible(true);
     }, 600);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene, onSceneExit, fireHook]);
 
+  // ── Upgrade 4: Skip captures live state at skip moment ────────
   const handleSkip = useCallback(() => {
     timerRef.current.forEach(clearTimeout);
+    fireHook(onSceneExit, scene);
     setExiting(true);
     setTimeout(() => {
       try { localStorage.setItem(CINEMATIC_SEEN_KEY, "1"); } catch {}
       onComplete();
     }, 600);
-  }, [onComplete]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene, onComplete, onSceneExit, fireHook]);
 
   const handleEnterFaultline = useCallback(() => {
-    // From Scene 5 — transition to Scene 6 (ASHA awakening)
+    fireHook(onSceneExit, scene);
     setSceneVisible(false);
     setTimeout(() => {
       setScene(6);
       setSceneVisible(true);
     }, 600);
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene, onSceneExit, fireHook]);
 
   const handleAshaComplete = useCallback(() => {
     timerRef.current.forEach(clearTimeout);
@@ -760,22 +934,43 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     narratorVisible && scene < 6
   );
 
+  const pressureColor = output.overall.riskLevel === "critical" ? "#FF3B5C"
+    : output.overall.riskLevel === "high" ? "#FF6B35"
+    : output.overall.riskLevel === "elevated" ? "#FFAA00"
+    : "#00E5FF";
+
   return (
-    <div style={{
-      position: "fixed", inset: 0, zIndex: 9999,
-      background: "#000",
-      opacity: exiting ? 0 : 1,
-      transition: exiting ? "opacity 0.8s cubic-bezier(0.23,1,0.32,1)" : "none",
-      overflow: "hidden",
-    }}>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="FAULTLINE Introduction"
+      style={{
+        position: "fixed", inset: 0, zIndex: 9999,
+        background: "#000",
+        opacity: exiting ? 0 : 1,
+        transition: exiting ? "opacity 0.8s cubic-bezier(0.23,1,0.32,1)" : "none",
+        overflow: "hidden",
+      }}
+    >
+      {/* ── Upgrade 6: aria-live status region ─────────────────── */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={{ position: "absolute", width: "1px", height: "1px", overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" }}
+      >
+        {scene < 6 ? `Scene ${scene} of 5: ${currentNarrator}` : "ASHA Intelligence Briefing"}
+      </div>
+
       {/* Particle field */}
       <canvas
         ref={canvasRef}
+        aria-hidden="true"
         style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
       />
 
       {/* Deep space gradient */}
-      <div style={{
+      <div aria-hidden="true" style={{
         position: "absolute", inset: 0,
         background: "radial-gradient(ellipse at 50% 30%, rgba(0,20,40,0.8) 0%, rgba(0,0,0,0.95) 70%)",
         pointerEvents: "none",
@@ -791,8 +986,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
         {scene === 1 && (
           <>
             <TectonicPlates visible={sceneVisible} />
-            {/* Earth horizon glow */}
-            <div style={{
+            <div aria-hidden="true" style={{
               position: "absolute", top: "48%", left: 0, right: 0,
               height: "2px",
               background: "linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.2) 20%, rgba(0,229,255,0.4) 50%, rgba(0,229,255,0.2) 80%, transparent 100%)",
@@ -809,25 +1003,17 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
             gap: "24px",
           }}>
             {/* Scientific seismograph */}
-            <div style={{
-              width: "min(600px, 90vw)", height: "60px",
-              opacity: 0.7,
-            }}>
-              <SeismicLine intensity={0.5} color="rgba(200,200,200,0.6)" scientific />
+            <div style={{ width: "min(600px, 90vw)", height: "60px", opacity: 0.7 }}>
+              <ScientificSeismicLine color="rgba(200,200,200,0.6)" />
             </div>
-            {/* Transform arrow */}
-            <div style={{
+            <div aria-hidden="true" style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "10px", letterSpacing: "0.2em",
               color: "rgba(0,229,255,0.4)",
             }}>↓</div>
-            {/* FAULTLINE seismograph */}
-            <div style={{
-              width: "min(600px, 90vw)", height: "80px",
-              position: "relative",
-            }}>
-              <SeismicLine intensity={1.2} color="#00E5FF" />
-              {/* FAULTLINE label */}
+            {/* ── Upgrade 3: Real SeismicWave component in Scene 2 ── */}
+            <div style={{ width: "min(600px, 90vw)", height: "80px", position: "relative" }}>
+              <SeismicWave color="#00E5FF" score={output.overall.score} height={80} />
               <div style={{
                 position: "absolute", bottom: "-20px", right: 0,
                 fontFamily: "'IBM Plex Mono', monospace",
@@ -844,7 +1030,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
         {/* Scene 4 — Platform cards */}
         {scene === 4 && <PlatformCards visible={sceneVisible} />}
 
-        {/* Scene 5 — Final declaration */}
+        {/* Scene 5 — Final declaration with live SeismicWave */}
         {scene === 5 && (
           <div style={{
             position: "absolute", inset: 0,
@@ -875,11 +1061,19 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
               transition: "opacity 1s ease 0.3s",
             }}>SEE WHAT'S BUILDING BENEATH THE SURFACE.</div>
 
+            {/* ── Upgrade 3: Real live SeismicWave in Scene 5 ── */}
+            <div style={{
+              width: "min(560px, 85vw)", height: "60px",
+              opacity: sceneVisible ? 1 : 0,
+              transition: "opacity 1.2s ease 0.5s",
+            }}>
+              <SeismicWave color={pressureColor} score={output.overall.score} height={60} />
+            </div>
+
             {/* ENTER FAULTLINE button */}
             <button
               onClick={handleEnterFaultline}
               style={{
-                marginTop: "16px",
                 background: "transparent",
                 border: "1px solid rgba(0,229,255,0.4)",
                 borderRadius: "4px",
@@ -916,6 +1110,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
             visible={sceneVisible && scene === 6}
             onEnter={handleAshaComplete}
             userName={user?.name?.split(" ")[0]}
+            entrySnapshot={entrySnapshot}
           />
         )}
       </div>
@@ -940,7 +1135,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
             fontStyle: "italic",
           }}>
             {narratorText}
-            <span style={{
+            <span aria-hidden="true" style={{
               display: "inline-block", width: "2px", height: "1em",
               background: "rgba(0,229,255,0.7)",
               marginLeft: "2px", verticalAlign: "text-bottom",
@@ -952,13 +1147,20 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
       {/* Scene progress dots (scenes 1–5) */}
       {scene < 6 && (
-        <div style={{
-          position: "absolute", bottom: "clamp(40px, 6vh, 60px)",
-          left: "50%", transform: "translateX(-50%)",
-          display: "flex", gap: "8px",
-        }}>
+        <div
+          role="progressbar"
+          aria-valuenow={scene}
+          aria-valuemin={1}
+          aria-valuemax={5}
+          aria-label={`Scene ${scene} of 5`}
+          style={{
+            position: "absolute", bottom: "clamp(40px, 6vh, 60px)",
+            left: "50%", transform: "translateX(-50%)",
+            display: "flex", gap: "8px",
+          }}
+        >
           {([1, 2, 3, 4, 5] as Scene[]).map(s => (
-            <div key={s} style={{
+            <div key={s} aria-hidden="true" style={{
               width: s === scene ? "20px" : "6px",
               height: "6px",
               borderRadius: "3px",
@@ -973,6 +1175,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
       {scene < 6 && (
         <button
           onClick={handleSkip}
+          aria-label="Skip introduction"
           style={{
             position: "absolute", top: "20px", right: "20px",
             background: "rgba(0,0,0,0.4)",
@@ -1005,7 +1208,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
         { bottom: "12px", left: "12px", borderBottom: "1px solid rgba(0,229,255,0.3)", borderLeft: "1px solid rgba(0,229,255,0.3)" },
         { bottom: "12px", right: "12px", borderBottom: "1px solid rgba(0,229,255,0.3)", borderRight: "1px solid rgba(0,229,255,0.3)" },
       ].map((style, i) => (
-        <div key={i} style={{
+        <div key={i} aria-hidden="true" style={{
           position: "absolute", width: "24px", height: "24px",
           ...style,
           opacity: 0.6,

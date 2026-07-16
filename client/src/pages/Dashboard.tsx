@@ -38,6 +38,7 @@ import AshaDailyGreeting from "@/components/AshaDailyGreeting";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
+import SeismicWaveShared from "@/components/SeismicWave";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -145,8 +146,12 @@ function AmbientParticles({ riskLevel }: { riskLevel: string }) {
   );
 }
 
-// ── Multi-layer seismic waveform ─────────────────────────────
+// ── SeismicWave — thin wrapper around shared component ─────────────────────────────
 function SeismicWave({ color, score }: { color: string; score: number }) {
+  return <SeismicWaveShared color={color} score={score} height={52} />;
+}
+// Legacy implementation kept below for reference only — not used
+function _SeismicWaveLegacy({ color, score }: { color: string; score: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = canvasRef.current;
