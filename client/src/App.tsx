@@ -620,6 +620,7 @@ function Router() {
               <Route path="/app/command" component={MarketCommandCenter} />
               <Route path="/app/todays-story" component={TodaysStory} />
               <Route path="/app/discover" component={SmartDiscovery} />
+              <Route path="/app/ask-asha"><Redirect to="/app/discover" /></Route>
               <Route path="/app/decision-ledger" component={DecisionLedger} />
               <Route path="/app"><Redirect to="/app/seismograph" /></Route>
               <Route path="/app/dashboard" component={Dashboard} />

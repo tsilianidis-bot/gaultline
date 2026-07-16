@@ -37,6 +37,7 @@ import AshaHeroSection from "@/components/AshaHeroSection";
 import AshaDailyGreeting from "@/components/AshaDailyGreeting";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
+import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -526,6 +527,11 @@ export default function Dashboard() {
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [heroInputFocused, setHeroInputFocused] = useState(false);
+  const [heroInputValue, setHeroInputValue] = useState('');
+  const heroInputRef = useRef<HTMLInputElement>(null);
+  // Derive ASHA regime state from pressure score
+  const ashaRegimeState: AshaRegimeState = overall.score >= 7 ? 'critical' : overall.score >= 4.5 ? 'rising' : 'calm';
   // 3-mode intelligence system
   const { data: meData } = trpc.auth.me.useQuery();
   const [dashMode, setDashMode] = useState<DashboardMode>("pulse");
@@ -608,7 +614,7 @@ export default function Dashboard() {
       {/* Share card */}
       {showShare && <ShareCard onClose={() => setShowShare(false)} />}
 
-      {/* ── HERO: Vivid Command Panel ─────────────────────────────────────────── */}
+      {/* ── ASHA COMMAND CENTER — Primary first impression ─────────────────── */}
       <div style={{
         position: 'relative',
         background: `linear-gradient(160deg, #070910 0%, #0A0D14 40%, #050608 100%)`,
@@ -644,9 +650,10 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Main hero content — 3-panel command center */}
-        <div style={{ position: 'relative', zIndex: 2, padding: '44px 20px 0' }}>
-          {/* Regime pill row */}
+        {/* ── ASHA Presence — orb, identity, seismic wave, input ── */}
+        <div style={{ position: 'relative', zIndex: 2, padding: '36px 20px 0' }}>
+
+          {/* Regime pill */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
             <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, transparent, ${color}50)` }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '5px 16px', background: `${color}14`, border: `1px solid ${color}50`, borderRadius: '20px', boxShadow: `0 0 20px ${color}15` }}>
@@ -656,108 +663,116 @@ export default function Dashboard() {
             <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, ${color}50, transparent)` }} />
           </div>
 
-          {/* 3-panel row: ring | score | threat+analog */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '16px', marginBottom: '0' }}>
-
-            {/* LEFT — Pressure Ring + Radar */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-              <div style={{ position: 'relative' }}>
-                <PressureRing score={overall.score} color={color} size={88} />
-                <div style={{ position: 'absolute', bottom: -8, right: -8, opacity: 0.7 }}>
-                  <RadarScan color={color} size={32} />
-                </div>
-              </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.6)', letterSpacing: '0.18em', textTransform: 'uppercase', textAlign: 'center' }}>SYSTEMIC RISK</div>
-              {/* Mini domain bars */}
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                {domains.slice(0, 3).map(d => {
-                  const dc = getRiskColor(d.riskLevel);
-                  return (
-                    <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.75)', width: '44px', textAlign: 'right', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.label.split(' ')[0]}</div>
-                      <div style={{ flex: 1, height: '3px', background: 'rgba(255,255,255,0.09)', borderRadius: '2px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${d.score * 10}%`, background: `linear-gradient(90deg, ${dc}80, ${dc})`, boxShadow: `0 0 4px ${dc}60`, transition: 'width 1.2s cubic-bezier(0.23,1,0.32,1)' }} />
-                      </div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: dc, width: '20px', flexShrink: 0 }}>{d.score.toFixed(1)}</div>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* ASHA identity row — orb + name + tagline */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+            {/* Orb — glows brighter when input is focused */}
+            <div style={{ transition: 'transform 0.3s cubic-bezier(0.23,1,0.32,1)', transform: heroInputFocused ? 'scale(1.08)' : 'scale(1)' }}>
+              <AshaOrb regimeState={ashaRegimeState} size={56} isListening={heroInputFocused} />
             </div>
-
-            {/* CENTER — Giant score */}
             <div style={{ textAlign: 'center' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: '4px' }}>
-                <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: 'clamp(72px, 18vw, 96px)', lineHeight: 1, color, textShadow: `0 0 40px ${color}90, 0 0 80px ${color}40, 0 0 120px ${color}20`, letterSpacing: '-0.02em', animation: 'fade-in 0.8s ease both' }}>{overall.score.toFixed(1)}</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '16px', color: 'rgba(255,255,255,0.25)', marginBottom: '12px' }}>/10</span>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.25em', color: 'rgba(0,229,255,0.55)', marginBottom: '3px' }}>ASHA · FAULTLINE INTELLIGENCE LAYER</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 'clamp(28px, 7vw, 40px)', lineHeight: 1, color, textShadow: `0 0 30px ${color}70`, letterSpacing: '-0.01em' }}>
+                {overall.score.toFixed(1)}<span style={{ fontSize: '0.45em', color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>/10</span>
               </div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(240,244,255,0.4)', letterSpacing: '0.12em', marginTop: '-2px' }}>{regime.sublabel}</div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '8px' }}>
-                <div style={{ height: '1px', width: '24px', background: `${color}40` }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: `${color}80`, letterSpacing: '0.15em' }}>
-                  {overall.delta >= 0 ? '+' : ''}{overall.delta.toFixed(1)} vs baseline
-                </span>
-                <div style={{ height: '1px', width: '24px', background: `${color}40` }} />
-              </div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(240,244,255,0.4)', letterSpacing: '0.12em', marginTop: '2px' }}>{regime.sublabel}</div>
             </div>
-
-            {/* RIGHT — Top Threat + Closest Analog */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* Top Threat */}
-              <div style={{ background: 'rgba(255,45,85,0.06)', border: '1px solid rgba(255,45,85,0.18)', borderRadius: '6px', padding: '10px 12px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(255,45,85,0.3)', borderRight: '1px solid rgba(255,45,85,0.3)' }} />
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>TOP THREAT</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topThreat.label}</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#FF2D55', textShadow: '0 0 16px rgba(255,45,85,0.7)', lineHeight: 1 }}>{topThreat.score.toFixed(1)}</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(255,45,85,0.5)' }}>/10</span>
-                </div>
-              </div>
-
-              {/* Closest Analog */}
-              <div style={{ background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.14)', borderRadius: '6px', padding: '10px 12px', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', borderTop: '1px solid rgba(0,229,255,0.38)', borderRight: '1px solid rgba(0,229,255,0.38)' }} />
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(0,212,255,0.55)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: '5px' }}>CLOSEST ANALOG</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', marginBottom: '3px' }}>{analogs[0]?.era ?? '—'}</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                  <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: '#00E5FF', textShadow: '0 0 16px rgba(0,212,255,0.6)', lineHeight: 1 }}>{analogs[0]?.similarity ?? 0}%</span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(0,229,255,0.65)' }}>{analogs[0]?.year ?? ''}</span>
-                </div>
-              </div>
-            </div>
-
           </div>
 
-          {/* Tagline + Regime Summary */}
-          <div style={{ textAlign: 'center', marginTop: '14px', padding: '0 8px' }}>
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: 'rgba(240,244,255,0.55)', lineHeight: 1.6, maxWidth: '420px', margin: '0 auto 4px' }}>
-              FAULTLINE detects hidden systemic pressure building beneath financial markets before major regime shifts become obvious.
-            </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: 'rgba(100,116,139,0.55)', lineHeight: 1.5, maxWidth: '380px', margin: '0 auto' }}>
-              Monitor liquidity stress, credit pressure, speculative excess, and macro instability in real time.
+          {/* Hey ASHA input — the primary interaction */}
+          <div style={{ maxWidth: '480px', margin: '0 auto 16px', position: 'relative' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              background: heroInputFocused ? 'rgba(0,229,255,0.06)' : 'rgba(255,255,255,0.03)',
+              border: heroInputFocused ? `1px solid ${color}60` : '1px solid rgba(255,255,255,0.12)',
+              borderRadius: '6px', padding: '10px 14px',
+              boxShadow: heroInputFocused ? `0 0 24px ${color}20, inset 0 0 12px ${color}06` : 'none',
+              transition: 'all 0.25s cubic-bezier(0.23,1,0.32,1)',
+            }}>
+              <AshaOrb regimeState={ashaRegimeState} size={18} isListening={heroInputFocused} />
+              <input
+                ref={heroInputRef}
+                type="text"
+                value={heroInputValue}
+                onChange={e => setHeroInputValue(e.target.value)}
+                onFocus={() => setHeroInputFocused(true)}
+                onBlur={() => setHeroInputFocused(false)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && heroInputValue.trim()) {
+                    window.location.href = `/app/discover?q=${encodeURIComponent(heroInputValue.trim())}`;
+                  }
+                }}
+                placeholder="Ask ASHA..."
+                style={{
+                  flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px',
+                  color: '#E8F0F8', letterSpacing: '0.04em',
+                  // @ts-ignore
+                  '--placeholder-color': 'rgba(148,163,184,0.6)',
+                }}
+                className="asha-hero-input"
+              />
+              {heroInputValue && (
+                <button
+                  onClick={() => { window.location.href = `/app/discover?q=${encodeURIComponent(heroInputValue.trim())}`; }}
+                  style={{ background: `${color}18`, border: `1px solid ${color}40`, borderRadius: '4px', padding: '4px 10px', color, fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.12em', cursor: 'pointer', transition: 'all 0.15s ease', minHeight: 'unset' }}
+                >
+                  ASK →
+                </button>
+              )}
             </div>
           </div>
 
           {/* Seismic waveform */}
-          <div style={{ margin: '14px -20px 0' }}>
+          <div style={{ margin: '0 -20px' }}>
             <SeismicWave color={color} score={overall.score} />
           </div>
         </div>
 
-        {/* Stat grid strip */}
-        <div style={{ position: 'relative', zIndex: 2, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: `1px solid ${color}22` }}>
-          {[
-            { label: 'BULL', value: `${probability.bullProbability}%`, c: '#00FF88', sub: 'probability' },
-            { label: 'CRASH', value: `${probability.crashProbability}%`, c: '#FF2D55', sub: 'probability' },
-            { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, c: color, sub: 'vs baseline' },
-            { label: 'UPDATED', value: isLoading ? '...' : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), c: isLive ? '#00FF88' : '#FF9500', sub: isLive ? 'live feed' : 'simulated' },
-          ].map(({ label, value, c, sub }, i) => (
-            <div key={label} style={{ padding: '12px 10px', textAlign: 'center', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.09)' : 'none', background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.15em', marginBottom: '3px' }}>{label}</div>
-              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color: c, textShadow: `0 0 14px ${c}70`, lineHeight: 1 }}>{value}</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>{sub}</div>
+        {/* ── Seven focused intelligence panels ── */}
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          {/* Row 1: Pressure Index + Verdict + Bull/Bear */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: `1px solid ${color}22` }}>
+            {/* Pressure Index */}
+            <div style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,255,255,0.01)' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.12em', marginBottom: '4px' }}>PRESSURE</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color, textShadow: `0 0 14px ${color}70`, lineHeight: 1 }}>{overall.score.toFixed(1)}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>/ 10</div>
             </div>
-          ))}
+            {/* Bull probability */}
+            <div style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.09)' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.12em', marginBottom: '4px' }}>BULL</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#00FF88', textShadow: '0 0 14px rgba(0,255,136,0.7)', lineHeight: 1 }}>{probability.bullProbability}%</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>probability</div>
+            </div>
+            {/* Crash probability */}
+            <div style={{ padding: '12px 10px', textAlign: 'center' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.12em', marginBottom: '4px' }}>CRASH</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#FF2D55', textShadow: '0 0 14px rgba(255,45,85,0.7)', lineHeight: 1 }}>{probability.crashProbability}%</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>probability</div>
+            </div>
+          </div>
+
+          {/* Row 2: Top Threat + Analog + Delta */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            {/* Top Threat */}
+            <div style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.09)', background: 'rgba(255,45,85,0.02)' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(255,45,85,0.55)', letterSpacing: '0.12em', marginBottom: '4px' }}>TOP THREAT</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{topThreat?.label?.split(' ').slice(0, 2).join(' ') ?? '—'}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#FF2D55', marginTop: '3px' }}>{topThreat?.score.toFixed(1)}/10</div>
+            </div>
+            {/* Historical Analog */}
+            <div style={{ padding: '12px 10px', textAlign: 'center', borderRight: '1px solid rgba(255,255,255,0.09)', background: 'rgba(0,212,255,0.01)' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(0,212,255,0.55)', letterSpacing: '0.12em', marginBottom: '4px' }}>ANALOG</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '13px', color: '#F0F6FF', lineHeight: 1.2 }}>{analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—'}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00E5FF', marginTop: '3px' }}>{analogs[0]?.similarity ?? 0}% match</div>
+            </div>
+            {/* Delta */}
+            <div style={{ padding: '12px 10px', textAlign: 'center' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.65)', letterSpacing: '0.12em', marginBottom: '4px' }}>DELTA</div>
+              <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color, textShadow: `0 0 14px ${color}70`, lineHeight: 1 }}>{overall.delta >= 0 ? '+' : ''}{overall.delta.toFixed(1)}</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: 'rgba(100,116,139,0.45)', marginTop: '2px' }}>vs baseline</div>
+            </div>
+          </div>
         </div>
       </div>
 

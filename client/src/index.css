@@ -809,6 +809,10 @@
   .terminal-input::placeholder {
     color: rgba(148,163,184,0.75);
   }
+  .asha-hero-input::placeholder {
+    color: rgba(148,163,184,0.5);
+    font-style: italic;
+  }
 
   /* Premium button — Apple-style with terminal glow */
   .btn-terminal {
