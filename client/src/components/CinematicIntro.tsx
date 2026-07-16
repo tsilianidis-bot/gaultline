@@ -29,6 +29,7 @@ import SeismicWave from "./SeismicWave";
 import { useLocation } from "wouter";
 import { useCinematicAudio } from "../hooks/useCinematicAudio";
 import { useNarrationAudio } from "../hooks/useNarrationAudio";
+import { CinematicEngine } from "../lib/cinematicEngine";
 
 // ── Types ──────────────────────────────────────────────────────
 type Scene = 1 | 2 | 3 | 4 | 5 | 6;
@@ -712,6 +713,38 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
   const { user } = useAuth();
   const { output, isLoading } = useEngine();
   const canvasRef = useParticles(120, true);
+  const engineCanvasRef = useRef<HTMLCanvasElement>(null);
+  const engineRef = useRef<CinematicEngine | null>(null);
+
+  // ── Initialize CinematicEngine on mount ──────────────────────
+  useEffect(() => {
+    const canvas = engineCanvasRef.current;
+    if (!canvas) return;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const eng = new CinematicEngine({
+      canvas,
+      width: w,
+      height: h,
+      pressureScore: output.overall.score,
+      regime: output.regime.label,
+    });
+    eng.start();
+    engineRef.current = eng;
+
+    const onResize = () => eng.resize(window.innerWidth, window.innerHeight);
+    window.addEventListener('resize', onResize);
+    return () => {
+      eng.stop();
+      window.removeEventListener('resize', onResize);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Keep engine pressure in sync ─────────────────────────────
+  useEffect(() => {
+    engineRef.current?.setPressureScore(output.overall.score);
+  }, [output.overall.score]);
 
   // ── Global audio unlock on first interaction ──────────────────
   // Unlocks Web Audio on the very first touch/click/key anywhere in the cinematic
@@ -808,6 +841,8 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
     user={user}
     output={output}
     canvasRef={canvasRef}
+    engineCanvasRef={engineCanvasRef}
+    engineRef={engineRef}
     narratorLines={narratorLines}
     sceneDurations={sceneDurations}
     onComplete={onComplete}
@@ -822,7 +857,7 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
 // ── Inner component (separated to allow hooks before early return) ─
 function CinematicIntroInner({
   scene, setScene, exiting, setExiting, sceneVisible, setSceneVisible,
-  timerRef, user, output, canvasRef, narratorLines, sceneDurations,
+  timerRef, user, output, canvasRef, engineCanvasRef, engineRef, narratorLines, sceneDurations,
   onComplete, onSceneEnter, onSceneExit, entrySnapshot, audio, narration,
 }: {
   scene: Scene;
@@ -835,6 +870,8 @@ function CinematicIntroInner({
   user: { name?: string | null } | null | undefined;
   output: ReturnType<typeof useEngine>["output"];
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  engineCanvasRef: React.RefObject<HTMLCanvasElement | null>;
+  engineRef: React.MutableRefObject<CinematicEngine | null>;
   narratorLines: Record<Scene, string[]>;
   sceneDurations: Record<Scene, number>;
   onComplete: () => void;
@@ -986,6 +1023,14 @@ function CinematicIntroInner({
     }
   }, [scene]);
 
+  // ── Drive CinematicEngine scene changes ───────────────────────
+  useEffect(() => {
+    if (engineRef.current && scene >= 1 && scene <= 5) {
+      engineRef.current.setScene(scene as 1|2|3|4|5);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scene]);
+
   const pressureColor = output.overall.riskLevel === "critical" ? "#FF3B5C"
     : output.overall.riskLevel === "high" ? "#FF6B35"
     : output.overall.riskLevel === "elevated" ? "#FFAA00"
@@ -1014,19 +1059,19 @@ function CinematicIntroInner({
         {scene < 6 ? `Scene ${scene} of 5: ${currentNarrator}` : "ASHA Intelligence Briefing"}
       </div>
 
-      {/* Particle field */}
+      {/* CinematicEngine — living canvas: all scenes, particles, atmosphere, earth, fault lines, data streams */}
+      <canvas
+        ref={engineCanvasRef}
+        aria-hidden="true"
+        style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }}
+      />
+
+      {/* Legacy particle field — kept as supplemental layer */}
       <canvas
         ref={canvasRef}
         aria-hidden="true"
-        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+        style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2, opacity: 0.3 }}
       />
-
-      {/* Deep space gradient */}
-      <div aria-hidden="true" style={{
-        position: "absolute", inset: 0,
-        background: "radial-gradient(ellipse at 50% 30%, rgba(0,20,40,0.8) 0%, rgba(0,0,0,0.95) 70%)",
-        pointerEvents: "none",
-      }} />
 
       {/* ── Bloomberg-cinema layers ─────────────────────────────── */}
 
@@ -1120,53 +1165,7 @@ function CinematicIntroInner({
         opacity: sceneVisible ? 1 : 0,
         transition: "opacity 0.6s ease",
       }}>
-        {/* Scene 1 — Earth / Tectonic */}
-        {scene === 1 && (
-          <>
-            <TectonicPlates visible={sceneVisible} />
-            <div aria-hidden="true" style={{
-              position: "absolute", top: "48%", left: 0, right: 0,
-              height: "2px",
-              background: "linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.2) 20%, rgba(0,229,255,0.4) 50%, rgba(0,229,255,0.2) 80%, transparent 100%)",
-            }} />
-          </>
-        )}
-
-        {/* Scene 2 — Seismograph transition */}
-        {scene === 2 && (
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center",
-            gap: "24px",
-          }}>
-            {/* Scientific seismograph */}
-            <div style={{ width: "min(600px, 90vw)", height: "60px", opacity: 0.7 }}>
-              <ScientificSeismicLine color="rgba(200,200,200,0.6)" />
-            </div>
-            <div aria-hidden="true" style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "10px", letterSpacing: "0.2em",
-              color: "rgba(0,229,255,0.4)",
-            }}>↓</div>
-            {/* ── Upgrade 3: Real SeismicWave component in Scene 2 ── */}
-            <div style={{ width: "min(600px, 90vw)", height: "80px", position: "relative" }}>
-              <SeismicWave color="#00E5FF" score={output.overall.score} height={80} />
-              <div style={{
-                position: "absolute", bottom: "-20px", right: 0,
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: "9px", letterSpacing: "0.2em",
-                color: "rgba(0,229,255,0.5)",
-              }}>FAULTLINE SEISMOGRAPH™</div>
-            </div>
-          </div>
-        )}
-
-        {/* Scene 3 — Market streams */}
-        {scene === 3 && <MarketStreams visible={sceneVisible} />}
-
-        {/* Scene 4 — Platform cards */}
-        {scene === 4 && <PlatformCards visible={sceneVisible} />}
+        {/* Scenes 1–4: CinematicEngine renders all visuals on canvas — no DOM content needed */}
 
         {/* Scene 5 — Final declaration with live SeismicWave */}
         {scene === 5 && (
