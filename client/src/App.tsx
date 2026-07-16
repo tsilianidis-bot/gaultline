@@ -11,6 +11,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { EngineProvider } from "./contexts/EngineContext";
 import AppLayout from "./components/AppLayout";
 import IntroScreen from "./components/IntroScreen";
+import CinematicIntro, { CINEMATIC_SEEN_KEY } from "./components/CinematicIntro";
 import FREDDebugConsole from "./components/FREDDebugConsole";
 import CookieConsent from './components/CookieConsent';
 import RouteTracker from './components/RouteTracker';
@@ -206,7 +207,7 @@ function PageLoader() {
   );
 }
 
-// ── Session key: show intro once per browser session ──────────
+// ── Session key: show cinematic intro once per browser session (returning users) ──
 const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 
 function Router() {
@@ -707,13 +708,30 @@ function Router() {
 function App() {
   const isDemo = isDemoPath();
 
-  // Show intro if not seen this session.
-  // Auto-skip when the user lands directly on a deep /app/* link
-  // (e.g. /app/situation-room) so the feature is immediately visible.
-  // Also skip for demo mode — auditors should see the app immediately.
+  // First-time users see the full CinematicIntro (localStorage — once ever).
+  // Returning users see the short IntroScreen (sessionStorage — once per session).
+  // Deep links and demo mode always skip both.
+  const isFirstTime = (() => {
+    try {
+      if (isDemo) return false;
+      return localStorage.getItem(CINEMATIC_SEEN_KEY) !== '1';
+    } catch { return false; }
+  })();
+
+  const [cinematicDone, setCinematicDone] = useState<boolean>(() => {
+    try {
+      if (isDemo) return true;
+      if (!isFirstTime) return true; // returning user — skip cinematic
+      const path = window.location.pathname;
+      if (path.startsWith('/app/') && path !== '/app/dashboard' && path !== '/app/') return true;
+      return false;
+    } catch { return false; }
+  });
+
   const [introComplete, setIntroComplete] = useState<boolean>(() => {
     try {
       if (isDemo) return true; // skip intro in demo mode
+      if (!cinematicDone) return true; // cinematic handles the intro for first-timers
       if (sessionStorage.getItem(INTRO_SEEN_KEY) === '1') return true;
       const path = window.location.pathname;
       // Skip intro for any deep app link that isn't the root dashboard
@@ -727,7 +745,7 @@ function App() {
     }
   });
 
-    // ASHA Live Briefing — shown once per session, immediately after intro
+  // ASHA Live Briefing — shown once per session, immediately after intro
   const ASHA_BRIEFING_KEY = 'faultline_asha_briefing_seen';
   const [ashaBriefingDone, setAshaBriefingDone] = useState<boolean>(() => {
     try { return isDemo || sessionStorage.getItem(ASHA_BRIEFING_KEY) === '1'; } catch { return false; }
@@ -744,6 +762,19 @@ function App() {
     // Small delay to let intro exit animation finish
     setTimeout(() => setDashVisible(true), 100);
   }, []);
+
+  const handleCinematicComplete = useCallback(() => {
+    try {
+      localStorage.setItem(CINEMATIC_SEEN_KEY, '1');
+      sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+      sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
+    } catch {}
+    setCinematicDone(true);
+    setIntroComplete(true);
+    // CinematicIntro Scene 6 already showed ASHA briefing — skip it
+    setAshaBriefingDone(true);
+    setTimeout(() => setDashVisible(true), 300);
+  }, []);
   // If already seen, show dashboard immediately
   useEffect(() => {
     if (introComplete && ashaBriefingDone) setDashVisible(true);
@@ -759,8 +790,12 @@ function App() {
             {/* Demo mode banner — shown at top of every page in demo mode */}
             {isDemo && <DemoBanner />}
 
-            {/* Cinematic intro — shown once per session (skipped in demo mode) */}
-            {!introComplete && (
+            {/* CinematicIntro — shown ONCE EVER to first-time users (localStorage gate) */}
+            {!cinematicDone && (
+              <CinematicIntro onComplete={handleCinematicComplete} />
+            )}
+            {/* IntroScreen — shown once per session to returning users */}
+            {cinematicDone && !introComplete && (
               <IntroScreen onComplete={handleIntroComplete} />
             )}
             {/* ASHA Live Briefing — shown once per session, immediately after intro */}

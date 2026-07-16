@@ -16,6 +16,7 @@ import {
   Crosshair, Briefcase, Newspaper, GitBranch, Map,
 } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { CINEMATIC_SEEN_KEY } from "../components/CinematicIntro";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 
@@ -1610,6 +1611,7 @@ export default function Guide() {
   useSEO(PAGE_SEO.guide);
   const [activeId, setActiveId] = useState<string>("overview");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showCinematic, setShowCinematic] = useState(false);
 
   const filtered = searchQuery.trim()
     ? SECTIONS.filter(s => {
@@ -1628,16 +1630,46 @@ export default function Guide() {
     <div className="min-h-screen bg-[#020408] text-white font-mono"
       style={{ backgroundImage: "radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.03) 0%, transparent 60%)" }}>
 
+      {/* Understanding FAULTLINE — cinematic replay overlay */}
+      {showCinematic && (
+        <div className="fixed inset-0 z-[9999]">
+          {(() => {
+            // Dynamically require to avoid circular import issues
+            const CinematicIntroComp = require('../components/CinematicIntro').default;
+            return (
+              <CinematicIntroComp
+                onComplete={() => {
+                  try { localStorage.setItem(CINEMATIC_SEEN_KEY, '1'); } catch {}
+                  setShowCinematic(false);
+                }}
+              />
+            );
+          })()}
+        </div>
+      )}
+
       <PageHeader
         title="How to Use FAULTLINE"
         subtitle="Complete feature documentation — learn what each score means, how the engine works, and how to read the signals."
         badge="GUIDE"
         badgeColor="gray"
         rightSlot={
-          <PreflightTrigger
-            currentPage="guide"
-            actionKey="viewed_guide"
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                try { localStorage.removeItem(CINEMATIC_SEEN_KEY); } catch {}
+                setShowCinematic(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-mono tracking-widest uppercase border border-cyan-400/30 text-cyan-400/70 hover:text-cyan-400 hover:border-cyan-400/60 hover:bg-cyan-400/5 transition-all duration-200 rounded-sm"
+            >
+              <RotateCcw className="w-3 h-3" />
+              Understanding FAULTLINE
+            </button>
+            <PreflightTrigger
+              currentPage="guide"
+              actionKey="viewed_guide"
+            />
+          </div>
         }
       />
 
