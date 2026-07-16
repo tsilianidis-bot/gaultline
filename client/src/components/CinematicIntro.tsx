@@ -784,23 +784,9 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
 
   // Narrator lines per scene — compressed for 25–35 second total runtime
   // Scene 1: 5s  Scene 2: 7s  Scene 3: 7s  Scene 4: 8s  Scene 5: 5s  = ~32s
+  // Narrator lines removed — cinematic plays without on-screen narration
   const narratorLines: Record<Scene, string[]> = {
-    1: [
-      "Most people think an earthquake begins when the ground moves. It doesn't.",
-    ],
-    2: [
-      "Pressure builds beneath the surface — invisible, until it isn't.",
-    ],
-    3: [
-      "Financial markets aren't so different.\n\nLong before prices move, pressure is already building beneath the surface.",
-    ],
-    4: [
-      "FAULTLINE measures that hidden pressure...\n\nreveals it through the Seismograph...\n\nand translates it through ASHA...\n\nso you can understand what is building beneath the surface.",
-    ],
-    5: [
-      "Earthquakes don't begin when the ground moves.\n\nFinancial markets aren't so different.\n\nSee what's building beneath the surface.",
-    ],
-    6: [],
+    1: [], 2: [], 3: [], 4: [], 5: [], 6: [],
   };
 
   // Scene durations (ms) — total ~32 seconds
