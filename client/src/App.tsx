@@ -153,6 +153,7 @@ const ValidationLab = lazy(() => import("./pages/ValidationLab"));
 const FmosHealthDashboard = lazy(() => import("./pages/FmosHealthDashboard"));
 const IntelligenceValidation = lazy(() => import("./pages/IntelligenceValidation"));
 const ChatInbox = lazy(() => import("./pages/admin/ChatInbox"));
+const AshaIntelligenceCenter = lazy(() => import("./pages/AshaIntelligenceCenter"));
 const AdminPublishing  = lazy(() => import('./pages/AdminPublishing'));
 const DailyBriefArchive = lazy(() => import('./pages/DailyBriefArchive'));
 const DailyBriefPost   = lazy(() => import('./pages/DailyBriefPost'));
@@ -658,7 +659,10 @@ function Router() {
               <Route path="/app/admin/blog" component={AdminBlog} />
               <Route path="/app/admin/publishing" component={AdminPublishing} />
               <Route path="/app/admin/chat-inbox">
-                <ErrorBoundary><Suspense fallback={<PageLoader />}><ChatInbox /></Suspense></ErrorBoundary>
+                <ErrorBoundary><Suspense fallback={<PageLoader />}><AshaIntelligenceCenter /></Suspense></ErrorBoundary>
+              </Route>
+              <Route path="/app/asha-intelligence">
+                <ErrorBoundary><Suspense fallback={<PageLoader />}><AshaIntelligenceCenter /></Suspense></ErrorBoundary>
               </Route>
               <Route path="/app/x-posts" component={XPostGenerator} />
               <Route path="/app/x-post-queue" component={XPostQueue} />
