@@ -436,6 +436,18 @@ function AshaAwakeningScene({
     setGreetingDone(false);
   }, [greeting]);
 
+  // Max 8s timeout — actions always appear even if greeting is slow or LLM hangs
+  useEffect(() => {
+    if (!visible) return;
+    const maxTimer = setTimeout(() => {
+      setGreetingDone(true);
+      setIsListening(false);
+      setActionsVisible(true);
+      setStatsVisible(true);
+    }, 8000);
+    return () => clearTimeout(maxTimer);
+  }, [visible]);
+
   useEffect(() => {
     if (!greeting || greetingDone) return;
     if (greetingIdx >= greeting.length) {
@@ -1250,36 +1262,7 @@ function CinematicIntroInner({
         )}
       </div>
 
-      {/* Narrator text overlay (scenes 1–5) */}
-      {scene < 6 && (
-        <div style={{
-          position: "absolute",
-          bottom: "clamp(80px, 12vh, 140px)",
-          left: "50%", transform: "translateX(-50%)",
-          width: "min(600px, 85vw)",
-          textAlign: "center",
-          opacity: narratorVisible ? 1 : 0,
-          transition: "opacity 0.4s ease",
-        }}>
-          <p style={{
-            fontFamily: "'IBM Plex Sans', sans-serif",
-            fontSize: "clamp(14px, 2.5vw, 18px)",
-            lineHeight: 1.7,
-            color: "rgba(255,255,255,0.82)",
-            margin: 0,
-            fontStyle: "italic",
-            whiteSpace: "pre-wrap",
-          }}>
-            {narratorText}
-            <span aria-hidden="true" style={{
-              display: "inline-block", width: "2px", height: "1em",
-              background: "rgba(0,229,255,0.7)",
-              marginLeft: "2px", verticalAlign: "text-bottom",
-              animation: "fl-pulse 0.8s ease-in-out infinite",
-            }} />
-          </p>
-        </div>
-      )}
+      {/* Narrator text overlay REMOVED — narration captions disabled */}
 
       {/* Scene progress dots (scenes 1–5) */}
       {scene < 6 && (
@@ -1307,8 +1290,8 @@ function CinematicIntroInner({
         </div>
       )}
 
-      {/* Skip button + Mute toggle */}
-      {scene < 6 && (
+      {/* Skip button + Mute toggle — visible on ALL scenes including scene 6 */}
+      {(
         <div style={{
           position: "absolute", top: "20px", right: "20px",
           display: "flex", gap: "8px", alignItems: "center",
@@ -1346,8 +1329,8 @@ function CinematicIntroInner({
 
           {/* Skip */}
           <button
-            onClick={handleSkip}
-            aria-label="Skip introduction"
+            onClick={scene === 6 ? handleAshaComplete : handleSkip}
+            aria-label={scene === 6 ? "Enter dashboard" : "Skip introduction"}
             style={{
               background: "rgba(0,0,0,0.4)",
               border: "1px solid rgba(255,255,255,0.15)",
@@ -1355,20 +1338,20 @@ function CinematicIntroInner({
               padding: "8px 16px",
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "10px", letterSpacing: "0.15em",
-              color: "rgba(255,255,255,0.4)",
+              color: scene === 6 ? "rgba(0,229,255,0.6)" : "rgba(255,255,255,0.4)",
               cursor: "pointer",
               transition: "all 0.2s ease",
             }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.7)";
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.3)";
+              (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.85)";
+              (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.4)";
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.4)";
+              (e.currentTarget as HTMLButtonElement).style.color = scene === 6 ? "rgba(0,229,255,0.6)" : "rgba(255,255,255,0.4)";
               (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.15)";
             }}
           >
-            SKIP INTRO
+            {scene === 6 ? "ENTER DASHBOARD →" : "SKIP INTRO"}
           </button>
         </div>
       )}
