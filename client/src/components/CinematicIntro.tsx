@@ -895,22 +895,16 @@ function CinematicIntroInner({
   }, [output, onSceneEnter]);
 
   // ── Audio: start on scene 1 mount, then change per scene ────────
+  // Voiceover disabled — narration is captions-only on screen
   useEffect(() => {
     if (scene >= 1 && scene <= 5) {
       if (scene === 1) {
-        // First scene — start the audio engine (handles autoplay unlock)
         audio.startAudio(1);
-        // Play scene 1 narration immediately (will be unlocked by first gesture)
-        narration.playNarration(1);
       } else {
         audio.playScene(scene as 1 | 2 | 3 | 4 | 5 | 6);
-        // Play narration for scenes 2–5
-        narration.playNarration(scene);
       }
     } else if (scene === 6) {
       audio.playScene(6);
-      // No narration in scene 6 (ASHA awakening)
-      narration.stopNarration();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene]);
