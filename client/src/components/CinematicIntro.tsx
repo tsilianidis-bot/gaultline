@@ -750,13 +750,13 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
       "Pressure builds beneath the surface — invisible, until it isn't.",
     ],
     3: [
-      "Markets work the same way. Pressure builds before everything else.",
+      "Financial markets aren't so different.\n\nLong before prices move, pressure is already building beneath the surface.",
     ],
     4: [
-      "FAULTLINE monitors the Pressure Index, the Seismograph, and ASHA — so you see what's building.",
+      "FAULTLINE measures that hidden pressure...\n\nreveals it through the Seismograph...\n\nand translates it through ASHA...\n\nso you can understand what is building beneath the surface.",
     ],
     5: [
-      "Welcome. Let's see what's building beneath the surface.",
+      "Earthquakes don't begin when the ground moves.\n\nFinancial markets aren't so different.\n\nSee what's building beneath the surface.",
     ],
     6: [],
   };
@@ -1123,6 +1123,7 @@ function CinematicIntroInner({
             color: "rgba(255,255,255,0.82)",
             margin: 0,
             fontStyle: "italic",
+            whiteSpace: "pre-wrap",
           }}>
             {narratorText}
             <span aria-hidden="true" style={{
