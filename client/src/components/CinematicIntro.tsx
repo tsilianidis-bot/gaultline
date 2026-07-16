@@ -677,10 +677,7 @@ function StaticIntroFallback({ onComplete }: { onComplete: () => void }) {
         FAULTLINE reveals what is building beneath the surface.
       </div>
       <button
-        onClick={() => {
-          try { localStorage.setItem(CINEMATIC_SEEN_KEY, "1"); } catch {}
-          onComplete();
-        }}
+        onClick={() => { onComplete(); }}
         style={{
           background: "transparent",
           border: "1px solid rgba(0,229,255,0.4)",
@@ -712,7 +709,25 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
   const timerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { user } = useAuth();
   const { output, isLoading } = useEngine();
-  const canvasRef = useParticles(80, true);
+  const canvasRef = useParticles(120, true);
+
+  // ── Global audio unlock on first interaction ──────────────────
+  // Unlocks Web Audio on the very first touch/click/key anywhere in the cinematic
+  const audioUnlockedRef = useRef(false);
+  useEffect(() => {
+    const unlock = () => {
+      if (audioUnlockedRef.current) return;
+      audioUnlockedRef.current = true;
+      audio.unlockAndPlay();
+    };
+    window.addEventListener('pointerdown', unlock, { once: true, passive: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Upgrade 1: Capture live pressure snapshot at cinematic START ──
   const entrySnapshotRef = useRef<PressureSnapshot | null>(null);
@@ -826,6 +841,7 @@ function CinematicIntroInner({
   const [narratorIdx, setNarratorIdx] = useState(0);
   const [currentNarrator, setCurrentNarrator] = useState("");
   const [narratorVisible, setNarratorVisible] = useState(false);
+  const [glitching, setGlitching] = useState(false);
 
   // ── Upgrade 5: Fire onSceneEnter/onSceneExit hooks ────────────
   const fireHook = useCallback((hook: typeof onSceneEnter, s: Scene) => {
@@ -911,10 +927,7 @@ function CinematicIntroInner({
     timerRef.current.forEach(clearTimeout);
     fireHook(onSceneExit, scene);
     setExiting(true);
-    setTimeout(() => {
-      try { localStorage.setItem(CINEMATIC_SEEN_KEY, "1"); } catch {}
-      onComplete();
-    }, 600);
+    setTimeout(() => { onComplete(); }, 600);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, onComplete, onSceneExit, fireHook]);
 
@@ -931,10 +944,7 @@ function CinematicIntroInner({
   const handleAshaComplete = useCallback(() => {
     timerRef.current.forEach(clearTimeout);
     setExiting(true);
-    setTimeout(() => {
-      try { localStorage.setItem(CINEMATIC_SEEN_KEY, "1"); } catch {}
-      onComplete();
-    }, 800);
+    setTimeout(() => { onComplete(); }, 800);
   }, [onComplete]);
 
   // Cleanup on unmount
@@ -955,6 +965,14 @@ function CinematicIntroInner({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [narratorVisible, scene]);
+
+  // ── Glitch flash on scene transitions ─────────────────────────
+  useEffect(() => {
+    if (scene > 1) {
+      setGlitching(true);
+      setTimeout(() => setGlitching(false), 180);
+    }
+  }, [scene]);
 
   const pressureColor = output.overall.riskLevel === "critical" ? "#FF3B5C"
     : output.overall.riskLevel === "high" ? "#FF6B35"
@@ -997,6 +1015,92 @@ function CinematicIntroInner({
         background: "radial-gradient(ellipse at 50% 30%, rgba(0,20,40,0.8) 0%, rgba(0,0,0,0.95) 70%)",
         pointerEvents: "none",
       }} />
+
+      {/* ── Bloomberg-cinema layers ─────────────────────────────── */}
+
+      {/* CRT scanlines overlay */}
+      <div aria-hidden="true" style={{
+        position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10,
+        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px)",
+        mixBlendMode: "multiply",
+      }} />
+
+      {/* Noise grain */}
+      <div aria-hidden="true" style={{
+        position: "absolute", inset: 0, pointerEvents: "none", zIndex: 11,
+        opacity: 0.04,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        backgroundSize: "200px 200px",
+        animation: "fl-noise-drift 0.15s steps(1) infinite",
+      }} />
+
+      {/* Vignette — heavy cinematic border darkening */}
+      <div aria-hidden="true" style={{
+        position: "absolute", inset: 0, pointerEvents: "none", zIndex: 12,
+        background: "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.7) 100%)",
+      }} />
+
+      {/* Corner brackets — Bloomberg terminal aesthetic */}
+      {["top:0;left:0", "top:0;right:0", "bottom:0;left:0", "bottom:0;right:0"].map((pos, i) => {
+        const [v, h] = pos.split(";");
+        const isRight = h.includes("right");
+        const isBottom = v.includes("bottom");
+        return (
+          <div key={i} aria-hidden="true" style={{
+            position: "absolute",
+            [v.split(":")[0]]: "16px",
+            [h.split(":")[0]]: "16px",
+            width: "28px", height: "28px",
+            borderTop: isBottom ? "none" : "1px solid rgba(0,229,255,0.35)",
+            borderBottom: isBottom ? "1px solid rgba(0,229,255,0.35)" : "none",
+            borderLeft: isRight ? "none" : "1px solid rgba(0,229,255,0.35)",
+            borderRight: isRight ? "1px solid rgba(0,229,255,0.35)" : "none",
+            pointerEvents: "none", zIndex: 20,
+            opacity: scene < 6 ? 0.7 : 0.3,
+            transition: "opacity 1s ease",
+          }} />
+        );
+      })}
+
+      {/* Glitch flash on scene transition — brief RGB split */}
+      {glitching && (
+        <div aria-hidden="true" style={{
+          position: "absolute", inset: 0, pointerEvents: "none", zIndex: 30,
+          animation: "fl-glitch-flash 0.18s ease forwards",
+          background: "linear-gradient(135deg, rgba(0,229,255,0.06) 0%, rgba(255,0,80,0.04) 50%, rgba(0,255,136,0.04) 100%)",
+          mixBlendMode: "screen",
+        }} />
+      )}
+
+      {/* Live data ticker — top left, Bloomberg terminal style */}
+      {scene >= 1 && scene < 6 && (
+        <div aria-hidden="true" style={{
+          position: "absolute", top: "20px", left: "20px",
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "9px", letterSpacing: "0.12em",
+          color: "rgba(0,229,255,0.35)",
+          pointerEvents: "none", zIndex: 20,
+          lineHeight: 1.8,
+        }}>
+          <div style={{ color: "rgba(0,229,255,0.5)", marginBottom: "2px" }}>FAULTLINE INTELLIGENCE</div>
+          <div>SCENE {scene}/5</div>
+          <div style={{ marginTop: "4px", color: "rgba(255,255,255,0.2)" }}>LIVE FEED ACTIVE</div>
+        </div>
+      )}
+
+      {/* Pressure readout — bottom left */}
+      {scene >= 2 && scene < 6 && (
+        <div aria-hidden="true" style={{
+          position: "absolute", bottom: "clamp(40px, 6vh, 60px)", left: "20px",
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "9px", letterSpacing: "0.12em",
+          color: "rgba(0,229,255,0.3)",
+          pointerEvents: "none", zIndex: 20,
+        }}>
+          <div>PRESSURE {output.overall.score.toFixed(1)}/10</div>
+          <div style={{ color: pressureColor, opacity: 0.6 }}>{output.regime.label.toUpperCase()}</div>
+        </div>
+      )}
 
       {/* Scene content */}
       <div style={{

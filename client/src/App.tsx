@@ -712,19 +712,20 @@ const ASHA_BRIEFING_KEY = 'faultline_asha_briefing_seen';
 
 // ── Determine first-time status synchronously at module level ─────────────
 // This must be evaluated before ANY component renders so the initial state
-// is correct on the very first frame — no re-render, no flicker.
-function isFirstTimeUser(): boolean {
+// Cinematic shows every session unless user is in demo mode or deep-linking.
+// localStorage gate removed — user can always skip with the SKIP button.
+function shouldShowCinematic(): boolean {
   try {
-    const isDemo = isDemoPath();
-    if (isDemo) return false;
+    if (isDemoPath()) return false;
     const path = window.location.pathname;
-    // Deep links into the app skip the cinematic
+    // Deep links into specific app pages skip the cinematic
     if (path.startsWith('/app/') && path !== '/app/dashboard' && path !== '/app/') return false;
-    return localStorage.getItem(CINEMATIC_SEEN_KEY) !== '1';
+    // Show every session — no localStorage gate
+    return true;
   } catch { return false; }
 }
 
-const FIRST_TIME = isFirstTimeUser();
+const FIRST_TIME = shouldShowCinematic();
 
 function App() {
   const isDemo = isDemoPath();
@@ -744,8 +745,8 @@ function App() {
   // It is only available as an internal fallback if needed post-cinematic.
   // ──────────────────────────────────────────────────────────────────────────
 
-  // cinematicDone: true if user has already seen the cinematic (returning user)
-  // or if they are in demo mode or deep-linking into the app.
+  // cinematicDone: false until cinematic completes or is skipped.
+  // Shows every session — no localStorage gate. User can always skip.
   const [cinematicDone, setCinematicDone] = useState<boolean>(() => !FIRST_TIME);
 
   // introComplete: always true for first-time users (cinematic IS the intro)
@@ -778,19 +779,14 @@ function App() {
   }, []);
 
   // Dashboard visibility — fades in once all gates are cleared
-  const [dashVisible, setDashVisible] = useState(() => !FIRST_TIME && isDemo
-    ? true
-    : !FIRST_TIME // returning users see dashboard immediately after ASHA
-  );
+  const [dashVisible, setDashVisible] = useState(() => !FIRST_TIME ? true : false);
 
-  // Cinematic complete handler — called when CinematicIntro Scene 6 finishes
+  // Cinematic complete handler — called when CinematicIntro finishes or is skipped
   const handleCinematicComplete = useCallback(() => {
     try {
-      localStorage.setItem(CINEMATIC_SEEN_KEY, '1');
       sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
     } catch {}
     setCinematicDone(true);
-    // CinematicIntro Scene 6 already showed ASHA briefing — skip it
     setAshaBriefingDone(true);
     setTimeout(() => setDashVisible(true), 300);
   }, []);
