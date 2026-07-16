@@ -336,12 +336,13 @@ function ExecutionSequence({ currentStep }: { currentStep: number }) {
 
 // ── FMOS Engine Status Mini-Card ──────────────────────────────
 
-function EngineCard({ icon, label, value, color, sub }: {
+function EngineCard({ icon, label, value, color, sub, subColor }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   color: string;
   sub?: string;
+  subColor?: string;
 }) {
   return (
     <div style={{
@@ -359,7 +360,7 @@ function EngineCard({ icon, label, value, color, sub }: {
         <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", fontSize: "9px", letterSpacing: "0.1em", textTransform: "uppercase", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
       </div>
       <div style={{ ...MONO, fontSize: "11px", fontWeight: 700, color, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{value}</div>
-      {sub && <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.2)", fontSize: "9px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>}
+      {sub && <div style={{ ...MONO_SM, color: subColor ?? "rgba(255,255,255,0.2)", fontSize: "9px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sub}</div>}
     </div>
   );
 }
@@ -477,23 +478,37 @@ function ConfidenceBreakdown({ confidence, label, reasons }: {
   label: string;
   reasons: string[];
 }) {
-  const color = confidence >= 70 ? "#00FF88" : confidence >= 45 ? "#FFD700" : "#FF4444";
+  // Color driven by label (HIGH/MODERATE/LOW) — the canonical source from ASHA's system prompt
+  const labelNorm = (label ?? "").toUpperCase().trim();
+  const color = labelNorm === "HIGH" ? "#00FF88" : labelNorm === "MODERATE" ? "#FFD700" : labelNorm === "LOW" ? "#FF4444"
+    : confidence >= 70 ? "#00FF88" : confidence >= 45 ? "#FFD700" : "#FF4444";
+  const barColor = labelNorm === "HIGH" ? "green" : labelNorm === "MODERATE" ? "yellow" : labelNorm === "LOW" ? "red"
+    : confidence >= 70 ? "green" : confidence >= 45 ? "yellow" : "red";
+  const pillBg = labelNorm === "HIGH" ? "rgba(0,255,136,0.12)" : labelNorm === "MODERATE" ? "rgba(255,215,0,0.12)" : "rgba(255,68,68,0.12)";
+  const pillBorder = labelNorm === "HIGH" ? "rgba(0,255,136,0.3)" : labelNorm === "MODERATE" ? "rgba(255,215,0,0.3)" : "rgba(255,68,68,0.3)";
 
   return (
     <div style={{
       padding: "12px 14px",
       background: "rgba(255,255,255,0.02)",
-      border: "1px solid rgba(255,255,255,0.05)",
+      border: `1px solid ${pillBorder}`,
       borderRadius: "6px",
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
         <span style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", letterSpacing: "0.1em", fontSize: "10px" }}>CONFIDENCE BREAKDOWN</span>
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ ...MONO, fontSize: "13px", fontWeight: 700, color }}>{confidence}%</span>
-          <span style={{ ...MONO_SM, color, fontSize: "9px", padding: "1px 5px", background: `${color}15`, borderRadius: "3px" }}>{label}</span>
+          <span style={{
+            ...MONO_SM, color, fontSize: "9px", fontWeight: 700,
+            padding: "2px 8px",
+            background: pillBg,
+            border: `1px solid ${pillBorder}`,
+            borderRadius: "10px",
+            letterSpacing: "0.1em",
+          }}>{labelNorm || label}</span>
         </div>
       </div>
-      <div style={{ ...scoreBar(confidence, confidence >= 70 ? "green" : confidence >= 45 ? "yellow" : "red"), marginBottom: "8px" }} />
+      <div style={{ ...scoreBar(confidence, barColor), marginBottom: "8px" }} />
       {reasons && reasons.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           {reasons.map((r, i) => (
@@ -1114,7 +1129,18 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
   // Derive FMOS engine status values from answer fields
   const regimeStatus = answer.regimeColor === "green" ? "STABLE" : answer.regimeColor === "red" ? "STRESSED" : "TRANSITIONING";
   const regimeColor = answer.regimeColor === "green" ? "#00FF88" : answer.regimeColor === "red" ? "#FF4444" : "#FFD700";
-  const confidenceColor = answer.confidence >= 70 ? "#00FF88" : answer.confidence >= 45 ? "#FFD700" : "#FF4444";
+  // Confidence color — driven by confidenceLabel (HIGH/MODERATE/LOW) from ASHA, falling back to numeric score
+  const confidenceLabelNorm = (answer.confidenceLabel ?? "").toUpperCase().trim();
+  const confidenceColor = confidenceLabelNorm === "HIGH" ? "#00FF88"
+    : confidenceLabelNorm === "MODERATE" ? "#FFD700"
+    : confidenceLabelNorm === "LOW" ? "#FF4444"
+    : answer.confidence >= 70 ? "#00FF88" : answer.confidence >= 45 ? "#FFD700" : "#FF4444";
+  const confidenceBg = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.08)"
+    : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.08)"
+    : "rgba(255,68,68,0.08)";
+  const confidenceBorder = confidenceLabelNorm === "HIGH" ? "rgba(0,255,136,0.2)"
+    : confidenceLabelNorm === "MODERATE" ? "rgba(255,215,0,0.2)"
+    : "rgba(255,68,68,0.2)";
   const opportunityColor = answer.opportunityScore >= 65 ? "#00FF88" : answer.opportunityScore >= 40 ? "#FFD700" : "#FF4444";
 
   // Determine if this is a WAIT/HOLD verdict
@@ -1172,7 +1198,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
           {[
             { label: "OPPORTUNITY", value: answer.opportunityScore, color: answer.verdictColor },
-            { label: "CONFIDENCE", value: answer.confidence, color: answer.verdictColor },
+            { label: "CONFIDENCE", value: answer.confidence, color: confidenceLabelNorm === "HIGH" ? "green" : confidenceLabelNorm === "MODERATE" ? "yellow" : "red" },
           ].map(({ label, value, color }) => (
             <div key={label}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
@@ -1218,6 +1244,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
           value={`${answer.confidence}%`}
           color={confidenceColor}
           sub={answer.confidenceLabel}
+          subColor={confidenceColor}
         />
         <EngineCard
           icon={<Target size={9} />}
