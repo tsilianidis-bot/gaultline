@@ -95,7 +95,7 @@ export async function getUserByOpenId(openId: string) {
 export async function getPositionsByUser(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(positions).where(eq(positions.userId, userId));
+  return db.select().from(positions).where(eq(positions.userId, userId)).limit(500);
 }
 
 export async function addPosition(data: Omit<InsertPosition, 'id' | 'createdAt' | 'updatedAt'>) {
@@ -137,7 +137,7 @@ export async function getAllUsers() {
       lastSignedIn: users.lastSignedIn,
     })
     .from(users)
-    .orderBy(users.createdAt);
+    .orderBy(users.createdAt).limit(1000);
 }
 
 export async function getPositionById(id: number, userId: number) {
@@ -156,7 +156,7 @@ export async function getCryptoWatchlist(userId: number) {
   if (!db) return [];
   return db.select().from(cryptoWatchlist)
     .where(eq(cryptoWatchlist.userId, userId))
-    .orderBy(cryptoWatchlist.addedAt);
+    .orderBy(cryptoWatchlist.addedAt).limit(200);
 }
 
 export async function addCryptoWatchlistItem(
@@ -299,7 +299,7 @@ export async function getFoundingRequests() {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(foundingAccessRequests)
-    .orderBy(desc(foundingAccessRequests.createdAt));
+    .orderBy(desc(foundingAccessRequests.createdAt)).limit(500);
 }
 
 export async function updateFoundingRequestStatus(
@@ -390,7 +390,7 @@ export async function getAllUsersWithTier() {
       lastSignedIn: users.lastSignedIn,
     })
     .from(users)
-    .orderBy(users.createdAt);
+    .orderBy(users.createdAt).limit(1000);
 }
 
 // ── Statistics helpers ────────────────────────────────────────

@@ -398,7 +398,23 @@ Return JSON with these fields:
     }
   });
 
-  const data = JSON.parse(response.choices[0].message.content as string);
+  interface SignalPageData {
+    signalSummary: string;
+    bullishCase: string;
+    bearishCase: string;
+    macroRisks: string;
+    technicalRisks: string;
+    catalystAnalysis: string;
+    confidenceScore: number;
+    faqs: Array<{ question: string; answer: string }>;
+    signalLabel: string;
+  }
+  let data: SignalPageData;
+  try {
+    data = JSON.parse(response.choices[0].message.content as string) as SignalPageData;
+  } catch {
+    return { ok: false, error: 'LLM returned invalid JSON for signal page generation' };
+  }
 
   await db.insert(signalPages).values({
     symbol: symbol.toUpperCase(),

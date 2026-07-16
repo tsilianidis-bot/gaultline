@@ -59,20 +59,21 @@ function tierToPlanName(tier: string): string {
 export async function handleStripeWebhook(req: Request, res: Response) {
   const sig = req.headers['stripe-signature'] as string;
 
-  // ── Test verification passthrough ─────────────────────────────────────────
-  // Stripe's webhook verification ping sends an evt_test_ event whose signature
-  // is computed with the NEW webhook secret — which may differ from the secret
-  // currently stored in env. We must detect and pass through BEFORE constructEvent()
-  // so the 400 signature error never fires during verification.
-  let rawBody: string;
-  try {
-    rawBody = req.body instanceof Buffer ? req.body.toString('utf8') : String(req.body);
-  } catch {
-    rawBody = '';
-  }
-  if (rawBody.includes('evt_test_')) {
-    console.log('[Stripe Webhook] Test verification event detected — returning verified response');
-    return res.status(200).json({ verified: true });
+  // ── Signature verification bypass (dev/test only) ───────────────────────────
+  // NEVER bypass based on payload body content — that is spoofable by any caller.
+  // Only bypass when STRIPE_SKIP_VERIFICATION=true is explicitly set in the environment,
+  // which must never be set in production.
+  const skipVerification = process.env.STRIPE_SKIP_VERIFICATION === 'true' && process.env.NODE_ENV !== 'production';
+  if (skipVerification) {
+    console.warn('[Stripe Webhook] STRIPE_SKIP_VERIFICATION is active — skipping signature check (dev/test only)');
+    let parsedEvent: any;
+    try {
+      const rawBody = req.body instanceof Buffer ? req.body.toString('utf8') : String(req.body);
+      parsedEvent = JSON.parse(rawBody);
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON body' });
+    }
+    return res.status(200).json({ verified: true, eventId: parsedEvent?.id });
   }
 
   let event;

@@ -5,6 +5,7 @@
  * Full SEO: Article JSON-LD schema, Open Graph, canonical URL.
  */
 import { useParams, Link } from "wouter";
+import DOMPurify from "dompurify";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import { Badge } from "@/components/ui/badge";
@@ -236,7 +237,7 @@ export default function DailyBriefPost() {
             lineHeight: 1.8,
             fontSize: '0.95rem',
           } as React.CSSProperties}
-          dangerouslySetInnerHTML={{ __html: item.content ?? "<p>Content not available.</p>" }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content ?? "<p>Content not available.</p>") }}
         />
 
         {/* ── Internal links ──────────────────────────────────── */}

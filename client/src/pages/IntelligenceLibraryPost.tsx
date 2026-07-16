@@ -5,6 +5,7 @@
  * Full SEO: Article JSON-LD schema, FAQ schema, Open Graph, canonical URL.
  */
 import { useParams, Link } from "wouter";
+import DOMPurify from "dompurify";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import { Badge } from "@/components/ui/badge";
@@ -248,7 +249,7 @@ export default function IntelligenceLibraryPost() {
             lineHeight: 1.85,
             fontSize: '0.95rem',
           } as React.CSSProperties}
-          dangerouslySetInnerHTML={{ __html: item.content ?? "<p>Content not available.</p>" }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.content ?? "<p>Content not available.</p>") }}
         />
 
         {/* ── Quality score ────────────────────────────────────── */}

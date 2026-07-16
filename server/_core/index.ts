@@ -131,6 +131,14 @@ async function startServer() {
     next();
   });
 
+  // Security: strip x-internal from all incoming requests before any handler sees it.
+  // This header is used only for internal server-to-server calls and must never be
+  // trusted from external clients — it is spoofable by any HTTP caller.
+  app.use((req, _res, next) => {
+    delete req.headers['x-internal'];
+    next();
+  });
+
   // Stripe webhook MUST use raw body BEFORE express.json() for signature verification
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
@@ -152,28 +160,41 @@ async function startServer() {
   registerSEORoutes(app);
   app.use("/api/analytics", analyticsRoutes);
 
+  // Cron authentication helper — all scheduled endpoints must use this
+  const CRON_SECRET = process.env.CRON_SECRET ?? process.env.HEARTBEAT_SECRET ?? '';
+  function requireCron(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const auth = req.headers['authorization'] ?? '';
+    const token = typeof auth === 'string' ? auth.replace(/^Bearer\s+/i, '') : '';
+    // Allow if token matches CRON_SECRET, or if request is from localhost (dev)
+    const isLocalhost = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
+    if (!CRON_SECRET || (CRON_SECRET && token === CRON_SECRET) || (isLocalhost && process.env.NODE_ENV === 'development')) {
+      return next();
+    }
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+
   // Scheduled cron endpoints — must be before tRPC / Vite fallthrough
-  app.post("/api/scheduled/ping", (_req, res) => res.json({ ok: true }));
-  app.post("/api/scheduled/daily-snapshot", handleScheduledDailySnapshot);
-  app.post("/api/scheduled/publish-blog", handleScheduledPublishBlog);
-  app.post("/api/scheduled/auto-publish-drafts", handleScheduledAutoPublishDrafts);
-  app.post("/api/scheduled/x-post-scheduled", handleScheduledXPost);
-  app.post("/api/scheduled/x-news-monitor", handleXNewsMonitor);
-  app.post("/api/scheduled/daily-sim-portfolio", handleScheduledSimPortfolio);
-  app.post("/api/scheduled/generate-organic-content", handleGenerateOrganicContent);
-  app.post("/api/scheduled/refresh-signal-pages", handleRefreshSignalPages);
-  app.post("/api/scheduled/ledger-evaluation", handleScheduledLedgerEvaluation);
-  app.post("/api/scheduled/weekly-improvement-report", weeklyImprovementReportHandler);
-  app.post("/api/scheduled/drip-email", handleDripEmail);
-  app.post("/api/scheduled/seismograph-daily", handleScheduledSeismograph);
+  app.post("/api/scheduled/ping", requireCron, (_req, res) => res.json({ ok: true }));
+  app.post("/api/scheduled/daily-snapshot", requireCron, handleScheduledDailySnapshot);
+  app.post("/api/scheduled/publish-blog", requireCron, handleScheduledPublishBlog);
+  app.post("/api/scheduled/auto-publish-drafts", requireCron, handleScheduledAutoPublishDrafts);
+  app.post("/api/scheduled/x-post-scheduled", requireCron, handleScheduledXPost);
+  app.post("/api/scheduled/x-news-monitor", requireCron, handleXNewsMonitor);
+  app.post("/api/scheduled/daily-sim-portfolio", requireCron, handleScheduledSimPortfolio);
+  app.post("/api/scheduled/generate-organic-content", requireCron, handleGenerateOrganicContent);
+  app.post("/api/scheduled/refresh-signal-pages", requireCron, handleRefreshSignalPages);
+  app.post("/api/scheduled/ledger-evaluation", requireCron, handleScheduledLedgerEvaluation);
+  app.post("/api/scheduled/weekly-improvement-report", requireCron, weeklyImprovementReportHandler);
+  app.post("/api/scheduled/drip-email", requireCron, handleDripEmail);
+  app.post("/api/scheduled/seismograph-daily", requireCron, handleScheduledSeismograph);
   // Autonomous publishing pipeline
-  app.post("/api/scheduled/daily-brief", handleDailyBrief);
-  app.post("/api/scheduled/weekly-review", handleWeeklyReview);
-  app.post("/api/scheduled/monthly-report", handleMonthlyReport);
-  app.post("/api/scheduled/daily-brief/manual", handleManualPublish);
-  app.get("/api/publishing/status", handlePublishingStatus);
-  app.post("/api/publishing/toggle-active", handleToggleActive);
-  app.post("/api/publishing/publish-draft/:id", handlePublishDraft);
+  app.post("/api/scheduled/daily-brief", requireCron, handleDailyBrief);
+  app.post("/api/scheduled/weekly-review", requireCron, handleWeeklyReview);
+  app.post("/api/scheduled/monthly-report", requireCron, handleMonthlyReport);
+  app.post("/api/scheduled/daily-brief/manual", requireCron, handleManualPublish);
+  app.get("/api/publishing/status", requireCron, handlePublishingStatus);
+  app.post("/api/publishing/toggle-active", requireCron, handleToggleActive);
+  app.post("/api/publishing/publish-draft/:id", requireCron, handlePublishDraft);
   // RSS feed
   app.get("/api/rss.xml", handleRssFeed);
 

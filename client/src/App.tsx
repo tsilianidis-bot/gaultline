@@ -153,7 +153,6 @@ const Glossary = lazy(() => import("./pages/Glossary"));
 const ValidationLab = lazy(() => import("./pages/ValidationLab"));
 const FmosHealthDashboard = lazy(() => import("./pages/FmosHealthDashboard"));
 const IntelligenceValidation = lazy(() => import("./pages/IntelligenceValidation"));
-const ChatInbox = lazy(() => import("./pages/admin/ChatInbox"));
 const AshaIntelligenceCenter = lazy(() => import("./pages/AshaIntelligenceCenter"));
 const AdminPublishing  = lazy(() => import('./pages/AdminPublishing'));
 const DailyBriefArchive = lazy(() => import('./pages/DailyBriefArchive'));
