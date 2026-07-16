@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // Uploaded TTS narration files — one per cinematic scene
 const NARRATION_URLS: Record<number, string> = {
-  1: "/manus-storage/scene1_v2_16976ac8.wav",
-  2: "/manus-storage/scene2_v2_87a44b91.wav",
-  3: "/manus-storage/scene3_v2_e82cb875.wav",
-  4: "/manus-storage/scene4_v2_0e5d13b5.wav",
-  5: "/manus-storage/scene5_v2_eed2d1ec.wav",
+  1: "/manus-storage/scene1_v2_c9707dbb.wav",
+  2: "/manus-storage/scene2_v2_8bfbd3d6.wav",
+  3: "/manus-storage/scene3_v2_21cf6145.wav",
+  4: "/manus-storage/scene4_v2_4f336fe9.wav",
+  5: "/manus-storage/scene5_v2_7af3a6d8.wav",
 };
 
 // Narration volume relative to the synthesized soundscape
