@@ -146,6 +146,19 @@ interface FaultlineAnswer {
   } | null;
   // Historical Intelligence — server-computed, not from LLM
   historicalIntelligence?: HistoricalIntelligenceData | null;
+  // ── NEW V3 FIELDS — Final Verdict + Institutional Intelligence ──────────────────────────────
+  finalVerdictAction?: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
+  finalVerdictProbability?: number;
+  finalVerdictConfidence?: number;
+  finalVerdictRiskLevel?: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
+  finalVerdictTimeHorizon?: string;
+  finalVerdictRationale?: string;
+  suggestedBias?: string;
+  suggestedBiasCondition?: string;
+  historicalAnalog?: string | null;
+  historicalAnalogOutcome?: string | null;
+  keyDrivers?: string[];
+  risks?: string[];
 }
 
 // ── Opportunity Ranking Types (mirrors server OpportunityRankingAnswer) ──
@@ -1311,6 +1324,185 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
       {answer.watchCatalysts && answer.watchCatalysts.length > 0 && (
         <WatchCatalysts catalysts={answer.watchCatalysts} />
       )}
+
+      {/* ── SUGGESTED BIAS ── */}
+      {answer.suggestedBias && (
+        <div style={{
+          padding: "12px 16px",
+          background: "rgba(0,212,255,0.04)",
+          border: "1px solid rgba(0,212,255,0.15)",
+          borderRadius: "8px",
+          display: "flex",
+          gap: "10px",
+          alignItems: "flex-start",
+        }}>
+          <TrendingUp size={12} style={{ color: "#00D4FF", marginTop: "2px", flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ ...MONO_SM, color: "#00D4FF", marginBottom: "4px", fontSize: "9px", letterSpacing: "0.12em" }}>RECOMMENDED BIAS</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#E8EDF5", fontWeight: 600, marginBottom: answer.suggestedBiasCondition ? "4px" : 0 }}>
+              {answer.suggestedBias}
+            </div>
+            {answer.suggestedBiasCondition && (
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.45)", lineHeight: 1.5 }}>
+                Condition: {answer.suggestedBiasCondition}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── KEY DRIVERS ── */}
+      {answer.keyDrivers && answer.keyDrivers.length > 0 && (
+        <div style={{ padding: "14px 16px", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px" }}>
+          <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.4)", marginBottom: "10px", letterSpacing: "0.12em", fontSize: "10px", display: "flex", alignItems: "center", gap: "5px" }}>
+            <Zap size={9} style={{ color: "#00FF88" }} />
+            KEY DRIVERS
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {answer.keyDrivers.map((driver, i) => (
+              <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ ...MONO_SM, color: "#00FF88", marginTop: "2px", flexShrink: 0, fontSize: "10px", fontWeight: 700 }}>{i + 1}.</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#C8D0DC", lineHeight: 1.55 }}>{driver}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── RISKS ── */}
+      {answer.risks && answer.risks.length > 0 && (
+        <div style={{ padding: "14px 16px", background: "rgba(255,68,68,0.03)", border: "1px solid rgba(255,68,68,0.1)", borderRadius: "8px" }}>
+          <div style={{ ...MONO_SM, color: "rgba(255,68,68,0.7)", marginBottom: "10px", letterSpacing: "0.12em", fontSize: "10px", display: "flex", alignItems: "center", gap: "5px" }}>
+            <AlertTriangle size={9} style={{ color: "#FF4444" }} />
+            RISKS TO THE THESIS
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {answer.risks.map((risk, i) => (
+              <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                <span style={{ ...MONO_SM, color: "#FF4444", marginTop: "2px", flexShrink: 0, fontSize: "10px" }}>▸</span>
+                <span style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#C8D0DC", lineHeight: 1.55 }}>{risk}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── HISTORICAL ANALOG ── */}
+      {answer.historicalAnalog && (
+        <div style={{
+          padding: "12px 16px",
+          background: "rgba(255,215,0,0.03)",
+          border: "1px solid rgba(255,215,0,0.12)",
+          borderRadius: "8px",
+          display: "flex",
+          gap: "10px",
+          alignItems: "flex-start",
+        }}>
+          <BookOpen size={12} style={{ color: "#FFD700", marginTop: "2px", flexShrink: 0 }} />
+          <div>
+            <div style={{ ...MONO_SM, color: "#FFD700", marginBottom: "4px", fontSize: "9px", letterSpacing: "0.12em" }}>HISTORICAL ANALOG</div>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "#E8EDF5", marginBottom: answer.historicalAnalogOutcome ? "4px" : 0 }}>
+              {answer.historicalAnalog}
+            </div>
+            {answer.historicalAnalogOutcome && (
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "11px", color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+                Outcome: {answer.historicalAnalogOutcome}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── FINAL VERDICT ── */}
+      {answer.finalVerdictAction && (() => {
+        const fvAction = answer.finalVerdictAction!;
+        const fvColor = ["BUY", "ACCUMULATE"].includes(fvAction) ? "#00FF88"
+          : ["SELL", "AVOID"].includes(fvAction) ? "#FF4444"
+          : ["REDUCE"].includes(fvAction) ? "#FF6B35"
+          : "#FFD700";
+        const fvBg = ["BUY", "ACCUMULATE"].includes(fvAction) ? "rgba(0,255,136,0.06)"
+          : ["SELL", "AVOID"].includes(fvAction) ? "rgba(255,68,68,0.06)"
+          : ["REDUCE"].includes(fvAction) ? "rgba(255,107,53,0.06)"
+          : "rgba(255,215,0,0.06)";
+        const fvBorder = ["BUY", "ACCUMULATE"].includes(fvAction) ? "rgba(0,255,136,0.25)"
+          : ["SELL", "AVOID"].includes(fvAction) ? "rgba(255,68,68,0.25)"
+          : ["REDUCE"].includes(fvAction) ? "rgba(255,107,53,0.25)"
+          : "rgba(255,215,0,0.25)";
+        const rlColor = answer.finalVerdictRiskLevel === "LOW" ? "#00FF88"
+          : answer.finalVerdictRiskLevel === "MODERATE" ? "#FFD700"
+          : answer.finalVerdictRiskLevel === "EXTREME" ? "#FF1744"
+          : "#FF4444";
+        return (
+          <div style={{
+            padding: "18px 20px",
+            background: fvBg,
+            border: `2px solid ${fvBorder}`,
+            borderRadius: "10px",
+            marginTop: "4px",
+          }}>
+            {/* Header */}
+            <div style={{ ...MONO_SM, color: fvColor, marginBottom: "12px", letterSpacing: "0.14em", fontSize: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <CheckCircle size={10} style={{ color: fvColor }} />
+              FINAL VERDICT
+            </div>
+
+            {/* Action */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "14px", flexWrap: "wrap" }}>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "28px", fontWeight: 900, color: fvColor, letterSpacing: "0.06em" }}>
+                {fvAction}
+              </div>
+              {answer.finalVerdictTimeHorizon && (
+                <div style={{
+                  ...MONO_SM, fontSize: "10px",
+                  padding: "3px 8px",
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "4px",
+                  color: "rgba(255,255,255,0.5)",
+                  display: "flex", alignItems: "center", gap: "4px",
+                }}>
+                  <Clock size={9} />
+                  {answer.finalVerdictTimeHorizon}
+                </div>
+              )}
+            </div>
+
+            {/* Probability + Confidence + Risk grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
+              {[
+                { label: "PROBABILITY", value: `${answer.finalVerdictProbability ?? 0}%`, color: fvColor },
+                { label: "CONFIDENCE", value: `${answer.finalVerdictConfidence ?? 0}%`, color: confidenceColor },
+                { label: "RISK LEVEL", value: answer.finalVerdictRiskLevel ?? "—", color: rlColor },
+              ].map(({ label, value, color }) => (
+                <div key={label} style={{
+                  padding: "8px 10px",
+                  background: "rgba(0,0,0,0.25)",
+                  borderRadius: "6px",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  textAlign: "center",
+                }}>
+                  <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.35)", fontSize: "8px", letterSpacing: "0.1em", marginBottom: "4px" }}>{label}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", fontWeight: 700, color }}>{value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Rationale */}
+            {answer.finalVerdictRationale && (
+              <div style={{
+                padding: "9px 12px",
+                background: "rgba(0,0,0,0.2)",
+                borderRadius: "5px",
+                borderLeft: `3px solid ${fvColor}`,
+              }}>
+                <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "12px", color: "rgba(255,255,255,0.7)", lineHeight: 1.6, margin: 0 }}>
+                  {answer.finalVerdictRationale}
+                </p>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Collapsible: full analysis ── */}
       <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: "8px", overflow: "hidden" }}>
