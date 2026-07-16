@@ -1017,8 +1017,36 @@ export async function dayTradeSymbolSetup(
       return noTradeReport;
     }
 
-    const setup = await buildCryptoSetup(coin, direction, "balanced", regime, regimePressure);
-    if (!setup) throw new Error(`Failed to build crypto setup for ${symbol}`);
+    let setup = await buildCryptoSetup(coin, direction, "balanced", regime, regimePressure).catch((err: unknown) => {
+      log.error("[DayTradeSymbolSetup] buildCryptoSetup failed", { symbol, err });
+      return null;
+    });
+    if (!setup) {
+      // Degrade gracefully — return a NO_TRADE report instead of throwing
+      log.warn("[DayTradeSymbolSetup] Crypto setup unavailable, returning degraded report", { symbol });
+      return {
+        symbol: symbol.toUpperCase(), name: symbol.toUpperCase(), assetType: "crypto" as const,
+        currentPrice: coin.currentPrice, changePercent: coin.priceChangePercent24h ?? 0,
+        volume: coin.totalVolume ?? 0, relativeVolume: null, marketCap: coin.marketCap ?? null,
+        capBucket: "mixed" as const, setupType: "NO_TRADE", direction: "bullish" as const,
+        entryZoneLow: 0, entryZoneHigh: 0, target1: 0, target2: 0, stopLoss: 0,
+        invalidationLevel: 0, expectedHoldMinutes: 0, confidence: 0, probabilityRating: 0,
+        riskRewardRatio: 0, riskLevel: "Very High", liquidityRating: "Low",
+        executionScore: 0, executionGrade: "F" as const,
+        catalyst: "N/A", whyToday: "N/A", reasonForRecommendation: "N/A",
+        regimeImpact: "N/A", sectorStrength: "N/A", intradayTrend: "Neutral",
+        marketContext: "Setup calculation temporarily unavailable. Price data retrieved successfully.",
+        vwapStatus: "Unknown", momentumRating: 0, supportLevel: coin.low24h ?? 0,
+        resistanceLevel: coin.high24h ?? 0, whyTradeExists: "N/A", whatCancelsThisTrade: "N/A",
+        confidenceReasoning: "N/A", catalystSummary: "N/A",
+        noTradeReason: "Trade setup calculation temporarily unavailable. Price data was retrieved successfully but the setup engine encountered an error.",
+        executionScoreBreakdown: emptyBreakdown, bullCase: "N/A", bearCase: "N/A",
+        primaryCatalyst: "N/A", largestRisk: "N/A", mostLikelyPath: "N/A",
+        alternativePath: "N/A", recommendedTimeframe: "N/A", bestStrategy: "N/A",
+        generatedAt: Date.now(),
+        _degradedSources: ["setup-engine"],
+      } as DayTradeReport;
+    }
 
     const price = coin.currentPrice;
     const closes = coin.sparkline7d ?? [];
@@ -1031,7 +1059,17 @@ export async function dayTradeSymbolSetup(
       setup.setupType, setup.direction,
       setup.confidence, regime, regimePressure, setup.riskRewardRatio,
       setup.setupType === "NO_TRADE"
-    );
+    ).catch((err: unknown) => {
+      log.warn("[DayTradeSymbolSetup] LLM enrichment failed for crypto, using deterministic fallback", { symbol, err });
+      return null;
+    });
+    const enrichmentCrypto = enrichment ?? {
+      intradayTrend: "Neutral", marketContext: "AI enrichment temporarily unavailable.",
+      whyTradeExists: "N/A", whatCancelsThisTrade: "N/A", confidenceReasoning: "N/A",
+      catalystSummary: "N/A", noTradeReason: null, bullCase: "N/A", bearCase: "N/A",
+      primaryCatalyst: "N/A", largestRisk: "N/A", mostLikelyPath: "N/A",
+      alternativePath: "N/A", recommendedTimeframe: "N/A", bestStrategy: "N/A",
+    };
 
     const { breakdown: executionScoreBreakdown } = computeExecutionScore(
       regimePressure, rsi, setup.setupType, setup.relativeVolume, setup.liquidityRating,
@@ -1041,26 +1079,27 @@ export async function dayTradeSymbolSetup(
 
     const report: DayTradeReport = {
       ...setup,
-      intradayTrend: enrichment.intradayTrend,
-      marketContext: enrichment.marketContext,
+      intradayTrend: enrichmentCrypto.intradayTrend,
+      marketContext: enrichmentCrypto.marketContext,
       vwapStatus: price > vwap ? "Above VWAP" : price < vwap ? "Below VWAP" : "At VWAP",
       momentumRating: assessMomentum(coin.priceChangePercent24h, setup.relativeVolume, rsi),
       supportLevel: roundTo(coin.low24h, 4),
       resistanceLevel: roundTo(coin.high24h, 4),
-      whyTradeExists: enrichment.whyTradeExists,
-      whatCancelsThisTrade: enrichment.whatCancelsThisTrade,
-      confidenceReasoning: enrichment.confidenceReasoning,
-      catalystSummary: enrichment.catalystSummary,
-      noTradeReason: enrichment.noTradeReason ?? undefined,
+      whyTradeExists: enrichmentCrypto.whyTradeExists,
+      whatCancelsThisTrade: enrichmentCrypto.whatCancelsThisTrade,
+      confidenceReasoning: enrichmentCrypto.confidenceReasoning,
+      catalystSummary: enrichmentCrypto.catalystSummary,
+      noTradeReason: enrichmentCrypto.noTradeReason ?? undefined,
       executionScoreBreakdown,
-      bullCase: enrichment.bullCase,
-      bearCase: enrichment.bearCase,
-      primaryCatalyst: enrichment.primaryCatalyst,
-      largestRisk: enrichment.largestRisk,
-      mostLikelyPath: enrichment.mostLikelyPath,
-      alternativePath: enrichment.alternativePath,
-      recommendedTimeframe: enrichment.recommendedTimeframe,
-      bestStrategy: enrichment.bestStrategy,
+      bullCase: enrichmentCrypto.bullCase,
+      bearCase: enrichmentCrypto.bearCase,
+      primaryCatalyst: enrichmentCrypto.primaryCatalyst,
+      largestRisk: enrichmentCrypto.largestRisk,
+      mostLikelyPath: enrichmentCrypto.mostLikelyPath,
+      alternativePath: enrichmentCrypto.alternativePath,
+      recommendedTimeframe: enrichmentCrypto.recommendedTimeframe,
+      bestStrategy: enrichmentCrypto.bestStrategy,
+      ...(!enrichment ? { _degradedSources: ["llm-enrichment"] } : {}),
     };
 
     reportCache.set(cacheKey, report);
@@ -1148,16 +1187,53 @@ export async function dayTradeSymbolSetup(
   const setup = await buildStockSetup(
     symbol, symbol, price, changePercent, volume, null, null,
     open, high, low, direction, "balanced", regime, regimePressure
-  );
+  ).catch((err: unknown) => {
+    log.error("[DayTradeSymbolSetup] buildStockSetup failed", { symbol, err });
+    return null;
+  });
 
-  if (!setup) throw new Error(`Failed to build stock setup for ${symbol}`);
+  if (!setup) {
+    log.warn("[DayTradeSymbolSetup] Stock setup unavailable, returning degraded report", { symbol });
+    return {
+      symbol: symbol.toUpperCase(), name: symbol.toUpperCase(), assetType: "stock" as const,
+      currentPrice: price, changePercent, volume, relativeVolume: null, marketCap: null,
+      capBucket: "large" as const, setupType: "NO_TRADE", direction: "bullish" as const,
+      entryZoneLow: 0, entryZoneHigh: 0, target1: 0, target2: 0, stopLoss: 0,
+      invalidationLevel: 0, expectedHoldMinutes: 0, confidence: 0, probabilityRating: 0,
+      riskRewardRatio: 0, riskLevel: "Very High", liquidityRating: "Low",
+      executionScore: 0, executionGrade: "F" as const,
+      catalyst: "N/A", whyToday: "N/A", reasonForRecommendation: "N/A",
+      regimeImpact: "N/A", sectorStrength: "N/A", intradayTrend: "Neutral",
+      marketContext: "Setup calculation temporarily unavailable. Price data retrieved successfully.",
+      vwapStatus: price > vwap ? "Above VWAP" : price < vwap ? "Below VWAP" : "At VWAP",
+      momentumRating: 0, supportLevel: roundTo(low, 4), resistanceLevel: roundTo(high, 4),
+      whyTradeExists: "N/A", whatCancelsThisTrade: "N/A", confidenceReasoning: "N/A",
+      catalystSummary: "N/A",
+      noTradeReason: "Trade setup calculation temporarily unavailable. Price data was retrieved successfully but the setup engine encountered an error.",
+      executionScoreBreakdown: emptyBreakdown, bullCase: "N/A", bearCase: "N/A",
+      primaryCatalyst: "N/A", largestRisk: "N/A", mostLikelyPath: "N/A",
+      alternativePath: "N/A", recommendedTimeframe: "N/A", bestStrategy: "N/A",
+      generatedAt: Date.now(),
+      _degradedSources: ["setup-engine"],
+    } as DayTradeReport;
+  }
 
   const enrichment = await enrichWithLLM(
     symbol, symbol, "stock", price, changePercent, volume, setup.relativeVolume, rsi,
     setup.setupType, setup.direction,
     setup.confidence, regime, regimePressure, setup.riskRewardRatio,
     setup.setupType === "NO_TRADE"
-  );
+  ).catch((err: unknown) => {
+    log.warn("[DayTradeSymbolSetup] LLM enrichment failed for stock, using deterministic fallback", { symbol, err });
+    return null;
+  });
+  const enrichmentStock = enrichment ?? {
+    intradayTrend: "Neutral", marketContext: "AI enrichment temporarily unavailable.",
+    whyTradeExists: "N/A", whatCancelsThisTrade: "N/A", confidenceReasoning: "N/A",
+    catalystSummary: "N/A", noTradeReason: null, bullCase: "N/A", bearCase: "N/A",
+    primaryCatalyst: "N/A", largestRisk: "N/A", mostLikelyPath: "N/A",
+    alternativePath: "N/A", recommendedTimeframe: "N/A", bestStrategy: "N/A",
+  };
 
   const { breakdown: executionScoreBreakdown } = computeExecutionScore(
     regimePressure, rsi, setup.setupType, setup.relativeVolume, setup.liquidityRating,
@@ -1167,26 +1243,27 @@ export async function dayTradeSymbolSetup(
 
   const report: DayTradeReport = {
     ...setup,
-    intradayTrend: enrichment.intradayTrend,
-    marketContext: enrichment.marketContext,
+    intradayTrend: enrichmentStock.intradayTrend,
+    marketContext: enrichmentStock.marketContext,
     vwapStatus: price > vwap ? "Above VWAP" : price < vwap ? "Below VWAP" : "At VWAP",
     momentumRating: assessMomentum(changePercent, setup.relativeVolume, rsi),
     supportLevel: roundTo(low, 4),
     resistanceLevel: roundTo(high, 4),
-    whyTradeExists: enrichment.whyTradeExists,
-    whatCancelsThisTrade: enrichment.whatCancelsThisTrade,
-    confidenceReasoning: enrichment.confidenceReasoning,
-    catalystSummary: enrichment.catalystSummary,
-    noTradeReason: enrichment.noTradeReason ?? undefined,
+    whyTradeExists: enrichmentStock.whyTradeExists,
+    whatCancelsThisTrade: enrichmentStock.whatCancelsThisTrade,
+    confidenceReasoning: enrichmentStock.confidenceReasoning,
+    catalystSummary: enrichmentStock.catalystSummary,
+    noTradeReason: enrichmentStock.noTradeReason ?? undefined,
     executionScoreBreakdown,
-    bullCase: enrichment.bullCase,
-    bearCase: enrichment.bearCase,
-    primaryCatalyst: enrichment.primaryCatalyst,
-    largestRisk: enrichment.largestRisk,
-    mostLikelyPath: enrichment.mostLikelyPath,
-    alternativePath: enrichment.alternativePath,
-    recommendedTimeframe: enrichment.recommendedTimeframe,
-    bestStrategy: enrichment.bestStrategy,
+    bullCase: enrichmentStock.bullCase,
+    bearCase: enrichmentStock.bearCase,
+    primaryCatalyst: enrichmentStock.primaryCatalyst,
+    largestRisk: enrichmentStock.largestRisk,
+    mostLikelyPath: enrichmentStock.mostLikelyPath,
+    alternativePath: enrichmentStock.alternativePath,
+    recommendedTimeframe: enrichmentStock.recommendedTimeframe,
+    bestStrategy: enrichmentStock.bestStrategy,
+    ...(!enrichment ? { _degradedSources: ["llm-enrichment"] } : {}),
   };
 
   reportCache.set(cacheKey, report);

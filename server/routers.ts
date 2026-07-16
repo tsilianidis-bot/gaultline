@@ -2718,10 +2718,39 @@ export const appRouter = router({
           return sanitizeNumbers(result) as typeof result;
         } catch (err) {
           console.error('[symbolSetup] Error for', input.symbol, err);
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: `Unable to generate analysis for ${input.symbol}. Live market data may be unavailable or the symbol may be invalid.`,
-          });
+          // Return a degraded report instead of throwing — the page must always render
+          const errMsg = err instanceof Error ? err.message : String(err);
+          return {
+            symbol: input.symbol.toUpperCase(),
+            name: input.symbol.toUpperCase(),
+            assetType: input.assetType,
+            currentPrice: 0,
+            changePercent: 0,
+            volume: 0,
+            relativeVolume: null,
+            marketCap: null,
+            capBucket: 'mixed',
+            setupType: 'NO_TRADE',
+            direction: 'bullish',
+            entryZoneLow: 0, entryZoneHigh: 0, target1: 0, target2: 0,
+            stopLoss: 0, invalidationLevel: 0, expectedHoldMinutes: 0,
+            confidence: 0, probabilityRating: 0, riskRewardRatio: 0,
+            riskLevel: 'Very High', liquidityRating: 'Low',
+            executionScore: 0, executionGrade: 'F',
+            catalyst: 'N/A', whyToday: 'N/A', reasonForRecommendation: 'N/A',
+            regimeImpact: 'N/A', sectorStrength: 'N/A', intradayTrend: 'Neutral',
+            marketContext: `Live data temporarily unavailable for ${input.symbol}. The intelligence pipeline encountered an error and will retry automatically.`,
+            vwapStatus: 'Unknown', momentumRating: 0, supportLevel: 0, resistanceLevel: 0,
+            whyTradeExists: 'N/A', whatCancelsThisTrade: 'N/A',
+            confidenceReasoning: 'N/A', catalystSummary: 'N/A',
+            noTradeReason: `Live market data temporarily unavailable for ${input.symbol}. Please try again in a moment.`,
+            executionScoreBreakdown: { macroCondition: 0, technicalStructure: 0, liquidityScore: 0, volatilityScore: 0, momentumScore: 0, riskRewardScore: 0 },
+            bullCase: 'N/A', bearCase: 'N/A', primaryCatalyst: 'N/A', largestRisk: 'N/A',
+            mostLikelyPath: 'N/A', alternativePath: 'N/A', recommendedTimeframe: 'N/A', bestStrategy: 'N/A',
+            generatedAt: Date.now(),
+            _degradedSources: ['all-providers'],
+            _errorMessage: errMsg,
+          };
         }
       }),
     getWatchlist: coreProcedure.query(async ({ ctx }) => {

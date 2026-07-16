@@ -91,13 +91,87 @@ interface SectionProps {
   label?: string;
 }
 
+class SectionBoundaryInner extends Component<SectionProps, State> {
+  constructor(props: SectionProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: { componentStack: string }) {
+    console.error(`[SectionErrorBoundary] ${this.props.label ?? "Section"} failed:`, error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const label = this.props.label ?? "This section";
+      return (
+        <div style={{
+          background: "rgba(255,107,107,0.04)",
+          border: "1px solid rgba(255,107,107,0.15)",
+          borderRadius: "6px",
+          padding: "16px 20px",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "12px",
+        }}>
+          <AlertTriangle size={16} style={{ color: "#FF6B6B", flexShrink: 0, marginTop: "2px" }} />
+          <div style={{ flex: 1 }}>
+            <div style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "#FF6B6B",
+              letterSpacing: "0.08em",
+              marginBottom: "4px",
+            }}>
+              {label.toUpperCase()} TEMPORARILY UNAVAILABLE
+            </div>
+            <div style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "10px",
+              color: "#6B7280",
+              lineHeight: 1.5,
+            }}>
+              This subsystem encountered an error and was isolated. All other sections continue to function normally.
+            </div>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              style={{
+                marginTop: "10px",
+                padding: "4px 12px",
+                background: "rgba(255,107,107,0.08)",
+                border: "1px solid rgba(255,107,107,0.25)",
+                borderRadius: "4px",
+                color: "#FF6B6B",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "10px",
+                cursor: "pointer",
+                letterSpacing: "0.06em",
+                display: "flex",
+                alignItems: "center",
+                gap: "5px",
+              }}
+            >
+              <RotateCcw size={10} />
+              RETRY
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export function SectionErrorBoundary({ children, label }: SectionProps) {
   return (
-    <ErrorBoundary
-      inline
-    >
+    <SectionBoundaryInner label={label}>
       {children}
-    </ErrorBoundary>
+    </SectionBoundaryInner>
   );
 }
 
