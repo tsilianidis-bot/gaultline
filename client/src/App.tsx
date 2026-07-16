@@ -19,6 +19,8 @@ import { DemoProvider, isDemoPath } from './contexts/DemoContext';
 import DemoBanner from './components/DemoBanner';
 import { OnboardingVideoModal } from './components/OnboardingVideoModal';
 import AshaLiveBriefing from './components/AshaLiveBriefing';
+import CinematicAuthGate from './components/CinematicAuthGate';
+import { useAuth } from './_core/hooks/useAuth';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -707,6 +709,7 @@ function Router() {
 
 function App() {
   const isDemo = isDemoPath();
+  const { user, loading: authLoading } = useAuth();
 
   // First-time users see the full CinematicIntro (localStorage — once ever).
   // Returning users see the short IntroScreen (sessionStorage — once per session).
@@ -754,6 +757,23 @@ function App() {
     try { sessionStorage.setItem(ASHA_BRIEFING_KEY, '1'); } catch {}
     setAshaBriefingDone(true);
   }, []);
+
+  // Auth gate — shown when user reaches ASHA greeting but is not authenticated.
+  // ASHA must never greet by name before identity is confirmed.
+  const [authGateDone, setAuthGateDone] = useState<boolean>(() => {
+    // Already authenticated, or demo mode, or post-auth redirect flag present
+    try {
+      if (isDemo) return true;
+      if (sessionStorage.getItem('fl_post_auth_asha') === '1') {
+        sessionStorage.removeItem('fl_post_auth_asha');
+        return true;
+      }
+      return false; // will be resolved by auth check in render
+    } catch { return true; }
+  });
+  const handleAuthGateComplete = useCallback(() => {
+    setAuthGateDone(true);
+  }, []);
   // Dashboard fade-in after intro
   const [dashVisible, setDashVisible] = useState(introComplete && ashaBriefingDone);
   const handleIntroComplete = useCallback(() => {
@@ -775,10 +795,17 @@ function App() {
     setAshaBriefingDone(true);
     setTimeout(() => setDashVisible(true), 300);
   }, []);
+
+  // Resolve auth gate: if auth has loaded and user is present, mark done automatically
+  useEffect(() => {
+    if (!authLoading && user && !authGateDone) {
+      setAuthGateDone(true);
+    }
+  }, [authLoading, user, authGateDone]);
   // If already seen, show dashboard immediately
   useEffect(() => {
-    if (introComplete && ashaBriefingDone) setDashVisible(true);
-  }, [introComplete, ashaBriefingDone]);
+    if (introComplete && authGateDone && ashaBriefingDone) setDashVisible(true);
+  }, [introComplete, authGateDone, ashaBriefingDone]);
 
   const appContent = (
     <ErrorBoundary>
@@ -798,8 +825,15 @@ function App() {
             {cinematicDone && !introComplete && (
               <IntroScreen onComplete={handleIntroComplete} />
             )}
-            {/* ASHA Live Briefing — shown once per session, immediately after intro */}
-            {introComplete && !ashaBriefingDone && (
+            {/* Auth gate — shown when intro is done but auth is not yet confirmed.
+                 Cinematic-styled sign-in screen. ASHA never greets by name before
+                 identity is confirmed. Authenticated users pass through instantly. */}
+            {introComplete && !authGateDone && (
+              <CinematicAuthGate onAuthenticated={handleAuthGateComplete} />
+            )}
+
+            {/* ASHA Live Briefing — shown once per session, after auth is confirmed */}
+            {introComplete && authGateDone && !ashaBriefingDone && (
               <AshaLiveBriefing onContinue={handleAshaBriefingComplete} />
             )}
 

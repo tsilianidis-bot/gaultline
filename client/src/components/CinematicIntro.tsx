@@ -740,44 +740,34 @@ export default function CinematicIntro({ onComplete, onSceneEnter, onSceneExit }
     return <StaticIntroFallback onComplete={onComplete} />;
   }
 
-  // Narrator lines per scene
+  // Narrator lines per scene — compressed for 25–35 second total runtime
+  // Scene 1: 5s  Scene 2: 7s  Scene 3: 7s  Scene 4: 8s  Scene 5: 5s  = ~32s
   const narratorLines: Record<Scene, string[]> = {
     1: [
-      "Most people think an earthquake begins when the ground shakes.",
-      "It doesn't.",
-      "For days... months... sometimes years...",
-      "Pressure quietly builds beneath the surface.",
-      "Invisible to almost everyone.",
+      "Most people think an earthquake begins when the ground moves. It doesn't.",
     ],
     2: [
-      "Scientists don't wait for the earthquake.",
-      "They monitor the pressure.",
+      "Pressure builds beneath the surface — invisible, until it isn't.",
     ],
     3: [
-      "Financial markets behave in remarkably similar ways.",
-      "Major market shifts rarely begin without pressure building first.",
-      "The signals exist.",
-      "They are simply difficult to understand together.",
+      "Markets work the same way. Pressure builds before everything else.",
     ],
     4: [
-      "That is why we built FAULTLINE.",
-      "Not to predict the future with certainty.",
-      "But to help you understand what is building beneath the surface.",
+      "FAULTLINE monitors the Pressure Index, the Seismograph, and ASHA — so you see what's building.",
     ],
     5: [
-      "The question isn't whether markets move.",
-      "The question is whether you'll understand the pressure before everyone else.",
+      "Welcome. Let's see what's building beneath the surface.",
     ],
     6: [],
   };
 
-  // Scene durations (ms)
+  // Scene durations (ms) — total ~32 seconds
   const sceneDurations: Record<Scene, number> = {
-    1: 11000,
-    2: 9000,
-    3: 10000,
-    4: 10000,
-    5: 8000,
+    1: 5000,
+    2: 7000,
+    3: 7000,
+    4: 8000,
+    5: 5000,
     6: 0,
   };
 
