@@ -14,6 +14,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { AshaAmbientEngine } from "@/lib/AshaAmbientEngine";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useTickerStore } from "@/contexts/TickerStore";
@@ -2619,6 +2620,43 @@ export default function SmartDiscovery() {
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const stepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const ambientEngineRef = useRef<AshaAmbientEngine | null>(null);
+
+  // ASHA ambient sound bed — starts on mount, stops on unmount
+  useEffect(() => {
+    const engine = new AshaAmbientEngine();
+    ambientEngineRef.current = engine;
+
+    // Start on first user interaction (browser autoplay policy)
+    let started = false;
+    const tryStart = () => {
+      if (started) return;
+      started = true;
+      engine.start(0.42);
+    };
+
+    // Attempt immediate start (works if user has already interacted)
+    setTimeout(tryStart, 300);
+
+    // Fallback: start on next interaction
+    const onInteract = () => {
+      tryStart();
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("keydown", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+    };
+    window.addEventListener("click", onInteract);
+    window.addEventListener("keydown", onInteract);
+    window.addEventListener("touchstart", onInteract);
+
+    return () => {
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("keydown", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      engine.stop(1.2);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const askMutation = trpc.smartDiscovery.ask.useMutation();
   const logMutation = trpc.smartDiscovery.logRecommendation.useMutation();

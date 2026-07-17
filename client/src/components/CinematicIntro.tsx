@@ -19,6 +19,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PressureEngine } from "@/lib/pressureEngine";
 import AshaIntelligenceCanvas, { type AshaCanvasHandle } from "./AshaIntelligenceCanvas";
+import { CinematicAudioEngine } from "@/lib/CinematicAudioEngine";
 
 // ── Exported key ───────────────────────────────────────────────
 export const CINEMATIC_SEEN_KEY = "fl_cinematic_intro_v1";
@@ -162,6 +163,10 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
   const ashaStartRef = useRef(0);
   const ashaRafRef   = useRef(0);
   const timersRef    = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const audioRef     = useRef<CinematicAudioEngine | null>(null);
+  const audioStartedRef = useRef(false);
+  // Chime refs — track which chimes have fired to avoid double-firing
+  const chimesFiredRef = useRef({ name: false, subtitle: false, tagline: false });
 
   // Inject styles once
   useEffect(() => {
@@ -184,6 +189,42 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     return () => { engine.stop(); ro.disconnect(); };
   }, []);
 
+  // Initialize audio engine — deferred until first user interaction or auto-start
+  useEffect(() => {
+    const engine = new CinematicAudioEngine();
+    audioRef.current = engine;
+
+    // Attempt auto-start (works if user has already interacted with the page)
+    const tryStart = () => {
+      if (audioStartedRef.current) return;
+      audioStartedRef.current = true;
+      engine.start(0.5);
+      engine.playFaultlinePhase();
+    };
+
+    // Try immediately — may succeed if AudioContext is already unlocked
+    setTimeout(tryStart, 420);
+
+    // Also listen for first interaction as a fallback
+    const onInteract = () => {
+      tryStart();
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("keydown", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+    };
+    window.addEventListener("click", onInteract);
+    window.addEventListener("keydown", onInteract);
+    window.addEventListener("touchstart", onInteract);
+
+    return () => {
+      window.removeEventListener("click", onInteract);
+      window.removeEventListener("keydown", onInteract);
+      window.removeEventListener("touchstart", onInteract);
+      engine.stop(0.4);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Phase sequencer
   useEffect(() => {
     const t = timersRef.current;
@@ -195,12 +236,20 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
       setPhase("converge");
       pressureEngineRef.current?.setIntensity(1.1);
       pressureEngineRef.current?.triggerShockwave();
+      // Audio: begin energy swell, seismic fades
+      audioRef.current?.playConvergePhase();
     }, 3000));
-    t.push(setTimeout(() => setPhase("transform"), 3800));
+    t.push(setTimeout(() => {
+      setPhase("transform");
+      // Audio: swell peaks, atmospheric drone fades
+      audioRef.current?.playTransformPhase();
+    }, 3800));
     t.push(setTimeout(() => {
       setPhase("asha");
       pressureEngineRef.current?.stop();
       ashaStartRef.current = performance.now();
+      // Audio: intelligence drone + holographic shimmer + system online tone
+      audioRef.current?.playAshaPhase();
     }, 5600));
     // Auto-complete after ~6.8s of ASHA showcase
     t.push(setTimeout(() => triggerExit(), 12400));
@@ -223,6 +272,8 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     if (phase === "exiting") return;
     setPhase("exiting");
     cancelAnimationFrame(ashaRafRef.current);
+    // Audio: fade out
+    audioRef.current?.stop(1.2);
     // Tell canvas to dissolve; onDissolveComplete fires ~1.4s later
     ashaCanvasRef.current?.dissolve();
   }, [phase]);
@@ -231,6 +282,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     timersRef.current.forEach(clearTimeout);
     cancelAnimationFrame(ashaRafRef.current);
     pressureEngineRef.current?.stop();
+    audioRef.current?.stop(0.35);
     setPhase("exiting");
     // If in asha phase, dissolve the canvas; otherwise just complete immediately
     if (phase === "asha") {
@@ -262,6 +314,26 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
   const showAshaName     = ashaElapsed >= ASHA_TEXT_DELAYS.name;
   const showAshaSubtitle = ashaElapsed >= ASHA_TEXT_DELAYS.subtitle;
   const showAshaTagline  = ashaElapsed >= ASHA_TEXT_DELAYS.tagline;
+
+  // Fire chimes when text reveals become visible (once each)
+  useEffect(() => {
+    if (showAshaName && !chimesFiredRef.current.name) {
+      chimesFiredRef.current.name = true;
+      audioRef.current?.playChime(0);
+    }
+  }, [showAshaName]);
+  useEffect(() => {
+    if (showAshaSubtitle && !chimesFiredRef.current.subtitle) {
+      chimesFiredRef.current.subtitle = true;
+      audioRef.current?.playChime(1);
+    }
+  }, [showAshaSubtitle]);
+  useEffect(() => {
+    if (showAshaTagline && !chimesFiredRef.current.tagline) {
+      chimesFiredRef.current.tagline = true;
+      audioRef.current?.playChime(2);
+    }
+  }, [showAshaTagline]);
 
   return (
     <div
