@@ -425,199 +425,193 @@ export default function AshaSummon({
         )}
       </div>
 
-      {/* ── ASHA identity label — appears with sphere ──────── */}
+      {/* ── Content column: label + suggestions + input ──── */}
       {showSphere && (
         <div style={{
           position: "fixed",
           zIndex: 1021,
           left: centerX,
-          top: centerY + 96,
+          // Sit below the settled sphere (center + half of 160px sphere + 24px gap)
+          top: centerY + 80 + 24,
           transform: "translateX(-50%)",
+          width: "min(520px, calc(100vw - 40px))",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: "3px",
+          gap: "16px",
           opacity: phase === "expanding" ? 0 : 1,
           transition: "opacity 400ms ease 100ms",
-          pointerEvents: "none",
+          pointerEvents: showInput ? "auto" : "none",
         }}>
-          <div style={{
-            fontFamily: "'Rajdhani', sans-serif",
-            fontWeight: 700,
-            fontSize: "18px",
-            letterSpacing: "0.25em",
-            color: regimeState === "calm" ? "#00D4FF"
-              : regimeState === "rising" ? "#FFAA00"
-              : "#FF3B5C",
-            textTransform: "uppercase",
-          }}>
-            ASHA
-          </div>
-          <div style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: "8px",
-            letterSpacing: "0.18em",
-            color: "rgba(148,163,184,0.45)",
-            textTransform: "uppercase",
-          }}>
-            Intelligence Engine Active
-          </div>
-        </div>
-      )}
 
-      {/* ── Suggestion cards ───────────────────────────────── */}
-      {showInput && (
-        <div style={{
-          position: "fixed",
-          zIndex: 1022,
-          left: centerX,
-          top: centerY + 148,
-          transform: "translateX(-50%)",
-          width: "min(480px, calc(100vw - 40px))",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "7px",
-          justifyContent: "center",
-        }}>
-          {suggestions.slice(0, 6).map((s, i) => (
-            <button
-              key={i}
-              onClick={() => onSubmit(s)}
-              style={{
-                padding: "7px 13px",
-                background: "rgba(4,8,18,0.88)",
-                border: "1px solid rgba(0,212,255,0.22)",
-                borderRadius: "20px",
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: "11px",
-                color: "rgba(148,163,184,0.75)",
-                cursor: "pointer",
-                backdropFilter: "blur(12px)",
-                transition: "all 0.16s ease",
-                opacity: i < visibleCards ? 1 : 0,
-                transform: i < visibleCards ? "translateY(0)" : "translateY(6px)",
-                transitionProperty: "opacity, transform, background, color, border-color",
-                transitionDuration: "0.22s",
-                transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)",
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLButtonElement;
-                el.style.background = "rgba(0,212,255,0.14)";
-                el.style.color = "#E2E8F0";
-                el.style.borderColor = "rgba(0,212,255,0.40)";
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLButtonElement;
-                el.style.background = "rgba(4,8,18,0.88)";
-                el.style.color = "rgba(148,163,184,0.75)";
-                el.style.borderColor = "rgba(0,212,255,0.22)";
-              }}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* ── Input panel ────────────────────────────────────── */}
-      {showInput && (
-        <div style={{
-          position: "fixed",
-          zIndex: 1023,
-          left: centerX,
-          top: centerY + 220,
-          transform: "translateX(-50%)",
-          width: "min(520px, calc(100vw - 40px))",
-          opacity: phase === "revealing" ? 0 : 1,
-          transition: "opacity 320ms ease 120ms",
-        }}>
-          {/* Input row */}
+          {/* ASHA identity label */}
           <div style={{
             display: "flex",
+            flexDirection: "column",
             alignItems: "center",
-            gap: "0",
-            background: "rgba(4,8,18,0.94)",
-            border: "1px solid rgba(0,212,255,0.28)",
-            borderRadius: "8px",
-            backdropFilter: "blur(20px)",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,212,255,0.06)",
-            overflow: "hidden",
+            gap: "3px",
+            pointerEvents: "none",
           }}>
-            {/* Orb indicator inside input */}
-            <div style={{ padding: "0 10px 0 12px", flexShrink: 0 }}>
-              <AshaOrb regimeState={regimeState} size={18} isListening={!!input} />
+            <div style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontWeight: 700,
+              fontSize: "18px",
+              letterSpacing: "0.25em",
+              color: regimeState === "calm" ? "#00D4FF"
+                : regimeState === "rising" ? "#FFAA00"
+                : "#FF3B5C",
+              textTransform: "uppercase",
+            }}>
+              ASHA
             </div>
+            <div style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "8px",
+              letterSpacing: "0.18em",
+              color: "rgba(148,163,184,0.45)",
+              textTransform: "uppercase",
+            }}>
+              Intelligence Engine Active
+            </div>
+          </div>
 
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey && input.trim()) {
-                  e.preventDefault();
-                  onSubmit(input.trim());
-                }
-              }}
-              placeholder="Ask ASHA anything about the markets..."
-              style={{
-                flex: 1,
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                padding: "14px 8px",
-                fontFamily: "'IBM Plex Sans', sans-serif",
-                fontSize: "13px",
-                color: "#E2E8F0",
-                caretColor: regimeState === "calm" ? "#00D4FF"
-                  : regimeState === "rising" ? "#FFAA00"
-                  : "#FF3B5C",
-              }}
-            />
+          {/* Suggestion cards */}
+          {showInput && (
+            <div style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "7px",
+              justifyContent: "center",
+              width: "100%",
+            }}>
+              {suggestions.slice(0, 6).map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => onSubmit(s)}
+                  style={{
+                    padding: "7px 13px",
+                    background: "rgba(4,8,18,0.88)",
+                    border: "1px solid rgba(0,212,255,0.22)",
+                    borderRadius: "20px",
+                    fontFamily: "'IBM Plex Sans', sans-serif",
+                    fontSize: "11px",
+                    color: "rgba(148,163,184,0.75)",
+                    cursor: "pointer",
+                    backdropFilter: "blur(12px)",
+                    opacity: i < visibleCards ? 1 : 0,
+                    transform: i < visibleCards ? "translateY(0)" : "translateY(6px)",
+                    transitionProperty: "opacity, transform, background, color, border-color",
+                    transitionDuration: "0.22s",
+                    transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)",
+                  }}
+                  onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLButtonElement;
+                    el.style.background = "rgba(0,212,255,0.14)";
+                    el.style.color = "#E2E8F0";
+                    el.style.borderColor = "rgba(0,212,255,0.40)";
+                  }}
+                  onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLButtonElement;
+                    el.style.background = "rgba(4,8,18,0.88)";
+                    el.style.color = "rgba(148,163,184,0.75)";
+                    el.style.borderColor = "rgba(0,212,255,0.22)";
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
 
-            <button
-              onClick={() => { if (input.trim()) onSubmit(input.trim()); }}
-              disabled={!input.trim()}
-              style={{
-                padding: "0 16px",
-                height: "100%",
-                background: input.trim()
-                  ? (regimeState === "calm" ? "rgba(0,212,255,0.18)"
-                    : regimeState === "rising" ? "rgba(255,170,0,0.18)"
-                    : "rgba(255,59,92,0.18)")
-                  : "transparent",
-                border: "none",
-                borderLeft: "1px solid rgba(0,212,255,0.14)",
-                cursor: input.trim() ? "pointer" : "not-allowed",
-                color: input.trim()
-                  ? (regimeState === "calm" ? "#00D4FF"
-                    : regimeState === "rising" ? "#FFAA00"
-                    : "#FF3B5C")
-                  : "rgba(100,116,139,0.3)",
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: "9px",
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                transition: "all 0.16s ease",
-                alignSelf: "stretch",
+          {/* Input panel */}
+          {showInput && (
+            <div style={{
+              width: "100%",
+              opacity: phase === "revealing" ? 0 : 1,
+              transition: "opacity 320ms ease 120ms",
+            }}>
+              <div style={{
                 display: "flex",
                 alignItems: "center",
-              }}
-            >
-              Analyze
-            </button>
-          </div>
-
-          {/* Dismiss hint */}
-          <div style={{
-            textAlign: "center",
-            marginTop: "10px",
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: "8px",
-            letterSpacing: "0.12em",
-            color: "rgba(100,116,139,0.30)",
-          }}>
-            Press Esc to dismiss
-          </div>
+                background: "rgba(4,8,18,0.94)",
+                border: "1px solid rgba(0,212,255,0.28)",
+                borderRadius: "8px",
+                backdropFilter: "blur(20px)",
+                boxShadow: "0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,212,255,0.06)",
+                overflow: "hidden",
+              }}>
+                <div style={{ padding: "0 10px 0 12px", flexShrink: 0 }}>
+                  <AshaOrb regimeState={regimeState} size={18} isListening={!!input} />
+                </div>
+                <input
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && !e.shiftKey && input.trim()) {
+                      e.preventDefault();
+                      onSubmit(input.trim());
+                    }
+                  }}
+                  placeholder="Ask ASHA anything about the markets..."
+                  style={{
+                    flex: 1,
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    padding: "14px 8px",
+                    fontFamily: "'IBM Plex Sans', sans-serif",
+                    fontSize: "13px",
+                    color: "#E2E8F0",
+                    caretColor: regimeState === "calm" ? "#00D4FF"
+                      : regimeState === "rising" ? "#FFAA00"
+                      : "#FF3B5C",
+                  }}
+                />
+                <button
+                  onClick={() => { if (input.trim()) onSubmit(input.trim()); }}
+                  disabled={!input.trim()}
+                  style={{
+                    padding: "0 16px",
+                    height: "100%",
+                    background: input.trim()
+                      ? (regimeState === "calm" ? "rgba(0,212,255,0.18)"
+                        : regimeState === "rising" ? "rgba(255,170,0,0.18)"
+                        : "rgba(255,59,92,0.18)")
+                      : "transparent",
+                    border: "none",
+                    borderLeft: "1px solid rgba(0,212,255,0.14)",
+                    cursor: input.trim() ? "pointer" : "not-allowed",
+                    color: input.trim()
+                      ? (regimeState === "calm" ? "#00D4FF"
+                        : regimeState === "rising" ? "#FFAA00"
+                        : "#FF3B5C")
+                      : "rgba(100,116,139,0.3)",
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: "9px",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    transition: "all 0.16s ease",
+                    alignSelf: "stretch",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  Analyze
+                </button>
+              </div>
+              <div style={{
+                textAlign: "center",
+                marginTop: "10px",
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "8px",
+                letterSpacing: "0.12em",
+                color: "rgba(100,116,139,0.30)",
+              }}>
+                Press Esc to dismiss
+              </div>
+            </div>
+          )}
         </div>
       )}
     </>
