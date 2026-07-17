@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAshaContext } from "@/contexts/AshaContext";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Copy, Check, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────
@@ -263,6 +264,7 @@ export function AshaIntelligenceBrief({
 }: AshaIntelligenceBriefProps) {
   const meta = VARIANT_META[variant];
   const { pageContext } = useAshaContext();
+  const { user } = useAuth();
   const [brief, setBrief] = useState<ParsedBrief | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -314,11 +316,11 @@ export function AshaIntelligenceBrief({
   };
 
   useEffect(() => {
-    if (autoFetch && !fetchedRef.current) {
+    if (autoFetch && !fetchedRef.current && user) {
       fetchBrief();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoFetch]);
+  }, [autoFetch, user]);
 
   const handleCopy = async () => {
     if (!brief) return;

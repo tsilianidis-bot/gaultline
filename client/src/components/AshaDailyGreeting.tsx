@@ -28,9 +28,9 @@ export default function AshaDailyGreeting() {
   }, []);
 
   useEffect(() => {
-    if (dismissed || fetched || isLoading || !output?.overall) return;
+    if (dismissed || fetched || isLoading || !output?.overall || !user) return;
     const score = output.overall.score;
-    if (score === undefined) return;
+    if (score === undefined || isNaN(score)) return;
 
     setFetched(true);
     greetingMutation.mutateAsync({
