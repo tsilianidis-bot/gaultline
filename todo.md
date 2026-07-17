@@ -3892,3 +3892,22 @@
 - [x] Mission ID auto-generated (YYMMDD-XXXX format)
 - [x] TypeScript: 0 errors (npx tsc --noEmit)
 - [x] Save checkpoint
+
+## ASHA Summon Experience (Signature Brand Moment)
+
+- [x] Build AshaSummon.tsx — 7-step cinematic activation overlay component
+- [x] Step 1: Background dims 14% on summon (backdrop overlay, pointer-events auto when ready)
+- [x] Step 2: Orb lifts from dock position (slight rise, 260ms premium ease)
+- [x] Step 3: Orb ascends to screen center, enlarging (480ms cubic-bezier(0.16,1,0.3,1))
+- [x] Step 4: Orb expands into IntelligenceSphere — premium illuminated sphere with specular highlight, ambient warmth, depth ring, outer glow ring, restrained breathing animation
+- [x] Step 5: Signature chime plays on sphere expand — 432/648/864/216 Hz harmonic chord, 2.8s decay, warm reverb simulation via delay node
+- [x] Step 6: Context-aware suggestion cards stagger in (90ms per card, translateY(6px) → 0 + opacity 0 → 1)
+- [x] Step 7: Elegant input panel fades up — orb indicator inside input, "Ask ASHA anything about the markets..." placeholder, cursor auto-focused, Analyze button
+- [x] Escape key dismisses summon overlay
+- [x] Backdrop click dismisses summon overlay
+- [x] ASHA identity label (name + "Intelligence Engine Active") appears with sphere
+- [x] Orb trigger button: lift on hover, scale(0.97) on press, premium easing
+- [x] Wire AshaSummon into AshaPanel state machine: idle → summon → synthesizing → briefing
+- [x] Removed old arrival animation phases (rising/pausing/expanding) — replaced by AshaSummon
+- [x] TypeScript: 0 errors (npx tsc --noEmit)
+- [x] Save checkpoint
