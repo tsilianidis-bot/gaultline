@@ -1,30 +1,26 @@
 /* ============================================================
-   FAULTLINE — Cinematic Intro v4.0
-   Three deliberate phases. No artificial loading delay.
-   Feels intentional, cinematic, premium, emotionally engaging.
+   FAULTLINE — Cinematic Intro v5.0
+   Three deliberate phases. Premium quality.
 
-   PHASE 1 — FAULTLINE IDENTITY (0–3.8s)
-     0.0–0.8s  : Fade in from black. PressureEngine warms.
-     0.8–3.0s  : Full FAULTLINE identity on screen — logo,
-                 brand, tagline, ambient particle field.
-     3.0–3.8s  : Begin transition. Cyan energy gathers center.
+   PHASE 1 — FAULTLINE IDENTITY (0.4–3.0s)
+     Full wordmark. Tagline. Seismograph. PressureEngine.
 
-   PHASE 2 — TRANSFORMATION (3.8–5.6s)
-     Logo fades. Seismograph pulse converges. A central
-     intelligence light forms. ASHA is born from FAULTLINE.
+   PHASE 2 — TRANSFORMATION (3.0–5.6s)
+     Logo dissolves. Energy converges. Intelligence awakens.
 
-   PHASE 3 — ASHA SHOWCASE (5.6–12s)
-     ASHA orb fully present. "SPIRIT OF FAULTLINE" identity.
-     Supporting line. Ambient network alive. ~6–7 seconds.
-     Then onComplete() fires → sign-in or dashboard.
+   PHASE 3 — ASHA REVEAL (5.6–12.5s)
+     AshaIntelligenceCanvas takes over the full screen.
+     One living orb. Breathing. Filaments. Wisps.
+     Text fades in: ASHA → SPIRIT OF FAULTLINE → tagline.
+     Orb brightens → particle dissolve → dashboard.
 
    Skip always available top-right.
    ============================================================ */
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PressureEngine } from "@/lib/pressureEngine";
-import AshaOrb from "./AshaOrb";
+import AshaIntelligenceCanvas, { type AshaCanvasHandle } from "./AshaIntelligenceCanvas";
 
-// ── Exported key (App.tsx uses this) ──────────────────────────
+// ── Exported key ───────────────────────────────────────────────
 export const CINEMATIC_SEEN_KEY = "fl_cinematic_intro_v1";
 
 // ── Props ──────────────────────────────────────────────────────
@@ -34,12 +30,20 @@ interface CinematicIntroProps {
 
 // ── Phase type ─────────────────────────────────────────────────
 type Phase =
-  | "black"          // 0–0.4s  : absolute black, engine starts
-  | "faultline"      // 0.4–3.0s: full FAULTLINE identity
-  | "converge"       // 3.0–3.8s: energy gathering, logo dimming
-  | "transform"      // 3.8–5.6s: logo dissolves, light forms
-  | "asha"           // 5.6–12s : ASHA showcase
-  | "exiting";       // dissolve out
+  | "black"       // 0–0.4s
+  | "faultline"   // 0.4–3.0s  — full FAULTLINE identity
+  | "converge"    // 3.0–3.8s  — energy gathering, logo dims
+  | "transform"   // 3.8–5.6s  — logo dissolves
+  | "asha"        // 5.6–12.5s — ASHA canvas reveal
+  | "exiting";    // particle dissolve → onComplete
+
+// ── Text reveal stages within asha phase ──────────────────────
+// These are offsets from when the asha phase starts (elapsed - 5.6)
+const ASHA_TEXT_DELAYS = {
+  name:      1.4,   // "ASHA" fades in 1.4s after orb phase starts
+  subtitle:  2.6,   // "SPIRIT OF FAULTLINE"
+  tagline:   3.6,   // "The Intelligence Beneath the Surface."
+};
 
 // ── Keyframes ─────────────────────────────────────────────────
 const STYLES = `
@@ -80,58 +84,28 @@ const STYLES = `
 }
 @keyframes ci-logo-dissolve {
   0%   { opacity: 1; filter: blur(0px) brightness(1); transform: scale(1); }
-  35%  { opacity: 0.7; filter: blur(1px) brightness(1.6); transform: scale(1.02); }
-  100% { opacity: 0; filter: blur(14px) brightness(4); transform: scale(1.1); }
+  35%  { opacity: 0.65; filter: blur(1.5px) brightness(1.8); transform: scale(1.02); }
+  100% { opacity: 0; filter: blur(16px) brightness(4.5); transform: scale(1.12); }
 }
-@keyframes ci-energy-gather {
-  0%   { opacity: 0; transform: scale(0.3) translate(var(--ex), var(--ey)); }
-  60%  { opacity: 0.8; }
-  100% { opacity: 0; transform: scale(0) translate(0, 0); }
-}
-@keyframes ci-light-form {
-  0%   { opacity: 0; transform: scale(0.1); filter: blur(20px); }
-  50%  { opacity: 0.9; filter: blur(6px); }
-  100% { opacity: 1; transform: scale(1); filter: blur(0px); }
-}
-@keyframes ci-orb-emerge {
-  0%   { opacity: 0; transform: scale(0.5); filter: blur(12px); }
-  55%  { opacity: 0.85; filter: blur(3px); }
-  100% { opacity: 1; transform: scale(1); filter: blur(0px); }
-}
-@keyframes ci-asha-title {
-  0%   { opacity: 0; letter-spacing: 0.8em; }
-  100% { opacity: 1; letter-spacing: 0.45em; }
-}
-@keyframes ci-asha-subtitle {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes ci-ring-expand {
-  0%   { r: 0; opacity: 0.6; }
-  100% { r: 120; opacity: 0; }
-}
-@keyframes ci-network-line {
-  0%   { stroke-dashoffset: 400; opacity: 0; }
-  15%  { opacity: 0.35; }
-  85%  { opacity: 0.35; }
-  100% { stroke-dashoffset: 0; opacity: 0; }
-}
-@keyframes ci-dot-pulse {
-  0%, 100% { opacity: 0.25; r: 1.5; }
-  50%       { opacity: 0.7; r: 3; }
+@keyframes ci-seismo-fade {
+  from { opacity: 0.22; }
+  to   { opacity: 0; }
 }
 @keyframes ci-exit-dissolve {
-  0%   { opacity: 1; transform: scale(1); }
-  30%  { opacity: 1; transform: scale(1.01); }
-  100% { opacity: 0; transform: scale(1.05); }
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
 }
-@keyframes ci-seismo-converge {
-  0%   { stroke-dashoffset: 0; opacity: 0.5; }
-  100% { stroke-dashoffset: 600; opacity: 0; }
+@keyframes ci-asha-name {
+  0%   { opacity: 0; letter-spacing: 0.9em; filter: blur(4px); }
+  100% { opacity: 1; letter-spacing: 0.45em; filter: blur(0px); }
 }
-@keyframes ci-supporting-line {
+@keyframes ci-asha-sub {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ci-asha-tag {
   from { opacity: 0; }
-  to   { opacity: 0.55; }
+  to   { opacity: 0.52; }
 }
 `;
 
@@ -162,10 +136,10 @@ function CornerBracket({ pos, visible }: { pos: "tl" | "tr" | "bl" | "br"; visib
     position: "absolute",
     ...(pos === "tl" || pos === "bl" ? { left: 20 } : { right: 20 }),
     ...(pos === "tl" || pos === "tr" ? { top: 20 } : { bottom: 20 }),
-    opacity: visible ? 0.38 : 0,
+    opacity: visible ? 0.32 : 0,
     transform: xf,
-    transition: "opacity 1.2s ease",
-    filter: "drop-shadow(0 0 4px rgba(0,212,255,0.45))",
+    transition: "opacity 1.4s ease",
+    filter: "drop-shadow(0 0 4px rgba(0,212,255,0.4))",
   };
   return (
     <svg width={28} height={28} viewBox="0 0 28 28" style={st}>
@@ -176,104 +150,18 @@ function CornerBracket({ pos, visible }: { pos: "tl" | "tr" | "bl" | "br"; visib
   );
 }
 
-// ── Ambient network SVG (ASHA phase) ──────────────────────────
-const NET_PTS = Array.from({ length: 20 }, (_, i) => ({
-  x: 5 + ((i * 41 + Math.sin(i * 1.7) * 90) % 90),
-  y: 5 + ((i * 33 + Math.cos(i * 1.1) * 80) % 90),
-}));
-const NET_LINES: Array<{ x1: number; y1: number; x2: number; y2: number; d: number }> = [];
-for (let i = 0; i < NET_PTS.length; i++) {
-  for (let j = i + 1; j < NET_PTS.length; j++) {
-    const dx = NET_PTS[i].x - NET_PTS[j].x;
-    const dy = NET_PTS[i].y - NET_PTS[j].y;
-    if (Math.sqrt(dx * dx + dy * dy) < 26) {
-      NET_LINES.push({ x1: NET_PTS[i].x, y1: NET_PTS[i].y, x2: NET_PTS[j].x, y2: NET_PTS[j].y, d: (i + j) * 0.09 });
-    }
-  }
-}
-
-function AmbientNetwork({ visible }: { visible: boolean }) {
-  return (
-    <div style={{
-      position: "absolute", inset: 0, pointerEvents: "none", zIndex: 4,
-      opacity: visible ? 1 : 0, transition: "opacity 1.8s cubic-bezier(0.23,1,0.32,1)",
-    }}>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"
-        style={{ position: "absolute", inset: 0 }}>
-        {NET_LINES.map((l, i) => (
-          <line key={i} x1={`${l.x1}%`} y1={`${l.y1}%`} x2={`${l.x2}%`} y2={`${l.y2}%`}
-            stroke="rgba(0,212,255,0.28)" strokeWidth="0.12"
-            strokeDasharray="400" strokeDashoffset="400"
-            style={{ animation: `ci-network-line 4s ease-in-out ${l.d}s infinite` }} />
-        ))}
-        {NET_PTS.map((p, i) => (
-          <circle key={i} cx={`${p.x}%`} cy={`${p.y}%`} r="1.5" fill="rgba(0,212,255,0.45)"
-            style={{ animation: `ci-dot-pulse 2.5s ease-in-out ${i * 0.18}s infinite` }} />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-// ── Energy particle (converge phase) ──────────────────────────
-function EnergyParticles({ visible }: { visible: boolean }) {
-  if (!visible) return null;
-  const particles = Array.from({ length: 24 }, (_, i) => {
-    const angle = (i / 24) * Math.PI * 2;
-    const dist = 30 + Math.random() * 35;
-    return {
-      ex: `${Math.cos(angle) * dist}vw`,
-      ey: `${Math.sin(angle) * dist}vh`,
-      delay: i * 0.04,
-      size: 2 + Math.random() * 3,
-      color: i % 3 === 0 ? "#FFD700" : "#00D4FF",
-    };
-  });
-  return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 8,
-      display: "flex", alignItems: "center", justifyContent: "center" }}>
-      {particles.map((p, i) => (
-        <div key={i} style={{
-          position: "absolute",
-          width: p.size, height: p.size,
-          borderRadius: "50%",
-          background: p.color,
-          boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
-          // @ts-ignore
-          "--ex": p.ex, "--ey": p.ey,
-          animation: `ci-energy-gather 1.2s cubic-bezier(0.23,1,0.32,1) ${p.delay}s both`,
-        }} />
-      ))}
-    </div>
-  );
-}
-
-// ── Seismograph line (FAULTLINE phase) ────────────────────────
-function SeismographLine({ visible, converging }: { visible: boolean; converging: boolean }) {
-  const path = "M0,50 C20,50 25,20 50,50 S75,80 100,50 S125,20 150,50 S175,80 200,50 S225,20 250,50 S275,80 300,50 S325,20 350,50 S375,80 400,50";
-  return (
-    <div style={{
-      position: "absolute", bottom: "18%", left: 0, right: 0,
-      height: "60px", pointerEvents: "none", zIndex: 3,
-      opacity: visible ? (converging ? 0 : 0.22) : 0,
-      transition: converging ? "opacity 1.5s ease" : "opacity 1.2s ease 1s",
-    }}>
-      <svg width="100%" height="60" viewBox="0 0 400 60" preserveAspectRatio="none">
-        <path d={path} fill="none" stroke="#00D4FF" strokeWidth="0.8"
-          strokeDasharray="600"
-          style={{ animation: converging ? "ci-seismo-converge 1.5s ease-out forwards" : undefined }} />
-      </svg>
-    </div>
-  );
-}
-
 // ── Main component ─────────────────────────────────────────────
 export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const engineRef = useRef<PressureEngine | null>(null);
-  const [phase, setPhase] = useState<Phase>("black");
+  const pressureCanvasRef = useRef<HTMLCanvasElement>(null);
+  const pressureEngineRef = useRef<PressureEngine | null>(null);
+  const ashaCanvasRef     = useRef<AshaCanvasHandle>(null);
+
+  const [phase, setPhase]               = useState<Phase>("black");
   const [stylesInjected, setStylesInjected] = useState(false);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [ashaElapsed, setAshaElapsed]   = useState(0);  // seconds since asha phase started
+  const ashaStartRef = useRef(0);
+  const ashaRafRef   = useRef(0);
+  const timersRef    = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Inject styles once
   useEffect(() => {
@@ -285,83 +173,95 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     return () => { try { document.head.removeChild(el); } catch {} };
   }, [stylesInjected]);
 
-  // PressureEngine canvas
+  // PressureEngine for FAULTLINE phase
   useEffect(() => {
-    if (!canvasRef.current) return;
-    const engine = new PressureEngine({ canvas: canvasRef.current, intensity: 0.65 });
-    engineRef.current = engine;
+    if (!pressureCanvasRef.current) return;
+    const engine = new PressureEngine({ canvas: pressureCanvasRef.current, intensity: 0.65 });
+    pressureEngineRef.current = engine;
     engine.start();
     const ro = new ResizeObserver(() => engine.resize());
-    ro.observe(canvasRef.current);
+    ro.observe(pressureCanvasRef.current);
     return () => { engine.stop(); ro.disconnect(); };
   }, []);
 
-  // Phase sequencer — precise timing per spec
+  // Phase sequencer
   useEffect(() => {
     const t = timersRef.current;
-    // Phase 1: FAULTLINE identity
     t.push(setTimeout(() => {
       setPhase("faultline");
-      setTimeout(() => engineRef.current?.triggerShockwave(), 300);
+      setTimeout(() => pressureEngineRef.current?.triggerShockwave(), 300);
     }, 400));
-    // Phase 1→2 boundary: begin converge
     t.push(setTimeout(() => {
       setPhase("converge");
-      engineRef.current?.setIntensity(1.1);
-      engineRef.current?.triggerShockwave();
+      pressureEngineRef.current?.setIntensity(1.1);
+      pressureEngineRef.current?.triggerShockwave();
     }, 3000));
-    // Phase 2: transform
-    t.push(setTimeout(() => {
-      setPhase("transform");
-    }, 3800));
-    // Phase 3: ASHA showcase
+    t.push(setTimeout(() => setPhase("transform"), 3800));
     t.push(setTimeout(() => {
       setPhase("asha");
-      engineRef.current?.setIntensity(0.8);
+      pressureEngineRef.current?.stop();
+      ashaStartRef.current = performance.now();
     }, 5600));
-    // Auto-complete after ASHA showcase (~6.5s on screen)
-    t.push(setTimeout(() => {
-      handleComplete();
-    }, 12100));
+    // Auto-complete after ~6.8s of ASHA showcase
+    t.push(setTimeout(() => triggerExit(), 12400));
     return () => t.forEach(clearTimeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleComplete = useCallback(() => {
+  // Track elapsed time within asha phase for text reveals
+  useEffect(() => {
+    if (phase !== "asha") return;
+    function tick() {
+      setAshaElapsed((performance.now() - ashaStartRef.current) / 1000);
+      ashaRafRef.current = requestAnimationFrame(tick);
+    }
+    ashaRafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(ashaRafRef.current);
+  }, [phase]);
+
+  const triggerExit = useCallback(() => {
     if (phase === "exiting") return;
     setPhase("exiting");
-    engineRef.current?.triggerShockwave();
-    setTimeout(() => {
-      engineRef.current?.stop();
-      onComplete();
-    }, 700);
-  }, [phase, onComplete]);
+    cancelAnimationFrame(ashaRafRef.current);
+    // Tell canvas to dissolve; onDissolveComplete fires ~1.4s later
+    ashaCanvasRef.current?.dissolve();
+  }, [phase]);
 
   const handleSkip = useCallback(() => {
     timersRef.current.forEach(clearTimeout);
+    cancelAnimationFrame(ashaRafRef.current);
+    pressureEngineRef.current?.stop();
     setPhase("exiting");
-    engineRef.current?.triggerShockwave();
-    setTimeout(() => {
-      engineRef.current?.stop();
-      onComplete();
-    }, 400);
+    // If in asha phase, dissolve the canvas; otherwise just complete immediately
+    if (phase === "asha") {
+      ashaCanvasRef.current?.dissolve();
+    } else {
+      setTimeout(onComplete, 400);
+    }
+  }, [phase, onComplete]);
+
+  const handleDissolveComplete = useCallback(() => {
+    onComplete();
   }, [onComplete]);
 
-  // Tagline typewriter — active from faultline phase onward
+  // Tagline typewriter during FAULTLINE phase
   const tagline = "DETECTING HIDDEN SYSTEMIC PRESSURE IN REAL TIME";
   const { displayed: taglineText, done: taglineDone } = useTypewriter(
     tagline, 30,
     phase === "faultline" || phase === "converge"
   );
 
-  const isExiting = phase === "exiting";
-  const showLogo = phase === "faultline" || phase === "converge" || phase === "transform";
-  const logoDissolving = phase === "transform";
-  const logoConverging = phase === "converge";
-  const showSeismo = phase === "faultline" || phase === "converge";
-  const showEnergy = phase === "converge";
-  const showAsha = phase === "asha" || phase === "exiting";
-  const showNetwork = phase === "asha" || phase === "exiting";
+  const showPressureCanvas = phase !== "asha" && phase !== "exiting";
+  const showLogo           = phase === "faultline" || phase === "converge" || phase === "transform";
+  const logoDissolving     = phase === "transform";
+  const logoConverging     = phase === "converge";
+  const showSeismo         = phase === "faultline" || phase === "converge";
+  const showAshaCanvas     = phase === "asha" || phase === "exiting";
+
+  // Text reveal within asha phase
+  const showAshaName     = ashaElapsed >= ASHA_TEXT_DELAYS.name;
+  const showAshaSubtitle = ashaElapsed >= ASHA_TEXT_DELAYS.subtitle;
+  const showAshaTagline  = ashaElapsed >= ASHA_TEXT_DELAYS.tagline;
 
   return (
     <div
@@ -371,68 +271,87 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
         background: "#020305",
-        animation: isExiting ? "ci-exit-dissolve 0.7s cubic-bezier(0.23,1,0.32,1) forwards" : undefined,
         overflow: "hidden",
       }}
     >
-      {/* PressureEngine canvas */}
-      <canvas ref={canvasRef}
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
+      {/* ── PressureEngine canvas (FAULTLINE phases) ── */}
+      <canvas
+        ref={pressureCanvasRef}
+        style={{
+          position: "absolute", inset: 0,
+          width: "100%", height: "100%",
+          opacity: showPressureCanvas ? 1 : 0,
+          transition: "opacity 1.2s ease",
+        }}
+      />
 
-      {/* Ambient intelligence network */}
-      <AmbientNetwork visible={showNetwork} />
+      {/* ── ASHA Intelligence Canvas (full screen, asha + exiting phases) ── */}
+      {showAshaCanvas && (
+        <AshaIntelligenceCanvas
+          ref={ashaCanvasRef}
+          onDissolveComplete={handleDissolveComplete}
+          speed={1}
+        />
+      )}
 
-      {/* Energy particles converging to center */}
-      <EnergyParticles visible={showEnergy} />
-
-      {/* Seismograph line */}
-      <SeismographLine visible={showSeismo} converging={logoConverging} />
-
-      {/* CRT scanlines */}
+      {/* ── CRT scanlines ── */}
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10,
-        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.010) 2px, rgba(0,212,255,0.010) 4px)",
-        opacity: phase === "black" ? 0 : 0.55,
+        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,212,255,0.009) 2px, rgba(0,212,255,0.009) 4px)",
+        opacity: phase === "black" ? 0 : 0.5,
         transition: "opacity 1.2s",
       }} />
 
-      {/* Vignette */}
+      {/* ── Vignette ── */}
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none", zIndex: 11,
-        background: "radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(0,0,0,0.7) 100%)",
+        background: "radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,0.72) 100%)",
       }} />
 
-      {/* Corner brackets */}
-      <CornerBracket pos="tl" visible={showLogo || showAsha} />
-      <CornerBracket pos="tr" visible={showLogo || showAsha} />
-      <CornerBracket pos="bl" visible={showLogo || showAsha} />
-      <CornerBracket pos="br" visible={showLogo || showAsha} />
+      {/* ── Corner brackets ── */}
+      <CornerBracket pos="tl" visible={showLogo || showAshaCanvas} />
+      <CornerBracket pos="tr" visible={showLogo || showAshaCanvas} />
+      <CornerBracket pos="bl" visible={showLogo || showAshaCanvas} />
+      <CornerBracket pos="br" visible={showLogo || showAshaCanvas} />
 
-      {/* ── Content ── */}
+      {/* ── Seismograph line ── */}
+      {showSeismo && (
+        <div style={{
+          position: "absolute", bottom: "16%", left: 0, right: 0,
+          height: "60px", pointerEvents: "none", zIndex: 12,
+          animation: logoConverging ? "ci-seismo-fade 1.2s ease-out forwards" : undefined,
+          opacity: 0.2,
+        }}>
+          <svg width="100%" height="60" viewBox="0 0 400 60" preserveAspectRatio="none">
+            <path
+              d="M0,30 C20,30 25,10 50,30 S75,50 100,30 S125,10 150,30 S175,50 200,30 S225,10 250,30 S275,50 300,30 S325,10 350,30 S375,50 400,30"
+              fill="none" stroke="#00D4FF" strokeWidth="0.9" />
+          </svg>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
+          FAULTLINE IDENTITY CONTENT (phases: faultline, converge, transform)
+          ═══════════════════════════════════════════════════════ */}
       <div style={{
-        position: "relative", zIndex: 20,
+        position: "absolute", inset: 0, zIndex: 20,
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        height: "100%", padding: "0 24px",
-        textAlign: "center",
+        textAlign: "center", padding: "0 24px",
+        pointerEvents: "none",
+        opacity: showLogo ? 1 : 0,
+        transition: "opacity 0.6s ease",
       }}>
-
-        {/* ═══════════════════════════════════════════════════
-            PHASE 1 + 2: FAULTLINE IDENTITY
-            Full identity on screen 0.8–3.0s. Begins dissolving at 3.0s.
-            ═══════════════════════════════════════════════════ */}
         {showLogo && (
           <div style={{
             animation: logoDissolving
               ? "ci-logo-dissolve 1.8s cubic-bezier(0.23,1,0.32,1) forwards"
               : "ci-scanline-reveal 1.2s cubic-bezier(0.23,1,0.32,1) forwards",
             marginBottom: "8px",
-            pointerEvents: "none",
-            // Dim slightly during converge to signal transition beginning
-            filter: logoConverging ? "brightness(0.85)" : undefined,
-            transition: logoConverging ? "filter 0.8s ease" : undefined,
+            filter: logoConverging ? "brightness(0.82)" : undefined,
+            transition: logoConverging ? "filter 0.9s ease" : undefined,
           }}>
-            {/* FAULTLINE wordmark */}
+            {/* Wordmark */}
             <div style={{
               fontFamily: "'Rajdhani', sans-serif",
               fontWeight: 700,
@@ -440,7 +359,9 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
               letterSpacing: "0.18em",
               color: "#F0F4FF",
               lineHeight: 1,
-              animation: logoDissolving ? undefined : "ci-glow-pulse 3s ease-in-out 1.2s infinite, ci-flicker 9s ease-in-out 3s infinite",
+              animation: logoDissolving
+                ? undefined
+                : "ci-glow-pulse 3s ease-in-out 1.2s infinite, ci-flicker 9s ease-in-out 3s infinite",
               textShadow: "0 0 20px rgba(0,212,255,0.4), 0 0 60px rgba(0,212,255,0.15)",
             }}>
               FAULT<span style={{ color: "#00D4FF" }}>LINE</span>
@@ -460,7 +381,6 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
               fontSize: "clamp(9px, 1.5vw, 13px)",
               letterSpacing: "0.38em",
               color: "rgba(0,212,255,0.72)",
-              textTransform: "uppercase",
               animation: "ci-fade-up 0.8s ease-out 1.1s both",
             }}>
               MACROECONOMIC RISK INTELLIGENCE
@@ -468,18 +388,18 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
           </div>
         )}
 
-        {/* Tagline typewriter — visible during FAULTLINE phase only */}
+        {/* Tagline */}
         {(phase === "faultline" || phase === "converge") && (
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: "clamp(9px, 1.6vw, 12px)",
             letterSpacing: "0.22em",
-            color: "rgba(148,163,184,0.75)",
+            color: "rgba(148,163,184,0.72)",
             marginTop: "20px",
             minHeight: "18px",
             animation: "ci-fade-up 0.6s ease-out 1.4s both",
             opacity: logoConverging ? 0 : undefined,
-            transition: logoConverging ? "opacity 0.8s ease" : undefined,
+            transition: logoConverging ? "opacity 0.7s ease" : undefined,
           }}>
             {taglineText}
             {!taglineDone && (
@@ -487,98 +407,83 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
             )}
           </div>
         )}
-
-        {/* ═══════════════════════════════════════════════════
-            PHASE 3: ASHA SHOWCASE
-            ~6–7 seconds. ASHA is the intelligence within FAULTLINE.
-            ═══════════════════════════════════════════════════ */}
-        {showAsha && (
-          <div style={{
-            display: "flex", flexDirection: "column",
-            alignItems: "center", gap: "22px",
-            animation: "ci-orb-emerge 1.6s cubic-bezier(0.23,1,0.32,1) forwards",
-          }}>
-            {/* ASHA Orb — large, prominent */}
-            <AshaOrb
-              regimeState="calm"
-              size={88}
-              isListening={false}
-              label={undefined}
-            />
-
-            {/* ASHA name */}
-            <div style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontWeight: 700,
-              fontSize: "clamp(36px, 6vw, 64px)",
-              letterSpacing: "0.45em",
-              color: "#00D4FF",
-              lineHeight: 1,
-              textShadow: "0 0 30px rgba(0,212,255,0.6), 0 0 80px rgba(0,212,255,0.2)",
-              animation: "ci-asha-title 1.2s cubic-bezier(0.23,1,0.32,1) 0.2s both",
-            }}>
-              ASHA
-            </div>
-
-            {/* SPIRIT OF FAULTLINE */}
-            <div style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "clamp(9px, 1.5vw, 12px)",
-              letterSpacing: "0.35em",
-              color: "rgba(255,215,0,0.75)",
-              textTransform: "uppercase",
-              animation: "ci-asha-subtitle 0.8s ease-out 0.7s both",
-            }}>
-              SPIRIT OF FAULTLINE
-            </div>
-
-            {/* Supporting line */}
-            <div style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "clamp(8px, 1.2vw, 11px)",
-              letterSpacing: "0.18em",
-              color: "rgba(148,163,184,0.55)",
-              textTransform: "uppercase",
-              animation: "ci-supporting-line 1s ease-out 1.4s both",
-            }}>
-              THE INTELLIGENCE BENEATH THE SURFACE
-            </div>
-
-            {/* Expanding ring — ambient energy */}
-            <svg
-              width="0" height="0"
-              viewBox="0 0 240 240"
-              style={{
-                position: "absolute",
-                width: "clamp(200px, 40vw, 340px)",
-                height: "clamp(200px, 40vw, 340px)",
-                pointerEvents: "none",
-                zIndex: -1,
-                opacity: 0.12,
-              }}
-            >
-              <circle cx="120" cy="120" r="0" fill="none" stroke="#00D4FF" strokeWidth="1"
-                style={{ animation: "ci-ring-expand 3s ease-out 0.5s infinite" }} />
-              <circle cx="120" cy="120" r="0" fill="none" stroke="#00D4FF" strokeWidth="0.5"
-                style={{ animation: "ci-ring-expand 3s ease-out 1.5s infinite" }} />
-            </svg>
-          </div>
-        )}
       </div>
 
-      {/* Skip button — always visible */}
+      {/* ═══════════════════════════════════════════════════════
+          ASHA TEXT OVERLAYS (phase: asha, exiting)
+          Positioned in the lower third so they don't obscure the orb.
+          ═══════════════════════════════════════════════════════ */}
+      {showAshaCanvas && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 25,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          textAlign: "center", padding: "0 24px",
+          pointerEvents: "none",
+        }}>
+          {/* Spacer — push text below the orb */}
+          <div style={{ flex: "0 0 52%" }} />
+
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+            {/* ASHA */}
+            {showAshaName && (
+              <div style={{
+                fontFamily: "'Rajdhani', sans-serif",
+                fontWeight: 700,
+                fontSize: "clamp(32px, 5.5vw, 58px)",
+                letterSpacing: "0.45em",
+                color: "#00D4FF",
+                lineHeight: 1,
+                textShadow: "0 0 30px rgba(0,212,255,0.55), 0 0 80px rgba(0,212,255,0.18)",
+                animation: "ci-asha-name 1.4s cubic-bezier(0.23,1,0.32,1) forwards",
+              }}>
+                ASHA
+              </div>
+            )}
+
+            {/* SPIRIT OF FAULTLINE */}
+            {showAshaSubtitle && (
+              <div style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "clamp(9px, 1.4vw, 12px)",
+                letterSpacing: "0.35em",
+                color: "rgba(255,215,0,0.78)",
+                animation: "ci-asha-sub 0.9s ease-out forwards",
+              }}>
+                SPIRIT OF FAULTLINE
+              </div>
+            )}
+
+            {/* Tagline */}
+            {showAshaTagline && (
+              <div style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: "clamp(8px, 1.15vw, 11px)",
+                letterSpacing: "0.16em",
+                color: "rgba(148,163,184,0.52)",
+                marginTop: "2px",
+                animation: "ci-asha-tag 1.2s ease-out forwards",
+              }}>
+                THE INTELLIGENCE BENEATH THE SURFACE
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Skip button ── */}
       <button
         onClick={handleSkip}
         aria-label="Skip introduction"
         style={{
-          position: "absolute", top: "20px", right: "20px", zIndex: 30,
-          background: "rgba(0,0,0,0.35)",
-          border: "1px solid rgba(255,255,255,0.10)",
+          position: "absolute", top: "20px", right: "20px", zIndex: 40,
+          background: "rgba(0,0,0,0.32)",
+          border: "1px solid rgba(255,255,255,0.09)",
           borderRadius: "4px",
           padding: "8px 18px",
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: "10px", letterSpacing: "0.15em",
-          color: "rgba(255,255,255,0.30)",
+          color: "rgba(255,255,255,0.28)",
           cursor: "pointer",
           transition: "all 0.2s ease",
           animation: "ci-fade-up 0.5s ease-out 1.2s both",
@@ -586,12 +491,12 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
         onMouseEnter={e => {
           const b = e.currentTarget as HTMLButtonElement;
           b.style.color = "rgba(0,212,255,0.75)";
-          b.style.borderColor = "rgba(0,212,255,0.30)";
+          b.style.borderColor = "rgba(0,212,255,0.28)";
         }}
         onMouseLeave={e => {
           const b = e.currentTarget as HTMLButtonElement;
-          b.style.color = "rgba(255,255,255,0.30)";
-          b.style.borderColor = "rgba(255,255,255,0.10)";
+          b.style.color = "rgba(255,255,255,0.28)";
+          b.style.borderColor = "rgba(255,255,255,0.09)";
         }}
       >
         SKIP INTRO
@@ -599,10 +504,10 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
       {/* Version tag */}
       <div style={{
-        position: "absolute", bottom: "24px", left: "24px", zIndex: 30,
+        position: "absolute", bottom: "22px", left: "22px", zIndex: 40,
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: "8px", letterSpacing: "0.15em",
-        color: "rgba(55,65,81,0.55)",
+        color: "rgba(55,65,81,0.5)",
         animation: "ci-fade-up 0.5s ease-out 1.6s both",
       }}>
         FAULTLINE v1.0 — BETA
