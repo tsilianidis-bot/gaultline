@@ -2,6 +2,7 @@
    ASHA — Persistent Floating Ask ASHA Panel
    Appears on every page. Regime-reactive orb trigger.
    Page-context aware: injects current page data into every query.
+   Signature arrival: rise → pause + chime → expand.
    ============================================================ */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
@@ -68,6 +69,118 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
   ],
 };
 
+// ── Arrival phases ────────────────────────────────────────────
+type ArrivalPhase = "idle" | "rising" | "pausing" | "expanding" | "open";
+
+// ── Signature chime synthesizer ───────────────────────────────
+let audioCtx: AudioContext | null = null;
+let chimeInProgress = false;
+
+function getAudioContext(): AudioContext | null {
+  try {
+    if (!audioCtx || audioCtx.state === "closed") {
+      audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return audioCtx;
+  } catch {
+    return null;
+  }
+}
+
+function playSignatureChime() {
+  // Prevent overlapping chimes from rapid taps
+  if (chimeInProgress) return;
+  // Respect muted / reduced-motion preference
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  // Resume suspended context (browser autoplay policy)
+  if (ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
+  }
+
+  chimeInProgress = true;
+  const now = ctx.currentTime;
+
+  // ── Primary tone: 432 Hz — warm, resonant, not mystical ──
+  const osc1 = ctx.createOscillator();
+  const gain1 = ctx.createGain();
+  osc1.type = "sine";
+  osc1.frequency.setValueAtTime(432, now);
+  // Soft attack — like a crystal glass strike
+  gain1.gain.setValueAtTime(0, now);
+  gain1.gain.linearRampToValueAtTime(0.22, now + 0.025);
+  // Long elegant decay — 2.2s
+  gain1.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+  osc1.connect(gain1);
+  gain1.connect(ctx.destination);
+
+  // ── Second harmonic: 864 Hz (octave) — adds clarity ──
+  const osc2 = ctx.createOscillator();
+  const gain2 = ctx.createGain();
+  osc2.type = "sine";
+  osc2.frequency.setValueAtTime(864, now);
+  gain2.gain.setValueAtTime(0, now);
+  gain2.gain.linearRampToValueAtTime(0.08, now + 0.025);
+  gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+  osc2.connect(gain2);
+  gain2.connect(ctx.destination);
+
+  // ── Third harmonic: 648 Hz (perfect fifth) — rich texture ──
+  const osc3 = ctx.createOscillator();
+  const gain3 = ctx.createGain();
+  osc3.type = "sine";
+  osc3.frequency.setValueAtTime(648, now);
+  gain3.gain.setValueAtTime(0, now);
+  gain3.gain.linearRampToValueAtTime(0.05, now + 0.04);
+  gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+  osc3.connect(gain3);
+  gain3.connect(ctx.destination);
+
+  // ── Technological undertone: 216 Hz sub ──
+  const osc4 = ctx.createOscillator();
+  const gain4 = ctx.createGain();
+  osc4.type = "sine";
+  osc4.frequency.setValueAtTime(216, now);
+  gain4.gain.setValueAtTime(0, now);
+  gain4.gain.linearRampToValueAtTime(0.04, now + 0.02);
+  gain4.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+  osc4.connect(gain4);
+  gain4.connect(ctx.destination);
+
+  // Start all oscillators
+  osc1.start(now); osc1.stop(now + 2.3);
+  osc2.start(now); osc2.stop(now + 1.7);
+  osc3.start(now); osc3.stop(now + 1.9);
+  osc4.start(now); osc4.stop(now + 1.1);
+
+  // Release lock after chime decays
+  setTimeout(() => { chimeInProgress = false; }, 2400);
+}
+
+// Soft response-ready cue (much quieter, shorter)
+function playResponseCue() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(648, now);
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.04, now + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.6);
+}
+
 // ── Message type ──────────────────────────────────────────────
 interface Message {
   role: "user" | "assistant";
@@ -77,10 +190,6 @@ interface Message {
   enginesConsulted?: string[];
   lastUpdated?: string;
   showTransparency?: boolean;
-}
-
-interface AshaPanelProps {
-  // No props needed — reads from AshaContext
 }
 
 function confidenceColor(c?: "high" | "moderate" | "low") {
@@ -128,18 +237,21 @@ function TransparencyPanel({ msg }: { msg: Message }) {
   );
 }
 
-export default function AshaPanel({}: AshaPanelProps) {
+export default function AshaPanel({}: {}) {
   const { output } = useEngine();
   const { pageContext } = useAshaContext();
-  const [open, setOpen] = useState(false);
+  const [arrivalPhase, setArrivalPhase] = useState<ArrivalPhase>("idle");
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const arrivalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const askMutation = trpc.asha.ask.useMutation();
+
+  const open = arrivalPhase === "open";
 
   // Derive regime state for orb
   const regimeState: AshaRegimeState = (() => {
@@ -176,6 +288,52 @@ export default function AshaPanel({}: AshaPanelProps) {
     }
   }, [open, messages, scrollToBottom]);
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
+    };
+  }, []);
+
+  // ── Arrival sequence ──────────────────────────────────────
+  const handleOpen = () => {
+    // Prevent re-triggering if already animating or open
+    if (arrivalPhase !== "idle") return;
+
+    // Preload AudioContext on first user gesture
+    getAudioContext();
+
+    // Respect reduced-motion: skip animation, open immediately
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setArrivalPhase("open");
+      return;
+    }
+
+    // Phase 1: Rise (0.3s)
+    setArrivalPhase("rising");
+
+    arrivalTimerRef.current = setTimeout(() => {
+      // Phase 2: Pause (0.3s) — play chime at start of pause
+      setArrivalPhase("pausing");
+      playSignatureChime();
+
+      arrivalTimerRef.current = setTimeout(() => {
+        // Phase 3: Expand (0.3s)
+        setArrivalPhase("expanding");
+
+        arrivalTimerRef.current = setTimeout(() => {
+          // Phase 4: Open
+          setArrivalPhase("open");
+        }, 300);
+      }, 300);
+    }, 300);
+  };
+
+  const handleClose = () => {
+    if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
+    setArrivalPhase("idle");
+  };
+
   const sendMessage = async (text: string) => {
     if (!text.trim() || loading) return;
     const userMsg: Message = { role: "user", content: text.trim() };
@@ -200,6 +358,8 @@ export default function AshaPanel({}: AshaPanelProps) {
         showTransparency: false,
       };
       setMessages(prev => [...prev, assistantMsg]);
+      // Soft cue when response arrives
+      playResponseCue();
     } catch {
       setMessages(prev => [...prev, {
         role: "assistant",
@@ -225,24 +385,71 @@ export default function AshaPanel({}: AshaPanelProps) {
 
   const clearChat = () => setMessages([]);
 
+  // ── Arrival orb overlay styles ────────────────────────────
+  const isArriving = arrivalPhase === "rising" || arrivalPhase === "pausing" || arrivalPhase === "expanding";
+
+  const arrivalOrbStyle: React.CSSProperties = {
+    position: "fixed",
+    bottom: "20px",
+    right: "20px",
+    zIndex: 1002,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    pointerEvents: "none",
+  };
+
+  const orbContainerStyle: React.CSSProperties = {
+    animation:
+      arrivalPhase === "rising"
+        ? "asha-orb-rise 0.30s cubic-bezier(0.23,1,0.32,1) both"
+        : arrivalPhase === "pausing"
+        ? "asha-orb-pause-pulse 0.30s ease-in-out both"
+        : arrivalPhase === "expanding"
+        ? "asha-orb-expand 0.30s cubic-bezier(0.23,1,0.32,1) both"
+        : "none",
+  };
+
   return (
     <>
-      {/* ── Floating trigger button ──────────────────────────── */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "20px",
-          right: "20px",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "4px",
-        }}
-      >
-        {!open && (
+      {/* ── Arrival orb overlay (during animation phases) ──── */}
+      {isArriving && (
+        <div style={arrivalOrbStyle}>
+          <div style={orbContainerStyle}>
+            {/* Ripple ring during pause */}
+            {arrivalPhase === "pausing" && (
+              <div style={{
+                position: "absolute",
+                width: "60px",
+                height: "60px",
+                borderRadius: "50%",
+                border: "1px solid rgba(0,229,255,0.35)",
+                animation: "asha-ripple 0.30s ease-out both",
+                pointerEvents: "none",
+              }} />
+            )}
+            <AshaOrb regimeState={regimeState} size={36} isListening={false} />
+          </div>
+        </div>
+      )}
+
+      {/* ── Floating trigger button (idle only) ─────────────── */}
+      {arrivalPhase === "idle" && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "4px",
+          }}
+        >
           <button
-            onClick={() => setOpen(true)}
+            onClick={handleOpen}
             style={{
               background: "rgba(6,10,20,0.92)",
               border: "1px solid rgba(0,229,255,0.38)",
@@ -274,10 +481,10 @@ export default function AshaPanel({}: AshaPanelProps) {
               textTransform: "uppercase",
             }}>Ask ASHA</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── Chat panel ──────────────────────────────────────── */}
+      {/* ── Chat panel (open phase only) ────────────────────── */}
       {open && (
         <div
           style={{
@@ -325,7 +532,7 @@ export default function AshaPanel({}: AshaPanelProps) {
                 </button>
               )}
               <button
-                onClick={() => setOpen(false)}
+                onClick={handleClose}
                 style={{ background: "transparent", border: "none", cursor: "pointer", color: "rgba(100,116,139,0.4)", padding: "4px", transition: "color 0.15s ease" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.6)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(100,116,139,0.4)"; }}
@@ -432,17 +639,20 @@ export default function AshaPanel({}: AshaPanelProps) {
               </div>
             ))}
 
+            {/* Thinking state — orb contracts + internal pulses */}
             {loading && (
               <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0" }}>
-                <AshaOrb regimeState={regimeState} size={18} isListening={true} />
-                <div style={{ display: "flex", gap: "4px" }}>
-                  {[0, 1, 2].map(i => (
+                <div style={{ animation: "asha-thinking-orb 1.8s ease-in-out infinite" }}>
+                  <AshaOrb regimeState={regimeState} size={18} isListening={true} />
+                </div>
+                <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
+                  {[0, 1, 2, 3].map(i => (
                     <div key={i} style={{
-                      width: "5px",
-                      height: "5px",
+                      width: "3px",
+                      height: "3px",
                       borderRadius: "50%",
                       background: "#00E5FF",
-                      animation: `asha-dot-bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
+                      animation: `asha-pulse-dot 1.4s ease-in-out ${i * 0.18}s infinite`,
                     }} />
                   ))}
                 </div>
@@ -465,7 +675,7 @@ export default function AshaPanel({}: AshaPanelProps) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask ASHA anything…"
+              placeholder="Ask ASHA..."
               disabled={loading}
               style={{
                 flex: 1,
@@ -538,13 +748,56 @@ export default function AshaPanel({}: AshaPanelProps) {
       )}
 
       <style>{`
+        /* ── Panel open ── */
         @keyframes asha-panel-open {
           from { opacity: 0; transform: translateY(12px) scale(0.97); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
         }
+
+        /* ── Arrival: orb rises from below ── */
+        @keyframes asha-orb-rise {
+          from { opacity: 0; transform: translateY(20px) scale(0.85); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ── Arrival: pause — one breathing pulse ── */
+        @keyframes asha-orb-pause-pulse {
+          0%   { transform: scale(1);    filter: brightness(1); }
+          40%  { transform: scale(1.12); filter: brightness(1.35); }
+          70%  { transform: scale(1.04); filter: brightness(1.15); }
+          100% { transform: scale(1.08); filter: brightness(1.2); }
+        }
+
+        /* ── Arrival: expand into panel position ── */
+        @keyframes asha-orb-expand {
+          from { opacity: 1; transform: scale(1.08); filter: brightness(1.2); }
+          to   { opacity: 0; transform: scale(2.2);  filter: brightness(0); }
+        }
+
+        /* ── Ripple ring during pause ── */
+        @keyframes asha-ripple {
+          from { transform: scale(0.6); opacity: 0.6; }
+          to   { transform: scale(2.0); opacity: 0; }
+        }
+
+        /* ── Thinking state: orb contracts and brightens ── */
+        @keyframes asha-thinking-orb {
+          0%   { transform: scale(1);    filter: brightness(1); }
+          30%  { transform: scale(0.88); filter: brightness(1.4); }
+          60%  { transform: scale(0.94); filter: brightness(1.2); }
+          100% { transform: scale(1);    filter: brightness(1); }
+        }
+
+        /* ── Thinking dots: internal pulse pattern ── */
+        @keyframes asha-pulse-dot {
+          0%, 100% { transform: scaleY(1);   opacity: 0.3; }
+          50%       { transform: scaleY(2.2); opacity: 1; }
+        }
+
+        /* ── Dot bounce (legacy, kept for other uses) ── */
         @keyframes asha-dot-bounce {
           0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-          40% { transform: translateY(-4px); opacity: 1; }
+          40%            { transform: translateY(-4px); opacity: 1; }
         }
       `}</style>
     </>
