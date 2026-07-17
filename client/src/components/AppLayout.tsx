@@ -39,6 +39,7 @@ type NavItem = {
 
 type NavGroup = {
   label: string;
+  color: string;       // bright accent color for the category header
   items: NavItem[];
 };
 
@@ -46,6 +47,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     // Q1 + Q2: What is the market doing right now? Why?
     label: "SITUATION",
+    color: "#00E5FF",
     items: [
       { id: "seismograph",     label: "Seismograph",          shortLabel: "Seismograph", icon: Activity,        path: "/app/seismograph" },
       { id: "intelligence-hub", label: "Intelligence Hub",    shortLabel: "Intel Hub",   icon: Brain,           path: "/app/intelligence-hub" },
@@ -59,6 +61,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     // Q3 + Q4: What does it mean? What is the highest probability outcome?
     label: "UNDERSTAND",
+    color: "#FFAA00",
     items: [
       { id: "signal-outlook",  label: "Signal Outlook",       shortLabel: "Outlook",     icon: Eye,             path: "/app/signal-outlook" },
       { id: "pre-flight",      label: "Pre-Flight Check",     shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
@@ -74,6 +77,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     // Q5 + Q6: What could change the outlook? How do I capitalize?
     label: "OPPORTUNITIES",
+    color: "#00FF88",
     items: [
       { id: "discover",        label: "Ask ASHA",             shortLabel: "Ask ASHA",    icon: Search,          path: "/app/discover" },
       { id: "opportunities",   label: "Opportunities",        shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
@@ -81,11 +85,13 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "symbol-intel",    label: "Symbol Intelligence",  shortLabel: "Symbol Intel",icon: Telescope,       path: "/app/symbol-intelligence" },
       { id: "decision-engine", label: "Decision Engine",      shortLabel: "Decide",      icon: Crosshair,       path: "/app/decision-engine" },
       { id: "day-trade",       label: "Day Trade Intel",      shortLabel: "Day Trade",   icon: Target,          path: "/app/day-trade-intelligence" },
+      { id: "market-movers",   label: "Market Movers",        shortLabel: "Movers",      icon: TrendingUp,      path: "/app/market-movers" },
     ],
   },
   {
     // Q7: What should I continue monitoring?
     label: "MONITOR",
+    color: "#A78BFA",
     items: [
       { id: "alerts",           label: "Alerts",               shortLabel: "Alerts",      icon: BellRing,        path: "/app/alerts" },
       { id: "watchlist",        label: "Watchlist",            shortLabel: "Watch",       icon: Bell,            path: "/app/watchlist" },
@@ -584,8 +590,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           overflowX: 'auto',
           scrollbarWidth: 'none',
         }}>
-          {[...NAV_GROUPS, ...(isAdmin ? [{ label: "OWNER PORTAL", items: ADMIN_NAV_ITEMS }] : [])].map((group, gi) => {
+          {[...NAV_GROUPS, ...(isAdmin ? [{ label: "OWNER PORTAL", color: "#FFAA00", items: ADMIN_NAV_ITEMS }] : [])].map((group, gi) => {
             const isOwnerPortal = group.label === 'OWNER PORTAL';
+            const groupColor = (group as NavGroup & { color?: string }).color ?? '#FFAA00';
             return (
             <div key={group.label} style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
               {/* Group divider (not before first group) */}
@@ -593,22 +600,24 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <div style={{
                   width: '1px',
                   height: '28px',
-                  background: isOwnerPortal ? 'rgba(255,170,0,0.35)' : 'rgba(255,255,255,0.12)',
-                  margin: isOwnerPortal ? '0 12px' : '0 8px',
+                  background: `${groupColor}40`,
+                  margin: '0 6px',
                   flexShrink: 0,
                 }} />
               )}
-              {/* Group label */}
+              {/* Group label — bright, color-coded category header */}
               <span style={{
                 fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '12px',
-                color: isOwnerPortal ? 'rgba(255,170,0,0.7)' : '#374151',
-                letterSpacing: '0.18em',
+                fontSize: '9px',
+                color: groupColor,
+                letterSpacing: '0.22em',
                 textTransform: 'uppercase',
-                padding: '0 6px',
+                padding: '0 5px',
                 flexShrink: 0,
                 userSelect: 'none',
-                ...(isOwnerPortal ? { textShadow: '0 0 8px rgba(255,170,0,0.4)' } : {}),
+                fontWeight: 700,
+                textShadow: `0 0 10px ${groupColor}55`,
+                opacity: 0.9,
               }}>
                 {group.label}
               </span>

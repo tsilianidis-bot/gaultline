@@ -62,6 +62,7 @@ const SituationRoom = lazy(() => import('./pages/SituationRoom'));
 const PreFlight = lazy(() => import('./pages/PreFlight'));
 const InsiderIntelligence = lazy(() => import("./pages/InsiderIntelligence"));
 const DayTradeIntelligence = lazy(() => import("./pages/DayTradeIntelligence"));
+const MarketMovers         = lazy(() => import("./pages/MarketMovers"));
 const SeoOptimizer = lazy(() => import("./pages/SeoOptimizer"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
@@ -681,6 +682,7 @@ function Router() {
               <Route path="/app/pre-flight" component={PreFlight} />
               <Route path="/app/insider-intelligence" component={InsiderIntelligence} />
               <Route path="/app/day-trade-intelligence" component={DayTradeIntelligence} />
+              <Route path="/app/market-movers" component={MarketMovers} />
               <Route path="/app/trade-journal" component={TradeJournal} />
               <Route path="/app/symbol-intelligence" component={UniversalSymbolIntelligence} />
               <Route path="/app/glossary" component={Glossary} />
