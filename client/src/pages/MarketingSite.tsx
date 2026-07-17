@@ -3087,7 +3087,7 @@ export default function MarketingSite() {
   useSEO({
     title: "FAULTLINE — Market Risk Intelligence Platform",
     description: "Move within the faultlines before the quake. FAULTLINE gives self-directed traders the same systemic pressure intelligence top hedge funds use to position before collapses — not react to them.",
-    canonical: "/",
+    canonical: "/about",
   });
 
   const scrollToForm = () => {

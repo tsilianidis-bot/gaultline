@@ -212,6 +212,8 @@ function PageLoader() {
 
 // ── Session key: show cinematic intro once per browser session (returning users) ──
 const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
+// ── Persistent key: cinematic completed at least once (survives sessions) ──
+const CINEMATIC_COMPLETED_KEY = 'fl_cinematic_completed_v1';
 
 function Router() {
   return (
@@ -606,14 +608,22 @@ function Router() {
       <Route path="/altcoin-season-index"><Redirect to="/alt-season-indicator" /></Route>
       <Route path="/stock-market-today"><Redirect to="/stock-market-risk-today" /></Route>
       <Route path="/market-briefing"><Redirect to="/app/report" /></Route>
-      {/* Marketing site at root — standalone, no AppLayout */}
-      <Route path="/">
+      {/* Marketing site moved to /about and /platform — no longer the homepage */}
+      <Route path="/about">
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <MarketingSite />
           </Suspense>
         </ErrorBoundary>
       </Route>
+      <Route path="/platform">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <MarketingSite />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Root / — handled by the cinematic gate in App() */}
       {/* All platform routes inside AppLayout under /app */}
       <Route>
         <AppLayout>
@@ -720,10 +730,26 @@ function shouldShowCinematic(): boolean {
   try {
     if (isDemoPath()) return false;
     const path = window.location.pathname;
+    // SEO/blog/public pages never trigger the cinematic
+    const publicPaths = ['/blog', '/daily-brief', '/intelligence-library', '/analysis',
+      '/intelligence', '/intel-archive', '/methodology', '/pressure-index', '/legal',
+      '/contact', '/press', '/about', '/platform', '/phoenix-systems', '/glossary',
+      '/pricing', '/r/', '/mobile/', '/public-', '/market-crash', '/alt-season',
+      '/bitcoin-', '/ethereum-', '/nvda-', '/pltr-', '/tao-', '/tsla-', '/meta-',
+      '/amd-', '/ai-stocks', '/market-regime', '/market-crash-indicator',
+      '/recession-', '/federal-reserve', '/liquidity-', '/volatility-', '/ai-bubble',
+      '/stock-market-', '/bull-or-bear', '/bull-bear', '/treasury-', '/credit-market',
+      '/is-now-', '/best-market', '/crypto-bull', '/crypto-market', '/bitcoin-vs',
+      '/aapl-', '/amzn-', '/msft-', '/spy-', '/qqq-', '/iwm-', '/dia-',
+      '/learn/', '/vs/', '/stocks/', '/crypto/', '/sitemap'];
+    if (publicPaths.some(p => path.startsWith(p))) return false;
     // Deep links into specific app pages skip the cinematic
     if (path.startsWith('/app/') && path !== '/app/dashboard' && path !== '/app/') return false;
-    // Show every session — no localStorage gate
-    return true;
+    // First-time visitor: cinematic has never been completed
+    const completed = localStorage.getItem(CINEMATIC_COMPLETED_KEY);
+    if (!completed) return true;
+    // Returning visitor: skip cinematic entirely
+    return false;
   } catch { return false; }
 }
 
@@ -748,8 +774,19 @@ function App() {
   // ──────────────────────────────────────────────────────────────────────────
 
   // cinematicDone: false until cinematic completes or is skipped.
-  // Shows every session — no localStorage gate. User can always skip.
+  // First-time visitors: cinematic plays. Returning visitors: skip.
   const [cinematicDone, setCinematicDone] = useState<boolean>(() => !FIRST_TIME);
+
+  // returningUnauth: returning visitor who has seen cinematic but is not logged in
+  // → show styled sign-in page instead of cinematic
+  const [returningUnauth] = useState<boolean>(() => {
+    try {
+      if (isDemoPath()) return false;
+      const completed = localStorage.getItem(CINEMATIC_COMPLETED_KEY);
+      if (!completed) return false; // first-timer, cinematic handles it
+      return true; // returning visitor — auth gate will handle sign-in vs skip
+    } catch { return false; }
+  });
 
   // introComplete: always true for first-time users (cinematic IS the intro)
   // and always true for returning users (IntroScreen is no longer a session gate).
@@ -780,12 +817,23 @@ function App() {
     setAuthGateDone(true);
   }, []);
 
+  // For returning visitors (cinematic already seen):
+  // - Authenticated: skip cinematic + ASHA briefing, go straight to dashboard
+  // - Unauthenticated: skip cinematic, show auth gate only
+  const isReturning = !FIRST_TIME && !isDemo;
+
   // Dashboard visibility — fades in once all gates are cleared
-  const [dashVisible, setDashVisible] = useState(() => !FIRST_TIME ? true : false);
+  const [dashVisible, setDashVisible] = useState(() => {
+    if (isDemo) return false;
+    if (!FIRST_TIME) return true; // returning visitor: dashboard immediately visible
+    return false;
+  });
 
   // Cinematic complete handler — called when CinematicIntro finishes or is skipped
   const handleCinematicComplete = useCallback(() => {
     try {
+      // Mark cinematic as permanently completed so returning visitors skip it
+      localStorage.setItem(CINEMATIC_COMPLETED_KEY, '1');
       sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
     } catch {}
     setCinematicDone(true);
@@ -822,15 +870,20 @@ function App() {
                  Nothing below this block mounts until cinematicDone = true.
                  No IntroScreen. No loading bar. No dashboard. No auth UI.
                  The very first rendered frame is the opening Earth scene. */}
-            {!cinematicDone && (
+            {/* First-time visitor: play cinematic */}
+            {!cinematicDone && !isReturning && (
               <CinematicIntro onComplete={handleCinematicComplete} />
             )}
 
-            {/* ── RENDER GATE 2: Auth gate ───────────────────────────────────
-                 Only mounts after cinematic is done.
-                 Shown when user is not authenticated after cinematic.
+            {/* ── RENDER GATE 2: Auth gate ───────────────────────────────────────
+                 Case A: After cinematic (first-time user) — show if not authenticated.
+                 Case B: Returning unauthenticated user — show directly (skip cinematic).
                  Cinematic-styled sign-in — never a white page or redirect. */}
             {cinematicDone && !authGateDone && (
+              <CinematicAuthGate onAuthenticated={handleAuthGateComplete} />
+            )}
+            {/* Returning unauthenticated: show auth gate directly without cinematic */}
+            {isReturning && !authGateDone && (
               <CinematicAuthGate onAuthenticated={handleAuthGateComplete} />
             )}
 
