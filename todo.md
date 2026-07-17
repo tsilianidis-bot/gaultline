@@ -3878,3 +3878,17 @@
 - [x] Integrated above Intelligence Layer in Dashboard.tsx
 - [x] /api/signals/search endpoint added to signalsProxy.ts
 - [x] TypeScript: 0 errors
+
+## Oracle Briefing + Intelligence Synthesis (ASHA Defining UX Moment)
+
+- [x] Extend AshaResponse interface in server/ashaEngine.ts with Oracle Briefing structured fields (executiveSummary, marketBias, marketRegime, threatLevel, pressureIndex, riskLevel, suggestedBias, bullProbability, bearProbability, keyFindings, supportingEvidence, historicalAnalog, riskFactors, invalidationConditions, missionRecommendation, finalVerdictAction, expectedTimeframe, followUpChips)
+- [x] Update askAsha() to use JSON schema structured LLM response — returns all briefing fields in one call
+- [x] Build IntelligenceSynthesis.tsx — live pipeline steps display during ASHA analysis (8 steps: regime, pressure, liquidity, credit, volatility, analog, probability, synthesis)
+- [x] Build OracleBriefing.tsx — full-screen classified intelligence report with stagger-in sections (Executive Summary, Market Assessment grid, Key Intelligence, Supporting Evidence, Historical Analogs, Risk Factors, Invalidation Conditions, Mission Recommendation, Final Verdict, Follow-up chips, Copy button, Ask Another Question floating button)
+- [x] Rewrite AshaPanel.tsx — replace chat bubble model with synthesis→briefing state machine (panelState: input | synthesizing | briefing)
+- [x] Wire IntelligenceSynthesis overlay to askMutation.isPending state
+- [x] Wire OracleBriefing overlay to askMutation success with mapped OracleBriefingData
+- [x] "Ask Another Question" button returns to input state, clears all state
+- [x] Mission ID auto-generated (YYMMDD-XXXX format)
+- [x] TypeScript: 0 errors (npx tsc --noEmit)
+- [x] Save checkpoint

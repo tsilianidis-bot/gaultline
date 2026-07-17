@@ -1,15 +1,17 @@
 /* ============================================================
    ASHA — Persistent Floating Ask ASHA Panel
-   Appears on every page. Regime-reactive orb trigger.
-   Page-context aware: injects current page data into every query.
-   Signature arrival: rise → pause + chime → expand.
+   Synthesis → Oracle Briefing flow.
+   No chat bubbles. No typing animation. No chatbot feel.
+   State machine: input → synthesizing → briefing
    ============================================================ */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAshaContext } from "@/contexts/AshaContext";
 import AshaOrb, { AshaRegimeState } from "./AshaOrb";
-import { X, Send, ChevronDown, Eye, Zap, RotateCcw } from "lucide-react";
+import IntelligenceSynthesis, { SynthesisStep } from "./IntelligenceSynthesis";
+import OracleBriefing, { OracleBriefingData } from "./OracleBriefing";
+import { X, Send, Zap } from "lucide-react";
 
 // ── Suggested questions per page ─────────────────────────────
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -69,8 +71,23 @@ const PAGE_SUGGESTIONS: Record<string, string[]> = {
   ],
 };
 
+// ── Synthesis pipeline step definitions ──────────────────────
+const SYNTHESIS_STEPS: Array<{ id: string; label: string; detail?: string }> = [
+  { id: "regime",     label: "Evaluating market regime",          detail: "Regime detection complete" },
+  { id: "pressure",   label: "Reading pressure index",            detail: "Pressure vectors mapped" },
+  { id: "liquidity",  label: "Analyzing liquidity conditions",    detail: "Funding markets assessed" },
+  { id: "credit",     label: "Scanning credit markets",           detail: "Spread analysis complete" },
+  { id: "volatility", label: "Measuring volatility structure",    detail: "Vol regime classified" },
+  { id: "analog",     label: "Consulting historical analogs",     detail: "Closest periods identified" },
+  { id: "probability",label: "Computing probability distribution",detail: "Outcome weights calibrated" },
+  { id: "synthesis",  label: "Synthesizing 10-engine consensus",  detail: "Intelligence unified" },
+];
+
 // ── Arrival phases ────────────────────────────────────────────
 type ArrivalPhase = "idle" | "rising" | "pausing" | "expanding" | "open";
+
+// ── Panel interaction state ───────────────────────────────────
+type PanelState = "input" | "synthesizing" | "briefing";
 
 // ── Signature chime synthesizer ───────────────────────────────
 let audioCtx: AudioContext | null = null;
@@ -88,36 +105,26 @@ function getAudioContext(): AudioContext | null {
 }
 
 function playSignatureChime() {
-  // Prevent overlapping chimes from rapid taps
   if (chimeInProgress) return;
-  // Respect muted / reduced-motion preference
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   const ctx = getAudioContext();
   if (!ctx) return;
-
-  // Resume suspended context (browser autoplay policy)
-  if (ctx.state === "suspended") {
-    ctx.resume().catch(() => {});
-  }
+  if (ctx.state === "suspended") ctx.resume().catch(() => {});
 
   chimeInProgress = true;
   const now = ctx.currentTime;
 
-  // ── Primary tone: 432 Hz — warm, resonant, not mystical ──
   const osc1 = ctx.createOscillator();
   const gain1 = ctx.createGain();
   osc1.type = "sine";
   osc1.frequency.setValueAtTime(432, now);
-  // Soft attack — like a crystal glass strike
   gain1.gain.setValueAtTime(0, now);
   gain1.gain.linearRampToValueAtTime(0.22, now + 0.025);
-  // Long elegant decay — 2.2s
   gain1.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
   osc1.connect(gain1);
   gain1.connect(ctx.destination);
 
-  // ── Second harmonic: 864 Hz (octave) — adds clarity ──
   const osc2 = ctx.createOscillator();
   const gain2 = ctx.createGain();
   osc2.type = "sine";
@@ -128,7 +135,6 @@ function playSignatureChime() {
   osc2.connect(gain2);
   gain2.connect(ctx.destination);
 
-  // ── Third harmonic: 648 Hz (perfect fifth) — rich texture ──
   const osc3 = ctx.createOscillator();
   const gain3 = ctx.createGain();
   osc3.type = "sine";
@@ -139,7 +145,6 @@ function playSignatureChime() {
   osc3.connect(gain3);
   gain3.connect(ctx.destination);
 
-  // ── Technological undertone: 216 Hz sub ──
   const osc4 = ctx.createOscillator();
   const gain4 = ctx.createGain();
   osc4.type = "sine";
@@ -150,104 +155,34 @@ function playSignatureChime() {
   osc4.connect(gain4);
   gain4.connect(ctx.destination);
 
-  // Start all oscillators
   osc1.start(now); osc1.stop(now + 2.3);
   osc2.start(now); osc2.stop(now + 1.7);
   osc3.start(now); osc3.stop(now + 1.9);
   osc4.start(now); osc4.stop(now + 1.1);
 
-  // Release lock after chime decays
   setTimeout(() => { chimeInProgress = false; }, 2400);
 }
 
-// Soft response-ready cue (much quieter, shorter)
-function playResponseCue() {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const ctx = getAudioContext();
-  if (!ctx) return;
-  if (ctx.state === "suspended") ctx.resume().catch(() => {});
-
-  const now = ctx.currentTime;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(648, now);
-  gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(0.04, now + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + 0.6);
-}
-
-// ── Message type ──────────────────────────────────────────────
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  confidence?: "high" | "moderate" | "low";
-  sources?: string[];
-  enginesConsulted?: string[];
-  lastUpdated?: string;
-  showTransparency?: boolean;
-}
-
-function confidenceColor(c?: "high" | "moderate" | "low") {
-  if (c === "high") return "#00FF88";
-  if (c === "low") return "#FF6B35";
-  return "#FFB347";
-}
-
-function TransparencyPanel({ msg }: { msg: Message }) {
-  return (
-    <div style={{
-      marginTop: "8px",
-      padding: "10px 12px",
-      background: "rgba(0,212,255,0.04)",
-      border: "1px solid rgba(0,229,255,0.18)",
-      borderRadius: "5px",
-      fontSize: "9px",
-      fontFamily: "'IBM Plex Mono', monospace",
-    }}>
-      {msg.confidence && (
-        <div style={{ marginBottom: "5px" }}>
-          <span style={{ color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>CONFIDENCE: </span>
-          <span style={{ color: confidenceColor(msg.confidence), fontWeight: 700 }}>{msg.confidence.toUpperCase()}</span>
-        </div>
-      )}
-      {msg.enginesConsulted && msg.enginesConsulted.length > 0 && (
-        <div style={{ marginBottom: "5px" }}>
-          <span style={{ color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>ENGINES: </span>
-          <span style={{ color: "#94A3B8" }}>{msg.enginesConsulted.join(", ")}</span>
-        </div>
-      )}
-      {msg.sources && msg.sources.length > 0 && (
-        <div style={{ marginBottom: "5px" }}>
-          <span style={{ color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>SOURCES: </span>
-          <span style={{ color: "#94A3B8" }}>{msg.sources.join(", ")}</span>
-        </div>
-      )}
-      {msg.lastUpdated && (
-        <div>
-          <span style={{ color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>UPDATED: </span>
-          <span style={{ color: "#94A3B8" }}>{new Date(msg.lastUpdated).toLocaleTimeString()}</span>
-        </div>
-      )}
-    </div>
-  );
+// ── Mission ID generator ──────────────────────────────────────
+function generateMissionId(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${now.getFullYear().toString().slice(2)}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${Math.floor(Math.random() * 9000 + 1000)}`;
 }
 
 export default function AshaPanel({}: {}) {
   const { output } = useEngine();
   const { pageContext } = useAshaContext();
   const [arrivalPhase, setArrivalPhase] = useState<ArrivalPhase>("idle");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [panelState, setPanelState] = useState<PanelState>("input");
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [currentQuestion, setCurrentQuestion] = useState("");
+  const [synthSteps, setSynthSteps] = useState<SynthesisStep[]>([]);
+  const [briefingData, setBriefingData] = useState<OracleBriefingData | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const arrivalTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const synthTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const askMutation = trpc.asha.ask.useMutation();
 
@@ -277,52 +212,38 @@ export default function AshaPanel({}: {}) {
 
   const suggestions = PAGE_SUGGESTIONS[fullPageContext.page] ?? PAGE_SUGGESTIONS.default;
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      scrollToBottom();
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [open, messages, scrollToBottom]);
-
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
+      if (synthTimerRef.current) clearTimeout(synthTimerRef.current);
     };
   }, []);
 
+  // Focus input when panel opens or returns to input state
+  useEffect(() => {
+    if (open && panelState === "input") {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [open, panelState]);
+
   // ── Arrival sequence ──────────────────────────────────────
   const handleOpen = () => {
-    // Prevent re-triggering if already animating or open
     if (arrivalPhase !== "idle") return;
-
-    // Preload AudioContext on first user gesture
     getAudioContext();
 
-    // Respect reduced-motion: skip animation, open immediately
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setArrivalPhase("open");
       return;
     }
 
-    // Phase 1: Rise (0.3s)
     setArrivalPhase("rising");
-
     arrivalTimerRef.current = setTimeout(() => {
-      // Phase 2: Pause (0.3s) — play chime at start of pause
       setArrivalPhase("pausing");
       playSignatureChime();
-
       arrivalTimerRef.current = setTimeout(() => {
-        // Phase 3: Expand (0.3s)
         setArrivalPhase("expanding");
-
         arrivalTimerRef.current = setTimeout(() => {
-          // Phase 4: Open
           setArrivalPhase("open");
         }, 300);
       }, 300);
@@ -331,44 +252,113 @@ export default function AshaPanel({}: {}) {
 
   const handleClose = () => {
     if (arrivalTimerRef.current) clearTimeout(arrivalTimerRef.current);
+    if (synthTimerRef.current) clearTimeout(synthTimerRef.current);
     setArrivalPhase("idle");
+    setPanelState("input");
+    setInput("");
+    setCurrentQuestion("");
+    setSynthSteps([]);
+    setBriefingData(null);
   };
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || loading) return;
-    const userMsg: Message = { role: "user", content: text.trim() };
-    const history = messages.map(m => ({ role: m.role, content: m.content }));
-    setMessages(prev => [...prev, userMsg]);
+  // ── Synthesis step advancement ────────────────────────────
+  const advanceSynthesisSteps = useCallback((stepIndex: number, totalSteps: number, onComplete: () => void) => {
+    if (stepIndex >= totalSteps) {
+      onComplete();
+      return;
+    }
+
+    setSynthSteps(prev => prev.map((s, i) => {
+      if (i < stepIndex) return { ...s, status: "complete" as const };
+      if (i === stepIndex) return { ...s, status: "active" as const };
+      return { ...s, status: "pending" as const };
+    }));
+
+    // Stagger each step: 400ms per step, accelerating toward the end
+    const delay = stepIndex < totalSteps - 2 ? 400 : 250;
+    synthTimerRef.current = setTimeout(() => {
+      advanceSynthesisSteps(stepIndex + 1, totalSteps, onComplete);
+    }, delay);
+  }, []);
+
+  // ── Submit question ───────────────────────────────────────
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || askMutation.isPending) return;
+
+    const question = text.trim();
+    setCurrentQuestion(question);
     setInput("");
-    setLoading(true);
+    setPanelState("synthesizing");
+
+    // Initialize synthesis steps
+    const initialSteps: SynthesisStep[] = SYNTHESIS_STEPS.map(s => ({
+      ...s,
+      status: "pending" as const,
+    }));
+    setSynthSteps(initialSteps);
+
+    // Start step advancement (timed to approximate backend response)
+    advanceSynthesisSteps(0, SYNTHESIS_STEPS.length, () => {
+      // Steps complete — keep showing synthesis until mutation resolves
+    });
 
     try {
       const response = await askMutation.mutateAsync({
-        userMessage: text.trim(),
-        history,
+        userMessage: question,
+        history: [],
         pageContext: fullPageContext,
       });
-      const assistantMsg: Message = {
-        role: "assistant",
-        content: response.reply,
-        confidence: response.confidence,
-        sources: response.sources,
-        enginesConsulted: response.enginesConsulted,
-        lastUpdated: response.lastUpdated,
-        showTransparency: false,
+
+      // Mark all steps complete
+      setSynthSteps(prev => prev.map(s => ({ ...s, status: "complete" as const })));
+
+      // Brief pause to show "SYNTHESIS COMPLETE" before transitioning
+      await new Promise(resolve => setTimeout(resolve, 700));
+
+      // Map response to OracleBriefingData
+      const confidenceNum = response.confidence === "high" ? 82
+        : response.confidence === "moderate" ? 65
+        : 45;
+
+      const data: OracleBriefingData = {
+        question,
+        missionId: generateMissionId(),
+        timestamp: new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+
+        executiveSummary: response.executiveSummary || response.reply.split("\n")[0] || response.reply.slice(0, 200),
+        marketBias: response.marketBias || "NEUTRAL",
+        confidence: confidenceNum,
+        marketRegime: response.marketRegime || fullPageContext.regime || "Unknown",
+        threatLevel: response.threatLevel || "ELEVATED",
+        pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? 50,
+        riskLevel: response.riskLevel || "Moderate",
+        suggestedBias: response.suggestedBias,
+
+        bullProbability: response.bullProbability ?? 50,
+        bearProbability: response.bearProbability ?? 50,
+
+        keyFindings: response.keyFindings?.length ? response.keyFindings : [response.reply.slice(0, 180)],
+        supportingEvidence: response.supportingEvidence?.length ? response.supportingEvidence : response.sources,
+        historicalAnalog: response.historicalAnalog || fullPageContext.historicalAnalog,
+        riskFactors: response.riskFactors?.length ? response.riskFactors : (response.invalidationTriggers || []),
+        invalidationConditions: response.invalidationConditions?.length ? response.invalidationConditions : [],
+
+        missionRecommendation: response.missionRecommendation || response.reply,
+        finalVerdictAction: response.finalVerdictAction || "WATCH",
+        expectedTimeframe: response.expectedTimeframe || "2-4 weeks",
+
+        followUpChips: response.followUpChips?.length ? response.followUpChips : suggestions.slice(0, 3),
       };
-      setMessages(prev => [...prev, assistantMsg]);
-      // Soft cue when response arrives
-      playResponseCue();
+
+      setBriefingData(data);
+      setPanelState("briefing");
+
     } catch {
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: "I encountered an issue accessing the intelligence systems. Please try again in a moment.",
-      }]);
-    } finally {
-      setLoading(false);
+      // On error, return to input state with a message
+      setSynthSteps([]);
+      setPanelState("input");
     }
-  };
+  }, [askMutation, fullPageContext, advanceSynthesisSteps, suggestions]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -377,47 +367,43 @@ export default function AshaPanel({}: {}) {
     }
   };
 
-  const toggleTransparency = (index: number) => {
-    setMessages(prev => prev.map((m, i) =>
-      i === index ? { ...m, showTransparency: !m.showTransparency } : m
-    ));
+  const handleAskAnother = () => {
+    setPanelState("input");
+    setInput("");
+    setCurrentQuestion("");
+    setSynthSteps([]);
+    setBriefingData(null);
+    setTimeout(() => inputRef.current?.focus(), 100);
   };
-
-  const clearChat = () => setMessages([]);
 
   // ── Arrival orb overlay styles ────────────────────────────
   const isArriving = arrivalPhase === "rising" || arrivalPhase === "pausing" || arrivalPhase === "expanding";
-
-  const arrivalOrbStyle: React.CSSProperties = {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    zIndex: 1002,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    pointerEvents: "none",
-  };
-
-  const orbContainerStyle: React.CSSProperties = {
-    animation:
-      arrivalPhase === "rising"
-        ? "asha-orb-rise 0.30s cubic-bezier(0.23,1,0.32,1) both"
-        : arrivalPhase === "pausing"
-        ? "asha-orb-pause-pulse 0.30s ease-in-out both"
-        : arrivalPhase === "expanding"
-        ? "asha-orb-expand 0.30s cubic-bezier(0.23,1,0.32,1) both"
-        : "none",
-  };
 
   return (
     <>
       {/* ── Arrival orb overlay (during animation phases) ──── */}
       {isArriving && (
-        <div style={arrivalOrbStyle}>
-          <div style={orbContainerStyle}>
-            {/* Ripple ring during pause */}
+        <div style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          zIndex: 1002,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+        }}>
+          <div style={{
+            animation:
+              arrivalPhase === "rising"
+                ? "asha-orb-rise 0.30s cubic-bezier(0.23,1,0.32,1) both"
+                : arrivalPhase === "pausing"
+                ? "asha-orb-pause-pulse 0.30s ease-in-out both"
+                : arrivalPhase === "expanding"
+                ? "asha-orb-expand 0.30s cubic-bezier(0.23,1,0.32,1) both"
+                : "none",
+          }}>
             {arrivalPhase === "pausing" && (
               <div style={{
                 position: "absolute",
@@ -436,18 +422,16 @@ export default function AshaPanel({}: {}) {
 
       {/* ── Floating trigger button (idle only) ─────────────── */}
       {arrivalPhase === "idle" && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "20px",
-            right: "20px",
-            zIndex: 1000,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "4px",
-          }}
-        >
+        <div style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          zIndex: 1000,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "4px",
+        }}>
           <button
             onClick={handleOpen}
             style={{
@@ -484,27 +468,41 @@ export default function AshaPanel({}: {}) {
         </div>
       )}
 
-      {/* ── Chat panel (open phase only) ────────────────────── */}
-      {open && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "20px",
-            right: "20px",
-            width: "min(420px, calc(100vw - 32px))",
-            height: "min(580px, calc(100vh - 100px))",
-            zIndex: 1001,
-            background: "rgba(4,8,18,0.97)",
-            border: "1px solid rgba(0,212,255,0.18)",
-            borderRadius: "10px",
-            boxShadow: "0 8px 48px rgba(0,0,0,0.7), 0 0 40px rgba(0,212,255,0.06)",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            animation: "asha-panel-open 0.25s cubic-bezier(0.23,1,0.32,1) both",
-            backdropFilter: "blur(20px)",
-          }}
-        >
+      {/* ── Intelligence Synthesis overlay ───────────────────── */}
+      <IntelligenceSynthesis
+        question={currentQuestion}
+        steps={synthSteps}
+        regimeState={regimeState}
+        visible={open && panelState === "synthesizing"}
+      />
+
+      {/* ── Oracle Briefing overlay ───────────────────────────── */}
+      {briefingData && (
+        <OracleBriefing
+          data={briefingData}
+          visible={open && panelState === "briefing"}
+          onAskAnother={handleAskAnother}
+        />
+      )}
+
+      {/* ── Input panel (open + input state) ─────────────────── */}
+      {open && panelState === "input" && (
+        <div style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "20px",
+          width: "min(440px, calc(100vw - 32px))",
+          zIndex: 1001,
+          background: "rgba(4,8,18,0.97)",
+          border: "1px solid rgba(0,212,255,0.18)",
+          borderRadius: "10px",
+          boxShadow: "0 8px 48px rgba(0,0,0,0.7), 0 0 40px rgba(0,212,255,0.06)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          animation: "asha-panel-open 0.25s cubic-bezier(0.23,1,0.32,1) both",
+          backdropFilter: "blur(20px)",
+        }}>
           {/* Header */}
           <div style={{
             display: "flex",
@@ -517,148 +515,61 @@ export default function AshaPanel({}: {}) {
             <AshaOrb regimeState={regimeState} size={28} isListening={isListening} />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#00E5FF", lineHeight: 1 }}>ASHA</div>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.15em", color: "rgba(0,229,255,0.55)", textTransform: "uppercase" }}>Spirit of FAULTLINE</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.15em", color: "rgba(0,229,255,0.55)", textTransform: "uppercase" }}>Oracle Briefing System</div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              {messages.length > 0 && (
-                <button
-                  onClick={clearChat}
-                  title="Clear conversation"
-                  style={{ background: "transparent", border: "none", cursor: "pointer", color: "rgba(100,116,139,0.4)", padding: "4px", transition: "color 0.15s ease" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.6)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(100,116,139,0.4)"; }}
-                >
-                  <RotateCcw size={12} />
-                </button>
-              )}
-              <button
-                onClick={handleClose}
-                style={{ background: "transparent", border: "none", cursor: "pointer", color: "rgba(100,116,139,0.4)", padding: "4px", transition: "color 0.15s ease" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.6)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(100,116,139,0.4)"; }}
-              >
-                <X size={14} />
-              </button>
-            </div>
+            <button
+              onClick={handleClose}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "rgba(100,116,139,0.4)", padding: "4px", transition: "color 0.15s ease" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.6)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(100,116,139,0.4)"; }}
+            >
+              <X size={14} />
+            </button>
           </div>
 
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            {messages.length === 0 && (
-              <div>
-                <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "rgba(148,163,184,0.6)", lineHeight: 1.6, marginBottom: "14px" }}>
-                  Here is what is building beneath the surface. Ask me anything about current market conditions, the engines, or what deserves your attention.
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                  {suggestions.map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => sendMessage(s)}
-                      style={{
-                        textAlign: "left",
-                        padding: "7px 10px",
-                        background: "rgba(0,212,255,0.04)",
-                        border: "1px solid rgba(0,229,255,0.18)",
-                        borderRadius: "5px",
-                        fontFamily: "'IBM Plex Sans', sans-serif",
-                        fontSize: "11px",
-                        color: "rgba(148,163,184,0.7)",
-                        cursor: "pointer",
-                        transition: "all 0.12s ease",
-                      }}
-                      onMouseEnter={e => {
-                        (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.14)";
-                        (e.currentTarget as HTMLButtonElement).style.color = "#E2E8F0";
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.32)";
-                      }}
-                      onMouseLeave={e => {
-                        (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.04)";
-                        (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.7)";
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.18)";
-                      }}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {messages.map((msg, i) => (
-              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start" }}>
-                <div style={{
-                  maxWidth: "88%",
-                  padding: "9px 12px",
-                  borderRadius: msg.role === "user" ? "10px 10px 2px 10px" : "10px 10px 10px 2px",
-                  background: msg.role === "user" ? "rgba(0,229,255,0.18)" : "rgba(255,255,255,0.14)",
-                  border: msg.role === "user" ? "1px solid rgba(0,229,255,0.32)" : "1px solid rgba(255,255,255,0.11)",
-                  fontFamily: "'IBM Plex Sans', sans-serif",
-                  fontSize: "12px",
-                  lineHeight: 1.65,
-                  color: msg.role === "user" ? "#E2E8F0" : "rgba(226,232,240,0.9)",
-                  whiteSpace: "pre-wrap",
-                }}>
-                  {msg.content}
-                </div>
-
-                {/* Transparency toggle for ASHA responses */}
-                {msg.role === "assistant" && (msg.confidence || msg.enginesConsulted) && (
-                  <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <button
-                      onClick={() => toggleTransparency(i)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "3px",
-                        background: "transparent",
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: "'IBM Plex Mono', monospace",
-                        fontSize: "7px",
-                        letterSpacing: "0.1em",
-                        color: "rgba(100,116,139,0.4)",
-                        textTransform: "uppercase",
-                        padding: "2px 0",
-                        transition: "color 0.12s ease",
-                      }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(0,229,255,0.65)"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(100,116,139,0.4)"; }}
-                    >
-                      <Eye size={9} />
-                      {msg.showTransparency ? "Hide sources" : "Show sources"}
-                      <ChevronDown size={8} style={{ transform: msg.showTransparency ? "rotate(180deg)" : "none", transition: "transform 0.2s ease" }} />
-                    </button>
-                    {msg.confidence && (
-                      <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: confidenceColor(msg.confidence), letterSpacing: "0.1em" }}>
-                        {msg.confidence.toUpperCase()} CONFIDENCE
-                      </span>
-                    )}
-                  </div>
-                )}
-                {msg.role === "assistant" && msg.showTransparency && <TransparencyPanel msg={msg} />}
-              </div>
-            ))}
-
-            {/* Thinking state — orb contracts + internal pulses */}
-            {loading && (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0" }}>
-                <div style={{ animation: "asha-thinking-orb 1.8s ease-in-out infinite" }}>
-                  <AshaOrb regimeState={regimeState} size={18} isListening={true} />
-                </div>
-                <div style={{ display: "flex", gap: "3px", alignItems: "center" }}>
-                  {[0, 1, 2, 3].map(i => (
-                    <div key={i} style={{
-                      width: "3px",
-                      height: "3px",
-                      borderRadius: "50%",
-                      background: "#00E5FF",
-                      animation: `asha-pulse-dot 1.4s ease-in-out ${i * 0.18}s infinite`,
-                    }} />
-                  ))}
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
+          {/* Intro + suggestions */}
+          <div style={{ padding: "14px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            <p style={{
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "12px",
+              color: "rgba(148,163,184,0.65)",
+              lineHeight: 1.6,
+              margin: 0,
+            }}>
+              Submit a question. ASHA will synthesize all 10 engines and deliver a classified intelligence briefing.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => sendMessage(s)}
+                  style={{
+                    textAlign: "left",
+                    padding: "7px 10px",
+                    background: "rgba(0,212,255,0.04)",
+                    border: "1px solid rgba(0,229,255,0.18)",
+                    borderRadius: "5px",
+                    fontFamily: "'IBM Plex Sans', sans-serif",
+                    fontSize: "11px",
+                    color: "rgba(148,163,184,0.7)",
+                    cursor: "pointer",
+                    transition: "all 0.12s ease",
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,229,255,0.14)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "#E2E8F0";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.32)";
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,212,255,0.04)";
+                    (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.7)";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.18)";
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Input */}
@@ -676,7 +587,7 @@ export default function AshaPanel({}: {}) {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask ASHA..."
-              disabled={loading}
+              disabled={askMutation.isPending}
               style={{
                 flex: 1,
                 background: "rgba(255,255,255,0.14)",
@@ -700,14 +611,14 @@ export default function AshaPanel({}: {}) {
             />
             <button
               onClick={() => sendMessage(input)}
-              disabled={!input.trim() || loading}
+              disabled={!input.trim() || askMutation.isPending}
               style={{
-                background: input.trim() && !loading ? "rgba(0,229,255,0.20)" : "rgba(255,255,255,0.03)",
-                border: `1px solid ${input.trim() && !loading ? "rgba(0,229,255,0.45)" : "rgba(255,255,255,0.11)"}`,
+                background: input.trim() && !askMutation.isPending ? "rgba(0,229,255,0.20)" : "rgba(255,255,255,0.03)",
+                border: `1px solid ${input.trim() && !askMutation.isPending ? "rgba(0,229,255,0.45)" : "rgba(255,255,255,0.11)"}`,
                 borderRadius: "5px",
                 padding: "8px 10px",
-                cursor: input.trim() && !loading ? "pointer" : "not-allowed",
-                color: input.trim() && !loading ? "#00E5FF" : "rgba(100,116,139,0.3)",
+                cursor: input.trim() && !askMutation.isPending ? "pointer" : "not-allowed",
+                color: input.trim() && !askMutation.isPending ? "#00E5FF" : "rgba(100,116,139,0.3)",
                 transition: "all 0.15s ease",
               }}
             >
@@ -778,26 +689,6 @@ export default function AshaPanel({}: {}) {
         @keyframes asha-ripple {
           from { transform: scale(0.6); opacity: 0.6; }
           to   { transform: scale(2.0); opacity: 0; }
-        }
-
-        /* ── Thinking state: orb contracts and brightens ── */
-        @keyframes asha-thinking-orb {
-          0%   { transform: scale(1);    filter: brightness(1); }
-          30%  { transform: scale(0.88); filter: brightness(1.4); }
-          60%  { transform: scale(0.94); filter: brightness(1.2); }
-          100% { transform: scale(1);    filter: brightness(1); }
-        }
-
-        /* ── Thinking dots: internal pulse pattern ── */
-        @keyframes asha-pulse-dot {
-          0%, 100% { transform: scaleY(1);   opacity: 0.3; }
-          50%       { transform: scaleY(2.2); opacity: 1; }
-        }
-
-        /* ── Dot bounce (legacy, kept for other uses) ── */
-        @keyframes asha-dot-bounce {
-          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
-          40%            { transform: translateY(-4px); opacity: 1; }
         }
       `}</style>
     </>

@@ -162,6 +162,26 @@ export interface AshaResponse {
   lastUpdated: string;
   alternativeInterpretation?: string;
   invalidationTriggers?: string[];
+
+  // Oracle Briefing structured fields
+  executiveSummary?: string;
+  marketBias?: "BULLISH" | "BEARISH" | "NEUTRAL";
+  marketRegime?: string;
+  threatLevel?: "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
+  pressureIndex?: number;
+  riskLevel?: string;
+  suggestedBias?: string;
+  bullProbability?: number;
+  bearProbability?: number;
+  keyFindings?: string[];
+  supportingEvidence?: string[];
+  historicalAnalog?: string;
+  riskFactors?: string[];
+  invalidationConditions?: string[];
+  missionRecommendation?: string;
+  finalVerdictAction?: string;
+  expectedTimeframe?: string;
+  followUpChips?: string[];
 }
 
 // ── Build page-aware context block ───────────────────────────
@@ -252,8 +272,54 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     { role: "user", content: req.userMessage },
   ];
 
-  const llmResponse = await invokeLLM({ messages });
-  const reply = (llmResponse.choices?.[0]?.message?.content as string) ?? "I was unable to generate a response. Please try again.";
+  const llmResponse = await invokeLLM({
+    messages,
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "asha_oracle_briefing",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            reply: { type: "string", description: "Full narrative response — the main intelligence answer. 3-6 paragraphs. No bullet points. No generic AI disclaimers." },
+            executiveSummary: { type: "string", description: "1-2 sentence executive summary of the core finding." },
+            marketBias: { type: "string", enum: ["BULLISH", "BEARISH", "NEUTRAL"], description: "Overall market directional bias based on current conditions." },
+            marketRegime: { type: "string", description: "Current market regime label (e.g. Late Cycle, Stagflation, Expansion)." },
+            threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"], description: "Systemic threat level based on engine synthesis." },
+            pressureIndex: { type: "number", description: "Estimated systemic pressure score 0-100." },
+            riskLevel: { type: "string", description: "Risk level label (e.g. Moderate, Elevated, High)." },
+            suggestedBias: { type: "string", description: "Specific positioning bias recommendation (e.g. Reduce equity exposure, Favor defensive sectors)." },
+            bullProbability: { type: "number", description: "Bull scenario probability 0-100." },
+            bearProbability: { type: "number", description: "Bear scenario probability 0-100." },
+            keyFindings: { type: "array", items: { type: "string" }, description: "3-5 key intelligence findings, each 1-2 sentences." },
+            supportingEvidence: { type: "array", items: { type: "string" }, description: "3-5 supporting evidence points from the engine network." },
+            historicalAnalog: { type: "string", description: "Most relevant historical period comparison with key similarities and differences." },
+            riskFactors: { type: "array", items: { type: "string" }, description: "3-5 primary risk factors to the thesis." },
+            invalidationConditions: { type: "array", items: { type: "string" }, description: "2-4 conditions that would invalidate this assessment." },
+            missionRecommendation: { type: "string", description: "Actionable recommendation paragraph — what the user should do with this intelligence." },
+            finalVerdictAction: { type: "string", enum: ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"], description: "Single-word final verdict action." },
+            expectedTimeframe: { type: "string", description: "Expected timeframe for this assessment (e.g. 2-4 weeks, 3-6 months)." },
+            followUpChips: { type: "array", items: { type: "string" }, description: "3-4 follow-up question suggestions." },
+          },
+          required: ["reply", "executiveSummary", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "historicalAnalog", "riskFactors", "invalidationConditions", "missionRecommendation", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
+          additionalProperties: false,
+        },
+      },
+    },
+  });
+
+  let parsed: Record<string, unknown> = {};
+  try {
+    const raw = llmResponse.choices?.[0]?.message?.content as string;
+    parsed = JSON.parse(raw);
+  } catch {
+    // Fallback: treat entire content as reply
+    const raw = (llmResponse.choices?.[0]?.message?.content as string) ?? "";
+    parsed = { reply: raw };
+  }
+
+  const reply = (parsed.reply as string) || "I was unable to generate a response. Please try again.";
 
   return {
     reply,
@@ -261,7 +327,26 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     sources: ["FAULTLINE Engine Network", "Live Market Data", "Historical Records"],
     enginesConsulted: extractEngines(req.pageContext),
     lastUpdated: new Date().toISOString(),
-    invalidationTriggers: undefined,
+    invalidationTriggers: parsed.invalidationConditions as string[] | undefined,
+    // Oracle Briefing structured fields
+    executiveSummary: (parsed.executiveSummary as string) || reply.split("\n")[0],
+    marketBias: (parsed.marketBias as "BULLISH" | "BEARISH" | "NEUTRAL") || "NEUTRAL",
+    marketRegime: (parsed.marketRegime as string) || "Unknown",
+    threatLevel: (parsed.threatLevel as "LOW" | "ELEVATED" | "HIGH" | "CRITICAL") || "ELEVATED",
+    pressureIndex: typeof parsed.pressureIndex === "number" ? parsed.pressureIndex : (req.pageContext.pressureScore ?? 50),
+    riskLevel: (parsed.riskLevel as string) || "Moderate",
+    suggestedBias: parsed.suggestedBias as string | undefined,
+    bullProbability: typeof parsed.bullProbability === "number" ? parsed.bullProbability : 50,
+    bearProbability: typeof parsed.bearProbability === "number" ? parsed.bearProbability : 50,
+    keyFindings: (parsed.keyFindings as string[]) || [],
+    supportingEvidence: (parsed.supportingEvidence as string[]) || [],
+    historicalAnalog: parsed.historicalAnalog as string | undefined,
+    riskFactors: (parsed.riskFactors as string[]) || [],
+    invalidationConditions: (parsed.invalidationConditions as string[]) || [],
+    missionRecommendation: (parsed.missionRecommendation as string) || "",
+    finalVerdictAction: (parsed.finalVerdictAction as string) || "WATCH",
+    expectedTimeframe: (parsed.expectedTimeframe as string) || "2-4 weeks",
+    followUpChips: (parsed.followUpChips as string[]) || [],
   };
 }
 
