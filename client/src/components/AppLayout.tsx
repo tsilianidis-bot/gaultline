@@ -106,6 +106,7 @@ const NAV_GROUPS: NavGroup[] = [
 // Owner Portal nav items — admin-only group rendered last with distinct amber styling
 const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: "admin-portal",     label: "Owner Portal",     shortLabel: "Portal",    icon: Shield,    path: "/app/admin" },
+  { id: "demo-tokens",      label: "Demo Tokens",      shortLabel: "Tokens",    icon: Zap,       path: "/app/admin?tab=demo" },
   { id: "admin-users",      label: "Users",            shortLabel: "Users",     icon: User,      path: "/app/admin/users" },
   { id: "x-posts",          label: "X Posts",          shortLabel: "X Posts",   icon: Zap,       path: "/app/x-posts" },
   { id: "x-post-queue",     label: "Post Queue",       shortLabel: "Queue",     icon: Settings,  path: "/app/x-post-queue" },

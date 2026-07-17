@@ -3,8 +3,8 @@
  * Private admin-only dashboard at /admin
  * Tabs: Overview · Waitlist · Users · Platform Health
  */
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useSEO } from "@/hooks/useSEO";
@@ -1352,7 +1352,21 @@ export default function AdminPortal() {
   useSEO({ title: "Owner Portal — FAULTLINE", description: "Private owner intelligence portal" });
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const search = useSearch();
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const params = new URLSearchParams(search);
+    const t = params.get("tab") as Tab | null;
+    return t && ["overview","waitlist","users","stats","health","engine","seo","content","demo"].includes(t) ? t : "overview";
+  });
+
+  // Re-sync if the URL ?tab= param changes (e.g. navigation from More drawer)
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const t = params.get("tab") as Tab | null;
+    if (t && ["overview","waitlist","users","stats","health","engine","seo","content","demo"].includes(t)) {
+      setActiveTab(t);
+    }
+  }, [search]);
 
   // Redirect non-admins
   if (!loading && (!user || user.role !== "admin")) {
