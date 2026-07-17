@@ -688,17 +688,17 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
               <path d="M2 7h10M8 3l4 4-4 4" />
             </svg>
           </a>
-          <button
-            onClick={onTryDemo}
+          <a
+            href="/app/pressure"
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 font-mono font-bold text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
-            style={{ border: "1px solid rgba(255,215,0,0.35)", color: "#FFD700", background: "rgba(255,215,0,0.06)", minHeight: "56px" }}
+            style={{ border: "1px solid rgba(255,215,0,0.35)", color: "#FFD700", background: "rgba(255,215,0,0.06)", minHeight: "56px", textDecoration: "none" }}
           >
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="6.5" cy="6.5" r="5" />
               <path d="M6.5 4v3.5l2 1" />
             </svg>
             Explore the Pressure Index
-          </button>
+          </a>
         </div>
 
         {/* No-login reassurance */}
@@ -2728,7 +2728,7 @@ function FoundingAccessForm
 }
 
 // ── Footer ────────────────────────────────────────────────────
-function Footer() {
+function Footer({ onDemoAccess }: { onDemoAccess: () => void }) {
   return (
     <footer className="bg-[#050608] border-t border-[rgba(255,255,255,0.06)] pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-6">
@@ -2833,6 +2833,8 @@ function Footer() {
               <a href="mailto:jt@getfaultline.live" className="hover:text-[#00D4FF] transition-colors">jt@getfaultline.live</a>
               <span className="opacity-30">·</span>
               <a href="tel:+14407457384" className="hover:text-[#00D4FF] transition-colors">+1 (440) 745-7384</a>
+              <span className="opacity-30">·</span>
+              <button onClick={onDemoAccess} className="hover:text-[#00D4FF] transition-colors bg-transparent border-0 p-0 cursor-pointer font-mono text-[10px] text-[#4B5563]">Demo Access</button>
             </span>
           </div>
         </div>
@@ -3123,7 +3125,7 @@ export default function MarketingSite() {
       <FoundingAccessForm formRef={formRef} />
       <MarketIntelligenceSection />
       <EvergreenHubSection />
-      <Footer />
+      <Footer onDemoAccess={() => setDemoModalOpen(true)} />
     </div>
   );
 }
