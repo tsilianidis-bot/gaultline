@@ -178,6 +178,8 @@ const CryptoRegimeDashboard = lazy(() => import("./pages/CryptoRegimeDashboard")
 const PhoenixSystems = lazy(() => import("./pages/PhoenixSystems"));
 const Press = lazy(() => import("./pages/Press"));
 const About = lazy(() => import("./pages/About"));
+const PromoRedeem = lazy(() => import("./pages/PromoRedeem"));
+const AdminPromoDashboard = lazy(() => import("./pages/AdminPromoDashboard"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -620,6 +622,22 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <MarketingSite />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Promo campaign redemption — public, no AppLayout */}
+      <Route path="/promo/:code">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <PromoRedeem />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Admin promo dashboard — admin only, no AppLayout */}
+      <Route path="/admin/promo">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <AdminPromoDashboard />
           </Suspense>
         </ErrorBoundary>
       </Route>

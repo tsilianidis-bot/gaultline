@@ -3911,3 +3911,26 @@
 - [x] Removed old arrival animation phases (rising/pausing/expanding) — replaced by AshaSummon
 - [x] TypeScript: 0 errors (npx tsc --noEmit)
 - [x] Save checkpoint
+
+## FACEBOOK30 Promotional Campaign
+
+- [x] Add promo_campaigns table to drizzle schema
+- [x] Add promo_redemptions table to drizzle schema
+- [x] Generate and apply migration SQL
+- [x] Seed FACEBOOK30 campaign row (max 100, 30-day trial, active)
+- [x] Build promo tRPC router: validateCode, redeemCode (concurrency-safe), getStatus
+- [x] Concurrency-safe redemption: atomic UPDATE WHERE redemptionCount < maxRedemptions
+- [x] Per-user deduplication: one redemption per userId and per email
+- [x] Only count redemption after account exists and trial is activated
+- [x] Auto-deactivate campaign after 100th successful redemption
+- [x] Milestone notifications at 75, 90, 100 redemptions (notifyOwner)
+- [x] Trial expiry: trialExpiresAt = now + 30 days stored on redemption
+- [x] User subscription status: accessTier elevated to premium for trial duration
+- [x] Build /promo/FACEBOOK30 landing page (no counter visible)
+- [x] Redemption flow: login → redeem → success screen
+- [x] Expired/exhausted code shows "This promotional offer has ended."
+- [x] Build /admin/promo private dashboard (admin role only)
+- [x] Admin dashboard: total redemptions, conversion rate, milestone log, full redemption table
+- [x] Admin table columns: order#, name, email, signup time, activation status, trial expiry, engaged, converted
+- [x] Admin dashboard never accessible to non-admin users
+- [x] Vitest: 10/10 tests passing (redemption logic, deduplication, concurrency guard, milestones)

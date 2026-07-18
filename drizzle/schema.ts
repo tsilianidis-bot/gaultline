@@ -1732,3 +1732,74 @@ export const marketMemory = mysqlTable("marketMemory", {
 }));
 export type MarketMemory = typeof marketMemory.$inferSelect;
 export type InsertMarketMemory = typeof marketMemory.$inferInsert;
+
+// ── Promotional Campaigns ────────────────────────────────────
+/**
+ * Stores promotional campaign configurations.
+ * Each row represents one campaign (e.g. FACEBOOK30).
+ * maxRedemptions enforced atomically on the backend.
+ */
+export const promoCampaigns = mysqlTable("promoCampaigns", {
+  id:               int("id").autoincrement().primaryKey(),
+  code:             varchar("code", { length: 50 }).notNull().unique(),
+  description:      varchar("description", { length: 255 }),
+  /** Access tier granted during the trial period */
+  trialTier:        mysqlEnum("trialTier", ["free", "core", "premium", "founding"]).default("premium").notNull(),
+  /** Trial duration in days */
+  trialDays:        int("trialDays").default(30).notNull(),
+  /** Maximum number of successful redemptions allowed */
+  maxRedemptions:   int("maxRedemptions").default(100).notNull(),
+  /** Current count of successful redemptions — incremented atomically */
+  redemptionCount:  int("redemptionCount").default(0).notNull(),
+  /** Whether the campaign is currently accepting redemptions */
+  active:           boolean("active").default(true).notNull(),
+  /** Campaign source label for analytics */
+  source:           varchar("source", { length: 100 }),
+  /** Comma-separated milestone thresholds for admin notifications (e.g. "75,90,100") */
+  milestones:       varchar("milestones", { length: 100 }).default("75,90,100"),
+  /** JSON array of milestone counts already notified, to prevent duplicate alerts */
+  milestonesNotified: text("milestonesNotified").default("[]"),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:        timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PromoCampaign = typeof promoCampaigns.$inferSelect;
+export type InsertPromoCampaign = typeof promoCampaigns.$inferInsert;
+
+// ── Promotional Redemptions ──────────────────────────────────
+/**
+ * One row per successful promotional redemption.
+ * Tracks the full lifecycle: registration → activation → trial → conversion.
+ * Used for admin analytics and concurrency-safe deduplication.
+ */
+export const promoRedemptions = mysqlTable("promoRedemptions", {
+  id:               int("id").autoincrement().primaryKey(),
+  campaignId:       int("campaignId").notNull().references(() => promoCampaigns.id),
+  userId:           int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** Redemption order number (1-based, assigned at activation time) */
+  redemptionNumber: int("redemptionNumber").notNull(),
+  /** Email at time of redemption — stored for deduplication even if user changes email */
+  email:            varchar("email", { length: 320 }).notNull(),
+  name:             varchar("name", { length: 200 }),
+  /** When the trial access was activated */
+  activatedAt:      timestamp("activatedAt").defaultNow().notNull(),
+  /** When the trial access expires (activatedAt + trialDays) */
+  trialExpiresAt:   timestamp("trialExpiresAt").notNull(),
+  /** Whether the user has been active since redemption (last login > activatedAt) */
+  engaged:          boolean("engaged").default(false).notNull(),
+  /** Whether the user converted to a paid subscription after the trial */
+  converted:        boolean("converted").default(false).notNull(),
+  /** Stripe subscription ID if converted */
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:        timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  campaignIdx:  index("promoRedemptions_campaignId_idx").on(t.campaignId),
+  userIdx:      index("promoRedemptions_userId_idx").on(t.userId),
+  emailIdx:     index("promoRedemptions_email_idx").on(t.email),
+  /** Prevent a user from redeeming the same campaign twice */
+  userCampaignUniq: uniqueIndex("promoRedemptions_userId_campaignId_uniq").on(t.userId, t.campaignId),
+  /** Prevent the same email from redeeming the same campaign twice */
+  emailCampaignUniq: uniqueIndex("promoRedemptions_email_campaignId_uniq").on(t.email, t.campaignId),
+}));
+export type PromoRedemption = typeof promoRedemptions.$inferSelect;
+export type InsertPromoRedemption = typeof promoRedemptions.$inferInsert;

@@ -17,3 +17,4 @@ export { marketIntelligenceRouter } from "./marketIntelligence";
 export { conversationIntelligenceRouter } from "./conversationIntelligence";
 export { seismographRouter } from "./seismograph";
 export { ashaMemoryRouter } from "./ashaMemory";
+export { promoRouter } from "./promo";
