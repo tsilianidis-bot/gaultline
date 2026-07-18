@@ -324,7 +324,7 @@ function MarketCommandCenterInner() {
   const regimeAttr = riskLevel === "low" ? "bullish" : riskLevel === "moderate" ? "moderate" : riskLevel === "elevated" ? "elevated" : "crisis";
 
   // Verdict
-  const verdict = riskLevel === "low" ? "TAKE RISK" : riskLevel === "moderate" ? "STAY SELECTIVE" : riskLevel === "elevated" ? "REDUCE EXPOSURE" : "STEP ASIDE";
+  const verdict = riskLevel === "low" ? "RISK ON" : riskLevel === "moderate" ? "STAY SELECTIVE" : riskLevel === "elevated" ? "REDUCE EXPOSURE" : "STEP ASIDE";
   const verdictColor = getVerdictColor(riskLevel);
 
   // ── 8 Regime indicator pills ──────────────────────────────

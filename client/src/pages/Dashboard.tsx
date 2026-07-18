@@ -741,7 +741,7 @@ export default function Dashboard() {
           const analogLabel = analogs[0]?.era?.split(' ').slice(0, 3).join(' ') ?? '—';
           const analogSim = analogs[0]?.similarity ?? 0;
           const verdictColor = overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55';
-          const verdictLabel = overall.riskLevel === 'low' ? 'TAKE RISK' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE';
+          const verdictLabel = overall.riskLevel === 'low' ? 'RISK ON' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE';
           const cells = [
             { label: 'PRESSURE INDEX', value: overall.score.toFixed(1), sub: '/ 10', valueColor: color },
             { label: 'REGIME', value: regime.label.split(' ').slice(0, 2).join(' '), sub: regime.sublabel.slice(0, 18), valueColor: color },
@@ -812,7 +812,7 @@ export default function Dashboard() {
         let verdictColor: string;
         let verdictSub: string;
         if (riskLevel === 'low' || score <= 3.5) {
-          verdict = 'TAKE RISK';
+          verdict = 'RISK ON';
           verdictColor = '#00FF88';
           verdictSub = 'Regime supports risk-on positioning — momentum window open';
         } else if (riskLevel === 'moderate' || score <= 5.5) {
@@ -865,8 +865,8 @@ export default function Dashboard() {
         const cards = [
           {
             label: "TODAY'S VERDICT",
-            value: overall.riskLevel === 'low' ? 'TAKE RISK' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE',
-            sub: overall.riskLevel === 'low' ? 'Conditions favor risk-taking' : overall.riskLevel === 'moderate' ? 'High-conviction setups only' : overall.riskLevel === 'elevated' ? 'Trim and protect' : 'Capital preservation mode',
+            value: overall.riskLevel === 'low' ? 'RISK ON' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE',
+            sub: overall.riskLevel === 'low' ? 'Conditions favor risk-on positioning' : overall.riskLevel === 'moderate' ? 'High-conviction setups only' : overall.riskLevel === 'elevated' ? 'Trim and protect' : 'Capital preservation mode',
             color: overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55',
             href: '/app/pre-flight',
           },

@@ -20,7 +20,7 @@ function getVerdictFromScore(score: number): { label: string; sub: string; color
   if (score >= 70) return { label: "STEP ASIDE", sub: "Systemic risk is critical. Reduce exposure.", color: "#FF2D55" };
   if (score >= 55) return { label: "REDUCE EXPOSURE", sub: "Elevated risk. Defensive positioning advised.", color: "#FF9500" };
   if (score >= 40) return { label: "STAY SELECTIVE", sub: "Mixed conditions. High-conviction setups only.", color: "#FFD700" };
-  return { label: "TAKE RISK", sub: "Favorable conditions. Opportunities are opening.", color: "#34D399" };
+  return { label: "RISK ON", sub: "Favorable conditions. Opportunities are opening.", color: "#34D399" };
 }
 
 function getRegimeLabel(regime: string): string {

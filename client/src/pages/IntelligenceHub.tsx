@@ -297,7 +297,7 @@ export default function IntelligenceHub() {
     .filter(Boolean).length;
 
   // Regime label
-  const verdictLabel = riskLevel === "low" ? "TAKE RISK" : riskLevel === "moderate" ? "STAY SELECTIVE" : riskLevel === "elevated" ? "REDUCE EXPOSURE" : "STEP ASIDE";
+  const verdictLabel = riskLevel === "low" ? "RISK ON" : riskLevel === "moderate" ? "STAY SELECTIVE" : riskLevel === "elevated" ? "REDUCE EXPOSURE" : "STEP ASIDE";
 
   // Top threat
   const topThreat = useMemo(() => {

@@ -633,6 +633,8 @@ function Router() {
           </Suspense>
         </ErrorBoundary>
       </Route>
+      {/* /pricing — redirect to landing page pricing section */}
+      <Route path="/pricing"><Redirect to="/app/account" /></Route>
       {/* Admin promo dashboard — admin only, no AppLayout */}
       <Route path="/admin/promo">
         <ErrorBoundary>

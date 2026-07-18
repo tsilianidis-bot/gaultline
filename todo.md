@@ -3934,3 +3934,34 @@
 - [x] Admin table columns: order#, name, email, signup time, activation status, trial expiry, engaged, converted
 - [x] Admin dashboard never accessible to non-admin users
 - [x] Vitest: 10/10 tests passing (redemption logic, deduplication, concurrency guard, milestones)
+
+## Product Refinement — Phase 1: Trust & Data Integrity
+
+- [ ] Standardize Pressure Index to 0-100 everywhere (fix Dashboard.tsx /10 display)
+- [ ] Fix MarketContextStrip to show 0-100 scale
+- [ ] Replace "TAKE RISK" with "RISK ON" in Dashboard.tsx
+- [ ] Replace "TAKE RISK" with "RISK ON" in IntelligenceHub.tsx
+- [ ] Replace "TAKE RISK" with "RISK ON" in MarketCommandCenter.tsx
+- [ ] Replace "TAKE RISK" with "RISK ON" in MobilePulse.tsx
+- [ ] Add /pricing route to App.tsx
+- [ ] Redirect /pressure to /pressure-index (canonical page)
+- [ ] Verify all landing page CTAs route correctly
+- [ ] Check seismographUnified.ts for verdict label consistency
+
+## Product Refinement — Phase 2: One ASHA
+- [ ] Audit all ASHA client components for duplicate logic
+- [ ] Ensure all ASHA surfaces use ashaEngine.ts as single backend
+- [ ] Remove or consolidate redundant ASHA components
+
+## Product Refinement — Phase 3: Information Architecture
+- [ ] Restructure nav into 4 primary destinations: Today, Ask ASHA, Opportunities, My Positions
+- [ ] Ensure every page answers one of the 5 platform questions
+
+## Product Refinement — Phase 4: Eliminate Redundancy
+- [ ] Consolidate duplicate Daily Brief implementations
+- [ ] Consolidate seismograph engine files
+
+## Product Refinement — Phase 5: UX Refinement
+- [ ] Reduce cognitive load on primary pages
+- [ ] Improve mobile experience
+- [ ] Simplify onboarding flow
