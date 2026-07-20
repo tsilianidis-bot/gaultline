@@ -2944,6 +2944,68 @@ function MarketIntelligenceSection() {
 }
 
 // ── About / Origin ──────────────────────────────────────────
+
+// ── Coming Soon / Roadmap ──────────────────────────────────────
+function ComingSoonSection({ onRequestAccess }: { onRequestAccess: () => void }) {
+  const FEATURES = [
+    { label: 'Portfolio Intelligence', desc: 'Understand how changing market conditions affect the investments you own. Monitor portfolio exposure, concentration, macro risk, and overall portfolio health through personalized AI-powered investment risk monitoring.', color: '#00D4FF', d: 'M20 7H4a2 2 0 00-2 2v6a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z' },
+    { label: 'Smart Portfolio Alerts', desc: 'Receive intelligent notifications whenever meaningful market changes could materially affect your portfolio. Designed to eliminate noise while highlighting what truly deserves your attention.', color: '#FFAA00', d: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
+    { label: 'Brokerage Connections', desc: 'Securely connect supported brokerage accounts to automatically import your holdings and receive personalized market intelligence without manual updates.', color: '#00FF88', d: 'M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1' },
+    { label: 'Retirement Monitor', desc: 'View your retirement investments through a long-term macroeconomic lens. Understand how changing economic conditions may influence retirement portfolios over time.', color: '#A78BFA', d: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+    { label: 'Weekly Portfolio Health Report', desc: 'Receive an institutional-style weekly briefing that summarizes what changed, why it matters, emerging risks, improving conditions, and key portfolio observations.', color: '#FF6B6B', d: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { label: 'Custom Risk Profiles', desc: 'Customize FAULTLINE around your investing style. Long-Term Investor, Active Trader, Retirement Investor, Income Investor, Growth Investor, or Crypto Investor.', color: '#34D399', d: 'M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4' },
+  ];
+
+  return (
+    <section id="coming-soon" className="py-24 px-4 relative overflow-hidden" style={{ background: "#080A10", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 40% at 50% 0%, rgba(0,212,255,0.04) 0%, transparent 70%)" }} />
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="text-center mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.15)" }}>
+            <span className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/80">PLATFORM ROADMAP</span>
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+            The Intelligence Platform<br />
+            <span style={{ color: "#00D4FF" }}>Keeps Getting Smarter.</span>
+          </h2>
+          <p className="text-[15px] text-[#94A3B8] max-w-2xl mx-auto leading-relaxed">
+            Every FAULTLINE subscription becomes more valuable over time. We are continuously expanding the platform with powerful portfolio intelligence, investment risk monitoring, and financial market intelligence tools designed to help investors make more informed decisions.
+          </p>
+        </div>
+        <div className="rounded-2xl p-6 mb-12 flex flex-col sm:flex-row items-start sm:items-center gap-4" style={{ background: "linear-gradient(135deg, rgba(0,212,255,0.07) 0%, rgba(0,255,136,0.04) 100%)", border: "1px solid rgba(0,212,255,0.18)" }}>
+          <div className="flex-1">
+            <div className="text-[10px] font-mono tracking-[0.25em] text-[#00D4FF]/70 mb-1">INCLUDED WITH YOUR MEMBERSHIP</div>
+            <p className="text-[14px] text-white font-semibold leading-snug">As FAULTLINE evolves, upcoming features included within your subscription tier will become available automatically.</p>
+            <p className="text-[12px] text-[#64748B] mt-1">No additional setup. No migration. No waiting for a new version. Your platform becomes more valuable over time.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+          {FEATURES.map(f => (
+            <div key={f.label} className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${f.color}20` }}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${f.color}12`, border: `1px solid ${f.color}28` }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={f.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={f.d} /></svg>
+                  </div>
+                  <span className="text-[13px] font-bold text-white leading-tight">{f.label}</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full flex-shrink-0" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <span className="text-[8px] font-mono tracking-widest text-[#64748B]">COMING SOON</span>
+                </div>
+              </div>
+              <p className="text-[12px] text-[#94A3B8] leading-relaxed">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+        <div className="text-center space-y-4">
+          <p className="text-[13px] text-[#64748B]">The full intelligence platform is live today — Pressure Index, Seismograph, ASHA, Signals, and more.</p>
+          <button onClick={onRequestAccess} className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-[12px] font-mono font-bold tracking-wider transition-all duration-200 hover:opacity-90 active:scale-[0.97]" style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.3)", color: "#00D4FF" }}>GET EARLY ACCESS</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function EvergreenHubSection() {
   const { data: posts, isLoading } = trpc.blog.listEvergreen.useQuery({ limit: 6 });
 
@@ -3085,9 +3147,9 @@ export default function MarketingSite() {
   const [demoModalOpen, setDemoModalOpen] = useState(false);
 
   useSEO({
-    title: "FAULTLINE — Market Risk Intelligence Platform",
-    description: "Move within the faultlines before the quake. FAULTLINE gives self-directed traders the same systemic pressure intelligence top hedge funds use to position before collapses — not react to them.",
-    canonical: "/about",
+    title: "FAULTLINE — AI Market Intelligence & Portfolio Risk Monitoring Platform",
+    description: "FAULTLINE is an AI-powered market intelligence platform for self-directed investors. Monitor portfolio risk, track macro conditions, analyze systemic risk, and understand market regimes before they move. Portfolio intelligence, investment risk monitoring, and financial market intelligence in one platform.",
+    canonical: "/",
   });
 
   const scrollToForm = () => {
@@ -3125,6 +3187,7 @@ export default function MarketingSite() {
       <FoundingAccessForm formRef={formRef} />
       <MarketIntelligenceSection />
       <EvergreenHubSection />
+      <ComingSoonSection onRequestAccess={scrollToForm} />
       <Footer onDemoAccess={() => setDemoModalOpen(true)} />
     </div>
   );

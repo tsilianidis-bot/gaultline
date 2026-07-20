@@ -98,6 +98,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "portfolio",        label: "Portfolio",            shortLabel: "Portfolio",   icon: Briefcase,       path: "/app/portfolio" },
       { id: "trade-journal",    label: "Trade Journal",        shortLabel: "Journal",     icon: BookOpen,        path: "/app/trade-journal" },
       { id: "guide",            label: "Guide",                shortLabel: "Guide",       icon: BookOpen,        path: "/app/guide" },
+      { id: "roadmap",          label: "Coming Soon",           shortLabel: "Roadmap",     icon: Sparkles,        path: "/app/roadmap" },
       { id: "account",          label: "Account",              shortLabel: "Account",     icon: User,            path: "/app/account" },
     ],
   },

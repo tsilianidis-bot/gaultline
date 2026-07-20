@@ -180,6 +180,7 @@ const Press = lazy(() => import("./pages/Press"));
 const About = lazy(() => import("./pages/About"));
 const PromoRedeem = lazy(() => import("./pages/PromoRedeem"));
 const AdminPromoDashboard = lazy(() => import("./pages/AdminPromoDashboard"));
+const Roadmap             = lazy(() => import("./pages/Roadmap"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -679,6 +680,7 @@ function Router() {
               <Route path="/app/crypto-search"><Redirect to="/app/crypto" /></Route>
               <Route path="/app/crypto-watchlist"><Redirect to="/app/crypto" /></Route>
               <Route path="/app/guide" component={Guide} />
+              <Route path="/app/roadmap" component={Roadmap} />
               <Route path="/app/diagnostic" component={DiagnosticAI} />
               <Route path="/app/portfolio" component={Portfolio} />
               <Route path="/app/aftershock" component={AftershockEngine} />

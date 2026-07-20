@@ -3939,14 +3939,21 @@
 
 - [ ] Standardize Pressure Index to 0-100 everywhere (fix Dashboard.tsx /10 display)
 - [ ] Fix MarketContextStrip to show 0-100 scale
-- [ ] Replace "TAKE RISK" with "RISK ON" in Dashboard.tsx
-- [ ] Replace "TAKE RISK" with "RISK ON" in IntelligenceHub.tsx
-- [ ] Replace "TAKE RISK" with "RISK ON" in MarketCommandCenter.tsx
-- [ ] Replace "TAKE RISK" with "RISK ON" in MobilePulse.tsx
-- [ ] Add /pricing route to App.tsx
+- [x] Replace "TAKE RISK" with "RISK ON" in Dashboard.tsx
+- [x] Replace "TAKE RISK" with "RISK ON" in IntelligenceHub.tsx
+- [x] Replace "TAKE RISK" with "RISK ON" in MarketCommandCenter.tsx
+- [x] Replace "TAKE RISK" with "RISK ON" in MobilePulse.tsx
+- [x] Add /pricing route to App.tsx
 - [ ] Redirect /pressure to /pressure-index (canonical page)
 - [ ] Verify all landing page CTAs route correctly
 - [ ] Check seismographUnified.ts for verdict label consistency
+
+## Coming Soon Experience
+- [x] In-app Coming Soon page (/app/roadmap) with 6 premium feature cards
+- [x] Add roadmap nav item to MONITOR group in AppLayout sidebar
+- [x] Wire /app/roadmap route in App.tsx
+- [x] Homepage Coming Soon section with SEO keyword integration
+- [x] Founding Member benefit messaging on roadmap page and homepage section
 
 ## Product Refinement — Phase 2: One ASHA
 - [ ] Audit all ASHA client components for duplicate logic
