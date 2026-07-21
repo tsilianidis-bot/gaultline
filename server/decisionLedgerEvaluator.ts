@@ -95,7 +95,18 @@ export function parseTimeframeMs(timeframe: string): number {
 
 // ── Price fetching ────────────────────────────────────────────────────────────
 
+// Valid ticker: 1-10 uppercase letters/digits, optionally with a dot (e.g. BRK.B)
+const VALID_TICKER_RE = /^[A-Z][A-Z0-9.]{0,9}$/;
+// Words that are verdicts/actions, never valid tickers
+const VERDICT_WORDS = new Set(["BUYING", "SELLING", "HOLD", "BUY", "SELL", "AVOID", "WATCH", "ACCUMULATE", "REDUCE", "WAIT", "NEUTRAL"]);
+
 async function fetchCurrentPrice(ticker: string, assetType: "stock" | "crypto"): Promise<number | null> {
+  // Guard: skip lookup for invalid or verdict-word tickers
+  const upper = ticker.toUpperCase();
+  if (!VALID_TICKER_RE.test(upper) || VERDICT_WORDS.has(upper)) {
+    console.warn(`[LedgerEval] Skipping price lookup for invalid ticker: ${ticker}`);
+    return null;
+  }
   try {
     if (assetType === "crypto") {
       const data = await getCoinMarketData(ticker);

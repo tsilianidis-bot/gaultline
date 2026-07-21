@@ -313,7 +313,12 @@ Write exactly this JSON structure:
         });
 
         const rawContent = response.choices?.[0]?.message?.content;
-        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent ?? {});
+        let content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent ?? {});
+        // Strip markdown code fences if the LLM wrapped the JSON in ```json ... ```
+        content = content.trim();
+        if (content.startsWith("```")) {
+          content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        }
         const story = JSON.parse(content);
 
         return sanitizeNumbers({

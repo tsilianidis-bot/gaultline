@@ -31,7 +31,7 @@ import { handleScheduledLedgerEvaluation } from "../scheduledLedgerEvaluation";
 import { weeklyImprovementReportHandler } from "../scheduledWeeklyImprovementReport";
 import { handleDripEmail } from "../scheduledDripEmail";
 import { handleScheduledSeismograph } from "../scheduledSeismograph";
-import { appRouter } from "../routers";
+import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { captureError, flushErrorTracking } from "../errorTracking";
