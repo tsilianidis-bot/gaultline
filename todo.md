@@ -3972,3 +3972,16 @@
 - [ ] Reduce cognitive load on primary pages
 - [ ] Improve mobile experience
 - [ ] Simplify onboarding flow
+
+## High-Contrast Navigation + Quick-Action System
+- [ ] Build LeftNavDrawer component: warm ivory/stone edge tab, dark charcoal text, 4-group hierarchy (Primary / Market Intelligence / Personal / System), active amber indicator, global search, slide-in animation, tap-outside close
+- [ ] Build RightActionDrawer component: pale blue-gray edge tab, contextual actions per page, 3-section structure (Immediate / Personal / Portfolio), slide-in animation, closes after action
+- [ ] Create useDrawerContext: shared state for leftOpen, rightOpen, mutual exclusion, ASHA coordination
+- [ ] Move ASHA orb from bottom-right to bottom-center; wire ASHA summon to close both drawers first
+- [ ] Remove desktop top nav bar and mobile bottom tab bar from AppLayout; replace with edge drawer tabs
+- [ ] Apply three-layer contrast system: dark canvas for analytics, light surfaces for all control elements, semantic accent colors only for meaning
+- [ ] Add first-use onboarding cue (tap left = nav, tap right = actions, tap orb = ASHA); dismiss after first interaction
+- [ ] Add keyboard shortcuts: Cmd+K = search, Cmd+/ = ASHA, Cmd+B = nav drawer, Cmd+Shift+A = actions drawer
+- [ ] Verify all existing routes remain accessible through new nav structure
+- [ ] TypeScript check: 0 errors
+- [ ] Save checkpoint

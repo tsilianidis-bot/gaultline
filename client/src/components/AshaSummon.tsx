@@ -271,6 +271,19 @@ export default function AshaSummon({
     return () => window.removeEventListener("keydown", handler);
   }, [visible, onDismiss]);
 
+  // Listen for asha:prefill event dispatched by AshaPanel after external summon
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt;
+      if (prompt && visible) {
+        setInput(prompt);
+        setTimeout(() => inputRef.current?.focus(), 60);
+      }
+    };
+    window.addEventListener("asha:prefill", handler);
+    return () => window.removeEventListener("asha:prefill", handler);
+  }, [visible]);
+
   if (!visible && phase === "idle") return null;
 
   const vw = typeof window !== "undefined" ? window.innerWidth : 1440;

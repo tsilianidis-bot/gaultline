@@ -149,6 +149,35 @@ export default function AshaPanel() {
 
   const suggestions = PAGE_SUGGESTIONS[fullPageContext.page] ?? PAGE_SUGGESTIONS.default;
 
+  // ── External trigger: asha:summon CustomEvent ────────────
+  // Dispatched by RightActionDrawer and keyboard shortcut Cmd+/
+  // Payload: { prompt?: string }
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const prompt = (e as CustomEvent<{ prompt?: string }>).detail?.prompt;
+      setPanelState("summon");
+      if (prompt) {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("asha:prefill", { detail: { prompt } }));
+        }, 80);
+      }
+    };
+    window.addEventListener("asha:summon", handler);
+    return () => window.removeEventListener("asha:summon", handler);
+  }, []);
+
+  // ── Keyboard shortcut: Cmd+/ ──────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "/") {
+        e.preventDefault();
+        setPanelState(prev => prev === "idle" ? "summon" : "idle");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -265,7 +294,8 @@ export default function AshaPanel() {
         <div style={{
           position: "fixed",
           bottom: "20px",
-          right: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
           zIndex: 1000,
           display: "flex",
           flexDirection: "column",
@@ -328,7 +358,7 @@ export default function AshaPanel() {
         onSubmit={sendMessage}
         onDismiss={handleDismiss}
         dockBottom={20}
-        dockRight={20}
+        dockRight={undefined}
       />
 
       {/* ── Intelligence Synthesis ─────────────────────────── */}

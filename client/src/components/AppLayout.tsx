@@ -24,6 +24,9 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import AshaIntroModal from "@/components/AshaIntroModal";
 import AshaPanel from "@/components/AshaPanel";
+import { DrawerProvider } from "@/contexts/DrawerContext";
+import LeftNavDrawer from "@/components/LeftNavDrawer";
+import RightActionDrawer from "@/components/RightActionDrawer";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: command → markets → intelligence → analysis → account
@@ -268,7 +271,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }, [navigate]);
 
   return (
+    <DrawerProvider>
     <div className="min-h-screen flex flex-col" style={{ background: '#080A0F', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+
+      {/* ── Edge navigation drawers ── */}
+      <LeftNavDrawer breachCount={breachCount} />
+      <RightActionDrawer />
 
       {/* ── Top header bar ── */}
       <header style={{
@@ -719,7 +727,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       )}
 
       {/* ── Main content ── */}
-      <main style={{ flex: 1, paddingBottom: '72px' }} className="lg:pb-0">
+      <main style={{ flex: 1, paddingBottom: '0' }} className="lg:pb-0">
         <MarketContextStrip />
         {children}
       </main>
@@ -926,5 +934,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <AshaIntroModal />
       <AshaPanel />
     </div>
+    </DrawerProvider>
   );
 }
