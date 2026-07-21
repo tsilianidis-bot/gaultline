@@ -8,8 +8,7 @@
  *               → What Could Change → Invalidation Conditions → Ask FAULTLINE
  */
 
-import { useState, useEffect } from "react";
-import { useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { RefreshCw } from "lucide-react";
 import { Link } from "wouter";
@@ -44,6 +43,188 @@ function signalColor(sig: string): string {
   if (sig === "bearish" || sig === "stressed") return "#f97316";
   if (sig === "bullish" || sig === "recovering") return "#22c55e";
   return "#06b6d4";
+}
+
+// ── Reduced-motion helper ─────────────────────────────────────────────────────
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// ── Animated count-up hook ────────────────────────────────────────────────────
+function useCountUp(target: number, duration = 1200, delay = 0): number {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (prefersReducedMotion()) { setValue(target); return; }
+    let raf: number;
+    const start = performance.now() + delay;
+    function tick(now: number) {
+      const elapsed = Math.max(0, now - start);
+      const progress = Math.min(elapsed / duration, 1);
+      // ease-out cubic
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setValue(Math.round(eased * target));
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration, delay]);
+  return value;
+}
+
+// ── Staged load hook ──────────────────────────────────────────────────────────
+// Returns a phase 0-5 that increments over time after data is ready
+function useStagedLoad(ready: boolean): number {
+  const [phase, setPhase] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => {
+    if (!ready) return;
+    if (prefersReducedMotion()) { setPhase(5); return; }
+    const delays = [0, 200, 500, 800, 1200, 1800];
+    delays.forEach((d, i) => {
+      const t = setTimeout(() => setPhase(i + 1), d);
+      timerRef.current.push(t);
+    });
+    return () => timerRef.current.forEach(clearTimeout);
+  }, [ready]);
+  return phase;
+}
+
+// ── Live seismograph waveform ─────────────────────────────────────────────────
+interface WaveformProps {
+  sparkline: { score: number }[];
+  scoreColor: string;
+  currentScore: number;
+}
+
+function LiveSeismographWave({ sparkline, scoreColor, currentScore }: WaveformProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<number>(0);
+  const phaseRef = useRef(0);
+  const rm = prefersReducedMotion();
+
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Build base points from sparkline (last 90 values)
+    const pts = sparkline.length > 0 ? sparkline : Array.from({ length: 60 }, (_, i) => ({ score: currentScore + Math.sin(i * 0.3) * 4 }));
+    const n = pts.length;
+
+    // Compute y positions
+    const ys = pts.map((p) => H - Math.max(4, (p.score / 100) * (H - 8)) - 4);
+
+    // Add live tremor noise to the last 8 points
+    const t = phaseRef.current;
+    const noisedYs = ys.map((y, i) => {
+      if (i < n - 8) return y;
+      const age = n - 1 - i; // 0 = newest
+      const amplitude = rm ? 0 : (2 - age * 0.22) * (currentScore / 100 + 0.3);
+      return y + Math.sin(t * 0.08 + i * 1.7) * amplitude;
+    });
+
+    // Draw glow line (wide, low opacity)
+    ctx.beginPath();
+    ctx.strokeStyle = scoreColor + "30";
+    ctx.lineWidth = 3;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    const xStep = W / (n - 1);
+    noisedYs.forEach((y, i) => {
+      const x = i * xStep;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Draw main line
+    ctx.beginPath();
+    ctx.strokeStyle = scoreColor + "cc";
+    ctx.lineWidth = 1.5;
+    noisedYs.forEach((y, i) => {
+      const x = i * xStep;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Draw scan cursor (vertical line at the right edge, sweeping slightly)
+    if (!rm) {
+      const cursorX = W - 2 + Math.sin(t * 0.04) * 1.5;
+      const cursorY = noisedYs[n - 1];
+      ctx.beginPath();
+      ctx.strokeStyle = scoreColor + "80";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 4]);
+      ctx.moveTo(cursorX, 0);
+      ctx.lineTo(cursorX, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Cursor dot
+      ctx.beginPath();
+      ctx.arc(cursorX, cursorY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = scoreColor;
+      ctx.fill();
+      // Glow dot
+      ctx.beginPath();
+      ctx.arc(cursorX, cursorY, 6, 0, Math.PI * 2);
+      ctx.fillStyle = scoreColor + "25";
+      ctx.fill();
+    }
+
+    phaseRef.current += 1;
+    animRef.current = requestAnimationFrame(draw);
+  }, [sparkline, scoreColor, currentScore, rm]);
+
+  useEffect(() => {
+    animRef.current = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(animRef.current);
+  }, [draw]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={700}
+      height={52}
+      style={{ width: "100%", height: "52px", display: "block", borderRadius: "4px" }}
+    />
+  );
+}
+
+// ── Animated ProbBar ──────────────────────────────────────────────────────────
+function AnimProbBar({ label, value, color, width = "100px", revealDelay = 0 }: { label: string; value: number; color: string; width?: string; revealDelay?: number }) {
+  const [displayed, setDisplayed] = useState(prefersReducedMotion() ? value : 0);
+  const prevRef = useRef(value);
+  useEffect(() => {
+    if (prefersReducedMotion()) { setDisplayed(value); return; }
+    let raf: number;
+    const from = prevRef.current;
+    const to = value;
+    const start = performance.now() + revealDelay;
+    const dur = 900;
+    function tick(now: number) {
+      const elapsed = Math.max(0, now - start);
+      const p = Math.min(elapsed / dur, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setDisplayed(Math.round(from + (to - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+      else prevRef.current = to;
+    }
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, revealDelay]);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "7px" }}>
+      <div style={{ ...mono, width, fontSize: "9px", color: "rgba(6,182,212,0.55)", letterSpacing: "0.06em", flexShrink: 0 }}>{label}</div>
+      <div style={{ flex: 1, height: "4px", background: "rgba(6,182,212,0.08)", borderRadius: "2px", overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${Math.min(100, displayed)}%`, background: color, borderRadius: "2px", transition: "width 0.05s linear" }} />
+      </div>
+      <div style={{ ...mono, width: "30px", textAlign: "right", fontSize: "10px", color, fontWeight: 700, flexShrink: 0 }}>{displayed}%</div>
+    </div>
+  );
 }
 
 // ── Shared layout primitives ───────────────────────────────────────────────────
@@ -157,6 +338,10 @@ export default function SeismographIntelligence() {
   const regimeProbs = regimeProbabilities5way;
   const topEngines = [...engineContributions].sort((a, b) => b.contributionWeight - a.contributionWeight).slice(0, 5);
 
+  // ── Animation hooks ──────────────────────────────────────────
+  const loadPhase = useStagedLoad(true); // intel is guaranteed non-null here
+  const animatedScore = useCountUp(currentScore, 1100, 400);
+
   // Register ASHA page context — memoized to prevent infinite render loop
   const ashaCtx = useMemo(() => ({
     page: "seismograph" as const,
@@ -179,7 +364,7 @@ export default function SeismographIntelligence() {
   useRegisterAshaContext(ashaCtx);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px" }}>
+    <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px", opacity: loadPhase >= 1 ? 1 : 0, transition: "opacity 0.4s ease-out" }}>
 
       {/* ── STICKY HEADER ── */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(0,0,0,0.95)", borderBottom: "1px solid rgba(6,182,212,0.12)", backdropFilter: "blur(12px)" }}>
@@ -211,11 +396,11 @@ export default function SeismographIntelligence() {
         <SectionLabel text="Current Market Assessment" color="rgba(6,182,212,0.6)" />
 
         {/* Score + regime row */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "20px", marginBottom: "20px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: "20px", marginBottom: "20px", flexWrap: "wrap", opacity: loadPhase >= 2 ? 1 : 0, transition: "opacity 0.5s ease-out" }}>
           {/* Big score */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", flexShrink: 0 }}>
-            <div style={{ ...mono, fontSize: "56px", fontWeight: 800, color: scoreColor, lineHeight: 1, textShadow: `0 0 30px ${scoreColor}40` }}>
-              {currentScore}
+            <div style={{ ...mono, fontSize: "56px", fontWeight: 800, color: scoreColor, lineHeight: 1, textShadow: `0 0 30px ${scoreColor}40`, animation: loadPhase >= 2 ? `seismo-glow-breathe 3s ease-in-out infinite` : "none", opacity: loadPhase >= 2 ? 1 : 0, transition: "opacity 0.5s ease-out" }}>
+              {animatedScore}
             </div>
             <div style={{ ...mono, fontSize: "9px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.4)" }}>SYSTEMIC PRESSURE</div>
           </div>
@@ -230,8 +415,22 @@ export default function SeismographIntelligence() {
           </div>
         </div>
 
+        {/* ── Live seismograph waveform ── */}
+        {evolution.sparkline90d.length > 0 && (
+          <div style={{ marginBottom: "20px", opacity: loadPhase >= 2 ? 1 : 0, transition: "opacity 0.7s ease-out 0.15s" }}>
+            <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
+              LIVE PRESSURE SIGNAL
+              <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", background: scoreColor, boxShadow: `0 0 6px ${scoreColor}`, animation: "livepulse 2s infinite" }} />
+            </div>
+            <LiveSeismographWave sparkline={evolution.sparkline90d} scoreColor={scoreColor} currentScore={currentScore} />
+            <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: "8px", color: "rgba(6,182,212,0.28)", marginTop: "4px" }}>
+              <span>90 DAYS AGO</span><span>LIVE</span>
+            </div>
+          </div>
+        )}
+
         {/* Macro ticker strip */}
-        <div style={{ display: "flex", gap: "24px", marginBottom: "20px", padding: "10px 14px", background: "rgba(6,182,212,0.03)", borderRadius: "6px", border: "1px solid rgba(6,182,212,0.1)", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "24px", marginBottom: "20px", padding: "10px 14px", background: "rgba(6,182,212,0.03)", borderRadius: "6px", border: "1px solid rgba(6,182,212,0.1)", flexWrap: "wrap", opacity: loadPhase >= 3 ? 1 : 0, transition: "opacity 0.5s ease-out" }}>
           {macroTicker.tsy10y !== null && (
             <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
               <span style={{ ...mono, fontSize: "9px", color: "rgba(6,182,212,0.4)", letterSpacing: "0.06em" }}>10Y TSY</span>
@@ -263,7 +462,7 @@ export default function SeismographIntelligence() {
         </div>
 
         {/* Executive briefing paragraph */}
-        <div style={{ marginBottom: "28px", padding: "18px 20px", background: "rgba(6,182,212,0.03)", borderRadius: "8px", border: "1px solid rgba(6,182,212,0.12)", borderLeft: `3px solid ${scoreColor}` }}>
+        <div style={{ marginBottom: "28px", padding: "18px 20px", background: "rgba(6,182,212,0.03)", borderRadius: "8px", border: "1px solid rgba(6,182,212,0.12)", borderLeft: `3px solid ${scoreColor}`, opacity: loadPhase >= 3 ? 1 : 0, transform: loadPhase >= 3 ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.6s ease-out 0.1s, transform 0.6s ease-out 0.1s" }}>
           <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.14em", color: "rgba(6,182,212,0.4)", fontWeight: 700, marginBottom: "10px" }}>EXECUTIVE INTELLIGENCE BRIEFING</div>
           <p style={{ fontSize: "14px", color: "rgba(226,232,240,0.88)", lineHeight: 1.75, margin: 0, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>
             {todayStory}
@@ -272,7 +471,7 @@ export default function SeismographIntelligence() {
 
         {/* Key developments */}
         {keyDevelopments.length > 0 && (
-          <div style={{ marginBottom: "28px" }}>
+          <div style={{ marginBottom: "28px", opacity: loadPhase >= 4 ? 1 : 0, transition: "opacity 0.5s ease-out" }}>
             <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.12em", color: "rgba(6,182,212,0.4)", fontWeight: 700, marginBottom: "10px" }}>KEY DEVELOPMENTS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {keyDevelopments.map((d, i) => (
@@ -376,11 +575,11 @@ export default function SeismographIntelligence() {
         {/* 5-way regime probabilities */}
         <div style={{ marginBottom: "20px" }}>
           <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "10px" }}>REGIME PROBABILITY DISTRIBUTION</div>
-          <ProbBar label="BULL MARKET" value={regimeProbs.bull} color="#22c55e" />
-          <ProbBar label="SOFT LANDING" value={regimeProbs.softLanding} color="#06b6d4" />
-          <ProbBar label="STAGFLATION" value={regimeProbs.stagflation} color="#f59e0b" />
-          <ProbBar label="RECESSION" value={regimeProbs.recession} color="#f97316" />
-          <ProbBar label="CRISIS / CRASH" value={regimeProbs.crash} color="#ef4444" />
+          <AnimProbBar label="BULL MARKET" value={regimeProbs.bull} color="#22c55e" revealDelay={0} />
+          <AnimProbBar label="SOFT LANDING" value={regimeProbs.softLanding} color="#06b6d4" revealDelay={100} />
+          <AnimProbBar label="STAGFLATION" value={regimeProbs.stagflation} color="#f59e0b" revealDelay={200} />
+          <AnimProbBar label="RECESSION" value={regimeProbs.recession} color="#f97316" revealDelay={300} />
+          <AnimProbBar label="CRISIS / CRASH" value={regimeProbs.crash} color="#ef4444" revealDelay={400} />
         </div>
 
         {/* Evidence families */}
@@ -446,10 +645,10 @@ export default function SeismographIntelligence() {
 
         <div style={{ marginBottom: "20px" }}>
           <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "10px" }}>REGIME TRANSITION PROBABILITIES</div>
-          <ProbBar label="REMAIN IN REGIME" value={transitionProbabilities.remainInRegime} color="#06b6d4" width="140px" />
-          <ProbBar label="TRANSITION ELEVATED" value={transitionProbabilities.transitionToElevated} color="#f97316" width="140px" />
-          <ProbBar label="TRANSITION LOW" value={transitionProbabilities.transitionToLow} color="#22c55e" width="140px" />
-          <ProbBar label="TRANSITION CRISIS" value={transitionProbabilities.transitionToCrisis} color="#ef4444" width="140px" />
+          <AnimProbBar label="REMAIN IN REGIME" value={transitionProbabilities.remainInRegime} color="#06b6d4" width="140px" />
+          <AnimProbBar label="TRANSITION ELEVATED" value={transitionProbabilities.transitionToElevated} color="#f97316" width="140px" revealDelay={100} />
+          <AnimProbBar label="TRANSITION LOW" value={transitionProbabilities.transitionToLow} color="#22c55e" width="140px" revealDelay={200} />
+          <AnimProbBar label="TRANSITION CRISIS" value={transitionProbabilities.transitionToCrisis} color="#ef4444" width="140px" revealDelay={300} />
         </div>
 
         {transitionProbabilities.historicalBasis && (
@@ -656,6 +855,21 @@ export default function SeismographIntelligence() {
       <style>{`
         @keyframes livepulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes seismo-glow-breathe {
+          0%,100% { filter: brightness(1); }
+          50% { filter: brightness(1.15) drop-shadow(0 0 12px currentColor); }
+        }
+        @keyframes seismo-fade-up {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes seismo-scan-pulse {
+          0%,100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+        }
         @media (max-width: 480px) {
           .seismo-meta-grid { grid-template-columns: 1fr 1fr !important; }
         }
