@@ -6,6 +6,7 @@
 import { useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { TickerChip } from "@/components/TickerActionMenu";
 
 // ── Types (mirrored from server/cryptoEngine.ts) ─────────────
@@ -215,26 +216,28 @@ function SystemicRiskMini({ risk }: { risk: CryptoSystemicRisk }) {
 // ── Main component ────────────────────────────────────────────
 export default function HomeCryptoSection() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const [searchInput, setSearchInput] = useState("");
   const [searchSymbol, setSearchSymbol] = useState<string | null>(null);
 
-  // Fetch systemic risk
+  // Fetch systemic risk (protected — only when logged in)
   const { data: sysRisk } = trpc.crypto.getSystemicRisk.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     retry: 1,
+    enabled: !!user,
   });
 
-  // Fetch asset intelligence when user searches
+  // Fetch asset intelligence when user searches (protected)
   const { data: assetIntelResult, isLoading: assetLoading } = trpc.crypto.getAssetIntelligence.useQuery(
     { idOrSymbol: searchSymbol ?? "" },
-    { enabled: !!searchSymbol, staleTime: 2 * 60 * 1000, retry: 1 }
+    { enabled: !!searchSymbol && !!user, staleTime: 2 * 60 * 1000, retry: 1 }
   );
   const assetIntel = assetIntelResult?.asset ?? null;
 
-  // Fetch top markets for the heatmap strip
+  // Fetch top markets for the heatmap strip (protected)
   const { data: topMarkets } = trpc.crypto.getTopMarkets.useQuery(
     { limit: 6 },
-    { staleTime: 5 * 60 * 1000, retry: 1 }
+    { staleTime: 5 * 60 * 1000, retry: 1, enabled: !!user }
   );
 
   const handleSearch = useCallback(() => {
