@@ -21,6 +21,7 @@ import { OnboardingVideoModal } from './components/OnboardingVideoModal';
 import AshaLiveBriefing from './components/AshaLiveBriefing';
 import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
+import { ANALYTICAL_LEGACY_ALIASES, preserveRouteContext } from '@shared/routeRegistry';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -212,6 +213,18 @@ function PageLoader() {
       </span>
     </div>
   );
+}
+
+function AnalyticalLegacyAliases() {
+  return Object.entries(ANALYTICAL_LEGACY_ALIASES).map(([source, target]) => (
+    <Route key={source} path={source}>
+      {() => (
+        <Redirect
+          to={preserveRouteContext(target, window.location.search, window.location.hash)}
+        />
+      )}
+    </Route>
+  ));
 }
 
 // ── Session key: show cinematic intro once per browser session (returning users) ──
@@ -649,18 +662,24 @@ function Router() {
       {/* All platform routes inside AppLayout under /app */}
       <Route>
         <AppLayout>
-          <ErrorBoundary inline>
-          <Suspense fallback={<PageLoader />}>
-            <Switch>
-              <Route path="/app/pressure" component={Pressure} />
+	          <ErrorBoundary inline>
+	          <Suspense fallback={<PageLoader />}>
+	            <Switch>
+	              <Route path="/app/now" component={SeismographicDash} />
+	              <Route path="/app/why" component={TodaysStory} />
+	              <Route path="/app/outlook" component={SignalOutlookCenter} />
+	              <Route path="/app/watch" component={Signals} />
+	              <Route path="/app/act" component={SmartDiscovery} />
+	              <Route path="/app"><Redirect to="/app/now" /></Route>
+	              <AnalyticalLegacyAliases />
+	              <Route path="/app/pressure" component={Pressure} />
               <Route path="/app/intelligence-hub" component={IntelligenceHub} />
               <Route path="/app/command" component={MarketCommandCenter} />
               <Route path="/app/todays-story" component={TodaysStory} />
               <Route path="/app/discover" component={SmartDiscovery} />
               <Route path="/app/ask-asha"><Redirect to="/app/discover" /></Route>
               <Route path="/app/decision-ledger" component={DecisionLedger} />
-              <Route path="/app"><Redirect to="/app/seismograph" /></Route>
-              <Route path="/app/dashboard" component={Dashboard} />
+	              <Route path="/app/dashboard" component={Dashboard} />
               {/* P1 — Deprecated routes redirect to new destinations */}
               {/* Canonical URL aliases — advertised paths */}
               <Route path="/app/command-center"><Redirect to="/app/command" /></Route>
