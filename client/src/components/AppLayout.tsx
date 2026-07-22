@@ -27,6 +27,8 @@ import AshaPanel from "@/components/AshaPanel";
 import { DrawerProvider } from "@/contexts/DrawerContext";
 import LeftNavDrawer from "@/components/LeftNavDrawer";
 import RightActionDrawer from "@/components/RightActionDrawer";
+import { CANONICAL_DESTINATIONS } from "@shared/routeRegistry";
+import { getRouteIcon } from "@/lib/routeIcons";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: command → markets → intelligence → analysis → account
@@ -46,66 +48,17 @@ type NavGroup = {
   items: NavItem[];
 };
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    // Q1 + Q2: What is the market doing right now? Why?
-    label: "SITUATION",
-    color: "#00E5FF",
-    items: [
-      { id: "seismograph",     label: "Seismograph",          shortLabel: "Seismograph", icon: Activity,        path: "/app/seismograph" },
-      { id: "intelligence-hub", label: "Intelligence Hub",    shortLabel: "Intel Hub",   icon: Brain,           path: "/app/intelligence-hub" },
-      { id: "command",        label: "Command Center",       shortLabel: "Command",     icon: Command,         path: "/app/command" },
-      { id: "dashboard",      label: "Dashboard Briefing",   shortLabel: "Briefing",    icon: LayoutDashboard, path: "/app/dashboard" },
-      { id: "todays-story",   label: "Today's Story",        shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
-      { id: "pressure",       label: "Pressure Index",       shortLabel: "Pressure",    icon: Gauge,           path: "/app/pressure" },
-      { id: "report",         label: "ASHA Intelligence",    shortLabel: "Intel",       icon: FileText,        path: "/app/report" },
-    ],
-  },
-  {
-    // Q3 + Q4: What does it mean? What is the highest probability outcome?
-    label: "UNDERSTAND",
-    color: "#FFAA00",
-    items: [
-      { id: "signal-outlook",  label: "Signal Outlook",       shortLabel: "Outlook",     icon: Eye,             path: "/app/signal-outlook" },
-      { id: "pre-flight",      label: "Pre-Flight Check",     shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
-      { id: "social-intel",    label: "Social Intelligence",  shortLabel: "Social Intel",icon: Users,           path: "/app/social-intelligence" },
-      { id: "insider-intel",   label: "Insider Intelligence", shortLabel: "Insider",     icon: TrendingDown,    path: "/app/insider-intelligence" },
-      { id: "alt-rotation",    label: "Sector Rotation",      shortLabel: "Rotation",    icon: RotateCcw,       path: "/app/alt-rotation" },
-      { id: "crypto",          label: "Crypto Hub",           shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
-      { id: "market-intelligence", label: "ASHA Market Intel",    shortLabel: "Regimes",     icon: BarChart3,       path: "/app/market-intelligence" },
-      { id: "crypto-regime",       label: "Crypto Regime",          shortLabel: "Crypto Regime", icon: Bitcoin,         path: "/app/crypto-regime" },
-      { id: "blog",                label: "Blog",                   shortLabel: "Blog",        icon: Newspaper,       path: "/blog" },
-    ],
-  },
-  {
-    // Q5 + Q6: What could change the outlook? How do I capitalize?
-    label: "OPPORTUNITIES",
-    color: "#00FF88",
-    items: [
-      { id: "discover",        label: "Ask ASHA",             shortLabel: "Ask ASHA",    icon: Search,          path: "/app/discover" },
-      { id: "opportunities",   label: "Opportunities",        shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
-      { id: "signals",         label: "ASHA Signals",         shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
-      { id: "symbol-intel",    label: "Symbol Intelligence",  shortLabel: "Symbol Intel",icon: Telescope,       path: "/app/symbol-intelligence" },
-      { id: "decision-engine", label: "Decision Engine",      shortLabel: "Decide",      icon: Crosshair,       path: "/app/decision-engine" },
-      { id: "day-trade",       label: "Day Trade Intel",      shortLabel: "Day Trade",   icon: Target,          path: "/app/day-trade-intelligence" },
-      { id: "market-movers",   label: "Market Movers",        shortLabel: "Movers",      icon: TrendingUp,      path: "/app/market-movers" },
-    ],
-  },
-  {
-    // Q7: What should I continue monitoring?
-    label: "MONITOR",
-    color: "#A78BFA",
-    items: [
-      { id: "alerts",           label: "Alerts",               shortLabel: "Alerts",      icon: BellRing,        path: "/app/alerts" },
-      { id: "watchlist",        label: "Watchlist",            shortLabel: "Watch",       icon: Bell,            path: "/app/watchlist" },
-      { id: "portfolio",        label: "Portfolio",            shortLabel: "Portfolio",   icon: Briefcase,       path: "/app/portfolio" },
-      { id: "trade-journal",    label: "Trade Journal",        shortLabel: "Journal",     icon: BookOpen,        path: "/app/trade-journal" },
-      { id: "guide",            label: "Guide",                shortLabel: "Guide",       icon: BookOpen,        path: "/app/guide" },
-      { id: "roadmap",          label: "Coming Soon",           shortLabel: "Roadmap",     icon: Sparkles,        path: "/app/roadmap" },
-      { id: "account",          label: "Account",              shortLabel: "Account",     icon: User,            path: "/app/account" },
-    ],
-  },
-];
+const NAV_GROUPS: NavGroup[] = [{
+  label: "MARKET QUESTIONS",
+  color: "#00E5FF",
+  items: CANONICAL_DESTINATIONS.map(destination => ({
+    id: destination.id,
+    label: destination.label,
+    shortLabel: destination.shortLabel,
+    icon: getRouteIcon(destination.icon),
+    path: destination.path,
+  })),
+}];
 
 // Owner Portal nav items — admin-only group rendered last with distinct amber styling
 const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -127,11 +80,8 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 // Flat list for convenience
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
-// Mobile primary tabs (bottom bar — 5 primary + More)
-// Home (Dashboard), Ask, Signals, Symbol Intel, Account
-const MOBILE_HOME_TAB: NavItem = { id: "home", label: "Home", shortLabel: "Home", icon: Activity, path: "/app/seismograph" };
-const MOBILE_PRIMARY_IDS = ["discover", "signals", "symbol-intel", "account"];
-const MOBILE_PRIMARY = [MOBILE_HOME_TAB, ...ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id))];
+// Mobile and desktop share one five-question order.
+const MOBILE_PRIMARY = ALL_TABS;
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -587,7 +537,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           overflowX: 'auto',
           scrollbarWidth: 'none',
         }}>
-          {[...NAV_GROUPS, ...(isAdmin ? [{ label: "OWNER PORTAL", color: "#FFAA00", items: ADMIN_NAV_ITEMS }] : [])].map((group, gi) => {
+          {NAV_GROUPS.map((group, gi) => {
             const isOwnerPortal = group.label === 'OWNER PORTAL';
             const groupColor = (group as NavGroup & { color?: string }).color ?? '#FFAA00';
             return (
@@ -773,25 +723,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </button>
           );
         })}
-
-        {/* "More" button */}
-        <button
-          onClick={() => setMoreOpen(true)}
-          style={{
-            flex: 1,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            padding: '8px 2px', gap: '3px',
-            background: 'transparent', border: 'none',
-            color: moreOpen ? '#00E5FF' : '#8B9BB4',
-            cursor: 'pointer',
-            transition: 'color 0.15s ease',
-          }}
-        >
-          <MoreHorizontal size={18} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            More
-          </span>
-        </button>
       </nav>
 
       {/* ── Mobile: "More" drawer ── */}
