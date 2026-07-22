@@ -10,6 +10,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { ArrowRight, Shield, Zap, TrendingDown } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // ── Macro Regime Panel ─────────────────────────────────────────────────────────
 function MacroRegimePanel() {
@@ -131,8 +132,10 @@ function MacroRegimePanel() {
 // ── Aftershock Snapshot ────────────────────────────────────────────────────────
 function AftershockSnapshot() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const { data, isLoading } = trpc.aftershock.getAnalysis.useQuery(undefined, {
     staleTime: 10 * 60 * 1000,
+    enabled: !!user,
   });
 
   return (

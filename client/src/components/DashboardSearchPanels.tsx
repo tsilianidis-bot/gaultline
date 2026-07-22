@@ -269,10 +269,10 @@ export function CryptoPorchPanel() {
   const [active, setActive] = useState("BTC");
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Fetch live screener data for real prices
+  // Fetch live screener data for real prices (only when logged in — protected procedure)
   const { data: screenerData } = trpc.crypto.getScreener.useQuery(
     { limit: 20 },
-    { staleTime: 60_000, refetchInterval: 90_000 }
+    { staleTime: 60_000, refetchInterval: 90_000, enabled: !!user }
   );
 
   const meta = CRYPTO_META[active] ?? CRYPTO_META.BTC;

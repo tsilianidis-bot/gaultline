@@ -10,6 +10,7 @@ import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function riskLabel(level: string): string {
@@ -289,9 +290,10 @@ function DailyBriefSummary() {
 // ── Compact Signal Footer ──────────────────────────────────────────────────────
 function CompactSignalFooter() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const { data: cryptoData } = trpc.crypto.getTopMarkets.useQuery(
     { limit: 3 },
-    { staleTime: 5 * 60 * 1000 }
+    { staleTime: 5 * 60 * 1000, enabled: !!user }
   );
 
   return (

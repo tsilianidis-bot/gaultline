@@ -426,100 +426,17 @@ function AshaIntelPanel() {
 
 // ── Main exported component ───────────────────────────────────
 export default function AshaHeroSection() {
-  const ASHA_IMG = "/manus-storage/asha-hero-globe_372b539f.png";
-
   return (
     <div style={{ background: "#000", borderBottom: "1px solid rgba(0,229,255,0.06)" }}>
       {/* ── 13-instrument live ticker strip ── */}
       <MacroTickerStrip />
 
-      {/* ── Hero: two-column on desktop, stacked on mobile ── */}
-      <div
-        className="asha-hero-grid"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0,1fr) minmax(0,400px)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Left: intelligence panel */}
-        <div style={{
-          borderRight: "1px solid rgba(0,229,255,0.05)",
-          background: "linear-gradient(135deg, rgba(0,229,255,0.015) 0%, transparent 55%)",
-        }}>
-          <AshaIntelPanel />
-        </div>
-
-        {/* Right: ASHA figure */}
-        <div
-          className="asha-hero-figure"
-          style={{
-            position: "relative",
-            overflow: "hidden",
-            minHeight: "420px",
-          }}
-        >
-          {/* Ambient glow */}
-          <div style={{
-            position: "absolute",
-            inset: 0,
-            background: "radial-gradient(ellipse 80% 80% at 50% 55%, rgba(0,229,255,0.05) 0%, transparent 70%)",
-            pointerEvents: "none",
-            zIndex: 1,
-          }} />
-          <img
-            src={ASHA_IMG}
-            alt="ASHA — FAULTLINE Intelligence"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              objectPosition: "center top",
-              display: "block",
-              opacity: 0.9,
-            }}
-          />
-          {/* ASHA label */}
-          <div style={{
-            position: "absolute",
-            bottom: "20px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            textAlign: "center",
-            pointerEvents: "none",
-            zIndex: 2,
-          }}>
-            <div style={{
-              fontFamily: "'Rajdhani', sans-serif",
-              fontSize: "20px",
-              fontWeight: 700,
-              letterSpacing: "0.24em",
-              color: "rgba(255,255,255,0.88)",
-              textShadow: "0 0 18px rgba(0,229,255,0.35)",
-            }}>ASHA</div>
-            <div style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "8px",
-              letterSpacing: "0.12em",
-              color: "rgba(0,229,255,0.55)",
-              marginTop: "3px",
-            }}>Your guide through noise. Illuminating what matters.</div>
-          </div>
-        </div>
+      {/* ── Hero: full-width intelligence panel ── */}
+      <div style={{
+        background: "linear-gradient(135deg, rgba(0,229,255,0.015) 0%, transparent 55%)",
+      }}>
+        <AshaIntelPanel />
       </div>
-
-      {/* ── Responsive overrides ── */}
-      <style>{`
-        @media (max-width: 768px) {
-          .asha-hero-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .asha-hero-figure {
-            min-height: 260px !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }

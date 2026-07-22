@@ -54,9 +54,10 @@ function FilterBar({ active, onChange }: { active: FilterTab; onChange: (t: Filt
 // ── Crypto Signal Cards ────────────────────────────────────────────────────────
 function CryptoSignalGrid() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const { data, isLoading } = trpc.crypto.getTopMarkets.useQuery(
     { limit: 12 },
-    { staleTime: 3 * 60 * 1000 }
+    { staleTime: 3 * 60 * 1000, enabled: !!user }
   );
 
   if (isLoading) {
