@@ -3995,3 +3995,18 @@
 - [x] Fix tsx IPC pipe issue (patch temporary-directory.mjs)
 - [x] Link all .ignored packages to node_modules for server startup
 - [x] Server running on port 3000
+
+## SEO Blog Articles — Initial 10 Evergreen Articles
+- [x] Article 1: "What Causes a Market Crash?" — published immediately (2026-07-22)
+- [x] Article 2: "How to Read Credit Spreads Like Professional Investors" — published immediately (2026-07-22)
+- [x] Article 3: "Understanding the Yield Curve and Why It Matters" — scheduled 2026-07-23
+- [x] Article 4: "The Early Warning Signs of a Financial Crisis" — scheduled 2026-07-24
+- [x] Article 5: "What the Federal Reserve Actually Does" — scheduled 2026-07-25
+- [x] Article 6: "Understanding Treasury Yields: A Complete Investor's Guide" — scheduled 2026-07-26
+- [x] Article 7: "What Is Systemic Risk? How Financial Contagion Spreads" — scheduled 2026-07-27
+- [x] Article 8: "How Inflation Affects Financial Markets" — scheduled 2026-07-28
+- [x] Article 9: "The Difference Between Liquidity and Solvency" — scheduled 2026-07-29
+- [x] Article 10: "How Professional Investors Monitor Market Risk" — scheduled 2026-07-30
+- [x] All 10 articles: contentClass=evergreen, published=1, metaTitle, metaDescription, readTimeMinutes set
+- [x] All articles include internal links to /app and /app/seismograph
+- [x] All articles include FAQ sections for featured snippet optimization
