@@ -960,6 +960,7 @@ const TYPE_BG: Record<string, string> = {
 
 function SEOTab() {
   const baseUrl = "https://getfaultline.live";
+  const { data: gscStatus } = trpc.gsc.getStatus.useQuery(undefined, { staleTime: 60_000 });
   const sitemapUrl = `${baseUrl}/sitemap.xml`;
   const robotsUrl  = `${baseUrl}/robots.txt`;
 
@@ -988,7 +989,7 @@ function SEOTab() {
             { label: "Dynamic /crypto/:symbol Routes", status: "ACTIVE",    detail: "Auto-generates metadata for any crypto asset without a static file",  color: "rgba(0,255,136,0.9)" },
             { label: "Sitemap.xml",                    status: "ACTIVE",    detail: sitemapUrl,                                                            color: "rgba(0,255,136,0.9)" },
             { label: "Robots.txt",                     status: "ACTIVE",    detail: robotsUrl,                                                             color: "rgba(0,255,136,0.9)" },
-            { label: "Google Search Console",          status: "NOT CONNECTED", detail: "Connect via Google Search Console → Settings → Ownership verification", color: "rgba(251,191,36,0.9)" },
+            { label: "Google Search Console",          status: gscStatus?.connected ? "CONNECTED" : "NOT CONNECTED", detail: gscStatus?.connected ? `Site: ${gscStatus.siteUrl ?? "connected — no site selected yet"}` : "Go to SEO Optimizer → Search Console tab to connect", color: gscStatus?.connected ? "rgba(0,255,136,0.9)" : "rgba(251,191,36,0.9)" },
           ].map(item => (
             <div key={item.label} style={{
               display: "flex", alignItems: "center", gap: "14px",
