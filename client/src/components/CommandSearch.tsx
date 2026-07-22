@@ -11,6 +11,8 @@ import {
   Eye, AlertTriangle, Gauge, BarChart2, TrendingUp, FileText,
   MessageSquare, ArrowRight, Hash, Zap,
 } from "lucide-react";
+import { CANONICAL_DESTINATIONS, EXPERT_WORKSPACES, PERSISTENT_UTILITIES } from "@shared/routeRegistry";
+import { getRouteIcon } from "@/lib/routeIcons";
 
 // ── Types ─────────────────────────────────────────────────────
 type CommandItem = {
@@ -26,23 +28,33 @@ type CommandItem = {
 
 // ── Page commands ─────────────────────────────────────────────
 const PAGE_COMMANDS: CommandItem[] = [
-  { id: "dashboard",         type: "page", label: "Dashboard",             description: "Main intelligence dashboard",          icon: <LayoutDashboard size={14} />, path: "/app",                              keywords: ["home", "main", "overview"] },
-  { id: "pre-flight",        type: "page", label: "Pre-Flight",            description: "Market awareness checklist",           icon: <Shield size={14} />,           path: "/app/pre-flight",                   keywords: ["preflight", "checklist", "awareness"] },
-  { id: "situation-room",    type: "page", label: "Situation Room",        description: "Real-time market situation",           icon: <Crosshair size={14} />,        path: "/app/situation-room",               keywords: ["situation", "room", "tactical"] },
-  { id: "opportunities",     type: "page", label: "Opportunities",         description: "Ranked trade opportunities",           icon: <Sparkles size={14} />,         path: "/app/opportunities",                keywords: ["opps", "trade", "ranked"] },
-  { id: "symbol-intel",      type: "page", label: "Symbol Intelligence",   description: "Universal symbol analysis",            icon: <Telescope size={14} />,        path: "/app/symbol-intelligence",          keywords: ["symbol", "intel", "universal", "search"] },
-  { id: "day-trade",         type: "page", label: "Day Trade Intelligence",description: "Intraday trading terminal",            icon: <Target size={14} />,           path: "/app/day-trade-intelligence",       keywords: ["day", "trade", "intraday", "dti"] },
-  { id: "signals",           type: "page", label: "Signals",               description: "Stock & market signals",               icon: <Radio size={14} />,            path: "/app/signals",                      keywords: ["stock", "signal"] },
-  { id: "watchlist",         type: "page", label: "Watchlist",             description: "Your tracked symbols",                 icon: <Bell size={14} />,             path: "/app/watchlist",                    keywords: ["watch", "tracked"] },
-  { id: "portfolio",         type: "page", label: "Portfolio",             description: "Portfolio tracker",                    icon: <Briefcase size={14} />,        path: "/app/portfolio",                    keywords: ["holdings", "positions"] },
-  { id: "crypto",            type: "page", label: "Crypto Intelligence",   description: "Crypto market analysis",               icon: <Bitcoin size={14} />,          path: "/app/crypto-search",                keywords: ["bitcoin", "ethereum", "crypto"] },
-  { id: "alt-rotation",      type: "page", label: "Sector Rotation",       description: "Sector rotation analysis",             icon: <RotateCcw size={14} />,        path: "/app/alt-rotation",                 keywords: ["sector", "rotation", "alt"] },
-  { id: "social-intel",      type: "page", label: "Social Intelligence",   description: "Social sentiment analysis",            icon: <MessageSquare size={14} />,    path: "/app/social-intelligence",          keywords: ["social", "sentiment", "twitter"] },
-  { id: "insider",           type: "page", label: "Insider Intelligence",  description: "Insider trading activity",             icon: <Eye size={14} />,              path: "/app/insider-intelligence",         keywords: ["insider", "trading", "sec"] },
-  { id: "alerts",            type: "page", label: "Alerts",                description: "Price & condition alerts",             icon: <AlertTriangle size={14} />,    path: "/app/alerts",                       keywords: ["alert", "notification"] },
-  { id: "pressure",          type: "page", label: "Market Stress",         description: "Market stress indicators",             icon: <Gauge size={14} />,            path: "/app/pressure",                     keywords: ["stress", "pressure", "vix"] },
-  { id: "heatmap",           type: "page", label: "Stock Heatmap",         description: "Visual sector heatmap",                icon: <BarChart2 size={14} />,        path: "/app/stock-heatmap",                keywords: ["heatmap", "sector", "visual"] },
-  { id: "report",            type: "page", label: "Daily Briefing",        description: "Daily market intelligence report",     icon: <FileText size={14} />,         path: "/app/report",                       keywords: ["daily", "briefing", "report"] },
+  ...CANONICAL_DESTINATIONS.map(destination => ({
+    id: destination.id,
+    type: "page" as const,
+    label: destination.label,
+    description: destination.question,
+    icon: React.createElement(getRouteIcon(destination.icon), { size: 14 }),
+    path: destination.path,
+    keywords: [destination.id, destination.shortLabel.toLowerCase(), "market question"],
+  })),
+  ...PERSISTENT_UTILITIES.flatMap(utility => utility.path ? [{
+    id: utility.id,
+    type: "page" as const,
+    label: utility.label,
+    description: utility.description,
+    icon: React.createElement(getRouteIcon(utility.icon), { size: 14 }),
+    path: utility.path,
+    keywords: [utility.id, "utility"],
+  }] : []),
+  ...EXPERT_WORKSPACES.map(workspace => ({
+    id: workspace.id,
+    type: "page" as const,
+    label: workspace.label,
+    description: workspace.description,
+    icon: React.createElement(getRouteIcon(workspace.icon), { size: 14 }),
+    path: workspace.path,
+    keywords: [workspace.id, "expert workspace"],
+  })),
 ];
 
 // ── Quick stock symbols ───────────────────────────────────────
