@@ -170,6 +170,7 @@ const TodaysStory = lazy(() => import("./pages/TodaysStory"));
 const SmartDiscovery = lazy(() => import("./pages/SmartDiscovery"));
 const DecisionLedger = lazy(() => import("./pages/DecisionLedger"));
 const SeismographIntelligence = lazy(() => import("./pages/SeismographIntelligence"));
+const SeismographicDash = lazy(() => import("./pages/SeismographicDash"));
 const IntelligenceHub   = lazy(() => import("./pages/IntelligenceHub"));
 const EngineeringDiagnostics = lazy(() => import("./pages/admin/EngineeringDiagnostics"));
 const ConversationIntelligence = lazy(() => import("./pages/admin/ConversationIntelligence"));
@@ -684,7 +685,8 @@ function Router() {
               <Route path="/app/diagnostic" component={DiagnosticAI} />
               <Route path="/app/portfolio" component={Portfolio} />
               <Route path="/app/aftershock" component={AftershockEngine} />
-              <Route path="/app/seismograph" component={SeismographIntelligence} />
+              <Route path="/app/seismograph" component={SeismographicDash} />
+              <Route path="/app/seismograph-legacy" component={SeismographIntelligence} />
               <Route path="/app/crypto-signals"><Redirect to="/app/crypto" /></Route>
               <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />

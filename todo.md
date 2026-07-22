@@ -3985,3 +3985,13 @@
 - [ ] Verify all existing routes remain accessible through new nav structure
 - [ ] TypeScript check: 0 errors
 - [ ] Save checkpoint
+
+## SeismographicDash Unified Home Page
+- [x] Merge Dashboard.tsx + SeismographIntelligence.tsx into single SeismographicDash.tsx (81KB)
+- [x] Update App.tsx: /app/seismograph → SeismographicDash, /app/seismograph-legacy → SeismographIntelligence
+- [x] LeftNavDrawer "Today" entry already points to /app/seismograph
+- [x] Fix pnpm store filesystem corruption (bind mount)
+- [x] Fix pnpm .tools filesystem corruption (bind mount)
+- [x] Fix tsx IPC pipe issue (patch temporary-directory.mjs)
+- [x] Link all .ignored packages to node_modules for server startup
+- [x] Server running on port 3000
