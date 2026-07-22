@@ -27,6 +27,8 @@ import {
 import { useDrawer } from "@/contexts/DrawerContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { CANONICAL_DESTINATIONS, EXPERT_WORKSPACES, PERSISTENT_UTILITIES } from "@shared/routeRegistry";
+import { getRouteIcon } from "@/lib/routeIcons";
 
 // ── Navigation structure per spec ────────────────────────────
 // PRIMARY: most-used destinations
@@ -49,64 +51,39 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    label: "PRIMARY",
-    items: [
-      { id: "seismograph",    label: "Today",                  icon: Activity,      path: "/app/seismograph" },
-      { id: "signals",        label: "Signals",                icon: Radio,         path: "/app/signals" },
-      { id: "portfolio",      label: "Portfolio",              icon: Briefcase,     path: "/app/portfolio" },
-      { id: "discover",       label: "Ask ASHA",               icon: SearchIcon,    path: "/app/discover" },
-    ],
+    label: "MARKET QUESTIONS",
+    items: CANONICAL_DESTINATIONS.map(destination => ({
+      id: destination.id,
+      label: destination.label,
+      icon: getRouteIcon(destination.icon),
+      path: destination.path,
+    })),
   },
   {
-    label: "MARKET INTELLIGENCE",
-    items: [
-      { id: "pressure",       label: "Pressure Index",         icon: Gauge,         path: "/app/pressure" },
-      { id: "market-intelligence", label: "Market Regime",     icon: BarChart3,     path: "/app/market-intelligence" },
-      { id: "decision-engine", label: "Situation Room",        icon: Command,       path: "/app/decision-engine" },
-      { id: "opportunities",  label: "Opportunities",          icon: Sparkles,      path: "/app/opportunities" },
-      { id: "symbol-intel",   label: "Symbol Intelligence",    icon: Telescope,     path: "/app/symbol-intelligence" },
-      { id: "analogs",        label: "Historical Analogs",     icon: Clock,         path: "/app/analogs" },
-      { id: "intelligence-hub", label: "Intelligence Hub",     icon: Brain,         path: "/app/intelligence-hub" },
-      { id: "insider-intel",  label: "Insider Intelligence",   icon: TrendingDown,  path: "/app/insider-intelligence" },
-      { id: "social-intel",   label: "Social Intelligence",    icon: Users,         path: "/app/social-intelligence" },
-      { id: "crypto",         label: "Crypto Hub",             icon: Bitcoin,       path: "/app/crypto" },
-      { id: "alt-rotation",   label: "Sector Rotation",        icon: RotateCcw,     path: "/app/alt-rotation" },
-      { id: "market-movers",  label: "Market Movers",           icon: TrendingUp,    path: "/app/market-movers" },
-      { id: "day-trade",      label: "Day Trade Intelligence",  icon: Flame,         path: "/app/day-trade-intelligence" },
-      { id: "pre-flight",     label: "Pre-Flight Check",        icon: Plane,         path: "/app/pre-flight" },
-      { id: "crypto-regime",  label: "Crypto Regime",           icon: Bitcoin,       path: "/app/crypto-regime" },
-      { id: "stock-heatmap",  label: "Stock Heatmap",           icon: Grid3X3,       path: "/app/stock-heatmap" },
-      { id: "aftershock",     label: "Aftershock",              icon: AlertTriangle, path: "/app/aftershock" },
-      { id: "analogs-hist",   label: "Historical Analogs",      icon: Clock,         path: "/app/analogs" },
-      { id: "todays-story",   label: "Today's Story",           icon: Newspaper,     path: "/app/todays-story" },
-    ],
+    label: "UTILITIES",
+    items: PERSISTENT_UTILITIES.flatMap(utility => utility.path ? [{
+      id: utility.id,
+      label: utility.label,
+      icon: getRouteIcon(utility.icon),
+      path: utility.path,
+    }] : []),
   },
   {
-    label: "PERSONAL",
-    items: [
-      { id: "watchlist",      label: "Watchlist",              icon: Bell,          path: "/app/watchlist" },
-      { id: "alerts",         label: "Alerts",                 icon: BellRing,      path: "/app/alerts" },
-      { id: "report",         label: "ASHA Intelligence",      icon: FileText,      path: "/app/report" },
-      { id: "decision-ledger", label: "Decision Ledger",       icon: JournalIcon,   path: "/app/decision-ledger" },
-      { id: "trade-journal",  label: "Trade Journal",          icon: BookOpen,      path: "/app/trade-journal" },
-      { id: "diagnostic",     label: "Diagnostic AI",          icon: Layers,        path: "/app/diagnostic" },
-      { id: "signal-outlook", label: "Signal Outlook",         icon: Eye,           path: "/app/signal-outlook" },
-      { id: "sim-portfolio",  label: "Sim Portfolio",           icon: PieChart,      path: "/app/sim-portfolio" },
-      { id: "simulate",       label: "Scenario Simulator",      icon: Beaker,        path: "/app/simulate" },
-      { id: "reading-history", label: "Reading History",        icon: BookMarked,    path: "/app/reading-history" },
-      { id: "validation-lab", label: "Validation Lab",          icon: FlaskConical,  path: "/app/validation-lab" },
-    ],
+    label: "EXPERT WORKSPACES",
+    items: EXPERT_WORKSPACES.map(workspace => ({
+      id: workspace.id,
+      label: workspace.label,
+      icon: getRouteIcon(workspace.icon),
+      path: workspace.path,
+    })),
   },
   {
-    label: "SYSTEM",
+    label: "RESOURCES",
     items: [
-      { id: "guide",          label: "Guide",                  icon: HelpCircle,    path: "/app/guide" },
-      { id: "account",        label: "Account",                icon: User,          path: "/app/account" },
-      { id: "roadmap",        label: "Coming Soon",            icon: Sparkles,      path: "/app/roadmap" },
-      { id: "blog",           label: "Blog",                   icon: Newspaper,     path: "/blog" },
-      { id: "glossary",       label: "Glossary",                icon: GraduationCap, path: "/app/glossary" },
-      { id: "track-record",   label: "Track Record",            icon: Trophy,        path: "/app/track-record" },
-      { id: "methodology",    label: "Methodology",             icon: Scale,         path: "/methodology" },
+      { id: "blog", label: "Blog", icon: Newspaper, path: "/blog" },
+      { id: "glossary", label: "Glossary", icon: GraduationCap, path: "/app/glossary" },
+      { id: "track-record", label: "Track Record", icon: Trophy, path: "/app/track-record" },
+      { id: "methodology", label: "Methodology", icon: Scale, path: "/methodology" },
     ],
   },
 ];
@@ -191,7 +168,7 @@ export default function LeftNavDrawer({ breachCount = 0 }: LeftNavDrawerProps) {
   }, [leftOpen, closeLeft]);
 
   const isActive = useCallback((path: string) => {
-    if (path === "/app/seismograph") return location === "/app" || location === "/app/seismograph";
+    if (path === "/app/now") return location === "/app" || location.startsWith("/app/now");
     return location.startsWith(path);
   }, [location]);
 
