@@ -3,7 +3,7 @@
  * One-click flow: Enter URL → Analyze → Fix Everything
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -12,6 +12,7 @@ import {
   ChevronDown, ChevronUp, Code2, ArrowRight, CheckCheck,
   Flame, Tag, Hash, Eye, Monitor, Smartphone, Link2,
   FileText, BookOpen, BarChart2, TrendingUp, ExternalLink,
+  BarChart3, MousePointerClick, TrendingDown, Activity, Link, Unlink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -306,9 +307,230 @@ function MetaGenerator() {
   );
 }
 
+// ── Google Search Console Panel ─────────────────────────────
+
+function GscPanel() {
+  const utils = trpc.useUtils();
+  const { data: status, isLoading: statusLoading } = trpc.gsc.getStatus.useQuery();
+
+  // Date range: last 28 days
+  const endDate   = new Date().toISOString().slice(0, 10);
+  const startDate = new Date(Date.now() - 28 * 86400_000).toISOString().slice(0, 10);
+
+  const { data: summary, isLoading: summaryLoading } = trpc.gsc.getSummary.useQuery(
+    { startDate, endDate },
+    { enabled: !!status?.connected }
+  );
+  const { data: topQueries, isLoading: queriesLoading } = trpc.gsc.getPerformance.useQuery(
+    { startDate, endDate, dimensions: ["query"], rowLimit: 20 },
+    { enabled: !!status?.connected }
+  );
+  const { data: topPages, isLoading: pagesLoading } = trpc.gsc.getPerformance.useQuery(
+    { startDate, endDate, dimensions: ["page"], rowLimit: 20 },
+    { enabled: !!status?.connected }
+  );
+
+  const disconnect = trpc.gsc.disconnect.useMutation({
+    onSuccess: () => { utils.gsc.getStatus.invalidate(); toast.success("Disconnected from Google Search Console"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // OAuth connect — get auth URL then redirect
+  const getAuthUrl = trpc.gsc.getAuthUrl.useQuery(
+    { redirectUri: typeof window !== "undefined" ? window.location.origin + "/app/seo-optimizer" : "" },
+    { enabled: false }
+  );
+
+  const handleConnect = useCallback(async () => {
+    const res = await getAuthUrl.refetch();
+    if (res.data?.url) window.location.href = res.data.url;
+    else toast.error("Could not generate Google auth URL. Check that GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set in Settings → Secrets.");
+  }, [getAuthUrl]);
+
+  // Handle OAuth callback code in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    if (!code || status?.connected) return;
+    // Exchange code for tokens
+    fetch("/api/trpc/gsc.handleCallback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ json: { code, redirectUri: window.location.origin + "/app/seo-optimizer" } }),
+    }).then(r => r.json()).then((res) => {
+      if (res?.result?.data?.json?.success) {
+        toast.success("Google Search Console connected!");
+        utils.gsc.getStatus.invalidate();
+        // Remove code from URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete("code");
+        url.searchParams.delete("scope");
+        url.searchParams.delete("state");
+        window.history.replaceState({}, "", url.toString());
+      } else {
+        toast.error("Failed to connect Google Search Console");
+      }
+    }).catch(() => toast.error("Failed to connect Google Search Console"));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status?.connected]);
+
+  if (statusLoading) return (
+    <div className="border border-white/10 rounded-xl bg-white/[0.02] p-8 flex items-center justify-center">
+      <RefreshCw className="w-5 h-5 text-white/40 animate-spin" />
+    </div>
+  );
+
+  if (!status?.connected) return (
+    <div className="border border-white/10 rounded-xl bg-white/[0.02] p-8">
+      <div className="flex items-center gap-3 mb-6">
+        <BarChart3 className="w-5 h-5 text-blue-400" />
+        <h2 className="text-sm font-bold tracking-wider uppercase text-white/80">Google Search Console</h2>
+      </div>
+      <div className="text-center py-10">
+        <Globe className="w-12 h-12 text-white/20 mx-auto mb-4" />
+        <p className="text-white/60 text-sm mb-2">Connect Google Search Console to see real clicks, impressions, CTR, and keyword rankings for getfaultline.live.</p>
+        <p className="text-white/40 text-xs mb-6">Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Settings → Secrets.</p>
+        <Button onClick={handleConnect} className="bg-blue-600 hover:bg-blue-500 text-white">
+          <Link className="w-4 h-4 mr-2" /> Connect Google Search Console
+        </Button>
+      </div>
+    </div>
+  );
+
+  const fmt = (n: number) => n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n);
+  const pct = (n: number) => (n * 100).toFixed(1) + "%";
+  const pos = (n: number) => n.toFixed(1);
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="border border-white/10 rounded-xl bg-white/[0.02] p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="w-5 h-5 text-blue-400" />
+            <div>
+              <h2 className="text-sm font-bold tracking-wider uppercase text-white/80">Google Search Console</h2>
+              <p className="text-xs text-white/40 mt-0.5">{status.siteUrl ?? "Connected"} · Last 28 days</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => disconnect.mutate()} disabled={disconnect.isPending}
+            className="text-xs border-white/10 text-white/50 hover:text-red-400 hover:border-red-500/30">
+            <Unlink className="w-3 h-3 mr-1" /> Disconnect
+          </Button>
+        </div>
+      </div>
+
+      {/* Summary metrics */}
+      {summaryLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="border border-white/10 rounded-xl bg-white/[0.02] p-4 h-20 animate-pulse" />
+          ))}
+        </div>
+      ) : summary ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Total Clicks",       value: fmt(summary.totalClicks),       icon: MousePointerClick, color: "text-blue-400" },
+            { label: "Total Impressions",  value: fmt(summary.totalImpressions),  icon: Eye,               color: "text-purple-400" },
+            { label: "Avg CTR",            value: pct(summary.avgCtr),            icon: TrendingUp,        color: "text-emerald-400" },
+            { label: "Avg Position",       value: pos(summary.avgPosition),       icon: Activity,          color: "text-amber-400" },
+          ].map(({ label, value, icon: Icon, color }) => (
+            <div key={label} className="border border-white/10 rounded-xl bg-white/[0.02] p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon className={`w-4 h-4 ${color}`} />
+                <span className="text-xs text-white/50">{label}</span>
+              </div>
+              <div className="text-xl font-bold text-white">{value}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Top Queries */}
+      <div className="border border-white/10 rounded-xl bg-white/[0.02] p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Search className="w-4 h-4 text-blue-400" />
+          <h3 className="text-sm font-bold tracking-wider uppercase text-white/70">Top Queries</h3>
+        </div>
+        {queriesLoading ? <div className="h-40 animate-pulse bg-white/5 rounded-lg" /> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-white/5">
+                  <th className="text-left py-2 pr-4 text-white/40 font-medium">Query</th>
+                  <th className="text-right py-2 px-3 text-white/40 font-medium">Clicks</th>
+                  <th className="text-right py-2 px-3 text-white/40 font-medium">Impressions</th>
+                  <th className="text-right py-2 px-3 text-white/40 font-medium">CTR</th>
+                  <th className="text-right py-2 pl-3 text-white/40 font-medium">Position</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(topQueries?.rows ?? []).map((row, i) => (
+                  <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
+                    <td className="py-2 pr-4 text-white/80 max-w-[200px] truncate">{row.keys[0]}</td>
+                    <td className="text-right py-2 px-3 text-blue-300">{fmt(row.clicks)}</td>
+                    <td className="text-right py-2 px-3 text-purple-300">{fmt(row.impressions)}</td>
+                    <td className="text-right py-2 px-3 text-emerald-300">{pct(row.ctr)}</td>
+                    <td className="text-right py-2 pl-3 text-amber-300">{pos(row.position)}</td>
+                  </tr>
+                ))}
+                {(topQueries?.rows ?? []).length === 0 && (
+                  <tr><td colSpan={5} className="py-6 text-center text-white/30">No query data available for this period.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Top Pages */}
+      <div className="border border-white/10 rounded-xl bg-white/[0.02] p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <FileText className="w-4 h-4 text-purple-400" />
+          <h3 className="text-sm font-bold tracking-wider uppercase text-white/70">Top Pages</h3>
+        </div>
+        {pagesLoading ? <div className="h-40 animate-pulse bg-white/5 rounded-lg" /> : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-white/5">
+                  <th className="text-left py-2 pr-4 text-white/40 font-medium">Page</th>
+                  <th className="text-right py-2 px-3 text-white/40 font-medium">Clicks</th>
+                  <th className="text-right py-2 px-3 text-white/40 font-medium">Impressions</th>
+                  <th className="text-right py-2 px-3 text-white/40 font-medium">CTR</th>
+                  <th className="text-right py-2 pl-3 text-white/40 font-medium">Position</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(topPages?.rows ?? []).map((row, i) => (
+                  <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
+                    <td className="py-2 pr-4 text-white/80 max-w-[220px] truncate">
+                      <a href={row.keys[0]} target="_blank" rel="noopener noreferrer"
+                        className="hover:text-blue-400 transition-colors">
+                        {row.keys[0]?.replace(/^https?:\/\/[^/]+/, "") || "/"}
+                      </a>
+                    </td>
+                    <td className="text-right py-2 px-3 text-blue-300">{fmt(row.clicks)}</td>
+                    <td className="text-right py-2 px-3 text-purple-300">{fmt(row.impressions)}</td>
+                    <td className="text-right py-2 px-3 text-emerald-300">{pct(row.ctr)}</td>
+                    <td className="text-right py-2 pl-3 text-amber-300">{pos(row.position)}</td>
+                  </tr>
+                ))}
+                {(topPages?.rows ?? []).length === 0 && (
+                  <tr><td colSpan={5} className="py-6 text-center text-white/30">No page data available for this period.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────
 
-type ActiveSection = "overview" | "checks" | "keywords" | "serp" | "technical" | "ai" | "fixes" | "meta-gen";
+type ActiveSection = "overview" | "checks" | "keywords" | "serp" | "technical" | "ai" | "fixes" | "meta-gen" | "gsc";
 
 export default function SeoOptimizer() {
   useSEO(PAGE_SEO.seoOptimizer);
@@ -402,6 +624,7 @@ export default function SeoOptimizer() {
     { id: "ai", label: "AI Tips", icon: Sparkles },
     { id: "fixes", label: "Fixes", icon: Wrench },
     { id: "meta-gen", label: "Meta Gen", icon: TrendingUp },
+    { id: "gsc",      label: "Search Console", icon: BarChart3 },
   ];
 
   return (
@@ -1155,6 +1378,9 @@ export default function SeoOptimizer() {
                 <MetaGenerator />
               </div>
             )}
+
+            {/* ── GOOGLE SEARCH CONSOLE ── */}
+            {activeSection === "gsc" && <GscPanel />}
 
           </div>
         )}

@@ -20,6 +20,9 @@ import {
   History, User, Settings, HelpCircle, Newspaper,
   BarChart2, Zap, Trophy, FlaskConical, BrainCircuit,
   Clock, Layers, Map, AlertTriangle,
+  Flame, Plane, Grid3X3, Beaker, BookMarked, FlaskRound,
+  LineChart, Cpu, MessageSquare, Send, PieChart,
+  Library, GraduationCap, Scale, Globe,
 } from "lucide-react";
 import { useDrawer } from "@/contexts/DrawerContext";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -68,6 +71,14 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "social-intel",   label: "Social Intelligence",    icon: Users,         path: "/app/social-intelligence" },
       { id: "crypto",         label: "Crypto Hub",             icon: Bitcoin,       path: "/app/crypto" },
       { id: "alt-rotation",   label: "Sector Rotation",        icon: RotateCcw,     path: "/app/alt-rotation" },
+      { id: "market-movers",  label: "Market Movers",           icon: TrendingUp,    path: "/app/market-movers" },
+      { id: "day-trade",      label: "Day Trade Intelligence",  icon: Flame,         path: "/app/day-trade-intelligence" },
+      { id: "pre-flight",     label: "Pre-Flight Check",        icon: Plane,         path: "/app/pre-flight" },
+      { id: "crypto-regime",  label: "Crypto Regime",           icon: Bitcoin,       path: "/app/crypto-regime" },
+      { id: "stock-heatmap",  label: "Stock Heatmap",           icon: Grid3X3,       path: "/app/stock-heatmap" },
+      { id: "aftershock",     label: "Aftershock",              icon: AlertTriangle, path: "/app/aftershock" },
+      { id: "analogs-hist",   label: "Historical Analogs",      icon: Clock,         path: "/app/analogs" },
+      { id: "todays-story",   label: "Today's Story",           icon: Newspaper,     path: "/app/todays-story" },
     ],
   },
   {
@@ -80,6 +91,10 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "trade-journal",  label: "Trade Journal",          icon: BookOpen,      path: "/app/trade-journal" },
       { id: "diagnostic",     label: "Diagnostic AI",          icon: Layers,        path: "/app/diagnostic" },
       { id: "signal-outlook", label: "Signal Outlook",         icon: Eye,           path: "/app/signal-outlook" },
+      { id: "sim-portfolio",  label: "Sim Portfolio",           icon: PieChart,      path: "/app/sim-portfolio" },
+      { id: "simulate",       label: "Scenario Simulator",      icon: Beaker,        path: "/app/simulate" },
+      { id: "reading-history", label: "Reading History",        icon: BookMarked,    path: "/app/reading-history" },
+      { id: "validation-lab", label: "Validation Lab",          icon: FlaskConical,  path: "/app/validation-lab" },
     ],
   },
   {
@@ -89,6 +104,9 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "account",        label: "Account",                icon: User,          path: "/app/account" },
       { id: "roadmap",        label: "Coming Soon",            icon: Sparkles,      path: "/app/roadmap" },
       { id: "blog",           label: "Blog",                   icon: Newspaper,     path: "/blog" },
+      { id: "glossary",       label: "Glossary",                icon: GraduationCap, path: "/app/glossary" },
+      { id: "track-record",   label: "Track Record",            icon: Trophy,        path: "/app/track-record" },
+      { id: "methodology",    label: "Methodology",             icon: Scale,         path: "/methodology" },
     ],
   },
 ];
@@ -98,8 +116,15 @@ const ADMIN_ITEMS: NavItem[] = [
   { id: "analytics",        label: "Site Analytics",          icon: BarChart2,     path: "/app/analytics" },
   { id: "admin-blog",       label: "Blog Manager",            icon: Newspaper,     path: "/app/admin/blog" },
   { id: "x-posts",          label: "X Posts",                 icon: Zap,           path: "/app/x-posts" },
+  { id: "x-post-queue",     label: "X Post Queue",            icon: Send,          path: "/app/x-post-queue" },
   { id: "engineering",      label: "Engineering Diagnostics", icon: FlaskConical,  path: "/app/admin/engineering" },
   { id: "chat-inbox",       label: "ASHA Intelligence",       icon: BrainCircuit,  path: "/app/asha-intelligence" },
+  { id: "seo-optimizer",    label: "SEO Optimizer",           icon: Globe,         path: "/app/seo-optimizer" },
+  { id: "admin-users",      label: "User Management",         icon: Users,         path: "/app/admin/users" },
+  { id: "admin-publishing", label: "Publishing",              icon: Library,       path: "/app/admin/publishing" },
+  { id: "conv-intel",       label: "Conversation Intel",      icon: MessageSquare, path: "/app/admin/conversation-intelligence" },
+  { id: "fmos-health",      label: "FMOS Health",             icon: Cpu,           path: "/app/fmos-health" },
+  { id: "intel-validation", label: "Intel Validation",        icon: LineChart,     path: "/app/intelligence-validation" },
 ];
 
 // ── Searchable flat list ──────────────────────────────────────

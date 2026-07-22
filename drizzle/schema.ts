@@ -1803,3 +1803,19 @@ export const promoRedemptions = mysqlTable("promoRedemptions", {
 }));
 export type PromoRedemption = typeof promoRedemptions.$inferSelect;
 export type InsertPromoRedemption = typeof promoRedemptions.$inferInsert;
+
+// ── Google Search Console OAuth tokens ───────────────────────────────────────
+export const gscTokens = mysqlTable("gsc_tokens", {
+  id:           int("id").autoincrement().primaryKey(),
+  userId:       int("userId").notNull(),
+  accessToken:  text("accessToken").notNull(),
+  refreshToken: text("refreshToken"),
+  expiryDate:   bigint("expiryDate", { mode: "number" }),
+  siteUrl:      varchar("siteUrl", { length: 512 }),
+  createdAt:    timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:    timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  userIdx: uniqueIndex("gscTokens_userId_uniq").on(t.userId),
+}));
+export type GscToken = typeof gscTokens.$inferSelect;
+export type InsertGscToken = typeof gscTokens.$inferInsert;
