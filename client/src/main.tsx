@@ -91,18 +91,52 @@ const queryClient = new QueryClient({
   },
 });
 
+// Track auth state at module level so the redirect handler can check it.
+// Set to true once auth.me resolves with a user, false once it resolves without one.
+// Starts as null (loading) to suppress redirects during the initial auth check.
+let authResolved: boolean | null = null;
+let authHasUser: boolean = false;
+
+// Called by the auth.me query observer (set up after queryClient is created)
+export function setAuthResolved(hasUser: boolean) {
+  authResolved = true;
+  authHasUser = hasUser;
+}
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
 
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
-
   if (!isUnauthorized) return;
+
+  // Only redirect if auth.me has already resolved and confirmed no user.
+  // If auth.me is still loading (authResolved === null), this is a race-condition
+  // error from a component that fired a protected query before the session was
+  // confirmed. Suppress the redirect — the enabled: !!user guard should prevent
+  // this, but this is a safety net for any remaining unguarded queries.
+  if (authResolved === null) return; // auth still loading — suppress redirect
+  if (authHasUser) return; // user is logged in — stale error, suppress redirect
 
   window.location.href = getLoginUrl();
 };
 
 queryClient.getQueryCache().subscribe(event => {
+  // Track auth.me resolution so the redirect handler knows whether auth is loaded.
+  // tRPC v11 query keys are arrays; auth.me key contains the path ["auth","me"].
+  if (event.type === "updated") {
+    const queryKey = event.query.queryKey;
+    const isAuthMe = Array.isArray(queryKey) && queryKey.some(
+      k => Array.isArray(k) && k[0] === 'auth' && k[1] === 'me'
+    );
+    if (isAuthMe) {
+      if (event.action.type === "success") {
+        setAuthResolved(Boolean(event.action.data));
+      } else if (event.action.type === "error") {
+        setAuthResolved(false);
+      }
+    }
+  }
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);

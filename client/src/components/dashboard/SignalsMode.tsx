@@ -219,8 +219,10 @@ function StocksSection() {
 // ── Rotation Tracker ───────────────────────────────────────────────────────────
 function RotationTracker() {
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const { data, isLoading } = trpc.altRotation.getData.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
+    enabled: !!user,
   });
 
   if (isLoading) {
