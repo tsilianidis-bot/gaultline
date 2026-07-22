@@ -119,59 +119,86 @@ function LiveSeismographWave({ sparkline, scoreColor, currentScore }: WaveformPr
     // Compute y positions
     const ys = pts.map((p) => H - Math.max(4, (p.score / 100) * (H - 8)) - 4);
 
-    // Add live tremor noise to the last 8 points
+    // Add live tremor noise to the last 8 points + slow data-shift scroll
     const t = phaseRef.current;
+    // Slow horizontal data-shift: offset x positions to simulate advancing data
+    const shiftFrac = rm ? 0 : ((t * 0.3) % (W / (n - 1))) / W; // sub-pixel shift per frame
     const noisedYs = ys.map((y, i) => {
       if (i < n - 8) return y;
       const age = n - 1 - i; // 0 = newest
-      const amplitude = rm ? 0 : (2 - age * 0.22) * (currentScore / 100 + 0.3);
-      return y + Math.sin(t * 0.08 + i * 1.7) * amplitude;
+      const amplitude = rm ? 0 : (2.5 - age * 0.28) * (currentScore / 100 + 0.35);
+      return y + Math.sin(t * 0.07 + i * 1.5) * amplitude + Math.sin(t * 0.13 + i * 0.9) * amplitude * 0.4;
     });
+
+    // Draw outer halo (very wide, very low opacity — ambient glow)
+    if (!rm) {
+      ctx.beginPath();
+      ctx.strokeStyle = scoreColor + "18";
+      ctx.lineWidth = 8;
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      const xStep0 = W / (n - 1);
+      noisedYs.forEach((y, i) => {
+        const x = i * xStep0 - shiftFrac * W;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+    }
 
     // Draw glow line (wide, low opacity)
     ctx.beginPath();
-    ctx.strokeStyle = scoreColor + "30";
+    ctx.strokeStyle = scoreColor + "35";
     ctx.lineWidth = 3;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     const xStep = W / (n - 1);
     noisedYs.forEach((y, i) => {
-      const x = i * xStep;
+      const x = i * xStep - shiftFrac * W;
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
     // Draw main line
     ctx.beginPath();
-    ctx.strokeStyle = scoreColor + "cc";
+    ctx.strokeStyle = scoreColor + "d0";
     ctx.lineWidth = 1.5;
     noisedYs.forEach((y, i) => {
-      const x = i * xStep;
+      const x = i * xStep - shiftFrac * W;
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
 
     // Draw scan cursor (vertical line at the right edge, sweeping slightly)
     if (!rm) {
-      const cursorX = W - 2 + Math.sin(t * 0.04) * 1.5;
+      const cursorX = W - 2 + Math.sin(t * 0.035) * 2;
       const cursorY = noisedYs[n - 1];
+      // Cursor vertical line
       ctx.beginPath();
-      ctx.strokeStyle = scoreColor + "80";
+      ctx.strokeStyle = scoreColor + "70";
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 4]);
       ctx.moveTo(cursorX, 0);
       ctx.lineTo(cursorX, H);
       ctx.stroke();
       ctx.setLineDash([]);
+      // Ripple ring (expanding)
+      const rippleR = ((t * 0.6) % 14) + 3;
+      const rippleAlpha = Math.max(0, 1 - rippleR / 17);
+      ctx.beginPath();
+      ctx.arc(cursorX, cursorY, rippleR, 0, Math.PI * 2);
+      ctx.strokeStyle = scoreColor + Math.round(rippleAlpha * 80).toString(16).padStart(2, '0');
+      ctx.lineWidth = 1;
+      ctx.stroke();
       // Cursor dot
       ctx.beginPath();
       ctx.arc(cursorX, cursorY, 3, 0, Math.PI * 2);
       ctx.fillStyle = scoreColor;
       ctx.fill();
       // Glow dot
+      const glowPulse = 0.5 + Math.sin(t * 0.12) * 0.5;
       ctx.beginPath();
-      ctx.arc(cursorX, cursorY, 6, 0, Math.PI * 2);
-      ctx.fillStyle = scoreColor + "25";
+      ctx.arc(cursorX, cursorY, 6 + glowPulse * 2, 0, Math.PI * 2);
+      ctx.fillStyle = scoreColor + Math.round(glowPulse * 40).toString(16).padStart(2, '0');
       ctx.fill();
     }
 
@@ -219,8 +246,13 @@ function AnimProbBar({ label, value, color, width = "100px", revealDelay = 0 }: 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "7px" }}>
       <div style={{ ...mono, width, fontSize: "9px", color: "rgba(6,182,212,0.55)", letterSpacing: "0.06em", flexShrink: 0 }}>{label}</div>
-      <div style={{ flex: 1, height: "4px", background: "rgba(6,182,212,0.08)", borderRadius: "2px", overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${Math.min(100, displayed)}%`, background: color, borderRadius: "2px", transition: "width 0.05s linear" }} />
+      <div style={{ flex: 1, height: "4px", background: "rgba(6,182,212,0.08)", borderRadius: "2px", overflow: "hidden", position: "relative" }}>
+        <div style={{ height: "100%", width: `${Math.min(100, displayed)}%`, background: color, borderRadius: "2px", transition: "width 0.05s linear", position: "relative", overflow: "hidden" }}>
+          {/* Shimmer sweep */}
+          {!prefersReducedMotion() && (
+            <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.28) 50%, transparent 100%)`, animation: `shimmer-flow ${2.8 + revealDelay * 0.001}s ease-in-out infinite`, animationDelay: `${revealDelay * 0.5}ms` }} />
+          )}
+        </div>
       </div>
       <div style={{ ...mono, width: "30px", textAlign: "right", fontSize: "10px", color, fontWeight: 700, flexShrink: 0 }}>{displayed}%</div>
     </div>
@@ -364,13 +396,20 @@ export default function SeismographIntelligence() {
   useRegisterAshaContext(ashaCtx);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px", opacity: loadPhase >= 1 ? 1 : 0, transition: "opacity 0.4s ease-out" }}>
+    <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px", opacity: loadPhase >= 1 ? 1 : 0, transition: "opacity 0.4s ease-out", position: "relative", overflow: "hidden" }}>
+      {/* Ambient page scanline — continuous top-to-bottom sweep */}
+      {!prefersReducedMotion() && (
+        <div aria-hidden="true" style={{ position: "absolute", left: 0, right: 0, height: "2px", background: "linear-gradient(90deg, transparent 0%, rgba(6,182,212,0.12) 30%, rgba(6,182,212,0.18) 50%, rgba(6,182,212,0.12) 70%, transparent 100%)", pointerEvents: "none", zIndex: 0, animation: "page-scanline 8s linear infinite", animationDelay: "1s" }} />
+      )}
 
       {/* ── STICKY HEADER ── */}
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "rgba(0,0,0,0.95)", borderBottom: "1px solid rgba(6,182,212,0.12)", backdropFilter: "blur(12px)" }}>
         <div style={{ maxWidth: "720px", margin: "0 auto", padding: "10px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px #22c55e", animation: "livepulse 2s infinite" }} />
+            <div style={{ position: "relative", width: "7px", height: "7px", flexShrink: 0 }}>
+              <div style={{ position: "absolute", inset: "-4px", borderRadius: "50%", background: "#22c55e", opacity: 0, animation: "live-ripple 2.2s ease-out infinite" }} />
+              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px #22c55e, 0 0 16px #22c55e40", animation: "livepulse 2s infinite", position: "relative", zIndex: 1 }} />
+            </div>
             <span style={{ ...mono, fontSize: "10px", letterSpacing: "0.14em", fontWeight: 700, color: "#06b6d4" }}>FAULTLINE SEISMOGRAPH</span>
             <span style={{ ...mono, fontSize: "9px", color: "rgba(6,182,212,0.35)", letterSpacing: "0.06em" }}>{memory.observationCount} OBS · {memory.datasetSpan}</span>
           </div>
@@ -399,7 +438,7 @@ export default function SeismographIntelligence() {
         <div style={{ display: "flex", alignItems: "flex-start", gap: "20px", marginBottom: "20px", flexWrap: "wrap", opacity: loadPhase >= 2 ? 1 : 0, transition: "opacity 0.5s ease-out" }}>
           {/* Big score */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", flexShrink: 0 }}>
-            <div style={{ ...mono, fontSize: "56px", fontWeight: 800, color: scoreColor, lineHeight: 1, textShadow: `0 0 30px ${scoreColor}40`, animation: loadPhase >= 2 ? `seismo-glow-breathe 3s ease-in-out infinite` : "none", opacity: loadPhase >= 2 ? 1 : 0, transition: "opacity 0.5s ease-out" }}>
+            <div style={{ ...mono, fontSize: "56px", fontWeight: 800, color: scoreColor, lineHeight: 1, textShadow: `0 0 30px ${scoreColor}40`, animation: loadPhase >= 2 ? `score-breathe-deep 4s ease-in-out infinite` : "none", opacity: loadPhase >= 2 ? 1 : 0, transition: "opacity 0.5s ease-out" }}>
               {animatedScore}
             </div>
             <div style={{ ...mono, fontSize: "9px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.4)" }}>SYSTEMIC PRESSURE</div>
@@ -420,7 +459,10 @@ export default function SeismographIntelligence() {
           <div style={{ marginBottom: "20px", opacity: loadPhase >= 2 ? 1 : 0, transition: "opacity 0.7s ease-out 0.15s" }}>
             <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
               LIVE PRESSURE SIGNAL
-              <span style={{ display: "inline-block", width: "5px", height: "5px", borderRadius: "50%", background: scoreColor, boxShadow: `0 0 6px ${scoreColor}`, animation: "livepulse 2s infinite" }} />
+              <span style={{ position: "relative", display: "inline-block", width: "5px", height: "5px", flexShrink: 0 }}>
+                <span style={{ position: "absolute", inset: "-3px", borderRadius: "50%", background: scoreColor, opacity: 0, animation: "live-ripple 2.2s ease-out infinite", animationDelay: "0.4s" }} />
+                <span style={{ display: "block", width: "5px", height: "5px", borderRadius: "50%", background: scoreColor, boxShadow: `0 0 6px ${scoreColor}`, animation: "livepulse 2s infinite", position: "relative", zIndex: 1 }} />
+              </span>
             </div>
             <LiveSeismographWave sparkline={evolution.sparkline90d} scoreColor={scoreColor} currentScore={currentScore} />
             <div style={{ display: "flex", justifyContent: "space-between", ...mono, fontSize: "8px", color: "rgba(6,182,212,0.28)", marginTop: "4px" }}>
@@ -858,6 +900,25 @@ export default function SeismographIntelligence() {
         @keyframes seismo-glow-breathe {
           0%,100% { filter: brightness(1); }
           50% { filter: brightness(1.15) drop-shadow(0 0 12px currentColor); }
+        }
+        @keyframes score-breathe-deep {
+          0%   { filter: brightness(1)    drop-shadow(0 0 8px currentColor); }
+          40%  { filter: brightness(1.22) drop-shadow(0 0 28px currentColor) drop-shadow(0 0 56px currentColor); }
+          100% { filter: brightness(1)    drop-shadow(0 0 8px currentColor); }
+        }
+        @keyframes live-ripple {
+          0%   { transform: scale(1);   opacity: 0.55; }
+          100% { transform: scale(3.2); opacity: 0; }
+        }
+        @keyframes shimmer-flow {
+          0%   { transform: translateX(-100%); }
+          100% { transform: translateX(300%); }
+        }
+        @keyframes page-scanline {
+          0%   { top: -2px; opacity: 0; }
+          5%   { opacity: 0.07; }
+          95%  { opacity: 0.03; }
+          100% { top: 100%; opacity: 0; }
         }
         @keyframes seismo-fade-up {
           from { opacity: 0; transform: translateY(10px); }

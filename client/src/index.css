@@ -295,6 +295,42 @@
     100% { opacity: 0; transform: translateX(0); }
   }
 
+  /* ── Continuous flowing motion ─────────────────────────── */
+
+  /* Shimmer sweep across prob bars */
+  @keyframes shimmer-flow {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
+
+  /* Score deep breathe — color temperature shift */
+  @keyframes score-breathe-deep {
+    0%   { filter: brightness(1)    drop-shadow(0 0 8px currentColor); }
+    40%  { filter: brightness(1.18) drop-shadow(0 0 22px currentColor) drop-shadow(0 0 44px currentColor); }
+    100% { filter: brightness(1)    drop-shadow(0 0 8px currentColor); }
+  }
+
+  /* Ambient page scan line — sweeps top to bottom */
+  @keyframes page-scanline {
+    0%   { top: -2px; opacity: 0; }
+    5%   { opacity: 0.06; }
+    95%  { opacity: 0.03; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  /* Waveform data-advance shimmer */
+  @keyframes wave-advance {
+    0%   { opacity: 0.5; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.5; }
+  }
+
+  /* Live dot ripple */
+  @keyframes live-ripple {
+    0%   { transform: scale(1);   opacity: 0.6; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
   /* Feed pulse */
   @keyframes feed-pulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }

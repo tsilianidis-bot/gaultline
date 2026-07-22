@@ -296,22 +296,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
           display: 'flex',
           alignItems: 'center',
         }}>
-          <div style={{
-            display: 'flex',
-            gap: '48px',
-            animation: 'ticker-scroll 40s linear infinite',
-            whiteSpace: 'nowrap',
-            paddingLeft: '100%',
-          }}>
-            {liveTickerItems.map((item, i) => (
-              <span key={i} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em' }}>
-                <span style={{ color: '#8A9AB0' }}>{item.label} </span>
-                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8' }}>{item.value}</span>
-                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8', marginLeft: '2px' }}>{item.direction === 'up' ? '▲' : item.direction === 'down' ? '▼' : '—'}</span>
-              </span>
-            ))}
-            {liveTickerItems.slice(0, 5).map((item, i) => (
-              <span key={`dup-${i}`} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em' }}>
+          <div style={{ display: 'flex', gap: '0', animation: 'ticker-scroll 55s linear infinite', whiteSpace: 'nowrap', willChange: 'transform' }}>
+            {[...liveTickerItems, ...liveTickerItems].map((item, i) => (
+              <span key={i} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em', paddingRight: '48px' }}>
                 <span style={{ color: '#8A9AB0' }}>{item.label} </span>
                 <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8' }}>{item.value}</span>
                 <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8', marginLeft: '2px' }}>{item.direction === 'up' ? '▲' : item.direction === 'down' ? '▼' : '—'}</span>
