@@ -20,15 +20,24 @@ import {
 } from "@/hooks/useAnalytics";
 import { getConsentChoice } from "@/components/CookieConsent";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { CANONICAL_DESTINATIONS } from "@shared/routeRegistry";
+
+const CANONICAL_PAGE_TITLES: Record<string, string> = Object.fromEntries(
+  CANONICAL_DESTINATIONS.map(destination => [
+    destination.path,
+    `FAULTLINE — ${destination.label}`,
+  ]),
+);
 
 // Map route paths to human-readable page titles for GA4
 const PAGE_TITLES: Record<string, string> = {
+	...CANONICAL_PAGE_TITLES,
   "/": "FAULTLINE — Home",
   "/blog": "FAULTLINE — Blog",
   "/legal": "FAULTLINE — Legal",
   "/pressure-index": "FAULTLINE — Pressure Index",
   "/track-record": "FAULTLINE — Track Record",
-  "/app": "FAULTLINE — Dashboard",
+	  "/app": "FAULTLINE — NOW",
   "/app/pressure": "FAULTLINE — Market Stress",
   "/app/scores": "FAULTLINE — Risk Score Breakdown",
   "/app/charts": "FAULTLINE — Charts",
