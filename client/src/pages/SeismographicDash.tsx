@@ -926,12 +926,12 @@ export default function SeismographicDash() {
               <div style={{ marginBottom: "20px" }}>
                 <div style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "10px" }}>EVIDENCE FAMILIES</div>
                 {evidenceFamilies.map((ef: any, i: number) => {
-                  const sc = ef.direction === "bearish" ? "#ef4444" : ef.direction === "bullish" ? "#22c55e" : "rgba(6,182,212,0.5)";
+                  const sc = ef.signal === "bearish" ? "#ef4444" : ef.signal === "bullish" ? "#22c55e" : "rgba(6,182,212,0.5)";
                   return (
                     <div key={i} style={{ display: "flex", gap: "12px", marginBottom: "12px", padding: "10px 12px", background: "rgba(6,182,212,0.02)", borderRadius: "5px", border: "1px solid rgba(6,182,212,0.07)" }}>
                       <div style={{ flexShrink: 0, width: "80px" }}>
                         <div style={{ ...seismoMono, fontSize: "9px", color: sc, fontWeight: 700, letterSpacing: "0.04em", marginBottom: "2px" }}>{ef.name}</div>
-                        <div style={{ ...seismoMono, fontSize: "8px", color: sc, letterSpacing: "0.06em", opacity: 0.7, marginBottom: "4px" }}>{ef.direction.toUpperCase()}</div>
+                        <div style={{ ...seismoMono, fontSize: "8px", color: sc, letterSpacing: "0.06em", opacity: 0.7, marginBottom: "4px" }}>{ef.signal?.toUpperCase() ?? ''}</div>
                         <div style={{ marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
                           <div style={{ flex: 1, height: "3px", background: "rgba(6,182,212,0.08)", borderRadius: "2px" }}>
                             <div style={{ height: "100%", width: `${(ef.strength / 10) * 100}%`, background: sc, borderRadius: "2px" }} />
@@ -962,7 +962,7 @@ export default function SeismographicDash() {
                         <div style={{ height: "100%", width: `${e.contributionWeight}%`, background: dc, borderRadius: "2px", transition: "width 0.9s cubic-bezier(0.23,1,0.32,1)" }} />
                       </div>
                       <div style={{ ...seismoMono, width: "28px", textAlign: "right", fontSize: "9px", color: dc, fontWeight: 700, flexShrink: 0 }}>{e.contributionWeight}%</div>
-                      <div style={{ ...seismoMono, width: "60px", fontSize: "8px", color: dc, textAlign: "right", flexShrink: 0, letterSpacing: "0.04em" }}>{e.direction.toUpperCase()}</div>
+                      <div style={{ ...seismoMono, width: "60px", fontSize: "8px", color: dc, textAlign: "right", flexShrink: 0, letterSpacing: "0.04em" }}>{e.direction?.toUpperCase() ?? ''}</div>
                     </div>
                   );
                 })}
