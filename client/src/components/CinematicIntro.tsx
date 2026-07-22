@@ -251,8 +251,8 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
       // Audio: intelligence drone + holographic shimmer + system online tone
       audioRef.current?.playAshaPhase();
     }, 5600));
-    // Auto-complete after ~6.8s of ASHA showcase
-    t.push(setTimeout(() => triggerExit(), 12400));
+    // Auto-complete after ~3.4s of ASHA showcase (shimmer fades at ~2.4s, so this gives a clean silence before exit)
+    t.push(setTimeout(() => triggerExit(), 9000));
     return () => t.forEach(clearTimeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

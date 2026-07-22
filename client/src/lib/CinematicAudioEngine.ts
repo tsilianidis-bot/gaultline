@@ -375,7 +375,12 @@ export class CinematicAudioEngine {
       osc.start();
       tremolo.start();
 
-      this.fadeGain(gainNode, 0.06, 2.5, 0.8);
+      // Fade in over 1.0s (delay 0.5s), then auto-fade out after 2.2s total
+      // This gives the ASHA reveal a brief shimmer that stops before the intro exits
+      this.fadeGain(gainNode, 0.06, 1.0, 0.5);
+      setTimeout(() => {
+        if (!this.stopped) this.stopLayer("holographicShimmer", 1.2);
+      }, 2400);
       this.setLayer("holographicShimmer", gainNode, [osc, tremolo]);
     }
   }
