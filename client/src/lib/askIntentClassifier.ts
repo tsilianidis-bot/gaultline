@@ -486,6 +486,6 @@ export function getAskPlaceholder(
     case "economic":
       return "Ask ASHA about the economy, recession risk, cycles…";
     default:
-      return "Ask ASHA…";
+      return "Ask ASHA about markets, risk, and opportunities…";
   }
 }
