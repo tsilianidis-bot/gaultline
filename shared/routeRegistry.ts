@@ -2,6 +2,8 @@ export type CanonicalDestinationId = "now" | "why" | "outlook" | "watch" | "act"
 export type RouteIconKey = "activity" | "network" | "telescope" | "bell" | "crosshair" | "message" | "search" | "help" | "user" | "gauge" | "brain" | "target";
 export type RouteAccess = "authenticated" | "public" | "owner";
 export type RouteSurface = "primary" | "utility" | "expert";
+export type PersistentUtilityId = "asha" | "search" | "alerts" | "help" | "account";
+export type ExpertWorkspaceId = "pressure" | "signal-outlook" | "decision-engine" | "day-trade-intelligence" | "symbol-intelligence" | "smart-discovery";
 
 export interface CanonicalDestination {
   id: CanonicalDestinationId;
@@ -28,7 +30,7 @@ export const CANONICAL_DESTINATIONS: readonly CanonicalDestination[] = [
   { id: "act", label: "ACT", shortLabel: "ACT", question: "How should I respond?", path: "/app/act", icon: "crosshair", accent: "#00FF88", analyticsId: "destination_act", searchKeywords: ["act", "opportunities", "analyze", "decide", "journal"], defaultView: "opportunities", views: ["opportunities", "analyze", "decide", "journal"], access: "authenticated", surface: "primary", requiresAuth: true },
 ] as const;
 
-export interface PersistentUtility { id: "asha" | "search" | "alerts" | "help" | "account"; label: string; icon: RouteIconKey; kind: "route" | "action"; path?: string; analyticsId: string; searchKeywords: readonly string[]; access: "authenticated"; surface: "utility"; }
+export interface PersistentUtility { id: PersistentUtilityId; label: string; icon: RouteIconKey; kind: "route" | "action"; path?: string; analyticsId: string; searchKeywords: readonly string[]; access: "authenticated"; surface: "utility"; }
 export const PERSISTENT_UTILITIES: readonly PersistentUtility[] = [
   { id: "asha", label: "ASHA", icon: "message", kind: "route", path: "/app/asha", analyticsId: "utility_asha", searchKeywords: ["asha", "ask", "advisor", "conversation"], access: "authenticated", surface: "utility" },
   { id: "search", label: "Search", icon: "search", kind: "action", analyticsId: "utility_search", searchKeywords: ["search", "command", "symbol"], access: "authenticated", surface: "utility" },
@@ -37,7 +39,7 @@ export const PERSISTENT_UTILITIES: readonly PersistentUtility[] = [
   { id: "account", label: "Account", icon: "user", kind: "route", path: "/app/account", analyticsId: "utility_account", searchKeywords: ["account", "billing", "subscription"], access: "authenticated", surface: "utility" },
 ] as const;
 
-export interface ExpertWorkspace { id: string; label: string; path: string; owner: CanonicalDestinationId | "asha"; ownerView: string; icon: RouteIconKey; analyticsId: string; searchKeywords: readonly string[]; access: "authenticated"; surface: "expert"; }
+export interface ExpertWorkspace { id: ExpertWorkspaceId; label: string; path: string; owner: CanonicalDestinationId | "asha"; ownerView: string; icon: RouteIconKey; analyticsId: string; searchKeywords: readonly string[]; access: "authenticated"; surface: "expert"; }
 export const EXPERT_WORKSPACES: readonly ExpertWorkspace[] = [
   { id: "pressure", label: "Pressure Engine", path: "/app/pressure", owner: "now", ownerView: "pressure", icon: "gauge", analyticsId: "expert_pressure", searchKeywords: ["pressure", "stress", "seismograph", "risk"], access: "authenticated", surface: "expert" },
   { id: "signal-outlook", label: "Signal Outlook Center", path: "/app/signal-outlook", owner: "outlook", ownerView: "probabilities", icon: "telescope", analyticsId: "expert_signal_outlook", searchKeywords: ["signal outlook", "probability", "scenario", "transition"], access: "authenticated", surface: "expert" },
@@ -52,6 +54,8 @@ export const ANALYTICAL_LEGACY_ALIASES: Readonly<Record<string, string>> = {
 };
 
 export const CANONICAL_DESTINATION_BY_ID = Object.fromEntries(CANONICAL_DESTINATIONS.map(item => [item.id, item])) as Record<CanonicalDestinationId, CanonicalDestination>;
+export const PERSISTENT_UTILITY_BY_ID = Object.fromEntries(PERSISTENT_UTILITIES.map(item => [item.id, item])) as Record<PersistentUtilityId, PersistentUtility>;
+export const EXPERT_WORKSPACE_BY_ID = Object.fromEntries(EXPERT_WORKSPACES.map(item => [item.id, item])) as Record<ExpertWorkspaceId, ExpertWorkspace>;
 export function stripRouteContext(route: string): string { return route.split(/[?#]/, 1)[0] || "/"; }
 export function preserveRouteContext(target: string, currentSearch = "", currentHash = ""): string {
   const [targetPath, targetQuery = ""] = target.split("?");
