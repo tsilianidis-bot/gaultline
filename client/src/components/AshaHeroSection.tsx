@@ -21,6 +21,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useEngine } from "@/contexts/EngineContext";
 import { Link } from "wouter";
+import { formatCanonicalScore } from "@shared/marketMetrics";
 
 // ── Instrument definitions (ticker → display label) ───────────
 // Mapped to symbols available in the existing /api/signals/quotes cache.
@@ -204,14 +205,7 @@ function AshaIntelPanel() {
             color: scoreColor,
             lineHeight: 1,
             textShadow: `0 0 24px ${scoreColor}35`,
-          }}>{score.toFixed(1)}</span>
-          <span style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: "14px",
-            color: "rgba(255,255,255,0.25)",
-            alignSelf: "flex-end",
-            paddingBottom: "6px",
-          }}>/10</span>
+          }}>{formatCanonicalScore(score * 10)}</span>
           <div style={{ marginLeft: "4px", alignSelf: "flex-end", paddingBottom: "4px" }}>
             <div style={{
               fontFamily: "'IBM Plex Mono', monospace",

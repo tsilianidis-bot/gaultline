@@ -17,7 +17,7 @@
 - [ ] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
 - [x] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
 - [ ] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
-- [ ] Compose and validate NOW in the required conclusion-first sequence with complete Seismograph depth.
+- [x] Compose and validate NOW in the required conclusion-first sequence with complete Seismograph depth.
 - [ ] Archive `FAULTLINE_Post-NOW` as checkpoint plus immutable tag.
 - [ ] Compose and validate WHY, OUTLOOK, WATCH, and ACT in their required information orders.
 - [ ] Preserve Pressure, Signal Outlook, Decision Engine, Day Trade, Symbol Intelligence, and Smart Discovery as expert workspaces outside primary navigation.
@@ -49,3 +49,7 @@
 - [ ] Implement shared ASHA conversation continuity across the persistent utility, contextual panel, and `/app/asha` workspace.
 - [ ] Add focused ASHA continuity plus explicit live response and error-path coverage.
 - [ ] Prove deferred ASHA continuity across the persistent utility, contextual panel, and `/app/asha` workspace during Stage 2/3 destination work.
+- [x] Reconstruct and validate the lost conclusion-first NOW destination from the recorded Stage 2 specification.
+- [x] Collapse the overlapping `CinematicAuthGate` render branches in `App.tsx` into one gate instance.
+- [x] Convert the ASHA hero plus NOW-adjacent pressure displays to the shared canonical 0–100 formatter.
+- [x] Re-verify the hydrated NOW route and confirm no legacy pressure `/10` presentation remains in the NOW flow.

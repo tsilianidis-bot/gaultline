@@ -20,6 +20,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AshaOrb from "@/components/AshaOrb";
 import type { AshaRegimeState } from "@/components/AshaOrb";
+import { formatCanonicalScore } from "@shared/marketMetrics";
 
 // ── Inline SeismicWave (canvas-based animated waveform) ───────
 function SeismicWave({ color, score }: { color: string; score: number }) {
@@ -555,7 +556,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           }}
         >
           {[
-            { label: "PRESSURE", value: `${overall.score.toFixed(1)}/10`, color: pressureColor },
+            { label: "PRESSURE", value: formatCanonicalScore(overall.score * 10), color: pressureColor },
             { label: "BULL", value: `${output.probability?.bullProbability ?? "—"}%`, color: "#00FF88" },
             { label: "CRASH", value: `${output.probability?.crashProbability ?? "—"}%`, color: "#FF2D55" },
             { label: "ANALOG", value: analog?.era?.split(" ").slice(0, 2).join(" ") ?? "—", color: "#00E5FF" },

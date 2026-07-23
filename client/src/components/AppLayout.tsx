@@ -24,6 +24,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import AshaIntroModal from "@/components/AshaIntroModal";
 import AshaPanel from "@/components/AshaPanel";
+import { formatCanonicalScore } from "@shared/marketMetrics";
 import { DrawerProvider } from "@/contexts/DrawerContext";
 import LeftNavDrawer from "@/components/LeftNavDrawer";
 import RightActionDrawer from "@/components/RightActionDrawer";
@@ -193,7 +194,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const fearGreedLabel = fearGreed > 75 ? 'Extreme Greed' : fearGreed > 55 ? 'Greed' : fearGreed > 45 ? 'Neutral' : fearGreed > 25 ? 'Fear' : 'Extreme Fear';
   const liveTickerItems: { label: string; value: string; direction: 'up' | 'down' | 'flat' }[] = [
     { label: 'Regime', value: regimeShort, direction: overall.score > 6 ? 'up' : overall.score > 4 ? 'flat' : 'down' },
-    { label: 'Pressure Index', value: `${overall.score.toFixed(1)}`, direction: overall.delta > 0 ? 'up' : 'down' },
+    { label: 'Pressure Index', value: formatCanonicalScore(overall.score * 10), direction: overall.delta > 0 ? 'up' : 'down' },
     { label: 'Liquidity', value: liquidityLabel, direction: liquidityDir },
     { label: 'AI Concentration', value: aiConcLabel, direction: aiConc > 28 ? 'up' : 'flat' },
     { label: 'Credit Stress', value: creditLabel, direction: creditDir },

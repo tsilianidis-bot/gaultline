@@ -26,6 +26,7 @@ import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATIO
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
 import Dashboard from "./pages/Dashboard";
+import Now from "./pages/Now";
 
 const Pressure        = lazy(() => import("./pages/Pressure"));
 const Scores          = lazy(() => import("./pages/Scores"));
@@ -227,8 +228,10 @@ function AnalyticalLegacyAliases() {
   ));
 }
 
+const NOW_DEEP_PATH = "/app/now/deep";
+
 const CANONICAL_PAGE_BY_ID: Record<CanonicalDestinationId, ComponentType> = {
-  now: SeismographicDash,
+  now: Now,
   why: TodaysStory,
   outlook: SignalOutlookCenter,
   watch: Signals,
@@ -683,8 +686,9 @@ function Router() {
         <AppLayout>
 	          <ErrorBoundary inline>
 	          <Suspense fallback={<PageLoader />}>
-	            <Switch>
-		              <CanonicalDestinationRoutes />
+		            <Switch>
+			              <Route path={NOW_DEEP_PATH} component={Dashboard} />
+			              <CanonicalDestinationRoutes />
 		              <Route path="/app"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
 	              <AnalyticalLegacyAliases />
 	              <Route path="/app/pressure" component={Pressure} />
@@ -694,8 +698,7 @@ function Router() {
               <Route path="/app/discover" component={SmartDiscovery} />
               <Route path="/app/ask-asha"><Redirect to="/app/discover" /></Route>
               <Route path="/app/decision-ledger" component={DecisionLedger} />
-	              <Route path="/app/dashboard" component={Dashboard} />
-              {/* P1 — Deprecated routes redirect to new destinations */}
+	              {/* P1 — Deprecated routes redirect to new destinations */}
               {/* Canonical URL aliases — advertised paths */}
               <Route path="/app/command-center"><Redirect to="/app/command" /></Route>
               <Route path="/app/pressure-index"><Redirect to="/app/pressure" /></Route>
@@ -937,11 +940,9 @@ function App() {
                  Case A: After cinematic (first-time user) — show if not authenticated.
                  Case B: Returning unauthenticated user — show directly (skip cinematic).
                  Cinematic-styled sign-in — never a white page or redirect. */}
+            {/* cinematicDone is already true for returning visitors, so one
+                mutually exclusive gate covers both onboarding paths. */}
             {cinematicDone && !authGateDone && (
-              <CinematicAuthGate onAuthenticated={handleAuthGateComplete} />
-            )}
-            {/* Returning unauthenticated: show auth gate directly without cinematic */}
-            {isReturning && !authGateDone && (
               <CinematicAuthGate onAuthenticated={handleAuthGateComplete} />
             )}
 

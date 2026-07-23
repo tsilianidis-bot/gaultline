@@ -8,6 +8,7 @@ import { useLocation } from "wouter";
 import { ArrowRight, Lightbulb, AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
+import { formatCanonicalScore } from "@shared/marketMetrics";
 
 export type SynthesisContext =
   | "pressure"        // Pressure Index / Market Stress page
@@ -198,7 +199,7 @@ export default function MarketSynthesisPanel({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
           <SentimentIcon size={12} color={pressureColor} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{overall.score.toFixed(1)}/10</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{formatCanonicalScore(overall.score * 10)}</span>
         </div>
       </div>
 
