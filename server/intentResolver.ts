@@ -11,85 +11,11 @@
  * Fixes: "Should I buy BTC today?" → Bitcoin (not SHOULD ticker)
  */
 
-// ── Asset type ────────────────────────────────────────────────
-export type AssetType = "stock" | "crypto" | "etf" | "forex" | "commodity" | null;
-export type QueryType = "security" | "macro" | "opportunity" | "portfolio" | "general";
+import type { AssetType, IntentResult, QueryType } from "./intentResolver.contract";
+import { MACRO_KEYWORDS, OPPORTUNITY_KEYWORDS, PORTFOLIO_KEYWORDS } from "./intentResolver.queryKeywords";
 
-/**
- * QuestionIntent: the specific TYPE of question the user is asking.
- * Used to determine which answer fields to populate first (exact-question-first).
- */
-export type QuestionIntent =
-  | "downside"          // How low can it fall? What is the downside?
-  | "upside"            // How high can it go? What is the upside?
-  | "buy_verdict"       // Should I buy? Is it a good buy?
-  | "sell_verdict"      // Should I sell? Time to exit?
-  | "wait_verdict"      // Should I wait? Is now the right time?
-  | "entry_zone"        // Where should I enter? What is the entry?
-  | "exit_zone"         // Where should I exit? What is the exit?
-  | "target_price"      // What is the target? What price can it reach?
-  | "invalidation"      // What price invalidates this? What breaks the thesis?
-  | "risk_assessment"   // What is the risk? How risky is this?
-  | "compare"           // Compare A vs B
-  | "opportunity_ranking" // Best opportunities, top picks
-  | "general_analysis"; // Default — full institutional report
-
-/**
- * Detect the specific question intent from the user's query.
- * This runs AFTER ticker/asset detection and determines which answer
- * fields must be populated first.
- */
-export function detectQuestionIntent(query: string): QuestionIntent {
-  const q = query.toLowerCase().trim();
-
-  // Compare
-  if (/\bvs\.?\b|\bversus\b|\bcompare\b|\bwhich is better\b|\bwhich one\b/.test(q)) return "compare";
-
-  // Opportunity ranking (broad multi-asset)
-  if (/best opportunit|top opportunit|best invest|top invest|best trade|best stock|best crypto|top pick|highest conviction|what (should i buy|to buy|are the best)|buy list|what stocks|what crypto|investment ideas|trade ideas/.test(q)) return "opportunity_ranking";
-
-  // Downside / how low
-  if (/how low|how far (down|it fall|will it drop|can it drop|could it drop|can it fall|could it fall)|how far can|downside|fall to|drop to|crash to|how much (can it|will it) (fall|drop|lose)|bear.?case (price|target|level)|worst.?case (price|target|scenario)|what.?s the (low|bottom|floor)|minimum (price|level)|how bad/.test(q)) return "downside";
-
-  // Upside / how high
-  if (/how high|how far (up|can it go|will it rise)|upside|rally to|rise to|ceiling|resistance level|how much (can it|will it) (gain|rise|go up)|bull.?case (price|target|level)|best.?case (price|target)|what.?s the (high|ceiling|top)|maximum (price|level)|price target|moon|target price|where (will|can|could) (it|this|\w+) (go|trade|end up)|where will it go|fair value|fair price|intrinsic value|end of year target|eoy target|12.month target/.test(q)) return "upside";
-
-  // Entry zone (specific price questions — must come BEFORE buy_verdict to handle 'buy at $X')
-  if (/where (should i|to) enter|entry (zone|point|price|level)|good (entry|buy point|price to buy)|buy (at|around|near) \$|accumulate (at|around|near)|dip (to buy|entry)|what price (to buy|should i buy)/.test(q)) return "entry_zone";
-
-  // Exit zone (specific price questions — must come BEFORE sell_verdict to handle 'take profit at $X')
-  if (/where (should i|to) (exit|sell|take profit)|exit (zone|point|price|level)|profit target|sell (at|around|near|target) \$|take profit at|when (should i|to) sell|what price (to sell|should i sell)|trim (at|around)|reduce (at|around)|where (to|should i) take (profit|gains)|sell target|exit target/.test(q)) return "exit_zone";
-
-  // Buy verdict
-  if (/should i buy|is (it|this|\w+) (a good|worth) (buy|investment|trade)|is (\w+ )?a good buy|buy or (wait|hold|sell)|good time to buy|right time to buy|buy now|buy today|add (to|more)|accumulate now/.test(q)) return "buy_verdict";
-
-  // Sell verdict
-  if (/should i sell|time to (sell|exit)|sell now|sell today|exit now|exit today|lock in (profit|gains)|sell or hold|should i take profit|take (my )?profit now/.test(q)) return "sell_verdict";
-
-  // Invalidation
-  if (/invalidat|what (price|level) (breaks|kills|ends|destroys|invalidates)|thesis (fail|break|end)|where (is|should) (the stop|my stop)|stop.?loss (level|be|for|at)|what breaks|what kills|what ends the bull|what would break/.test(q)) return "invalidation";
-
-  // Risk assessment
-  if (/what.?s the risk|how risky|risk level|how dangerous|how safe|risk.?reward|downside risk|tail risk|black swan|worst case|how much (can i|could i) lose|maximum loss|how volatile/.test(q)) return "risk_assessment";
-
-  // Wait verdict
-  if (/should i wait|wait (for|until)|hold (off|on)|not yet|too early|too late|right time|is now (a good|the right) time|when (is the right|should i)/.test(q)) return "wait_verdict";
-
-  // Target price (kept as alias — upside now handles most of these)
-  if (/price target|what.?s (the target|a fair value|fair price|intrinsic value)/.test(q)) return "upside";
-
-  return "general_analysis";
-}
-
-export interface IntentResult {
-  ticker: string | null;
-  assetType: AssetType;
-  queryType: QueryType;
-  assetName: string | null;       // Human-readable name (e.g. "Bitcoin")
-  needsClarification: boolean;
-  clarificationPrompt: string | null;
-  confidence: "high" | "medium" | "low";
-}
+export { detectQuestionIntent } from "./intentResolver.contract";
+export type { AssetType, IntentResult, QueryType, QuestionIntent } from "./intentResolver.contract";
 
 // ── Common English words that look like tickers — NEVER treat as tickers ──
 const ENGLISH_SKIP = new Set([
@@ -485,45 +411,6 @@ const COMMODITY_MAP: Record<string, { ticker: string; name: string; assetType: A
   "aud": { ticker: "AUDUSD", name: "AUD/USD", assetType: "forex" },
   "australian dollar": { ticker: "AUDUSD", name: "AUD/USD", assetType: "forex" },
 };
-
-// ── Macro / portfolio keywords ────────────────────────────────
-const MACRO_KEYWORDS = [
-  "market", "macro", "economy", "recession", "inflation", "deflation", "stagflation",
-  "fed", "federal reserve", "interest rate", "rate hike", "rate cut", "quantitative",
-  "qe", "qt", "yield curve", "inverted yield", "credit", "liquidity", "systemic",
-  "crash", "correction", "bear market", "bull market", "rally", "selloff",
-  "gdp", "cpi", "ppi", "nfp", "unemployment", "jobs report", "earnings season",
-  "geopolitical", "war", "sanctions", "tariff", "trade war", "china", "russia",
-  "banking crisis", "debt ceiling", "fiscal", "monetary policy", "central bank",
-  "vix", "volatility", "fear", "greed", "sentiment", "institutional",
-  "safe haven", "risk off", "risk on", "flight to quality",
-  "sector rotation", "asset allocation", "diversification",
-  "how risky", "how dangerous", "what is happening", "what changed",
-];
-
-const PORTFOLIO_KEYWORDS = [
-  "portfolio", "position", "holding", "allocation", "rebalance", "diversify",
-  "my stocks", "my crypto", "my investments", "should i stay", "should i exit",
-  "take profits", "cut losses", "stop loss", "risk management",
-];
-
-const OPPORTUNITY_KEYWORDS = [
-  // Original
-  "opportunit", "swing trade", "best trade", "what to buy", "what should i buy",
-  "best stock", "best crypto", "top pick", "undervalued", "oversold", "overbought",
-  "screener", "scanner", "find me", "recommend", "suggestions",
-  // Spec additions — broad market / multi-asset queries
-  "best invest", "top invest", "what should i invest", "where should i invest",
-  "highest conviction", "best opportunities", "top opportunities",
-  "what are the best", "what stocks", "what crypto", "what etf",
-  "highest upside", "what to accumulate", "what has upside",
-  "market scan", "full scan", "rank", "ranking", "leaderboard",
-  "best buys", "top buys", "buy list",
-  "investment ideas", "trade ideas", "conviction ideas",
-  "best defensive", "best growth", "best value",
-  "highest return", "best risk reward", "best risk/reward",
-  "what should i accumulate", "what to watch",
-];
 
 // ── Main resolver function ────────────────────────────────────
 /**
