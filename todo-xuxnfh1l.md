@@ -61,3 +61,7 @@
 - [x] Preserve the current `SignalOutlookCenter` experience at `/app/outlook/deep` while making `/app/outlook` the canonical OUTLOOK composition.
 - [x] Add focused OUTLOOK composition, route ownership, probability-scale, source-state, provenance, and deep-view regression coverage.
 - [x] Validate the hydrated OUTLOOK route in the browser, run TypeScript plus focused tests, and commit the Stage 4 milestone.
+- [x] Compose WATCH from canonical MarketState in monitoring order: what changed, developing conditions, active patterns, leading indicators, duration/trend, expected impact, invalidations, confidence, ASHA, and expert handoffs.
+- [x] Preserve the current `AiWatchAssistant` experience at `/app/watch/deep` while making `/app/watch` the canonical WATCH composition.
+- [x] Add focused WATCH composition, route ownership, source-state, duration/trend, provenance, and deep-view regression coverage.
+- [x] Validate the hydrated WATCH route in the browser, run TypeScript plus focused tests, and commit the Stage 5 milestone.
