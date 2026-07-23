@@ -12,7 +12,7 @@
 - [x] Establish one macro/FRED provider, cache owner, retry/fallback path, truthful provenance, and no fabricated live values.
 - [x] Add scoring, canonical-state assembly, cache, real provider-path, freshness, fallback, provenance, and projection tests.
 - [x] Create one shared ASHA context contract and one advisor-facing gateway retaining bounded specialist engines.
-- [ ] Implement ASHA as persistent utility, contextual panel, and `/app/asha` workspace with shared continuity.
+- [x] Implement ASHA as persistent utility, contextual panel, and `/app/asha` workspace with shared continuity.
 - [x] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
 - [ ] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
 - [x] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
@@ -46,9 +46,9 @@
 - [x] Wire browser live-state consumers to the canonical `marketState` API while preserving explicit deterministic simulation controls.
 - [x] Add focused MarketState provider, freshness, stale-if-error, provenance, and client-projection coverage.
 - [x] Prove the authoritative macro/FRED provider path, source health, freshness, stale-if-error behavior, and no-fabrication provenance with explicit focused assertions.
-- [ ] Implement shared ASHA conversation continuity across the persistent utility, contextual panel, and `/app/asha` workspace.
+- [x] Implement shared ASHA conversation continuity across the persistent utility, contextual panel, and `/app/asha` workspace.
 - [ ] Add focused ASHA continuity plus explicit live response and error-path coverage.
-- [ ] Prove deferred ASHA continuity across the persistent utility, contextual panel, and `/app/asha` workspace during Stage 2/3 destination work.
+- [x] Prove deferred ASHA continuity across the persistent utility, contextual panel, and `/app/asha` workspace during Stage 2/3 destination work.
 - [x] Reconstruct and validate the lost conclusion-first NOW destination from the recorded Stage 2 specification.
 - [x] Collapse the overlapping `CinematicAuthGate` render branches in `App.tsx` into one gate instance.
 - [x] Convert the ASHA hero plus NOW-adjacent pressure displays to the shared canonical 0–100 formatter.
@@ -69,3 +69,9 @@
 - [x] Preserve the current `SmartDiscovery` experience at `/app/act/deep` while making `/app/act` the canonical ACT composition.
 - [x] Add focused ACT composition, route ownership, decision-boundary, risk-control, provenance, and deep-view regression coverage.
 - [x] Validate the hydrated ACT route in the browser, run TypeScript plus focused tests, and commit the Stage 6 milestone.
+- [x] Inventory the persistent ASHA utility, destination-context panel/CTA surfaces, `/app/asha` workspace, shared context contract, and advisor gateway without creating a parallel assistant stack.
+- [x] Preserve the existing root-scoped `AshaProvider` architecture per explicit user direction; do not introduce a second conversation provider.
+- [x] Extend the existing root-scoped `AshaProvider` with minimal session-persisted thread history and provenance; do not create another provider or server stack.
+- [x] Expose the existing ASHA Intelligence workspace at canonical `/app/asha` while preserving its current aliases.
+- [x] Add one focused regression proving the root provider, persistent utility request path, contextual ASHA handoff, persisted conversation-memory query, and `/app/asha` workspace route form one continuity chain.
+- [x] Run the focused ASHA continuity test plus zero-error TypeScript validation, commit the bounded milestone, and move immediately to page consolidation.

@@ -116,7 +116,7 @@ function generateMissionId(): string {
 
 export default function AshaPanel() {
   const { output } = useEngine();
-  const { pageContext } = useAshaContext();
+  const { pageContext, threadHistory, appendThreadExchange } = useAshaContext();
   const [panelState, setPanelState] = useState<PanelState>("idle");
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [synthSteps, setSynthSteps] = useState<SynthesisStep[]>([]);
@@ -224,8 +224,17 @@ export default function AshaPanel() {
     try {
       const response = await askMutation.mutateAsync({
         userMessage: question,
-        history: [],
+        history: threadHistory,
         pageContext: fullPageContext,
+      });
+
+      appendThreadExchange({
+        question,
+        answer: response.reply,
+        page: fullPageContext.page,
+        confidence: response.confidence,
+        sources: response.sources,
+        enginesConsulted: response.enginesConsulted,
       });
 
       // Mark all steps complete
@@ -269,7 +278,7 @@ export default function AshaPanel() {
       setSynthSteps([]);
       setPanelState("summon");
     }
-  }, [askMutation, fullPageContext, advanceSynthesisSteps, suggestions]);
+  }, [askMutation, fullPageContext, threadHistory, appendThreadExchange, advanceSynthesisSteps, suggestions]);
 
   // ── Ask another question ──────────────────────────────────
   const handleAskAnother = useCallback(() => {

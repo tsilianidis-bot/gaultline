@@ -748,6 +748,9 @@ function Router() {
               <Route path="/app/admin/chat-inbox">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><AshaIntelligenceCenter /></Suspense></ErrorBoundary>
               </Route>
+              <Route path="/app/asha">
+                <ErrorBoundary><Suspense fallback={<PageLoader />}><AshaIntelligenceCenter /></Suspense></ErrorBoundary>
+              </Route>
               <Route path="/app/asha-intelligence">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><AshaIntelligenceCenter /></Suspense></ErrorBoundary>
               </Route>

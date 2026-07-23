@@ -11,6 +11,7 @@
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
+import { useAshaContext } from "@/contexts/AshaContext";
 import { useLocation } from "wouter";
 import AshaOrb from "@/components/AshaOrb";
 
@@ -126,9 +127,11 @@ function IntelCard({ children, accent }: { children: React.ReactNode; accent?: s
 export default function AshaIntelligenceCenter() {
   const [, navigate] = useLocation();
   const { output } = useEngine();
+  const { threadMessages, clearThread } = useAshaContext();
   const { overall, regime } = output;
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedConv, setExpandedConv] = useState<number | null>(null);
+  const [workspacePrompt, setWorkspacePrompt] = useState("");
 
   // Backend data
   const { data: todayConv, isLoading: loadingConv } = trpc.ashaMemory.getTodayConversation.useQuery();
@@ -154,7 +157,16 @@ export default function AshaIntelligenceCenter() {
     });
   }
 
+  function summonSharedThread(rawPrompt?: string) {
+    const prompt = rawPrompt?.trim();
+    window.dispatchEvent(new CustomEvent("asha:summon", {
+      detail: prompt ? { prompt } : {},
+    }));
+    if (prompt) setWorkspacePrompt("");
+  }
+
   const hasAnyHistory = (todayConv?.totalMessages ?? 0) > 0 || (timeline?.entries?.length ?? 0) > 0;
+  const activeThreadMessages = threadMessages.slice(-8);
 
   return (
     <div style={{
@@ -188,7 +200,7 @@ export default function AshaIntelligenceCenter() {
         </div>
         <div style={{ flex: 1 }} />
         <button
-          onClick={() => navigate("/app/discover")}
+          onClick={() => summonSharedThread()}
           style={{
             background: `${color}12`,
             border: `1px solid ${color}35`,
@@ -233,6 +245,92 @@ export default function AshaIntelligenceCenter() {
             </div>
           </IntelCard>
         )}
+
+        {/* ── Shared session thread — persistent panel ↔ destination context ↔ workspace ── */}
+        <IntelCard accent="#00E5FF">
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+            <SectionLabel text="Active Cross-Surface Thread" />
+            {activeThreadMessages.length > 0 && (
+              <button
+                onClick={clearThread}
+                style={{ background: "transparent", border: "none", color: "rgba(100,116,139,0.55)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", cursor: "pointer", letterSpacing: "0.1em" }}
+              >
+                CLEAR SESSION
+              </button>
+            )}
+          </div>
+
+          {activeThreadMessages.length > 0 ? (
+            <div data-asha-shared-thread style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {activeThreadMessages.map(message => (
+                <div
+                  key={message.id}
+                  data-asha-thread-message={message.role}
+                  style={{
+                    borderLeft: `2px solid ${message.role === "assistant" ? "rgba(0,229,255,0.45)" : "rgba(148,163,184,0.28)"}`,
+                    padding: "8px 0 8px 12px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginBottom: "5px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: message.role === "assistant" ? "rgba(0,229,255,0.7)" : "rgba(148,163,184,0.65)", textTransform: "uppercase" }}>
+                    <span>{message.role === "assistant" ? "ASHA" : "You"} · {message.page}</span>
+                    <span>{formatTime(new Date(message.createdAt))}</span>
+                  </div>
+                  <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", lineHeight: 1.65, color: "rgba(240,244,255,0.82)", whiteSpace: "pre-wrap" }}>
+                    {message.content}
+                  </div>
+                  {message.role === "assistant" && (
+                    <div style={{ marginTop: "7px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", lineHeight: 1.6, color: "rgba(100,116,139,0.58)" }}>
+                      CONFIDENCE {message.confidence?.toUpperCase() ?? "UNAVAILABLE"}
+                      {message.sources?.length ? ` · SOURCES ${message.sources.slice(0, 3).join(", ")}` : " · SOURCES UNAVAILABLE"}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={() => summonSharedThread()}
+                style={{ alignSelf: "flex-start", marginTop: "4px", background: "rgba(0,229,255,0.08)", border: "1px solid rgba(0,229,255,0.28)", borderRadius: "4px", padding: "7px 12px", color: "#00E5FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.1em", cursor: "pointer" }}
+              >
+                CONTINUE THREAD →
+              </button>
+            </div>
+          ) : (
+            <div data-asha-shared-thread-empty style={{ padding: "8px 0 4px" }}>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", lineHeight: 1.65, color: "rgba(148,163,184,0.72)" }}>
+                Ask ASHA from any destination. The same session thread will continue here with its page context, confidence, and available-source provenance intact.
+              </div>
+              <button
+                onClick={() => summonSharedThread()}
+                style={{ marginTop: "12px", background: "rgba(0,229,255,0.08)", border: "1px solid rgba(0,229,255,0.28)", borderRadius: "4px", padding: "7px 12px", color: "#00E5FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.1em", cursor: "pointer" }}
+              >
+                START SHARED THREAD →
+              </button>
+            </div>
+          )}
+
+          <form
+            data-asha-workspace-continuation
+            onSubmit={(event) => {
+              event.preventDefault();
+              summonSharedThread(workspacePrompt);
+            }}
+            style={{ display: "flex", gap: "8px", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid rgba(0,229,255,0.12)" }}
+          >
+            <input
+              aria-label="Continue the shared ASHA thread"
+              value={workspacePrompt}
+              onChange={(event) => setWorkspacePrompt(event.target.value)}
+              placeholder="Continue this thread from the workspace..."
+              style={{ flex: 1, minWidth: 0, background: "rgba(15,23,42,0.72)", border: "1px solid rgba(148,163,184,0.18)", borderRadius: "4px", padding: "9px 11px", color: "rgba(240,244,255,0.9)", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", outline: "none" }}
+            />
+            <button
+              type="submit"
+              disabled={!workspacePrompt.trim()}
+              style={{ background: workspacePrompt.trim() ? "rgba(0,229,255,0.12)" : "rgba(100,116,139,0.08)", border: `1px solid ${workspacePrompt.trim() ? "rgba(0,229,255,0.32)" : "rgba(100,116,139,0.14)"}`, borderRadius: "4px", padding: "8px 12px", color: workspacePrompt.trim() ? "#00E5FF" : "rgba(100,116,139,0.42)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.08em", cursor: workspacePrompt.trim() ? "pointer" : "not-allowed" }}
+            >
+              SEND →
+            </button>
+          </form>
+        </IntelCard>
 
         {/* ── Current Market Thesis ── */}
         <IntelCard accent={color}>
