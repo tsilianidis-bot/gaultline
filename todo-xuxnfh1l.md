@@ -30,7 +30,7 @@
 - [ ] Resolve all source defects and run full Vitest, TypeScript, build, browser, console, network, server-log, route, public, admin, and authenticated-flow validation.
 - [ ] Review this ledger and accurately mark all completed requirements.
 - [ ] Archive `FAULTLINE_Production-Verified` as checkpoint plus immutable tag.
-- [ ] Fix the two committed CommandSearch route-registry TypeScript errors.
+- [x] Fix the two committed CommandSearch route-registry TypeScript errors.
 - [ ] Fix all thirteen pre-existing TypeScript errors in SeismographicDash and Stripe configuration.
 - [ ] Run the complete TypeScript check and confirm zero errors before feature work resumes.
 - [ ] Inspect the rendered application, logs, console, and network activity; fix every runtime crash and error-boundary failure.
