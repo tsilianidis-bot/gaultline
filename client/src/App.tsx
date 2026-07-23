@@ -30,6 +30,7 @@ import Now from "./pages/Now";
 import Why from "./pages/Why";
 import Outlook from "./pages/Outlook";
 import Watch from "./pages/Watch";
+import Act from "./pages/Act";
 
 const Pressure        = lazy(() => import("./pages/Pressure"));
 const Scores          = lazy(() => import("./pages/Scores"));
@@ -235,13 +236,14 @@ const NOW_DEEP_PATH = "/app/now/deep";
 const WHY_DEEP_PATH = "/app/why/deep";
 const OUTLOOK_DEEP_PATH = "/app/outlook/deep";
 const WATCH_DEEP_PATH = "/app/watch/deep";
+const ACT_DEEP_PATH = "/app/act/deep";
 
 const CANONICAL_PAGE_BY_ID: Record<CanonicalDestinationId, ComponentType> = {
   now: Now,
   why: Why,
   outlook: Outlook,
   watch: Watch,
-  act: SmartDiscovery,
+  act: Act,
 };
 
 function CanonicalDestinationRoutes() {
@@ -694,10 +696,11 @@ function Router() {
 	          <Suspense fallback={<PageLoader />}>
 	            <Switch>
 			              <Route path={NOW_DEEP_PATH} component={Dashboard} />
-			              <Route path={WHY_DEEP_PATH} component={TodaysStory} />
-			              <Route path={OUTLOOK_DEEP_PATH} component={SignalOutlookCenter} />
-			              <Route path={WATCH_DEEP_PATH} component={AIWatch} />
-			              <CanonicalDestinationRoutes />
+		              <Route path={WHY_DEEP_PATH} component={TodaysStory} />
+		              <Route path={OUTLOOK_DEEP_PATH} component={SignalOutlookCenter} />
+		              <Route path={WATCH_DEEP_PATH} component={AIWatch} />
+		              <Route path={ACT_DEEP_PATH} component={SmartDiscovery} />
+		              <CanonicalDestinationRoutes />
 		              <Route path="/app"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
 	              <AnalyticalLegacyAliases />
 	              <Route path="/app/pressure" component={Pressure} />

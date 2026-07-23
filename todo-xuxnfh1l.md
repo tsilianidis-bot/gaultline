@@ -65,3 +65,7 @@
 - [x] Preserve the current `AiWatchAssistant` experience at `/app/watch/deep` while making `/app/watch` the canonical WATCH composition.
 - [x] Add focused WATCH composition, route ownership, source-state, duration/trend, provenance, and deep-view regression coverage.
 - [x] Validate the hydrated WATCH route in the browser, run TypeScript plus focused tests, and commit the Stage 5 milestone.
+- [x] Compose ACT from canonical MarketState in decision order: posture, decision summary, evidence boundary, scenario responses, risk controls, invalidation, monitored triggers, confidence, ASHA, and expert handoffs.
+- [x] Preserve the current `SmartDiscovery` experience at `/app/act/deep` while making `/app/act` the canonical ACT composition.
+- [x] Add focused ACT composition, route ownership, decision-boundary, risk-control, provenance, and deep-view regression coverage.
+- [ ] Validate the hydrated ACT route in the browser, run TypeScript plus focused tests, and commit the Stage 6 milestone.
