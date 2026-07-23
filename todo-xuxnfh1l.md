@@ -8,7 +8,7 @@
 - [x] Expose only NOW, WHY, OUTLOOK, WATCH, ACT as analytical navigation; keep ASHA, Search, Help, Account, Alerts as utilities.
 - [x] Add registry order, uniqueness, metadata, access, and context-preserving alias tests.
 - [x] Define one versioned typed server-generated canonical 0–100 market-state snapshot and deterministic scoring core.
-- [ ] Make browser live state a projection of canonical state while retaining explicit deterministic simulation controls.
+- [x] Make browser live state a projection of canonical state while retaining explicit deterministic simulation controls.
 - [ ] Establish one macro/FRED provider, cache owner, retry/fallback path, truthful provenance, and no fabricated live values.
 - [ ] Add scoring, snapshot, cache, provider, freshness, fallback, provenance, and projection tests.
 - [x] Create one shared ASHA context contract and one advisor-facing gateway retaining bounded specialist engines.
@@ -43,7 +43,8 @@
 - [x] Confirm destination-order, path-uniqueness, access-metadata, and context-preserving alias test coverage explicitly.
 - [x] Prove the deterministic MarketState 0–100 scoring path with focused tests or add the missing canonical scoring boundary.
 - [x] Centralize canonical pressure and probability formatting and cover its UI consumers with focused tests.
-- [ ] Wire browser live-state consumers to the canonical `marketState` API while preserving explicit deterministic simulation controls.
+- [x] Wire browser live-state consumers to the canonical `marketState` API while preserving explicit deterministic simulation controls.
 - [ ] Add focused MarketState provider, freshness, stale-if-error, provenance, and client-projection coverage.
+- [ ] Prove the authoritative macro/FRED provider path, source health, freshness, stale-if-error behavior, and no-fabrication provenance with explicit focused assertions.
 - [ ] Implement shared ASHA conversation continuity across the persistent utility, contextual panel, and `/app/asha` workspace.
 - [ ] Add focused ASHA continuity plus explicit live response and error-path coverage.
