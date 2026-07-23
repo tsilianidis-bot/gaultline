@@ -26,63 +26,20 @@
 // The Seismograph is the only synthesis layer.
 // ============================================================
 
-// ── Evidence Types ────────────────────────────────────────────
-export type EvidenceType =
-  | "macro_pressure"           // Pressure Engine
-  | "regime_classification"    // FMOS Regime + Stock/Crypto Regime Engines
-  | "probability_distribution" // FMOS Probability Engine
-  | "historical_analog"        // FMOS Historical Analogs + Historical Intelligence
-  | "transition_signal"        // FMOS Transition + Aftershock Engine
-  | "liquidity_conditions"     // FMOS Evidence (liquidity family)
-  | "credit_stress"            // FMOS Evidence (credit family)
-  | "momentum"                 // FMOS Evidence (momentum family)
-  | "volatility"               // FMOS Evidence (volatility family)
-  | "cross_market_alignment"   // Cross-Market Engine
-  | "crypto_cycle"             // Crypto Regime Engine
-  | "breakdown_signals"        // SOB Engine
-  | "recovery_confirmation"    // Recovery Engine
-  | "sentiment"                // Social Intelligence
-  | "insider_flow";            // Insider Intelligence
+import type {
+  EvidencePacket,
+  EvidenceSignal,
+  EvidenceType,
+  SeismographProviderProvenance,
+} from "./seismographCore.contract";
 
-export type EvidenceSignal =
-  | "bullish"
-  | "bearish"
-  | "neutral"
-  | "stressed"
-  | "recovering"
-  | "transitioning";
-
-// ── EvidencePacket — the contract every contributor implements ─
-export interface EvidencePacket {
-  /** Unique identifier for the contributing engine */
-  source: string;
-  /** Unix timestamp (ms) when this evidence was computed */
-  timestamp: number;
-  /** Category of evidence this packet represents */
-  evidenceType: EvidenceType;
-  /** Directional signal from this evidence */
-  signal: EvidenceSignal;
-  /** Evidence strength 0–100 (how strong is this signal?) */
-  strength: number;
-  /** Confidence in this evidence 0–100 (how reliable is the data?) */
-  confidence: number;
-  /** One-sentence machine-readable summary for synthesis */
-  primaryReading: string;
-  /** One-sentence plain-English summary for display */
-  humanReadable: string;
-  /** Component sub-scores (engine-specific) */
-  subScores?: Record<string, number>;
-  /** Engine-specific metadata for downstream consumers */
-  metadata?: Record<string, unknown>;
-}
-
-export interface SeismographProviderProvenance {
-  fred: {
-    status: "live" | "fallback" | "unavailable";
-    detail: string;
-    asOf: number;
-  };
-}
+export type {
+  EvidenceContributor,
+  EvidencePacket,
+  EvidenceSignal,
+  EvidenceType,
+  SeismographProviderProvenance,
+} from "./seismographCore.contract";
 
 export function deriveProviderProvenance(
   packets: EvidencePacket[],
@@ -320,27 +277,6 @@ export interface SeismographOutput {
   forAlerts: AlertEvaluationContext;
   forStockPages: MacroContextBlock;
   forReports: ReportContext;
-}
-
-// ── EvidenceContributor Interface ─────────────────────────────
-/**
- * Every engine that contributes evidence to the Seismograph
- * must implement this interface.
- *
- * The `toEvidencePacket()` function wraps the engine's existing
- * output in the standardized EvidencePacket format.
- * Existing engine exports remain unchanged.
- */
-export interface EvidenceContributor<TInput = void> {
-  /** Unique identifier for this contributor */
-  readonly sourceId: string;
-  /** Evidence type this contributor produces */
-  readonly evidenceType: EvidenceType;
-  /**
-   * Convert this engine's output to a standardized EvidencePacket.
-   * Called by the Seismograph Heartbeat job each cycle.
-   */
-  toEvidencePacket(input: TInput): Promise<EvidencePacket>;
 }
 
 // ── Synthesis Helpers ─────────────────────────────────────────

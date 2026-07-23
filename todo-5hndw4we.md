@@ -18,6 +18,7 @@
 - [ ] Run TypeScript validation and targeted tests, then checkpoint each validated shared/server decomposition batch
 - [x] Extract the `cryptoIntelligence` domain contract into a focused type module, preserve its public exports, keep both modules below 800 lines, and validate all 21 focused tests
 - [x] Split the `intentResolver` contract and query taxonomy into focused modules, preserve its public API, reduce the resolver to 764 lines, and validate 10 deterministic resolver tests
+- [x] Extract the `seismographCore` evidence contract into a focused module, preserve its public type exports, reduce the core to 774 lines, and validate 13 focused and existing provenance tests
 - [ ] Decompose oversized NOW, WHY, OUTLOOK, WATCH, ACT, ASHA, and analytical UI modules into focused components, hooks, data modules, and types
 - [ ] Add or update Vitest coverage for behavior moved out of oversized canonical and analytical UI modules
 - [ ] Run TypeScript validation and targeted tests, then checkpoint each validated canonical/UI decomposition batch
