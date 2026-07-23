@@ -1,6 +1,6 @@
 # FAULTLINE Reorganization Session TODO
 
-- [ ] Create and verify immutable tag `FAULTLINE_Pre-Reorganization_2026-07-22` on the existing untouched checkpoint `f6106e41`.
+- [x] Create and verify immutable tag `FAULTLINE_Pre-Reorganization_2026-07-22` on the existing untouched checkpoint `f6106e41`.
 - [x] Validate all 158 page-map rows and all 56 large-file-audit rows; record untouched route, TypeScript, Vitest, and build baselines.
 - [ ] Recover the discarded route-registry, canonical-market-state, and unified-ASHA Foundation in independently committed batches.
 - [ ] Create one typed route registry for NOW, WHY, OUTLOOK, WATCH, ACT, utilities, aliases, access, icons, analytics, search, and CTAs.
@@ -33,8 +33,9 @@
 - [x] Fix the two committed CommandSearch route-registry TypeScript errors.
 - [x] Fix all thirteen pre-existing TypeScript errors in SeismographicDash and Stripe configuration.
 - [x] Run the complete TypeScript check and confirm zero errors before feature work resumes.
-- [ ] Inspect the rendered application, logs, console, and network activity; fix every runtime crash and error-boundary failure.
-- [ ] Verify core public and authenticated application routes load cleanly before creating the pre-reorganization tag.
+- [x] Inspect the rendered application, logs, console, and network activity; fix every runtime crash and error-boundary failure.
+- [x] Verify all five canonical routes and the account authentication gate render cleanly before creating the pre-reorganization tag.
 - [x] Fix the Stripe `evt_test_` webhook passthrough runtime failure and restore its focused test.
 - [x] Reconcile the global ASHA placeholder contract with its existing focused test.
 - [x] Document the user-waived SendGrid HTTP 401 as a known external-dependency issue and explicitly skip only its live credential assertion.
+- [ ] Validate a signed-in authenticated route end to end during production verification.
