@@ -31,7 +31,7 @@
 - [ ] Review this ledger and accurately mark all completed requirements.
 - [ ] Archive `FAULTLINE_Production-Verified` as checkpoint plus immutable tag.
 - [x] Fix the two committed CommandSearch route-registry TypeScript errors.
-- [ ] Fix all thirteen pre-existing TypeScript errors in SeismographicDash and Stripe configuration.
-- [ ] Run the complete TypeScript check and confirm zero errors before feature work resumes.
+- [x] Fix all thirteen pre-existing TypeScript errors in SeismographicDash and Stripe configuration.
+- [x] Run the complete TypeScript check and confirm zero errors before feature work resumes.
 - [ ] Inspect the rendered application, logs, console, and network activity; fix every runtime crash and error-boundary failure.
 - [ ] Verify core public and authenticated application routes load cleanly before creating the pre-reorganization tag.
