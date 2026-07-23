@@ -16,7 +16,7 @@
 - [x] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
 - [ ] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
 - [x] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
-- [ ] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
+- [x] Archive the user-directed validated Foundation scope as `FAULTLINE_Post-Foundation` checkpoint plus immutable tag.
 - [ ] Compose and validate NOW in the required conclusion-first sequence with complete Seismograph depth.
 - [ ] Archive `FAULTLINE_Post-NOW` as checkpoint plus immutable tag.
 - [ ] Compose and validate WHY, OUTLOOK, WATCH, and ACT in their required information orders.
