@@ -59,4 +59,32 @@ describe("resolveAshaModelCandidates", () => {
 
     expect(fetchCatalog).toHaveBeenCalledTimes(1);
   });
+
+  it("refreshes the bounded cache on demand and adopts the latest live catalogue", async () => {
+    const fetchCatalog = vi.fn()
+      .mockResolvedValueOnce({ data: [{ id: "gpt-5" }] })
+      .mockResolvedValueOnce({ data: [{ id: "claude-sonnet-4-6" }] });
+    let nowMs = Date.parse("2026-07-23T13:00:00.000Z");
+
+    const first = await resolveAshaModelCandidates({ fetchCatalog, now: () => nowMs });
+    nowMs += 60_000;
+    const refreshed = await resolveAshaModelCandidates({ fetchCatalog, now: () => nowMs, forceRefresh: true });
+
+    expect(first.candidates).toEqual(["gpt-5"]);
+    expect(refreshed.candidates).toEqual(["claude-sonnet-4-6"]);
+    expect(fetchCatalog).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses the explicit transport fallback when the live catalogue is empty", async () => {
+    const resolution = await resolveAshaModelCandidates({
+      fetchCatalog: async () => ({ data: [] }),
+      now: () => Date.parse("2026-07-23T13:00:00.000Z"),
+    });
+
+    expect(resolution).toEqual({
+      candidates: ["gemini-3-flash-preview"],
+      source: "transport-fallback",
+      resolvedAt: "2026-07-23T13:00:00.000Z",
+    });
+  });
 });

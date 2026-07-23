@@ -53,7 +53,7 @@ const gatewayContext = {
     ],
     now: { pressureScore: 61, regime: "Late Cycle" },
     history: { observationCount: 120 },
-    outlook: { probabilities: { confidence: 72 } },
+    outlook: { probabilities: { bull: 25, bear: 35, confidence: 72 } },
     why: {
       evidenceFamilies: [
         { name: "Credit" },
@@ -107,6 +107,10 @@ describe("ASHA live gateway integration", () => {
             content: expect.stringContaining("CANONICAL-MARKETSTATE-CONTEXT"),
           }),
         ]),
+        response_format: expect.objectContaining({
+          type: "json_schema",
+          json_schema: expect.objectContaining({ strict: true }),
+        }),
       }),
     );
     expect(response.sources).toEqual(["Canonical Seismograph", "Historical Market Memory"]);
@@ -125,6 +129,117 @@ describe("ASHA live gateway integration", () => {
     expect(response.lastUpdated).toBe("2026-07-23T12:59:00.000Z");
     expect(response.provenance).toBe(provenance);
     expect(response.modelTrace).toBe(modelTrace);
+  });
+
+  it("preserves bounded prior conversation order at the live gateway boundary", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({
+      response: llmResult(JSON.stringify({ reply: "Conditions have deteriorated." })),
+      trace: modelTrace,
+    });
+
+    await askAsha({
+      userMessage: "What changed?",
+      history: [
+        { role: "user", content: "What were conditions yesterday?" },
+        { role: "assistant", content: "Pressure was moderate." },
+      ],
+      pageContext: { page: "/app/why" },
+    });
+
+    expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(expect.objectContaining({
+      messages: [
+        expect.objectContaining({ role: "system" }),
+        { role: "user", content: "What were conditions yesterday?" },
+        { role: "assistant", content: "Pressure was moderate." },
+        { role: "user", content: "What changed?" },
+      ],
+    }));
+  });
+
+  it("sanitizes invalid structured fields and clamps all pressure and probability values to 0-100", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({
+      response: llmResult(JSON.stringify({
+        reply: "The evidence is uncertain because source coverage is incomplete.",
+        marketBias: "SIDEWAYS",
+        threatLevel: "EXTREME",
+        pressureIndex: 145,
+        bullProbability: -12,
+        bearProbability: 140,
+        keyFindings: ["Credit is tightening", 7, ""],
+        supportingEvidence: "not-an-array",
+        invalidationConditions: ["Credit improves", null],
+        finalVerdictAction: "CHASE",
+      })),
+      trace: modelTrace,
+    });
+
+    const response = await askAsha({
+      userMessage: "How risky is this?",
+      history: [],
+      pageContext: { page: "/app/act" },
+    });
+
+    expect(response.confidence).toBe("low");
+    expect(response.marketBias).toBe("NEUTRAL");
+    expect(response.threatLevel).toBe("ELEVATED");
+    expect(response.pressureIndex).toBe(100);
+    expect(response.bullProbability).toBe(0);
+    expect(response.bearProbability).toBe(100);
+    expect(response.keyFindings).toEqual(["Credit is tightening"]);
+    expect(response.supportingEvidence).toEqual([]);
+    expect(response.invalidationConditions).toEqual(["Credit improves"]);
+    expect(response.invalidationTriggers).toEqual(["Credit improves"]);
+    expect(response.finalVerdictAction).toBe("WATCH");
+  });
+
+  it("returns canonical defaults and truthful provenance for a plain-text model response", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({
+      response: llmResult("Current evidence is unclear while crypto coverage is unavailable."),
+      trace: modelTrace,
+    });
+
+    const response = await askAsha({
+      userMessage: "Summarize current conditions.",
+      history: [],
+      pageContext: { page: "/app/now" },
+    });
+
+    expect(response.reply).toContain("Current evidence is unclear");
+    expect(response.confidence).toBe("low");
+    expect(response.marketRegime).toBe("Late Cycle");
+    expect(response.pressureIndex).toBe(61);
+    expect(response.bullProbability).toBe(25);
+    expect(response.bearProbability).toBe(35);
+    expect(response.sources).not.toContain("Crypto Market Overlay");
+    expect(response.provenance).toBe(provenance);
+    expect(response.modelTrace).toBe(modelTrace);
+  });
+
+  it("returns an explicit retry response when the model payload is empty", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({
+      response: llmResult(""),
+      trace: modelTrace,
+    });
+
+    const response = await askAsha({
+      userMessage: "What is happening?",
+      history: [],
+      pageContext: { page: "/app/now" },
+    });
+
+    expect(response.reply).toBe("I was unable to generate a response. Please try again.");
+    expect(response.confidence).toBe("moderate");
+    expect(response.pressureIndex).toBe(61);
+  });
+
+  it("propagates a total gateway failure instead of fabricating an answer", async () => {
+    gatewayMocks.invokeGateway.mockRejectedValue(new Error("ASHA model gateway failed"));
+
+    await expect(askAsha({
+      userMessage: "What is happening?",
+      history: [],
+      pageContext: { page: "/app/now" },
+    })).rejects.toThrow("ASHA model gateway failed");
   });
 
   it("routes the daily greeting through the same canonical context and model gateway", async () => {
@@ -163,5 +278,25 @@ describe("ASHA live gateway integration", () => {
       }),
     );
     expect(greeting).toContain("Welcome back");
+  });
+
+  it("uses the truthful generic greeting when the live model returns an empty payload", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({
+      response: llmResult("   "),
+      trace: modelTrace,
+    });
+
+    const greeting = await generateAshaDailyGreeting({
+      engineContext: {
+        pressureScore: 61,
+        regime: "Late Cycle",
+        regimeConfidence: 0.72,
+        narrative: "Credit is tightening.",
+        trend: "Deteriorating",
+        keyDrivers: ["Credit"],
+      },
+    });
+
+    expect(greeting).toBe("Welcome back. I have reviewed the market. Here is what is building beneath the surface.");
   });
 });

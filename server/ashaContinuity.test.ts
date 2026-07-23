@@ -42,6 +42,14 @@ describe("ASHA cross-surface continuity", () => {
     expect(panel).toContain('window.addEventListener("asha:summon", handler)');
   });
 
+  it("does not append a failed live request to the shared thread and resets the panel for retry", () => {
+    const catchBranch = panel.match(/\}\s*catch\s*\{([\s\S]*?)\n\s*\}\n\s*\}, \[/)?.[1] ?? "";
+
+    expect(catchBranch).toContain("setSynthSteps([])");
+    expect(catchBranch).toContain('setPanelState("summon")');
+    expect(catchBranch).not.toContain("appendThreadExchange");
+  });
+
   it("keeps every canonical destination attached to the same registry-owned ASHA utility", () => {
     for (const destination of [now, why, outlook, watch, act]) {
       expect(destination).toContain("PERSISTENT_UTILITY_BY_ID.asha.path");

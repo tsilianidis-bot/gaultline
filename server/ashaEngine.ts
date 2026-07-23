@@ -193,6 +193,32 @@ function inferConfidence(reply: string): "high" | "moderate" | "low" {
   return "moderate";
 }
 
+function readString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function readEnum<T extends string>(value: unknown, allowed: readonly T[]): T | undefined {
+  return typeof value === "string" && (allowed as readonly string[]).includes(value)
+    ? value as T
+    : undefined;
+}
+
+function readBoundedScore(value: unknown, fallback: number): number {
+  const safeFallback = Number.isFinite(fallback) ? fallback : 50;
+  const candidate = typeof value === "number" && Number.isFinite(value) ? value : safeFallback;
+  return Math.max(0, Math.min(100, candidate));
+}
+
 // ── Extract only evidence actually available in canonical state ─────────────
 function extractEngines(context: AshaGatewayContext): string[] {
   const engines = ["Canonical Seismograph", "Pressure Index", "Market Regime Engine"];
@@ -273,7 +299,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     parsed = { reply: raw };
   }
 
-  const reply = (parsed.reply as string) || "I was unable to generate a response. Please try again.";
+  const reply = readString(parsed.reply) || "I was unable to generate a response. Please try again.";
+  const invalidationConditions = readStringArray(parsed.invalidationConditions);
 
   return {
     reply,
@@ -283,26 +310,26 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
       .map(source => source.label),
     enginesConsulted: extractEngines(gatewayContext),
     lastUpdated: gatewayContext.marketState.sourceUpdatedAt,
-    invalidationTriggers: parsed.invalidationConditions as string[] | undefined,
+    invalidationTriggers: invalidationConditions.length > 0 ? invalidationConditions : undefined,
     // Oracle Briefing structured fields
-    executiveSummary: (parsed.executiveSummary as string) || reply.split("\n")[0],
-    marketBias: (parsed.marketBias as "BULLISH" | "BEARISH" | "NEUTRAL") || "NEUTRAL",
-    marketRegime: (parsed.marketRegime as string) || gatewayContext.marketState.now.regime,
-    threatLevel: (parsed.threatLevel as "LOW" | "ELEVATED" | "HIGH" | "CRITICAL") || "ELEVATED",
-    pressureIndex: typeof parsed.pressureIndex === "number" ? parsed.pressureIndex : gatewayContext.marketState.now.pressureScore,
-    riskLevel: (parsed.riskLevel as string) || "Moderate",
-    suggestedBias: parsed.suggestedBias as string | undefined,
-    bullProbability: typeof parsed.bullProbability === "number" ? parsed.bullProbability : 50,
-    bearProbability: typeof parsed.bearProbability === "number" ? parsed.bearProbability : 50,
-    keyFindings: (parsed.keyFindings as string[]) || [],
-    supportingEvidence: (parsed.supportingEvidence as string[]) || [],
-    historicalAnalog: parsed.historicalAnalog as string | undefined,
-    riskFactors: (parsed.riskFactors as string[]) || [],
-    invalidationConditions: (parsed.invalidationConditions as string[]) || [],
-    missionRecommendation: (parsed.missionRecommendation as string) || "",
-    finalVerdictAction: (parsed.finalVerdictAction as string) || "WATCH",
-    expectedTimeframe: (parsed.expectedTimeframe as string) || "2-4 weeks",
-    followUpChips: (parsed.followUpChips as string[]) || [],
+    executiveSummary: readString(parsed.executiveSummary) || reply.split("\n")[0],
+    marketBias: readEnum(parsed.marketBias, ["BULLISH", "BEARISH", "NEUTRAL"] as const) || "NEUTRAL",
+    marketRegime: readString(parsed.marketRegime) || gatewayContext.marketState.now.regime,
+    threatLevel: readEnum(parsed.threatLevel, ["LOW", "ELEVATED", "HIGH", "CRITICAL"] as const) || "ELEVATED",
+    pressureIndex: readBoundedScore(parsed.pressureIndex, gatewayContext.marketState.now.pressureScore),
+    riskLevel: readString(parsed.riskLevel) || "Moderate",
+    suggestedBias: readString(parsed.suggestedBias),
+    bullProbability: readBoundedScore(parsed.bullProbability, gatewayContext.marketState.outlook.probabilities.bull),
+    bearProbability: readBoundedScore(parsed.bearProbability, gatewayContext.marketState.outlook.probabilities.bear),
+    keyFindings: readStringArray(parsed.keyFindings),
+    supportingEvidence: readStringArray(parsed.supportingEvidence),
+    historicalAnalog: readString(parsed.historicalAnalog),
+    riskFactors: readStringArray(parsed.riskFactors),
+    invalidationConditions,
+    missionRecommendation: readString(parsed.missionRecommendation) || "",
+    finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const) || "WATCH",
+    expectedTimeframe: readString(parsed.expectedTimeframe) || "2-4 weeks",
+    followUpChips: readStringArray(parsed.followUpChips),
     provenance: getAshaContextProvenance(gatewayContext),
     modelTrace,
   };
@@ -355,7 +382,8 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
   ];
 
   const { response: llmResponse } = await invokeAshaGateway({ messages });
-  return (llmResponse.choices?.[0]?.message?.content as string) ?? "Welcome back. I have reviewed the market. Here is what is building beneath the surface.";
+  return readString(llmResponse.choices?.[0]?.message?.content)
+    ?? "Welcome back. I have reviewed the market. Here is what is building beneath the surface.";
 }
 
 // ── First-login introduction (static, from brand brief) ───────

@@ -14,7 +14,7 @@
 - [x] Create one shared ASHA context contract and one advisor-facing gateway retaining bounded specialist engines.
 - [x] Implement ASHA as persistent utility, contextual panel, and `/app/asha` workspace with shared continuity.
 - [x] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
-- [ ] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
+- [x] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
 - [x] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
 - [x] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
 - [x] Compose and validate NOW in the required conclusion-first sequence with complete Seismograph depth.
@@ -47,7 +47,7 @@
 - [x] Add focused MarketState provider, freshness, stale-if-error, provenance, and client-projection coverage.
 - [x] Prove the authoritative macro/FRED provider path, source health, freshness, stale-if-error behavior, and no-fabrication provenance with explicit focused assertions.
 - [x] Implement shared ASHA conversation continuity across the persistent utility, contextual panel, and `/app/asha` workspace.
-- [ ] Add focused ASHA continuity plus explicit live response and error-path coverage.
+- [x] Add focused ASHA continuity plus explicit live response and error-path coverage.
 - [x] Prove deferred ASHA continuity across the persistent utility, contextual panel, and `/app/asha` workspace during Stage 2/3 destination work.
 - [x] Reconstruct and validate the lost conclusion-first NOW destination from the recorded Stage 2 specification.
 - [x] Collapse the overlapping `CinematicAuthGate` render branches in `App.tsx` into one gate instance.
@@ -85,3 +85,6 @@
 - [x] Apply every capability-backed redirect or preservation decision, extend parity tests, and archive the completed Stage 4 milestone in a commit and checkpoint.
 - [x] Restore the orphaned admin Chat Inbox implementation at `/app/admin/chat-inbox` instead of routing that path to the unrelated ASHA Intelligence Center.
 - [x] Add a committed full-page treatment manifest and regression test proving all 158 authoritative baseline rows plus the five new canonical destinations retain an explicit treatment.
+- [x] Cover ASHA live-catalog selection, bounded cache refresh, empty-catalog fallback, and catalogue transport failure without hardcoded retired models.
+- [x] Cover ASHA canonical context truncation, truthful provenance, model failover trace, and all-candidate gateway failure.
+- [x] Cover ASHA structured, plain-text, empty, history-bearing, unavailable-source, and live gateway-error response paths at the engine and client boundaries.
