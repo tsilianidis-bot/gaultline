@@ -7,7 +7,7 @@ import {
 } from "../shared/routeRegistry";
 
 const CLIENT_ROOT = join(process.cwd(), "client", "src");
-const HARDCODED_CANONICAL_PATH = /["'`]\/app\/(?:now|why|outlook|watch|act)(?:[?/#"'`]|$)/;
+const HARDCODED_CANONICAL_PATH = /["'`]\/app\/(?:now|why|outlook|watch|act)(?:[?#"'`]|$)/;
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory).flatMap(entry => {

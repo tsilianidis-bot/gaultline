@@ -21,7 +21,7 @@ import { OnboardingVideoModal } from './components/OnboardingVideoModal';
 import AshaLiveBriefing from './components/AshaLiveBriefing';
 import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
-import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, preserveRouteContext, type CanonicalDestinationId } from '@shared/routeRegistry';
+import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, EXPERT_WORKSPACE_BY_ID, preserveRouteContext, type CanonicalDestinationId } from '@shared/routeRegistry';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -33,25 +33,9 @@ import Watch from "./pages/Watch";
 import Act from "./pages/Act";
 
 const Pressure        = lazy(() => import("./pages/Pressure"));
-const Scores          = lazy(() => import("./pages/Scores"));
-const Charts          = lazy(() => import("./pages/Charts"));
 const AIWatch         = lazy(() => import("./pages/AIWatch"));
-const Scenarios       = lazy(() => import("./pages/Scenarios"));
-const Alerts          = lazy(() => import("./pages/Alerts"));
-const HistoricalAnalogs = lazy(() => import("./pages/HistoricalAnalogs"));
-const SimulatePressure = lazy(() => import("./pages/SimulatePressure"));
-const DailyReport     = lazy(() => import("./pages/DailyReport"));
-const Watchlist       = lazy(() => import("./pages/Watchlist"));
-const Signals         = lazy(() => import("./pages/Signals"));
 const Guide           = lazy(() => import("./pages/Guide"));
-const DiagnosticAI    = lazy(() => import("./pages/DiagnosticAI"));
-const Portfolio       = lazy(() => import("./pages/Portfolio"));
 const AdminUsers      = lazy(() => import("./pages/AdminUsers"));
-const CryptoIntelligence = lazy(() => import("./pages/CryptoIntelligence"));
-const CryptoSearch = lazy(() => import("./pages/CryptoSearch"));
-const CryptoWatchlist = lazy(() => import("./pages/CryptoWatchlist"));
-const AftershockEngine = lazy(() => import("./pages/AftershockEngine"));
-const CryptoSignals    = lazy(() => import("./pages/CryptoSignals"));
 const UserAccount      = lazy(() => import("./pages/UserAccount"));
 const AdminPortal      = lazy(() => import("./pages/AdminPortal"));
 const MarketingSite    = lazy(() => import("./pages/MarketingSite"));
@@ -62,11 +46,6 @@ const AdminBlog        = lazy(() => import("./pages/AdminBlog"));
 const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
-const AltRotation = lazy(() => import('./pages/AltRotation'));
-const TradePreflight = lazy(() => import('./pages/TradePreflight'));
-const SituationRoom = lazy(() => import('./pages/SituationRoom'));
-const PreFlight = lazy(() => import('./pages/PreFlight'));
-const InsiderIntelligence = lazy(() => import("./pages/InsiderIntelligence"));
 const DayTradeIntelligence = lazy(() => import("./pages/DayTradeIntelligence"));
 const MarketMovers         = lazy(() => import("./pages/MarketMovers"));
 const SeoOptimizer = lazy(() => import("./pages/SeoOptimizer"));
@@ -75,14 +54,10 @@ const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
 const Methodology      = lazy(() => import("./pages/Methodology"));
-const StockHeatmap     = lazy(() => import("./pages/StockHeatmap"));
-const SimPortfolio     = lazy(() => import("./pages/SimPortfolio"));
 const OwnerSimulation  = lazy(() => import("./pages/OwnerSimulation"));
 const PublicSharedReport = lazy(() => import("./pages/PublicSharedReport"));
 const SignalOutlookCenter = lazy(() => import("./pages/SignalOutlookCenter"));
-const SocialIntelligence = lazy(() => import("./pages/SocialIntelligence"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
-const TradeJournal = lazy(() => import("./pages/TradeJournal"));
 
 // ── Public SEO landing pages (no auth required, crawlable) ────────
 const PublicSignals        = lazy(() => import("./pages/PublicSignals"));
@@ -157,31 +132,21 @@ const PublicDiagnosticAI   = lazy(() => import("./pages/PublicDiagnosticAI"));
 const NotFound             = lazy(() => import("./pages/NotFound"));
 const IntelligenceArchive  = lazy(() => import("./pages/IntelligenceArchive"));
 const Analysis             = lazy(() => import("./pages/Analysis"));
-const Opportunities        = lazy(() => import("./pages/Opportunities"));
 const UniversalSymbolIntelligence = lazy(() => import("./pages/UniversalSymbolIntelligence"));
 const Glossary = lazy(() => import("./pages/Glossary"));
 const ValidationLab = lazy(() => import("./pages/ValidationLab"));
 const FmosHealthDashboard = lazy(() => import("./pages/FmosHealthDashboard"));
-const IntelligenceValidation = lazy(() => import("./pages/IntelligenceValidation"));
 const AshaIntelligenceCenter = lazy(() => import("./pages/AshaIntelligenceCenter"));
 const AdminPublishing  = lazy(() => import('./pages/AdminPublishing'));
 const DailyBriefArchive = lazy(() => import('./pages/DailyBriefArchive'));
 const DailyBriefPost   = lazy(() => import('./pages/DailyBriefPost'));
 const IntelligenceLibrary = lazy(() => import('./pages/IntelligenceLibrary'));
 const IntelligenceLibraryPost = lazy(() => import('./pages/IntelligenceLibraryPost'));
-const CryptoHub = lazy(() => import("./pages/CryptoHub"));
 const DecisionEngine = lazy(() => import("./pages/DecisionEngine"));
-const MarketCommandCenter = lazy(() => import("./pages/MarketCommandCenter"));
 const TodaysStory = lazy(() => import("./pages/TodaysStory"));
 const SmartDiscovery = lazy(() => import("./pages/SmartDiscovery"));
-const DecisionLedger = lazy(() => import("./pages/DecisionLedger"));
-const SeismographIntelligence = lazy(() => import("./pages/SeismographIntelligence"));
-const SeismographicDash = lazy(() => import("./pages/SeismographicDash"));
-const IntelligenceHub   = lazy(() => import("./pages/IntelligenceHub"));
 const EngineeringDiagnostics = lazy(() => import("./pages/admin/EngineeringDiagnostics"));
 const ConversationIntelligence = lazy(() => import("./pages/admin/ConversationIntelligence"));
-const MarketIntelligence = lazy(() => import("./pages/MarketIntelligence"));
-const CryptoRegimeDashboard = lazy(() => import("./pages/CryptoRegimeDashboard"));
 const PhoenixSystems = lazy(() => import("./pages/PhoenixSystems"));
 const Press = lazy(() => import("./pages/Press"));
 const About = lazy(() => import("./pages/About"));
@@ -266,23 +231,23 @@ function Router() {
   return (
     <Switch>
       {/* Demo mode — /demo and /demo/* redirect to /app/* with DemoProvider active */}
-      <Route path="/demo/discover"><Redirect to="/app/discover" /></Route>
-      <Route path="/demo/dashboard"><Redirect to="/app/dashboard" /></Route>
-      <Route path="/demo/pressure"><Redirect to="/app/pressure" /></Route>
-      <Route path="/demo/signals"><Redirect to="/app/signals" /></Route>
-      <Route path="/demo/diagnostic"><Redirect to="/app/diagnostic" /></Route>
-      <Route path="/demo/signal-outlook"><Redirect to="/app/signal-outlook" /></Route>
-      <Route path="/demo/day-trade-intelligence"><Redirect to="/app/day-trade-intelligence" /></Route>
-      <Route path="/demo/decision-engine"><Redirect to="/app/decision-engine" /></Route>
-      <Route path="/demo/opportunities"><Redirect to="/app/opportunities" /></Route>
-      <Route path="/demo/insider-intelligence"><Redirect to="/app/insider-intelligence" /></Route>
-      <Route path="/demo/social-intelligence"><Redirect to="/app/social-intelligence" /></Route>
-      <Route path="/demo/crypto"><Redirect to="/app/crypto" /></Route>
-      <Route path="/demo/watchlist"><Redirect to="/app/watchlist" /></Route>
-      <Route path="/demo/portfolio"><Redirect to="/app/portfolio" /></Route>
-      <Route path="/demo"><Redirect to="/app/discover" /></Route>
+      <Route path="/demo/discover"><Redirect to={EXPERT_WORKSPACE_BY_ID["smart-discovery"].path} /></Route>
+      <Route path="/demo/dashboard"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
+      <Route path="/demo/pressure"><Redirect to={EXPERT_WORKSPACE_BY_ID.pressure.path} /></Route>
+      <Route path="/demo/signals"><Redirect to={CANONICAL_DESTINATION_BY_ID.watch.path} /></Route>
+      <Route path="/demo/diagnostic"><Redirect to={ANALYTICAL_LEGACY_ALIASES["/app/diagnostic"]} /></Route>
+      <Route path="/demo/signal-outlook"><Redirect to={EXPERT_WORKSPACE_BY_ID["signal-outlook"].path} /></Route>
+      <Route path="/demo/day-trade-intelligence"><Redirect to={EXPERT_WORKSPACE_BY_ID["day-trade-intelligence"].path} /></Route>
+      <Route path="/demo/decision-engine"><Redirect to={EXPERT_WORKSPACE_BY_ID["decision-engine"].path} /></Route>
+      <Route path="/demo/opportunities"><Redirect to={CANONICAL_DESTINATION_BY_ID.act.path} /></Route>
+      <Route path="/demo/insider-intelligence"><Redirect to={ANALYTICAL_LEGACY_ALIASES["/app/insider-intelligence"]} /></Route>
+      <Route path="/demo/social-intelligence"><Redirect to={ANALYTICAL_LEGACY_ALIASES["/app/social-intelligence"]} /></Route>
+      <Route path="/demo/crypto"><Redirect to={ANALYTICAL_LEGACY_ALIASES["/app/crypto"]} /></Route>
+      <Route path="/demo/watchlist"><Redirect to={ANALYTICAL_LEGACY_ALIASES["/app/watchlist"]} /></Route>
+      <Route path="/demo/portfolio"><Redirect to={ANALYTICAL_LEGACY_ALIASES["/app/portfolio"]} /></Route>
+      <Route path="/demo"><Redirect to={EXPERT_WORKSPACE_BY_ID["smart-discovery"].path} /></Route>
       {/* Catch-all for any unlisted /demo/* sub-routes — redirect to discover */}
-      <Route path="/demo/:rest*"><Redirect to="/app/discover" /></Route>
+      <Route path="/demo/:rest*"><Redirect to={EXPERT_WORKSPACE_BY_ID["smart-discovery"].path} /></Route>
       {/* Public Shared Report — no login required, no AppLayout */}
       <Route path="/r/:publicShareId">
         <ErrorBoundary>
@@ -654,7 +619,7 @@ function Router() {
       <Route path="/ai-bubble-monitor"><Redirect to="/ai-bubble-risk-tracker" /></Route>
       <Route path="/altcoin-season-index"><Redirect to="/alt-season-indicator" /></Route>
       <Route path="/stock-market-today"><Redirect to="/stock-market-risk-today" /></Route>
-      <Route path="/market-briefing"><Redirect to="/app/report" /></Route>
+      <Route path="/market-briefing"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
       {/* Marketing site moved to /about and /platform — no longer the homepage */}
       <Route path="/about">
         <ErrorBoundary>
@@ -704,40 +669,10 @@ function Router() {
 		              <Route path="/app"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
 	              <AnalyticalLegacyAliases />
 	              <Route path="/app/pressure" component={Pressure} />
-              <Route path="/app/intelligence-hub" component={IntelligenceHub} />
-              <Route path="/app/command" component={MarketCommandCenter} />
-              <Route path="/app/todays-story" component={TodaysStory} />
-              <Route path="/app/discover" component={SmartDiscovery} />
-              <Route path="/app/ask-asha"><Redirect to="/app/discover" /></Route>
-              <Route path="/app/decision-ledger" component={DecisionLedger} />
-	              {/* P1 — Deprecated routes redirect to new destinations */}
-              {/* Canonical URL aliases — advertised paths */}
-              <Route path="/app/command-center"><Redirect to="/app/command" /></Route>
-              <Route path="/app/pressure-index"><Redirect to="/app/pressure" /></Route>
-              <Route path="/app/ai-diagnostic"><Redirect to="/app/diagnostic" /></Route>
-              <Route path="/app/daily-briefing"><Redirect to="/app/report" /></Route>
-              <Route path="/app/scores"><Redirect to="/app/pressure" /></Route>
-              <Route path="/app/charts"><Redirect to="/app/symbol-intelligence" /></Route>
-              <Route path="/app/ai-watch"><Redirect to="/app/signals" /></Route>
-              <Route path="/app/scenarios"><Redirect to="/app/decision-engine" /></Route>
-              <Route path="/app/alerts" component={Alerts} />
-              <Route path="/app/analogs" component={HistoricalAnalogs} />
-              <Route path="/app/simulate" component={SimulatePressure} />
-              <Route path="/app/report" component={DailyReport} />
-              <Route path="/app/watchlist" component={Watchlist} />
-              <Route path="/app/signals" component={Signals} />
-              <Route path="/app/crypto" component={CryptoHub} />
-              <Route path="/app/crypto-search"><Redirect to="/app/crypto" /></Route>
-              <Route path="/app/crypto-watchlist"><Redirect to="/app/crypto" /></Route>
-              <Route path="/app/guide" component={Guide} />
-              <Route path="/app/roadmap" component={Roadmap} />
-              <Route path="/app/diagnostic" component={DiagnosticAI} />
-              <Route path="/app/portfolio" component={Portfolio} />
-              <Route path="/app/aftershock" component={AftershockEngine} />
-              <Route path="/app/seismograph" component={SeismographicDash} />
-              <Route path="/app/seismograph-legacy" component={SeismographIntelligence} />
-              <Route path="/app/crypto-signals"><Redirect to="/app/crypto" /></Route>
-              <Route path="/app/admin" component={AdminPortal} />
+	              <Route path="/app/discover" component={SmartDiscovery} />
+	              <Route path="/app/guide" component={Guide} />
+	              <Route path="/app/roadmap" component={Roadmap} />
+	              <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
               <Route path="/app/admin/engineering" component={EngineeringDiagnostics} />
               <Route path="/app/admin/conversation-intelligence">
@@ -756,21 +691,11 @@ function Router() {
               </Route>
               <Route path="/app/x-posts" component={XPostGenerator} />
               <Route path="/app/x-post-queue" component={XPostQueue} />
-              <Route path="/app/alt-rotation" component={AltRotation} />
-              <Route path="/app/decision-engine" component={DecisionEngine} />
-              <Route path="/app/trade-preflight"><Redirect to="/app/decision-engine" /></Route>
-              <Route path="/app/situation-room"><Redirect to="/app/decision-engine" /></Route>
-              <Route path="/app/opportunities" component={Opportunities} />
-              <Route path="/app/market-intelligence" component={MarketIntelligence} />
-              <Route path="/app/crypto-regime" component={CryptoRegimeDashboard} />
-              <Route path="/app/signal-outlook" component={SignalOutlookCenter} />
-              <Route path="/app/social-intelligence" component={SocialIntelligence} />
-              <Route path="/app/pre-flight" component={PreFlight} />
-              <Route path="/app/insider-intelligence" component={InsiderIntelligence} />
-              <Route path="/app/day-trade-intelligence" component={DayTradeIntelligence} />
-              <Route path="/app/market-movers" component={MarketMovers} />
-              <Route path="/app/trade-journal" component={TradeJournal} />
-              <Route path="/app/symbol-intelligence" component={UniversalSymbolIntelligence} />
+	              <Route path="/app/decision-engine" component={DecisionEngine} />
+	              <Route path="/app/signal-outlook" component={SignalOutlookCenter} />
+	              <Route path="/app/day-trade-intelligence" component={DayTradeIntelligence} />
+	              <Route path="/app/market-movers" component={MarketMovers} />
+	              <Route path="/app/symbol-intelligence" component={UniversalSymbolIntelligence} />
               <Route path="/app/glossary" component={Glossary} />
               <Route path="/app/account" component={UserAccount} />
               <Route path="/app/blog/:slug" component={BlogPost} />
@@ -779,11 +704,8 @@ function Router() {
               <Route path="/app/reading-history" component={ReadingHistory} />
               <Route path="/app/seo-optimizer" component={SeoOptimizer} />
               <Route path="/app/analytics" component={AnalyticsDashboard} />
-              <Route path="/app/stock-heatmap" component={StockHeatmap} />
-              <Route path="/app/sim-portfolio" component={SimPortfolio} />
-              <Route path="/app/validation-lab" component={ValidationLab} />
-              <Route path="/app/intelligence-validation" component={IntelligenceValidation} />
-              <Route path="/app/fmos-health" component={FmosHealthDashboard} />
+	              <Route path="/app/validation-lab" component={ValidationLab} />
+	              <Route path="/app/fmos-health" component={FmosHealthDashboard} />
               <Route path="/owner/simulation" component={OwnerSimulation} />
               <Route component={NotFound} />
             </Switch>
