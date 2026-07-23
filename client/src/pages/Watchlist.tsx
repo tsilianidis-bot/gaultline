@@ -8,9 +8,9 @@
    ============================================================ */
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Plus, Trash2, Bell, BellOff, Edit3, Check, X,
-  ChevronDown, ChevronUp, AlertTriangle, TrendingUp,
-  TrendingDown, Minus, BookOpen, Zap, Info, Bitcoin, Target,
+  Plus, Trash2, Bell, BellOff, Edit3,
+  ChevronDown, ChevronUp, AlertTriangle,
+  Minus, BookOpen, Zap, Info, Bitcoin, Target,
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useEngine } from '@/contexts/EngineContext';
@@ -18,14 +18,16 @@ import { getRiskColor } from '@/components/RiskBadge';
 import { LineChart, Line, ResponsiveContainer, ReferenceLine, Tooltip } from 'recharts';
 import {
   WatchlistItem, IndicatorDef, INDICATOR_CATALOG, INDICATOR_MAP,
-  loadWatchlist, saveWatchlist, evaluateBreach, getBreachDistance, nanoid8,
-  AlertCondition, AlertSeverity,
+  loadWatchlist, saveWatchlist, evaluateBreach, getBreachDistance,
+  AlertSeverity,
 } from '@/lib/watchlist';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
+import { WatchlistEditModal } from '@/components/watchlist/WatchlistEditModal';
+import { CATEGORY_COLORS, SEVERITY_CONFIG } from '@/components/watchlist/watchlistPresentation';
 
 // ── Watchlist tab type ─────────────────────────────────────────
 type WatchlistTab = 'macro' | 'crypto' | 'daytrade';
@@ -64,290 +66,6 @@ function getLiveValue(
   // Raw indicators
   const v = indicators[indicatorKey as keyof typeof indicators];
   return typeof v === 'number' ? v : null;
-}
-
-const SEVERITY_CONFIG: Record<AlertSeverity, { color: string; label: string; bg: string }> = {
-  critical: { color: '#FF2D55', label: 'CRITICAL', bg: 'rgba(255,45,85,0.08)' },
-  high:     { color: '#FF9500', label: 'HIGH',     bg: 'rgba(255,149,0,0.08)' },
-  moderate: { color: '#FFD700', label: 'MODERATE', bg: 'rgba(255,215,0,0.06)' },
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  rates: '#00D4FF', credit: '#FF9500', inflation: '#FFD700',
-  speculation: '#C084FC', liquidity: '#FF9500', economy: '#00FF88', score: '#00D4FF',
-};
-
-// ── Add / Edit modal ──────────────────────────────────────────
-interface EditModalProps {
-  item?: WatchlistItem | null;
-  onSave: (item: WatchlistItem) => void;
-  onClose: () => void;
-  liveValues: Record<string, number | null>;
-}
-
-function EditModal({ item, onSave, onClose, liveValues }: EditModalProps) {
-  const [indicatorKey, setIndicatorKey] = useState(item?.indicatorKey ?? 'score_overall');
-  const [condition, setCondition] = useState<AlertCondition>(item?.condition ?? 'above');
-  const [threshold, setThreshold] = useState(item?.thresholdValue ?? 7.0);
-  const [severity, setSeverity] = useState<AlertSeverity>(item?.severity ?? 'high');
-  const [note, setNote] = useState(item?.note ?? '');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-
-  const def = INDICATOR_MAP[indicatorKey];
-  const liveVal = liveValues[indicatorKey];
-
-  // Update threshold when indicator changes
-  useEffect(() => {
-    if (!item) {
-      const d = INDICATOR_MAP[indicatorKey];
-      if (d) {
-        setThreshold(d.defaultThreshold);
-        setCondition(d.defaultCondition);
-      }
-    }
-  }, [indicatorKey, item]);
-
-  const categories = useMemo(() => {
-    const cats = new Set(INDICATOR_CATALOG.map(d => d.category));
-    return ['all', ...Array.from(cats)];
-  }, []);
-
-  const filteredCatalog = useMemo(() =>
-    INDICATOR_CATALOG.filter(d => categoryFilter === 'all' || d.category === categoryFilter),
-    [categoryFilter]
-  );
-
-  const handleSave = () => {
-    if (!def) return;
-    const newItem: WatchlistItem = {
-      id: item?.id ?? nanoid8(),
-      indicatorKey,
-      thresholdValue: threshold,
-      condition,
-      severity,
-      note: note.trim() || undefined,
-      createdAt: item?.createdAt ?? Date.now(),
-      breachCount: item?.breachCount ?? 0,
-      lastBreached: item?.lastBreached,
-    };
-    onSave(newItem);
-  };
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 300,
-      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-      background: 'rgba(5,6,8,0.9)', backdropFilter: 'blur(10px)',
-      animation: 'fade-in 0.2s ease both',
-    }}>
-      <div style={{
-        width: '100%', maxWidth: '520px',
-        background: '#0A0C10',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderBottom: 'none',
-        borderRadius: '12px 12px 0 0',
-        maxHeight: '90vh',
-        overflow: 'auto',
-        animation: 'onboard-slide 0.3s cubic-bezier(0.23,1,0.32,1) both',
-      }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 14px', borderBottom: '1px solid rgba(255,255,255,0.06)', position: 'sticky', top: 0, background: '#0A0C10', zIndex: 1 }}>
-          <div>
-            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#F0F4FF' }}>
-              {item ? 'Edit Alert' : 'Add to Watchlist'}
-            </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', letterSpacing: '0.1em', marginTop: '2px' }}>
-              SET THRESHOLD · CONDITION · SEVERITY
-            </div>
-          </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#6B7280', minHeight: 'unset' }}>
-            <X size={14} />
-          </button>
-        </div>
-
-        <div style={{ padding: '16px 20px 24px' }}>
-          {/* Indicator selector */}
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Select Indicator</div>
-            {/* Category filter */}
-            <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
-              {categories.map(cat => (
-                <button key={cat} onClick={() => setCategoryFilter(cat)} style={{
-                  padding: '3px 10px', borderRadius: '3px', cursor: 'pointer', minHeight: '28px',
-                  background: categoryFilter === cat ? `${CATEGORY_COLORS[cat] ?? '#00D4FF'}18` : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${categoryFilter === cat ? (CATEGORY_COLORS[cat] ?? '#00D4FF') + '40' : 'rgba(255,255,255,0.06)'}`,
-                  color: categoryFilter === cat ? (CATEGORY_COLORS[cat] ?? '#00D4FF') : '#6B7280',
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', textTransform: 'uppercase', letterSpacing: '0.08em',
-                }}>
-                  {cat}
-                </button>
-              ))}
-            </div>
-            {/* Indicator list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '180px', overflowY: 'auto' }}>
-              {filteredCatalog.map(d => {
-                const lv = liveValues[d.key];
-                const isSelected = indicatorKey === d.key;
-                const catColor = CATEGORY_COLORS[d.category] ?? '#00D4FF';
-                return (
-                  <button key={d.key} onClick={() => setIndicatorKey(d.key)} style={{
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '9px 12px', borderRadius: '4px', cursor: 'pointer', textAlign: 'left',
-                    background: isSelected ? `${catColor}10` : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${isSelected ? catColor + '35' : 'rgba(255,255,255,0.05)'}`,
-                    transition: 'all 0.15s ease', minHeight: '40px',
-                  }}>
-                    <div style={{ width: '3px', height: '28px', background: isSelected ? catColor : 'rgba(255,255,255,0.08)', borderRadius: '2px', flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '13px', color: isSelected ? '#F0F4FF' : '#94A3B8' }}>{d.label}</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>{d.sublabel}</div>
-                    </div>
-                    {lv != null && (
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: isSelected ? catColor : '#6B7280', flexShrink: 0 }}>
-                        {d.format(lv)}
-                      </div>
-                    )}
-                    {isSelected && <Check size={12} style={{ color: catColor, flexShrink: 0 }} />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Selected indicator info */}
-          {def && (
-            <div style={{ padding: '10px 12px', background: `${CATEGORY_COLORS[def.category] ?? '#00D4FF'}08`, border: `1px solid ${CATEGORY_COLORS[def.category] ?? '#00D4FF'}18`, borderRadius: '4px', marginBottom: '16px' }}>
-              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#6B7280', lineHeight: 1.55 }}>{def.description}</div>
-              {def.apiSource && (
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', marginTop: '5px' }}>Source: {def.apiSource}</div>
-              )}
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', marginTop: '3px' }}>
-                Normal range: {def.format(def.normalRange[0])} – {def.format(def.normalRange[1])}
-              </div>
-            </div>
-          )}
-
-          {/* Condition + Threshold */}
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Alert Condition</div>
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-              {(['above', 'below'] as AlertCondition[]).map(cond => (
-                <button key={cond} onClick={() => setCondition(cond)} style={{
-                  flex: 1, padding: '10px', borderRadius: '4px', cursor: 'pointer', minHeight: '44px',
-                  background: condition === cond ? 'rgba(0,212,255,0.1)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${condition === cond ? 'rgba(0,212,255,0.35)' : 'rgba(255,255,255,0.06)'}`,
-                  color: condition === cond ? '#00D4FF' : '#6B7280',
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                }}>
-                  {cond === 'above' ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                  {cond === 'above' ? 'Alert when ABOVE' : 'Alert when BELOW'}
-                </button>
-              ))}
-            </div>
-
-            {/* Threshold input */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ flex: 1 }}>
-                <input
-                  type="range"
-                  min={def?.min ?? 0}
-                  max={def?.max ?? 10}
-                  step={def?.step ?? 0.1}
-                  value={threshold}
-                  onChange={e => setThreshold(parseFloat(e.target.value))}
-                  style={{ width: '100%', accentColor: '#00D4FF', cursor: 'pointer' }}
-                />
-              </div>
-              <div style={{
-                background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.25)',
-                borderRadius: '4px', padding: '8px 12px', minWidth: '70px', textAlign: 'center',
-              }}>
-                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '16px', color: '#00D4FF', fontWeight: 700, lineHeight: 1 }}>
-                  {def ? def.format(threshold) : threshold.toFixed(1)}
-                </div>
-                {def && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', marginTop: '2px' }}>{def.unit || 'value'}</div>}
-              </div>
-            </div>
-
-            {/* Quick presets */}
-            {def && (
-              <div style={{ display: 'flex', gap: '5px', marginTop: '8px', flexWrap: 'wrap' }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', alignSelf: 'center', marginRight: '3px' }}>QUICK:</span>
-                {[
-                  { label: 'Default', val: def.defaultThreshold },
-                  { label: 'Stress', val: def.stressLevel },
-                  { label: 'Normal Lo', val: def.normalRange[0] },
-                  { label: 'Normal Hi', val: def.normalRange[1] },
-                ].map(p => (
-                  <button key={p.label} onClick={() => setThreshold(p.val)} style={{
-                    padding: '3px 8px', borderRadius: '2px', cursor: 'pointer', minHeight: '24px',
-                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-                    color: '#6B7280', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px',
-                  }}>
-                    {p.label} ({def.format(p.val)})
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Severity */}
-          <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Alert Severity</div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {(Object.entries(SEVERITY_CONFIG) as [AlertSeverity, typeof SEVERITY_CONFIG[AlertSeverity]][]).map(([sev, cfg]) => (
-                <button key={sev} onClick={() => setSeverity(sev)} style={{
-                  flex: 1, padding: '10px 6px', borderRadius: '4px', cursor: 'pointer', minHeight: '44px',
-                  background: severity === sev ? cfg.bg : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${severity === sev ? cfg.color + '40' : 'rgba(255,255,255,0.05)'}`,
-                  color: severity === sev ? cfg.color : '#6B7280',
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.08em',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {cfg.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Note */}
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px' }}>Note (optional)</div>
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="e.g. Credit crunch threshold — 2008 analog"
-              maxLength={120}
-              rows={2}
-              style={{
-                width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '4px', padding: '10px 12px', color: '#94A3B8', resize: 'none',
-                fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', lineHeight: 1.5,
-                outline: 'none', boxSizing: 'border-box',
-              }}
-            />
-          </div>
-
-          {/* Save */}
-          <button onClick={handleSave} style={{
-            width: '100%', padding: '14px',
-            background: 'linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.08))',
-            border: '1px solid rgba(0,212,255,0.35)',
-            borderRadius: '6px', color: '#00D4FF',
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px',
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-            cursor: 'pointer', boxShadow: '0 0 20px rgba(0,212,255,0.1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            minHeight: '52px',
-          }}>
-            <Bell size={15} />
-            {item ? 'Update Alert' : 'Add to Watchlist'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ── Watchlist card ────────────────────────────────────────────
@@ -710,7 +428,7 @@ export default function Watchlist() {
     <div style={{ background: '#050608', minHeight: '100vh', padding: '0 0 80px' }}>
       {/* Edit/Add modal */}
       {editingItem !== undefined && activeTab === 'macro' && (
-        <EditModal
+        <WatchlistEditModal
           item={editingItem}
           onSave={handleSave}
           onClose={() => setEditingItem(undefined)}
