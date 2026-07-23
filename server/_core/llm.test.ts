@@ -7,7 +7,7 @@ vi.mock("./env", () => ({
   },
 }));
 
-import { invokeLLM } from "./llm";
+import { invokeLLM, listLLMModels } from "./llm";
 
 const successfulResponse = () =>
   new Response(
@@ -62,5 +62,34 @@ describe("invokeLLM transport", () => {
 
     expect(payload.model).toBe("gpt-5-mini");
     expect(payload.max_tokens).toBe(4096);
+  });
+});
+
+describe("listLLMModels", () => {
+  it("reads the live model catalog through the configured server-side gateway", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      object: "list",
+      data: [{ id: "claude-sonnet-4-6" }, { id: "gpt-5" }],
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await listLLMModels();
+
+    expect(result.data.map(model => model.id)).toEqual(["claude-sonnet-4-6", "gpt-5"]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://forge.example/v1/models",
+      expect.objectContaining({
+        headers: { authorization: "Bearer test-forge-key" },
+      }),
+    );
+  });
+
+  it("rejects malformed catalog responses instead of inventing model availability", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ models: [] }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    )));
+
+    await expect(listLLMModels()).rejects.toThrow("invalid response");
   });
 });

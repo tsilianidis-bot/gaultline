@@ -98,6 +98,18 @@ export type InvokeResult = {
   };
 };
 
+export type LLMModel = {
+  id: string;
+  object?: string;
+  owned_by?: string;
+  capabilities?: Record<string, unknown>;
+};
+
+export type ListLLMModelsResult = {
+  object?: string;
+  data: LLMModel[];
+};
+
 export type JsonSchema = {
   name: string;
   schema: Record<string, unknown>;
@@ -215,6 +227,11 @@ const resolveApiUrl = () =>
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
 
+const resolveModelsApiUrl = () =>
+  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
+    : "https://forge.manus.im/v1/models";
+
 const assertApiKey = () => {
   if (!ENV.forgeApiKey) {
     throw new Error("OPENAI_API_KEY is not configured");
@@ -330,4 +347,27 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   }
 
   return (await response.json()) as InvokeResult;
+}
+
+export async function listLLMModels(): Promise<ListLLMModelsResult> {
+  assertApiKey();
+
+  const response = await fetch(resolveModelsApiUrl(), {
+    headers: {
+      authorization: `Bearer ${ENV.forgeApiKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `LLM model catalog failed: ${response.status} ${response.statusText} – ${errorText}`,
+    );
+  }
+
+  const result = (await response.json()) as ListLLMModelsResult;
+  if (!Array.isArray(result.data)) {
+    throw new Error("LLM model catalog returned an invalid response");
+  }
+  return result;
 }
