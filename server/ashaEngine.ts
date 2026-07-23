@@ -3,7 +3,20 @@
    AI intelligence engine: identity, briefing structure,
    page-context injection, live engine data, transparency.
    ============================================================ */
-import { invokeLLM } from "./_core/llm";
+import type {
+  AshaContextProvenance,
+  AshaGatewayContext,
+  AshaModelTrace,
+  AshaPageContext,
+} from "../shared/ashaContext";
+import {
+  buildAshaCanonicalContextBlock,
+  createAshaGatewayContext,
+  getAshaContextProvenance,
+  invokeAshaGateway,
+} from "./ashaGateway";
+
+export type { AshaPageContext } from "../shared/ashaContext";
 
 // ── ASHA core identity system prompt ─────────────────────────
 const ASHA_IDENTITY = `You are ASHA, the Spirit of FAULTLINE.
@@ -11,7 +24,7 @@ const ASHA_IDENTITY = `You are ASHA, the Spirit of FAULTLINE.
 IDENTITY:
 Your name is ASHA. Your title is "The Spirit of FAULTLINE." You are the AI market intelligence guide and voice of the FAULTLINE platform. You are a symbolic digital intelligence powered by FAULTLINE's 10 proprietary intelligence engines. Your purpose is to reveal what is building beneath the market's surface and translate complex conditions into understandable intelligence.
 
-You are NOT a generic language model. You are NOT a chatbot. You are the intelligence layer that unifies all FAULTLINE engines. Every response you give must originate from FAULTLINE's intelligence systems. Never answer investment or market questions without first evaluating all available engine readings.
+You are NOT a generic language model. You are NOT a chatbot. You are the intelligence layer that unifies FAULTLINE's available evidence systems. Every response you give must originate from the canonical FAULTLINE MarketState. Never answer investment or market questions without first evaluating every currently available engine reading and its source-health status.
 
 You represent:
 - Truth over noise
@@ -46,8 +59,8 @@ PREFERRED PHRASING:
 - "The risk is rising, but the rupture has not occurred."
 - "History suggests caution, not certainty."
 
-MANDATORY 10-ENGINE SYNTHESIS PROTOCOL:
-Before answering ANY market or investment question, you MUST internally evaluate all 10 FAULTLINE engines and synthesize their readings into your response. This is non-negotiable. You are the unified intelligence layer — not a single-engine tool.
+MANDATORY AVAILABLE-EVIDENCE SYNTHESIS PROTOCOL:
+Before answering ANY market or investment question, you MUST internally evaluate the canonical MarketState and synthesize every available FAULTLINE engine reading. You are the unified intelligence layer — not a single-engine tool. If an engine or source is unavailable, do not simulate its output or imply that it was consulted; disclose the limitation when it materially affects the answer.
 
 The 10 engines you must consult and synthesize:
 
@@ -72,13 +85,13 @@ The 10 engines you must consult and synthesize:
 10. SIGNAL ENGINE — What are the highest-conviction signals right now? Which signals are confirming the regime? Are any signals diverging from the consensus? What are the most significant institutional positioning signals?
 
 SYNTHESIS REQUIREMENT:
-After evaluating all 10 engines, identify:
+After evaluating every available engine, identify:
 - Which engines AGREE with each other (consensus)
 - Which engines DIVERGE (important — divergence often precedes regime change)
 - Which engines carry the most weight given the current question
 - What the synthesis of all 10 engines suggests as the most probable conclusion
 
-Cite which engines support your conclusion. If engines disagree, explain the disagreement. Never give a confident answer when engines are diverging — acknowledge the uncertainty.
+Cite only engines and sources that the canonical MarketState marks available. If engines disagree, explain the disagreement. Never give a confident answer when engines are diverging — acknowledge the uncertainty.
 
 BRIEFING STRUCTURE:
 When explaining the market, organize your response in this order:
@@ -120,20 +133,6 @@ If a user thanks you, respond with one of:
 
 SIGNATURE LINE (use selectively, not in every response):
 "Here is what is building beneath the surface."`;
-
-// ── Page context types ────────────────────────────────────────
-export interface AshaPageContext {
-  page: string;
-  pressureScore?: number;
-  regime?: string;
-  regimeConfidence?: number;
-  narrative?: string;
-  trend?: string;
-  keyDrivers?: string[];
-  historicalAnalog?: string;
-  transitionProbability?: number;
-  additionalContext?: Record<string, unknown>;
-}
 
 export interface AshaMessage {
   role: "user" | "assistant";
@@ -182,42 +181,8 @@ export interface AshaResponse {
   finalVerdictAction?: string;
   expectedTimeframe?: string;
   followUpChips?: string[];
-}
-
-// ── Build page-aware context block ───────────────────────────
-function buildPageContextBlock(ctx: AshaPageContext): string {
-  const lines: string[] = [`CURRENT PAGE: ${ctx.page}`];
-
-  if (ctx.pressureScore !== undefined) {
-    lines.push(`PRESSURE INDEX: ${ctx.pressureScore.toFixed(1)}/100`);
-  }
-  if (ctx.regime) {
-    lines.push(`MARKET REGIME: ${ctx.regime}${ctx.regimeConfidence ? ` (confidence: ${(ctx.regimeConfidence * 100).toFixed(0)}%)` : ""}`);
-  }
-  if (ctx.narrative) {
-    lines.push(`CURRENT NARRATIVE: ${ctx.narrative}`);
-  }
-  if (ctx.trend) {
-    lines.push(`PRESSURE TREND: ${ctx.trend}`);
-  }
-  if (ctx.keyDrivers && ctx.keyDrivers.length > 0) {
-    lines.push(`KEY DRIVERS: ${ctx.keyDrivers.join(", ")}`);
-  }
-  if (ctx.historicalAnalog) {
-    lines.push(`CLOSEST HISTORICAL ANALOG: ${ctx.historicalAnalog}`);
-  }
-  if (ctx.transitionProbability !== undefined) {
-    lines.push(`REGIME TRANSITION PROBABILITY (30d): ${(ctx.transitionProbability * 100).toFixed(0)}%`);
-  }
-  if (ctx.additionalContext) {
-    for (const [k, v] of Object.entries(ctx.additionalContext)) {
-      if (v !== null && v !== undefined) {
-        lines.push(`${k.toUpperCase()}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`);
-      }
-    }
-  }
-
-  return `\n\nLIVE FAULTLINE ENGINE READINGS:\n${lines.join("\n")}\n\nREMINDER: Synthesize all 10 engines before responding. Cite which engines support your conclusion.`;
+  provenance: AshaContextProvenance;
+  modelTrace: AshaModelTrace;
 }
 
 // ── Determine confidence from response ───────────────────────
@@ -228,43 +193,32 @@ function inferConfidence(reply: string): "high" | "moderate" | "low" {
   return "moderate";
 }
 
-// ── Extract engines consulted from context ────────────────────
-function extractEngines(ctx: AshaPageContext): string[] {
-  const engines: string[] = [];
-  if (ctx.pressureScore !== undefined) engines.push("Pressure Index");
-  if (ctx.regime) engines.push("Regime Detection Engine");
-  if (ctx.historicalAnalog) engines.push("Historical Analog Engine");
-  if (ctx.transitionProbability !== undefined) engines.push("Transition Probability Engine");
-  if (ctx.additionalContext?.seismographScore !== undefined) engines.push("Seismograph Engine");
-  if (ctx.additionalContext?.liquidityScore !== undefined) engines.push("Liquidity Engine");
-  if (ctx.additionalContext?.creditScore !== undefined) engines.push("Credit Risk Engine");
-  if (ctx.additionalContext?.volatilityScore !== undefined) engines.push("Volatility Engine");
-  if (ctx.additionalContext?.sentimentScore !== undefined) engines.push("Sentiment Engine");
-  if (ctx.additionalContext?.cryptoScore !== undefined) engines.push("Crypto Intelligence Engine");
-  if (ctx.additionalContext?.signalScore !== undefined) engines.push("Signal Engine");
-  if (ctx.additionalContext?.probabilityBull !== undefined) engines.push("Probability Engine");
-  // Always include the full engine network in the list
-  const coreEngines = [
-    "Market Regime Engine",
-    "Pressure Index",
-    "Liquidity Engine",
-    "Treasury Conditions Engine",
-    "Volatility Engine",
-    "Credit Risk Engine",
-    "Historical Analog Engine",
-    "Probability Engine",
-    "Crypto Intelligence Engine",
-    "Signal Engine",
-  ];
-  // Merge detected + always-present core engines
-  const merged = Array.from(new Set([...engines, ...coreEngines]));
-  return merged;
+// ── Extract only evidence actually available in canonical state ─────────────
+function extractEngines(context: AshaGatewayContext): string[] {
+  const engines = ["Canonical Seismograph", "Pressure Index", "Market Regime Engine"];
+  const { marketState } = context;
+
+  if (marketState.history.observationCount > 0) {
+    engines.push("Historical Market Memory", "Historical Analog Engine");
+  }
+  if (marketState.outlook.probabilities.confidence > 0) {
+    engines.push("Probability Engine");
+  }
+  for (const family of marketState.why.evidenceFamilies) {
+    engines.push(`${family.name} Evidence`);
+  }
+  const cryptoSource = marketState.sourceHealth.find(source => source.id === "coingecko");
+  if (cryptoSource && cryptoSource.status !== "unavailable") {
+    engines.push("Crypto Market Overlay");
+  }
+
+  return Array.from(new Set(engines));
 }
 
 // ── Main ASHA ask function ────────────────────────────────────
 export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
-  const pageContextBlock = buildPageContextBlock(req.pageContext);
-  const systemPrompt = ASHA_IDENTITY + pageContextBlock;
+  const gatewayContext = await createAshaGatewayContext(req.pageContext);
+  const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
@@ -272,7 +226,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     { role: "user", content: req.userMessage },
   ];
 
-  const llmResponse = await invokeLLM({
+  const { response: llmResponse, trace: modelTrace } = await invokeAshaGateway({
     messages,
     response_format: {
       type: "json_schema",
@@ -324,16 +278,18 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   return {
     reply,
     confidence: inferConfidence(reply),
-    sources: ["FAULTLINE Engine Network", "Live Market Data", "Historical Records"],
-    enginesConsulted: extractEngines(req.pageContext),
-    lastUpdated: new Date().toISOString(),
+    sources: gatewayContext.marketState.sourceHealth
+      .filter(source => source.status !== "unavailable")
+      .map(source => source.label),
+    enginesConsulted: extractEngines(gatewayContext),
+    lastUpdated: gatewayContext.marketState.sourceUpdatedAt,
     invalidationTriggers: parsed.invalidationConditions as string[] | undefined,
     // Oracle Briefing structured fields
     executiveSummary: (parsed.executiveSummary as string) || reply.split("\n")[0],
     marketBias: (parsed.marketBias as "BULLISH" | "BEARISH" | "NEUTRAL") || "NEUTRAL",
-    marketRegime: (parsed.marketRegime as string) || "Unknown",
+    marketRegime: (parsed.marketRegime as string) || gatewayContext.marketState.now.regime,
     threatLevel: (parsed.threatLevel as "LOW" | "ELEVATED" | "HIGH" | "CRITICAL") || "ELEVATED",
-    pressureIndex: typeof parsed.pressureIndex === "number" ? parsed.pressureIndex : (req.pageContext.pressureScore ?? 50),
+    pressureIndex: typeof parsed.pressureIndex === "number" ? parsed.pressureIndex : gatewayContext.marketState.now.pressureScore,
     riskLevel: (parsed.riskLevel as string) || "Moderate",
     suggestedBias: parsed.suggestedBias as string | undefined,
     bullProbability: typeof parsed.bullProbability === "number" ? parsed.bullProbability : 50,
@@ -347,6 +303,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     finalVerdictAction: (parsed.finalVerdictAction as string) || "WATCH",
     expectedTimeframe: (parsed.expectedTimeframe as string) || "2-4 weeks",
     followUpChips: (parsed.followUpChips as string[]) || [],
+    provenance: getAshaContextProvenance(gatewayContext),
+    modelTrace,
   };
 }
 
@@ -370,28 +328,33 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
     ? engineContext.pressureScore - engineContext.previousPressureScore
     : null;
 
-  const contextBlock = `
-CURRENT FAULTLINE READINGS:
-- Pressure Index: ${engineContext.pressureScore.toFixed(1)}/100 ${pressureChange !== null ? `(${pressureChange >= 0 ? "+" : ""}${pressureChange.toFixed(1)} since last session)` : ""}
-- Market Regime: ${engineContext.regime} (confidence: ${(engineContext.regimeConfidence * 100).toFixed(0)}%)
-- Pressure Trend: ${engineContext.trend}
-- Key Drivers: ${engineContext.keyDrivers.join(", ")}
-- Current Narrative: ${engineContext.narrative}`;
+  const gatewayContext = await createAshaGatewayContext({
+    page: "daily-greeting",
+    pressureScore: engineContext.pressureScore,
+    regime: engineContext.regime,
+    regimeConfidence: engineContext.regimeConfidence,
+    narrative: engineContext.narrative,
+    trend: engineContext.trend,
+    keyDrivers: engineContext.keyDrivers,
+    additionalContext: {
+      pressureChangeSinceLastSession: pressureChange,
+    },
+  });
+  const contextBlock = buildAshaCanonicalContextBlock(gatewayContext);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     {
       role: "system",
-      content: ASHA_IDENTITY,
+      content: ASHA_IDENTITY + contextBlock,
     },
     {
       role: "user",
       content: `Generate a personalized daily greeting for ${userName ? userName : "the user"} based on the current FAULTLINE intelligence readings. Keep it to 3-4 sentences. Start with "Welcome back." Do not use the signature line "Let me show you what is building beneath the surface" — save that for first-time introductions. The greeting must dynamically reflect the actual engine output provided below. Be specific about what changed, what matters, and what deserves attention today.
-
-${contextBlock}`,
+`,
     },
   ];
 
-  const llmResponse = await invokeLLM({ messages });
+  const { response: llmResponse } = await invokeAshaGateway({ messages });
   return (llmResponse.choices?.[0]?.message?.content as string) ?? "Welcome back. I have reviewed the market. Here is what is building beneath the surface.";
 }
 
