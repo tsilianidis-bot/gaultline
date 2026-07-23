@@ -2,7 +2,7 @@
    FAULTLINE — Palantir Noir Intelligence Terminal
    App shell with cinematic intro screen + bottom tab navigation
    ============================================================ */
-import { useState, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useCallback, useEffect, lazy, Suspense, type ComponentType } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Route, Switch, Redirect } from "wouter";
@@ -21,7 +21,7 @@ import { OnboardingVideoModal } from './components/OnboardingVideoModal';
 import AshaLiveBriefing from './components/AshaLiveBriefing';
 import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
-import { ANALYTICAL_LEGACY_ALIASES, preserveRouteContext } from '@shared/routeRegistry';
+import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, preserveRouteContext, type CanonicalDestinationId } from '@shared/routeRegistry';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -225,6 +225,25 @@ function AnalyticalLegacyAliases() {
       )}
     </Route>
   ));
+}
+
+const CANONICAL_PAGE_BY_ID: Record<CanonicalDestinationId, ComponentType> = {
+  now: SeismographicDash,
+  why: TodaysStory,
+  outlook: SignalOutlookCenter,
+  watch: Signals,
+  act: SmartDiscovery,
+};
+
+function CanonicalDestinationRoutes() {
+  return CANONICAL_DESTINATIONS.map(destination => {
+    const DestinationPage = CANONICAL_PAGE_BY_ID[destination.id];
+    return (
+      <Route key={destination.id} path={destination.path}>
+        {() => <DestinationPage />}
+      </Route>
+    );
+  });
 }
 
 // ── Session key: show cinematic intro once per browser session (returning users) ──
@@ -665,12 +684,8 @@ function Router() {
 	          <ErrorBoundary inline>
 	          <Suspense fallback={<PageLoader />}>
 	            <Switch>
-	              <Route path="/app/now" component={SeismographicDash} />
-	              <Route path="/app/why" component={TodaysStory} />
-	              <Route path="/app/outlook" component={SignalOutlookCenter} />
-	              <Route path="/app/watch" component={Signals} />
-	              <Route path="/app/act" component={SmartDiscovery} />
-	              <Route path="/app"><Redirect to="/app/now" /></Route>
+		              <CanonicalDestinationRoutes />
+		              <Route path="/app"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
 	              <AnalyticalLegacyAliases />
 	              <Route path="/app/pressure" component={Pressure} />
               <Route path="/app/intelligence-hub" component={IntelligenceHub} />
