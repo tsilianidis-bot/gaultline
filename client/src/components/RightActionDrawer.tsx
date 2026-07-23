@@ -10,11 +10,17 @@ import { useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   Zap, X, MessageSquare, Search, BarChart2, Command,
-  Bell, Bookmark, BookOpen, Briefcase, TrendingUp, Users,
-  AlertTriangle, RefreshCw, Eye, FileText, Target,
+  Bell, Bookmark, Briefcase, AlertTriangle, Eye, FileText,
   ChevronRight, Layers, Radio,
 } from "lucide-react";
 import { useDrawer } from "@/contexts/DrawerContext";
+import {
+  CANONICAL_DESTINATION_BY_ID,
+  EXPERT_WORKSPACE_BY_ID,
+  PERSISTENT_UTILITY_BY_ID,
+  resolveCanonicalDestination,
+  type CanonicalDestinationId,
+} from "@shared/routeRegistry";
 // ASHA is triggered via CustomEvent 'asha:summon' — no direct context needed
 
 // ── Colours ───────────────────────────────────────────────────
@@ -27,7 +33,7 @@ const ACCENT_BLUE    = "#3B82F6";
 const TAB_BG         = "#E4EBF5";   // slightly deeper blue-gray for tab
 
 // ── Action definition ─────────────────────────────────────────
-type QuickAction = {
+export type QuickAction = {
   id: string;
   label: string;
   icon: React.ElementType;
@@ -36,80 +42,57 @@ type QuickAction = {
   target?: string;   // path for navigate, prompt for asha
 };
 
-// ── Page-specific contextual actions ─────────────────────────
-// Keyed by partial path match
-const PAGE_ACTIONS: Record<string, QuickAction[]> = {
-  "/app/seismograph": [
-    { id: "ask-today",     label: "Ask ASHA About Today",      icon: MessageSquare, action: "asha",     target: "What changed in the market today?" },
-    { id: "open-signals",  label: "Open Signals",              icon: Radio,         action: "navigate", target: "/app/signals" },
-    { id: "view-alerts",   label: "Review Alerts",             icon: Bell,          action: "navigate", target: "/app/alerts" },
-    { id: "situation",     label: "Open Situation Room",       icon: Command,       action: "navigate", target: "/app/decision-engine" },
+// ── Registry-owned contextual actions ────────────────────────
+const destination = CANONICAL_DESTINATION_BY_ID;
+const expert = EXPERT_WORKSPACE_BY_ID;
+const utility = PERSISTENT_UTILITY_BY_ID;
+
+const PAGE_ACTIONS: Record<CanonicalDestinationId, QuickAction[]> = {
+  now: [
+    { id: "ask-today", label: "Ask ASHA About Today", icon: MessageSquare, action: "asha", target: "Explain what is happening in markets right now and what changed." },
+    { id: "open-pressure", label: "Open Pressure Engine", icon: AlertTriangle, action: "navigate", target: expert.pressure.path },
+    { id: "open-signals", label: "Open Signals", icon: Radio, action: "navigate", target: destination.watch.path },
+    { id: "view-history", label: "Compare With History", icon: Layers, action: "navigate", target: `${destination.why.path}?view=history` },
   ],
-  "/app/dashboard": [
-    { id: "ask-today",     label: "Ask ASHA About Today",      icon: MessageSquare, action: "asha",     target: "Explain today's market conditions" },
-    { id: "open-signals",  label: "Open Signals",              icon: Radio,         action: "navigate", target: "/app/signals" },
-    { id: "view-alerts",   label: "Review Alerts",             icon: Bell,          action: "navigate", target: "/app/alerts" },
-    { id: "situation",     label: "Open Situation Room",       icon: Command,       action: "navigate", target: "/app/decision-engine" },
+  why: [
+    { id: "ask-drivers", label: "Ask ASHA Why", icon: MessageSquare, action: "asha", target: "Why are current market conditions developing, and which evidence carries the most weight?" },
+    { id: "view-history", label: "View Historical Context", icon: Layers, action: "navigate", target: `${destination.why.path}?view=history` },
+    { id: "open-pressure", label: "Open Pressure Engine", icon: AlertTriangle, action: "navigate", target: expert.pressure.path },
+    { id: "view-outlook", label: "View Outlook", icon: Eye, action: "navigate", target: destination.outlook.path },
   ],
-  "/app/signals": [
-    { id: "ask-signals",   label: "Ask ASHA About Signals",    icon: MessageSquare, action: "asha",     target: "What signals are most significant right now?" },
-    { id: "analyze",       label: "Analyze a Symbol",          icon: Search,        action: "navigate", target: "/app/symbol-intelligence" },
-    { id: "watchlist",     label: "Add to Watchlist",          icon: Bookmark,      action: "navigate", target: "/app/watchlist" },
-    { id: "outlook",       label: "View Signal Outlook",       icon: Eye,           action: "navigate", target: "/app/signal-outlook" },
+  outlook: [
+    { id: "ask-outcome", label: "Ask ASHA What Is Next", icon: MessageSquare, action: "asha", target: "What is the highest-probability market path, and what would invalidate it?" },
+    { id: "signal-outlook", label: "Open Signal Outlook", icon: Eye, action: "navigate", target: expert["signal-outlook"].path },
+    { id: "scenarios", label: "Compare Scenarios", icon: BarChart2, action: "navigate", target: `${destination.outlook.path}?view=scenarios` },
+    { id: "watch", label: "Review What to Watch", icon: Bell, action: "navigate", target: destination.watch.path },
   ],
-  "/app/portfolio": [
-    { id: "risk-scan",     label: "Run Portfolio Risk Scan",   icon: AlertTriangle, action: "asha",     target: "Run a portfolio risk scan on my current positions" },
-    { id: "ask-portfolio", label: "Ask ASHA About Portfolio",  icon: MessageSquare, action: "asha",     target: "Analyze my portfolio in the current macro regime" },
-    { id: "rebalance",     label: "Rebalance Review",          icon: RefreshCw,     action: "asha",     target: "Should I rebalance my portfolio given current conditions?" },
-    { id: "benchmark",     label: "Compare Against Benchmark", icon: BarChart2,     action: "asha",     target: "How does my portfolio compare against SPY?" },
+  watch: [
+    { id: "ask-watch", label: "Ask ASHA What to Watch", icon: MessageSquare, action: "asha", target: "Which developing conditions and signals deserve the most attention now?" },
+    { id: "alerts", label: "Review Alerts", icon: Bell, action: "navigate", target: utility.alerts.path },
+    { id: "watchlists", label: "Open Watchlists", icon: Bookmark, action: "navigate", target: `${destination.watch.path}?view=watchlists` },
+    { id: "portfolio", label: "Review Portfolio", icon: Briefcase, action: "navigate", target: `${destination.watch.path}?view=portfolio` },
   ],
-  "/app/symbol-intelligence": [
-    { id: "ask-symbol",    label: "Ask ASHA About This Asset", icon: MessageSquare, action: "asha",     target: "Analyze this asset in the current macro regime" },
-    { id: "add-watch",     label: "Add to Watchlist",          icon: Bookmark,      action: "navigate", target: "/app/watchlist" },
-    { id: "compare",       label: "Compare Assets",            icon: BarChart2,     action: "asha",     target: "Compare this asset against its sector peers" },
-    { id: "situation",     label: "Open Situation Room",       icon: Command,       action: "navigate", target: "/app/decision-engine" },
-  ],
-  "/app/decision-engine": [
-    { id: "ask-outcome",   label: "Ask ASHA Highest Probability", icon: MessageSquare, action: "asha",  target: "What is the highest-probability market outcome right now?" },
-    { id: "preflight",     label: "Run Pre-Flight Check",      icon: Target,        action: "navigate", target: "/app/pre-flight" },
-    { id: "save-analysis", label: "Save Current Analysis",     icon: Bookmark,      action: "navigate", target: "/app/decision-ledger" },
-    { id: "signals",       label: "Open Signals",              icon: Radio,         action: "navigate", target: "/app/signals" },
-  ],
-  "/app/opportunities": [
-    { id: "ask-opps",      label: "Ask ASHA for Opportunities", icon: MessageSquare, action: "asha",    target: "What are the best opportunities in the current regime?" },
-    { id: "analyze",       label: "Analyze a Symbol",           icon: Search,        action: "navigate", target: "/app/symbol-intelligence" },
-    { id: "signals",       label: "Open Signals",               icon: Radio,         action: "navigate", target: "/app/signals" },
-    { id: "watchlist",     label: "Add to Watchlist",           icon: Bookmark,      action: "navigate", target: "/app/watchlist" },
-  ],
-  "/app/market-intelligence": [
-    { id: "ask-regime",    label: "Ask ASHA About Regime",     icon: MessageSquare, action: "asha",     target: "What regime are we in and how long has it lasted?" },
-    { id: "analogs",       label: "View Historical Analogs",   icon: Layers,        action: "navigate", target: "/app/analogs" },
-    { id: "pressure",      label: "Open Pressure Index",       icon: AlertTriangle, action: "navigate", target: "/app/pressure" },
-    { id: "situation",     label: "Open Situation Room",       icon: Command,       action: "navigate", target: "/app/decision-engine" },
-  ],
-  "/app/crypto": [
-    { id: "ask-crypto",    label: "Ask ASHA About Crypto",     icon: MessageSquare, action: "asha",     target: "How does crypto behave in the current macro regime?" },
-    { id: "regime",        label: "View Crypto Regime",        icon: BarChart2,     action: "navigate", target: "/app/crypto-regime" },
-    { id: "watchlist",     label: "Add to Watchlist",          icon: Bookmark,      action: "navigate", target: "/app/watchlist" },
-    { id: "signals",       label: "Open Signals",              icon: Radio,         action: "navigate", target: "/app/signals" },
+  act: [
+    { id: "ask-response", label: "Ask ASHA How to Respond", icon: MessageSquare, action: "asha", target: "How should I respond to current conditions, and what risk controls matter most?" },
+    { id: "analyze", label: "Analyze a Symbol", icon: Search, action: "navigate", target: expert["symbol-intelligence"].path },
+    { id: "decide", label: "Open Decision Engine", icon: Command, action: "navigate", target: expert["decision-engine"].path },
+    { id: "journal", label: "Open Decision Journal", icon: FileText, action: "navigate", target: `${destination.act.path}?view=journal` },
   ],
 };
 
 // ── Default actions (fallback for any page) ───────────────────
 const DEFAULT_ACTIONS: QuickAction[] = [
   { id: "ask-asha",      label: "Ask ASHA",                   icon: MessageSquare, action: "asha",     target: "What is the most important thing happening in the market right now?" },
-  { id: "analyze",       label: "Analyze a Symbol",           icon: Search,        action: "navigate", target: "/app/symbol-intelligence" },
-  { id: "situation",     label: "Open Situation Room",        icon: Command,       action: "navigate", target: "/app/decision-engine" },
-  { id: "watchlist",     label: "View Watchlist",             icon: Bookmark,      action: "navigate", target: "/app/watchlist" },
-  { id: "alerts",        label: "View Alerts",                icon: Bell,          action: "navigate", target: "/app/alerts" },
-  { id: "save-analysis", label: "Save Analysis",              icon: FileText,      action: "navigate", target: "/app/decision-ledger" },
+  { id: "analyze",       label: "Analyze a Symbol",           icon: Search,        action: "navigate", target: expert["symbol-intelligence"].path },
+  { id: "decide",        label: "Open Decision Engine",       icon: Command,       action: "navigate", target: expert["decision-engine"].path },
+  { id: "watchlist",     label: "View Watchlists",            icon: Bookmark,      action: "navigate", target: `${destination.watch.path}?view=watchlists` },
+  { id: "alerts",        label: "View Alerts",                icon: Bell,          action: "navigate", target: utility.alerts.path },
+  { id: "journal",       label: "Open Decision Journal",      icon: FileText,      action: "navigate", target: `${destination.act.path}?view=journal` },
 ];
 
-function getActionsForPath(path: string): QuickAction[] {
-  for (const [key, actions] of Object.entries(PAGE_ACTIONS)) {
-    if (path.startsWith(key)) return actions;
-  }
-  return DEFAULT_ACTIONS;
+export function getActionsForPath(path: string): QuickAction[] {
+  const owner = resolveCanonicalDestination(path);
+  return owner ? PAGE_ACTIONS[owner.id] : DEFAULT_ACTIONS;
 }
 
 export default function RightActionDrawer() {

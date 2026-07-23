@@ -3,7 +3,7 @@
 - [x] Create and verify immutable tag `FAULTLINE_Pre-Reorganization_2026-07-22` on the existing untouched checkpoint `f6106e41`.
 - [x] Validate all 158 page-map rows and all 56 large-file-audit rows; record untouched route, TypeScript, Vitest, and build baselines.
 - [ ] Recover the discarded route-registry, canonical-market-state, and unified-ASHA Foundation in independently committed batches.
-- [ ] Create one typed route registry for NOW, WHY, OUTLOOK, WATCH, ACT, utilities, aliases, access, icons, analytics, search, and CTAs.
+- [x] Create one typed route registry for NOW, WHY, OUTLOOK, WATCH, ACT, utilities, aliases, access, icons, analytics, search, and CTAs.
 - [ ] Make `/app` resolve to `/app/now`; make desktop, tablet, mobile, onboarding, search, analytics, links, CTAs, and wrappers consume the registry.
 - [ ] Expose only NOW, WHY, OUTLOOK, WATCH, ACT as analytical navigation; keep ASHA, Search, Help, Account, Alerts as utilities.
 - [ ] Add registry order, uniqueness, metadata, access, and context-preserving alias tests.
@@ -11,9 +11,9 @@
 - [ ] Make browser live state a projection of canonical state while retaining explicit deterministic simulation controls.
 - [ ] Establish one macro/FRED provider, cache owner, retry/fallback path, truthful provenance, and no fabricated live values.
 - [ ] Add scoring, snapshot, cache, provider, freshness, fallback, provenance, and projection tests.
-- [ ] Create one shared ASHA context contract and one advisor-facing gateway retaining bounded specialist engines.
+- [x] Create one shared ASHA context contract and one advisor-facing gateway retaining bounded specialist engines.
 - [ ] Implement ASHA as persistent utility, contextual panel, and `/app/asha` workspace with shared continuity.
-- [ ] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
+- [x] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
 - [ ] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
 - [ ] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
 - [ ] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
@@ -39,3 +39,7 @@
 - [x] Reconcile the global ASHA placeholder contract with its existing focused test.
 - [x] Document the user-waived SendGrid HTTP 401 as a known external-dependency issue and explicitly skip only its live credential assertion.
 - [ ] Validate a signed-in authenticated route end to end during production verification.
+- [ ] Verify and convert remaining mobile, onboarding, link, CTA, and wrapper consumers to shared route-registry ownership.
+- [ ] Confirm destination-order, path-uniqueness, access-metadata, and context-preserving alias test coverage explicitly.
+- [ ] Prove the deterministic MarketState 0–100 scoring path with focused tests or add the missing canonical scoring boundary.
+- [ ] Centralize canonical pressure and probability formatting and cover its UI consumers with focused tests.
