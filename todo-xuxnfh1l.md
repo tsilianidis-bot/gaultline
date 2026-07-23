@@ -16,9 +16,9 @@
 - [x] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
 - [ ] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
 - [x] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
-- [ ] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
+- [x] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
 - [x] Compose and validate NOW in the required conclusion-first sequence with complete Seismograph depth.
-- [ ] Archive `FAULTLINE_Post-NOW` as checkpoint plus immutable tag.
+- [x] Archive `FAULTLINE_Post-NOW` as checkpoint plus immutable tag.
 - [ ] Compose and validate WHY, OUTLOOK, WATCH, and ACT in their required information orders.
 - [ ] Preserve Pressure, Signal Outlook, Decision Engine, Day Trade, Symbol Intelligence, and Smart Discovery as expert workspaces outside primary navigation.
 - [ ] Apply the exact treatment to all 158 page-map rows, preserving public/support/account/admin/internal/mobile behavior and legacy context.
