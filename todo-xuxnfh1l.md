@@ -53,3 +53,7 @@
 - [x] Collapse the overlapping `CinematicAuthGate` render branches in `App.tsx` into one gate instance.
 - [x] Convert the ASHA hero plus NOW-adjacent pressure displays to the shared canonical 0–100 formatter.
 - [x] Re-verify the hydrated NOW route and confirm no legacy pressure `/10` presentation remains in the NOW flow.
+- [x] Compose WHY from canonical MarketState in causal order: explanation, primary drivers, transmission, positioning, duration/change, history, invalidation, confidence, ASHA, and expert handoffs.
+- [x] Preserve the current `TodaysStory` experience at `/app/why/deep` while making `/app/why` the canonical WHY composition.
+- [x] Add focused WHY composition, route ownership, source-state, provenance, and deep-view regression coverage.
+- [x] Validate the hydrated WHY route in the browser, run TypeScript plus focused tests, and commit the Stage 3 milestone.

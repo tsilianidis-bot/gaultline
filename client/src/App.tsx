@@ -27,6 +27,7 @@ import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATIO
 // Dashboard is eager (first page, must be instant)
 import Dashboard from "./pages/Dashboard";
 import Now from "./pages/Now";
+import Why from "./pages/Why";
 
 const Pressure        = lazy(() => import("./pages/Pressure"));
 const Scores          = lazy(() => import("./pages/Scores"));
@@ -229,10 +230,11 @@ function AnalyticalLegacyAliases() {
 }
 
 const NOW_DEEP_PATH = "/app/now/deep";
+const WHY_DEEP_PATH = "/app/why/deep";
 
 const CANONICAL_PAGE_BY_ID: Record<CanonicalDestinationId, ComponentType> = {
   now: Now,
-  why: TodaysStory,
+  why: Why,
   outlook: SignalOutlookCenter,
   watch: Signals,
   act: SmartDiscovery,
@@ -686,8 +688,9 @@ function Router() {
         <AppLayout>
 	          <ErrorBoundary inline>
 	          <Suspense fallback={<PageLoader />}>
-		            <Switch>
+	            <Switch>
 			              <Route path={NOW_DEEP_PATH} component={Dashboard} />
+			              <Route path={WHY_DEEP_PATH} component={TodaysStory} />
 			              <CanonicalDestinationRoutes />
 		              <Route path="/app"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
 	              <AnalyticalLegacyAliases />
