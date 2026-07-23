@@ -43,6 +43,7 @@ import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
 import SeismicWaveShared from "@/components/SeismicWave";
+import { formatCanonicalPercent, normalizeCanonicalMetric } from "@shared/marketMetrics";
 import { Activity } from "lucide-react";
 import { Link } from "wouter";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
@@ -234,10 +235,11 @@ function AnimProbBar({ label, value, color, width = "100px", revealDelay = 0 }: 
   const prevRef = useRef(0);
   const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono','Courier New',monospace" };
   useEffect(() => {
-    if (prefersReducedMotion()) { setDisplayed(value); return; }
+    const canonicalValue = normalizeCanonicalMetric(value);
+    if (prefersReducedMotion()) { setDisplayed(canonicalValue); return; }
     let raf: number;
     const from = prevRef.current;
-    const to = value;
+    const to = canonicalValue;
     const start = performance.now() + revealDelay;
     const dur = 900;
     function tick(now: number) {
@@ -261,7 +263,7 @@ function AnimProbBar({ label, value, color, width = "100px", revealDelay = 0 }: 
           )}
         </div>
       </div>
-      <div style={{ ...mono, width: "30px", textAlign: "right", fontSize: "10px", color, fontWeight: 700, flexShrink: 0 }}>{displayed}%</div>
+      <div style={{ ...mono, width: "38px", textAlign: "right", fontSize: "10px", color, fontWeight: 700, flexShrink: 0 }}>{formatCanonicalPercent(displayed)}</div>
     </div>
   );
 }
@@ -387,14 +389,15 @@ function IntelTicker({ items }: { items: { label: string; value: string; color: 
 // ── Dashboard ProbBar ─────────────────────────────────────────
 function ProbBar({ label, value, color }: { label: string; value: number; color: string }) {
   const [anim, setAnim] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setAnim(value), 600); return () => clearTimeout(t); }, [value]);
+  const canonicalValue = normalizeCanonicalMetric(value);
+  useEffect(() => { const t = setTimeout(() => setAnim(canonicalValue), 600); return () => clearTimeout(t); }, [canonicalValue]);
   return (
     <div style={{ flex: 1, minWidth: '72px' }}>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
       <div style={{ position: 'relative', height: '4px', background: 'rgba(255,255,255,0.14)', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${anim}%`, background: `linear-gradient(90deg, ${color}70, ${color})`, boxShadow: `0 0 6px ${color}60`, borderRadius: '2px', transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
       </div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color, fontWeight: 600 }}>{value}%</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color, fontWeight: 600 }}>{formatCanonicalPercent(canonicalValue)}</div>
     </div>
   );
 }

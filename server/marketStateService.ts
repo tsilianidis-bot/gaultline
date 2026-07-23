@@ -3,6 +3,7 @@ import type {
   MarketStateCacheStatus,
   MarketStateSourceHealth,
 } from "../shared/marketState";
+import { normalizeCanonicalMetric } from "../shared/marketMetrics";
 import {
   getUnifiedSeismographIntelligence,
   type UnifiedSeismographIntelligence,
@@ -94,10 +95,11 @@ function buildSourceHealth(
 }
 
 function marketPosture(
-  source: CanonicalMarketStateSource,
+  stressLevel: CanonicalMarketStateSource["currentStressLevel"],
+  probabilities: CanonicalMarketState["outlook"]["probabilities"],
 ): CanonicalMarketState["act"]["marketPosture"] {
-  if (source.currentStressLevel === "Crisis" || source.probabilities.bear >= 55) return "defensive";
-  if (source.currentStressLevel === "Low" && source.probabilities.bull >= 50) return "opportunistic";
+  if (stressLevel === "Crisis" || probabilities.bear >= 55) return "defensive";
+  if (stressLevel === "Low" && probabilities.bull >= 50) return "opportunistic";
   return "balanced";
 }
 
@@ -115,7 +117,14 @@ export function assembleCanonicalMarketState(
     .sort((a, b) => b.strength - a.strength)
     .slice(0, 3)
     .map(family => `${family.name}: ${family.currentValue}`);
-  const posture = marketPosture(source);
+  const probabilities = {
+    ...source.probabilities,
+    bull: normalizeCanonicalMetric(source.probabilities.bull),
+    neutral: normalizeCanonicalMetric(source.probabilities.neutral),
+    bear: normalizeCanonicalMetric(source.probabilities.bear),
+    confidence: normalizeCanonicalMetric(source.probabilities.confidence),
+  };
+  const posture = marketPosture(source.currentStressLevel, probabilities);
 
   return {
     version: "1.0",
@@ -130,11 +139,11 @@ export function assembleCanonicalMarketState(
     sourceHealth,
     warnings,
     now: {
-      pressureScore: source.currentScore,
+      pressureScore: normalizeCanonicalMetric(source.currentScore),
       regime: source.currentRegime,
       stressLevel: source.currentStressLevel,
       direction: source.currentDirection,
-      historicalPercentile: source.currentPercentile,
+      historicalPercentile: normalizeCanonicalMetric(source.currentPercentile),
       headline: `${source.currentStressLevel} stress in a ${source.currentRegime} regime; pressure is ${source.currentDirection.toLowerCase()}.`,
       topDrivers,
     },
@@ -149,20 +158,36 @@ export function assembleCanonicalMarketState(
         whatHasChanged: source.marketNarrative.whatHasChanged,
         whatIsBuildingBeneathSurface: source.marketNarrative.whatIsBuildingBeneathSurface,
       },
-      evidenceFamilies: source.evidenceFamilies,
+      evidenceFamilies: source.evidenceFamilies.map(family => ({
+        ...family,
+        strength: normalizeCanonicalMetric(family.strength),
+      })),
       evidenceConsensus: source.evidenceConsensus,
     },
     outlook: {
-      probabilities: source.probabilities,
-      regimeProbabilities: source.regimeProbabilities5way,
-      transitionProbabilities: source.transitionProbabilities,
+      probabilities,
+      regimeProbabilities: {
+        bull: normalizeCanonicalMetric(source.regimeProbabilities5way.bull),
+        softLanding: normalizeCanonicalMetric(source.regimeProbabilities5way.softLanding),
+        stagflation: normalizeCanonicalMetric(source.regimeProbabilities5way.stagflation),
+        recession: normalizeCanonicalMetric(source.regimeProbabilities5way.recession),
+        crash: normalizeCanonicalMetric(source.regimeProbabilities5way.crash),
+      },
+      transitionProbabilities: {
+        ...source.transitionProbabilities,
+        remainInRegime: normalizeCanonicalMetric(source.transitionProbabilities.remainInRegime),
+        transitionToElevated: normalizeCanonicalMetric(source.transitionProbabilities.transitionToElevated),
+        transitionToLow: normalizeCanonicalMetric(source.transitionProbabilities.transitionToLow),
+        transitionToCrisis: normalizeCanonicalMetric(source.transitionProbabilities.transitionToCrisis),
+        confidence: normalizeCanonicalMetric(source.transitionProbabilities.confidence),
+      },
       highestProbabilityPath: source.marketNarrative.highestProbabilityPath,
       invalidationConditions: source.evolution.invalidationConditions,
       topAnalog: source.topAnalog
         ? {
             period: source.topAnalog.period,
             label: source.topAnalog.label,
-            similarity: source.topAnalog.similarity,
+            similarity: normalizeCanonicalMetric(source.topAnalog.similarity),
             resolution: source.topAnalog.resolution,
           }
         : null,
@@ -180,7 +205,7 @@ export function assembleCanonicalMarketState(
       activePatterns: source.activePatterns.map(pattern => ({
         name: pattern.name,
         description: pattern.description,
-        confidence: pattern.confidence,
+        confidence: normalizeCanonicalMetric(pattern.confidence),
         daysActive: pattern.daysActive,
         invalidationConditions: pattern.invalidationConditions,
       })),

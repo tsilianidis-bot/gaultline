@@ -166,4 +166,25 @@ describe("assembleCanonicalMarketState", () => {
     expect(state.sourceHealth.find(item => item.id === "seismograph")?.status).toBe("degraded");
     expect(state.warnings).toContain("Refresh failed; serving the last known-good MarketState.");
   });
+
+  it("normalizes all canonical pressure and probability values to 0-100", () => {
+    const state = assembleCanonicalMarketState(source({
+      currentScore: 140,
+      currentPercentile: -8,
+      probabilities: {
+        ...source().probabilities,
+        bull: 108,
+        bear: -2,
+        confidence: 61.26,
+      },
+    }), {
+      generatedAt: "2026-07-23T12:05:00.000Z",
+      cacheStatus: "refreshed",
+      cacheAgeMs: 0,
+    });
+
+    expect(state.now.pressureScore).toBe(100);
+    expect(state.now.historicalPercentile).toBe(0);
+    expect(state.outlook.probabilities).toMatchObject({ bull: 100, bear: 0, confidence: 61.3 });
+  });
 });

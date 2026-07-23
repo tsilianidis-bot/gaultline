@@ -4,10 +4,10 @@
 - [x] Validate all 158 page-map rows and all 56 large-file-audit rows; record untouched route, TypeScript, Vitest, and build baselines.
 - [ ] Recover the discarded route-registry, canonical-market-state, and unified-ASHA Foundation in independently committed batches.
 - [x] Create one typed route registry for NOW, WHY, OUTLOOK, WATCH, ACT, utilities, aliases, access, icons, analytics, search, and CTAs.
-- [ ] Make `/app` resolve to `/app/now`; make desktop, tablet, mobile, onboarding, search, analytics, links, CTAs, and wrappers consume the registry.
-- [ ] Expose only NOW, WHY, OUTLOOK, WATCH, ACT as analytical navigation; keep ASHA, Search, Help, Account, Alerts as utilities.
-- [ ] Add registry order, uniqueness, metadata, access, and context-preserving alias tests.
-- [ ] Define one versioned typed server-generated canonical 0–100 market-state snapshot and deterministic scoring core.
+- [x] Make `/app` resolve to `/app/now`; make desktop, tablet, mobile, onboarding, search, analytics, links, CTAs, and wrappers consume the registry.
+- [x] Expose only NOW, WHY, OUTLOOK, WATCH, ACT as analytical navigation; keep ASHA, Search, Help, Account, Alerts as utilities.
+- [x] Add registry order, uniqueness, metadata, access, and context-preserving alias tests.
+- [x] Define one versioned typed server-generated canonical 0–100 market-state snapshot and deterministic scoring core.
 - [ ] Make browser live state a projection of canonical state while retaining explicit deterministic simulation controls.
 - [ ] Establish one macro/FRED provider, cache owner, retry/fallback path, truthful provenance, and no fabricated live values.
 - [ ] Add scoring, snapshot, cache, provider, freshness, fallback, provenance, and projection tests.
@@ -15,7 +15,7 @@
 - [ ] Implement ASHA as persistent utility, contextual panel, and `/app/asha` workspace with shared continuity.
 - [x] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
 - [ ] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
-- [ ] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
+- [x] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
 - [ ] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
 - [ ] Compose and validate NOW in the required conclusion-first sequence with complete Seismograph depth.
 - [ ] Archive `FAULTLINE_Post-NOW` as checkpoint plus immutable tag.
@@ -39,7 +39,11 @@
 - [x] Reconcile the global ASHA placeholder contract with its existing focused test.
 - [x] Document the user-waived SendGrid HTTP 401 as a known external-dependency issue and explicitly skip only its live credential assertion.
 - [ ] Validate a signed-in authenticated route end to end during production verification.
-- [ ] Verify and convert remaining mobile, onboarding, link, CTA, and wrapper consumers to shared route-registry ownership.
-- [ ] Confirm destination-order, path-uniqueness, access-metadata, and context-preserving alias test coverage explicitly.
-- [ ] Prove the deterministic MarketState 0–100 scoring path with focused tests or add the missing canonical scoring boundary.
-- [ ] Centralize canonical pressure and probability formatting and cover its UI consumers with focused tests.
+- [x] Verify and convert remaining mobile, onboarding, link, CTA, and wrapper consumers to shared route-registry ownership.
+- [x] Confirm destination-order, path-uniqueness, access-metadata, and context-preserving alias test coverage explicitly.
+- [x] Prove the deterministic MarketState 0–100 scoring path with focused tests or add the missing canonical scoring boundary.
+- [x] Centralize canonical pressure and probability formatting and cover its UI consumers with focused tests.
+- [ ] Wire browser live-state consumers to the canonical `marketState` API while preserving explicit deterministic simulation controls.
+- [ ] Add focused MarketState provider, freshness, stale-if-error, provenance, and client-projection coverage.
+- [ ] Implement shared ASHA conversation continuity across the persistent utility, contextual panel, and `/app/asha` workspace.
+- [ ] Add focused ASHA continuity plus explicit live response and error-path coverage.

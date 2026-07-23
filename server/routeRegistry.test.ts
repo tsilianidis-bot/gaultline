@@ -3,6 +3,10 @@ import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATIO
 describe("canonical route registry", () => {
   it("defines five market questions in required order", () => expect(CANONICAL_DESTINATIONS.map(item => item.id)).toEqual(["now", "why", "outlook", "watch", "act"]));
   it("provides complete primary metadata", () => CANONICAL_DESTINATIONS.forEach(item => { expect(item.question.length).toBeGreaterThan(10); expect(item.analyticsId).toMatch(/^destination_/); expect(item.searchKeywords.length).toBeGreaterThan(2); expect(item.views).toContain(item.defaultView); expect(item.access).toBe("authenticated"); expect(item.surface).toBe("primary"); expect(item.requiresAuth).toBe(true); }));
+  it("keeps every registered path globally unique", () => {
+    const paths = [...CANONICAL_DESTINATIONS, ...PERSISTENT_UTILITIES, ...EXPERT_WORKSPACES].map(item => item.path);
+    expect(new Set(paths).size).toBe(paths.length);
+  });
   it("keeps fully described utilities and experts outside primary navigation", () => {
     expect(PERSISTENT_UTILITIES.map(item => item.id)).toEqual(["asha", "search", "alerts", "help", "account"]);
     PERSISTENT_UTILITIES.forEach(item => { expect(item.analyticsId).toMatch(/^utility_/); expect(item.searchKeywords.length).toBeGreaterThan(1); expect(item.access).toBe("authenticated"); expect(item.surface).toBe("utility"); });

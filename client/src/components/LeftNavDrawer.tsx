@@ -27,7 +27,7 @@ import {
 import { useDrawer } from "@/contexts/DrawerContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { CANONICAL_DESTINATIONS, EXPERT_WORKSPACES, PERSISTENT_UTILITIES } from "@shared/routeRegistry";
+import { CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, EXPERT_WORKSPACES, PERSISTENT_UTILITIES } from "@shared/routeRegistry";
 import { getRouteIcon } from "@/lib/routeIcons";
 
 // ── Navigation structure per spec ────────────────────────────
@@ -168,7 +168,9 @@ export default function LeftNavDrawer({ breachCount = 0 }: LeftNavDrawerProps) {
   }, [leftOpen, closeLeft]);
 
   const isActive = useCallback((path: string) => {
-    if (path === "/app/now") return location === "/app" || location.startsWith("/app/now");
+    if (path === CANONICAL_DESTINATION_BY_ID.now.path) {
+      return location === "/app" || location.startsWith(CANONICAL_DESTINATION_BY_ID.now.path);
+    }
     return location.startsWith(path);
   }, [location]);
 
