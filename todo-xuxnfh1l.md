@@ -19,7 +19,7 @@
 - [x] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
 - [x] Compose and validate NOW in the required conclusion-first sequence with complete Seismograph depth.
 - [x] Archive `FAULTLINE_Post-NOW` as checkpoint plus immutable tag.
-- [ ] Compose and validate WHY, OUTLOOK, WATCH, and ACT in their required information orders.
+- [x] Compose and validate WHY, OUTLOOK, WATCH, and ACT in their required information orders.
 - [ ] Preserve Pressure, Signal Outlook, Decision Engine, Day Trade, Symbol Intelligence, and Smart Discovery as expert workspaces outside primary navigation.
 - [ ] Apply the exact treatment to all 158 page-map rows, preserving public/support/account/admin/internal/mobile behavior and legacy context.
 - [ ] Add page-treatment and legacy-route parity tests.
@@ -68,4 +68,4 @@
 - [x] Compose ACT from canonical MarketState in decision order: posture, decision summary, evidence boundary, scenario responses, risk controls, invalidation, monitored triggers, confidence, ASHA, and expert handoffs.
 - [x] Preserve the current `SmartDiscovery` experience at `/app/act/deep` while making `/app/act` the canonical ACT composition.
 - [x] Add focused ACT composition, route ownership, decision-boundary, risk-control, provenance, and deep-view regression coverage.
-- [ ] Validate the hydrated ACT route in the browser, run TypeScript plus focused tests, and commit the Stage 6 milestone.
+- [x] Validate the hydrated ACT route in the browser, run TypeScript plus focused tests, and commit the Stage 6 milestone.
