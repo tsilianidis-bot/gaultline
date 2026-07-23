@@ -1,3 +1,5 @@
+import type { UnifiedSeismographIntelligence } from "./seismographUnified";
+
 export interface MarketStateCacheResult<T> {
   value: T;
   status: "fresh-cache" | "refreshed" | "stale-if-error";
@@ -80,7 +82,11 @@ export class MarketStateCache<T> {
   }
 }
 
-export const canonicalMarketStateCache = new MarketStateCache<unknown>(
+export const canonicalMarketStateCache = new MarketStateCache<UnifiedSeismographIntelligence>(
   5 * 60 * 1000,
   24 * 60 * 60 * 1000,
 );
+
+export function invalidateCanonicalMarketStateCache(): void {
+  canonicalMarketStateCache.invalidate();
+}
