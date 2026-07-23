@@ -57,3 +57,7 @@
 - [x] Preserve the current `TodaysStory` experience at `/app/why/deep` while making `/app/why` the canonical WHY composition.
 - [x] Add focused WHY composition, route ownership, source-state, provenance, and deep-view regression coverage.
 - [x] Validate the hydrated WHY route in the browser, run TypeScript plus focused tests, and commit the Stage 3 milestone.
+- [x] Compose OUTLOOK from canonical MarketState in decision order: ranked scenarios, probability changes, horizons, triggers, invalidations, indicators, historical analogs, confidence, ASHA, and expert handoffs.
+- [x] Preserve the current `SignalOutlookCenter` experience at `/app/outlook/deep` while making `/app/outlook` the canonical OUTLOOK composition.
+- [x] Add focused OUTLOOK composition, route ownership, probability-scale, source-state, provenance, and deep-view regression coverage.
+- [x] Validate the hydrated OUTLOOK route in the browser, run TypeScript plus focused tests, and commit the Stage 4 milestone.
