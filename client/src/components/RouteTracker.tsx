@@ -20,6 +20,7 @@ import {
 } from "@/hooks/useAnalytics";
 import { getConsentChoice } from "@/components/CookieConsent";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { queueInternalPageView } from "@/lib/internalAnalytics";
 import { CANONICAL_DESTINATIONS } from "@shared/routeRegistry";
 
 const CANONICAL_PAGE_TITLES: Record<string, string> = Object.fromEntries(
@@ -148,24 +149,17 @@ function sendInternalPageView(path: string, title: string, userId?: number) {
   const visitorId = getOrCreateVisitorId();
   const { utmSource, utmMedium, utmCampaign } = getUtmParams();
 
-  fetch("/api/analytics/pageview", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      sessionId,
-      visitorId,
-      userId,
-      path,
-      title,
-      referrer: document.referrer || undefined,
-      utmSource,
-      utmMedium,
-      utmCampaign,
-      screenWidth: window.screen?.width,
-    }),
-    // Note: keepalive omitted — causes "Failed to fetch" in some proxy/iframe environments
-  }).catch(() => {
-    // Silently ignore — analytics must never break the app
+  queueInternalPageView({
+    sessionId,
+    visitorId,
+    userId,
+    path,
+    title,
+    referrer: document.referrer || undefined,
+    utmSource,
+    utmMedium,
+    utmCampaign,
+    screenWidth: window.screen?.width,
   });
 }
 
