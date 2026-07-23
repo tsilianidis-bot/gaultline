@@ -2,15 +2,15 @@
 
 - [x] Create and verify immutable tag `FAULTLINE_Pre-Reorganization_2026-07-22` on the existing untouched checkpoint `f6106e41`.
 - [x] Validate all 158 page-map rows and all 56 large-file-audit rows; record untouched route, TypeScript, Vitest, and build baselines.
-- [ ] Recover the discarded route-registry, canonical-market-state, and unified-ASHA Foundation in independently committed batches.
+- [x] Recover and archive the validated route-registry, canonical-market-state, browser projection, provider provenance, and unified-ASHA gateway Foundation in independently committed batches.
 - [x] Create one typed route registry for NOW, WHY, OUTLOOK, WATCH, ACT, utilities, aliases, access, icons, analytics, search, and CTAs.
 - [x] Make `/app` resolve to `/app/now`; make desktop, tablet, mobile, onboarding, search, analytics, links, CTAs, and wrappers consume the registry.
 - [x] Expose only NOW, WHY, OUTLOOK, WATCH, ACT as analytical navigation; keep ASHA, Search, Help, Account, Alerts as utilities.
 - [x] Add registry order, uniqueness, metadata, access, and context-preserving alias tests.
 - [x] Define one versioned typed server-generated canonical 0–100 market-state snapshot and deterministic scoring core.
 - [x] Make browser live state a projection of canonical state while retaining explicit deterministic simulation controls.
-- [ ] Establish one macro/FRED provider, cache owner, retry/fallback path, truthful provenance, and no fabricated live values.
-- [ ] Add scoring, snapshot, cache, provider, freshness, fallback, provenance, and projection tests.
+- [x] Establish one macro/FRED provider, cache owner, retry/fallback path, truthful provenance, and no fabricated live values.
+- [x] Add scoring, canonical-state assembly, cache, real provider-path, freshness, fallback, provenance, and projection tests.
 - [x] Create one shared ASHA context contract and one advisor-facing gateway retaining bounded specialist engines.
 - [ ] Implement ASHA as persistent utility, contextual panel, and `/app/asha` workspace with shared continuity.
 - [x] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
@@ -44,7 +44,8 @@
 - [x] Prove the deterministic MarketState 0–100 scoring path with focused tests or add the missing canonical scoring boundary.
 - [x] Centralize canonical pressure and probability formatting and cover its UI consumers with focused tests.
 - [x] Wire browser live-state consumers to the canonical `marketState` API while preserving explicit deterministic simulation controls.
-- [ ] Add focused MarketState provider, freshness, stale-if-error, provenance, and client-projection coverage.
-- [ ] Prove the authoritative macro/FRED provider path, source health, freshness, stale-if-error behavior, and no-fabrication provenance with explicit focused assertions.
+- [x] Add focused MarketState provider, freshness, stale-if-error, provenance, and client-projection coverage.
+- [x] Prove the authoritative macro/FRED provider path, source health, freshness, stale-if-error behavior, and no-fabrication provenance with explicit focused assertions.
 - [ ] Implement shared ASHA conversation continuity across the persistent utility, contextual panel, and `/app/asha` workspace.
 - [ ] Add focused ASHA continuity plus explicit live response and error-path coverage.
+- [ ] Prove deferred ASHA continuity across the persistent utility, contextual panel, and `/app/asha` workspace during Stage 2/3 destination work.

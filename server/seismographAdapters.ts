@@ -32,6 +32,8 @@ export function pressureToEvidencePacket(
   output: FaultlinePressureOutput
 ): EvidencePacket {
   const score = output.overallPressure; // 0–100
+  const outputTimestamp = Date.parse(output.timestamp);
+  const fallbackReason = output.vectors.find(vector => vector.fallbackReason)?.fallbackReason;
   const strength = score; // already 0–100
   const signal: EvidenceSignal =
     score >= 65 ? "stressed" :
@@ -49,7 +51,7 @@ export function pressureToEvidencePacket(
 
   return {
     source: "pressure-engine",
-    timestamp: Date.now(),
+    timestamp: Number.isFinite(outputTimestamp) ? outputTimestamp : Date.now(),
     evidenceType: "macro_pressure",
     signal,
     strength,
@@ -64,6 +66,8 @@ export function pressureToEvidencePacket(
       level: output.level,
       topAnalog: output.topAnalog?.label,
       dataSource: output.dataSource,
+      fallbackReason,
+      lastUpdated: output.lastUpdated,
     },
   };
 }

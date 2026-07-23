@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   assembleCanonicalMarketState,
+  createCanonicalMarketStateReader,
   type CanonicalMarketStateSource,
 } from "./marketStateService";
+import { pressureToEvidencePacket } from "./seismographAdapters";
+import { deriveProviderProvenance } from "./seismographCore";
+import type { FaultlinePressureOutput } from "./pressure/engine";
 
 function source(overrides: Partial<CanonicalMarketStateSource> = {}): CanonicalMarketStateSource {
   return {
@@ -13,6 +17,13 @@ function source(overrides: Partial<CanonicalMarketStateSource> = {}): CanonicalM
     currentPercentile: 82,
     dataFreshness: "live",
     lastUpdated: "2026-07-23T12:00:00.000Z",
+    providerProvenance: {
+      fred: {
+        status: "live",
+        detail: "Live FRED macro and credit observations contributed through the pressure engine.",
+        asOf: Date.parse("2026-07-23T12:00:00.000Z"),
+      },
+    },
     todayStory: "Credit and liquidity conditions are tightening together.",
     keyDevelopments: ["Credit spreads widened"],
     whyThisScore: "Three high-weight evidence families are stressed.",
@@ -186,5 +197,146 @@ describe("assembleCanonicalMarketState", () => {
     expect(state.now.pressureScore).toBe(100);
     expect(state.now.historicalPercentile).toBe(0);
     expect(state.outlook.probabilities).toMatchObject({ bull: 100, bear: 0, confidence: 61.3 });
+  });
+});
+
+describe("canonical MarketState provider boundary", () => {
+  it("uses one authoritative provider and retries it once before succeeding", async () => {
+    const authoritative = source({ currentScore: 61, lastUpdated: "2026-07-23T13:00:00.000Z" });
+    const load = vi.fn()
+      .mockRejectedValueOnce(new Error("temporary upstream failure"))
+      .mockResolvedValueOnce(authoritative);
+    const cache = {
+      getOrLoad: vi.fn(async (loader: () => Promise<CanonicalMarketStateSource>) => ({
+        value: await loader(),
+        status: "refreshed" as const,
+        ageMs: 0,
+      })),
+    };
+    const read = createCanonicalMarketStateReader({
+      provider: { id: "unified-seismograph", load },
+      cache,
+      now: () => new Date("2026-07-23T13:01:00.000Z"),
+    });
+
+    const state = await read();
+
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(cache.getOrLoad).toHaveBeenCalledTimes(1);
+    expect(state.now.pressureScore).toBe(61);
+    expect(state.sourceUpdatedAt).toBe(authoritative.lastUpdated);
+    expect(state.freshness).toBe("live");
+    expect(state.sourceHealth.find(item => item.id === "fred")).toMatchObject({
+      status: "healthy",
+      required: true,
+      asOf: new Date(authoritative.providerProvenance.fred.asOf).toISOString(),
+    });
+  });
+
+  it("labels stale-if-error data and provenance truthfully after both provider attempts fail", async () => {
+    const lastKnownGood = source({
+      currentScore: 57,
+      dataFreshness: "stale",
+      lastUpdated: "2026-07-23T12:30:00.000Z",
+    });
+    const load = vi.fn().mockRejectedValue(new Error("provider unavailable"));
+    const cache = {
+      getOrLoad: vi.fn(async (loader: () => Promise<CanonicalMarketStateSource>) => {
+        try {
+          await loader();
+        } catch (error) {
+          return { value: lastKnownGood, status: "stale-if-error" as const, ageMs: 1_800_000, error };
+        }
+        throw new Error("Expected provider failure");
+      }),
+    };
+    const read = createCanonicalMarketStateReader({
+      provider: { id: "unified-seismograph", load },
+      cache,
+      now: () => new Date("2026-07-23T13:00:00.000Z"),
+    });
+
+    const state = await read({ forceRefresh: true });
+
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(cache.getOrLoad).toHaveBeenCalledWith(expect.any(Function), { forceRefresh: true });
+    expect(state.cache).toMatchObject({ status: "stale-if-error", ageMs: 1_800_000 });
+    expect(state.freshness).toBe("stale");
+    expect(state.sourceUpdatedAt).toBe(lastKnownGood.lastUpdated);
+    expect(state.sourceHealth.find(item => item.id === "seismograph")?.status).toBe("degraded");
+    expect(state.warnings.join(" ")).toContain("provider unavailable");
+  });
+
+  it("marks missing source evidence unavailable instead of fabricating live values", () => {
+    const withoutEvidence = source({
+      evidenceFamilies: [],
+      providerProvenance: {
+        fred: {
+          status: "unavailable",
+          detail: "No pressure-engine FRED provenance was present in this Seismograph output.",
+          asOf: Date.parse("2026-07-23T12:00:00.000Z"),
+        },
+      },
+      memory: { ...source().memory, observationCount: 0, datasetSpan: "unavailable" },
+    });
+    const state = assembleCanonicalMarketState(withoutEvidence, {
+      generatedAt: "2026-07-23T13:00:00.000Z",
+      cacheStatus: "refreshed",
+      cacheAgeMs: 0,
+    });
+
+    expect(state.now.topDrivers).toEqual([]);
+    expect(state.why.evidenceFamilies).toEqual([]);
+    expect(state.sourceHealth.find(item => item.id === "fred")?.status).toBe("unavailable");
+    expect(state.sourceHealth.find(item => item.id === "historical-memory")?.status).toBe("unavailable");
+    expect(state.warnings).toEqual(expect.arrayContaining([
+      expect.stringContaining("Macro and Credit Evidence"),
+      expect.stringContaining("Historical Market Memory"),
+    ]));
+  });
+
+  it("propagates the real pressure adapter's FRED fallback provenance into canonical source health", () => {
+    const pressure: FaultlinePressureOutput = {
+      overallPressure: 58,
+      regime: "Elevated Risk",
+      level: "High",
+      vectors: [{
+        id: "credit-liquidity",
+        name: "Credit and Liquidity",
+        score: 58,
+        level: "High",
+        trend: "stable",
+        weight: 1,
+        rawInputs: { hySpread: null },
+        dataStatus: "fallback",
+        source: "FRED: BAMLH0A0HYM2",
+        fallbackReason: "FRED data unavailable; using last known values",
+      }],
+      alerts: [],
+      topAnalog: { year: 2018, label: "Q4 2018", similarity: 82, description: "Tightening episode" },
+      analogs: [],
+      timestamp: "2026-07-23T12:00:00.000Z",
+      dataSource: "fallback",
+      lastUpdated: "2026-07-23T12:00:00.000Z",
+    };
+    const providerProvenance = deriveProviderProvenance([
+      pressureToEvidencePacket(pressure),
+    ]);
+    const state = assembleCanonicalMarketState(source({ providerProvenance }), {
+      generatedAt: "2026-07-23T13:00:00.000Z",
+      cacheStatus: "refreshed",
+      cacheAgeMs: 0,
+    });
+
+    expect(providerProvenance.fred).toMatchObject({
+      status: "fallback",
+      detail: "FRED data unavailable; using last known values",
+      asOf: Date.parse(pressure.timestamp),
+    });
+    expect(state.sourceHealth.find(item => item.id === "fred")).toMatchObject({
+      status: "degraded",
+      detail: "FRED data unavailable; using last known values",
+    });
+    expect(state.warnings.join(" ")).toContain("FRED data unavailable; using last known values");
   });
 });

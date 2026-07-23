@@ -8,7 +8,11 @@ import {
   getUnifiedSeismographIntelligence,
   type UnifiedSeismographIntelligence,
 } from "./seismographUnified";
-import { canonicalMarketStateCache } from "./marketStateCache";
+import {
+  canonicalMarketStateCache,
+  type MarketStateCacheOptions,
+  type MarketStateCacheResult,
+} from "./marketStateCache";
 
 export type CanonicalMarketStateSource = Pick<
   UnifiedSeismographIntelligence,
@@ -19,6 +23,7 @@ export type CanonicalMarketStateSource = Pick<
   | "currentPercentile"
   | "dataFreshness"
   | "lastUpdated"
+  | "providerProvenance"
   | "todayStory"
   | "keyDevelopments"
   | "whyThisScore"
@@ -44,13 +49,38 @@ interface AssembleMarketStateOptions {
   staleReason?: string | null;
 }
 
+export interface CanonicalMarketStateProvider<T extends CanonicalMarketStateSource = CanonicalMarketStateSource> {
+  id: "unified-seismograph";
+  load: () => Promise<T>;
+}
+
+export interface CanonicalMarketStateCachePort<T extends CanonicalMarketStateSource = CanonicalMarketStateSource> {
+  getOrLoad(
+    loader: () => Promise<T>,
+    options?: MarketStateCacheOptions,
+  ): Promise<MarketStateCacheResult<T>>;
+}
+
+export const canonicalMarketStateProvider: CanonicalMarketStateProvider<UnifiedSeismographIntelligence> = {
+  id: "unified-seismograph",
+  load: getUnifiedSeismographIntelligence,
+};
+
 function buildSourceHealth(
   source: CanonicalMarketStateSource,
   cacheStatus: MarketStateCacheStatus,
 ): MarketStateSourceHealth[] {
   const stale = cacheStatus === "stale-if-error" || source.dataFreshness === "stale";
   const historicalAvailable = source.memory.observationCount > 0;
-  const evidenceAvailable = source.evidenceFamilies.length > 0;
+  const fred = source.providerProvenance.fred;
+  const fredStatus = fred.status === "live"
+    ? "healthy"
+    : fred.status === "fallback"
+      ? "degraded"
+      : "unavailable";
+  const fredAsOf = Number.isFinite(fred.asOf)
+    ? new Date(fred.asOf).toISOString()
+    : source.lastUpdated;
 
   return [
     {
@@ -76,12 +106,10 @@ function buildSourceHealth(
     {
       id: "fred",
       label: "Macro and Credit Evidence",
-      status: evidenceAvailable ? "healthy" : "unavailable",
+      status: fredStatus,
       required: true,
-      asOf: source.lastUpdated,
-      detail: evidenceAvailable
-        ? `${source.evidenceFamilies.length} normalized evidence families are contributing.`
-        : "Normalized macro and credit evidence is unavailable.",
+      asOf: fredAsOf,
+      detail: fred.detail,
     },
     {
       id: "coingecko",
@@ -234,19 +262,51 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown MarketState refresh failure";
 }
 
-export async function getCanonicalMarketState(options: { forceRefresh?: boolean } = {}): Promise<CanonicalMarketState> {
-  const result = await canonicalMarketStateCache.getOrLoad(
-    getUnifiedSeismographIntelligence,
-    { forceRefresh: options.forceRefresh },
-  );
-  const staleReason = result.status === "stale-if-error"
-    ? `Refresh failed; serving the last known-good MarketState. ${errorMessage(result.error)}`
-    : null;
+async function loadWithOneRetry<T extends CanonicalMarketStateSource>(
+  provider: CanonicalMarketStateProvider<T>,
+): Promise<T> {
+  let firstError: unknown;
+  try {
+    return await provider.load();
+  } catch (error) {
+    firstError = error;
+  }
 
-  return assembleCanonicalMarketState(result.value, {
-    generatedAt: new Date().toISOString(),
-    cacheStatus: result.status,
-    cacheAgeMs: result.ageMs,
-    staleReason,
-  });
+  try {
+    return await provider.load();
+  } catch (secondError) {
+    throw new Error(
+      `MarketState provider failed twice: ${errorMessage(firstError)}; retry: ${errorMessage(secondError)}`,
+    );
+  }
 }
+
+export function createCanonicalMarketStateReader<T extends CanonicalMarketStateSource>(dependencies: {
+  provider: CanonicalMarketStateProvider<T>;
+  cache: CanonicalMarketStateCachePort<T>;
+  now?: () => Date;
+}) {
+  return async function readCanonicalMarketState(
+    options: { forceRefresh?: boolean } = {},
+  ): Promise<CanonicalMarketState> {
+    const result = await dependencies.cache.getOrLoad(
+      () => loadWithOneRetry(dependencies.provider),
+      { forceRefresh: options.forceRefresh },
+    );
+    const staleReason = result.status === "stale-if-error"
+      ? `Refresh failed; serving the last known-good MarketState. ${errorMessage(result.error)}`
+      : null;
+
+    return assembleCanonicalMarketState(result.value, {
+      generatedAt: (dependencies.now ?? (() => new Date()))().toISOString(),
+      cacheStatus: result.status,
+      cacheAgeMs: result.ageMs,
+      staleReason,
+    });
+  };
+}
+
+export const getCanonicalMarketState = createCanonicalMarketStateReader({
+  provider: canonicalMarketStateProvider,
+  cache: canonicalMarketStateCache,
+});

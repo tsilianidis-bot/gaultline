@@ -76,6 +76,53 @@ export interface EvidencePacket {
   metadata?: Record<string, unknown>;
 }
 
+export interface SeismographProviderProvenance {
+  fred: {
+    status: "live" | "fallback" | "unavailable";
+    detail: string;
+    asOf: number;
+  };
+}
+
+export function deriveProviderProvenance(
+  packets: EvidencePacket[],
+  computedAt: number = Date.now(),
+): SeismographProviderProvenance {
+  const pressurePacket = packets.find(packet => packet.source === "pressure-engine");
+  const dataSource = pressurePacket?.metadata?.dataSource;
+  const fallbackReason = pressurePacket?.metadata?.fallbackReason;
+
+  if (dataSource === "live") {
+    return {
+      fred: {
+        status: "live",
+        detail: "Live FRED macro and credit observations contributed through the pressure engine.",
+        asOf: pressurePacket?.timestamp ?? computedAt,
+      },
+    };
+  }
+
+  if (dataSource === "fallback") {
+    return {
+      fred: {
+        status: "fallback",
+        detail: typeof fallbackReason === "string" && fallbackReason.length > 0
+          ? fallbackReason
+          : "FRED was unavailable; explicitly labeled fallback observations contributed through the pressure engine.",
+        asOf: pressurePacket?.timestamp ?? computedAt,
+      },
+    };
+  }
+
+  return {
+    fred: {
+      status: "unavailable",
+      detail: "No pressure-engine FRED provenance was present in this Seismograph output.",
+      asOf: computedAt,
+    },
+  };
+}
+
 // ── Historical Analog ─────────────────────────────────────────
 export interface SeismographAnalog {
   year?: number;
@@ -261,6 +308,7 @@ export interface SeismographOutput {
   evidenceFamilies: SeismographEvidenceFamily[];
   activeContributors: string[];
   evidenceConsensus: "strong" | "moderate" | "weak" | "divergent";
+  providerProvenance?: SeismographProviderProvenance;
 
   // ── Market Memory ─────────────────────────────────────────
   marketMemory: SeismographMarketMemory;
@@ -729,9 +777,10 @@ export function assembleSeismographOutput(
   const dataFreshness: "live" | "recent" | "stale" =
     packets.length >= 5 ? "live" : packets.length >= 2 ? "recent" : "stale";
 
+  const computedAt = Date.now();
   const output: SeismographOutput = {
     version: "2.0",
-    computedAt: Date.now(),
+    computedAt,
     dataFreshness,
     pressureScore: blendedPressure,
     regime: state.regime,
@@ -753,6 +802,7 @@ export function assembleSeismographOutput(
     evidenceFamilies,
     activeContributors: Array.from(new Set(packets.map((p) => p.source))),
     evidenceConsensus,
+    providerProvenance: deriveProviderProvenance(packets, computedAt),
     marketMemory: state.marketMemory,
     // Distribution payloads — built below
     forDashboard: {} as DashboardPayload,
