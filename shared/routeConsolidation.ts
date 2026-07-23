@@ -24,6 +24,19 @@ export const CANONICAL_DEEP_VIEW_PATHS = [
 ] as const;
 
 export const PRESERVED_UNIQUE_APP_PATHS = [
+  "/app/historical-analogs",
+  "/app/simulate-pressure",
+  "/app/watchlist",
+  "/app/signals",
+  "/app/portfolio",
+  "/app/crypto",
+  "/app/crypto-search",
+  "/app/crypto-watchlist",
+  "/app/crypto-signals",
+  "/app/sim-portfolio",
+  "/app/trade-journal",
+  "/app/validation",
+  "/app/decision-ledger",
   "/app/roadmap",
   "/app/admin",
   "/app/admin/users",

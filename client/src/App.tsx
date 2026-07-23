@@ -33,6 +33,20 @@ import Watch from "./pages/Watch";
 import Act from "./pages/Act";
 
 const Pressure        = lazy(() => import("./pages/Pressure"));
+const Alerts          = lazy(() => import("./pages/Alerts"));
+const HistoricalAnalogs = lazy(() => import("./pages/HistoricalAnalogs"));
+const SimulatePressure = lazy(() => import("./pages/SimulatePressure"));
+const Watchlist       = lazy(() => import("./pages/Watchlist"));
+const Signals         = lazy(() => import("./pages/Signals"));
+const Portfolio       = lazy(() => import("./pages/Portfolio"));
+const CryptoSearch    = lazy(() => import("./pages/CryptoSearch"));
+const CryptoWatchlist = lazy(() => import("./pages/CryptoWatchlist"));
+const CryptoSignals   = lazy(() => import("./pages/CryptoSignals"));
+const SimPortfolio    = lazy(() => import("./pages/SimPortfolio"));
+const TradeJournal    = lazy(() => import("./pages/TradeJournal"));
+const IntelligenceValidation = lazy(() => import("./pages/IntelligenceValidation"));
+const CryptoHub       = lazy(() => import("./pages/CryptoHub"));
+const DecisionLedger  = lazy(() => import("./pages/DecisionLedger"));
 const AIWatch         = lazy(() => import("./pages/AIWatch"));
 const Guide           = lazy(() => import("./pages/Guide"));
 const AdminUsers      = lazy(() => import("./pages/AdminUsers"));
@@ -153,6 +167,7 @@ const About = lazy(() => import("./pages/About"));
 const PromoRedeem = lazy(() => import("./pages/PromoRedeem"));
 const AdminPromoDashboard = lazy(() => import("./pages/AdminPromoDashboard"));
 const Roadmap             = lazy(() => import("./pages/Roadmap"));
+const ChatInbox           = lazy(() => import("./pages/admin/ChatInbox"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -669,8 +684,22 @@ function Router() {
 		              <Route path="/app"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
 	              <AnalyticalLegacyAliases />
 	              <Route path="/app/pressure" component={Pressure} />
-	              <Route path="/app/discover" component={SmartDiscovery} />
-	              <Route path="/app/guide" component={Guide} />
+		              <Route path="/app/discover" component={SmartDiscovery} />
+		              <Route path="/app/alerts" component={Alerts} />
+		              <Route path="/app/historical-analogs" component={HistoricalAnalogs} />
+		              <Route path="/app/simulate-pressure" component={SimulatePressure} />
+		              <Route path="/app/watchlist" component={Watchlist} />
+		              <Route path="/app/signals" component={Signals} />
+		              <Route path="/app/portfolio" component={Portfolio} />
+		              <Route path="/app/crypto" component={CryptoHub} />
+		              <Route path="/app/crypto-search" component={CryptoSearch} />
+		              <Route path="/app/crypto-watchlist" component={CryptoWatchlist} />
+		              <Route path="/app/crypto-signals" component={CryptoSignals} />
+		              <Route path="/app/sim-portfolio" component={SimPortfolio} />
+		              <Route path="/app/trade-journal" component={TradeJournal} />
+		              <Route path="/app/validation" component={IntelligenceValidation} />
+		              <Route path="/app/decision-ledger" component={DecisionLedger} />
+		              <Route path="/app/guide" component={Guide} />
 	              <Route path="/app/roadmap" component={Roadmap} />
 	              <Route path="/app/admin" component={AdminPortal} />
               <Route path="/app/admin/users" component={AdminUsers} />
@@ -681,7 +710,7 @@ function Router() {
               <Route path="/app/admin/blog" component={AdminBlog} />
               <Route path="/app/admin/publishing" component={AdminPublishing} />
               <Route path="/app/admin/chat-inbox">
-                <ErrorBoundary><Suspense fallback={<PageLoader />}><AshaIntelligenceCenter /></Suspense></ErrorBoundary>
+                <ErrorBoundary><Suspense fallback={<PageLoader />}><ChatInbox /></Suspense></ErrorBoundary>
               </Route>
               <Route path="/app/asha">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><AshaIntelligenceCenter /></Suspense></ErrorBoundary>

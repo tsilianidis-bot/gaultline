@@ -21,7 +21,7 @@
 - [x] Archive `FAULTLINE_Post-NOW` as checkpoint plus immutable tag.
 - [x] Compose and validate WHY, OUTLOOK, WATCH, and ACT in their required information orders.
 - [x] Preserve Pressure, Signal Outlook, Decision Engine, Day Trade, Symbol Intelligence, and Smart Discovery as expert workspaces outside primary navigation.
-- [ ] Apply the exact treatment to all 158 page-map rows, preserving public/support/account/admin/internal/mobile behavior and legacy context.
+- [x] Apply the exact treatment to all 158 page-map rows, preserving public/support/account/admin/internal/mobile behavior and legacy context.
 - [x] Add page-treatment and legacy-route parity tests.
 - [ ] Apply all required large-file decompositions behind stable exports and compatibility façades.
 - [ ] Complete mobile parity and preserve every valuable capability without placeholders, mocks, fabricated data, or demos.
@@ -77,6 +77,11 @@
 - [x] Run the focused ASHA continuity test plus zero-error TypeScript validation, commit the bounded milestone, and move immediately to page consolidation.
 - [x] Enumerate every explicit and registry-generated route in the current `App.tsx` assembly and classify it as canonical, deep-view, utility/auth/settings/onboarding, redundant analytical, or uniquely functional.
 - [x] Keep the five canonical destinations, their `/deep` routes, canonical `/app/asha`, and all required utility/auth/settings/onboarding routes.
-- [ ] Redirect or remove only legacy analytical pages whose valuable functions are fully served by NOW, WHY, OUTLOOK, WATCH, ACT, or their deep views.
-- [ ] Preserve every current route with a unique function not covered by the canonical destinations, including specialist expert workspaces outside primary navigation.
+- [x] Redirect or remove only legacy analytical pages whose valuable functions are fully served by NOW, WHY, OUTLOOK, WATCH, ACT, or their deep views.
+- [x] Preserve every current route with a unique function not covered by the canonical destinations, including specialist expert workspaces outside primary navigation.
 - [x] Add route-inventory, treatment, redirect-target, uniqueness, utility-preservation, and expert-workspace parity tests; validate and commit consolidation incrementally.
+- [x] Reconcile all 33 recovered successful capability-audit classifications against the committed route treatment registry without rerunning the audit.
+- [x] Manually inspect and classify only the three capability-audit rows that did not return results, using their current source implementations.
+- [x] Apply every capability-backed redirect or preservation decision, extend parity tests, and archive the completed Stage 4 milestone in a commit and checkpoint.
+- [x] Restore the orphaned admin Chat Inbox implementation at `/app/admin/chat-inbox` instead of routing that path to the unrelated ASHA Intelligence Center.
+- [x] Add a committed full-page treatment manifest and regression test proving all 158 authoritative baseline rows plus the five new canonical destinations retain an explicit treatment.

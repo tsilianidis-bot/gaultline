@@ -959,11 +959,22 @@ function DomainAnalysisTab() {
 // ── Main Pressure Page ────────────────────────────────────────
 export default function Pressure() {
   useSEO(PAGE_SEO.pressure);
-  const [activeTab, setActiveTab] = useState<StressTabId>('pressure');
+  const [activeTab, setActiveTab] = useState<StressTabId>(() => {
+    const requested = new URLSearchParams(window.location.search).get('tab');
+    return STRESS_TABS.some(tab => tab.id === requested) ? requested as StressTabId : 'pressure';
+  });
   const { data, isLoading, error, refetch, isFetching } = trpc.pressure.getCurrentPressure.useQuery(
     undefined,
     { refetchInterval: 5 * 60 * 1000 } // auto-refresh every 5 minutes
   );
+
+  const handleTabSelect = (tab: StressTabId) => {
+    setActiveTab(tab);
+    const url = new URL(window.location.href);
+    if (tab === 'pressure') url.searchParams.delete('tab');
+    else url.searchParams.set('tab', tab);
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  };
 
   if (isLoading) return <PressureSkeleton />;
 
@@ -1026,7 +1037,7 @@ export default function Pressure() {
         <div style={{ padding: '0 16px' }}>
           <SeismographNarrativeBanner context="pressure" defaultExpanded={false} />
         </div>
-        <StressTabBar active={activeTab} onSelect={setActiveTab} />
+        <StressTabBar active={activeTab} onSelect={handleTabSelect} />
         {activeTab === 'scores' && <Scores />}
         {activeTab === 'charts' && <Charts />}
         {activeTab === 'aftershock' && <AftershockEnginePage />}

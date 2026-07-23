@@ -34,7 +34,7 @@ export interface PersistentUtility { id: PersistentUtilityId; label: string; ico
 export const PERSISTENT_UTILITIES: readonly PersistentUtility[] = [
   { id: "asha", label: "ASHA", icon: "message", kind: "route", path: "/app/asha", analyticsId: "utility_asha", searchKeywords: ["asha", "ask", "advisor", "conversation"], access: "authenticated", surface: "utility" },
   { id: "search", label: "Search", icon: "search", kind: "action", analyticsId: "utility_search", searchKeywords: ["search", "command", "symbol"], access: "authenticated", surface: "utility" },
-  { id: "alerts", label: "Alerts", icon: "bell", kind: "route", path: "/app/watch?view=alerts", analyticsId: "utility_alerts", searchKeywords: ["alerts", "thresholds"], access: "authenticated", surface: "utility" },
+  { id: "alerts", label: "Alerts", icon: "bell", kind: "route", path: "/app/alerts", analyticsId: "utility_alerts", searchKeywords: ["alerts", "thresholds"], access: "authenticated", surface: "utility" },
   { id: "help", label: "Help", icon: "help", kind: "route", path: "/app/guide", analyticsId: "utility_help", searchKeywords: ["help", "guide", "methodology"], access: "authenticated", surface: "utility" },
   { id: "account", label: "Account", icon: "user", kind: "route", path: "/app/account", analyticsId: "utility_account", searchKeywords: ["account", "billing", "subscription"], access: "authenticated", surface: "utility" },
 ] as const;
@@ -50,48 +50,37 @@ export const EXPERT_WORKSPACES: readonly ExpertWorkspace[] = [
 ] as const;
 
 export const ANALYTICAL_LEGACY_ALIASES: Readonly<Record<string, string>> = {
-  "/app/aftershock": "/app/outlook?view=aftershock-recovery",
-  "/app/ai-diagnostic": "/app/now?view=confidence",
+  "/app/aftershock": "/app/outlook/deep",
+  "/app/ai-diagnostic": "/app/now/deep",
   "/app/ai-watch": "/app/watch",
-  "/app/alerts": "/app/watch?view=alerts",
-  "/app/alt-rotation": "/app/why?view=transmission",
-  "/app/analogs": "/app/why?view=history",
+  "/app/alt-rotation": "/app/why/deep",
+  "/app/analogs": "/app/historical-analogs",
   "/app/ask-asha": "/app/asha",
-  "/app/charts": "/app/act?view=analyze",
-  "/app/command": "/app/now",
-  "/app/command-center": "/app/now",
-  "/app/crypto": "/app/now?view=markets",
-  "/app/crypto-regime": "/app/outlook?view=transition",
-  "/app/crypto-search": "/app/act?view=analyze",
-  "/app/crypto-signals": "/app/watch",
-  "/app/crypto-watchlist": "/app/watch?view=watchlists",
-  "/app/daily-briefing": "/app/now",
+  "/app/charts": "/app/now/deep",
+  "/app/command": "/app/now/deep",
+  "/app/command-center": "/app/now/deep",
+  "/app/crypto-regime": "/app/outlook/deep",
+  "/app/daily-briefing": "/app/now/deep",
   "/app/dashboard": "/app/now",
-  "/app/decision-ledger": "/app/act?view=journal",
-  "/app/diagnostic": "/app/now?view=confidence",
-  "/app/insider-intelligence": "/app/why?view=positioning",
-  "/app/intelligence-hub": "/app/now",
-  "/app/intelligence-validation": "/app/act?view=journal",
-  "/app/market-intelligence": "/app/now",
-  "/app/opportunities": "/app/act",
-  "/app/portfolio": "/app/watch?view=portfolio",
-  "/app/pre-flight": "/app/act?view=decide",
+  "/app/diagnostic": "/app/now/deep",
+  "/app/insider-intelligence": "/app/watch/deep",
+  "/app/intelligence-hub": "/app/now/deep",
+  "/app/intelligence-validation": "/app/validation",
+  "/app/market-intelligence": "/app/now/deep",
+  "/app/opportunities": "/app/act/deep",
+  "/app/pre-flight": "/app/now/deep",
   "/app/pressure-index": "/app/now?view=pressure",
-  "/app/report": "/app/now",
-  "/app/scenarios": "/app/outlook?view=scenarios",
-  "/app/scores": "/app/now?view=pressure",
-  "/app/seismograph": "/app/now?view=pressure",
-  "/app/seismograph-legacy": "/app/now?view=pressure",
-  "/app/signals": "/app/watch",
-  "/app/sim-portfolio": "/app/watch?view=portfolio",
-  "/app/simulate": "/app/act?view=decide",
-  "/app/situation-room": "/app/act?view=decide",
-  "/app/social-intelligence": "/app/why?view=positioning",
-  "/app/stock-heatmap": "/app/now?view=markets",
+  "/app/report": "/app/now/deep",
+  "/app/scenarios": "/app/outlook/deep",
+  "/app/scores": "/app/pressure?tab=scores",
+  "/app/seismograph": "/app/now/deep",
+  "/app/seismograph-legacy": "/app/now/deep",
+  "/app/simulate": "/app/simulate-pressure",
+  "/app/situation-room": "/app/now/deep",
+  "/app/social-intelligence": "/app/watch/deep",
+  "/app/stock-heatmap": "/app/now/deep",
   "/app/todays-story": "/app/now",
-  "/app/trade-journal": "/app/act?view=journal",
-  "/app/trade-preflight": "/app/act?view=decide",
-  "/app/watchlist": "/app/watch?view=watchlists",
+  "/app/trade-preflight": "/app/decision-engine#trade-preflight",
   "/mobile/brief": "/app/now",
   "/mobile/crypto": "/app/now?view=markets",
   "/mobile/rotation": "/app/why?view=transmission",
@@ -104,11 +93,13 @@ export const PERSISTENT_UTILITY_BY_ID = Object.fromEntries(PERSISTENT_UTILITIES.
 export const EXPERT_WORKSPACE_BY_ID = Object.fromEntries(EXPERT_WORKSPACES.map(item => [item.id, item])) as Record<ExpertWorkspaceId, ExpertWorkspace>;
 export function stripRouteContext(route: string): string { return route.split(/[?#]/, 1)[0] || "/"; }
 export function preserveRouteContext(target: string, currentSearch = "", currentHash = ""): string {
-  const [targetPath, targetQuery = ""] = target.split("?");
+  const [targetWithoutHash, targetHash = ""] = target.split("#", 2);
+  const [targetPath, targetQuery = ""] = targetWithoutHash.split("?", 2);
   const merged = new URLSearchParams(currentSearch.replace(/^\?/, ""));
   new URLSearchParams(targetQuery).forEach((value, key) => merged.set(key, value));
   const query = merged.toString();
-  return `${targetPath}${query ? `?${query}` : ""}${currentHash || ""}`;
+  const hash = currentHash || (targetHash ? `#${targetHash}` : "");
+  return `${targetPath}${query ? `?${query}` : ""}${hash}`;
 }
 export function getLegacyAliasTarget(pathname: string): string | undefined { return ANALYTICAL_LEGACY_ALIASES[stripRouteContext(pathname)]; }
 export function resolveCanonicalDestination(pathname: string): CanonicalDestination | undefined {
@@ -118,5 +109,7 @@ export function resolveCanonicalDestination(pathname: string): CanonicalDestinat
   const expert = EXPERT_WORKSPACES.find(item => item.path === clean);
   if (expert && expert.owner !== "asha") return CANONICAL_DESTINATION_BY_ID[expert.owner];
   const target = getLegacyAliasTarget(clean);
-  return target ? CANONICAL_DESTINATIONS.find(item => stripRouteContext(target) === item.path) : undefined;
+  if (!target) return undefined;
+  const targetPath = stripRouteContext(target);
+  return CANONICAL_DESTINATIONS.find(item => targetPath === item.path || targetPath === `${item.path}/deep`);
 }

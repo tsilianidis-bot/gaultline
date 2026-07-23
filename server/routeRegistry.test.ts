@@ -14,13 +14,16 @@ describe("canonical route registry", () => {
     EXPERT_WORKSPACES.forEach(item => { expect(item.analyticsId).toMatch(/^expert_/); expect(item.searchKeywords.length).toBeGreaterThan(2); expect(item.access).toBe("authenticated"); expect(item.surface).toBe("expert"); });
   });
   it("owns legacy analytical aliases", () => {
-    expect(Object.keys(ANALYTICAL_LEGACY_ALIASES).length).toBeGreaterThanOrEqual(45);
-    expect(getLegacyAliasTarget("/app/seismograph")).toBe("/app/now?view=pressure");
-    expect(getLegacyAliasTarget("/app/seismograph-legacy")).toBe("/app/now?view=pressure");
-    expect(getLegacyAliasTarget("/app/command-center")).toBe("/app/now");
+    expect(Object.keys(ANALYTICAL_LEGACY_ALIASES).length).toBeGreaterThanOrEqual(30);
+    expect(getLegacyAliasTarget("/app/seismograph")).toBe("/app/now/deep");
+    expect(getLegacyAliasTarget("/app/seismograph-legacy")).toBe("/app/now/deep");
+    expect(getLegacyAliasTarget("/app/command-center")).toBe("/app/now/deep");
     expect(getLegacyAliasTarget("/app/pressure-index")).toBe("/app/now?view=pressure");
     expect(resolveCanonicalDestination("/app/alt-rotation")?.id).toBe("why");
   });
-  it("provides typed lookup maps for every route surface", () => { expect(CANONICAL_DESTINATION_BY_ID.now.path).toBe("/app/now"); expect(PERSISTENT_UTILITY_BY_ID.alerts.path).toBe("/app/watch?view=alerts"); expect(EXPERT_WORKSPACE_BY_ID["decision-engine"].owner).toBe("act"); });
-  it("preserves route context", () => expect(preserveRouteContext("/app/act?view=analyze", "?symbol=NVDA&conversationId=conv-7&view=old", "#evidence")).toBe("/app/act?symbol=NVDA&conversationId=conv-7&view=analyze#evidence"));
+  it("provides typed lookup maps for every route surface", () => { expect(CANONICAL_DESTINATION_BY_ID.now.path).toBe("/app/now"); expect(PERSISTENT_UTILITY_BY_ID.alerts.path).toBe("/app/alerts"); expect(EXPERT_WORKSPACE_BY_ID["decision-engine"].owner).toBe("act"); });
+  it("preserves route context", () => {
+    expect(preserveRouteContext("/app/act?view=analyze", "?symbol=NVDA&conversationId=conv-7&view=old", "#evidence")).toBe("/app/act?symbol=NVDA&conversationId=conv-7&view=analyze#evidence");
+    expect(preserveRouteContext("/app/decision-engine#trade-preflight", "?symbol=NVDA")).toBe("/app/decision-engine?symbol=NVDA#trade-preflight");
+  });
 });

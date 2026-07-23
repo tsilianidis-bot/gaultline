@@ -12,6 +12,11 @@ import {
   PRESERVED_UNIQUE_APP_PATHS,
   classifyAppRoute,
 } from "../shared/routeConsolidation";
+import {
+  LEGACY_CAPABILITY_AUDIT,
+  MANUAL_CAPABILITY_AUDIT,
+  RECOVERED_CAPABILITY_AUDIT,
+} from "../shared/legacyCapabilityAudit";
 
 const appSource = readFileSync(join(process.cwd(), "client/src/App.tsx"), "utf8");
 const explicitAppRoutes = [...appSource.matchAll(/<Route\s+path="(\/app[^" ]*)"/g)].map(match => match[1]);
@@ -39,11 +44,27 @@ describe("codebase-driven route consolidation", () => {
     PRESERVED_UNIQUE_APP_PATHS.forEach(route => expect(explicitAppRoutes).toContain(route));
   });
 
+  it("locks the recovered 33/36 capability audit and the three manual classifications", () => {
+    expect(LEGACY_CAPABILITY_AUDIT).toHaveLength(36);
+    expect(RECOVERED_CAPABILITY_AUDIT).toHaveLength(33);
+    expect(MANUAL_CAPABILITY_AUDIT.map(entry => entry.page)).toEqual(["Pressure", "Scores", "TradePreflight"]);
+    expect(new Set(LEGACY_CAPABILITY_AUDIT.map(entry => entry.page)).size).toBe(36);
+  });
+
+  it("mounts every preserved capability and redirects every redundant audited route", () => {
+    LEGACY_CAPABILITY_AUDIT.forEach(entry => {
+      if (entry.mountPath) expect(explicitAppRoutes).toContain(entry.mountPath);
+      if (entry.classification === "redundant" && entry.legacyPath) {
+        expect(ANALYTICAL_LEGACY_ALIASES[entry.legacyPath]).toBe(entry.destination);
+      }
+    });
+  });
+
   it("removes duplicate analytical mounts while retaining registry aliases", () => {
     Object.keys(ANALYTICAL_LEGACY_ALIASES)
       .filter(route => route.startsWith("/app/"))
       .forEach(route => expect(explicitAppRoutes).not.toContain(route));
-    expect(appSource).not.toMatch(/component=\{(?:Alerts|HistoricalAnalogs|DailyReport|Signals|Portfolio|AftershockEngine|SeismographicDash|MarketIntelligence|CryptoRegimeDashboard|SocialIntelligence|InsiderIntelligence|TradeJournal|StockHeatmap|SimPortfolio)\}/);
+    expect(appSource).not.toMatch(/component=\{(?:DailyReport|AftershockEngine|SeismographicDash|MarketIntelligence|CryptoRegimeDashboard|SocialIntelligence|InsiderIntelligence|StockHeatmap)\}/);
   });
 
   it("redirects public and demo compatibility routes directly to registry-owned destinations", () => {
