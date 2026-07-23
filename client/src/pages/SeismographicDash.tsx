@@ -1239,7 +1239,7 @@ export default function SeismographicDash() {
               { label: 'AI Bubble Monitor', path: '/app/pressure' },
               { label: 'Daily Report', path: '/app/report' },
             ].map(link => (
-              <a key={link.path} href={link.path} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#4B5563', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1px', transition: 'color 0.15s ease' }}
+              <a key={link.label} href={link.path} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#4B5563', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1px', transition: 'color 0.15s ease' }}
                 onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#00E5FF'}
                 onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#4B5563'}
               >
