@@ -1,5 +1,7 @@
 export type CanonicalDestinationId = "now" | "why" | "outlook" | "watch" | "act";
 export type RouteIconKey = "activity" | "network" | "telescope" | "bell" | "crosshair" | "message" | "search" | "help" | "user" | "gauge" | "brain" | "target";
+export type RouteAccess = "authenticated" | "public" | "owner";
+export type RouteSurface = "primary" | "utility" | "expert";
 
 export interface CanonicalDestination {
   id: CanonicalDestinationId;
@@ -13,34 +15,36 @@ export interface CanonicalDestination {
   searchKeywords: readonly string[];
   defaultView: string;
   views: readonly string[];
+  access: "authenticated";
+  surface: "primary";
   requiresAuth: true;
 }
 
 export const CANONICAL_DESTINATIONS: readonly CanonicalDestination[] = [
-  { id: "now", label: "NOW", shortLabel: "NOW", question: "What is happening right now?", path: "/app/now", icon: "activity", accent: "#00E5FF", analyticsId: "destination_now", searchKeywords: ["now", "market state", "seismograph", "pressure", "markets"], defaultView: "brief", views: ["brief", "markets", "pressure", "confidence"], requiresAuth: true },
-  { id: "why", label: "WHY", shortLabel: "WHY", question: "Why is it happening?", path: "/app/why", icon: "network", accent: "#FFAA00", analyticsId: "destination_why", searchKeywords: ["why", "drivers", "transmission", "positioning", "history"], defaultView: "drivers", views: ["drivers", "transmission", "positioning", "history"], requiresAuth: true },
-  { id: "outlook", label: "OUTLOOK", shortLabel: "OUTLOOK", question: "What is most likely next?", path: "/app/outlook", icon: "telescope", accent: "#A78BFA", analyticsId: "destination_outlook", searchKeywords: ["outlook", "probabilities", "scenarios", "transition", "recovery"], defaultView: "probabilities", views: ["probabilities", "scenarios", "transition", "aftershock-recovery"], requiresAuth: true },
-  { id: "watch", label: "WATCH", shortLabel: "WATCH", question: "What should I keep watching?", path: "/app/watch", icon: "bell", accent: "#F97316", analyticsId: "destination_watch", searchKeywords: ["watch", "signals", "alerts", "watchlists", "portfolio"], defaultView: "signals", views: ["signals", "alerts", "watchlists", "portfolio"], requiresAuth: true },
-  { id: "act", label: "ACT", shortLabel: "ACT", question: "How should I respond?", path: "/app/act", icon: "crosshair", accent: "#00FF88", analyticsId: "destination_act", searchKeywords: ["act", "opportunities", "analyze", "decide", "journal"], defaultView: "opportunities", views: ["opportunities", "analyze", "decide", "journal"], requiresAuth: true },
+  { id: "now", label: "NOW", shortLabel: "NOW", question: "What is happening right now?", path: "/app/now", icon: "activity", accent: "#00E5FF", analyticsId: "destination_now", searchKeywords: ["now", "market state", "seismograph", "pressure", "markets"], defaultView: "brief", views: ["brief", "markets", "pressure", "confidence"], access: "authenticated", surface: "primary", requiresAuth: true },
+  { id: "why", label: "WHY", shortLabel: "WHY", question: "Why is it happening?", path: "/app/why", icon: "network", accent: "#FFAA00", analyticsId: "destination_why", searchKeywords: ["why", "drivers", "transmission", "positioning", "history"], defaultView: "drivers", views: ["drivers", "transmission", "positioning", "history"], access: "authenticated", surface: "primary", requiresAuth: true },
+  { id: "outlook", label: "OUTLOOK", shortLabel: "OUTLOOK", question: "What is most likely next?", path: "/app/outlook", icon: "telescope", accent: "#A78BFA", analyticsId: "destination_outlook", searchKeywords: ["outlook", "probabilities", "scenarios", "transition", "recovery"], defaultView: "probabilities", views: ["probabilities", "scenarios", "transition", "aftershock-recovery"], access: "authenticated", surface: "primary", requiresAuth: true },
+  { id: "watch", label: "WATCH", shortLabel: "WATCH", question: "What should I keep watching?", path: "/app/watch", icon: "bell", accent: "#F97316", analyticsId: "destination_watch", searchKeywords: ["watch", "signals", "alerts", "watchlists", "portfolio"], defaultView: "signals", views: ["signals", "alerts", "watchlists", "portfolio"], access: "authenticated", surface: "primary", requiresAuth: true },
+  { id: "act", label: "ACT", shortLabel: "ACT", question: "How should I respond?", path: "/app/act", icon: "crosshair", accent: "#00FF88", analyticsId: "destination_act", searchKeywords: ["act", "opportunities", "analyze", "decide", "journal"], defaultView: "opportunities", views: ["opportunities", "analyze", "decide", "journal"], access: "authenticated", surface: "primary", requiresAuth: true },
 ] as const;
 
-export interface PersistentUtility { id: "asha" | "search" | "alerts" | "help" | "account"; label: string; icon: RouteIconKey; kind: "route" | "action"; path?: string; analyticsId: string; searchKeywords: readonly string[]; }
+export interface PersistentUtility { id: "asha" | "search" | "alerts" | "help" | "account"; label: string; icon: RouteIconKey; kind: "route" | "action"; path?: string; analyticsId: string; searchKeywords: readonly string[]; access: "authenticated"; surface: "utility"; }
 export const PERSISTENT_UTILITIES: readonly PersistentUtility[] = [
-  { id: "asha", label: "ASHA", icon: "message", kind: "route", path: "/app/asha", analyticsId: "utility_asha", searchKeywords: ["asha", "ask", "advisor", "conversation"] },
-  { id: "search", label: "Search", icon: "search", kind: "action", analyticsId: "utility_search", searchKeywords: ["search", "command", "symbol"] },
-  { id: "alerts", label: "Alerts", icon: "bell", kind: "route", path: "/app/watch?view=alerts", analyticsId: "utility_alerts", searchKeywords: ["alerts", "thresholds"] },
-  { id: "help", label: "Help", icon: "help", kind: "route", path: "/app/guide", analyticsId: "utility_help", searchKeywords: ["help", "guide", "methodology"] },
-  { id: "account", label: "Account", icon: "user", kind: "route", path: "/app/account", analyticsId: "utility_account", searchKeywords: ["account", "billing", "subscription"] },
+  { id: "asha", label: "ASHA", icon: "message", kind: "route", path: "/app/asha", analyticsId: "utility_asha", searchKeywords: ["asha", "ask", "advisor", "conversation"], access: "authenticated", surface: "utility" },
+  { id: "search", label: "Search", icon: "search", kind: "action", analyticsId: "utility_search", searchKeywords: ["search", "command", "symbol"], access: "authenticated", surface: "utility" },
+  { id: "alerts", label: "Alerts", icon: "bell", kind: "route", path: "/app/watch?view=alerts", analyticsId: "utility_alerts", searchKeywords: ["alerts", "thresholds"], access: "authenticated", surface: "utility" },
+  { id: "help", label: "Help", icon: "help", kind: "route", path: "/app/guide", analyticsId: "utility_help", searchKeywords: ["help", "guide", "methodology"], access: "authenticated", surface: "utility" },
+  { id: "account", label: "Account", icon: "user", kind: "route", path: "/app/account", analyticsId: "utility_account", searchKeywords: ["account", "billing", "subscription"], access: "authenticated", surface: "utility" },
 ] as const;
 
-export interface ExpertWorkspace { id: string; label: string; path: string; owner: CanonicalDestinationId | "asha"; ownerView: string; icon: RouteIconKey; }
+export interface ExpertWorkspace { id: string; label: string; path: string; owner: CanonicalDestinationId | "asha"; ownerView: string; icon: RouteIconKey; analyticsId: string; searchKeywords: readonly string[]; access: "authenticated"; surface: "expert"; }
 export const EXPERT_WORKSPACES: readonly ExpertWorkspace[] = [
-  { id: "pressure", label: "Pressure Engine", path: "/app/pressure", owner: "now", ownerView: "pressure", icon: "gauge" },
-  { id: "signal-outlook", label: "Signal Outlook Center", path: "/app/signal-outlook", owner: "outlook", ownerView: "probabilities", icon: "telescope" },
-  { id: "decision-engine", label: "Decision Engine", path: "/app/decision-engine", owner: "act", ownerView: "decide", icon: "crosshair" },
-  { id: "day-trade-intelligence", label: "Day Trade Intelligence", path: "/app/day-trade-intelligence", owner: "act", ownerView: "decide", icon: "target" },
-  { id: "symbol-intelligence", label: "Universal Symbol Intelligence", path: "/app/symbol-intelligence", owner: "act", ownerView: "analyze", icon: "target" },
-  { id: "smart-discovery", label: "Smart Discovery", path: "/app/discover", owner: "asha", ownerView: "workspace", icon: "brain" },
+  { id: "pressure", label: "Pressure Engine", path: "/app/pressure", owner: "now", ownerView: "pressure", icon: "gauge", analyticsId: "expert_pressure", searchKeywords: ["pressure", "stress", "seismograph", "risk"], access: "authenticated", surface: "expert" },
+  { id: "signal-outlook", label: "Signal Outlook Center", path: "/app/signal-outlook", owner: "outlook", ownerView: "probabilities", icon: "telescope", analyticsId: "expert_signal_outlook", searchKeywords: ["signal outlook", "probability", "scenario", "transition"], access: "authenticated", surface: "expert" },
+  { id: "decision-engine", label: "Decision Engine", path: "/app/decision-engine", owner: "act", ownerView: "decide", icon: "crosshair", analyticsId: "expert_decision_engine", searchKeywords: ["decision", "pre-flight", "respond", "scenario"], access: "authenticated", surface: "expert" },
+  { id: "day-trade-intelligence", label: "Day Trade Intelligence", path: "/app/day-trade-intelligence", owner: "act", ownerView: "decide", icon: "target", analyticsId: "expert_day_trade", searchKeywords: ["day trade", "intraday", "setup", "entry"], access: "authenticated", surface: "expert" },
+  { id: "symbol-intelligence", label: "Universal Symbol Intelligence", path: "/app/symbol-intelligence", owner: "act", ownerView: "analyze", icon: "target", analyticsId: "expert_symbol_intelligence", searchKeywords: ["symbol", "asset", "ticker", "analyze"], access: "authenticated", surface: "expert" },
+  { id: "smart-discovery", label: "Smart Discovery", path: "/app/discover", owner: "asha", ownerView: "workspace", icon: "brain", analyticsId: "expert_smart_discovery", searchKeywords: ["discover", "search", "asha", "research"], access: "authenticated", surface: "expert" },
 ] as const;
 
 export const ANALYTICAL_LEGACY_ALIASES: Readonly<Record<string, string>> = {
