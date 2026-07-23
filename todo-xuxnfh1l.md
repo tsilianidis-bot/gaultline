@@ -37,4 +37,4 @@
 - [ ] Verify core public and authenticated application routes load cleanly before creating the pre-reorganization tag.
 - [x] Fix the Stripe `evt_test_` webhook passthrough runtime failure and restore its focused test.
 - [x] Reconcile the global ASHA placeholder contract with its existing focused test.
-- [ ] Resolve the SendGrid credential-validation test without masking a real invalid-key condition.
+- [x] Document the user-waived SendGrid HTTP 401 as a known external-dependency issue and explicitly skip only its live credential assertion.
