@@ -1,6 +1,6 @@
 # FAULTLINE Reorganization Session TODO
 
-- [x] Save untouched checkpoint `f6106e41` and immutable tag `FAULTLINE_Pre-Reorganization_2026-07-22`.
+- [ ] Create and verify immutable tag `FAULTLINE_Pre-Reorganization_2026-07-22` on the existing untouched checkpoint `f6106e41`.
 - [x] Validate all 158 page-map rows and all 56 large-file-audit rows; record untouched route, TypeScript, Vitest, and build baselines.
 - [ ] Recover the discarded route-registry, canonical-market-state, and unified-ASHA Foundation in independently committed batches.
 - [ ] Create one typed route registry for NOW, WHY, OUTLOOK, WATCH, ACT, utilities, aliases, access, icons, analytics, search, and CTAs.
@@ -30,3 +30,8 @@
 - [ ] Resolve all source defects and run full Vitest, TypeScript, build, browser, console, network, server-log, route, public, admin, and authenticated-flow validation.
 - [ ] Review this ledger and accurately mark all completed requirements.
 - [ ] Archive `FAULTLINE_Production-Verified` as checkpoint plus immutable tag.
+- [ ] Fix the two committed CommandSearch route-registry TypeScript errors.
+- [ ] Fix all thirteen pre-existing TypeScript errors in SeismographicDash and Stripe configuration.
+- [ ] Run the complete TypeScript check and confirm zero errors before feature work resumes.
+- [ ] Inspect the rendered application, logs, console, and network activity; fix every runtime crash and error-boundary failure.
+- [ ] Verify core public and authenticated application routes load cleanly before creating the pre-reorganization tag.
