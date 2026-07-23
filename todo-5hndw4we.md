@@ -1,0 +1,34 @@
+# Project TODO
+
+- [x] Confirm repository HEAD, working-tree cleanliness, dependency state, TypeScript status, and current test baseline before editing
+- [ ] Make the pre-existing `tradePreflight` output-shape test deterministic so live LLM latency cannot cause the 30-second regression-suite timeout
+- [x] Inventory the five canonical destination routes and centralized legacy-alias ownership from the actual route registry and application mounts
+- [x] Enumerate every remaining legacy analytical page component and map each page to its current public route or absence from routing
+- [x] Process the recovered 33-row audit plus three direct-source manual classifications after abandoning the stalled parallel classification run
+- [x] Record the recovered legacy analytical capability decisions and overlap with NOW, WHY, OUTLOOK, WATCH, ACT, and preserved expert workspaces
+- [x] Classify every audited legacy analytical page as preserve, redirect, or archive through the authoritative code-level audit
+- [x] Preserve direct routes for legacy analytical pages whose unique capabilities are not covered by the five canonical destinations
+- [x] Redirect redundant legacy analytical routes directly to the correct canonical or expert destination without redirect chains
+- [x] Archive the unreachable redundant `CryptoIntelligence` source by keeping it unmounted with no compatibility alias
+- [x] Extend route-contract tests to cover every preserve, redirect, archive, deep-view, utility, and expert-workspace decision
+- [x] Run TypeScript validation and targeted route tests for the completed legacy-route audit implementation
+- [x] Generate an authoritative inventory of maintained source files over 800 lines, including test source while excluding generated artifacts, dependencies, migrations, and test snapshots
+- [ ] Decompose oversized shared and server modules into focused single-responsibility files while preserving public exports and runtime behavior
+- [ ] Add or update Vitest coverage for decomposed shared and server behavior
+- [ ] Run TypeScript validation and targeted tests, then checkpoint each validated shared/server decomposition batch
+- [ ] Decompose oversized NOW, WHY, OUTLOOK, WATCH, ACT, ASHA, and analytical UI modules into focused components, hooks, data modules, and types
+- [ ] Add or update Vitest coverage for behavior moved out of oversized canonical and analytical UI modules
+- [ ] Run TypeScript validation and targeted tests, then checkpoint each validated canonical/UI decomposition batch
+- [ ] Decompose every remaining production source file over 800 lines without changing user-visible scope
+- [ ] Verify with a deterministic line-count audit that no in-scope production source file remains over 800 lines
+- [ ] Inspect NOW, WHY, OUTLOOK, WATCH, and ACT at desktop and narrow mobile widths for horizontal overflow, clipped labels, unbroken text, and grid/flex min-width failures
+- [ ] Fix canonical-destination text containment with intrinsic sizing, wrapping, truncation, or scroll containment appropriate to each content type
+- [ ] Add or update regression tests for reusable text-containment and responsive-layout contracts where applicable
+- [ ] Verify responsive layouts for NOW, WHY, OUTLOOK, WATCH, and ACT at representative mobile viewports without changing their information hierarchy
+- [ ] Verify touch target sizing, tap interactions, drawers, tabs, tables, charts, and horizontally dense controls across all five destinations
+- [ ] Verify the unified ASHA gateway opens, closes, accepts input, preserves the shared thread, and maintains cross-surface continuity on mobile
+- [ ] Run TypeScript validation, targeted tests, and mobile visual verification, then checkpoint overflow and mobile-parity changes
+- [ ] Run the full Vitest suite, TypeScript validation, production build, route regression suite, and browser-console/network-log checks
+- [ ] Run a bounded production-performance audit on the five canonical destinations and address only regressions introduced or exposed by this reorganization
+- [ ] Review this complete ledger and mark every validated item accurately before the final checkpoint
+- [ ] Create the final FAULTLINE_Production-Verified checkpoint and document the route audit, decomposition results, mobile evidence, overflow fixes, tests, and any bounded residual risks
