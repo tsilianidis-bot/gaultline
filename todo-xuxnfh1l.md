@@ -35,6 +35,6 @@
 - [x] Run the complete TypeScript check and confirm zero errors before feature work resumes.
 - [ ] Inspect the rendered application, logs, console, and network activity; fix every runtime crash and error-boundary failure.
 - [ ] Verify core public and authenticated application routes load cleanly before creating the pre-reorganization tag.
-- [ ] Fix the Stripe `evt_test_` webhook passthrough runtime failure and restore its focused test.
+- [x] Fix the Stripe `evt_test_` webhook passthrough runtime failure and restore its focused test.
 - [ ] Reconcile the global ASHA placeholder contract with its existing focused test.
 - [ ] Resolve the SendGrid credential-validation test without masking a real invalid-key condition.
