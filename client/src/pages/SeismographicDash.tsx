@@ -663,7 +663,10 @@ export default function SeismographicDash() {
   const whyThisRegime = intel?.whyThisRegime ?? "";
   const probabilities = intel?.probabilities ?? { primaryDriver: "" };
   const evidenceFamilies = intel?.evidenceFamilies ?? [];
-  const evidenceConsensus = intel?.evidenceConsensus ?? { summary: "", bullishCount: 0, bearishCount: 0, neutralCount: 0 };
+  const evidenceConsensusRaw = intel?.evidenceConsensus ?? "weak";
+  const evidenceConsensus = typeof evidenceConsensusRaw === 'object' && evidenceConsensusRaw !== null
+    ? evidenceConsensusRaw as { summary: string; bullishCount: number; bearishCount: number; neutralCount: number }
+    : { summary: String(evidenceConsensusRaw), bullishCount: 0, bearishCount: 0, neutralCount: 0 };
   const enginesAgreeing = intel?.enginesAgreeing ?? 0;
   const enginesDisagreeing = intel?.enginesDisagreeing ?? 0;
   const seismoAnalogs = intel?.analogs ?? [];
@@ -675,7 +678,7 @@ export default function SeismographicDash() {
   const developingConditions = intel?.developingConditions ?? [];
   const engineContributions = intel?.engineContributions ?? [];
   const marketNarrative = intel?.marketNarrative ?? { whatIsBuildingBeneathSurface: "", whyIsItHappening: "", highestProbabilityPath: "", whatHasChanged: "", whatWouldInvalidate: "" };
-  const sparkline = intel?.macroTicker ?? [];
+  const sparkline: { score: number }[] = intel?.timeline?.map((t: any) => ({ score: t.score })) ?? [];
   const topEngines = [...engineContributions].sort((a: any, b: any) => b.contributionWeight - a.contributionWeight).slice(0, 5);
 
   // ── ASHA context registration ───────────────────────────────
@@ -886,9 +889,9 @@ export default function SeismographicDash() {
             {developingConditions.length > 0 && (
               <div style={{ marginBottom: "20px" }}>
                 <div style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "8px" }}>DEVELOPING CONDITIONS</div>
-                {developingConditions.map((dc: string, i: number) => (
+                {developingConditions.map((dc: any, i: number) => (
                   <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", marginBottom: "5px", padding: "6px 10px", background: "rgba(6,182,212,0.02)", borderRadius: "4px", borderLeft: "2px solid rgba(6,182,212,0.15)" }}>
-                    <span style={{ fontSize: "11px", color: "rgba(226,232,240,0.6)", lineHeight: 1.5, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>{dc}</span>
+                    <span style={{ fontSize: "11px", color: "rgba(226,232,240,0.6)", lineHeight: 1.5, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>{typeof dc === 'string' ? dc : dc.description ?? dc.title ?? JSON.stringify(dc)}</span>
                   </div>
                 ))}
               </div>
@@ -1109,7 +1112,7 @@ export default function SeismographicDash() {
 
         {/* SOB Panel */}
         <SectionErrorBoundary label="SOB Panel">
-          <SOBPanel context="dashboard" />
+          <SOBPanel />
         </SectionErrorBoundary>
 
         {/* Narrative Panel */}
@@ -1124,9 +1127,9 @@ export default function SeismographicDash() {
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <ProbBar label="Bull" value={probability.bullProbability} color="#00FF88" />
-            <ProbBar label="Bear" value={probability.bearProbability} color="#FF9500" />
+            <ProbBar label="Bear" value={(probability as any).bearProbability ?? (probability as any).recessionProbability ?? 0} color="#FF9500" />
             <ProbBar label="Crash" value={probability.crashProbability} color="#FF2D55" />
-            <ProbBar label="Neutral" value={probability.neutralProbability} color="#00E5FF" />
+            <ProbBar label="Neutral" value={(probability as any).neutralProbability ?? (probability as any).softLandingProbability ?? 0} color="#00E5FF" />
           </div>
         </div>
 
@@ -1142,7 +1145,7 @@ export default function SeismographicDash() {
                 label={d.label}
                 delta={d.delta}
                 color={getRiskColor(d.riskLevel)}
-                detail={d.interpretation}
+                detail={(d as any).interpretation ?? d.description ?? ''}
               />
             ))}
           </div>
@@ -1176,7 +1179,7 @@ export default function SeismographicDash() {
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: getRiskColor(aiDomain.riskLevel), background: `${getRiskColor(aiDomain.riskLevel)}12`, border: `1px solid ${getRiskColor(aiDomain.riskLevel)}25`, borderRadius: '2px', padding: '1px 5px', textTransform: 'uppercase' }}>{aiDomain.riskLevel}</div>
             </div>
             <SeismicWave color={getRiskColor(aiDomain.riskLevel)} score={aiDomain.score} />
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#B0C4D8', lineHeight: 1.55, marginTop: '8px' }}>{aiDomain.interpretation}</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#B0C4D8', lineHeight: 1.55, marginTop: '8px' }}>{(aiDomain as any).interpretation ?? aiDomain.description ?? ''}</div>
           </div>
         )}
 

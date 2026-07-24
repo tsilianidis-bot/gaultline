@@ -4010,3 +4010,108 @@
 - [x] All 10 articles: contentClass=evergreen, published=1, metaTitle, metaDescription, readTimeMinutes set
 - [x] All articles include internal links to /app and /app/seismograph
 - [x] All articles include FAQ sections for featured snippet optimization
+
+## FAULTLINE Reorganization — Stage 5/6/7 (Session: Jul 24 2026)
+
+### Stage 5: Large-File Decomposition (files >800 lines)
+
+#### Server files
+- [ ] server/routers.ts (3253 lines) — split into focused router sub-files
+- [ ] server/tradePreflight.ts (2823 lines) — extract types, validators, sub-engines
+- [ ] server/signalOutlook.ts (2301 lines) — extract types and sub-modules
+- [ ] server/routers/smartDiscovery.ts (1585 lines) — extract helpers/types
+- [ ] server/db.ts (1484 lines) — split into domain query files
+- [ ] server/dayTradeEngine.ts (1382 lines) — extract types and sub-engines
+- [ ] server/ownerSimulation.ts (1360 lines) — extract types/helpers
+- [ ] server/socialIntelligence.ts (1124 lines) — extract types/helpers
+- [ ] server/signalsProxy.ts (1068 lines) — extract types/helpers
+- [ ] server/seoOptimizer.ts (1028 lines) — extract types/helpers
+- [ ] server/seismographEngine.ts (979 lines) — extract types/helpers
+- [ ] server/autonomousPublishing.ts (960 lines) — extract types/helpers
+- [ ] server/intentResolver.ts (877 lines) — extract types/helpers
+- [ ] server/cryptoIntelligence.ts (822 lines) — extract types/helpers
+
+#### Client page/component files
+- [ ] client/src/pages/SmartDiscovery.tsx (3312 lines) — extract sub-components
+- [ ] client/src/pages/MarketingSite.tsx (3194 lines) — extract sub-components
+- [ ] client/src/pages/Signals.tsx (2696 lines) — extract sub-components
+- [ ] client/src/pages/DayTradeIntelligence.tsx (2299 lines) — extract sub-components
+- [ ] client/src/pages/Guide.tsx (1779 lines) — extract sub-components
+- [ ] client/src/pages/SignalOutlookCenter.tsx (1726 lines) — extract sub-components
+- [ ] client/src/pages/OwnerSimulation.tsx (1668 lines) — extract sub-components
+- [ ] client/src/pages/SituationRoom.tsx (1535 lines) — extract sub-components
+- [ ] client/src/pages/SocialIntelligence.tsx (1462 lines) — extract sub-components
+- [ ] client/src/pages/AdminPortal.tsx (1453 lines) — extract sub-components
+- [ ] client/src/lib/cinematicEngine.ts (1449 lines) — extract types/helpers
+- [ ] client/src/pages/ComponentShowcase.tsx (1437 lines) — extract sub-components
+- [ ] client/src/pages/SeoOptimizer.tsx (1390 lines) — extract sub-components
+- [ ] client/src/pages/Pressure.tsx (1343 lines) — extract sub-components
+- [ ] client/src/lib/signalsData.ts (1324 lines) — extract domain data files
+- [ ] client/src/pages/SeismographicDash.tsx (1260 lines) — extract sub-components
+- [ ] client/src/pages/CryptoSignals.tsx (1101 lines) — extract sub-components
+- [ ] client/src/components/ScoreExplainer.tsx (1095 lines) — extract sub-components
+- [ ] client/src/components/MarketPreflight.tsx (1083 lines) — extract sub-components
+- [ ] client/src/pages/UserAccount.tsx (1079 lines) — extract sub-components
+- [ ] client/src/components/OnboardingFlow.tsx (1061 lines) — extract sub-components
+- [ ] client/src/components/TickerSearch.tsx (1057 lines) — extract sub-components
+- [ ] client/src/pages/Press.tsx (1001 lines) — extract sub-components
+- [ ] client/src/pages/Portfolio.tsx (963 lines) — extract sub-components
+- [ ] client/src/pages/PreFlight.tsx (956 lines) — extract sub-components
+- [ ] client/src/App.tsx (953 lines) — extract route groups
+- [ ] client/src/pages/SeismographIntelligence.tsx (940 lines) — extract sub-components
+- [ ] client/src/hooks/useCinematicAudio.ts (936 lines) — extract helpers
+- [ ] client/src/components/PremiumGate.tsx (926 lines) — extract sub-components
+- [ ] client/src/components/AppLayout.tsx (926 lines) — extract sub-components
+- [ ] client/src/pages/Watchlist.tsx (909 lines) — extract sub-components
+- [ ] client/src/pages/UniversalSymbolIntelligence.tsx (909 lines) — extract sub-components
+- [ ] client/src/pages/AltRotation.tsx (903 lines) — extract sub-components
+- [ ] client/src/pages/CryptoIntelligence.tsx (895 lines) — extract sub-components
+- [ ] client/src/pages/CryptoSearch.tsx (858 lines) — extract sub-components
+- [ ] client/src/pages/Charts.tsx (855 lines) — extract sub-components
+- [ ] client/src/pages/IntelligenceHub.tsx (854 lines) — extract sub-components
+- [ ] client/src/pages/DiagnosticAI.tsx (844 lines) — extract sub-components
+- [ ] client/src/pages/Blog.tsx (831 lines) — extract sub-components
+- [ ] client/src/pages/ValidationLab.tsx (829 lines) — extract sub-components
+- [ ] client/src/pages/AftershockEngine.tsx (822 lines) — extract sub-components
+- [ ] client/src/pages/admin/ConversationIntelligence.tsx (817 lines) — extract sub-components
+
+### Stage 6: Mobile Parity
+- [ ] Fix text overflow on NOW destination (mobile 375px/768px)
+- [ ] Fix text overflow on WHY destination (mobile 375px/768px)
+- [ ] Fix text overflow on OUTLOOK destination (mobile 375px/768px)
+- [ ] Fix text overflow on WATCH destination (mobile 375px/768px)
+- [ ] Fix text overflow on ACT destination (mobile 375px/768px)
+- [ ] Fix ASHA gateway mobile layout
+- [ ] Responsive layouts for all card/panel components
+- [ ] Touch-friendly interaction targets (min 44px)
+
+### Stage 7: Production Verification
+- [ ] Zero TypeScript errors (tsc --noEmit)
+- [ ] Full test suite passes (skip tradePreflight.test.ts and SendGrid tests)
+- [ ] Production build succeeds (npm run build)
+- [ ] All 5 canonical routes render without errors
+- [ ] ASHA gateway responds without crashes
+- [ ] Create final git tag: FAULTLINE_Production-Verified
+
+## Stage 6: Mobile Parity (Session: Jul 24 2026 — priority)
+
+- [ ] Audit NOW destination (/app/now) at 375px and 768px
+- [ ] Audit WHY destination (/app/why) at 375px and 768px
+- [ ] Audit OUTLOOK destination (/app/outlook) at 375px and 768px
+- [ ] Audit WATCH destination (/app/watch) at 375px and 768px
+- [ ] Audit ACT destination (/app/act) at 375px and 768px
+- [ ] Audit ASHA gateway (/app/asha) at 375px and 768px
+- [ ] Fix text overflow issues on all destinations
+- [ ] Fix responsive layouts for card/panel components
+- [ ] Ensure touch-friendly interaction targets (min 44px)
+- [ ] Commit after validation
+
+## Stage 7: Production Verification (Session: Jul 24 2026 — priority)
+
+- [ ] Zero TypeScript errors (tsc --noEmit)
+- [ ] Full test suite passes (skip tradePreflight.test.ts and SendGrid tests)
+- [ ] Production build succeeds (pnpm build)
+- [ ] All 5 canonical routes render without errors
+- [ ] ASHA gateway responds without crashes
+- [ ] Create final git tag: FAULTLINE_Production-Verified
+- [ ] Deliver comprehensive production readiness report
