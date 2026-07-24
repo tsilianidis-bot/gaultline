@@ -36,6 +36,7 @@ import {
 } from "./seismographCore";
 import type { FaultlinePressureOutput } from "./pressure/engine";
 import type { FMOSUniversalOutput } from "./fmos/types";
+import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -133,6 +134,7 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
 
   // Step 8: Persist to Market Memory
   await memorySetJson(SEISMOGRAPH_OUTPUT_KEY, seismographOutput);
+  invalidateCanonicalMarketStateCache();
   console.log("[Seismograph] Output persisted to Market Memory");
 
   return seismographOutput;

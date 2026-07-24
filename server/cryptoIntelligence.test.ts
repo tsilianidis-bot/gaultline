@@ -7,6 +7,7 @@
 // ============================================================
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
+import { calculateFaultlinePressure } from "./pressure/engine";
 
 // Mock the pressure engine to return deterministic values
 vi.mock("./pressure/engine", () => ({
@@ -39,6 +40,7 @@ vi.mock("./_core/llm", () => ({
 describe("getCryptoIntelligence", () => {
   beforeEach(() => {
     clearCryptoCache();
+    vi.mocked(calculateFaultlinePressure).mockClear();
   });
 
   it("returns a valid CryptoIntelligenceReport shape", async () => {
@@ -168,6 +170,7 @@ describe("getCryptoIntelligence", () => {
     const second = await getCryptoIntelligence();
     // After clearing cache, second call should NOT be cached
     expect(second.cached).toBe(false);
+    expect(calculateFaultlinePressure).toHaveBeenCalledTimes(2);
   });
 
   it("pressureIndex matches the mocked overallPressure", async () => {
@@ -184,8 +187,6 @@ describe("getCryptoIntelligence", () => {
 //   liquidity 35–60 (liquidity = 100 - liquidityVectorScore, so vector 40–65)
 //   credit < 60
 //   equity < 65
-
-import { calculateFaultlinePressure } from "./pressure/engine";
 
 describe("Bear Market → Accumulation Phase classification", () => {
   beforeEach(() => {

@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp, Activity, TrendingUp, TrendingDown, Minus, Arro
 import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
+import { formatCanonicalScore } from "@shared/marketMetrics";
 
 // Pages that should NOT show the strip (landing, auth, public pages)
 const EXCLUDED_PATHS = [
@@ -65,7 +66,7 @@ export default function MarketContextStrip() {
   const { overall, regime, probability, narrative } = output;
   const verdictLabel = getVerdictLabel(overall.riskLevel);
   const regimeColor = regime.color;
-  const pressureScore = overall.score.toFixed(1);
+  const pressureScore = formatCanonicalScore(overall.score * 10);
   const pressureColor = getRiskColor(overall.riskLevel);
 
   // Pick the dominant probability for the "most likely outcome" pill
@@ -168,7 +169,6 @@ export default function MarketContextStrip() {
               <Activity size={10} color="rgba(100,116,139,0.5)" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.1em" }}>PRESSURE INDEX</span>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: pressureColor, textShadow: `0 0 10px ${pressureColor}60` }}>{pressureScore}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.4)" }}>/10</span>
             </div>
 
             {/* Verdict */}

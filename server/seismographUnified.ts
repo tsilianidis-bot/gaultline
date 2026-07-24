@@ -27,6 +27,7 @@ import {
 } from "../drizzle/schema";
 import { desc, asc, sql } from "drizzle-orm";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
+import type { SeismographProviderProvenance } from "./seismographCore";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -110,6 +111,7 @@ export interface UnifiedSeismographIntelligence {
   currentPercentile: number;
   dataFreshness: "live" | "recent" | "stale";
   lastUpdated: string;
+  providerProvenance: SeismographProviderProvenance;
 
   // ── Today's Story ──────────────────────────────────────────
   todayStory: string;
@@ -496,6 +498,15 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     latestAssembled
       ? new Date(latestAssembled.computedAt).toISOString()
       : new Date().toISOString();
+  const providerProvenance: SeismographProviderProvenance = latestAssembled?.providerProvenance ?? {
+    fred: {
+      status: "unavailable",
+      detail: latestAssembled
+        ? "This legacy Seismograph snapshot predates provider-level FRED provenance."
+        : "No assembled Seismograph output is available to verify FRED provenance.",
+      asOf: latestAssembled?.computedAt ?? Date.parse(lastUpdated),
+    },
+  };
 
   return {
     currentScore,
@@ -505,6 +516,7 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     currentPercentile,
     dataFreshness,
     lastUpdated,
+    providerProvenance,
     todayStory,
     keyDevelopments,
     whyThisScore,

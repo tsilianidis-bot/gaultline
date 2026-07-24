@@ -56,6 +56,7 @@ export type ToolChoice =
   | ToolChoiceExplicit;
 
 export type InvokeParams = {
+  model?: string;
   messages: Message[];
   tools?: Tool[];
   toolChoice?: ToolChoice;
@@ -95,6 +96,18 @@ export type InvokeResult = {
     completion_tokens: number;
     total_tokens: number;
   };
+};
+
+export type LLMModel = {
+  id: string;
+  object?: string;
+  owned_by?: string;
+  capabilities?: Record<string, unknown>;
+};
+
+export type ListLLMModelsResult = {
+  object?: string;
+  data: LLMModel[];
 };
 
 export type JsonSchema = {
@@ -214,6 +227,11 @@ const resolveApiUrl = () =>
     ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
     : "https://forge.manus.im/v1/chat/completions";
 
+const resolveModelsApiUrl = () =>
+  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
+    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
+    : "https://forge.manus.im/v1/models";
+
 const assertApiKey = () => {
   if (!ENV.forgeApiKey) {
     throw new Error("OPENAI_API_KEY is not configured");
@@ -269,6 +287,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   assertApiKey();
 
   const {
+    model,
     messages,
     tools,
     toolChoice,
@@ -277,10 +296,12 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     output_schema,
     responseFormat,
     response_format,
+    maxTokens,
+    max_tokens,
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: model ?? "gemini-3-flash-preview",
     messages: messages.map(normalizeMessage),
   };
 
@@ -296,10 +317,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
-  }
+  payload.max_tokens = maxTokens ?? max_tokens ?? 32768;
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -329,4 +347,27 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   }
 
   return (await response.json()) as InvokeResult;
+}
+
+export async function listLLMModels(): Promise<ListLLMModelsResult> {
+  assertApiKey();
+
+  const response = await fetch(resolveModelsApiUrl(), {
+    headers: {
+      authorization: `Bearer ${ENV.forgeApiKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `LLM model catalog failed: ${response.status} ${response.statusText} – ${errorText}`,
+    );
+  }
+
+  const result = (await response.json()) as ListLLMModelsResult;
+  if (!Array.isArray(result.data)) {
+    throw new Error("LLM model catalog returned an invalid response");
+  }
+  return result;
 }

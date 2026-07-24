@@ -14,108 +14,33 @@
 import { invokeLLM } from "./_core/llm";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
 import { LRUCache } from "./lruCache";
+import type {
+  AccumulationPhaseAnalysis,
+  AltcoinRiskAssessment,
+  BitcoinMacroDashboard,
+  CryptoAssetSignal,
+  CryptoIntelligenceReport,
+  CryptoMacroCorrelation,
+  CryptoPortfolioGuidance,
+  CryptoRisk,
+  CryptoSignal,
+  CyclePhase,
+  MomentumDir,
+} from "./cryptoIntelligence.types";
 
-// ── Types ────────────────────────────────────────────────────
-
-export type CryptoSignal = "Bullish" | "Neutral" | "Bearish";
-export type CryptoRisk   = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
-export type MomentumDir  = "Accelerating" | "Stable" | "Decelerating" | "Reversing";
-export type CyclePhase   =
-  | "Early Bull"
-  | "Mid Bull"
-  | "Late Bull / Euphoria"
-  | "Distribution"
-  | "Early Bear"
-  | "Mid Bear"
-  | "Capitulation"
-  | "Bear Market → Accumulation Phase"
-  | "Accumulation";
-
-// ── Accumulation Phase Analysis ──────────────────────────────
-// Structured response for the "Bear Market → Accumulation Phase" state.
-// This is the user-facing intelligence block shown when BTC is down
-// significantly from cycle highs but showing base-forming signals.
-export interface AccumulationPhaseAnalysis {
-  directAnswer:    string;   // "Bitcoin appears to be in an accumulation phase inside a broader bear-market structure."
-  confidenceLevel: number;   // 0–100
-  confidenceLabel: string;   // "High" | "Moderate" | "Low"
-  keyEvidence:     string[]; // 3–5 bullet evidence points
-  bullCycleConfirmation: string[]; // What would confirm a new bull cycle
-  invalidationSignals:   string[]; // What would invalidate the accumulation thesis
-  tradingBias:     string;   // Actionable bias: capital preservation, selective accumulation, etc.
-  disclaimer:      string;
-}
-
-export interface CryptoAssetSignal {
-  id: string;
-  name: string;
-  ticker: string;
-  signal: CryptoSignal;
-  momentum: MomentumDir;
-  risk: CryptoRisk;
-  riskScore: number;      // 0–100
-  signalScore: number;    // 0–100 (higher = more bullish)
-  explanation: string;    // 1–2 sentence plain-English summary
-  keyDrivers: string[];   // 2–3 bullet strings
-  macroAlignment: "Aligned" | "Diverging" | "Neutral";
-}
-
-export interface BitcoinMacroDashboard {
-  trendStrength:       { score: number; label: string; direction: "up" | "down" | "sideways"; note: string };
-  liquidityConditions: { score: number; label: string; direction: "expanding" | "contracting" | "neutral"; note: string };
-  dollarPressure:      { score: number; label: string; direction: "strengthening" | "weakening" | "neutral"; note: string };
-  yieldPressure:       { score: number; label: string; direction: "rising" | "falling" | "neutral"; note: string };
-  etfInstitutionalFlow:{ score: number; label: string; direction: "inflow" | "outflow" | "neutral"; note: string };
-  marketCyclePhase:    { phase: CyclePhase; confidence: number; note: string };
-  overallBtcBias:      CryptoSignal;
-  aiNarrative:         string;
-  accumulationAnalysis?: AccumulationPhaseAnalysis; // Only present when phase === "Bear Market → Accumulation Phase"
-}
-
-export interface AltcoinRiskAssessment {
-  overallRisk: CryptoRisk;
-  riskScore: number;          // 0–100
-  btcDominanceSignal: string; // e.g. "Dominance rising — altcoin risk elevated"
-  liquiditySignal: string;
-  stablecoinSignal: string;
-  riskOnOffSignal: string;
-  macroPressureSignal: string;
-  volatilitySignal: string;
-  altcoinSeasonProbability: number; // 0–100
-  recommendation: string;
-}
-
-export interface CryptoMacroCorrelation {
-  fedPolicyImpact:    { signal: CryptoSignal; note: string };
-  interestRateImpact: { signal: CryptoSignal; note: string };
-  dollarStrength:     { signal: CryptoSignal; note: string };
-  liquidityCycle:     { signal: CryptoSignal; note: string };
-  equityRiskAppetite: { signal: CryptoSignal; note: string };
-  bondMarketStress:   { signal: CryptoSignal; note: string };
-  overallMacroSignal: CryptoSignal;
-  correlationSummary: string;
-}
-
-export interface CryptoPortfolioGuidance {
-  btcGuidance:   { action: string; condition: string; note: string };
-  ethGuidance:   { action: string; condition: string; note: string };
-  altGuidance:   { action: string; condition: string; note: string };
-  stableGuidance:{ action: string; condition: string; note: string };
-  overallBias:   string;
-  disclaimer:    string;
-}
-
-export interface CryptoIntelligenceReport {
-  generatedAt:       number;
-  pressureIndex:     number;
-  regime:            string;
-  signals:           CryptoAssetSignal[];
-  btcDashboard:      BitcoinMacroDashboard;
-  altcoinRisk:       AltcoinRiskAssessment;
-  macroCorrelation:  CryptoMacroCorrelation;
-  portfolioGuidance: CryptoPortfolioGuidance;
-  cached?:           boolean;
-}
+export type {
+  AccumulationPhaseAnalysis,
+  AltcoinRiskAssessment,
+  BitcoinMacroDashboard,
+  CryptoAssetSignal,
+  CryptoIntelligenceReport,
+  CryptoMacroCorrelation,
+  CryptoPortfolioGuidance,
+  CryptoRisk,
+  CryptoSignal,
+  CyclePhase,
+  MomentumDir,
+} from "./cryptoIntelligence.types";
 
 // ── LRU cache (5-minute TTL) ─────────────────────────────────
 

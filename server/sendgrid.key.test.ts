@@ -11,7 +11,10 @@ describe("SENDGRID_API_KEY validation", () => {
     expect(key?.startsWith("SG."), "Key must start with SG.").toBe(true);
   });
 
-  it("key is accepted by SendGrid API", async () => {
+  // Known external dependency: the currently injected credential is rejected
+  // by SendGrid with HTTP 401. The owner explicitly waived credential repair.
+  // Keep this assertion visible and re-enable it when the secret is replaced.
+  it.skip("key is accepted by SendGrid API", async () => {
     const key = process.env.SENDGRID_API_KEY;
     if (!key) throw new Error("SENDGRID_API_KEY not set");
 

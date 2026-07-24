@@ -24,9 +24,13 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import AshaIntroModal from "@/components/AshaIntroModal";
 import AshaPanel from "@/components/AshaPanel";
+import { formatCanonicalScore } from "@shared/marketMetrics";
 import { DrawerProvider } from "@/contexts/DrawerContext";
 import LeftNavDrawer from "@/components/LeftNavDrawer";
 import RightActionDrawer from "@/components/RightActionDrawer";
+import { CANONICAL_DESTINATIONS } from "@shared/routeRegistry";
+import { getRouteIcon } from "@/lib/routeIcons";
+import AppMarketHeader, { type MarketTickerItem } from "@/components/AppMarketHeader";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: command → markets → intelligence → analysis → account
@@ -46,66 +50,17 @@ type NavGroup = {
   items: NavItem[];
 };
 
-const NAV_GROUPS: NavGroup[] = [
-  {
-    // Q1 + Q2: What is the market doing right now? Why?
-    label: "SITUATION",
-    color: "#00E5FF",
-    items: [
-      { id: "seismograph",     label: "Seismograph",          shortLabel: "Seismograph", icon: Activity,        path: "/app/seismograph" },
-      { id: "intelligence-hub", label: "Intelligence Hub",    shortLabel: "Intel Hub",   icon: Brain,           path: "/app/intelligence-hub" },
-      { id: "command",        label: "Command Center",       shortLabel: "Command",     icon: Command,         path: "/app/command" },
-      { id: "dashboard",      label: "Dashboard Briefing",   shortLabel: "Briefing",    icon: LayoutDashboard, path: "/app/dashboard" },
-      { id: "todays-story",   label: "Today's Story",        shortLabel: "Story",       icon: BookOpen,        path: "/app/todays-story" },
-      { id: "pressure",       label: "Pressure Index",       shortLabel: "Pressure",    icon: Gauge,           path: "/app/pressure" },
-      { id: "report",         label: "ASHA Intelligence",    shortLabel: "Intel",       icon: FileText,        path: "/app/report" },
-    ],
-  },
-  {
-    // Q3 + Q4: What does it mean? What is the highest probability outcome?
-    label: "UNDERSTAND",
-    color: "#FFAA00",
-    items: [
-      { id: "signal-outlook",  label: "Signal Outlook",       shortLabel: "Outlook",     icon: Eye,             path: "/app/signal-outlook" },
-      { id: "pre-flight",      label: "Pre-Flight Check",     shortLabel: "Pre-Flight",  icon: Shield,          path: "/app/pre-flight" },
-      { id: "social-intel",    label: "Social Intelligence",  shortLabel: "Social Intel",icon: Users,           path: "/app/social-intelligence" },
-      { id: "insider-intel",   label: "Insider Intelligence", shortLabel: "Insider",     icon: TrendingDown,    path: "/app/insider-intelligence" },
-      { id: "alt-rotation",    label: "Sector Rotation",      shortLabel: "Rotation",    icon: RotateCcw,       path: "/app/alt-rotation" },
-      { id: "crypto",          label: "Crypto Hub",           shortLabel: "Crypto",      icon: Bitcoin,         path: "/app/crypto" },
-      { id: "market-intelligence", label: "ASHA Market Intel",    shortLabel: "Regimes",     icon: BarChart3,       path: "/app/market-intelligence" },
-      { id: "crypto-regime",       label: "Crypto Regime",          shortLabel: "Crypto Regime", icon: Bitcoin,         path: "/app/crypto-regime" },
-      { id: "blog",                label: "Blog",                   shortLabel: "Blog",        icon: Newspaper,       path: "/blog" },
-    ],
-  },
-  {
-    // Q5 + Q6: What could change the outlook? How do I capitalize?
-    label: "OPPORTUNITIES",
-    color: "#00FF88",
-    items: [
-      { id: "discover",        label: "Ask ASHA",             shortLabel: "Ask ASHA",    icon: Search,          path: "/app/discover" },
-      { id: "opportunities",   label: "Opportunities",        shortLabel: "Opps",        icon: Sparkles,        path: "/app/opportunities" },
-      { id: "signals",         label: "ASHA Signals",         shortLabel: "Signals",     icon: Radio,           path: "/app/signals" },
-      { id: "symbol-intel",    label: "Symbol Intelligence",  shortLabel: "Symbol Intel",icon: Telescope,       path: "/app/symbol-intelligence" },
-      { id: "decision-engine", label: "Decision Engine",      shortLabel: "Decide",      icon: Crosshair,       path: "/app/decision-engine" },
-      { id: "day-trade",       label: "Day Trade Intel",      shortLabel: "Day Trade",   icon: Target,          path: "/app/day-trade-intelligence" },
-      { id: "market-movers",   label: "Market Movers",        shortLabel: "Movers",      icon: TrendingUp,      path: "/app/market-movers" },
-    ],
-  },
-  {
-    // Q7: What should I continue monitoring?
-    label: "MONITOR",
-    color: "#A78BFA",
-    items: [
-      { id: "alerts",           label: "Alerts",               shortLabel: "Alerts",      icon: BellRing,        path: "/app/alerts" },
-      { id: "watchlist",        label: "Watchlist",            shortLabel: "Watch",       icon: Bell,            path: "/app/watchlist" },
-      { id: "portfolio",        label: "Portfolio",            shortLabel: "Portfolio",   icon: Briefcase,       path: "/app/portfolio" },
-      { id: "trade-journal",    label: "Trade Journal",        shortLabel: "Journal",     icon: BookOpen,        path: "/app/trade-journal" },
-      { id: "guide",            label: "Guide",                shortLabel: "Guide",       icon: BookOpen,        path: "/app/guide" },
-      { id: "roadmap",          label: "Coming Soon",           shortLabel: "Roadmap",     icon: Sparkles,        path: "/app/roadmap" },
-      { id: "account",          label: "Account",              shortLabel: "Account",     icon: User,            path: "/app/account" },
-    ],
-  },
-];
+const NAV_GROUPS: NavGroup[] = [{
+  label: "MARKET QUESTIONS",
+  color: "#00E5FF",
+  items: CANONICAL_DESTINATIONS.map(destination => ({
+    id: destination.id,
+    label: destination.label,
+    shortLabel: destination.shortLabel,
+    icon: getRouteIcon(destination.icon),
+    path: destination.path,
+  })),
+}];
 
 // Owner Portal nav items — admin-only group rendered last with distinct amber styling
 const ADMIN_NAV_ITEMS: NavItem[] = [
@@ -127,11 +82,8 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 // Flat list for convenience
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
-// Mobile primary tabs (bottom bar — 5 primary + More)
-// Home (Dashboard), Ask, Signals, Symbol Intel, Account
-const MOBILE_HOME_TAB: NavItem = { id: "home", label: "Home", shortLabel: "Home", icon: Activity, path: "/app/seismograph" };
-const MOBILE_PRIMARY_IDS = ["discover", "signals", "symbol-intel", "account"];
-const MOBILE_PRIMARY = [MOBILE_HOME_TAB, ...ALL_TABS.filter(t => MOBILE_PRIMARY_IDS.includes(t.id))];
+// Mobile and desktop share one five-question order.
+const MOBILE_PRIMARY = ALL_TABS;
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -241,9 +193,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Fear & Greed proxy from overall score
   const fearGreed = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
   const fearGreedLabel = fearGreed > 75 ? 'Extreme Greed' : fearGreed > 55 ? 'Greed' : fearGreed > 45 ? 'Neutral' : fearGreed > 25 ? 'Fear' : 'Extreme Fear';
-  const liveTickerItems: { label: string; value: string; direction: 'up' | 'down' | 'flat' }[] = [
+  const liveTickerItems: MarketTickerItem[] = [
     { label: 'Regime', value: regimeShort, direction: overall.score > 6 ? 'up' : overall.score > 4 ? 'flat' : 'down' },
-    { label: 'Pressure Index', value: `${overall.score.toFixed(1)}`, direction: overall.delta > 0 ? 'up' : 'down' },
+    { label: 'Pressure Index', value: formatCanonicalScore(overall.score * 10), direction: overall.delta > 0 ? 'up' : 'down' },
     { label: 'Liquidity', value: liquidityLabel, direction: liquidityDir },
     { label: 'AI Concentration', value: aiConcLabel, direction: aiConc > 28 ? 'up' : 'flat' },
     { label: 'Credit Stress', value: creditLabel, direction: creditDir },
@@ -287,75 +239,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         top: 0,
         zIndex: 50,
       }}>
-        {/* Ticker strip */}
-        <div style={{
-          background: 'rgba(0, 212, 255, 0.04)',
-          borderBottom: '1px solid rgba(0, 212, 255, 0.06)',
-          overflow: 'hidden',
-          height: '24px',
-          display: 'flex',
-          alignItems: 'center',
-        }}>
-          <div style={{ display: 'flex', gap: '0', animation: 'ticker-scroll 55s linear infinite', whiteSpace: 'nowrap', willChange: 'transform' }}>
-            {[...liveTickerItems, ...liveTickerItems].map((item, i) => (
-              <span key={i} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.1em', paddingRight: '48px' }}>
-                <span style={{ color: '#8A9AB0' }}>{item.label} </span>
-                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8' }}>{item.value}</span>
-                <span style={{ color: item.direction === 'up' ? '#FF9500' : item.direction === 'down' ? '#00FF88' : '#B0C4D8', marginLeft: '2px' }}>{item.direction === 'up' ? '▲' : item.direction === 'down' ? '▼' : '—'}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Regime indicator strip (shows when market intelligence data is loaded) ── */}
-        {miData && !isMobile && (
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '3px 16px',
-            background: 'rgba(0,0,0,0.3)',
-            borderBottom: '1px solid rgba(255,255,255,0.14)',
-            overflowX: 'auto',
-          }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151', letterSpacing: '0.12em', textTransform: 'uppercase', flexShrink: 0 }}>REGIME</span>
-            {/* Stock regime pill */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '4px',
-              padding: '1px 7px', borderRadius: '3px',
-              background: 'rgba(59,130,246,0.08)',
-              border: '1px solid rgba(59,130,246,0.2)',
-              flexShrink: 0,
-            }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#8A9AB0', letterSpacing: '0.08em' }}>EQ</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#93C5FD', letterSpacing: '0.06em' }}>{miData.stockRegime?.regime ?? '—'}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>{miData.stockRegime?.confidence ? `${miData.stockRegime.confidence}%` : ''}</span>
-            </div>
-            {/* Crypto regime pill */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '4px',
-              padding: '1px 7px', borderRadius: '3px',
-              background: 'rgba(245,158,11,0.08)',
-              border: '1px solid rgba(245,158,11,0.2)',
-              flexShrink: 0,
-            }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#8A9AB0', letterSpacing: '0.08em' }}>BTC</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FCD34D', letterSpacing: '0.06em' }}>{miData.cryptoRegime?.regime ?? '—'}</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#374151' }}>{miData.cryptoRegime?.confidence ? `${miData.cryptoRegime.confidence}%` : ''}</span>
-            </div>
-            {/* Alignment pill */}
-            {miData.alignmentStatus && (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                padding: '1px 7px', borderRadius: '3px',
-                background: miData.alignmentScore != null && miData.alignmentScore > 65 ? 'rgba(16,185,129,0.08)' : miData.alignmentScore != null && miData.alignmentScore < 35 ? 'rgba(239,68,68,0.08)' : 'rgba(107,114,128,0.08)',
-                border: miData.alignmentScore != null && miData.alignmentScore > 65 ? '1px solid rgba(16,185,129,0.2)' : miData.alignmentScore != null && miData.alignmentScore < 35 ? '1px solid rgba(239,68,68,0.2)' : '1px solid rgba(107,114,128,0.2)',
-                flexShrink: 0,
-              }}>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#8A9AB0', letterSpacing: '0.08em' }}>ALIGN</span>
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: miData.alignmentScore != null && miData.alignmentScore > 65 ? '#6EE7B7' : miData.alignmentScore != null && miData.alignmentScore < 35 ? '#FCA5A5' : '#9CA3AF', letterSpacing: '0.06em' }}>{miData.alignmentStatus}</span>
-              </div>
-            )}
-          </div>
-        )}
+        <AppMarketHeader items={liveTickerItems} intelligence={miData} isMobile={isMobile} />
 
         {/* Logo row + status */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
@@ -587,7 +471,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           overflowX: 'auto',
           scrollbarWidth: 'none',
         }}>
-          {[...NAV_GROUPS, ...(isAdmin ? [{ label: "OWNER PORTAL", color: "#FFAA00", items: ADMIN_NAV_ITEMS }] : [])].map((group, gi) => {
+          {NAV_GROUPS.map((group, gi) => {
             const isOwnerPortal = group.label === 'OWNER PORTAL';
             const groupColor = (group as NavGroup & { color?: string }).color ?? '#FFAA00';
             return (
@@ -773,25 +657,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </button>
           );
         })}
-
-        {/* "More" button */}
-        <button
-          onClick={() => setMoreOpen(true)}
-          style={{
-            flex: 1,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            padding: '8px 2px', gap: '3px',
-            background: 'transparent', border: 'none',
-            color: moreOpen ? '#00E5FF' : '#8B9BB4',
-            cursor: 'pointer',
-            transition: 'color 0.15s ease',
-          }}
-        >
-          <MoreHorizontal size={18} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-            More
-          </span>
-        </button>
       </nav>
 
       {/* ── Mobile: "More" drawer ── */}

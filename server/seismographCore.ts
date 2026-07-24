@@ -26,54 +26,58 @@
 // The Seismograph is the only synthesis layer.
 // ============================================================
 
-// ── Evidence Types ────────────────────────────────────────────
-export type EvidenceType =
-  | "macro_pressure"           // Pressure Engine
-  | "regime_classification"    // FMOS Regime + Stock/Crypto Regime Engines
-  | "probability_distribution" // FMOS Probability Engine
-  | "historical_analog"        // FMOS Historical Analogs + Historical Intelligence
-  | "transition_signal"        // FMOS Transition + Aftershock Engine
-  | "liquidity_conditions"     // FMOS Evidence (liquidity family)
-  | "credit_stress"            // FMOS Evidence (credit family)
-  | "momentum"                 // FMOS Evidence (momentum family)
-  | "volatility"               // FMOS Evidence (volatility family)
-  | "cross_market_alignment"   // Cross-Market Engine
-  | "crypto_cycle"             // Crypto Regime Engine
-  | "breakdown_signals"        // SOB Engine
-  | "recovery_confirmation"    // Recovery Engine
-  | "sentiment"                // Social Intelligence
-  | "insider_flow";            // Insider Intelligence
+import type {
+  EvidencePacket,
+  EvidenceSignal,
+  EvidenceType,
+  SeismographProviderProvenance,
+} from "./seismographCore.contract";
 
-export type EvidenceSignal =
-  | "bullish"
-  | "bearish"
-  | "neutral"
-  | "stressed"
-  | "recovering"
-  | "transitioning";
+export type {
+  EvidenceContributor,
+  EvidencePacket,
+  EvidenceSignal,
+  EvidenceType,
+  SeismographProviderProvenance,
+} from "./seismographCore.contract";
 
-// ── EvidencePacket — the contract every contributor implements ─
-export interface EvidencePacket {
-  /** Unique identifier for the contributing engine */
-  source: string;
-  /** Unix timestamp (ms) when this evidence was computed */
-  timestamp: number;
-  /** Category of evidence this packet represents */
-  evidenceType: EvidenceType;
-  /** Directional signal from this evidence */
-  signal: EvidenceSignal;
-  /** Evidence strength 0–100 (how strong is this signal?) */
-  strength: number;
-  /** Confidence in this evidence 0–100 (how reliable is the data?) */
-  confidence: number;
-  /** One-sentence machine-readable summary for synthesis */
-  primaryReading: string;
-  /** One-sentence plain-English summary for display */
-  humanReadable: string;
-  /** Component sub-scores (engine-specific) */
-  subScores?: Record<string, number>;
-  /** Engine-specific metadata for downstream consumers */
-  metadata?: Record<string, unknown>;
+export function deriveProviderProvenance(
+  packets: EvidencePacket[],
+  computedAt: number = Date.now(),
+): SeismographProviderProvenance {
+  const pressurePacket = packets.find(packet => packet.source === "pressure-engine");
+  const dataSource = pressurePacket?.metadata?.dataSource;
+  const fallbackReason = pressurePacket?.metadata?.fallbackReason;
+
+  if (dataSource === "live") {
+    return {
+      fred: {
+        status: "live",
+        detail: "Live FRED macro and credit observations contributed through the pressure engine.",
+        asOf: pressurePacket?.timestamp ?? computedAt,
+      },
+    };
+  }
+
+  if (dataSource === "fallback") {
+    return {
+      fred: {
+        status: "fallback",
+        detail: typeof fallbackReason === "string" && fallbackReason.length > 0
+          ? fallbackReason
+          : "FRED was unavailable; explicitly labeled fallback observations contributed through the pressure engine.",
+        asOf: pressurePacket?.timestamp ?? computedAt,
+      },
+    };
+  }
+
+  return {
+    fred: {
+      status: "unavailable",
+      detail: "No pressure-engine FRED provenance was present in this Seismograph output.",
+      asOf: computedAt,
+    },
+  };
 }
 
 // ── Historical Analog ─────────────────────────────────────────
@@ -261,6 +265,7 @@ export interface SeismographOutput {
   evidenceFamilies: SeismographEvidenceFamily[];
   activeContributors: string[];
   evidenceConsensus: "strong" | "moderate" | "weak" | "divergent";
+  providerProvenance?: SeismographProviderProvenance;
 
   // ── Market Memory ─────────────────────────────────────────
   marketMemory: SeismographMarketMemory;
@@ -272,27 +277,6 @@ export interface SeismographOutput {
   forAlerts: AlertEvaluationContext;
   forStockPages: MacroContextBlock;
   forReports: ReportContext;
-}
-
-// ── EvidenceContributor Interface ─────────────────────────────
-/**
- * Every engine that contributes evidence to the Seismograph
- * must implement this interface.
- *
- * The `toEvidencePacket()` function wraps the engine's existing
- * output in the standardized EvidencePacket format.
- * Existing engine exports remain unchanged.
- */
-export interface EvidenceContributor<TInput = void> {
-  /** Unique identifier for this contributor */
-  readonly sourceId: string;
-  /** Evidence type this contributor produces */
-  readonly evidenceType: EvidenceType;
-  /**
-   * Convert this engine's output to a standardized EvidencePacket.
-   * Called by the Seismograph Heartbeat job each cycle.
-   */
-  toEvidencePacket(input: TInput): Promise<EvidencePacket>;
 }
 
 // ── Synthesis Helpers ─────────────────────────────────────────
@@ -729,9 +713,10 @@ export function assembleSeismographOutput(
   const dataFreshness: "live" | "recent" | "stale" =
     packets.length >= 5 ? "live" : packets.length >= 2 ? "recent" : "stale";
 
+  const computedAt = Date.now();
   const output: SeismographOutput = {
     version: "2.0",
-    computedAt: Date.now(),
+    computedAt,
     dataFreshness,
     pressureScore: blendedPressure,
     regime: state.regime,
@@ -753,6 +738,7 @@ export function assembleSeismographOutput(
     evidenceFamilies,
     activeContributors: Array.from(new Set(packets.map((p) => p.source))),
     evidenceConsensus,
+    providerProvenance: deriveProviderProvenance(packets, computedAt),
     marketMemory: state.marketMemory,
     // Distribution payloads — built below
     forDashboard: {} as DashboardPayload,

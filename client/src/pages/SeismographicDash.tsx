@@ -43,6 +43,7 @@ import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
 import SeismicWaveShared from "@/components/SeismicWave";
+import { formatCanonicalPercent, normalizeCanonicalMetric } from "@shared/marketMetrics";
 import { Activity } from "lucide-react";
 import { Link } from "wouter";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
@@ -234,10 +235,11 @@ function AnimProbBar({ label, value, color, width = "100px", revealDelay = 0 }: 
   const prevRef = useRef(0);
   const mono: React.CSSProperties = { fontFamily: "'JetBrains Mono','Courier New',monospace" };
   useEffect(() => {
-    if (prefersReducedMotion()) { setDisplayed(value); return; }
+    const canonicalValue = normalizeCanonicalMetric(value);
+    if (prefersReducedMotion()) { setDisplayed(canonicalValue); return; }
     let raf: number;
     const from = prevRef.current;
-    const to = value;
+    const to = canonicalValue;
     const start = performance.now() + revealDelay;
     const dur = 900;
     function tick(now: number) {
@@ -261,7 +263,7 @@ function AnimProbBar({ label, value, color, width = "100px", revealDelay = 0 }: 
           )}
         </div>
       </div>
-      <div style={{ ...mono, width: "30px", textAlign: "right", fontSize: "10px", color, fontWeight: 700, flexShrink: 0 }}>{displayed}%</div>
+      <div style={{ ...mono, width: "38px", textAlign: "right", fontSize: "10px", color, fontWeight: 700, flexShrink: 0 }}>{formatCanonicalPercent(displayed)}</div>
     </div>
   );
 }
@@ -387,14 +389,15 @@ function IntelTicker({ items }: { items: { label: string; value: string; color: 
 // ── Dashboard ProbBar ─────────────────────────────────────────
 function ProbBar({ label, value, color }: { label: string; value: number; color: string }) {
   const [anim, setAnim] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setAnim(value), 600); return () => clearTimeout(t); }, [value]);
+  const canonicalValue = normalizeCanonicalMetric(value);
+  useEffect(() => { const t = setTimeout(() => setAnim(canonicalValue), 600); return () => clearTimeout(t); }, [canonicalValue]);
   return (
     <div style={{ flex: 1, minWidth: '72px' }}>
       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>{label}</div>
       <div style={{ position: 'relative', height: '4px', background: 'rgba(255,255,255,0.14)', borderRadius: '2px', overflow: 'hidden', marginBottom: '4px' }}>
         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${anim}%`, background: `linear-gradient(90deg, ${color}70, ${color})`, boxShadow: `0 0 6px ${color}60`, borderRadius: '2px', transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
       </div>
-      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color, fontWeight: 600 }}>{value}%</div>
+      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color, fontWeight: 600 }}>{formatCanonicalPercent(canonicalValue)}</div>
     </div>
   );
 }
@@ -663,22 +666,29 @@ export default function SeismographicDash() {
   const whyThisRegime = intel?.whyThisRegime ?? "";
   const probabilities = intel?.probabilities ?? { primaryDriver: "" };
   const evidenceFamilies = intel?.evidenceFamilies ?? [];
-  const evidenceConsensusRaw = intel?.evidenceConsensus ?? "weak";
-  const evidenceConsensus = typeof evidenceConsensusRaw === 'object' && evidenceConsensusRaw !== null
-    ? evidenceConsensusRaw as { summary: string; bullishCount: number; bearishCount: number; neutralCount: number }
-    : { summary: String(evidenceConsensusRaw), bullishCount: 0, bearishCount: 0, neutralCount: 0 };
-  const enginesAgreeing = intel?.enginesAgreeing ?? 0;
-  const enginesDisagreeing = intel?.enginesDisagreeing ?? 0;
+  const evidenceConsensus = intel?.evidenceConsensus ?? "weak";
+  const enginesAgreeing = intel?.enginesAgreeing ?? [];
+  const enginesDisagreeing = intel?.enginesDisagreeing ?? [];
   const seismoAnalogs = intel?.analogs ?? [];
   const analogSummary = intel?.analogSummary ?? "";
   const transitionProbabilities = intel?.transitionProbabilities ?? { remainInRegime: 0, transitionToElevated: 0, transitionToLow: 0, transitionToCrisis: 0, historicalBasis: "" };
-  const evolution = intel?.evolution ?? { whatChanged: [], whatToWatch: [], invalidationConditions: [] };
+  const evolution = intel?.evolution ?? { whatChanged: [], whatToWatch: [], invalidationConditions: [], sparkline90d: [] };
   const memory = intel?.memory ?? { observationCount: 0, datasetSpan: "", historicalStats: { avgPressure: 0, maxPressure: 0, criticalMonths: 0, highRiskMonths: 0 } };
   const regimeProbabilities5way = intel?.regimeProbabilities5way ?? { deepBull: 0, bull: 0, neutral: 0, bear: 0, crisis: 0 };
   const developingConditions = intel?.developingConditions ?? [];
   const engineContributions = intel?.engineContributions ?? [];
   const marketNarrative = intel?.marketNarrative ?? { whatIsBuildingBeneathSurface: "", whyIsItHappening: "", highestProbabilityPath: "", whatHasChanged: "", whatWouldInvalidate: "" };
-  const sparkline: { score: number }[] = intel?.timeline?.map((t: any) => ({ score: t.score })) ?? [];
+  const sparkline = evolution.sparkline90d;
+  const evidenceCounts = evidenceFamilies.reduce(
+    (counts, family) => {
+      if (family.signal === "bullish" || family.signal === "recovering") counts.bullish += 1;
+      else if (family.signal === "bearish" || family.signal === "stressed") counts.bearish += 1;
+      else counts.neutral += 1;
+      return counts;
+    },
+    { bullish: 0, bearish: 0, neutral: 0 },
+  );
+  const evidenceConsensusSummary = `Cross-engine consensus is ${evidenceConsensus}. ${enginesAgreeing.length} engines agree and ${enginesDisagreeing.length} disagree.`;
   const topEngines = [...engineContributions].sort((a: any, b: any) => b.contributionWeight - a.contributionWeight).slice(0, 5);
 
   // ── ASHA context registration ───────────────────────────────
@@ -889,9 +899,12 @@ export default function SeismographicDash() {
             {developingConditions.length > 0 && (
               <div style={{ marginBottom: "20px" }}>
                 <div style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "8px" }}>DEVELOPING CONDITIONS</div>
-                {developingConditions.map((dc: any, i: number) => (
-                  <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start", marginBottom: "5px", padding: "6px 10px", background: "rgba(6,182,212,0.02)", borderRadius: "4px", borderLeft: "2px solid rgba(6,182,212,0.15)" }}>
-                    <span style={{ fontSize: "11px", color: "rgba(226,232,240,0.6)", lineHeight: 1.5, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>{typeof dc === 'string' ? dc : dc.description ?? dc.title ?? JSON.stringify(dc)}</span>
+                {developingConditions.map((dc, i: number) => (
+                  <div key={`${dc.title}-${i}`} style={{ display: "flex", gap: "8px", alignItems: "flex-start", marginBottom: "5px", padding: "6px 10px", background: "rgba(6,182,212,0.02)", borderRadius: "4px", borderLeft: "2px solid rgba(6,182,212,0.15)" }}>
+                    <div style={{ fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>
+                      <div style={{ fontSize: "11px", color: "rgba(226,232,240,0.75)", lineHeight: 1.4, fontWeight: 600 }}>{dc.title}</div>
+                      <div style={{ fontSize: "10px", color: "rgba(226,232,240,0.5)", lineHeight: 1.5 }}>{dc.description}</div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -908,11 +921,11 @@ export default function SeismographicDash() {
             <SectionLabel text="Evidence Consensus" color="rgba(6,182,212,0.6)" />
             <div style={{ display: "flex", gap: "14px", marginBottom: "14px", flexWrap: "wrap" }}>
               {([
-                { label: "BULLISH", val: evidenceConsensus.bullishCount, color: "#22c55e" },
-                { label: "BEARISH", val: evidenceConsensus.bearishCount, color: "#ef4444" },
-                { label: "NEUTRAL", val: evidenceConsensus.neutralCount, color: "rgba(6,182,212,0.5)" },
-                { label: "AGREEING", val: enginesAgreeing, color: "#22c55e" },
-                { label: "DISAGREEING", val: enginesDisagreeing, color: "#f97316" },
+                { label: "BULLISH", val: evidenceCounts.bullish, color: "#22c55e" },
+                { label: "BEARISH", val: evidenceCounts.bearish, color: "#ef4444" },
+                { label: "NEUTRAL", val: evidenceCounts.neutral, color: "rgba(6,182,212,0.5)" },
+                { label: "AGREEING", val: enginesAgreeing.length, color: "#22c55e" },
+                { label: "DISAGREEING", val: enginesDisagreeing.length, color: "#f97316" },
               ] as { label: string; val: number; color: string }[]).map(({ label, val, color: c }) => (
                 <div key={label} style={{ textAlign: "center" }}>
                   <div style={{ ...seismoMono, fontSize: "7px", color: "rgba(6,182,212,0.32)", letterSpacing: "0.1em", marginBottom: "2px" }}>{label}</div>
@@ -920,11 +933,9 @@ export default function SeismographicDash() {
                 </div>
               ))}
             </div>
-            {evidenceConsensus.summary && (
-              <div style={{ marginBottom: "16px", padding: "10px 14px", background: "rgba(6,182,212,0.02)", borderRadius: "5px", borderLeft: "2px solid rgba(6,182,212,0.2)" }}>
-                <p style={{ fontSize: "12px", color: "rgba(226,232,240,0.65)", lineHeight: 1.55, margin: 0, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>{evidenceConsensus.summary}</p>
-              </div>
-            )}
+            <div style={{ marginBottom: "16px", padding: "10px 14px", background: "rgba(6,182,212,0.02)", borderRadius: "5px", borderLeft: "2px solid rgba(6,182,212,0.2)" }}>
+              <p style={{ fontSize: "12px", color: "rgba(226,232,240,0.65)", lineHeight: 1.55, margin: 0, fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>{evidenceConsensusSummary}</p>
+            </div>
             {evidenceFamilies.length > 0 && (
               <div style={{ marginBottom: "20px" }}>
                 <div style={{ ...seismoMono, fontSize: "8px", letterSpacing: "0.1em", color: "rgba(6,182,212,0.38)", fontWeight: 700, marginBottom: "10px" }}>EVIDENCE FAMILIES</div>
@@ -1112,7 +1123,7 @@ export default function SeismographicDash() {
 
         {/* SOB Panel */}
         <SectionErrorBoundary label="SOB Panel">
-          <SOBPanel />
+          <SOBPanel regime={regime.label} pressureIndex={overall.score * 10} />
         </SectionErrorBoundary>
 
         {/* Narrative Panel */}
@@ -1127,9 +1138,9 @@ export default function SeismographicDash() {
           </div>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <ProbBar label="Bull" value={probability.bullProbability} color="#00FF88" />
-            <ProbBar label="Bear" value={(probability as any).bearProbability ?? (probability as any).recessionProbability ?? 0} color="#FF9500" />
+            <ProbBar label="Soft Landing" value={probability.softLandingProbability} color="#FF9500" />
             <ProbBar label="Crash" value={probability.crashProbability} color="#FF2D55" />
-            <ProbBar label="Neutral" value={(probability as any).neutralProbability ?? (probability as any).softLandingProbability ?? 0} color="#00E5FF" />
+            <ProbBar label="Recession" value={probability.recessionProbability} color="#00E5FF" />
           </div>
         </div>
 
@@ -1145,7 +1156,7 @@ export default function SeismographicDash() {
                 label={d.label}
                 delta={d.delta}
                 color={getRiskColor(d.riskLevel)}
-                detail={(d as any).interpretation ?? d.description ?? ''}
+                detail={d.description}
               />
             ))}
           </div>
@@ -1179,7 +1190,7 @@ export default function SeismographicDash() {
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: getRiskColor(aiDomain.riskLevel), background: `${getRiskColor(aiDomain.riskLevel)}12`, border: `1px solid ${getRiskColor(aiDomain.riskLevel)}25`, borderRadius: '2px', padding: '1px 5px', textTransform: 'uppercase' }}>{aiDomain.riskLevel}</div>
             </div>
             <SeismicWave color={getRiskColor(aiDomain.riskLevel)} score={aiDomain.score} />
-            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#B0C4D8', lineHeight: 1.55, marginTop: '8px' }}>{(aiDomain as any).interpretation ?? aiDomain.description ?? ''}</div>
+            <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#B0C4D8', lineHeight: 1.55, marginTop: '8px' }}>{aiDomain.description}</div>
           </div>
         )}
 
@@ -1231,7 +1242,7 @@ export default function SeismographicDash() {
               { label: 'AI Bubble Monitor', path: '/app/pressure' },
               { label: 'Daily Report', path: '/app/report' },
             ].map(link => (
-              <a key={link.path} href={link.path} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#4B5563', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1px', transition: 'color 0.15s ease' }}
+              <a key={link.label} href={link.path} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#4B5563', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1px', transition: 'color 0.15s ease' }}
                 onMouseEnter={e => (e.currentTarget as HTMLAnchorElement).style.color = '#00E5FF'}
                 onMouseLeave={e => (e.currentTarget as HTMLAnchorElement).style.color = '#4B5563'}
               >

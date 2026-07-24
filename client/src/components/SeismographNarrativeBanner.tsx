@@ -16,6 +16,7 @@ import { useState, useCallback } from "react";
 import { ChevronDown, ChevronUp, Activity, Clock, BarChart2, AlertTriangle, TrendingUp, TrendingDown, Minus, ArrowRight, RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
+import { formatCanonicalScore } from "@shared/marketMetrics";
 
 // ── Types (mirrors SeismographOutput from server) ─────────────
 interface SeismographAnalog {
@@ -245,7 +246,7 @@ export default function SeismographNarrativeBanner({
 
       {/* Pressure score */}
       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(148,163,184,0.7)", flexShrink: 0 }}>
-        Pressure {output.pressureScore.toFixed(1)}/10
+        Pressure {formatCanonicalScore(output.pressureScore)}
       </span>
 
       {/* Historical percentile */}

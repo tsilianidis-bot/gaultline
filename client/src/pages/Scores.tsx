@@ -22,7 +22,7 @@ function seededRand(seed: number) {
 function PressureBar({ score, riskLevel, seed }: { score: number; riskLevel: DomainScore['riskLevel']; seed: number }) {
   const [width, setWidth] = useState(0);
   const color = getRiskColor(riskLevel);
-  const pct = (score / 10) * 100;
+  const pct = Math.max(0, Math.min(100, score));
   const confLow = Math.max(0, pct - 5);
   const confHigh = Math.min(100, pct + 5);
 
@@ -137,7 +137,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
-        <ScoreRing score={score.score} maxScore={10} riskLevel={score.riskLevel} label="" delta={score.delta} size={64} showLabel={false} />
+        <ScoreRing score={Math.round(score.score * 10)} maxScore={100} riskLevel={score.riskLevel} label="" delta={score.delta * 10} size={64} showLabel={false} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
             <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#E2E8F0' }}>{score.label}</span>
@@ -145,12 +145,12 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
           </div>
           <PressureLevel riskLevel={score.riskLevel} score={score.score} />
           <div style={{ margin: '8px 0' }}>
-            <PressureBar score={score.score} riskLevel={score.riskLevel} seed={index * 17 + 3} />
+            <PressureBar score={score.score * 10} riskLevel={score.riskLevel} seed={index * 17 + 3} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <MomentumArrow delta={score.delta} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: '20px', color, textShadow: `0 0 16px ${color}60`, lineHeight: 1 }}>
-              {score.score.toFixed(1)}<span style={{ fontSize: '10px', color: '#4B5563' }}>/10</span>
+              {Math.round(score.score * 10)}<span style={{ fontSize: '10px', color: '#4B5563' }}>/100</span>
             </span>
           </div>
         </div>
@@ -173,7 +173,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
           )}
           {/* Confidence interval note */}
           <div style={{ marginTop: '8px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', padding: '5px 8px', borderLeft: `2px solid ${color}20` }}>
-            Confidence interval: {Math.max(0, score.score - 0.5).toFixed(1)} – {Math.min(10, score.score + 0.5).toFixed(1)} · ±5% band shown on bar
+            Confidence interval: {Math.round(Math.max(0, score.score - 0.5) * 10)} – {Math.round(Math.min(10, score.score + 0.5) * 10)} /100 · ±5-point band shown on bar
           </div>
         </div>
       )}
@@ -234,7 +234,7 @@ export default function Scores() {
         {/* Ambient glow */}
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse 50% 60% at 0% 50%, ${color}06 0%, transparent 60%)`, pointerEvents: 'none' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px', position: 'relative', zIndex: 1 }}>
-          <ScoreRing score={overall.score} maxScore={10} riskLevel={overall.riskLevel} label={overall.label} delta={overall.delta} size={110} showLabel={false} />
+          <ScoreRing score={Math.round(overall.score * 10)} maxScore={100} riskLevel={overall.riskLevel} label={overall.label} delta={overall.delta * 10} size={110} showLabel={false} />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#F0F4FF' }}>{overall.label}</span>
@@ -242,11 +242,11 @@ export default function Scores() {
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700, fontSize: '38px', color, textShadow: `0 0 24px ${color}60`, animation: 'score-tick 4s ease-in-out infinite' }}>
-                {overall.score.toFixed(1)}
+                {Math.round(overall.score * 10)}
               </span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '14px', color: '#4B5563' }}>/ 10</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '14px', color: '#4B5563' }}>/ 100</span>
             </div>
-            <PressureBar score={overall.score} riskLevel={overall.riskLevel} seed={99} />
+            <PressureBar score={overall.score * 10} riskLevel={overall.riskLevel} seed={99} />
             <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <MomentumArrow delta={overall.delta} />
               <PressureLevel riskLevel={overall.riskLevel} score={overall.score} />
