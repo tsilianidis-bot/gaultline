@@ -4112,3 +4112,21 @@
 - [x] ASHA gateway responds without crashes
 - [x] Create final git tag: FAULTLINE_Production-Verified
 - [x] Deliver comprehensive production readiness report
+
+## Dashboard Arrival UX (Session: Jul 24 2026)
+- [ ] Oracle Welcome: calm idle state after 3-5s (reduce flashing)
+- [ ] Oracle Welcome: move metrics strip above greeting text (conclusion-first)
+- [ ] Oracle Welcome: stronger Continue to Dashboard CTA
+- [ ] Oracle Welcome: add persistent Home button
+- [ ] Dashboard: add persistent Command Center status bar (Market State, Pressure, Bull%, Crash%)
+- [ ] Dashboard: improve NOW/WHY/OUTLOOK/WATCH/ACT nav clarity (higher contrast, accent colors)
+- [ ] Dashboard: ensure hero section is immediately impactful above the fold
+
+## Oracle Welcome Screen + Dashboard Arrival UX (Jul 24 2026)
+- [ ] Oracle Welcome: move 4-metric strip (PRESSURE/BULL/CRASH/ANALOG) above greeting text
+- [ ] Oracle Welcome: calm blink-alert animation after greeting completes (slow pulse)
+- [ ] Oracle Welcome: upgrade "Continue to Dashboard" from ghost text to visible bordered button
+- [ ] Dashboard arrival: add sticky Command Center strip below header (Market State, Pressure, Bull%, Crash%)
+- [ ] Dashboard arrival: increase NOW/WHY/WATCH/ACT nav contrast and font size
+- [ ] Pressure Index: build PressureGauge arc-meter component (5 zones, animated sweep, glowing needle)
+- [ ] Pressure Index: integrate PressureGauge into NOW page hero section

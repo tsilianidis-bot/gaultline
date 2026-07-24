@@ -21,6 +21,7 @@ import {
   PERSISTENT_UTILITY_BY_ID,
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
+import PressureGauge from "@/components/PressureGauge";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -235,16 +236,14 @@ export default function Now() {
                   <span className="rounded-sm border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-300">{stressLevel} pressure</span>
                 </div>
               </div>
-              <div className="border-l border-white/10 pl-6">
-                <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">FAULTLINE pressure</p>
-                <p className="mt-3 font-['Rajdhani'] text-6xl font-semibold leading-none" style={{ color: accent }}>
-                  {formatCanonicalScore(pressure)}
-                </p>
-                <p className="mt-4 text-xs leading-5 text-slate-500">
-                  {historicalPercentile === null
-                    ? "Historical percentile unavailable while canonical history is offline."
-                    : `${formatCanonicalPercent(historicalPercentile)} historical percentile.`}
-                </p>
+              <div className="border-l border-white/10 pl-6 flex flex-col items-center">
+                <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500 self-start mb-2">FAULTLINE pressure</p>
+                <PressureGauge
+                  score={pressure}
+                  historicalPercentile={historicalPercentile}
+                  analogLabel={topAnalog?.label ?? null}
+                  analogPeriod={topAnalog?.period ? String(topAnalog.period) : null}
+                />
               </div>
             </div>
 

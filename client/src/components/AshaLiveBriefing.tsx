@@ -118,6 +118,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
   const [greetingReady, setGreetingReady] = useState(false);
   const [actionsVisible, setActionsVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [idleCalm, setIdleCalm] = useState(false);
 
   const color = regime.color;
   const ashaRegimeState: AshaRegimeState =
@@ -186,6 +187,13 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
       return () => clearTimeout(t);
     }
   }, [greetingDone]);
+
+  // After greeting + 4s idle, enter calm state (slow pulse)
+  useEffect(() => {
+    if (!actionsVisible) return;
+    const t = setTimeout(() => setIdleCalm(true), 4000);
+    return () => clearTimeout(t);
+  }, [actionsVisible]);
 
   const handleAction = useCallback(
     (path: string, query?: string) => {
@@ -346,7 +354,8 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
               borderRadius: "50%",
               background: pressureColor,
               boxShadow: `0 0 8px ${pressureColor}`,
-              animation: "blink-alert 2s ease-in-out infinite",
+              animation: idleCalm ? "blink-alert 4.5s ease-in-out infinite" : "blink-alert 2s ease-in-out infinite",
+              transition: "animation-duration 1s ease",
             }}
           />
           <span
@@ -372,6 +381,58 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           </span>
         </div>
 
+        {/* ── Live intelligence stats — shown ABOVE greeting ── */}
+        <div
+          style={{
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            borderTop: `1px solid rgba(255,255,255,0.06)`,
+            borderBottom: `1px solid rgba(255,255,255,0.06)`,
+            marginBottom: "28px",
+            animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.35s both",
+          }}
+        >
+          {[
+            { label: "PRESSURE", value: formatCanonicalScore(overall.score * 10), color: pressureColor },
+            { label: "BULL", value: `${output.probability?.bullProbability ?? "\u2014"}%`, color: "#00FF88" },
+            { label: "CRASH", value: `${output.probability?.crashProbability ?? "\u2014"}%`, color: "#FF2D55" },
+            { label: "ANALOG", value: analog?.era?.split(" ").slice(0, 2).join(" ") ?? "\u2014", color: "#00E5FF" },
+          ].map((stat, i) => (
+            <div
+              key={i}
+              style={{
+                padding: "12px 8px",
+                textAlign: "center",
+                borderRight: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "8px",
+                  color: "rgba(100,116,139,0.5)",
+                  letterSpacing: "0.14em",
+                  marginBottom: "4px",
+                }}
+              >
+                {stat.label}
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Rajdhani', sans-serif",
+                  fontWeight: 700,
+                  fontSize: "16px",
+                  color: stat.color,
+                  textShadow: `0 0 12px ${stat.color}60`,
+                  lineHeight: 1,
+                }}
+              >
+                {stat.value}
+              </div>
+            </div>
+          ))}
+        </div>
         {/* ── Greeting text ── */}
         <div
           style={{
@@ -507,27 +568,38 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           <button
             onClick={handleContinueToDashboard}
             style={{
-              background: "transparent",
-              border: "none",
+              background: `${color}10`,
+              border: `1px solid ${color}45`,
+              borderRadius: "6px",
               cursor: "pointer",
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "10px",
-              color: "rgba(100,116,139,0.45)",
+              fontSize: "11px",
+              color: `${color}CC`,
               letterSpacing: "0.15em",
               textTransform: "uppercase",
-              padding: "8px 16px",
-              transition: "color 0.15s ease",
+              padding: "12px 28px",
+              transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
               marginBottom: "16px",
               animation: "asha-briefing-in 0.4s cubic-bezier(0.23,1,0.32,1) 0.5s both",
+              width: "100%",
+              maxWidth: "320px",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = "rgba(148,163,184,0.65)";
+              const btn = e.currentTarget as HTMLButtonElement;
+              btn.style.background = `${color}1A`;
+              btn.style.borderColor = `${color}70`;
+              btn.style.color = color;
+              btn.style.boxShadow = `0 0 20px ${color}20`;
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = "rgba(100,116,139,0.45)";
+              const btn = e.currentTarget as HTMLButtonElement;
+              btn.style.background = `${color}10`;
+              btn.style.borderColor = `${color}45`;
+              btn.style.color = `${color}CC`;
+              btn.style.boxShadow = "none";
             }}
           >
-            Continue to Dashboard →
+            Enter Intelligence Dashboard →
           </button>
         )}
 
@@ -544,57 +616,6 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           <SeismicWave color={color} score={overall.score} />
         </div>
 
-        {/* ── Live intelligence stats ── */}
-        <div
-          style={{
-            width: "100%",
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            borderTop: `1px solid rgba(255,255,255,0.06)`,
-            marginTop: "8px",
-            animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.7s both",
-          }}
-        >
-          {[
-            { label: "PRESSURE", value: formatCanonicalScore(overall.score * 10), color: pressureColor },
-            { label: "BULL", value: `${output.probability?.bullProbability ?? "—"}%`, color: "#00FF88" },
-            { label: "CRASH", value: `${output.probability?.crashProbability ?? "—"}%`, color: "#FF2D55" },
-            { label: "ANALOG", value: analog?.era?.split(" ").slice(0, 2).join(" ") ?? "—", color: "#00E5FF" },
-          ].map((stat, i) => (
-            <div
-              key={i}
-              style={{
-                padding: "12px 8px",
-                textAlign: "center",
-                borderRight: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: "8px",
-                  color: "rgba(100,116,139,0.5)",
-                  letterSpacing: "0.14em",
-                  marginBottom: "4px",
-                }}
-              >
-                {stat.label}
-              </div>
-              <div
-                style={{
-                  fontFamily: "'Rajdhani', sans-serif",
-                  fontWeight: 700,
-                  fontSize: "16px",
-                  color: stat.color,
-                  textShadow: `0 0 12px ${stat.color}60`,
-                  lineHeight: 1,
-                }}
-              >
-                {stat.value}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
       <style>{`

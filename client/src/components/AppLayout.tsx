@@ -42,6 +42,7 @@ type NavItem = {
   shortLabel: string;
   icon: React.ElementType;
   path: string;
+  accent?: string;  // per-destination accent color
 };
 
 type NavGroup = {
@@ -59,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [{
     shortLabel: destination.shortLabel,
     icon: getRouteIcon(destination.icon),
     path: destination.path,
+    accent: destination.accent,
   })),
 }];
 
@@ -511,11 +513,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 const isPreFlight = tab.id === 'pre-flight';
                 const isSitRoom = tab.id === 'situation-room';
                 const isFlagship = isPreFlight || isSitRoom;
+                // Per-destination accent color (canonical destinations have their own accent)
+                const destAccent = (tab as NavItem & { accent?: string }).accent;
                 // Flagship colors: Pre-Flight = cyan, Situation Room = amber
                 const flagshipColor = isPreFlight ? '#00E5FF' : '#FFAA00';
                 const flagshipBg = isPreFlight ? 'rgba(0,229,255,0.14)' : 'rgba(255,170,0,0.08)';
                 const flagshipBgActive = isPreFlight ? 'rgba(0,229,255,0.25)' : 'rgba(255,170,0,0.15)';
                 const flagshipBorder = isPreFlight ? 'rgba(0,229,255,0.45)' : 'rgba(255,170,0,0.3)';
+                // Canonical destination accent-based styling
+                const destActiveBg = destAccent ? `${destAccent}18` : 'rgba(0, 212, 255, 0.1)';
+                const destActiveBorder = destAccent ? `2px solid ${destAccent}` : `2px solid #00E5FF`;
+                const destInactiveColor = destAccent ? `${destAccent}99` : '#A8B8CC';
+                const destActiveColor = destAccent ?? '#00E5FF';
                 return (
                   <button
                     key={tab.id}
@@ -525,38 +534,39 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       padding: isFlagship ? '6px 12px' : '7px 10px',
                       borderRadius: isFlagship ? '3px' : '4px',
                       background: active
-                        ? (isFlagship ? flagshipBgActive : isTrackRecord ? 'rgba(34,197,94,0.12)' : 'rgba(0, 212, 255, 0.1)')
+                        ? (isFlagship ? flagshipBgActive : isTrackRecord ? 'rgba(34,197,94,0.12)' : destActiveBg)
                         : (isFlagship ? flagshipBg : isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent'),
                       border: isFlagship ? `1px solid ${active ? flagshipColor + '66' : flagshipBorder}` : 'none',
                       borderBottom: !isFlagship ? (active
-                        ? `2px solid ${isTrackRecord ? trackGreen : '#00E5FF'}`
+                        ? (isTrackRecord ? `2px solid ${trackGreen}` : destActiveBorder)
                         : (isTrackRecord ? `2px solid rgba(34,197,94,0.3)` : '2px solid transparent')) : undefined,
                       color: active
-                        ? (isFlagship ? flagshipColor : isTrackRecord ? trackGreen : '#00E5FF')
-                        : (isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : '#8A9AB0'),
+                        ? (isFlagship ? flagshipColor : isTrackRecord ? trackGreen : destActiveColor)
+                        : (isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : destInactiveColor),
                       fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: isFlagship ? '11px' : '10px',
-                      fontWeight: isFlagship ? '600' : 'normal',
-                      letterSpacing: isFlagship ? '0.1em' : '0.06em',
+                      fontSize: isFlagship ? '11px' : '11px',
+                      fontWeight: active ? '600' : 'normal',
+                      letterSpacing: isFlagship ? '0.1em' : '0.08em',
                       textTransform: 'uppercase',
                       cursor: 'pointer',
                       transition: 'all 0.15s cubic-bezier(0.23, 1, 0.32, 1)',
                       whiteSpace: 'nowrap',
                       flexShrink: 0,
                       position: 'relative',
+                      ...(active && destAccent ? { textShadow: `0 0 10px ${destAccent}55` } : {}),
                       ...(isFlagship && !active ? { boxShadow: `0 0 10px ${flagshipColor}22` } : {}),
                       ...(isFlagship && active ? { boxShadow: `0 0 14px ${flagshipColor}44` } : {}),
                       ...(isTrackRecord && !active ? { boxShadow: '0 0 8px rgba(34,197,94,0.15)' } : {}),
                     }}
                     onMouseEnter={e => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#4ADE80' : '#B0C4D8';
-                        (e.currentTarget as HTMLElement).style.background = isFlagship ? flagshipBgActive : isTrackRecord ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.14)';
+                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#4ADE80' : (destAccent ?? '#C8D8E8');
+                        (e.currentTarget as HTMLElement).style.background = isFlagship ? flagshipBgActive : isTrackRecord ? 'rgba(34,197,94,0.1)' : (destAccent ? `${destAccent}12` : 'rgba(255,255,255,0.08)');
                       }
                     }}
                     onMouseLeave={e => {
                       if (!active) {
-                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : '#8A9AB0';
+                        (e.currentTarget as HTMLElement).style.color = isFlagship ? flagshipColor : isTrackRecord ? '#22C55E' : destInactiveColor;
                         (e.currentTarget as HTMLElement).style.background = isFlagship ? flagshipBg : isTrackRecord ? 'rgba(34,197,94,0.06)' : 'transparent';
                       }
                     }}
