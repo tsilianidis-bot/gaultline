@@ -4130,3 +4130,6 @@
 - [ ] Dashboard arrival: increase NOW/WHY/WATCH/ACT nav contrast and font size
 - [ ] Pressure Index: build PressureGauge arc-meter component (5 zones, animated sweep, glowing needle)
 - [ ] Pressure Index: integrate PressureGauge into NOW page hero section
+
+## ASHA Welcome Flow Fix (Jul 24, 2026)
+- [x] Fix ASHA Oracle Welcome auto-trigger after login: remove cinematic bypass, make briefing completion durable across OAuth/session transitions, add intentional loading state, and add fallback redirect to dashboard

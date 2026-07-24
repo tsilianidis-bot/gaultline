@@ -746,8 +746,14 @@ function Router() {
   );
 }
 
-// ── Session key: show ASHA briefing once per session for returning users ──
+// ── Durable key: show ASHA briefing once per calendar day per user ──
+// Uses localStorage (not sessionStorage) so it survives OAuth cross-origin redirects.
+// Keyed by date so ASHA greets the user fresh each day.
 const ASHA_BRIEFING_KEY = 'faultline_asha_briefing_seen';
+function getAshaBriefingKey(userId?: string | null): string {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  return userId ? `${ASHA_BRIEFING_KEY}_${userId}_${today}` : `${ASHA_BRIEFING_KEY}_anon_${today}`;
+}
 
 // ── Determine first-time status synchronously at module level ─────────────
 // This must be evaluated before ANY component renders so the initial state
@@ -819,20 +825,37 @@ function App() {
   // and always true for returning users (IntroScreen is no longer a session gate).
   const [introComplete, setIntroComplete] = useState<boolean>(true);
 
-  // ASHA Live Briefing — shown once per session after auth is confirmed
+  // ASHA Live Briefing — shown once per calendar day after auth is confirmed
+  // Uses localStorage keyed per-user per-day so it survives OAuth cross-origin redirects.
   const [ashaBriefingDone, setAshaBriefingDone] = useState<boolean>(() => {
-    try { return isDemo || sessionStorage.getItem(ASHA_BRIEFING_KEY) === '1'; } catch { return false; }
+    try {
+      if (isDemo) return true;
+      // Check today's key for any stored user id (we don't have user yet at init time)
+      const today = new Date().toISOString().slice(0, 10);
+      // Check legacy sessionStorage key first (backwards compat)
+      if (sessionStorage.getItem(ASHA_BRIEFING_KEY) === '1') return true;
+      // Check localStorage for any today key (user id unknown at init)
+      const keys = Object.keys(localStorage).filter(k => k.startsWith(ASHA_BRIEFING_KEY) && k.endsWith(today));
+      return keys.some(k => localStorage.getItem(k) === '1');
+    } catch { return false; }
   });
   const handleAshaBriefingComplete = useCallback(() => {
-    try { sessionStorage.setItem(ASHA_BRIEFING_KEY, '1'); } catch {}
+    try {
+      const key = getAshaBriefingKey(user?.id?.toString());
+      localStorage.setItem(key, '1');
+      // Also set legacy sessionStorage key for backwards compat
+      sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
+    } catch {}
     setAshaBriefingDone(true);
-  }, []);
+  }, [user]);
 
   // Auth gate — shown after cinematic when user is not authenticated.
   // ASHA must never greet by name before identity is confirmed.
   const [authGateDone, setAuthGateDone] = useState<boolean>(() => {
     try {
       if (isDemo) return true;
+      // fl_post_auth_asha is set before OAuth redirect but wiped by cross-origin navigation.
+      // We fall back to the useEffect below which resolves authGateDone from auth.me.
       if (sessionStorage.getItem('fl_post_auth_asha') === '1') {
         sessionStorage.removeItem('fl_post_auth_asha');
         return true;
@@ -861,11 +884,11 @@ function App() {
     try {
       // Mark cinematic as permanently completed so returning visitors skip it
       localStorage.setItem(CINEMATIC_COMPLETED_KEY, '1');
-      sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
+      // NOTE: Do NOT set ashaBriefingDone here — ASHA briefing runs after cinematic.
+      // The flow is: CinematicIntro → (CinematicAuthGate if needed) → AshaLiveBriefing → Dashboard
     } catch {}
     setCinematicDone(true);
-    setAshaBriefingDone(true);
-    setTimeout(() => setDashVisible(true), 300);
+    // ashaBriefingDone stays false — ASHA will show after auth resolves
   }, []);
 
   // Resolve auth gate: if auth has loaded and user is present, mark done automatically
@@ -874,6 +897,28 @@ function App() {
       setAuthGateDone(true);
     }
   }, [authLoading, user, authGateDone]);
+
+  // Re-check ashaBriefingDone when user resolves (user id needed for per-user key)
+  useEffect(() => {
+    if (!user || ashaBriefingDone) return;
+    try {
+      const key = getAshaBriefingKey(user.id?.toString());
+      if (localStorage.getItem(key) === '1') {
+        setAshaBriefingDone(true);
+      }
+    } catch {}
+  }, [user, ashaBriefingDone]);
+
+  // Safety fallback: if auth gate is done but ASHA briefing hasn't completed after 15s,
+  // force skip to dashboard. Prevents users getting stuck on a blank screen.
+  useEffect(() => {
+    if (!cinematicDone || !authGateDone || ashaBriefingDone) return;
+    const t = setTimeout(() => {
+      console.warn('[ASHA] Briefing timeout — forcing skip to dashboard');
+      handleAshaBriefingComplete();
+    }, 15000);
+    return () => clearTimeout(t);
+  }, [cinematicDone, authGateDone, ashaBriefingDone, handleAshaBriefingComplete]);
 
   // Show dashboard once all post-cinematic gates are cleared
   useEffect(() => {
