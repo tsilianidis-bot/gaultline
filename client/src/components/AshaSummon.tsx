@@ -294,7 +294,11 @@ export default function AshaSummon({
   const dockY = vh - dockBottom - 22;
 
   // Sphere target: ~80% of the smaller viewport dimension, centered
-  const sphereDiameter = Math.min(vw, vh) * 0.82;
+  // On very small screens (mobile), cap at 95vw so it doesn't overflow
+  const isMobileViewport = vw < 640;
+  const sphereDiameter = isMobileViewport
+    ? Math.min(vw * 0.95, Math.min(vw, vh) * 0.95)
+    : Math.min(vw, vh) * 0.82;
 
   // Phase-driven small orb position (before sphere expands)
   const isLifting    = phase === "lifting";
@@ -382,7 +386,7 @@ export default function AshaSummon({
             left: vw / 2,
             top: vh / 2,
             transform: "translate(-50%, -50%)",
-            width: Math.min(sphereDiameter * 0.72, 560),
+            width: isMobileViewport ? Math.min(sphereDiameter * 0.88, vw - 24) : Math.min(sphereDiameter * 0.72, 560),
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -422,11 +426,11 @@ export default function AshaSummon({
             </div>
           </div>
 
-          {/* Suggestion cards — 2-column grid */}
+          {/* Suggestion cards — 1-column on mobile, 2-column on desktop */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "8px",
+            gridTemplateColumns: isMobileViewport ? "1fr" : "1fr 1fr",
+            gap: isMobileViewport ? "6px" : "8px",
             width: "100%",
           }}>
             {suggestions.slice(0, 6).map((s, i) => (
@@ -439,7 +443,7 @@ export default function AshaSummon({
                   border: `1px solid ${regimeGlow(regimeState, 0.20)}`,
                   borderRadius: "8px",
                   fontFamily: "'IBM Plex Sans', sans-serif",
-                  fontSize: "clamp(10px, 1.1vw, 12px)",
+                  fontSize: isMobileViewport ? "13px" : "clamp(10px, 1.1vw, 12px)",
                   color: "rgba(148,163,184,0.80)",
                   cursor: "pointer",
                   backdropFilter: "blur(16px)",

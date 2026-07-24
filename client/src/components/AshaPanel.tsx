@@ -15,6 +15,7 @@ import AshaOrb, { AshaRegimeState } from "./AshaOrb";
 import AshaSummon from "./AshaSummon";
 import IntelligenceSynthesis, { SynthesisStep } from "./IntelligenceSynthesis";
 import OracleBriefing, { OracleBriefingData } from "./OracleBriefing";
+import { useIsMobile } from "@/hooks/useMobile";
 
 // ── Context-aware suggestions per page ───────────────────────
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -121,6 +122,7 @@ export default function AshaPanel() {
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [synthSteps, setSynthSteps] = useState<SynthesisStep[]>([]);
   const [briefingData, setBriefingData] = useState<OracleBriefingData | null>(null);
+  const isMobile = useIsMobile();
   const synthTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const askMutation = trpc.asha.ask.useMutation();
@@ -302,7 +304,8 @@ export default function AshaPanel() {
       {panelState === "idle" && (
         <div style={{
           position: "fixed",
-          bottom: "20px",
+          // On mobile, float above the bottom nav bar (~60px) + safe area + 12px gap
+          bottom: isMobile ? "calc(60px + env(safe-area-inset-bottom, 0px) + 12px)" : "20px",
           left: "50%",
           transform: "translateX(-50%)",
           zIndex: 1000,
@@ -366,7 +369,7 @@ export default function AshaPanel() {
         suggestions={suggestions}
         onSubmit={sendMessage}
         onDismiss={handleDismiss}
-        dockBottom={20}
+        dockBottom={isMobile ? 80 : 20}
         dockRight={undefined}
       />
 

@@ -598,7 +598,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
       )}
 
       {/* ── Main content ── */}
-      <main style={{ flex: 1, paddingBottom: '0' }} className="lg:pb-0">
+      {/* Mobile: bottom padding clears the fixed bottom nav (~60px) + device safe-area */}
+      <main style={{ flex: 1 }} className="pb-[calc(60px+env(safe-area-inset-bottom,0px))] lg:pb-0">
         <MarketContextStrip />
         {children}
       </main>
