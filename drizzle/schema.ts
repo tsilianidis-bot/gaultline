@@ -1819,3 +1819,33 @@ export const gscTokens = mysqlTable("gsc_tokens", {
 }));
 export type GscToken = typeof gscTokens.$inferSelect;
 export type InsertGscToken = typeof gscTokens.$inferInsert;
+
+// ── Stripe webhook idempotency ────────────────────────────────────────────────
+export const stripeWebhookEvents = mysqlTable("stripeWebhookEvents", {
+  id:          int("id").autoincrement().primaryKey(),
+  eventId:     varchar("eventId", { length: 128 }).notNull(),
+  eventType:   varchar("eventType", { length: 128 }).notNull(),
+  processedAt: timestamp("processedAt").defaultNow().notNull(),
+}, (t) => ({
+  eventIdUniq: uniqueIndex("stripeWebhookEvents_eventId_uniq").on(t.eventId),
+}));
+export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
+export type InsertStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
+
+// ── Entitlement audit log ─────────────────────────────────────────────────────
+export const entitlementAuditLog = mysqlTable("entitlementAuditLog", {
+  id:                   int("id").autoincrement().primaryKey(),
+  userId:               int("userId").notNull(),
+  fromTier:             varchar("fromTier", { length: 32 }),
+  toTier:               varchar("toTier", { length: 32 }).notNull(),
+  reason:               varchar("reason", { length: 128 }).notNull(),
+  stripeEventId:        varchar("stripeEventId", { length: 128 }),
+  stripeCustomerId:     varchar("stripeCustomerId", { length: 64 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
+  createdAt:            timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  userIdx:      index("entitlementAuditLog_userId_idx").on(t.userId),
+  createdAtIdx: index("entitlementAuditLog_createdAt_idx").on(t.createdAt),
+}));
+export type EntitlementAuditEntry = typeof entitlementAuditLog.$inferSelect;
+export type InsertEntitlementAuditEntry = typeof entitlementAuditLog.$inferInsert;

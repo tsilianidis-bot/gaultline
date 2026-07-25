@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { stripe } from './client';
 import { ENV } from '../_core/env';
 import { getPlanByPriceId } from './products';
-import { updateUserStripe, getUserByStripeCustomerId } from '../db';
+import { updateUserStripe, getUserByStripeCustomerId, getUserTier, recordStripeWebhookEvent, writeEntitlementAudit } from '../db';
 import type { AccessTier } from '../../shared/tiers';
 import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
 
@@ -60,25 +60,19 @@ export async function handleStripeWebhook(req: Request, res: Response) {
   const sig = req.headers['stripe-signature'] as string;
 
   // Stripe/Manus webhook verification events use the evt_test_ prefix and must
-  // short-circuit before signature construction. Parsing does not mutate the
-  // raw request buffer required for verification of all non-test events.
+  // short-circuit before signature construction.
   try {
     const rawBody = req.body instanceof Buffer ? req.body.toString('utf8') : String(req.body);
     const testEvent = JSON.parse(rawBody) as { id?: unknown };
     if (typeof testEvent.id === 'string' && testEvent.id.startsWith('evt_test_')) {
       console.log('[Webhook] Test event detected, returning verification response');
-      return res.json({
-        verified: true,
-      });
+      return res.json({ verified: true });
     }
   } catch {
     // Let the normal signature-verification path handle malformed live payloads.
   }
 
   // ── Signature verification bypass (dev/test only) ───────────────────────────
-  // NEVER bypass based on payload body content — that is spoofable by any caller.
-  // Only bypass when STRIPE_SKIP_VERIFICATION=true is explicitly set in the environment,
-  // which must never be set in production.
   const skipVerification = process.env.STRIPE_SKIP_VERIFICATION === 'true' && process.env.NODE_ENV !== 'production';
   if (skipVerification) {
     console.warn('[Stripe Webhook] STRIPE_SKIP_VERIFICATION is active — skipping signature check (dev/test only)');
@@ -97,11 +91,18 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     event = stripe.webhooks.constructEvent(req.body, sig, ENV.stripeWebhookSecret);
   } catch (err: any) {
     console.error('[Stripe Webhook] Signature verification failed:', err.message);
-    // Return 200 with error JSON so Stripe doesn't retry indefinitely on config errors
     return res.status(200).json({ error: 'Signature verification failed', verified: false });
   }
 
   console.log(`[Stripe Webhook] Event: ${event.type} | ID: ${event.id}`);
+
+  // ── Idempotency guard ──────────────────────────────────────────────────────
+  // Record the event ID before processing. Duplicate key = already processed.
+  const isNew = await recordStripeWebhookEvent(event.id, event.type);
+  if (!isNew) {
+    console.log(`[Stripe Webhook] Duplicate event ${event.id} (${event.type}) — skipping`);
+    return res.json({ received: true, duplicate: true });
+  }
 
   try {
     switch (event.type) {
@@ -116,8 +117,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           break;
         }
 
-        // Always fetch line items from the API — they are NOT in the webhook payload
         const tier = await resolveTierFromSession(session.id);
+        const prevTier = await getUserTier(userId).catch(() => 'unknown');
 
         await updateUserStripe(userId, {
           accessTier: tier,
@@ -125,9 +126,18 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           stripeSubscriptionId: subscriptionId ?? undefined,
         });
 
+        await writeEntitlementAudit({
+          userId,
+          fromTier: prevTier,
+          toTier: tier,
+          reason: 'checkout.session.completed',
+          stripeEventId: event.id,
+          stripeCustomerId: customerId ?? undefined,
+          stripeSubscriptionId: subscriptionId ?? undefined,
+        });
+
         console.log(`[Stripe Webhook] User ${userId} upgraded to ${tier} (session ${session.id})`);
 
-        // Send subscription confirmation email (best-effort, non-blocking)
         const customerEmail = session.metadata?.customer_email ?? session.customer_email ?? null;
         const customerName = session.metadata?.customer_name ?? null;
         if (customerEmail) {
@@ -144,13 +154,10 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       }
 
       case 'invoice.paid': {
-        // Fires on every successful payment — initial charge AND renewals.
-        // Re-activates tier for users whose subscription lapsed and then renewed.
         const invoice = event.data.object as any;
         const customerId = invoice.customer as string;
         const subscriptionId = invoice.subscription as string | null;
 
-        // Only process subscription invoices (not one-time charges)
         if (!subscriptionId) break;
 
         const user = await getUserByStripeCustomerId(customerId);
@@ -159,15 +166,22 @@ export async function handleStripeWebhook(req: Request, res: Response) {
           break;
         }
 
-        // Resolve the tier from the subscription's current price
         const tier = await resolveTierFromSubscription(subscriptionId);
         if (!tier) {
           console.warn(`[Stripe Webhook] invoice.paid — could not resolve tier for subscription ${subscriptionId}`);
           break;
         }
 
-        await updateUserStripe(user.id, {
-          accessTier: tier,
+        const prevTier = user.accessTier;
+        await updateUserStripe(user.id, { accessTier: tier, stripeSubscriptionId: subscriptionId });
+
+        await writeEntitlementAudit({
+          userId: user.id,
+          fromTier: prevTier,
+          toTier: tier,
+          reason: 'invoice.paid',
+          stripeEventId: event.id,
+          stripeCustomerId: customerId,
           stripeSubscriptionId: subscriptionId,
         });
 
@@ -179,18 +193,27 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         const subscription = event.data.object as any;
         const customerId = subscription.customer as string;
 
-        // Downgrade user back to free when subscription is cancelled
         const user = await getUserByStripeCustomerId(customerId);
         if (user) {
+          const prevTier = user.accessTier;
           await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
+
+          await writeEntitlementAudit({
+            userId: user.id,
+            fromTier: prevTier,
+            toTier: 'free',
+            reason: 'customer.subscription.deleted',
+            stripeEventId: event.id,
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscription.id,
+          });
+
           console.log(`[Stripe Webhook] User ${user.id} downgraded to free (subscription cancelled)`);
         }
         break;
       }
 
       case 'customer.subscription.updated': {
-        // Fires on every plan change, upgrade, downgrade, trial conversion, or billing cycle update.
-        // This is the ONLY event that fires when a user changes plans via the Billing Portal.
         const subscription = event.data.object as any;
         const customerId = subscription.customer as string;
         const subscriptionId = subscription.id as string;
@@ -203,23 +226,42 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         }
 
         if (status === 'active' || status === 'trialing') {
-          // Resolve the new tier from the updated subscription's price
           const priceId = subscription.items?.data?.[0]?.price?.id as string | undefined;
           if (priceId) {
             const plan = getPlanByPriceId(priceId);
             if (plan && plan.tier !== 'free') {
-              await updateUserStripe(user.id, {
-                accessTier: plan.tier,
+              const prevTier = user.accessTier;
+              await updateUserStripe(user.id, { accessTier: plan.tier, stripeSubscriptionId: subscriptionId });
+
+              await writeEntitlementAudit({
+                userId: user.id,
+                fromTier: prevTier,
+                toTier: plan.tier,
+                reason: 'customer.subscription.updated',
+                stripeEventId: event.id,
+                stripeCustomerId: customerId,
                 stripeSubscriptionId: subscriptionId,
               });
+
               console.log(`[Stripe Webhook] User ${user.id} tier updated to ${plan.tier} via subscription update (${subscriptionId})`);
             } else {
               console.warn(`[Stripe Webhook] customer.subscription.updated — unknown price ${priceId} for subscription ${subscriptionId}`);
             }
           }
         } else if (status === 'canceled' || status === 'unpaid' || status === 'past_due') {
-          // Subscription entered a degraded state — downgrade to free
+          const prevTier = user.accessTier;
           await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
+
+          await writeEntitlementAudit({
+            userId: user.id,
+            fromTier: prevTier,
+            toTier: 'free',
+            reason: `customer.subscription.updated:${status}`,
+            stripeEventId: event.id,
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+          });
+
           console.log(`[Stripe Webhook] User ${user.id} downgraded to free (subscription ${subscriptionId} status: ${status})`);
         }
         break;
@@ -229,7 +271,6 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         const invoice = event.data.object as any;
         const customerId = invoice.customer as string;
         console.warn(`[Stripe Webhook] Payment failed for customer ${customerId} — invoice ${invoice.id}`);
-        // Could send a notification here — left for future implementation
         break;
       }
 

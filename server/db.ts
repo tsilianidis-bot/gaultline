@@ -1482,3 +1482,60 @@ export async function getUsersPendingDripStep(step: number, minAgeMs: number): P
   const sentSet = new Set(sentRows.map(r => r.userId));
   return allUsers.filter(u => !sentSet.has(u.id));
 }
+
+// ── Stripe webhook idempotency ────────────────────────────────────────────────
+import { stripeWebhookEvents, entitlementAuditLog } from '../drizzle/schema';
+
+/**
+ * Attempt to record a Stripe event ID for idempotency.
+ * Returns true if the event is new (should be processed).
+ * Returns false if the event was already processed (skip it).
+ */
+export async function recordStripeWebhookEvent(eventId: string, eventType: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return true; // If DB is unavailable, allow processing (fail open)
+  try {
+    await db.insert(stripeWebhookEvents).values({ eventId, eventType });
+    return true; // Insert succeeded — event is new
+  } catch {
+    // Unique constraint violation — event already processed
+    return false;
+  }
+}
+
+// ── Entitlement audit log ─────────────────────────────────────────────────────
+export async function writeEntitlementAudit(params: {
+  userId: number;
+  fromTier: string | null | undefined;
+  toTier: string;
+  reason: string;
+  stripeEventId?: string;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(entitlementAuditLog).values({
+      userId: params.userId,
+      fromTier: params.fromTier ?? null,
+      toTier: params.toTier,
+      reason: params.reason,
+      stripeEventId: params.stripeEventId ?? null,
+      stripeCustomerId: params.stripeCustomerId ?? null,
+      stripeSubscriptionId: params.stripeSubscriptionId ?? null,
+    });
+  } catch (err) {
+    console.warn('[EntitlementAudit] Failed to write audit entry:', err);
+  }
+}
+
+export async function getEntitlementAuditHistory(userId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select()
+    .from(entitlementAuditLog)
+    .where(eq(entitlementAuditLog.userId, userId))
+    .orderBy(desc(entitlementAuditLog.createdAt))
+    .limit(limit);
+}

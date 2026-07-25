@@ -4226,3 +4226,15 @@
 - [x] Phase 4: DataFreshnessChip + PageStateViews shared components created; applied to all 5 destinations
 - [x] Phase 5: All five destinations verified complete with distinct purposes and section structures
 - [x] Phase 6: Standardized loading/error/empty states via PageLoadingState, PageDegradedBanner, DataFreshnessChip
+
+## Phases 7–10 Completed (Jul 25, 2026)
+- [x] Phase 7: stripeWebhookEvents table added to schema + DB migration applied
+- [x] Phase 7: entitlementAuditLog table added to schema + DB migration applied
+- [x] Phase 7: recordStripeWebhookEvent + writeEntitlementAudit helpers added to db.ts
+- [x] Phase 7: webhook.ts hardened — idempotency check before processing, audit log write on every tier change
+- [x] Phase 7: webhook.test.ts updated with mocks for new helpers
+- [x] Phase 7: stripeEntitlement.test.ts — 23 deterministic tests covering idempotency, tier mapping, audit log, grace period, reconciliation
+- [x] Phase 8: DataIntegrity.tsx — corrected misleading "simulated baseline" language to accurate degraded-mode description
+- [x] Phase 9: Full test suite passes — 81 test files, 1486 tests, 0 failures
+- [x] Phase 10: Mobile bottom nav — aria-label and aria-current added to all tab buttons (AppLayout.tsx)
+- [x] Phase 10: Now.tsx Refresh button — aria-label="Refresh market data" added

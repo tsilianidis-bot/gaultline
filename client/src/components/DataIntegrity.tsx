@@ -55,7 +55,7 @@ export default function DataIntegrity() {
     : null;
 
   const statusColor = isLoading ? '#4B5563' : isLive ? '#00FF88' : '#FF9500';
-  const statusLabel = isLoading ? 'LOADING' : isLive ? 'LIVE' : 'SIMULATED';
+  const statusLabel = isLoading ? 'LOADING' : isLive ? 'LIVE' : 'CACHED';
 
   return (
     <div style={{
@@ -140,7 +140,7 @@ export default function DataIntegrity() {
         }}>
           <AlertCircle size={12} style={{ color: '#FF9500', flexShrink: 0 }} />
           <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.4 }}>
-            {dataError} — Using simulated baseline. All scores and probabilities remain fully functional.
+            {dataError} — Analysis is based on last available data. Scores and probabilities reflect the most recent confirmed readings.
           </span>
         </div>
       )}
@@ -207,7 +207,7 @@ export default function DataIntegrity() {
                     </div>
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: hasData ? '#00FF88' : '#4B5563', flexShrink: 0 }}>
-                    {isLoading ? '—' : hasData ? value!.toFixed(2) : 'SIM'}
+                    {isLoading ? '—' : hasData ? value!.toFixed(2) : 'N/A'}
                   </div>
                 </div>
               );

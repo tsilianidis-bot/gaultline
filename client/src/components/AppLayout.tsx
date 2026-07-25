@@ -637,6 +637,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <button
               key={tab.id}
               onClick={() => handleNavigate(tab.path)}
+              aria-label={tab.label}
+              aria-current={active ? 'page' : undefined}
               style={{
                 flex: 1,
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',

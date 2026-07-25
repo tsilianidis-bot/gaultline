@@ -42,6 +42,9 @@ vi.mock('./client', () => ({
 vi.mock('../db', () => ({
   updateUserStripe: vi.fn(),
   getUserByStripeCustomerId: vi.fn(),
+  getUserTier: vi.fn().mockResolvedValue('free'),
+  recordStripeWebhookEvent: vi.fn().mockResolvedValue(true), // default: new event
+  writeEntitlementAudit: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock ENV
@@ -57,7 +60,7 @@ vi.mock('./products', () => ({
 }));
 
 import { stripe } from './client';
-import { updateUserStripe, getUserByStripeCustomerId } from '../db';
+import { updateUserStripe, getUserByStripeCustomerId, recordStripeWebhookEvent, writeEntitlementAudit, getUserTier } from '../db';
 import { getPlanByPriceId } from './products';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
