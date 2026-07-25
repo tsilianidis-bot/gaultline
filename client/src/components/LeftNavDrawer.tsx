@@ -78,12 +78,41 @@ const NAV_GROUPS: NavGroup[] = [
     })),
   },
   {
-    label: "RESOURCES",
+    label: "KNOWLEDGE CENTER",
     items: [
-      { id: "blog", label: "Blog", icon: Newspaper, path: "/blog" },
-      { id: "glossary", label: "Glossary", icon: GraduationCap, path: "/app/glossary" },
-      { id: "track-record", label: "Track Record", icon: Trophy, path: "/app/track-record" },
-      { id: "methodology", label: "Methodology", icon: Scale, path: "/methodology" },
+      { id: "daily-brief",       label: "Daily Brief Archive",    icon: Newspaper,    path: "/daily-brief" },
+      { id: "intel-library",     label: "Intelligence Library",   icon: Library,      path: "/intelligence-library" },
+      { id: "intel-archive",     label: "Historical Briefings",   icon: History,      path: "/intel-archive" },
+      { id: "reading-history",   label: "Reading History",        icon: BookMarked,   path: "/app/reading-history" },
+      { id: "blog",              label: "Blog",                   icon: Newspaper,    path: "/blog" },
+      { id: "glossary",          label: "Glossary",               icon: GraduationCap, path: "/app/glossary" },
+    ],
+  },
+  {
+    label: "RESEARCH & PROOF",
+    items: [
+      { id: "track-record",      label: "Track Record",           icon: Trophy,       path: "/app/track-record" },
+      { id: "methodology",       label: "Methodology",            icon: Scale,        path: "/methodology" },
+      { id: "validation-lab",    label: "Validation Lab",         icon: FlaskConical, path: "/app/validation-lab" },
+      { id: "validation",        label: "Intel Validation",       icon: FlaskRound,   path: "/app/validation" },
+      { id: "decision-ledger",   label: "Decision Ledger",        icon: BookOpen,     path: "/app/decision-ledger" },
+    ],
+  },
+  {
+    label: "MARKET TOOLS",
+    items: [
+      { id: "signals",           label: "Signals",                icon: Radio,        path: "/app/signals" },
+      { id: "crypto-signals",    label: "Crypto Signals",         icon: Bitcoin,      path: "/app/crypto-signals" },
+      { id: "crypto-hub",        label: "Crypto Hub",             icon: Layers,       path: "/app/crypto" },
+      { id: "historical-analogs",label: "Historical Analogs",     icon: History,      path: "/app/historical-analogs" },
+      { id: "simulate-pressure", label: "Simulate Pressure",      icon: Gauge,        path: "/app/simulate-pressure" },
+      { id: "trade-journal",     label: "Trade Journal",          icon: JournalIcon,  path: "/app/trade-journal" },
+    ],
+  },
+  {
+    label: "COMMUNITY",
+    items: [
+      { id: "roadmap",           label: "Roadmap",                icon: Map,          path: "/app/roadmap" },
     ],
   },
 ];

@@ -2,6 +2,9 @@
  * BuildBadge — fixed bottom-right badge showing the deployed commit hash and build time.
  * Fetches from /api/build-info which reads BUILD_COMMIT + BUILD_TIME env vars injected at deploy time.
  * Allows Richard to confirm which version is live at getfaultline.live.
+ *
+ * IMPORTANT: z-index is set to 40 (below the mobile bottom tab bar at z-50) and
+ * bottom is offset above the tab bar (~60px) so it never intercepts tab bar taps.
  */
 
 import { useEffect, useState } from "react";
@@ -40,9 +43,12 @@ export function BuildBadge() {
     <div
       style={{
         position: "fixed",
-        bottom: "env(safe-area-inset-bottom, 0px)",
+        /* Sit above the mobile bottom tab bar (~60px) + device safe-area.
+           On desktop (no tab bar) this just floats 60px from the bottom edge. */
+        bottom: "calc(60px + env(safe-area-inset-bottom, 0px))",
         right: 0,
-        zIndex: 9000,
+        /* Below the mobile tab bar (z-50) and all overlays — purely informational */
+        zIndex: 40,
         fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
         fontSize: "10px",
         lineHeight: 1.4,

@@ -4268,3 +4268,13 @@
 - [x] Update AshaPanel mapping to pass all new fields through
 - [x] Add /api/build-info endpoint for deployment verification
 - [x] Add BuildBadge component (fetches from /api/build-info, shows commit + timestamp)
+
+## Product Experience Gate
+- [x] BuildBadge z-index fix (tab bar unblocked)
+- [x] Admin role bypass for PremiumGate
+- [x] Navigation reconnection (14 hidden pages, 5 new LeftNavDrawer groups)
+- [x] Startup page preference (schema, tRPC, Account Settings card)
+- [x] Post-ASHA redirect to user's preferred startup page
+- [ ] ProductExperience.tsx — 8-section immersive product launch page
+- [ ] App.tsx gate: fl_product_experience_v1 localStorage key
+- [ ] Animation reduction: play-once entrance, calm idle state

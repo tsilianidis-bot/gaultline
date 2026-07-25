@@ -1223,6 +1223,8 @@ export const userPreferences = mysqlTable("user_preferences", {
   notificationPrefs:  text("notificationPrefs"),
   /** Whether the user has seen the Getting Started onboarding video */
   hasSeenGettingStartedVideo: boolean("hasSeenGettingStartedVideo").default(false).notNull(),
+  /** Preferred startup destination after ASHA briefing: 'now' | 'why' | 'outlook' | 'watch' | 'act' | 'last' */
+  startupPage:        varchar("startupPage", { length: 32 }).default("now"),
   /** Snapshot of last engine state for "Since Your Last Visit" diff — JSON */
   lastVisitSnapshot:  text("lastVisitSnapshot"),
   /** Timestamp of last visit */

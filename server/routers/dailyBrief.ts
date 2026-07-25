@@ -417,6 +417,28 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
       };
     }),
 
+  // ── Startup page preference ────────────────────────────────────────────────
+  getStartupPage: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { startupPage: 'now' };
+    const rows = await db.select({ startupPage: userPreferences.startupPage }).from(userPreferences).where(eq(userPreferences.userId, ctx.user.id)).limit(1);
+    return { startupPage: rows[0]?.startupPage ?? 'now' };
+  }),
+
+  setStartupPage: protectedProcedure
+    .input(z.object({ startupPage: z.enum(['now', 'why', 'outlook', 'watch', 'act', 'last']) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      const existing = await db.select({ id: userPreferences.id }).from(userPreferences).where(eq(userPreferences.userId, ctx.user.id)).limit(1);
+      if (existing.length) {
+        await db.update(userPreferences).set({ startupPage: input.startupPage }).where(eq(userPreferences.userId, ctx.user.id));
+      } else {
+        await db.insert(userPreferences).values({ userId: ctx.user.id, onboardingComplete: false, startupPage: input.startupPage });
+      }
+      return { success: true };
+    }),
+
   // ── Reset onboarding (restart First Briefing) ─────────────────────────────
   resetOnboarding: protectedProcedure
     .mutation(async ({ ctx }) => {

@@ -270,6 +270,94 @@ function FoundingAccessForm({ userEmail }: { userEmail?: string | null }) {
   );
 }
 
+// ── Startup Page Preference Card ─────────────────────────────
+const STARTUP_OPTIONS: { value: string; label: string; description: string }[] = [
+  { value: 'now',     label: 'NOW — Seismograph',  description: 'Land on the live market state and Pressure Index. Recommended default.' },
+  { value: 'why',     label: 'WHY — Drivers',       description: 'Open directly to the macro driver analysis.' },
+  { value: 'outlook', label: 'OUTLOOK — Scenarios', description: 'Start with probability-weighted scenario forecasts.' },
+  { value: 'watch',   label: 'WATCH — Signals',     description: 'Jump straight to your active signals and alerts.' },
+  { value: 'act',     label: 'ACT — Opportunities', description: 'Open to the decision and trade intelligence workspace.' },
+  { value: 'last',    label: 'Last Visited Page',   description: 'Resume where you left off after each ASHA greeting.' },
+];
+
+function StartupPageCard() {
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
+  const { data, isLoading } = trpc.dailyBrief.getStartupPage.useQuery(undefined, {
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const setPage = trpc.dailyBrief.setStartupPage.useMutation({
+    onSuccess: () => {
+      utils.dailyBrief.getStartupPage.invalidate();
+      toast.success('Startup page saved');
+    },
+    onError: (err) => toast.error('Could not save preference', { description: err.message }),
+  });
+  if (!user) return null;
+  const current = data?.startupPage ?? 'now';
+  return (
+    <div style={{
+      marginTop: '24px',
+      background: 'rgba(0,229,255,0.02)',
+      border: '1px solid rgba(0,229,255,0.12)',
+      borderRadius: '12px',
+      padding: '24px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00E5FF', boxShadow: '0 0 6px #00E5FF' }} />
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00E5FF', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+          Startup Page
+        </span>
+      </div>
+      <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, marginBottom: '18px', marginTop: '6px' }}>
+        Choose where FAULTLINE takes you after each ASHA greeting. The default is <strong style={{ color: '#E5E7EB' }}>NOW</strong> — the Seismograph — which gives you the strongest first impression of current market conditions.
+      </p>
+      {isLoading ? (
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563', letterSpacing: '0.1em' }}>LOADING…</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {STARTUP_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setPage.mutate({ startupPage: opt.value as 'now' | 'why' | 'outlook' | 'watch' | 'act' | 'last' })}
+              disabled={setPage.isPending}
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: '12px',
+                padding: '14px 16px',
+                background: current === opt.value ? 'rgba(0,229,255,0.08)' : 'rgba(255,255,255,0.02)',
+                border: current === opt.value ? '1px solid rgba(0,229,255,0.35)' : '1px solid rgba(255,255,255,0.07)',
+                borderRadius: '8px',
+                cursor: setPage.isPending ? 'not-allowed' : 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.15s ease-out',
+                opacity: setPage.isPending ? 0.7 : 1,
+              }}
+            >
+              <div style={{
+                width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '2px',
+                border: current === opt.value ? '2px solid #00E5FF' : '2px solid rgba(255,255,255,0.2)',
+                background: current === opt.value ? 'rgba(0,229,255,0.25)' : 'transparent',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {current === opt.value && <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00E5FF' }} />}
+              </div>
+              <div>
+                <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: current === opt.value ? '#F0F4FF' : '#9CA3AF', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                  {opt.label}
+                </div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: '#6B7280', lineHeight: 1.5 }}>
+                  {opt.description}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Market Preflight Preference Card ─────────────────────────
 type PreflightMode = 'full_guidance' | 'minimal_reminders' | 'off';
 
@@ -634,6 +722,9 @@ export default function UserAccount() {
           </button>
         </div>
       )}
+
+      {/* ── Startup Page Preference ── */}
+      <StartupPageCard />
 
       {/* ── Market Preflight Prompts Preference ── */}
       <PreflightPreferenceCard />
