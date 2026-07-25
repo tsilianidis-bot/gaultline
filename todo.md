@@ -4238,3 +4238,33 @@
 - [x] Phase 9: Full test suite passes — 81 test files, 1486 tests, 0 failures
 - [x] Phase 10: Mobile bottom nav — aria-label and aria-current added to all tab buttons (AppLayout.tsx)
 - [x] Phase 10: Now.tsx Refresh button — aria-label="Refresh market data" added
+
+## Oracle Briefing Pipeline Repair (Jul 25, 2026)
+- [ ] Rewrite askAsha structured JSON schema with independent non-repeating fields
+- [ ] Add decisionPaths array to missionRecommendation (aggressive/staged/wait/avoid paths)
+- [ ] Add sources array with name, claim, observedAt, freshness fields
+- [ ] Add disclaimer as isolated field (not duplicated in executiveSummary/keyFindings/missionRecommendation)
+- [ ] Add limitations array for engine availability disclosures
+- [ ] Fix engine-count accuracy: never claim "all engines" if crypto unavailable
+- [ ] Add validation guards in parseAshaResponse: reject empty arrays, >25% duplication, truncated text
+- [ ] Update AshaResponse interface with new fields
+- [ ] Update OracleBriefingData interface + component to render decisionPaths, sources, disclaimer, limitations
+- [ ] Update AshaPanel mapping to pass new fields
+- [ ] Add /api/build-info endpoint + BuildBadge component (done)
+- [ ] Save checkpoint and verify
+
+## Oracle Briefing Pipeline Repair (Session Jul 25 2026)
+- [x] Add buildEngineAvailabilityContext() helper — accurate engine count, crypto availability flag
+- [x] Add validateOracleBriefing() helper — checks empty arrays, disclaimer leakage, field duplication
+- [x] Rewrite askAsha() with new structured JSON schema v2 (missionRecommendationStructured, sourceCitations, limitations, disclaimer)
+- [x] Add ENGINE AVAILABILITY block injected into system prompt — prevents false "all engines" claims
+- [x] Add ORACLE BRIEFING RULES block in system prompt — 10 strict rules for field independence
+- [x] Add regeneration loop — retries once if keyFindings/riskFactors/invalidationConditions are empty or executiveSummary is too long
+- [x] Update OracleBriefingData interface — add missionRecommendationStructured, sourceCitations, limitations, disclaimer
+- [x] Add Decision Paths section to OracleBriefing component
+- [x] Add Intelligence Sources section to OracleBriefing component
+- [x] Add Engine Limitations section to OracleBriefing component
+- [x] Add Disclaimer section to OracleBriefing component (isolated, subdued styling)
+- [x] Update AshaPanel mapping to pass all new fields through
+- [x] Add /api/build-info endpoint for deployment verification
+- [x] Add BuildBadge component (fetches from /api/build-info, shows commit + timestamp)

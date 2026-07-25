@@ -1,10 +1,27 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+
+// Build-time constants injected into the client bundle
+function getBuildCommit(): string {
+  try {
+    return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+function getBuildTime(): string {
+  try {
+    return execSync("git log -1 --format=%cI", { encoding: "utf-8" }).trim();
+  } catch {
+    return new Date().toISOString();
+  }
+}
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -152,9 +169,16 @@ function vitePluginManusDebugCollector(): Plugin {
 
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
 
+const BUILD_COMMIT = getBuildCommit();
+const BUILD_TIME = getBuildTime();
+
 export default defineConfig({
   plugins,
   cacheDir: "/tmp/vite-cache",
+  define: {
+    __BUILD_COMMIT__: JSON.stringify(BUILD_COMMIT),
+    __BUILD_TIME__: JSON.stringify(BUILD_TIME),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

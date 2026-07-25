@@ -197,6 +197,14 @@ async function startServer() {
   app.post("/api/publishing/publish-draft/:id", requireCron, handlePublishDraft);
   // RSS feed
   app.get("/api/rss.xml", handleRssFeed);
+  // Build info — public endpoint for deployment verification
+  app.get("/api/build-info", (_req, res) => {
+    res.json({
+      commit: process.env.BUILD_COMMIT ?? "dev",
+      buildTime: process.env.BUILD_TIME ?? new Date().toISOString(),
+      nodeEnv: process.env.NODE_ENV ?? "unknown",
+    });
+  });
 
   // tRPC API
   app.use(

@@ -178,6 +178,26 @@ export interface AshaResponse {
   riskFactors?: string[];
   invalidationConditions?: string[];
   missionRecommendation?: string;
+  // Structured mission recommendation with decision paths
+  missionRecommendationStructured?: {
+    verdict: string;
+    timeHorizon: string;
+    rationale: string;
+    decisionPaths: Array<{ scenario: string; response: string }>;
+  };
+  // Source citations with freshness labels
+  sourceCitations?: Array<{
+    name: string;
+    claim: string;
+    observedAt: string;
+    freshness: "LIVE" | "RECENT" | "STALE" | "ESTIMATED";
+  }>;
+  // Engine availability and limitations
+  limitations?: string[];
+  enginesAvailableCount?: number;
+  enginesAvailableList?: string[];
+  // Isolated disclaimer (not duplicated in other fields)
+  disclaimer?: string;
   finalVerdictAction?: string;
   expectedTimeframe?: string;
   followUpChips?: string[];
@@ -241,10 +261,121 @@ function extractEngines(context: AshaGatewayContext): string[] {
   return Array.from(new Set(engines));
 }
 
+// ── Build engine availability context for the prompt ─────────
+function buildEngineAvailabilityContext(context: AshaGatewayContext): {
+  availableEngines: string[];
+  unavailableEngines: string[];
+  limitations: string[];
+  cryptoAvailable: boolean;
+} {
+  const { marketState } = context;
+  const available: string[] = ["Pressure Index", "Market Regime Engine", "Seismograph"];
+  const unavailable: string[] = [];
+  const limitations: string[] = [];
+
+  for (const source of marketState.sourceHealth) {
+    if (source.status === "unavailable") {
+      if (source.id === "coingecko") {
+        unavailable.push("Crypto Intelligence Engine");
+        limitations.push(
+          "Crypto Intelligence Engine is unavailable. Crypto analysis is supplemented from external macro context only and is not FAULTLINE-native intelligence. Confidence is reduced accordingly."
+        );
+      } else if (source.id === "fred") {
+        unavailable.push("FRED Economic Data");
+        limitations.push("FRED economic data is temporarily unavailable. Macro indicators may be stale or estimated.");
+      }
+    } else {
+      if (source.id === "coingecko") available.push("Crypto Intelligence Engine");
+      if (source.id === "fred") available.push("FRED Economic Data");
+    }
+  }
+
+  if (marketState.history.observationCount > 0) {
+    available.push("Historical Analog Engine");
+  } else {
+    unavailable.push("Historical Analog Engine");
+    limitations.push("Historical analog data has insufficient observations for a reliable comparison.");
+  }
+
+  if (marketState.outlook.probabilities.confidence > 0) {
+    available.push("Probability Engine");
+  }
+
+  const cryptoAvailable = !unavailable.includes("Crypto Intelligence Engine");
+  return {
+    availableEngines: Array.from(new Set(available)),
+    unavailableEngines: unavailable,
+    limitations,
+    cryptoAvailable,
+  };
+}
+
+// ── Validate Oracle briefing for quality issues ───────────────
+function validateOracleBriefing(parsed: Record<string, unknown>): string[] {
+  const issues: string[] = [];
+  const keyFindings = Array.isArray(parsed.keyFindings) ? parsed.keyFindings as string[] : [];
+  const riskFactors = Array.isArray(parsed.riskFactors) ? parsed.riskFactors as string[] : [];
+  const invalidationConditions = Array.isArray(parsed.invalidationConditions) ? parsed.invalidationConditions as string[] : [];
+
+  if (keyFindings.length < 3) issues.push(`keyFindings has only ${keyFindings.length} items (minimum 3 required)`);
+  if (riskFactors.length < 3) issues.push(`riskFactors has only ${riskFactors.length} items (minimum 3 required)`);
+  if (invalidationConditions.length < 2) issues.push(`invalidationConditions has only ${invalidationConditions.length} items (minimum 2 required)`);
+
+  const execSummary = typeof parsed.executiveSummary === "string" ? parsed.executiveSummary.trim() : "";
+  const missionRec = typeof parsed.missionRecommendation === "string" ? parsed.missionRecommendation.trim() : "";
+
+  if (execSummary.length > 50 && missionRec.length > 50) {
+    const overlap = execSummary.substring(0, 80);
+    if (missionRec.includes(overlap)) {
+      issues.push("executiveSummary appears to duplicate missionRecommendation content");
+    }
+  }
+  if (execSummary.length > 400) {
+    issues.push("executiveSummary is too long — likely contains the full narrative instead of a 2-4 sentence summary");
+  }
+
+  const disclaimerPatterns = ["not financial advice", "not investment advice", "consult a financial", "do your own research", "past performance"];
+  for (const pattern of disclaimerPatterns) {
+    if (execSummary.toLowerCase().includes(pattern)) {
+      issues.push(`executiveSummary contains disclaimer text ('${pattern}') — disclaimers must be in the disclaimer field only`);
+    }
+    if (keyFindings.some((f: string) => f.toLowerCase().includes(pattern))) {
+      issues.push(`keyFindings contains disclaimer text ('${pattern}') — disclaimers must be in the disclaimer field only`);
+    }
+  }
+
+  return issues;
+}
+
 // ── Main ASHA ask function ────────────────────────────────────
 export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   const gatewayContext = await createAshaGatewayContext(req.pageContext);
-  const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext);
+  const engineCtx = buildEngineAvailabilityContext(gatewayContext);
+
+  // Build engine availability block to inject into system prompt
+  const engineAvailabilityBlock = [
+    `\n\n## ENGINE AVAILABILITY (AUTHORITATIVE — DO NOT CONTRADICT)`,
+    `Available engines (${engineCtx.availableEngines.length}): ${engineCtx.availableEngines.join(", ")}`,
+    engineCtx.unavailableEngines.length > 0
+      ? `Unavailable engines: ${engineCtx.unavailableEngines.join(", ")}. DO NOT claim these engines contributed to this briefing.`
+      : "All engines are available.",
+    engineCtx.cryptoAvailable
+      ? "Crypto Intelligence Engine: AVAILABLE — you may reference FAULTLINE crypto data."
+      : "Crypto Intelligence Engine: UNAVAILABLE — do NOT claim FAULTLINE-native crypto analysis. Acknowledge this limitation explicitly in the limitations field.",
+    `\n## ORACLE BRIEFING RULES (STRICT)`,
+    "1. executiveSummary: EXACTLY 2-4 sentences summarizing the core finding. DO NOT copy missionRecommendation into this field. DO NOT include disclaimers here.",
+    "2. keyFindings: EXACTLY 3-5 DISTINCT findings. Each must address a different aspect (price, macro, technical, on-chain, sentiment). NO duplicates. NO disclaimers.",
+    "3. riskFactors: EXACTLY 3-5 DISTINCT risks. Each must be a different risk vector. NO duplicates.",
+    "4. invalidationConditions: EXACTLY 2-4 DISTINCT conditions. Each must be a specific, measurable event.",
+    "5. missionRecommendation: Actionable guidance paragraph. DO NOT repeat executiveSummary. DO NOT include disclaimers here.",
+    "6. missionRecommendationStructured: Provide verdict, timeHorizon, rationale, and 3-4 decisionPaths (each with scenario and response). Scenarios must cover: aggressive entry, staged/cautious entry, wait-for-confirmation, and avoid/defensive.",
+    "7. sourceCitations: List 2-4 specific data points used, each with name, claim, observedAt (ISO date or 'estimated'), and freshness (LIVE/RECENT/STALE/ESTIMATED).",
+    "8. disclaimer: EXACTLY ONE disclaimer sentence. Place it ONLY in this field. Do not repeat it anywhere else.",
+    "9. limitations: List any engine unavailability or data quality issues. If all engines are available, return an empty array.",
+    "10. reply: Full narrative. 3-6 paragraphs. No bullet points. No disclaimers in this field.",
+  ].join("\n");
+
+  const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext) + engineAvailabilityBlock;
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
@@ -252,37 +383,78 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     { role: "user", content: req.userMessage },
   ];
 
-  const { response: llmResponse, trace: modelTrace } = await invokeAshaGateway({
+  const { response: llmResponse, trace: initialModelTrace } = await invokeAshaGateway({
     messages,
     response_format: {
       type: "json_schema",
       json_schema: {
-        name: "asha_oracle_briefing",
+        name: "asha_oracle_briefing_v2",
         strict: true,
         schema: {
           type: "object",
           properties: {
-            reply: { type: "string", description: "Full narrative response — the main intelligence answer. 3-6 paragraphs. No bullet points. No generic AI disclaimers." },
-            executiveSummary: { type: "string", description: "1-2 sentence executive summary of the core finding." },
-            marketBias: { type: "string", enum: ["BULLISH", "BEARISH", "NEUTRAL"], description: "Overall market directional bias based on current conditions." },
+            reply: { type: "string", description: "Full narrative intelligence response. 3-6 paragraphs. No bullet points. No disclaimers in this field." },
+            executiveSummary: { type: "string", description: "EXACTLY 2-4 sentences summarizing the core finding. MUST be different from missionRecommendation. MUST NOT contain disclaimers." },
+            marketBias: { type: "string", enum: ["BULLISH", "BEARISH", "NEUTRAL"], description: "Overall market directional bias." },
             marketRegime: { type: "string", description: "Current market regime label (e.g. Late Cycle, Stagflation, Expansion)." },
-            threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"], description: "Systemic threat level based on engine synthesis." },
-            pressureIndex: { type: "number", description: "Estimated systemic pressure score 0-100." },
+            threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"], description: "Systemic threat level." },
+            pressureIndex: { type: "number", description: "Systemic pressure score 0-100." },
             riskLevel: { type: "string", description: "Risk level label (e.g. Moderate, Elevated, High)." },
-            suggestedBias: { type: "string", description: "Specific positioning bias recommendation (e.g. Reduce equity exposure, Favor defensive sectors)." },
+            suggestedBias: { type: "string", description: "Specific positioning bias (e.g. Reduce equity exposure, Favor defensive sectors)." },
             bullProbability: { type: "number", description: "Bull scenario probability 0-100." },
             bearProbability: { type: "number", description: "Bear scenario probability 0-100." },
-            keyFindings: { type: "array", items: { type: "string" }, description: "3-5 key intelligence findings, each 1-2 sentences." },
-            supportingEvidence: { type: "array", items: { type: "string" }, description: "3-5 supporting evidence points from the engine network." },
+            keyFindings: { type: "array", items: { type: "string" }, description: "EXACTLY 3-5 DISTINCT key findings. Each must address a different aspect. NO duplicates. NO disclaimers." },
+            supportingEvidence: { type: "array", items: { type: "string" }, description: "3-5 supporting evidence points from available engines." },
             historicalAnalog: { type: "string", description: "Most relevant historical period comparison with key similarities and differences." },
-            riskFactors: { type: "array", items: { type: "string" }, description: "3-5 primary risk factors to the thesis." },
-            invalidationConditions: { type: "array", items: { type: "string" }, description: "2-4 conditions that would invalidate this assessment." },
-            missionRecommendation: { type: "string", description: "Actionable recommendation paragraph — what the user should do with this intelligence." },
+            riskFactors: { type: "array", items: { type: "string" }, description: "EXACTLY 3-5 DISTINCT risk factors. Each must be a different risk vector. NO duplicates." },
+            invalidationConditions: { type: "array", items: { type: "string" }, description: "EXACTLY 2-4 DISTINCT invalidation conditions. Each must be a specific measurable event." },
+            missionRecommendation: { type: "string", description: "Actionable recommendation paragraph. MUST be different from executiveSummary. NO disclaimers." },
+            missionRecommendationStructured: {
+              type: "object",
+              description: "Structured mission recommendation with decision paths.",
+              properties: {
+                verdict: { type: "string", description: "One-sentence verdict statement." },
+                timeHorizon: { type: "string", description: "Time horizon for this recommendation (e.g. 2-4 weeks)." },
+                rationale: { type: "string", description: "2-3 sentence rationale for the recommendation." },
+                decisionPaths: {
+                  type: "array",
+                  description: "3-4 decision paths covering: aggressive entry, staged entry, wait-for-confirmation, avoid/defensive.",
+                  items: {
+                    type: "object",
+                    properties: {
+                      scenario: { type: "string", description: "Scenario label (e.g. Aggressive Entry, Staged Entry, Wait for Confirmation, Avoid)." },
+                      response: { type: "string", description: "Specific action for this scenario." },
+                    },
+                    required: ["scenario", "response"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+              required: ["verdict", "timeHorizon", "rationale", "decisionPaths"],
+              additionalProperties: false,
+            },
+            sourceCitations: {
+              type: "array",
+              description: "2-4 specific data points used in this briefing with freshness labels.",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string", description: "Source name (e.g. FAULTLINE Pressure Index, CoinGecko ETH/USD, FRED 10Y Treasury)." },
+                  claim: { type: "string", description: "Specific claim or data point from this source." },
+                  observedAt: { type: "string", description: "ISO date string or 'estimated' if not directly observed." },
+                  freshness: { type: "string", enum: ["LIVE", "RECENT", "STALE", "ESTIMATED"], description: "Data freshness label." },
+                },
+                required: ["name", "claim", "observedAt", "freshness"],
+                additionalProperties: false,
+              },
+            },
+            limitations: { type: "array", items: { type: "string" }, description: "Engine unavailability or data quality issues. Empty array if all engines available." },
+            disclaimer: { type: "string", description: "EXACTLY ONE disclaimer sentence. This is the ONLY place disclaimers appear. Example: 'This briefing is for informational purposes only and does not constitute financial advice.'" },
             finalVerdictAction: { type: "string", enum: ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"], description: "Single-word final verdict action." },
             expectedTimeframe: { type: "string", description: "Expected timeframe for this assessment (e.g. 2-4 weeks, 3-6 months)." },
             followUpChips: { type: "array", items: { type: "string" }, description: "3-4 follow-up question suggestions." },
           },
-          required: ["reply", "executiveSummary", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "historicalAnalog", "riskFactors", "invalidationConditions", "missionRecommendation", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
+          required: ["reply", "executiveSummary", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "historicalAnalog", "riskFactors", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
           additionalProperties: false,
         },
       },
@@ -290,17 +462,156 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   });
 
   let parsed: Record<string, unknown> = {};
+  let modelTrace = initialModelTrace;
+
   try {
     const raw = llmResponse.choices?.[0]?.message?.content as string;
     parsed = JSON.parse(raw);
   } catch {
-    // Fallback: treat entire content as reply
     const raw = (llmResponse.choices?.[0]?.message?.content as string) ?? "";
     parsed = { reply: raw };
   }
 
+  // Run validation — if critical arrays are empty, retry once with a correction prompt
+  const validationIssues = validateOracleBriefing(parsed);
+  const criticalFailures = validationIssues.filter(issue =>
+    issue.includes("keyFindings has only 0") ||
+    issue.includes("riskFactors has only 0") ||
+    issue.includes("invalidationConditions has only 0") ||
+    issue.includes("keyFindings has only 1") ||
+    issue.includes("riskFactors has only 1") ||
+    issue.includes("riskFactors has only 2") ||
+    issue.includes("executiveSummary is too long")
+  );
+
+  if (criticalFailures.length > 0) {
+    console.warn("[ASHA Oracle] Critical validation failures — retrying:", criticalFailures);
+    const correctionMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+      ...messages,
+      { role: "assistant", content: llmResponse.choices?.[0]?.message?.content as string ?? "" },
+      {
+        role: "user",
+        content: [
+          "Your previous response had these structural problems that must be fixed:",
+          ...criticalFailures.map(f => `- ${f}`),
+          "",
+          "Please regenerate the complete Oracle briefing JSON, fixing all of the above issues.",
+          "Remember: keyFindings, riskFactors, and invalidationConditions MUST be populated with distinct items.",
+          "The executiveSummary MUST be 2-4 sentences only — not the full narrative.",
+          "Do not repeat disclaimer text in executiveSummary or keyFindings.",
+        ].join("\n"),
+      },
+    ];
+    try {
+      const { response: retryResponse, trace: retryTrace } = await invokeAshaGateway({
+        messages: correctionMessages,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "asha_oracle_briefing_v2",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                reply: { type: "string" },
+                executiveSummary: { type: "string" },
+                marketBias: { type: "string", enum: ["BULLISH", "BEARISH", "NEUTRAL"] },
+                marketRegime: { type: "string" },
+                threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"] },
+                pressureIndex: { type: "number" },
+                riskLevel: { type: "string" },
+                suggestedBias: { type: "string" },
+                bullProbability: { type: "number" },
+                bearProbability: { type: "number" },
+                keyFindings: { type: "array", items: { type: "string" } },
+                supportingEvidence: { type: "array", items: { type: "string" } },
+                historicalAnalog: { type: "string" },
+                riskFactors: { type: "array", items: { type: "string" } },
+                invalidationConditions: { type: "array", items: { type: "string" } },
+                missionRecommendation: { type: "string" },
+                missionRecommendationStructured: {
+                  type: "object",
+                  properties: {
+                    verdict: { type: "string" },
+                    timeHorizon: { type: "string" },
+                    rationale: { type: "string" },
+                    decisionPaths: { type: "array", items: { type: "object", properties: { scenario: { type: "string" }, response: { type: "string" } }, required: ["scenario", "response"], additionalProperties: false } },
+                  },
+                  required: ["verdict", "timeHorizon", "rationale", "decisionPaths"],
+                  additionalProperties: false,
+                },
+                sourceCitations: { type: "array", items: { type: "object", properties: { name: { type: "string" }, claim: { type: "string" }, observedAt: { type: "string" }, freshness: { type: "string", enum: ["LIVE", "RECENT", "STALE", "ESTIMATED"] } }, required: ["name", "claim", "observedAt", "freshness"], additionalProperties: false } },
+                limitations: { type: "array", items: { type: "string" } },
+                disclaimer: { type: "string" },
+                finalVerdictAction: { type: "string", enum: ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] },
+                expectedTimeframe: { type: "string" },
+                followUpChips: { type: "array", items: { type: "string" } },
+              },
+              required: ["reply", "executiveSummary", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "historicalAnalog", "riskFactors", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const retryRaw = retryResponse.choices?.[0]?.message?.content as string;
+      const retryParsed = JSON.parse(retryRaw);
+      const retryIssues = validateOracleBriefing(retryParsed);
+      if (retryIssues.length < validationIssues.length) {
+        console.log("[ASHA Oracle] Retry improved quality:", retryIssues);
+        parsed = retryParsed;
+        modelTrace = retryTrace;
+      } else {
+        console.warn("[ASHA Oracle] Retry did not improve quality, using original");
+      }
+    } catch (retryErr) {
+      console.error("[ASHA Oracle] Retry failed:", retryErr);
+    }
+  } else if (validationIssues.length > 0) {
+    console.warn("[ASHA Oracle] Non-critical validation issues:", validationIssues);
+  }
+
   const reply = readString(parsed.reply) || "I was unable to generate a response. Please try again.";
   const invalidationConditions = readStringArray(parsed.invalidationConditions);
+
+  // Parse structured mission recommendation
+  let missionRecommendationStructured: AshaResponse["missionRecommendationStructured"] | undefined;
+  if (parsed.missionRecommendationStructured && typeof parsed.missionRecommendationStructured === "object") {
+    const mrs = parsed.missionRecommendationStructured as Record<string, unknown>;
+    const decisionPaths = Array.isArray(mrs.decisionPaths)
+      ? (mrs.decisionPaths as Array<Record<string, unknown>>)
+          .map(dp => ({
+            scenario: readString(dp.scenario) || "",
+            response: readString(dp.response) || "",
+          }))
+          .filter(dp => dp.scenario && dp.response)
+      : [];
+    if (decisionPaths.length > 0) {
+      missionRecommendationStructured = {
+        verdict: readString(mrs.verdict) || "",
+        timeHorizon: readString(mrs.timeHorizon) || "2-4 weeks",
+        rationale: readString(mrs.rationale) || "",
+        decisionPaths,
+      };
+    }
+  }
+
+  // Parse source citations
+  let sourceCitations: AshaResponse["sourceCitations"] | undefined;
+  if (Array.isArray(parsed.sourceCitations)) {
+    const citations = (parsed.sourceCitations as Array<Record<string, unknown>>)
+      .map(c => ({
+        name: readString(c.name) || "",
+        claim: readString(c.claim) || "",
+        observedAt: readString(c.observedAt) || "estimated",
+        freshness: readEnum(c.freshness, ["LIVE", "RECENT", "STALE", "ESTIMATED"] as const) || "ESTIMATED" as const,
+      }))
+      .filter(c => c.name && c.claim);
+    if (citations.length > 0) sourceCitations = citations;
+  }
+
+  // Build limitations: combine LLM-reported + engine context
+  const llmLimitations = readStringArray(parsed.limitations);
+  const allLimitations = Array.from(new Set([...engineCtx.limitations, ...llmLimitations]));
 
   return {
     reply,
@@ -309,6 +620,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
       .filter(source => source.status !== "unavailable")
       .map(source => source.label),
     enginesConsulted: extractEngines(gatewayContext),
+    enginesAvailableCount: engineCtx.availableEngines.length,
+    enginesAvailableList: engineCtx.availableEngines,
     lastUpdated: gatewayContext.marketState.sourceUpdatedAt,
     invalidationTriggers: invalidationConditions.length > 0 ? invalidationConditions : undefined,
     // Oracle Briefing structured fields
@@ -327,6 +640,10 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     riskFactors: readStringArray(parsed.riskFactors),
     invalidationConditions,
     missionRecommendation: readString(parsed.missionRecommendation) || "",
+    missionRecommendationStructured,
+    sourceCitations,
+    limitations: allLimitations.length > 0 ? allLimitations : undefined,
+    disclaimer: readString(parsed.disclaimer) || "This briefing is for informational purposes only and does not constitute financial advice.",
     finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const) || "WATCH",
     expectedTimeframe: readString(parsed.expectedTimeframe) || "2-4 weeks",
     followUpChips: readStringArray(parsed.followUpChips),

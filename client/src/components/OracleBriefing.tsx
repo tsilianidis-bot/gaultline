@@ -35,8 +35,28 @@ export interface OracleBriefingData {
 
   // Verdict
   missionRecommendation: string;
+  missionRecommendationStructured?: {
+    verdict: string;
+    timeHorizon: string;
+    rationale: string;
+    decisionPaths: Array<{ scenario: string; response: string }>;
+  };
   finalVerdictAction: string;
   expectedTimeframe: string;
+
+  // Source citations
+  sourceCitations?: Array<{
+    name: string;
+    claim: string;
+    observedAt: string;
+    freshness: "LIVE" | "RECENT" | "STALE" | "ESTIMATED";
+  }>;
+
+  // Engine limitations
+  limitations?: string[];
+
+  // Isolated disclaimer
+  disclaimer?: string;
 
   // Follow-ups
   followUpChips?: string[];
@@ -433,7 +453,63 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
           }}>
             {data.missionRecommendation}
           </div>
+          {/* Decision paths */}
+          {data.missionRecommendationStructured?.decisionPaths && data.missionRecommendationStructured.decisionPaths.length > 0 && (
+            <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.18em", color: "rgba(0,229,255,0.45)", textTransform: "uppercase", marginBottom: "4px" }}>DECISION PATHS</div>
+              {data.missionRecommendationStructured.decisionPaths.map((path, i) => (
+                <div key={i} style={{
+                  display: "flex",
+                  gap: "12px",
+                  padding: "10px 14px",
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: "4px",
+                }}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "rgba(0,229,255,0.6)", textTransform: "uppercase", flexShrink: 0, minWidth: "140px", paddingTop: "2px" }}>{path.scenario}</div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", color: "rgba(226,232,240,0.8)", lineHeight: 1.5, fontWeight: 500 }}>{path.response}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </BriefingSection>
+
+        {/* ── Source Citations ── */}
+        {data.sourceCitations && data.sourceCitations.length > 0 && (
+          <BriefingSection delay={680}>
+            <SectionHeader label="INTELLIGENCE SOURCES" />
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {data.sourceCitations.map((src, i) => {
+                const freshnessColor = src.freshness === "LIVE" ? "#00FF88" : src.freshness === "RECENT" ? "#FFD700" : src.freshness === "STALE" ? "#FF8C00" : "rgba(100,116,139,0.7)";
+                return (
+                  <div key={i} style={{
+                    display: "flex",
+                    gap: "12px",
+                    alignItems: "flex-start",
+                    padding: "8px 12px",
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    borderRadius: "3px",
+                  }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", flexShrink: 0, minWidth: "120px" }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: "rgba(226,232,240,0.7)", textTransform: "uppercase" }}>{src.name}</div>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: freshnessColor, letterSpacing: "0.08em" }}>● {src.freshness}</div>
+                    </div>
+                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", color: "rgba(226,232,240,0.7)", lineHeight: 1.5, fontWeight: 500 }}>{src.claim}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </BriefingSection>
+        )}
+
+        {/* ── Limitations ── */}
+        {data.limitations && data.limitations.length > 0 && (
+          <BriefingSection delay={700}>
+            <SectionHeader label="ENGINE LIMITATIONS" />
+            <BulletList items={data.limitations} color="rgba(255,170,0,0.7)" />
+          </BriefingSection>
+        )}
 
         {/* ── Final Verdict ── */}
         <BriefingSection delay={720}>
@@ -507,6 +583,25 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
                   {chip}
                 </button>
               ))}
+            </div>
+          </BriefingSection>
+        )}
+
+        {/* ── Disclaimer ── */}
+        {data.disclaimer && (
+          <BriefingSection delay={820}>
+            <div style={{
+              padding: "10px 14px",
+              background: "rgba(100,116,139,0.04)",
+              border: "1px solid rgba(100,116,139,0.12)",
+              borderRadius: "3px",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              letterSpacing: "0.08em",
+              color: "rgba(100,116,139,0.55)",
+              lineHeight: 1.6,
+            }}>
+              {data.disclaimer}
             </div>
           </BriefingSection>
         )}

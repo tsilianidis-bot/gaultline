@@ -268,8 +268,12 @@ export default function AshaPanel() {
         riskFactors: response.riskFactors?.length ? response.riskFactors : (response.invalidationTriggers || []),
         invalidationConditions: response.invalidationConditions?.length ? response.invalidationConditions : [],
         missionRecommendation: response.missionRecommendation || response.reply,
+        missionRecommendationStructured: response.missionRecommendationStructured,
         finalVerdictAction: response.finalVerdictAction || "WATCH",
         expectedTimeframe: response.expectedTimeframe || "2-4 weeks",
+        sourceCitations: response.sourceCitations,
+        limitations: response.limitations,
+        disclaimer: response.disclaimer || "This briefing is for informational purposes only and does not constitute financial advice.",
         followUpChips: response.followUpChips?.length ? response.followUpChips : suggestions.slice(0, 3),
       };
 
