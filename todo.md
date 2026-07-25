@@ -4142,3 +4142,17 @@
 - [x] Scanlines opacity reduced in idle state (0.25 → 0.10)
 - [x] Persistent Home button: FAULTLINE logo in AppLayout header navigates to /app/now on click
 - [x] Fix Stripe SDK apiVersion mismatch (2026-06-24.dahlia → 2026-04-22.dahlia)
+
+## Post-Login Blank Screen Fix (Jul 25, 2026 — URGENT)
+- [ ] Diagnose root cause: inspect NOW page component, routing, providers, and production logs
+- [ ] Fix blank screen root cause (route mismatch, null data, provider failure, etc.)
+- [ ] Add route-level error boundaries to all 5 canonical routes
+- [ ] Add fail-safe loading states with timeout (never indefinitely loading)
+- [ ] Add retry/refresh button on data failure
+- [ ] Write vitest covering login → redirect → NOW rendering
+
+## Post-Login Blank Screen Fix (Jul 25, 2026)
+- [x] Fix authGateDone initializes to false for returning users — add !FIRST_TIME guard to skip auth gate immediately
+- [x] Fix ashaBriefingDone initialization race condition — returning users start as done, useEffect re-checks per-user key after user resolves
+- [x] Add dashVisible=false guard when ASHA briefing triggers for returning user to prevent flash of dashboard before ASHA
+- [x] TypeScript: 0 errors after all changes
