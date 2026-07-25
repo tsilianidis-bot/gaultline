@@ -355,7 +355,7 @@ Updated: ${updatedAgo}`;
         position: "sticky", top: 0, zIndex: 10,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 10px ${color}`, animation: "blink-alert 2s ease-in-out infinite" }} />
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 10px ${color}`, animation: "blink-alert 6s ease-in-out infinite" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", letterSpacing: "0.2em", color, textTransform: "uppercase", fontWeight: 600 }}>INTELLIGENCE HUB</span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>— {regime.label}</span>
         </div>
@@ -410,7 +410,7 @@ Updated: ${updatedAgo}`;
           <>
             <div style={{ width: "1px", height: "16px", background: "rgba(255,255,255,0.08)" }} />
             <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-              <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: ACCENT.amber, animation: "blink-alert 1s ease-in-out infinite" }} />
+              <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: ACCENT.amber, animation: "blink-alert 5s ease-in-out infinite" }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: ACCENT.amber, letterSpacing: "0.12em" }}>REGIME CHANGE DETECTED</span>
             </div>
           </>

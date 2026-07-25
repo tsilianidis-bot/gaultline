@@ -4278,3 +4278,16 @@
 - [ ] ProductExperience.tsx — 8-section immersive product launch page
 - [ ] App.tsx gate: fl_product_experience_v1 localStorage key
 - [ ] Animation reduction: play-once entrance, calm idle state
+
+## Session 2 — Jul 25 2026
+- [x] Fix BuildBadge z-index blocking mobile tab bar (was zIndex:9000, now zIndex:40 above tab bar)
+- [x] Add admin role bypass to PremiumGateFull and PremiumBlurOverlay
+- [x] Navigation reconnection — 14 hidden pages across 5 new groups in LeftNavDrawer
+- [x] Add startupPage column to userPreferences table + migration
+- [x] Add getStartupPage/setStartupPage tRPC procedures
+- [x] Add StartupPageCard to UserAccount settings
+- [x] Wire post-welcome redirect to user's preferred startup page (default: /app/now)
+- [x] Build ProductExperience.tsx — 8-section immersive product launch page
+- [x] Wire ProductExperience gate into App.tsx (first-time visitors only, fl_product_experience_v1 key)
+- [x] Reduce all blink-alert animations from 1-2s to 4-6s calm idle
+- [x] Reduce all fl-pulse animations from 1-2s to 4-5s calm idle

@@ -19,6 +19,7 @@ import { DemoProvider, isDemoPath } from './contexts/DemoContext';
 import DemoBanner from './components/DemoBanner';
 import { OnboardingVideoModal } from './components/OnboardingVideoModal';
 import AshaLiveBriefing from './components/AshaLiveBriefing';
+import ProductExperience from './components/ProductExperience';
 import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
 import { trpc } from './lib/trpc';
@@ -243,6 +244,7 @@ function CanonicalDestinationRoutes() {
 const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 // ── Persistent key: cinematic completed at least once (survives sessions) ──
 const CINEMATIC_COMPLETED_KEY = 'fl_cinematic_completed_v1';
+const PRODUCT_EXPERIENCE_KEY = 'fl_product_experience_v1';
 
 function Router() {
   return (
@@ -819,6 +821,20 @@ function App() {
   // First-time visitors: cinematic plays. Returning visitors: skip.
   const [cinematicDone, setCinematicDone] = useState<boolean>(() => !FIRST_TIME);
 
+  // productExperienceDone: true if user has already seen the product experience page.
+  // Only shown to first-time visitors after the cinematic, before auth gate.
+  const [productExperienceDone, setProductExperienceDone] = useState<boolean>(() => {
+    try {
+      if (isDemo) return true;
+      if (!FIRST_TIME) return true; // returning visitors skip it
+      return !!localStorage.getItem(PRODUCT_EXPERIENCE_KEY);
+    } catch { return true; }
+  });
+  const handleProductExperienceComplete = useCallback(() => {
+    try { localStorage.setItem(PRODUCT_EXPERIENCE_KEY, '1'); } catch {}
+    setProductExperienceDone(true);
+  }, []);
+
   // returningUnauth: returning visitor who has seen cinematic but is not logged in
   // → show styled sign-in page instead of cinematic
   const [returningUnauth] = useState<boolean>(() => {
@@ -1008,20 +1024,28 @@ function App() {
               <CinematicIntro onComplete={handleCinematicComplete} />
             )}
 
+            {/* ── RENDER GATE 1.5: Product Experience ──────────────────────────
+                 First-time visitors only. Shown after cinematic, before auth gate.
+                 Introduces the platform before ASHA onboarding begins.
+                 Returning visitors skip this entirely. */}
+            {cinematicDone && !productExperienceDone && (
+              <ProductExperience onEnter={handleProductExperienceComplete} />
+            )}
+
             {/* ── RENDER GATE 2: Auth gate ───────────────────────────────────────
                  Case A: After cinematic (first-time user) — show if not authenticated.
                  Case B: Returning unauthenticated user — show directly (skip cinematic).
                  Cinematic-styled sign-in — never a white page or redirect. */}
             {/* cinematicDone is already true for returning visitors, so one
                 mutually exclusive gate covers both onboarding paths. */}
-            {cinematicDone && !authGateDone && (
+            {cinematicDone && productExperienceDone && !authGateDone && (
               <CinematicAuthGate onAuthenticated={handleAuthGateComplete} />
             )}
 
             {/* ── RENDER GATE 3: ASHA Live Briefing ─────────────────────────
                  Only mounts after cinematic + auth are both done.
                  Shown once per session. ASHA greets by confirmed name. */}
-            {cinematicDone && authGateDone && !ashaBriefingDone && (
+            {cinematicDone && productExperienceDone && authGateDone && !ashaBriefingDone && (
               <AshaLiveBriefing onContinue={handleAshaBriefingComplete} />
             )}
 

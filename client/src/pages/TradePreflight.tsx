@@ -249,7 +249,7 @@ export default function TradePreflight() {
           {/* Pressure + regime row */}
           <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "14px", flexWrap: "wrap" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: "blink-alert 2s ease-in-out infinite" }} />
+              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: "blink-alert 6s ease-in-out infinite" }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.7)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Equity Pressure Index</span>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color, textShadow: `0 0 14px ${color}70` }}>{Math.round(output.overall.score * 10)}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.5)" }}>/100</span>

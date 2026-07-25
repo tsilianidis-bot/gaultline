@@ -35,7 +35,7 @@ export default function UniversalTickerBar() {
     }}>
       {/* Active ticker label */}
       <div style={{ display: "flex", alignItems: "center", gap: "6px", marginRight: "12px", flexShrink: 0 }}>
-        <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: accent, boxShadow: `0 0 6px ${accent}`, animation: "blink-alert 2s ease-in-out infinite" }} />
+        <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: accent, boxShadow: `0 0 6px ${accent}`, animation: "blink-alert 6s ease-in-out infinite" }} />
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: `${accent}80`, textTransform: "uppercase" }}>ACTIVE</span>
         <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "14px", color: accent, letterSpacing: "0.06em", textShadow: `0 0 10px ${accent}60` }}>{current.ticker}</span>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>{current.name}</span>

@@ -635,7 +635,7 @@ function CorrelationRiskMap() {
         borderRadius: '4px',
       }}>
         <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF2D55', boxShadow: '0 0 6px rgba(255,45,85,0.8)', flexShrink: 0, marginTop: '3px', animation: 'blink-alert 1.2s ease-in-out infinite' }} />
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF2D55', boxShadow: '0 0 6px rgba(255,45,85,0.8)', flexShrink: 0, marginTop: '3px', animation: 'blink-alert 5s ease-in-out infinite' }} />
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.5 }}>
             <strong style={{ color: '#FF2D55' }}>Stress contagion detected</strong> across Credit ↔ Liquidity ↔ Bonds ↔ Equities. Correlation breakdown between Equities and Bonds (traditional hedge) signals late-cycle regime shift. Cross-asset diversification effectiveness reduced.
           </p>

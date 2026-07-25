@@ -64,7 +64,7 @@ function PressureHero() {
                 width: 6, height: 6, borderRadius: "50%",
                 background: isLive ? "#00FF88" : "#FF9500",
                 boxShadow: `0 0 8px ${isLive ? "#00FF88" : "#FF9500"}`,
-                animation: "blink-alert 2s ease-in-out infinite",
+                animation: "blink-alert 6s ease-in-out infinite",
               }}
             />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.25em", color: "rgba(100,116,139,0.7)" }}>
@@ -225,7 +225,7 @@ function TopRiskCard() {
       }}
     >
       <div className="flex items-center gap-2 mb-3">
-        <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: "blink-alert 2s ease-in-out infinite" }} />
+        <div style={{ width: 6, height: 6, borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: "blink-alert 6s ease-in-out infinite" }} />
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.3em", color: "rgba(100,116,139,0.6)" }}>
           TOP MARKET RISK
         </span>

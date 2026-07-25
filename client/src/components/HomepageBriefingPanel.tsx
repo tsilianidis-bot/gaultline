@@ -97,7 +97,7 @@ export default function HomepageBriefingPanel() {
         animation: "cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) both",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FFD700", animation: "blink-alert 1.5s ease-in-out infinite" }} />
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FFD700", animation: "blink-alert 5s ease-in-out infinite" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FFD700", letterSpacing: "0.18em", textTransform: "uppercase" }}>
             Generating Market Briefing…
           </span>
@@ -127,7 +127,7 @@ export default function HomepageBriefingPanel() {
       }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px", flexWrap: "wrap", gap: "6px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FFD700", boxShadow: "0 0 8px #FFD700", animation: "blink-alert 2s ease-in-out infinite" }} />
+            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FFD700", boxShadow: "0 0 8px #FFD700", animation: "blink-alert 6s ease-in-out infinite" }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#FFD700", letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 600 }}>
               Today's Market Story
             </span>

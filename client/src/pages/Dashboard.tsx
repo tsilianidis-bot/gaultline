@@ -663,7 +663,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '20px' }}>
             <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, transparent, ${color}50)` }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '5px 16px', background: `${color}14`, border: `1px solid ${color}50`, borderRadius: '20px', boxShadow: `0 0 20px ${color}15` }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 10px ${color}`, animation: 'blink-alert 2s ease-in-out infinite' }} />
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 10px ${color}`, animation: 'blink-alert 6s ease-in-out infinite' }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 600 }}>{regime.label}</span>
             </div>
             <div style={{ height: '1px', flex: 1, background: `linear-gradient(90deg, ${color}50, transparent)` }} />
@@ -1027,7 +1027,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00E5FF', boxShadow: '0 0 8px #00E5FF', animation: 'blink-alert 2s ease-in-out infinite' }} />
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00E5FF', boxShadow: '0 0 8px #00E5FF', animation: 'blink-alert 6s ease-in-out infinite' }} />
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00E5FF', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Pre-Flight</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,212,255,0.55)', border: '1px solid rgba(0,229,255,0.45)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 1 — MARKET AWARENESS</span>
               </div>
@@ -1049,7 +1049,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFAA00', boxShadow: '0 0 8px #FFAA00', animation: 'blink-alert 2s ease-in-out infinite' }} />
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFAA00', boxShadow: '0 0 8px #FFAA00', animation: 'blink-alert 6s ease-in-out infinite' }} />
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#FFAA00', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Decision Engine</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,170,0,0.55)', border: '1px solid rgba(255,170,0,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>STEP 2 — DECISION ENGINE</span>
               </div>
@@ -1073,7 +1073,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF88', boxShadow: '0 0 8px #00FF88', animation: 'blink-alert 2s ease-in-out infinite' }} />
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00FF88', boxShadow: '0 0 8px #00FF88', animation: 'blink-alert 6s ease-in-out infinite' }} />
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#00FF88', textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Insider Intelligence™</span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(0,255,136,0.55)', border: '1px solid rgba(0,255,136,0.3)', padding: '1px 6px', borderRadius: '3px', letterSpacing: '0.1em' }}>SMART MONEY</span>
               </div>
@@ -1096,7 +1096,7 @@ export default function Dashboard() {
           {/* Header row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, animation: 'blink-alert 2s ease-in-out infinite' }} />
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, animation: 'blink-alert 6s ease-in-out infinite' }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: color, textTransform: 'uppercase', letterSpacing: '0.18em', fontWeight: 600 }}>Current Regime</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1358,7 +1358,7 @@ export default function Dashboard() {
         {aiDomain && (
           <div className="intel-module" style={{ padding: '16px', marginBottom: '10px', borderLeft: '3px solid #C084FC', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 580ms both' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#C084FC', boxShadow: '0 0 8px #C084FC', animation: 'blink-alert 2s ease-in-out infinite' }} />
+              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#C084FC', boxShadow: '0 0 8px #C084FC', animation: 'blink-alert 6s ease-in-out infinite' }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#C084FC', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Speculative Concentration Risk</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '7px' }}>

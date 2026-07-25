@@ -474,7 +474,7 @@ function OpportunitiesInner() {
           </button>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FACC15", boxShadow: "0 0 8px #FACC15", animation: "blink-alert 2s ease-in-out infinite" }} />
+              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FACC15", boxShadow: "0 0 8px #FACC15", animation: "blink-alert 6s ease-in-out infinite" }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: "#FACC15" }}>
                 OPPORTUNITY RADAR
               </span>

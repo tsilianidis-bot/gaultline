@@ -1175,7 +1175,7 @@ function SocialIntelligenceInner() {
                 width: 7, height: 7, borderRadius: "50%",
                 background: data ? "#00FF88" : "#FF9500",
                 boxShadow: data ? "0 0 6px #00FF88" : "0 0 6px #FF9500",
-                animation: "fl-pulse 2s infinite",
+                animation: "fl-pulse 5s infinite",
               }} />
               <span style={{ fontSize: 11, color: "var(--fl-text-secondary)", fontFamily: "monospace" }}>
                 {data ? "LIVE" : isLoading ? "LOADING" : "OFFLINE"}

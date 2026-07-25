@@ -191,7 +191,7 @@ export default function AIWatch() {
         animation: 'fade-slide-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) 120ms both',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF2D55', boxShadow: '0 0 8px rgba(255,45,85,0.8)', animation: 'blink-alert 1.2s ease-in-out infinite' }} />
+          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF2D55', boxShadow: '0 0 8px rgba(255,45,85,0.8)', animation: 'blink-alert 5s ease-in-out infinite' }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF2D55', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
             AI Bubble Risk: CRITICAL — 8.6/10
           </span>

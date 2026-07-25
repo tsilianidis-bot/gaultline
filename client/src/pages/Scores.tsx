@@ -94,7 +94,7 @@ function PressureLevel({ riskLevel, score }: { riskLevel: DomainScore['riskLevel
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, animation: riskLevel !== 'low' ? 'blink-alert 2s ease-in-out infinite' : 'none' }} />
+      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, animation: riskLevel !== 'low' ? 'blink-alert 6s ease-in-out infinite' : 'none' }} />
       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color, letterSpacing: '0.1em' }}>{config.label}</span>
     </div>
   );
@@ -210,7 +210,7 @@ export default function Scores() {
         {(criticalCount > 0 || highCount > 0) && (
           <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             {criticalCount > 0 && (
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#FF2D55', background: 'rgba(255,45,85,0.08)', border: '1px solid rgba(255,45,85,0.25)', borderRadius: '2px', padding: '3px 8px', animation: 'blink-alert 2s ease-in-out infinite' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#FF2D55', background: 'rgba(255,45,85,0.08)', border: '1px solid rgba(255,45,85,0.25)', borderRadius: '2px', padding: '3px 8px', animation: 'blink-alert 6s ease-in-out infinite' }}>
                 {criticalCount} CRITICAL DOMAIN{criticalCount > 1 ? 'S' : ''}
               </div>
             )}

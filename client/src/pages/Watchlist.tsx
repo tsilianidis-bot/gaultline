@@ -278,7 +278,7 @@ function SummaryBar({ items, liveValues }: { items: WatchlistItem[]; liveValues:
       {critical > 0 && (
         <div style={{ flex: 1, minWidth: '80px' }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#FF2D55', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '4px' }}>Critical</div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#FF2D55', lineHeight: 1, animation: 'blink-alert 2s ease-in-out infinite' }}>{critical}</div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#FF2D55', lineHeight: 1, animation: 'blink-alert 6s ease-in-out infinite' }}>{critical}</div>
         </div>
       )}
       {high > 0 && (

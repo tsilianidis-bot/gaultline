@@ -205,10 +205,10 @@
     50%       { opacity: 0.7; transform: scale(1.15); }
   }
 
-  /* Blink alert */
+  /* Blink alert — slowed to calm ambient (was 0.3 opacity flash, now gentle fade) */
   @keyframes blink-alert {
     0%, 100% { opacity: 1; }
-    50%       { opacity: 0.3; }
+    50%       { opacity: 0.55; }
   }
 
   /* Heatmap pulse */
@@ -262,10 +262,10 @@
     100% { opacity: 0; }
   }
 
-  /* Scan line sweep */
+  /* fl-pulse — gentle ambient breathe */
   @keyframes fl-pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    50% { opacity: 0.6; }
   }
   @keyframes fl-spin {
     from { transform: rotate(0deg); }

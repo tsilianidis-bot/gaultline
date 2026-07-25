@@ -501,7 +501,7 @@ export default function DailyReport() {
               <Zap size={10} style={{ color: '#00D4FF' }} />
               AI Macro Briefing
               {showBriefing && !typewriterDone && (
-                <span style={{ color: '#00FF88', animation: 'blink-alert 0.8s ease-in-out infinite' }}>▋</span>
+                <span style={{ color: '#00FF88', animation: 'blink-alert 4s ease-in-out infinite' }}>▋</span>
               )}
               {showBriefing && typewriterDone && (
                 <span style={{ color: '#00FF88', fontSize: '7px', background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '2px', padding: '1px 5px' }}>COMPLETE</span>

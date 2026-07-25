@@ -340,7 +340,7 @@ function ExecutionSequence({ currentStep }: { currentStep: number }) {
             <span style={{ ...MONO_SM, color: "#00FF88", marginLeft: "auto" }}>✓</span>
           )}
           {i === currentStep && (
-            <span style={{ ...MONO_SM, color: ACCENT, marginLeft: "auto", animation: "fl-pulse 1s infinite" }}>●</span>
+            <span style={{ ...MONO_SM, color: ACCENT, marginLeft: "auto", animation: "fl-pulse 4s infinite" }}>●</span>
           )}
         </div>
       ))}

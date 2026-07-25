@@ -848,7 +848,7 @@ function CryptoSignalsInner() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: regimeColor, boxShadow: `0 0 8px ${regimeColor}`, animation: "fl-pulse 2s ease-in-out infinite" }} />
+              <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: regimeColor, boxShadow: `0 0 8px ${regimeColor}`, animation: "fl-pulse 5s ease-in-out infinite" }} />
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "13px", color: regimeColor, letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 CRYPTO SIGNALS — {regimeCtx.headline}
               </span>
@@ -923,7 +923,7 @@ function CryptoSignalsInner() {
 
         {/* Data freshness */}
         <div style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,0.04)", display: "flex", alignItems: "center", gap: "6px" }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: screenerQuery.isFetching ? "#FFD700" : "#00D4FF", boxShadow: `0 0 6px ${screenerQuery.isFetching ? "#FFD700" : "#00D4FF"}`, animation: "fl-pulse 2s ease-in-out infinite" }} />
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: screenerQuery.isFetching ? "#FFD700" : "#00D4FF", boxShadow: `0 0 6px ${screenerQuery.isFetching ? "#FFD700" : "#00D4FF"}`, animation: "fl-pulse 5s ease-in-out infinite" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.1em", color: screenerQuery.isFetching ? "#FFD700" : "#00D4FF" }}>
             {screenerQuery.isFetching ? "REFRESHING..." : "COINGECKO LIVE"}
           </span>

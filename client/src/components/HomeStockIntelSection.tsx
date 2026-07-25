@@ -272,7 +272,7 @@ function MacroEnvPanel() {
       marginBottom: '12px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-        <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00D4FF', boxShadow: '0 0 8px rgba(0,212,255,0.8)', animation: 'blink-alert 2s ease-in-out infinite' }} />
+        <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00D4FF', boxShadow: '0 0 8px rgba(0,212,255,0.8)', animation: 'blink-alert 6s ease-in-out infinite' }} />
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Macro Regime Context</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>

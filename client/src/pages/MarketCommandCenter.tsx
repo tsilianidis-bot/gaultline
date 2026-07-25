@@ -491,7 +491,7 @@ function MarketCommandCenterInner() {
       }}>
         {/* Left: Title */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 10px ${color}`, animation: "blink-alert 2s ease-in-out infinite" }} />
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 10px ${color}`, animation: "blink-alert 6s ease-in-out infinite" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", letterSpacing: "0.2em", color, textTransform: "uppercase", fontWeight: 600 }}>MARKET COMMAND CENTER</span>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.1em" }}>— {regime.label}</span>
         </div>

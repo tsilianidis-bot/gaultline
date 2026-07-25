@@ -64,7 +64,7 @@ function FreshnessIndicator({ minutes }: { minutes: number }) {
   const label = minutes <= 1 ? "LIVE" : minutes <= 5 ? `${minutes}m ago` : minutes <= 60 ? `${minutes}m ago` : `${Math.floor(minutes / 60)}h ago`;
   return (
     <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-      <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: color, display: "inline-block", animation: minutes <= 5 ? "fl-pulse 2s ease-in-out infinite" : "none" }} />
+      <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: color, display: "inline-block", animation: minutes <= 5 ? "fl-pulse 5s ease-in-out infinite" : "none" }} />
       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color, letterSpacing: "0.08em" }}>{label}</span>
     </span>
   );

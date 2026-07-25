@@ -674,7 +674,7 @@ export default function SituationRoom() {
           <div style={{ display: "flex", alignItems: "center", gap: "18px", marginBottom: "16px", flexWrap: "wrap" }}>
             {/* Market Status badge */}
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: msColor, boxShadow: `0 0 10px ${msColor}`, animation: "blink-alert 2s ease-in-out infinite" }} />
+              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: msColor, boxShadow: `0 0 10px ${msColor}`, animation: "blink-alert 6s ease-in-out infinite" }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em" }}>Status</span>
               <div style={{ padding: "3px 12px", background: `${msColor}14`, border: `1px solid ${msColor}40`, borderRadius: "3px" }}>
                 <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: msColor, letterSpacing: "0.08em" }}>{clientMarketStatus}</span>

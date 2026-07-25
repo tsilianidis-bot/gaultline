@@ -99,7 +99,7 @@ function AlertCard({
             width: '8px', height: '8px', borderRadius: '50%',
             background: sColor,
             boxShadow: `0 0 ${!alert.acknowledged && (alert.severity === 'critical' || alert.severity === 'high') ? '10px' : '4px'} ${sColor}80`,
-            animation: !alert.acknowledged && alert.severity === 'critical' ? 'blink-alert 1.2s ease-in-out infinite' : 'none',
+            animation: !alert.acknowledged && alert.severity === 'critical' ? 'blink-alert 5s ease-in-out infinite' : 'none',
           }} />
         </div>
 

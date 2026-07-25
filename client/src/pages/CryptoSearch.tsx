@@ -250,7 +250,7 @@ function SystemicRiskPanel({ risk }: { risk: CryptoSystemicRisk }) {
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#64748B", letterSpacing: "0.15em" }}>CRYPTO SYSTEMIC RISK</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "3px 10px", background: `${color}14`, border: `1px solid ${color}40`, borderRadius: "12px" }}>
-            <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: "blink-alert 2s ease-in-out infinite" }} />
+            <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: "blink-alert 6s ease-in-out infinite" }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color, letterSpacing: "0.12em" }}>{risk.regime}</span>
           </div>
         </div>

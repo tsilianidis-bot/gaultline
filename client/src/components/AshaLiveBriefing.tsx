@@ -391,7 +391,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
               borderRadius: "50%",
               background: pressureColor,
               boxShadow: `0 0 8px ${pressureColor}`,
-              animation: idleCalm ? "blink-alert 5s ease-in-out infinite" : "blink-alert 2s ease-in-out infinite",
+              animation: idleCalm ? "blink-alert 5s ease-in-out infinite" : "blink-alert 6s ease-in-out infinite",
               transition: "animation-duration 2s ease",
             }}
           />

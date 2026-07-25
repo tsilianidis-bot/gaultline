@@ -1184,7 +1184,7 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
         <div style={{
           width: '6px', height: '6px', borderRadius: '50%',
           background: '#FFD700',
-          animation: 'fl-pulse 1s ease-in-out infinite',
+          animation: 'fl-pulse 4s ease-in-out infinite',
         }} />
         FETCHING MARKET DATA...
       </div>
@@ -1197,7 +1197,7 @@ function ApiHealthBadge({ source, tradeDate, lastUpdated, isLoading }: {
 
   const color = isLive ? '#00D4FF' : isStale ? '#FFD700' : '#FF2D55';
   const label = isLive ? 'YAHOO FINANCE LIVE' : isStale ? 'STALE CACHE' : 'FALLBACK MODE';
-  const dot = isLive ? 'fl-pulse 2s ease-in-out infinite' : 'none';
+  const dot = isLive ? 'fl-pulse 5s ease-in-out infinite' : 'none';
 
   return (
     <div style={{
@@ -1688,7 +1688,7 @@ function SignalsInner() {
                 width: '6px', height: '6px', borderRadius: '50%',
                 background: regimeColor,
                 boxShadow: `0 0 8px ${regimeColor}`,
-                animation: 'fl-pulse 2s ease-in-out infinite',
+                animation: 'fl-pulse 5s ease-in-out infinite',
               }} />
               <span style={{
                 fontFamily: "'Rajdhani', sans-serif",
@@ -2499,7 +2499,7 @@ function AsymmetricOpportunitiesView({
               <div style={{
                 width: '6px', height: '6px', borderRadius: '50%',
                 background: '#A855F7', boxShadow: '0 0 8px #A855F7',
-                animation: 'fl-pulse 2s ease-in-out infinite',
+                animation: 'fl-pulse 5s ease-in-out infinite',
               }} />
               <span style={{
                 fontFamily: "'Rajdhani', sans-serif",

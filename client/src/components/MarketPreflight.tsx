@@ -420,7 +420,7 @@ export function AwarenessDashboardCard({ onOpen }: { onOpen: () => void }) {
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: score >= 80 ? "blink-alert 2s ease-in-out infinite" : undefined }} />
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, boxShadow: `0 0 8px ${color}`, animation: score >= 80 ? "blink-alert 6s ease-in-out infinite" : undefined }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color, textTransform: "uppercase", letterSpacing: "0.18em", fontWeight: 600 }}>Complete Market Awareness™</span>
         </div>
         <div style={{ padding: "2px 8px", background: `${color}15`, border: `1px solid ${color}35`, borderRadius: "3px" }}>

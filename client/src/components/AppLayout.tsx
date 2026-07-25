@@ -291,7 +291,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 width: '6px', height: '6px', borderRadius: '50%',
                 background: isLoading ? '#4B5563' : isLive ? '#00FF88' : regime.color,
                 boxShadow: isLoading ? 'none' : `0 0 8px ${isLive ? '#00FF88' : regime.color}cc`,
-                animation: isLoading ? 'none' : 'pulse-gold 2s ease-in-out infinite',
+                animation: isLoading ? 'none' : 'pulse-gold 5s ease-in-out infinite',
               }} />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: isLoading ? '#4B5563' : isLive ? '#00FF88' : regime.color, letterSpacing: '0.1em' }}>
                 {isLoading ? 'LOADING' : isRefreshing ? 'UPDATING' : isLive ? 'LIVE' : 'SIM'}
@@ -666,7 +666,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     background: '#FF2D55', color: '#fff', borderRadius: '50%',
                     fontSize: '11px', fontFamily: "'IBM Plex Mono', monospace",
                     width: '13px', height: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 0 8px rgba(255,45,85,0.8)', animation: 'blink-alert 2s ease-in-out infinite',
+                    boxShadow: '0 0 8px rgba(255,45,85,0.8)', animation: 'blink-alert 6s ease-in-out infinite',
                   }}>{breachCount}</span>
                 )}
               </div>

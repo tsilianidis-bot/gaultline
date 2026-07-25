@@ -247,7 +247,7 @@ function PressureSlider({
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
         <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151' }}>{config.min}{config.unit}</span>
         {isStressed && (
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FF2D55', background: 'rgba(255,45,85,0.1)', border: '1px solid rgba(255,45,85,0.25)', borderRadius: '2px', padding: '0 4px', animation: 'blink-alert 1.2s ease-in-out infinite' }}>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#FF2D55', background: 'rgba(255,45,85,0.1)', border: '1px solid rgba(255,45,85,0.25)', borderRadius: '2px', padding: '0 4px', animation: 'blink-alert 5s ease-in-out infinite' }}>
             ⚠ STRESS ZONE
           </span>
         )}

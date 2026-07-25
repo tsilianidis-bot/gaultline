@@ -448,7 +448,7 @@ function InsiderIntelligenceInner() {
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "10px" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: sc, boxShadow: `0 0 8px ${sc}`, animation: "blink-alert 2s ease-in-out infinite" }} />
+                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: sc, boxShadow: `0 0 8px ${sc}`, animation: "blink-alert 6s ease-in-out infinite" }} />
                       <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#E2E8F0" }}>{alert.ticker}</span>
                       <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.55)" }}>{alert.company}</span>
                     </div>
@@ -576,7 +576,7 @@ function InsiderIntelligenceInner() {
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {radar.clusterAlerts.filter(a => a.strength !== "MODERATE").map((alert, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.18)", borderRadius: "4px" }}>
-                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00FF88", boxShadow: "0 0 8px #00FF88", flexShrink: 0, animation: "blink-alert 2s ease-in-out infinite" }} />
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#00FF88", boxShadow: "0 0 8px #00FF88", flexShrink: 0, animation: "blink-alert 6s ease-in-out infinite" }} />
                   <div style={{ flex: 1 }}>
                     <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{alert.ticker}</span>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B", marginLeft: "8px" }}>Cluster Buy Detected — {alert.insiderCount} insiders, {fmtDollar(alert.totalCapital)}</span>
@@ -588,7 +588,7 @@ function InsiderIntelligenceInner() {
               ))}
               {radar.topSellingAlerts.filter(a => a.classification === "Aggressive" || a.classification === "Unusual").map((alert, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px", background: "rgba(255,45,85,0.04)", border: "1px solid rgba(255,45,85,0.18)", borderRadius: "4px" }}>
-                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FF2D55", boxShadow: "0 0 8px #FF2D55", flexShrink: 0, animation: "blink-alert 2s ease-in-out infinite" }} />
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#FF2D55", boxShadow: "0 0 8px #FF2D55", flexShrink: 0, animation: "blink-alert 6s ease-in-out infinite" }} />
                   <div style={{ flex: 1 }}>
                     <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "14px", color: "#E2E8F0" }}>{alert.ticker}</span>
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B", marginLeft: "8px" }}>
