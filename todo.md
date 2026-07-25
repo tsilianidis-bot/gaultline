@@ -4133,3 +4133,12 @@
 
 ## ASHA Welcome Flow Fix (Jul 24, 2026)
 - [x] Fix ASHA Oracle Welcome auto-trigger after login: remove cinematic bypass, make briefing completion durable across OAuth/session transitions, add intentional loading state, and add fallback redirect to dashboard
+
+## Oracle Welcome Screen v3 (Jul 25, 2026)
+- [x] Calm idle state: entrance animation plays once, then gentle ambient motion after 3-5s (no repetitive flashing)
+- [x] Conclusion-first layout: metrics strip (State/Pressure/Bull/Crash/Analog) appears BEFORE greeting paragraph
+- [x] Prominent CTA: solid filled primary button for "Enter Intelligence Dashboard" (was ghost text)
+- [x] Seismic wave slows to 50% speed in idle state
+- [x] Scanlines opacity reduced in idle state (0.25 → 0.10)
+- [x] Persistent Home button: FAULTLINE logo in AppLayout header navigates to /app/now on click
+- [x] Fix Stripe SDK apiVersion mismatch (2026-06-24.dahlia → 2026-04-22.dahlia)

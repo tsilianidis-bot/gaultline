@@ -1,17 +1,14 @@
 /* ============================================================
-   ASHA LIVE BRIEFING
-   The first screen after "Enter FAULTLINE."
-   The conversation simply continued.
-
-   Layout:
-   1. ASHA orb — large, listening, alive
-   2. Personalized greeting — typewriter, 4 sentences
-   3. Live market state — pressure + regime + biggest change + analog
-   4. Four intelligent action buttons
-   5. Seismic wave — full-bleed, pressure-reactive
-
-   Design principle: this is not a dashboard.
-   This is ASHA speaking directly to the user.
+   ASHA LIVE BRIEFING  v3  — Oracle Welcome Screen
+   Refinements (Jul 2026):
+   1. Calm idle state: entrance animation plays once, then gentle
+      ambient motion after 3-5s (no repetitive flashing)
+   2. Conclusion-first: metrics strip (State/Pressure/Bull/Crash/Analog)
+      appears BEFORE the greeting paragraph
+   3. Prominent CTA: solid filled primary button for "Enter Dashboard"
+   4. Seismic wave slows to 50% speed in idle state
+   5. Scanlines opacity reduced in idle state
+   Design principle: calm intelligence, not constant stimulation.
    ============================================================ */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
@@ -23,12 +20,15 @@ import type { AshaRegimeState } from "@/components/AshaOrb";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 
 // ── Inline SeismicWave (canvas-based animated waveform) ───────
-function SeismicWave({ color, score }: { color: string; score: number }) {
+// idleCalm: slows animation speed to 50% for ambient idle state
+function SeismicWave({ color, score, idleCalm }: { color: string; score: number; idleCalm: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const idleCalmRef = useRef(idleCalm);
+  useEffect(() => { idleCalmRef.current = idleCalm; }, [idleCalm]);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
     let t = 0;
     const amplitude = 10 + score * 3;
@@ -38,32 +38,73 @@ function SeismicWave({ color, score }: { color: string; score: number }) {
     let animId: number;
     canvas.width = canvas.offsetWidth || 400;
     canvas.height = canvas.offsetHeight || 52;
-    const ro = new ResizeObserver(() => { canvas.width = canvas.offsetWidth || 400; canvas.height = canvas.offsetHeight || 52; });
+    const ro = new ResizeObserver(() => {
+      canvas.width = canvas.offsetWidth || 400;
+      canvas.height = canvas.offsetHeight || 52;
+    });
     ro.observe(canvas);
     const draw = () => {
-      const w = canvas.width; const h = canvas.height;
+      const w = canvas.width;
+      const h = canvas.height;
+      const speed = idleCalmRef.current ? 0.019 : 0.038;
       ctx.clearRect(0, 0, w, h);
-      ctx.beginPath(); ctx.moveTo(0, h / 2);
-      for (let x = 0; x < w; x++) { const y = h / 2 + Math.sin(x * freq1 + t) * amplitude * Math.sin(x * 0.007 + t * 0.25) * 1.6; ctx.lineTo(x, y); }
-      ctx.strokeStyle = color + '18'; ctx.lineWidth = 10; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, h / 2);
-      for (let x = 0; x < w; x++) { const y = h / 2 + Math.sin(x * freq2 + t * 0.85) * (amplitude * 0.7) * Math.sin(x * 0.01 + t * 0.4); ctx.lineTo(x, y); }
-      ctx.strokeStyle = color + '28'; ctx.lineWidth = 5; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, h / 2);
-      for (let x = 0; x < w; x++) { const y = h / 2 + Math.sin(x * freq1 + t) * amplitude * Math.sin(x * 0.007 + t * 0.25); ctx.lineTo(x, y); }
-      ctx.strokeStyle = color + 'D0'; ctx.lineWidth = 1.8; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, h / 2);
-      for (let x = 0; x < w; x++) { const y = h / 2 + Math.sin(x * freq3 + t * 1.3) * (amplitude * 0.25); ctx.lineTo(x, y); }
-      ctx.strokeStyle = color + '50'; ctx.lineWidth = 0.8; ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, h / 2); ctx.lineTo(w, h / 2);
-      ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1; ctx.stroke();
-      t += 0.038;
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x * freq1 + t) * amplitude * Math.sin(x * 0.007 + t * 0.25) * 1.6;
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color + "18";
+      ctx.lineWidth = 10;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x * freq2 + t * 0.85) * (amplitude * 0.7) * Math.sin(x * 0.01 + t * 0.4);
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color + "28";
+      ctx.lineWidth = 5;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x * freq1 + t) * amplitude * Math.sin(x * 0.007 + t * 0.25);
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color + "D0";
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x * freq3 + t * 1.3) * (amplitude * 0.25);
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = color + "50";
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, h / 2);
+      ctx.lineTo(w, h / 2);
+      ctx.strokeStyle = "rgba(255,255,255,0.14)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      t += speed;
       animId = requestAnimationFrame(draw);
     };
     draw();
-    return () => { cancelAnimationFrame(animId); ro.disconnect(); };
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+    };
   }, [color, score]);
-  return <canvas ref={canvasRef} style={{ width: '100%', height: '52px', display: 'block', opacity: 0.9 }} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ width: "100%", height: "52px", display: "block", opacity: 0.9 }}
+    />
+  );
 }
 
 interface AshaLiveBriefingProps {
@@ -100,7 +141,6 @@ function getPressureColor(score: number): string {
   if (score >= 4) return "#FFD700";
   return "#00FF99";
 }
-
 function getPressureLabel(score: number): string {
   if (score >= 7) return "CRITICAL";
   if (score >= 5.5) return "ELEVATED";
@@ -113,13 +153,11 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
   const { output, isLoading } = useEngine();
   const { user } = useAuth();
   const { overall, regime, domains, analogs, narrative } = output;
-
   const [greeting, setGreeting] = useState("");
   const [greetingReady, setGreetingReady] = useState(false);
   const [actionsVisible, setActionsVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [idleCalm, setIdleCalm] = useState(false);
-
   const color = regime.color;
   const ashaRegimeState: AshaRegimeState =
     overall.score >= 7 ? "critical" : overall.score >= 4.5 ? "rising" : "calm";
@@ -129,7 +167,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
   // Top changed domain
   const topChange = [...domains].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0];
   const topChangeDir = topChange?.delta > 0 ? "increasing" : "decreasing";
-  const topChangeLabel = topChange?.label?.split(" ").slice(0, 2).join(" ") ?? "—";
+  const topChangeLabel = topChange?.label?.split(" ").slice(0, 2).join(" ") ?? "\u2014";
 
   // Analog
   const analog = analogs[0];
@@ -139,7 +177,6 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
 
   // Generate greeting via ASHA engine
   const greetingMutation = trpc.asha.dailyGreeting.useMutation();
-
   useEffect(() => {
     if (isLoading || greetingReady) return;
     const keyDrivers = domains
@@ -164,7 +201,6 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           setGreetingReady(true);
         },
         onError: () => {
-          // Fallback greeting
           const fallback = `Welcome back${firstName !== "there" ? `, ${firstName}` : ""}. I have been monitoring the markets while you were away. Current systemic pressure is ${pressureLabel.toLowerCase()}. ${topChange ? `The most significant change today is ${topChangeDir} ${topChangeLabel.toLowerCase()}.` : ""}${analog ? ` Historical conditions continue to resemble ${analog.era}.` : ""} Would you like today's complete briefing?`;
           setGreeting(fallback);
           setGreetingReady(true);
@@ -180,7 +216,6 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
     20,
     greetingReady
   );
-
   useEffect(() => {
     if (greetingDone) {
       const t = setTimeout(() => setActionsVisible(true), 300);
@@ -188,10 +223,11 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
     }
   }, [greetingDone]);
 
-  // After greeting + 4s idle, enter calm state (slow pulse)
+  // After actions appear + 3.5s, enter calm idle state
+  // Entrance animation plays once, then transitions to gentle ambient motion
   useEffect(() => {
     if (!actionsVisible) return;
-    const t = setTimeout(() => setIdleCalm(true), 4000);
+    const t = setTimeout(() => setIdleCalm(true), 3500);
     return () => clearTimeout(t);
   }, [actionsVisible]);
 
@@ -218,28 +254,28 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
     {
       label: "Explain Today's Market",
       sub: "Full synthesis across all 10 engines",
-      icon: "◈",
+      icon: "\u25c8",
       color: color,
       action: () => handleAction("/app/discover", "Explain today's market conditions"),
     },
     {
       label: "What Changed Overnight?",
       sub: "Key shifts since your last session",
-      icon: "◉",
+      icon: "\u25c9",
       color: "#00FF88",
       action: () => handleAction("/app/discover", "What changed in the market overnight?"),
     },
     {
       label: "Show the Seismograph",
       sub: "Live pressure across all 10 engines",
-      icon: "⊕",
+      icon: "\u2295",
       color: "#FFD700",
       action: () => handleAction("/app/seismograph"),
     },
     {
       label: "Search Any Stock or Crypto",
       sub: "ASHA analyzes any symbol instantly",
-      icon: "◎",
+      icon: "\u25ce",
       color: "#B388FF",
       action: () => handleAction("/app/symbol-intelligence"),
     },
@@ -260,7 +296,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
         animation: "asha-briefing-in 0.6s cubic-bezier(0.23,1,0.32,1) both",
       }}
     >
-      {/* Regime ambient glow */}
+      {/* Regime ambient glow — dims in idle state */}
       <div
         style={{
           position: "fixed",
@@ -271,10 +307,11 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           height: "500px",
           background: `radial-gradient(ellipse at center, ${color}18 0%, ${color}06 45%, transparent 70%)`,
           pointerEvents: "none",
-          transition: "background 2s ease",
+          opacity: idleCalm ? 0.5 : 1,
+          transition: "opacity 2s ease",
         }}
       />
-      {/* Scanlines */}
+      {/* Scanlines — reduce opacity in idle state */}
       <div
         className="scanlines"
         style={{
@@ -282,10 +319,10 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           inset: 0,
           pointerEvents: "none",
           zIndex: 1,
-          opacity: 0.25,
+          opacity: idleCalm ? 0.10 : 0.25,
+          transition: "opacity 2s ease",
         }}
       />
-
       {/* ── Content ── */}
       <div
         style={{
@@ -304,7 +341,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
         <div style={{ position: "absolute", top: 16, left: 16, width: 18, height: 18, borderTop: `2px solid ${color}60`, borderLeft: `2px solid ${color}60`, pointerEvents: "none" }} />
         <div style={{ position: "absolute", top: 16, right: 16, width: 18, height: 18, borderTop: `2px solid ${color}60`, borderRight: `2px solid ${color}60`, pointerEvents: "none" }} />
 
-        {/* ASHA Orb — large, listening */}
+        {/* ASHA Orb */}
         <div
           style={{
             marginBottom: "24px",
@@ -330,7 +367,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.2s both",
           }}
         >
-          ASHA · FAULTLINE INTELLIGENCE LAYER
+          ASHA \u00b7 FAULTLINE INTELLIGENCE LAYER
         </div>
 
         {/* Live status pill */}
@@ -354,8 +391,8 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
               borderRadius: "50%",
               background: pressureColor,
               boxShadow: `0 0 8px ${pressureColor}`,
-              animation: idleCalm ? "blink-alert 4.5s ease-in-out infinite" : "blink-alert 2s ease-in-out infinite",
-              transition: "animation-duration 1s ease",
+              animation: idleCalm ? "blink-alert 5s ease-in-out infinite" : "blink-alert 2s ease-in-out infinite",
+              transition: "animation-duration 2s ease",
             }}
           />
           <span
@@ -377,16 +414,19 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
               color: "rgba(148,163,184,0.45)",
             }}
           >
-            · {regime.label}
+            \u00b7 {regime.label}
           </span>
         </div>
 
-        {/* ── Live intelligence stats — shown ABOVE greeting ── */}
+        {/* ── CONCLUSION FIRST: Live intelligence stats ─────────────
+             Displayed BEFORE the greeting paragraph so the user
+             understands today's market within 3 seconds.
+             ──────────────────────────────────────────────────────── */}
         <div
           style={{
             width: "100%",
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(5, 1fr)",
             borderTop: `1px solid rgba(255,255,255,0.06)`,
             borderBottom: `1px solid rgba(255,255,255,0.06)`,
             marginBottom: "28px",
@@ -394,6 +434,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           }}
         >
           {[
+            { label: "STATE", value: regime.label.split(" ")[0] ?? regime.label, color: color },
             { label: "PRESSURE", value: formatCanonicalScore(overall.score * 10), color: pressureColor },
             { label: "BULL", value: `${output.probability?.bullProbability ?? "\u2014"}%`, color: "#00FF88" },
             { label: "CRASH", value: `${output.probability?.crashProbability ?? "\u2014"}%`, color: "#FF2D55" },
@@ -402,18 +443,19 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             <div
               key={i}
               style={{
-                padding: "12px 8px",
+                padding: "12px 6px",
                 textAlign: "center",
-                borderRight: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                borderRight: i < 4 ? "1px solid rgba(255,255,255,0.06)" : "none",
               }}
             >
               <div
                 style={{
                   fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: "8px",
+                  fontSize: "7px",
                   color: "rgba(100,116,139,0.5)",
                   letterSpacing: "0.14em",
                   marginBottom: "4px",
+                  textTransform: "uppercase",
                 }}
               >
                 {stat.label}
@@ -422,7 +464,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
                 style={{
                   fontFamily: "'Rajdhani', sans-serif",
                   fontWeight: 700,
-                  fontSize: "16px",
+                  fontSize: "15px",
                   color: stat.color,
                   textShadow: `0 0 12px ${stat.color}60`,
                   lineHeight: 1,
@@ -433,6 +475,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             </div>
           ))}
         </div>
+
         {/* ── Greeting text ── */}
         <div
           style={{
@@ -442,7 +485,6 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           }}
         >
           {!greetingReady ? (
-            /* Loading state — ASHA is composing */
             <div
               style={{
                 display: "flex",
@@ -563,43 +605,45 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           </div>
         )}
 
-        {/* ── Continue to Dashboard ── */}
+        {/* ── Primary CTA: Enter Intelligence Dashboard ──────────
+             Prominent solid-filled button — the next step is always obvious.
+             ──────────────────────────────────────────────────────── */}
         {actionsVisible && (
           <button
             onClick={handleContinueToDashboard}
             style={{
-              background: `${color}10`,
-              border: `1px solid ${color}45`,
+              background: `linear-gradient(135deg, ${color}CC 0%, ${color}99 100%)`,
+              border: `1px solid ${color}`,
               borderRadius: "6px",
               cursor: "pointer",
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: "11px",
-              color: `${color}CC`,
-              letterSpacing: "0.15em",
+              fontSize: "12px",
+              color: "#000D14",
+              fontWeight: 700,
+              letterSpacing: "0.16em",
               textTransform: "uppercase",
-              padding: "12px 28px",
+              padding: "14px 32px",
               transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
               marginBottom: "16px",
               animation: "asha-briefing-in 0.4s cubic-bezier(0.23,1,0.32,1) 0.5s both",
               width: "100%",
-              maxWidth: "320px",
+              maxWidth: "360px",
+              boxShadow: `0 0 24px ${color}40, 0 4px 16px rgba(0,0,0,0.4)`,
             }}
             onMouseEnter={(e) => {
               const btn = e.currentTarget as HTMLButtonElement;
-              btn.style.background = `${color}1A`;
-              btn.style.borderColor = `${color}70`;
-              btn.style.color = color;
-              btn.style.boxShadow = `0 0 20px ${color}20`;
+              btn.style.background = `linear-gradient(135deg, ${color} 0%, ${color}CC 100%)`;
+              btn.style.boxShadow = `0 0 36px ${color}60, 0 6px 20px rgba(0,0,0,0.5)`;
+              btn.style.transform = "translateY(-1px)";
             }}
             onMouseLeave={(e) => {
               const btn = e.currentTarget as HTMLButtonElement;
-              btn.style.background = `${color}10`;
-              btn.style.borderColor = `${color}45`;
-              btn.style.color = `${color}CC`;
-              btn.style.boxShadow = "none";
+              btn.style.background = `linear-gradient(135deg, ${color}CC 0%, ${color}99 100%)`;
+              btn.style.boxShadow = `0 0 24px ${color}40, 0 4px 16px rgba(0,0,0,0.4)`;
+              btn.style.transform = "translateY(0)";
             }}
           >
-            Enter Intelligence Dashboard →
+            Enter Intelligence Dashboard \u2192
           </button>
         )}
 
@@ -609,15 +653,14 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             width: "calc(100% + 48px)",
             marginLeft: "-24px",
             marginRight: "-24px",
-            opacity: 0.6,
+            opacity: idleCalm ? 0.35 : 0.6,
+            transition: "opacity 2s ease",
             animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.6s both",
           }}
         >
-          <SeismicWave color={color} score={overall.score} />
+          <SeismicWave color={color} score={overall.score} idleCalm={idleCalm} />
         </div>
-
       </div>
-
       <style>{`
         @keyframes asha-briefing-in {
           from { opacity: 0; transform: translateY(8px); }

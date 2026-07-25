@@ -245,8 +245,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
         {/* Logo row + status */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
-          {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Logo — clicking navigates to Home (/app/now) */}
+          <button
+            onClick={() => handleNavigate('/app/now')}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', transition: 'background 0.15s ease', flexShrink: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,229,255,0.07)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            title="Home — Oracle Now"
+          >
             <div style={{
               width: '24px', height: '24px',
               background: 'linear-gradient(135deg, #00E5FF 0%, #0066FF 100%)',
@@ -270,8 +276,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 </div>
               )}
             </div>
-          </div>
-
+          </button>
           {/* Status + refresh + auth controls */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {isSimulating && (
