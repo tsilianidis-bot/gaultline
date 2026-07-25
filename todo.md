@@ -4156,3 +4156,73 @@
 - [x] Fix ashaBriefingDone initialization race condition — returning users start as done, useEffect re-checks per-user key after user resolves
 - [x] Add dashVisible=false guard when ASHA briefing triggers for returning user to prevent flash of dashboard before ASHA
 - [x] TypeScript: 0 errors after all changes
+
+## FAULTLINE Next-Phase Execution Plan (Jul 25, 2026)
+
+### Phase 1 — Lock and Regression-Test Startup
+- [ ] Write vitest: new user login flow (cinematicDone=false → auth gate → ASHA → dashboard)
+- [ ] Write vitest: returning user same day (all gates skip, dashboard immediate)
+- [ ] Write vitest: returning user new day (ASHA triggers once, then dashboard)
+- [ ] Write vitest: two different users same browser (per-user ASHA key isolation)
+- [ ] Write vitest: signed-out user with stale localStorage (no false auth state)
+- [ ] Write vitest: expired auth session (redirects to auth gate, not blank)
+- [ ] Write vitest: OAuth failure (graceful fallback, no infinite overlay)
+- [ ] Write vitest: user refresh during ASHA (ASHA re-shows, no blank)
+- [ ] Write vitest: user refresh after dashboard (dashboard immediate, no ASHA re-show)
+- [ ] Write vitest: slow network (loading state shown, not blank)
+- [ ] Write vitest: failed ASHA request (15s timeout fires, dashboard shown)
+- [ ] Write vitest: missing market-state request (page still renders with fallback)
+- [ ] Write vitest: FAULTLINE logo always navigates to /app/now
+- [ ] Write vitest: completed overlays removed from DOM after transition
+- [ ] Write vitest: localStorage controls presentation only, never authentication
+- [ ] Run full test suite and confirm all pass
+
+### Phase 2 — Finish the NOW Destination
+- [ ] Section 1: ASHA Market Conclusion — one conclusion-first statement (regime, direction, confidence, timestamp)
+- [ ] Section 2: Core Market State — Pressure Index dominant, regime, bull/correction/crash probabilities, confidence, delta
+- [ ] Section 3: What Changed — material changes since last update, last trading day, last user visit
+- [ ] Section 4: Primary Drivers — 3-5 largest contributors (name, direction, contribution, explanation, freshness, source)
+- [ ] Section 5: Seismograph — signature visualization with Live/30D/1Y/Historical tabs, zones, regime transitions, events, analog marker
+- [ ] Section 6: Historical Analog — closest match, similarity score, similarities, differences, what happened next, disclaimer
+- [ ] Section 7: What to Watch — specific triggers with thresholds that could alter current thesis
+- [ ] Section 8: Invalidation Conditions — what invalidates bullish case, bearish case, current regime assessment
+
+### Phase 3 — Canonical Market-State Contract
+- [ ] Audit codebase for all market-state calculation sites (pressure index, regime, probabilities)
+- [ ] Create/confirm one authoritative canonical market-state type with all required fields
+- [ ] Document duplicate calculations: file, whether removed/redirected/preserved
+- [ ] Ensure all destinations (NOW, WHY, OUTLOOK, WATCH, ACT, ASHA, Daily Brief) consume canonical state
+
+### Phase 4 — Data Trust and Freshness
+- [ ] Add freshnessStatus enum: LIVE | DELAYED | CACHED | STALE | ESTIMATED | UNAVAILABLE
+- [ ] Expose source, observedAt, calculatedAt, freshnessStatus, fallbackStatus, confidence impact on every major metric
+- [ ] Add compact source-health indicator panel (healthy/delayed/unavailable providers, last update)
+- [ ] Ensure hardcoded values never appear as LIVE
+- [ ] Ensure missing data reduces confidence score
+- [ ] Ensure single provider failure affects only its dependent modules
+
+### Phase 5 — Complete the Five Destinations
+- [ ] NOW: finalized per Phase 2
+- [ ] WHY: driver contribution breakdown, liquidity, credit, Treasury, inflation/Fed, AI/mega-cap, recession/labor, banking/CRE, causal evidence chain
+- [ ] OUTLOOK: scenario probabilities, short/medium/long horizon, bull/base/correction/crisis paths, catalysts, historical analogs, probability changes
+- [ ] WATCH: active triggers, threshold proximity, newly triggered, resolved warnings, watchlist changes, regime-change conditions, alert config
+- [ ] ACT: risk posture, exposure considerations, scenario preparation, position-sizing, hedging, invalidation, actions by time horizon (decision-support language only)
+
+### Phase 6 — Standardize Loading, Error, and Empty States
+- [ ] Create shared LoadingState component (initial app, route, module)
+- [ ] Create shared ErrorState component (what failed, what remains, cached data shown, last update, retry)
+- [ ] Create shared EmptyState component
+- [ ] Create shared StaleDataBanner component
+- [ ] Create shared ProviderDegraded component
+- [ ] Create shared UnauthorizedState component
+- [ ] Create shared UpgradeRequired component
+- [ ] Ensure no component returns visually empty area during loading or failure
+- [ ] Apply shared states to all five destinations and major modules
+
+## Next-Phase Execution Plan (Jul 25 2026)
+- [x] Phase 1: Startup state machine regression tests (16 scenarios, 80 test files, 1463 tests passing)
+- [x] Phase 2: NOW destination verified complete (10 sections, all canonical fields wired)
+- [x] Phase 3: Canonical market-state contract verified (shared/marketState.ts authoritative)
+- [x] Phase 4: DataFreshnessChip + PageStateViews shared components created; applied to all 5 destinations
+- [x] Phase 5: All five destinations verified complete with distinct purposes and section structures
+- [x] Phase 6: Standardized loading/error/empty states via PageLoadingState, PageDegradedBanner, DataFreshnessChip

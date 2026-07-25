@@ -22,6 +22,8 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
 import PressureGauge from "@/components/PressureGauge";
+import DataFreshnessChip from "@/components/DataFreshnessChip";
+import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -178,16 +180,7 @@ export default function Now() {
   const accent = pressureColor(pressure);
 
   if (isLoading && !marketState) {
-    return (
-      <main className="min-h-[70vh] bg-[#05080d] px-5 py-16 text-white md:px-10">
-        <div className="mx-auto max-w-6xl animate-pulse rounded-sm border border-cyan-300/15 bg-cyan-300/[0.025] p-8">
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300">NOW · Loading canonical market state</p>
-          <div className="mt-8 h-12 w-2/3 rounded bg-white/10" />
-          <div className="mt-5 h-4 w-full rounded bg-white/5" />
-          <div className="mt-3 h-4 w-5/6 rounded bg-white/5" />
-        </div>
-      </main>
-    );
+    return <PageLoadingState eyebrow="NOW · Current market state" message="Loading canonical market state…" />;
   }
 
   return (
@@ -205,6 +198,10 @@ export default function Now() {
                   NOW · Current market state
                 </span>
                 <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-slate-500">{modeLabel}</span>
+                <DataFreshnessChip
+                  freshness={marketState?.freshness ?? (isLive ? "live" : "stale")}
+                  tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
+                />
               </div>
               <button
                 type="button"
@@ -216,8 +213,11 @@ export default function Now() {
             </div>
 
             {dataError && (
-              <div className="mt-5 border-l-2 border-amber-400 bg-amber-400/[0.06] px-4 py-3 text-xs leading-5 text-amber-100/80">
-                Live refresh is degraded. FAULTLINE is preserving the latest verified state: {dataError}
+              <div className="mt-5">
+                <PageDegradedBanner
+                  message="Live refresh is degraded. FAULTLINE is preserving the latest verified state."
+                  detail={dataError}
+                />
               </div>
             )}
 
@@ -238,6 +238,7 @@ export default function Now() {
               </div>
               <div className="border-l border-white/10 pl-6 flex flex-col items-center">
                 <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500 self-start mb-2">FAULTLINE pressure</p>
+                <p className="font-['Rajdhani'] text-2xl font-semibold self-start mb-1" style={{ color: accent }}>{formatCanonicalScore(pressure)}</p>
                 <PressureGauge
                   score={pressure}
                   historicalPercentile={historicalPercentile}

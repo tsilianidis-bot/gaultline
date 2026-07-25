@@ -25,6 +25,8 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalScore, normalizeCanonicalMetric } from "@shared/marketMetrics";
 import type { CanonicalMarketState } from "@shared/marketState";
+import DataFreshnessChip from "@/components/DataFreshnessChip";
+import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
 type EvidenceFamily = CanonicalMarketState["why"]["evidenceFamilies"][number];
 
@@ -121,19 +123,6 @@ function SourceStatus({ source }: { source: CanonicalMarketState["sourceHealth"]
   );
 }
 
-function LoadingState() {
-  return (
-    <div className="mx-auto max-w-7xl px-5 py-16 md:px-10">
-      <div className="border border-amber-300/15 bg-[#080c13] p-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber-300">WHY · Loading canonical causal state</p>
-        <div className="mt-8 h-12 max-w-3xl animate-pulse bg-white/10" />
-        <div className="mt-5 h-4 animate-pulse bg-white/5" />
-        <div className="mt-3 h-4 w-4/5 animate-pulse bg-white/5" />
-      </div>
-    </div>
-  );
-}
-
 export default function Why() {
   useSEO({
     title: "WHY — FAULTLINE",
@@ -175,7 +164,7 @@ export default function Why() {
   const whyThisScore = marketState?.why.whyThisScore ?? output.overall.description;
   const ashaPath = PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha";
 
-  if (isLoading && !marketState) return <LoadingState />;
+  if (isLoading && !marketState) return <PageLoadingState eyebrow="WHY · Causal analysis" message="Loading canonical causal state…" />;
 
   return (
     <main className="min-h-screen bg-[#04070b] text-slate-200">

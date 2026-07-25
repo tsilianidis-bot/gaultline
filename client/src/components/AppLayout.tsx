@@ -28,7 +28,7 @@ import { formatCanonicalScore } from "@shared/marketMetrics";
 import { DrawerProvider } from "@/contexts/DrawerContext";
 import LeftNavDrawer from "@/components/LeftNavDrawer";
 import RightActionDrawer from "@/components/RightActionDrawer";
-import { CANONICAL_DESTINATIONS } from "@shared/routeRegistry";
+import { CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { getRouteIcon } from "@/lib/routeIcons";
 import AppMarketHeader, { type MarketTickerItem } from "@/components/AppMarketHeader";
 
@@ -247,7 +247,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
           {/* Logo — clicking navigates to Home (/app/now) */}
           <button
-            onClick={() => handleNavigate('/app/now')}
+            onClick={() => handleNavigate(CANONICAL_DESTINATION_BY_ID.now.path)}
             style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: '6px', transition: 'background 0.15s ease', flexShrink: 0 }}
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,229,255,0.07)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}

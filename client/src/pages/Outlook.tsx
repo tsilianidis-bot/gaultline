@@ -26,6 +26,8 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore, normalizeCanonicalMetric } from "@shared/marketMetrics";
 import type { CanonicalMarketState } from "@shared/marketState";
+import DataFreshnessChip from "@/components/DataFreshnessChip";
+import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
 type EvidenceFamily = CanonicalMarketState["why"]["evidenceFamilies"][number];
 type ScenarioKey = keyof CanonicalMarketState["outlook"]["regimeProbabilities"];
@@ -82,19 +84,6 @@ function SourceStatus({ source }: { source: CanonicalMarketState["sourceHealth"]
       </div>
       <p className="mt-2 text-xs leading-5 text-slate-500">{source.detail}</p>
       <p className="mt-2 font-mono text-[8px] uppercase tracking-[0.12em] text-slate-600">As of {new Date(source.asOf).toLocaleString()}</p>
-    </div>
-  );
-}
-
-function LoadingState() {
-  return (
-    <div className="mx-auto max-w-7xl px-5 py-16 md:px-10">
-      <div className="border border-violet-300/15 bg-[#080a14] p-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-violet-300">OUTLOOK · Loading canonical probability state</p>
-        <div className="mt-8 h-12 max-w-3xl animate-pulse bg-white/10" />
-        <div className="mt-5 h-4 animate-pulse bg-white/5" />
-        <div className="mt-3 h-4 w-4/5 animate-pulse bg-white/5" />
-      </div>
     </div>
   );
 }
@@ -165,7 +154,7 @@ export default function Outlook() {
   const developingConditions = marketState?.watch.developingConditions ?? [];
   const ashaPath = PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha";
 
-  if (isLoading && !marketState) return <LoadingState />;
+  if (isLoading && !marketState) return <PageLoadingState eyebrow="OUTLOOK · Probability analysis" message="Loading canonical probability state…" />;
 
   return (
     <main className="min-h-screen bg-[#04060c] text-slate-200">

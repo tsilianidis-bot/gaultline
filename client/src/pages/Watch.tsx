@@ -27,6 +27,8 @@ import {
   formatCanonicalScore,
   normalizeCanonicalMetric,
 } from "@shared/marketMetrics";
+import DataFreshnessChip from "@/components/DataFreshnessChip";
+import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
 const WATCH_DEEP_PATH = "/app/watch/deep";
 
@@ -108,20 +110,6 @@ function Section({
   );
 }
 
-function WatchLoading() {
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-      <div className="border border-white/10 bg-[#090b0f] p-8">
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-orange-300/80">
-          WATCH · Loading canonical monitoring state
-        </div>
-        <div className="mt-8 h-12 max-w-3xl animate-pulse bg-white/10" />
-        <div className="mt-5 h-4 max-w-5xl animate-pulse bg-white/[0.06]" />
-      </div>
-    </div>
-  );
-}
-
 export default function Watch() {
   const {
     marketState,
@@ -139,7 +127,7 @@ export default function Watch() {
     document.title = "WATCH — FAULTLINE";
   }, []);
 
-  if (isLoading && !marketState) return <WatchLoading />;
+  if (isLoading && !marketState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading canonical monitoring state…" />;
 
   const isCanonical = marketMode === "canonical" && Boolean(marketState);
   const pressure = marketState?.now.pressureScore ?? output.overall.score * 10;

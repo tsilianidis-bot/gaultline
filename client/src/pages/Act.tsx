@@ -24,6 +24,8 @@ import {
   formatCanonicalPercent,
   formatCanonicalScore,
 } from "@shared/marketMetrics";
+import DataFreshnessChip from "@/components/DataFreshnessChip";
+import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
 const ACT_DEEP_PATH = "/app/act/deep";
 
@@ -94,20 +96,6 @@ function Section({
   );
 }
 
-function ActLoading() {
-  return (
-    <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
-      <div className="border border-white/10 bg-[#090b0f] p-8">
-        <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-emerald-300/80">
-          ACT · Loading canonical decision state
-        </div>
-        <div className="mt-8 h-12 max-w-3xl animate-pulse bg-white/10" />
-        <div className="mt-5 h-4 max-w-5xl animate-pulse bg-white/[0.06]" />
-      </div>
-    </div>
-  );
-}
-
 export default function Act() {
   const {
     marketState,
@@ -125,7 +113,7 @@ export default function Act() {
     document.title = "ACT — FAULTLINE";
   }, []);
 
-  if (isLoading && !marketState) return <ActLoading />;
+  if (isLoading && !marketState) return <PageLoadingState eyebrow="ACT · Decision state" message="Loading canonical decision state…" />;
 
   const isCanonical = marketMode === "canonical" && Boolean(marketState);
   const pressure = marketState?.now.pressureScore ?? output.overall.score * 10;
