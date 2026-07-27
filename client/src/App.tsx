@@ -673,6 +673,15 @@ function Router() {
         </ErrorBoundary>
       </Route>
       {/* Root / — handled by the cinematic gate in App() */}
+      {/* Standalone 404 — must be BEFORE the catch-all AppLayout route so it renders
+           without the app shell (header/nav) for truly unknown URLs */}
+      <Route path="/404">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <NotFound />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
       {/* All platform routes inside AppLayout under /app */}
       <Route>
         <AppLayout>
@@ -749,7 +758,8 @@ function Router() {
 	              <Route path="/app/validation-lab" component={ValidationLab} />
 	              <Route path="/app/fmos-health" component={FmosHealthDashboard} />
               <Route path="/owner/simulation" component={OwnerSimulation} />
-              <Route component={NotFound} />
+              {/* Unknown /app/* sub-routes — redirect to standalone 404 */}
+              <Route><Redirect to="/404" /></Route>
             </Switch>
           </Suspense>
           </ErrorBoundary>

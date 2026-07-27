@@ -4322,3 +4322,23 @@
   - 9 regression tests added: server/App.routeSwitch.test.ts
 - [x] Fix WHY page false 0/100 scores (seismographUnified.ts zero-fallback fix)
 - [x] Phase 4: $299 lifetime Stripe product (lifetimeAccess schema, webhook protection, getLifetimeStatus procedure, UserAccount UI)
+
+## Marketing Page Update + Bug Fixes (Session — Jul 27, 2026)
+
+- [x] Fix 404-inside-AppShell: moved NotFound out of AppLayout inner Switch to standalone /404 route in outer Switch; unknown /app/* sub-routes redirect to /404
+- [x] Fix post-intro white flash: added style="background:#020305;" to <html> and style="background:#020305;color:#F0F4FF;margin:0;padding:0;" to <body> in index.html
+- [x] Hero: updated headline copy to "The systemic pressure that precedes market crashes is measurable. FAULTLINE measures it — in real time."
+- [x] Hero: added founding offer callout strip ($299 one-time, spots remaining)
+- [x] Hero: replaced "See the Platform" with "See the Proof" scroll CTA that scrolls to Historical Validation section
+- [x] Historical Validation section: 6 event cards (Dot-Com, GFC, COVID, 2022 bear, SVB, 2025 tariff) with drawdown, duration, and FAULTLINE signal description
+- [x] Historical Validation section: trust strip (6 crashes, 25+ years, 5 engines, 100% transparent methodology)
+- [x] Historical Validation section: methodology link + Track Record CTA
+- [x] Founder's Statement section: blockquote + Richard Roper attribution + 3 credibility pillars
+- [x] $299 Founding Lifetime Pricing section: real-time spots remaining from getLifetimeStatus, 8-item what's included list, Stripe checkout mutation (planId: 'lifetime'), SOLD OUT state, Try Free fallback CTA
+- [x] Nav: added $299 Lifetime button in sticky nav linking to pricing section
+- [x] Conversion flow: ASHA/onEnter only triggers on explicit button click (not on page load)
+- [x] Conflicting pricing: removed old $49/mo Founding tier card from pricing section; $299 lifetime is the primary offer
+- [x] Analytics: track() helper added; 7 events instrumented (product_experience_view, hero_see_proof_click, hero_see_pricing_click, enter_platform_click, lifetime_cta_click, lifetime_checkout_opened, validation_cta_click, methodology_link_click, sign_in_click)
+- [x] Accessibility: aria-label on all interactive buttons, aria-hidden on decorative elements, role="navigation", role="contentinfo", aria-label on sections, SVG aria-label + role="img"
+- [x] TypeScript: 0 errors after all fixes
+- [x] Checkpoint saved
