@@ -678,15 +678,24 @@ function Router() {
         <AppLayout>
 	          <ErrorBoundary inline>
 	          <Suspense fallback={<PageLoader />}>
-	            <Switch>
+            <Switch>
 			              <Route path={NOW_DEEP_PATH} component={Dashboard} />
-		              <Route path={WHY_DEEP_PATH} component={TodaysStory} />
-		              <Route path={OUTLOOK_DEEP_PATH} component={SignalOutlookCenter} />
-		              <Route path={WATCH_DEEP_PATH} component={AIWatch} />
-		              <Route path={ACT_DEEP_PATH} component={SmartDiscovery} />
-		              <CanonicalDestinationRoutes />
-		              <Route path="/app"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
-	              <AnalyticalLegacyAliases />
+			              <Route path={WHY_DEEP_PATH} component={TodaysStory} />
+			              <Route path={OUTLOOK_DEEP_PATH} component={SignalOutlookCenter} />
+			              <Route path={WATCH_DEEP_PATH} component={AIWatch} />
+			              <Route path={ACT_DEEP_PATH} component={SmartDiscovery} />
+			              {/* Canonical destinations — inlined to avoid wouter treating wrapper components as path-less catch-alls */}
+			              {CANONICAL_DESTINATIONS.map(destination => {
+			                const DestinationPage = CANONICAL_PAGE_BY_ID[destination.id];
+			                return <Route key={destination.id} path={destination.path}>{() => <DestinationPage />}</Route>;
+			              })}
+			              <Route path="/app"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
+		              {/* Legacy aliases — inlined to avoid wouter treating wrapper components as path-less catch-alls */}
+		              {Object.entries(ANALYTICAL_LEGACY_ALIASES).map(([source, target]) => (
+		                <Route key={source} path={source}>
+		                  {() => <Redirect to={preserveRouteContext(target, window.location.search, window.location.hash)} />}
+		                </Route>
+		              ))}
 	              <Route path="/app/pressure" component={Pressure} />
 		              <Route path="/app/discover" component={SmartDiscovery} />
 		              <Route path="/app/alerts" component={Alerts} />

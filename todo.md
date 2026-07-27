@@ -4314,3 +4314,11 @@
 - [x] WHY page stale-data indicator: amber banner shown when freshness=stale or cache=stale-if-error (Why.tsx)
 - [x] Vitest regression tests: 9 tests covering normalizeSubScore, patchLatestRow, and false-zero regression (seismographUnified.falseZero.test.ts)
 - [x] TypeScript: 0 errors
+
+## Session 3 — Jul 27 2026
+- [x] Fix secondary-route blank-screen navigation bug (wouter Switch path-less catch-all)
+  - Root cause: <CanonicalDestinationRoutes /> and <AnalyticalLegacyAliases /> had no path prop, treated as wildcard catch-alls by wouter Switch
+  - Fix: inlined both wrapper components' routes directly into the Switch in App.tsx
+  - 9 regression tests added: server/App.routeSwitch.test.ts
+- [x] Fix WHY page false 0/100 scores (seismographUnified.ts zero-fallback fix)
+- [x] Phase 4: $299 lifetime Stripe product (lifetimeAccess schema, webhook protection, getLifetimeStatus procedure, UserAccount UI)
