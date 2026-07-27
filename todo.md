@@ -4373,3 +4373,13 @@
 - [x] Fix Oracle Welcome: increase 15s safety timeout to 5 minutes (300s) so user controls transition
 - [x] Rename CTA button from "Enter Intelligence Dashboard" to "ENTER MARKET INTELLIGENCE"
 - [x] Register SeismographIntelligence at /app/seismograph (ASHA "Show the Seismograph" action now has a live destination)
+
+## Oracle Welcome + Seismograph Routing — Full Audit (2026-07-27)
+- [x] Audit Oracle Welcome timing: confirmed 5-min crash-guard is correct, user controls transition via CTA
+- [x] Audit Seismograph routing: found /app/seismograph was shadowed by ANALYTICAL_LEGACY_ALIASES → redirected to /app/now/deep (Dashboard) instead of SeismographIntelligence
+- [x] Fix: Remove /app/seismograph from ANALYTICAL_LEGACY_ALIASES in shared/routeRegistry.ts
+- [x] Fix: /app/seismograph route in App.tsx already points to SeismographIntelligence (confirmed)
+- [x] Fix: Add Seismograph Intelligence to LeftNavDrawer.tsx MARKET TOOLS group (first item, Activity icon)
+- [x] Fix: Add Seismograph Intelligence to NOW page Expert Tools section (Section 09)
+- [x] Confirmed: CTA button is "ENTER MARKET INTELLIGENCE →" (user-controlled, single arrow)
+- [x] Confirmed: 5-min safety timeout in App.tsx (crash-guard only, not a design timer)
