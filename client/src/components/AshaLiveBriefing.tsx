@@ -270,7 +270,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
       sub: "Live pressure across all 10 engines",
       icon: "\u2295",
       color: "#FFD700",
-      action: () => handleAction("/app/seismograph"),
+      action: () => handleAction("/app/seismograph-command-center"),
     },
     {
       label: "Search Any Stock or Crypto",

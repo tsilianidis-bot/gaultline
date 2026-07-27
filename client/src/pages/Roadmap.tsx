@@ -222,7 +222,7 @@ export default function Roadmap() {
             The full intelligence platform is live today — Pressure Index, Seismograph, ASHA, Signals, Situation Room, and more.
           </p>
           <a
-            href="/app/seismograph"
+            href="/app/seismograph-command-center"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[12px] font-mono font-bold tracking-wider transition-all duration-200 hover:opacity-90 active:scale-[0.97]"
             style={{ background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.3)", color: "#00D4FF" }}
           >

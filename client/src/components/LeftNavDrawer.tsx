@@ -103,7 +103,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "MARKET TOOLS",
     items: [
       { id: "tools-home",         label: "Tools & Features Hub",    icon: LayoutDashboard, path: "/app/tools" },
-      { id: "seismograph",        label: "Seismograph Intelligence", icon: Activity,     path: "/app/seismograph" },
+      { id: "seismograph",        label: "Seismograph Intelligence", icon: Activity,     path: "/app/seismograph-command-center" },
       { id: "signals",           label: "Signals",                icon: Radio,        path: "/app/signals" },
       { id: "crypto-signals",    label: "Crypto Signals",         icon: Bitcoin,      path: "/app/crypto-signals" },
       { id: "crypto-hub",        label: "Crypto Hub",             icon: Layers,       path: "/app/crypto" },

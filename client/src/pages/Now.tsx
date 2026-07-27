@@ -380,7 +380,7 @@ export default function Now() {
             <DestinationLink href={EXPERT_WORKSPACE_BY_ID["signal-outlook"].path} label="Signal Outlook" detail="Open scenario and transition analysis." />
             <DestinationLink href={EXPERT_WORKSPACE_BY_ID["decision-engine"].path} label="Decision Engine" detail="Stress-test a response against the regime." />
             <DestinationLink href={EXPERT_WORKSPACE_BY_ID["symbol-intelligence"].path} label="Symbol Intelligence" detail="Analyze a specific asset in context." />
-            <DestinationLink href="/app/seismograph" label="Seismograph Intelligence" detail="Live pressure across all 10 engines with historical context." />
+            <DestinationLink href="/app/seismograph-command-center" label="Seismograph Intelligence" detail="Live pressure across all 10 engines with historical context." />
           </div>
         </Section>
 

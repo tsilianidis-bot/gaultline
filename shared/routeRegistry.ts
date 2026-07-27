@@ -73,6 +73,7 @@ export const ANALYTICAL_LEGACY_ALIASES: Readonly<Record<string, string>> = {
   "/app/report": "/app/now/deep",
   "/app/scenarios": "/app/outlook/deep",
   "/app/scores": "/app/pressure?tab=scores",
+  "/app/seismograph": "/app/now/deep",
   "/app/seismograph-legacy": "/app/now/deep",
   "/app/simulate": "/app/simulate-pressure",
   "/app/situation-room": "/app/now/deep",

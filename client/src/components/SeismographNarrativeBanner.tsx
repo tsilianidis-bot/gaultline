@@ -137,7 +137,7 @@ const NEXT_STEPS: Record<string, { label: string; path: string }> = {
   situation:    { label: "Ask ASHA about this environment →", path: "/app/discover" },
   "daily-brief":{ label: "See what signals are active →", path: "/app/signals" },
   seismograph:  { label: "Ask ASHA about this reading →", path: "/app/discover" },
-  default:      { label: "View the full Seismograph →", path: "/app/seismograph" },
+  default:      { label: "View the full Seismograph →", path: "/app/seismograph-command-center" },
 };
 
 // ── Main Component ────────────────────────────────────────────
@@ -196,7 +196,7 @@ export default function SeismographNarrativeBanner({
           Seismograph reading not yet available — runs automatically after market close.
         </span>
         {context === "seismograph" && (
-          <Link href="/app/seismograph" style={{ marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00E5FF", textDecoration: "none", flexShrink: 0 }}>
+          <Link href="/app/seismograph-command-center" style={{ marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00E5FF", textDecoration: "none", flexShrink: 0 }}>
             Generate now →
           </Link>
         )}
@@ -389,7 +389,7 @@ export default function SeismographNarrativeBanner({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           {showSeismographLink && context !== "seismograph" && (
-            <Link href="/app/seismograph" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(0,229,255,0.65)", textDecoration: "none" }}>
+            <Link href="/app/seismograph-command-center" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(0,229,255,0.65)", textDecoration: "none" }}>
               Full Seismograph
             </Link>
           )}

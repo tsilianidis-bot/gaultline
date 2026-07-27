@@ -743,7 +743,7 @@ function Router() {
               <Route path="/app/tools">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><ToolsHome /></Suspense></ErrorBoundary>
               </Route>
-              <Route path="/app/seismograph">
+              <Route path="/app/seismograph-command-center">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><SeismographIntelligence /></Suspense></ErrorBoundary>
               </Route>
               <Route path="/app/asha">

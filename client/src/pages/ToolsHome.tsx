@@ -20,6 +20,7 @@ import {
   Sparkles, ChevronRight, ArrowLeft, RotateCcw, Users,
 } from "lucide-react";
 import { useExperience } from "@/contexts/ExperienceContext";
+import { CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 
 // ── Design tokens ──────────────────────────────────────────────
 const BG = "#0A0C10";
@@ -47,12 +48,12 @@ interface Tool {
 
 const ALL_TOOLS: Tool[] = [
   // Market Intelligence
-  { id: "now", label: "NOW — What Is Happening", description: "Real-time market regime and pressure synthesis", path: "/app/now", category: "Market Intelligence", icon: Activity },
-  { id: "why", label: "WHY — Why It Is Happening", description: "Macro driver analysis and causal intelligence", path: "/app/why", category: "Market Intelligence", icon: Brain },
-  { id: "outlook", label: "OUTLOOK — What Is Likely Next", description: "Probabilistic scenario and regime forecasting", path: "/app/outlook", category: "Market Intelligence", icon: Telescope },
-  { id: "watch", label: "WATCH — What To Monitor", description: "Key indicators and threshold alerts", path: "/app/watch", category: "Market Intelligence", icon: Eye },
-  { id: "act", label: "ACT — Decision Framework", description: "Actionable intelligence for your decisions", path: "/app/act", category: "Market Intelligence", icon: Target },
-  { id: "seismograph", label: "Seismograph Command Center", description: "Systemic pressure building over time — the signature FAULTLINE visualization", path: "/app/seismograph", category: "Market Intelligence", icon: Activity },
+  { id: "now", label: "NOW — What Is Happening", description: "Real-time market regime and pressure synthesis", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "Market Intelligence", icon: Activity },
+  { id: "why", label: "WHY — Why It Is Happening", description: "Macro driver analysis and causal intelligence", path: CANONICAL_DESTINATION_BY_ID.why.path, category: "Market Intelligence", icon: Brain },
+  { id: "outlook", label: "OUTLOOK — What Is Likely Next", description: "Probabilistic scenario and regime forecasting", path: CANONICAL_DESTINATION_BY_ID.outlook.path, category: "Market Intelligence", icon: Telescope },
+  { id: "watch", label: "WATCH — What To Monitor", description: "Key indicators and threshold alerts", path: CANONICAL_DESTINATION_BY_ID.watch.path, category: "Market Intelligence", icon: Eye },
+  { id: "act", label: "ACT — Decision Framework", description: "Actionable intelligence for your decisions", path: CANONICAL_DESTINATION_BY_ID.act.path, category: "Market Intelligence", icon: Target },
+  { id: "seismograph", label: "Seismograph Command Center", description: "Systemic pressure building over time — the signature FAULTLINE visualization", path: "/app/seismograph-command-center", category: "Market Intelligence", icon: Activity },
   { id: "todays-story", label: "Today's Story", description: "Narrative synthesis of today's market conditions", path: "/app/todays-story", category: "Market Intelligence", icon: Newspaper },
   // Pressure & Risk
   { id: "pressure", label: "Pressure Engine", description: "Full systemic pressure index with component breakdown", path: "/app/pressure", category: "Pressure & Risk", icon: Gauge },
@@ -97,7 +98,7 @@ const ALL_TOOLS: Tool[] = [
   // ASHA Intelligence
   { id: "asha-center", label: "ASHA Intelligence Center", description: "Full conversational intelligence with ASHA", path: "/app/asha", category: "ASHA Intelligence", icon: Sparkles },
   { id: "fmos", label: "FMOS Health Dashboard", description: "FAULTLINE Market Operating System diagnostics", path: "/app/fmos", category: "ASHA Intelligence", icon: Activity, isNew: true },
-  { id: "situation-room", label: "Situation Room", description: "Real-time crisis monitoring and systemic risk alerts", path: "/app/now", category: "ASHA Intelligence", icon: Shield },
+  { id: "situation-room", label: "Situation Room", description: "Real-time crisis monitoring and systemic risk alerts", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "ASHA Intelligence", icon: Shield },
 ];
 
 const CATEGORIES = [
