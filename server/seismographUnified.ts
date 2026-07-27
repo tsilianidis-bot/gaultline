@@ -383,16 +383,24 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   ]);
 
   // ── 2. Normalize history ──────────────────────────────────────
+  // NOTE: Use `|| 50` (not `?? 50`) so that DB rows storing 0 for missing sub-scores
+  // also fall back to the neutral sentinel value of 50. The DB stores 0 when a
+  // sub-score was not computed for that month (e.g. partial live-run rows), not
+  // as a genuine "zero stress" reading — genuine low-stress readings are ~20–30.
+  // We also track the raw DB values for the last two rows so the second-layer patch
+  // below can detect which sub-scores were genuinely missing (raw === 0).
+  const rawLatest = allHistory[allHistory.length - 1];
+  const rawPrev = allHistory.length >= 2 ? allHistory[allHistory.length - 2] : null;
   const history: HistoricalMonth[] = allHistory.map((r) => ({
     month: r.month,
     score: r.overallPressure,
     regime: r.regime,
-    liquidity: r.liquidityStress ?? 50,
-    credit: r.creditContagion ?? 50,
-    volatility: r.volatilityRegime ?? 50,
-    macro: r.macroSensitivity ?? 50,
-    breadth: r.marketBreadth ?? 50,
-    aiBubble: r.aiBubble ?? 50,
+    liquidity: r.liquidityStress || 50,
+    credit: r.creditContagion || 50,
+    volatility: r.volatilityRegime || 50,
+    macro: r.macroSensitivity || 50,
+    breadth: r.marketBreadth || 50,
+    aiBubble: r.aiBubble || 50,
     baaSpread: r.baaSpread !== null ? Number(r.baaSpread) : null,
     hySpread: r.hySpreadProxy !== null ? Number(r.hySpreadProxy) : null,
     tsy10y: r.tsy10y !== null ? Number(r.tsy10y) : null,
@@ -406,7 +414,7 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const latest = history[history.length - 1];
   if (!latest) throw new Error("No historical data available");
 
-  // ── 3. Current state ──────────────────────────────────────────
+  // ── 3. Current state ────────────────────────────────────────────────
   // Prefer the latest assembled output (live run) if available, fall back to pressureHistory
   const currentScore = latestAssembled?.pressureScore ?? latest.score;
   const currentRegime = latestAssembled?.regime ?? latest.regime;
@@ -419,8 +427,24 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   const currentPercentile =
     percentileIdx >= 0 ? Math.round((percentileIdx / sortedScores.length) * 100) : 50;
 
-  // ── 4. Evidence families from sub-scores ─────────────────────
-  const evidenceFamilies = buildEvidenceFamilies(latest, history);
+  // ── 4. Evidence families from sub-scores ─────────────────
+  // Guard: if the latest DB row has zero sub-scores (partial/incomplete row from a
+  // live run that did not fully populate all domain scores), patch each missing score
+  // with the previous row's actual value. We detect "missing" by checking the raw DB
+  // value (before the || 50 normalization) so we don't confuse the 50-sentinel with
+  // a genuine prior-row value.
+  const prev = history.length >= 2 ? history[history.length - 2] : null;
+  const latestForFamilies: typeof latest = (rawLatest && rawPrev && prev)
+    ? {
+        ...latest,
+        liquidity: (rawLatest.liquidityStress === 0 || rawLatest.liquidityStress === null) ? prev.liquidity : latest.liquidity,
+        credit:    (rawLatest.creditContagion  === 0 || rawLatest.creditContagion  === null) ? prev.credit    : latest.credit,
+        volatility:(rawLatest.volatilityRegime === 0 || rawLatest.volatilityRegime === null) ? prev.volatility: latest.volatility,
+        macro:     (rawLatest.macroSensitivity === 0 || rawLatest.macroSensitivity === null) ? prev.macro     : latest.macro,
+        breadth:   (rawLatest.marketBreadth    === 0 || rawLatest.marketBreadth    === null) ? prev.breadth   : latest.breadth,
+      }
+    : latest;
+  const evidenceFamilies = buildEvidenceFamilies(latestForFamilies, history);
   const enginesAgreeing = evidenceFamilies
     .filter((f) => f.signal === "bearish" || f.signal === "stressed")
     .map((f) => f.name);

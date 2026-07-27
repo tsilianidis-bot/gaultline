@@ -4306,3 +4306,11 @@
 - [x] Add getLifetimeStatus query hook to UserAccount.tsx
 - [x] Update lifetime button to show SOLD OUT when isSoldOut=true
 - [x] Update disclaimer to show real-time spots remaining (e.g. "100 OF 100 FOUNDING LIFETIME SPOTS REMAINING")
+
+## Session 3 — WHY Page False-Zero Fix (Jul 26 2026)
+- [x] Root cause traced: pressureHistory May 2026 row stores 0 (not null) for liquidityStress, creditContagion, macroSensitivity, marketBreadth — DB uses 0 as missing-data sentinel
+- [x] Fix 1: Changed `?? 50` to `|| 50` in history normalization so zero DB values fall back to neutral sentinel (seismographUnified.ts line 394-399)
+- [x] Fix 2: Added second-layer patch — when latest raw DB row has zero sub-scores, use previous row's actual values instead of 50 sentinel (seismographUnified.ts lines 431-446)
+- [x] WHY page stale-data indicator: amber banner shown when freshness=stale or cache=stale-if-error (Why.tsx)
+- [x] Vitest regression tests: 9 tests covering normalizeSubScore, patchLatestRow, and false-zero regression (seismographUnified.falseZero.test.ts)
+- [x] TypeScript: 0 errors

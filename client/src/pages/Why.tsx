@@ -237,6 +237,11 @@ export default function Why() {
         </Section>
 
         <Section id="transmission" index="02" eyebrow="Transmission" title="How pressure moves through the system" description="Evidence families show where a driver is concentrated, how strong it is, and whether conditions are improving or deteriorating.">
+          {marketState?.freshness === "stale" || (marketState?.cache.status === "stale-if-error") ? (
+            <div className="mb-4 border border-amber-300/20 bg-amber-300/[0.04] px-4 py-3">
+              <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-amber-300/80">Evidence families reflect the most recent complete data — live sub-scores are temporarily unavailable</p>
+            </div>
+          ) : null}
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {evidenceFamilies.map(family => <EvidenceCard key={family.name} family={family} />)}
           </div>
