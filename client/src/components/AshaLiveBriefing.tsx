@@ -643,7 +643,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
               btn.style.transform = "translateY(0)";
             }}
           >
-            Enter Intelligence Dashboard \u2192
+            ENTER MARKET INTELLIGENCE →
           </button>
         )}
 

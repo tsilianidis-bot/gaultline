@@ -171,6 +171,7 @@ const PromoRedeem = lazy(() => import("./pages/PromoRedeem"));
 const AdminPromoDashboard = lazy(() => import("./pages/AdminPromoDashboard"));
 const Roadmap             = lazy(() => import("./pages/Roadmap"));
 const ChatInbox           = lazy(() => import("./pages/admin/ChatInbox"));
+const SeismographIntelligence = lazy(() => import("./pages/SeismographIntelligence"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -738,6 +739,9 @@ function Router() {
               <Route path="/app/admin/chat-inbox">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><ChatInbox /></Suspense></ErrorBoundary>
               </Route>
+              <Route path="/app/seismograph">
+                <ErrorBoundary><Suspense fallback={<PageLoader />}><SeismographIntelligence /></Suspense></ErrorBoundary>
+              </Route>
               <Route path="/app/asha">
                 <ErrorBoundary><Suspense fallback={<PageLoader />}><AshaIntelligenceCenter /></Suspense></ErrorBoundary>
               </Route>
@@ -1028,7 +1032,7 @@ function App() {
     const t = setTimeout(() => {
       console.warn('[ASHA] Briefing timeout — forcing skip to dashboard');
       handleAshaBriefingComplete();
-    }, 15000);
+    }, 300000); // 5-min crash-guard — user controls transition
     return () => clearTimeout(t);
   }, [cinematicDone, authGateDone, ashaBriefingDone, handleAshaBriefingComplete]);
 

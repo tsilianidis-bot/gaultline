@@ -4368,3 +4368,8 @@
 ## Root URL Fix (2026-07-27)
 - [x] Fix root URL / showing blank screen for returning visitors — changed <Route path="/"><div /></Route> to <Route path="/"><Redirect to="/app/now" /></Route> so returning visitors land on the NOW dashboard instead of a blank page
 - [x] Fix routeRegistryConsumers test: replaced hardcoded "/app/now" string in root Redirect with CANONICAL_DESTINATION_BY_ID.now.path — test now passes (2/2)
+
+## Oracle Welcome + Seismograph Routing (2026-07-27)
+- [x] Fix Oracle Welcome: increase 15s safety timeout to 5 minutes (300s) so user controls transition
+- [x] Rename CTA button from "Enter Intelligence Dashboard" to "ENTER MARKET INTELLIGENCE"
+- [x] Register SeismographIntelligence at /app/seismograph (ASHA "Show the Seismograph" action now has a live destination)
