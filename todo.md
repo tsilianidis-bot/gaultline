@@ -4367,3 +4367,4 @@
 
 ## Root URL Fix (2026-07-27)
 - [x] Fix root URL / showing blank screen for returning visitors — changed <Route path="/"><div /></Route> to <Route path="/"><Redirect to="/app/now" /></Route> so returning visitors land on the NOW dashboard instead of a blank page
+- [x] Fix routeRegistryConsumers test: replaced hardcoded "/app/now" string in root Redirect with CANONICAL_DESTINATION_BY_ID.now.path — test now passes (2/2)
