@@ -4397,3 +4397,12 @@
 - [x] Seismograph routing: removed /app/seismograph from ANALYTICAL_LEGACY_ALIASES
 - [x] Seismograph nav: added to LeftNavDrawer MARKET TOOLS group
 - [x] Oracle Welcome: 5-minute crash-guard timeout (user-controlled via CTA)
+
+## Session: Seismograph Crash Fix + Pricing Rebuild (Jul 27 2026)
+
+- [x] Fix SeismographIntelligence.tsx crash — null-safety guards on all array/object destructures (evolution, memory, analogs, keyDevelopments, developingConditions, enginesAgreeing, enginesDisagreeing, evidenceFamilies, engineContributions)
+- [x] Fix root crash: getUnifiedSeismographIntelligence throws when pressureHistory is empty — safe defaults prevent component crash
+- [x] Rebuild PricingSection in MarketingSite.tsx with 5 plans: Free, Mobile ($9.99), Standard ($59), Professional ($99), Founder Lifetime ($299 one-time)
+- [x] Pricing maps to existing Stripe planIds: core→Mobile, premium→Standard, founding→Professional, lifetime→Founder Lifetime
+- [x] Founding Member window notice added to pricing header and footer
+- [x] All 83 test files passing (1504 tests) after changes

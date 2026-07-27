@@ -1994,6 +1994,353 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
 
 // ── Pricing ───────────────────────────────────────────────────
 function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
+  const pricingRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = pricingRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        trackPricingViewed("marketing_site");
+        obs.disconnect();
+      }
+    }, { threshold: 0.2 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const checkoutMutation = trpc.billing.createCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        toast.info('Redirecting to checkout\u2026', { description: 'Opening Stripe secure payment page.' });
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (err) => {
+      toast.error('Checkout unavailable', { description: err.message });
+    },
+  });
+
+  // Countdown: Founder Lifetime window — 6 months from launch (static display)
+  const founderDeadline = "January 2026";
+
+  type Plan = {
+    id: string;
+    name: string;
+    price: string;
+    priceSub: string;
+    tagline: string;
+    badge?: string;
+    badgeColor?: string;
+    accentColor: string;
+    glowColor: string;
+    features: string[];
+    cta: string;
+    ctaAction?: () => void;
+    ctaHref?: string;
+    featured?: boolean;
+    isFounder?: boolean;
+    isLifetime?: boolean;
+  };
+
+  const plans: Plan[] = [
+    {
+      id: 'free',
+      name: 'Free',
+      price: 'Free',
+      priceSub: 'No credit card required',
+      tagline: 'Introduction to the platform',
+      accentColor: '#64748B',
+      glowColor: 'rgba(100,116,139,0.08)',
+      features: [
+        'Limited daily market access',
+        'Limited reports',
+        'Basic Pressure Index',
+        'Limited Signals',
+        'Designed as an introduction',
+      ],
+      cta: 'Start Free',
+      ctaHref: PLATFORM_URL,
+    },
+    {
+      id: 'core',
+      name: 'Mobile',
+      price: '$9.99',
+      priceSub: '/month \u2014 cancel anytime',
+      tagline: 'Mobile-first market intelligence',
+      badge: 'MOST POPULAR',
+      badgeColor: '#22D3EE',
+      accentColor: '#22D3EE',
+      glowColor: 'rgba(34,211,238,0.1)',
+      features: [
+        'Mobile-first experience',
+        'Pulse',
+        'Signals',
+        'Watchlist',
+        'Sector Rotation',
+        'Daily Brief',
+        'Upgrade path to full platform',
+      ],
+      cta: 'Get Mobile \u2014 $9.99/mo',
+      ctaAction: () => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin }),
+    },
+    {
+      id: 'premium',
+      name: 'Standard',
+      price: '$59',
+      priceSub: '/month \u2014 cancel anytime',
+      tagline: 'Full FAULTLINE Intelligence platform',
+      badge: 'RECOMMENDED',
+      badgeColor: '#00D4FF',
+      accentColor: '#00D4FF',
+      glowColor: 'rgba(0,212,255,0.12)',
+      featured: true,
+      features: [
+        'Full FAULTLINE Intelligence platform',
+        'Daily reports',
+        'Pressure Index',
+        'Regime Detection',
+        'Historical Analogs',
+        'Signal Outlook',
+        'Watchlists',
+        'AI Intelligence',
+        'Seismograph',
+        'Research tools',
+      ],
+      cta: 'Get Standard \u2014 $59/mo',
+      ctaAction: () => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin }),
+    },
+    {
+      id: 'founding',
+      name: 'Professional',
+      price: '$99',
+      priceSub: '/month \u2014 cancel anytime',
+      tagline: 'Institutional features + API access',
+      badge: 'INSTITUTIONAL',
+      badgeColor: '#A78BFA',
+      accentColor: '#A78BFA',
+      glowColor: 'rgba(167,139,250,0.1)',
+      features: [
+        'Everything in Standard',
+        'Advanced research',
+        'Institutional features',
+        'API access (when enabled)',
+        'Expanded data and analytics',
+        'Priority feature access',
+      ],
+      cta: 'Get Professional \u2014 $99/mo',
+      ctaAction: () => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin }),
+    },
+    {
+      id: 'lifetime',
+      name: 'Founder Lifetime',
+      price: '$299',
+      priceSub: 'one-time \u2014 lifetime access',
+      tagline: 'Founding Member Pricing \u2014 pay once, never again',
+      badge: 'FOUNDING MEMBER',
+      badgeColor: '#FFD700',
+      accentColor: '#FFD700',
+      glowColor: 'rgba(255,215,0,0.12)',
+      isLifetime: true,
+      isFounder: true,
+      features: [
+        'Everything in Standard',
+        'Lifetime access \u2014 pay once',
+        'Founding member badge',
+        'Future feature grandfathering',
+        'Roadmap previews & early beta',
+        'Priority feature access',
+        'Exclusive founder-only tools',
+        'Direct feedback channel',
+      ],
+      cta: 'Claim Founder Lifetime \u2014 $299',
+      ctaAction: () => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin }),
+    },
+  ];
+
+  return (
+    <section
+      id="access"
+      ref={pricingRef}
+      style={{ background: '#050608', padding: '100px 0 80px', position: 'relative', overflow: 'hidden' }}
+    >
+      {/* Ambient glow */}
+      <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '700px', height: '300px', background: 'radial-gradient(ellipse at center, rgba(0,212,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px' }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '10px', letterSpacing: '0.2em', color: 'rgba(0,212,255,0.5)', fontWeight: 700, marginBottom: '16px' }}>
+            INTELLIGENCE ACCESS
+          </div>
+          <h2 style={{ fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, color: '#E2E8F0', lineHeight: 1.15, margin: '0 0 16px', letterSpacing: '-0.02em' }}>
+            Choose Your Intelligence Level
+          </h2>
+          <p style={{ fontSize: '16px', color: 'rgba(168,184,204,0.75)', maxWidth: '520px', margin: '0 auto', lineHeight: 1.65 }}>
+            From free access to institutional-grade intelligence. Every plan includes the FAULTLINE Pressure Index.
+          </p>
+          {/* Founder window notice */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '20px', padding: '8px 16px', background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: '8px' }}>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '10px', color: '#FFD700', letterSpacing: '0.1em', fontWeight: 700 }}>FOUNDING MEMBER PRICING</span>
+            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '10px', color: 'rgba(255,215,0,0.6)' }}>Available only during the first 6 months after launch \u00b7 Closes {founderDeadline}</span>
+          </div>
+        </div>
+
+        {/* Plan cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'start' }}>
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              style={{
+                position: 'relative',
+                background: plan.featured ? 'rgba(0,212,255,0.04)' : plan.isLifetime ? 'rgba(255,215,0,0.03)' : 'rgba(255,255,255,0.02)',
+                border: `1px solid ${plan.featured ? 'rgba(0,212,255,0.3)' : plan.isLifetime ? 'rgba(255,215,0,0.25)' : 'rgba(255,255,255,0.07)'}`,
+                borderRadius: '12px',
+                padding: '28px 22px',
+                boxShadow: plan.featured ? `0 0 40px ${plan.glowColor}` : plan.isLifetime ? `0 0 30px ${plan.glowColor}` : 'none',
+                transform: plan.featured ? 'scale(1.02)' : 'scale(1)',
+                transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+              }}
+            >
+              {/* Badge */}
+              {plan.badge && (
+                <div style={{
+                  position: 'absolute',
+                  top: '-12px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  background: plan.badgeColor,
+                  color: plan.isLifetime ? '#050608' : '#050608',
+                  fontFamily: "'JetBrains Mono',monospace",
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  letterSpacing: '0.12em',
+                  padding: '4px 12px',
+                  borderRadius: '20px',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {plan.badge}
+                </div>
+              )}
+
+              {/* Plan name */}
+              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '11px', letterSpacing: '0.14em', fontWeight: 700, color: plan.accentColor, marginBottom: '6px' }}>
+                {plan.name.toUpperCase()}
+              </div>
+              <div style={{ fontSize: '12px', color: 'rgba(168,184,204,0.6)', marginBottom: '20px', lineHeight: 1.4 }}>
+                {plan.tagline}
+              </div>
+
+              {/* Price */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                  <span style={{ fontSize: '36px', fontWeight: 800, color: plan.accentColor, lineHeight: 1, letterSpacing: '-0.02em' }}>
+                    {plan.price}
+                  </span>
+                </div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '10px', color: 'rgba(100,116,139,0.8)', marginTop: '4px' }}>
+                  {plan.priceSub}
+                </div>
+              </div>
+
+              {/* Founder lifetime notice */}
+              {plan.isLifetime && (
+                <div style={{ marginBottom: '16px', padding: '10px 12px', background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: '6px' }}>
+                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '9px', color: '#FFD700', fontWeight: 700, letterSpacing: '0.1em', marginBottom: '4px' }}>
+                    FOUNDING MEMBER PRICING
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,215,0,0.7)', lineHeight: 1.5 }}>
+                    Replaces monthly payments for qualifying users. Will never be offered again after the founder window closes.
+                  </div>
+                </div>
+              )}
+
+              {/* Features */}
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {plan.features.map((f) => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: 'rgba(168,184,204,0.8)', lineHeight: 1.45 }}>
+                    <span style={{ color: plan.accentColor, flexShrink: 0, marginTop: '1px', fontSize: '10px' }}>\u2713</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              {plan.ctaAction ? (
+                <button
+                  onClick={plan.ctaAction}
+                  disabled={checkoutMutation.isPending}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontFamily: "'JetBrains Mono',monospace",
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    borderRadius: '8px',
+                    border: `1px solid ${plan.accentColor}${plan.featured ? 'ff' : '50'}`,
+                    background: plan.featured ? plan.accentColor : plan.isLifetime ? plan.accentColor : `${plan.accentColor}12`,
+                    color: (plan.featured || plan.isLifetime) ? '#050608' : plan.accentColor,
+                    cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
+                    opacity: checkoutMutation.isPending ? 0.6 : 1,
+                    boxShadow: plan.featured ? `0 0 20px ${plan.accentColor}40` : plan.isLifetime ? `0 0 16px ${plan.accentColor}30` : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onMouseEnter={e => {
+                    if (!plan.featured && !plan.isLifetime) e.currentTarget.style.background = `${plan.accentColor}22`;
+                  }}
+                  onMouseLeave={e => {
+                    if (!plan.featured && !plan.isLifetime) e.currentTarget.style.background = `${plan.accentColor}12`;
+                  }}
+                >
+                  {plan.cta.toUpperCase()}
+                </button>
+              ) : (
+                <a
+                  href={plan.ctaHref}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    padding: '12px 16px',
+                    fontFamily: "'JetBrains Mono',monospace",
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    borderRadius: '8px',
+                    border: `1px solid ${plan.accentColor}30`,
+                    background: `${plan.accentColor}08`,
+                    color: plan.accentColor,
+                    textDecoration: 'none',
+                    textAlign: 'center',
+                    transition: 'all 0.15s ease',
+                    boxSizing: 'border-box',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = `${plan.accentColor}18`; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = `${plan.accentColor}08`; }}
+                >
+                  {plan.cta.toUpperCase()}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Feature comparison note */}
+        <div style={{ marginTop: '48px', padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', textAlign: 'center' }}>
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '9px', letterSpacing: '0.16em', color: 'rgba(0,212,255,0.4)', fontWeight: 700, marginBottom: '8px' }}>
+            FOUNDING MEMBER GUARANTEE
+          </div>
+          <p style={{ fontSize: '13px', color: 'rgba(168,184,204,0.65)', margin: 0, lineHeight: 1.65 }}>
+            The Founder Lifetime plan replaces monthly payments for qualifying users and will <strong style={{ color: 'rgba(255,215,0,0.8)' }}>never be offered again</strong> after the founder window closes in {founderDeadline}. All plans cancel anytime. No long-term contracts.
+          </p>
+        </div>
+
+        <p style={{ textAlign: 'center', color: 'rgba(100,116,139,0.6)', fontSize: '11px', fontFamily: "'JetBrains Mono',monospace", marginTop: '24px', letterSpacing: '0.08em' }}>
+          INSTITUTIONAL-GRADE MACRO INTELLIGENCE \u00b7 ALL PLANS CANCEL ANYTIME \u00b7 FOUNDING PRICING LOCKS AT SIGNUP
+        </p>
+      </div>
+    </section>
+  );
+}: { onRequestAccess: () => void }) {
   const [annual, setAnnual] = useState(false);
   // Scarcity: founding slots remaining (static for now, can be made dynamic)
   const foundingSlots = 47;
