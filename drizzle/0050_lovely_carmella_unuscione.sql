@@ -1,0 +1,1 @@
+ALTER TABLE `user_preferences` ADD `experienceMode` varchar(16) DEFAULT 'guided';

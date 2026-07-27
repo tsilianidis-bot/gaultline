@@ -10,6 +10,7 @@
    - Keyboard: Cmd+B toggles
    ============================================================ */
 import { useState, useEffect, useRef, useCallback } from "react";
+import { ExperienceSelector } from "./ExperienceSelector";
 import { useLocation } from "wouter";
 import {
   Menu, X, Search, ChevronRight,
@@ -101,6 +102,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "MARKET TOOLS",
     items: [
+      { id: "tools-home",         label: "Tools & Features Hub",    icon: LayoutDashboard, path: "/app/tools" },
       { id: "seismograph",        label: "Seismograph Intelligence", icon: Activity,     path: "/app/seismograph" },
       { id: "signals",           label: "Signals",                icon: Radio,        path: "/app/signals" },
       { id: "crypto-signals",    label: "Crypto Signals",         icon: Bitcoin,      path: "/app/crypto-signals" },
@@ -348,6 +350,11 @@ export default function LeftNavDrawer({ breachCount = 0 }: LeftNavDrawerProps) {
           >
             <X size={16} />
           </button>
+        </div>
+
+        {/* Experience Selector */}
+        <div style={{ borderBottom: `1px solid ${DRAWER_BORDER}`, flexShrink: 0 }}>
+          <ExperienceSelector onSelect={closeLeft} />
         </div>
 
         {/* Search */}

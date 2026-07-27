@@ -178,6 +178,9 @@ export default function Why() {
                 <span className="border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-400">
                   {marketMode === "canonical" ? "Canonical state" : "Deterministic fallback"}
                 </span>
+<Link href="/app/tools" className="flex items-center gap-1.5 border border-white/10 px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.13em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300">
+                  <ArrowRight size={11} /> Tools & Features
+                </Link>
                 <button
                   type="button"
                   onClick={refresh}

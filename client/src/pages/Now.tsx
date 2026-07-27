@@ -203,14 +203,19 @@ export default function Now() {
                   tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
                 />
               </div>
-              <button
-                type="button"
-                onClick={refresh}
-                aria-label="Refresh market data"
-                className="flex items-center gap-2 rounded-sm border border-white/10 px-3 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300 active:scale-[0.97]"
-              >
-                <RefreshCw size={12} /> Refresh
-              </button>
+              <div className="flex items-center gap-2">
+                <Link href="/app/tools" className="flex items-center gap-1.5 rounded-sm border border-white/10 px-3 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300">
+                  <ArrowRight size={11} /> Tools & Features
+                </Link>
+                <button
+                  type="button"
+                  onClick={refresh}
+                  aria-label="Refresh market data"
+                  className="flex items-center gap-2 rounded-sm border border-white/10 px-3 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300 active:scale-[0.97]"
+                >
+                  <RefreshCw size={12} /> Refresh
+                </button>
+              </div>
             </div>
 
             {dataError && (

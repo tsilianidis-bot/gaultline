@@ -1232,6 +1232,8 @@ export const userPreferences = mysqlTable("user_preferences", {
   hasSeenGettingStartedVideo: boolean("hasSeenGettingStartedVideo").default(false).notNull(),
   /** Preferred startup destination after ASHA briefing: 'now' | 'why' | 'outlook' | 'watch' | 'act' | 'last' */
   startupPage:        varchar("startupPage", { length: 32 }).default("now"),
+  /** Platform experience mode: 'guided' (five-question) | 'tools' (direct tool access) */
+  experienceMode:     varchar("experienceMode", { length: 16 }).default("guided"),
   /** Snapshot of last engine state for "Since Your Last Visit" diff — JSON */
   lastVisitSnapshot:  text("lastVisitSnapshot"),
   /** Timestamp of last visit */

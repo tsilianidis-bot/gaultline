@@ -4383,3 +4383,17 @@
 - [x] Fix: Add Seismograph Intelligence to NOW page Expert Tools section (Section 09)
 - [x] Confirmed: CTA button is "ENTER MARKET INTELLIGENCE →" (user-controlled, single arrow)
 - [x] Confirmed: 5-min safety timeout in App.tsx (crash-guard only, not a design timer)
+
+## Two-Experience Architecture (Jul 27 2026)
+- [x] DB migration: add experienceMode column to user_preferences table
+- [x] tRPC: getExperience and setExperience procedures in dailyBriefRouter
+- [x] ExperienceContext: localStorage + DB sync, guided/tools mode
+- [x] ExperienceSelector component: two-button toggle in sidebar
+- [x] Onboarding step 9: experience selection before entering app
+- [x] LeftNavDrawer: ExperienceSelector integrated between header and search
+- [x] ToolsHome page: /app/tools route with search, categories, recents, ASHA recommendations
+- [x] LeftNavDrawer: Tools & Features Hub added to MARKET TOOLS group
+- [x] Cross-experience links: Tools & Features link added to NOW, WHY, OUTLOOK, WATCH, ACT pages
+- [x] Seismograph routing: removed /app/seismograph from ANALYTICAL_LEGACY_ALIASES
+- [x] Seismograph nav: added to LeftNavDrawer MARKET TOOLS group
+- [x] Oracle Welcome: 5-minute crash-guard timeout (user-controlled via CTA)

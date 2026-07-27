@@ -452,4 +452,24 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
       }
       return { success: true };
     }),
+  // ── Experience mode preference ─────────────────────────────────────────────
+  getExperience: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { experienceMode: 'guided' as const };
+    const rows = await db.select({ experienceMode: userPreferences.experienceMode }).from(userPreferences).where(eq(userPreferences.userId, ctx.user.id)).limit(1);
+    return { experienceMode: (rows[0]?.experienceMode ?? 'guided') as 'guided' | 'tools' };
+  }),
+  setExperience: protectedProcedure
+    .input(z.object({ experienceMode: z.enum(['guided', 'tools']) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      const existing = await db.select({ id: userPreferences.id }).from(userPreferences).where(eq(userPreferences.userId, ctx.user.id)).limit(1);
+      if (existing.length) {
+        await db.update(userPreferences).set({ experienceMode: input.experienceMode }).where(eq(userPreferences.userId, ctx.user.id));
+      } else {
+        await db.insert(userPreferences).values({ userId: ctx.user.id, onboardingComplete: false, experienceMode: input.experienceMode });
+      }
+      return { success: true };
+    }),
 });

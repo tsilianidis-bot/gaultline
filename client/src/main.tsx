@@ -8,6 +8,7 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import { TickerStoreProvider } from "./contexts/TickerStore";
 import { AshaProvider } from "./contexts/AshaContext";
+import { ExperienceProvider } from "./contexts/ExperienceContext";
 import "./index.css";
 
 /**
@@ -167,7 +168,9 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <TickerStoreProvider>
         <AshaProvider>
-          <App />
+          <ExperienceProvider>
+            <App />
+          </ExperienceProvider>
         </AshaProvider>
       </TickerStoreProvider>
     </QueryClientProvider>

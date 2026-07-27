@@ -19,6 +19,7 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { trackEvent } from "@/hooks/useAnalytics";
+import { useExperience, type ExperienceMode } from "../contexts/ExperienceContext";
 
 // ── Design tokens (matching FAULTLINE dashboard) ──────────────
 const ACCENT = "#00D4FF";
@@ -30,7 +31,7 @@ const MONO_SM: React.CSSProperties = { fontFamily: "'JetBrains Mono', 'Fira Code
 const SANS: React.CSSProperties = { fontFamily: "'Inter', sans-serif" };
 
 // ── Total step count ──────────────────────────────────────────
-const TOTAL_STEPS = 8; // 0-indexed; steps 0–8
+const TOTAL_STEPS = 9; // 0-indexed; steps 0–9 (step 9 = experience selection)
 
 // ── Investor types ────────────────────────────────────────────
 // Internal `id` values are preserved from the original schema.
@@ -195,6 +196,8 @@ interface OnboardingFlowProps {
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [step, setStep] = useState(0);
+  const [selectedExperience, setSelectedExperience] = useState<ExperienceMode | null>(null);
+  const { setExperience } = useExperience();
   const [investorType, setInvestorType] = useState<string | null>(null);
   const [riskProfile, setRiskProfile] = useState<string | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
@@ -264,15 +267,21 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         watchlistTickers: watchlist,
         onboardingComplete: true,
       });
+      // Persist the experience choice made in step 9
+      if (selectedExperience) {
+        setExperience(selectedExperience);
+      }
       trackEvent("first_briefing_completed", {
         event_category: "onboarding",
         investor_type: investorType ?? "retail",
         risk_profile: riskProfile ?? "moderate",
         interests_count: interests.length,
         watchlist_count: watchlist.length,
+        experience_mode: selectedExperience ?? "guided",
       });
       onComplete();
     } catch {
+      if (selectedExperience) setExperience(selectedExperience);
       onComplete();
     }
     setIsSaving(false);
@@ -1011,16 +1020,15 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               </div>
 
               <button
-                onClick={handleComplete}
-                disabled={isSaving}
+                onClick={() => setStep(9)}
                 style={{
                   ...primaryBtn,
-                  background: isSaving ? "rgba(0,212,255,0.3)" : ACCENT,
-                  cursor: isSaving ? "default" : "pointer",
+                  background: ACCENT,
+                  cursor: "pointer",
                   marginBottom: "10px",
                 }}
               >
-                {isSaving ? "SAVING..." : "ENTER FAULTLINE →"}
+                CHOOSE YOUR EXPERIENCE →
               </button>
               <button
                 onClick={() => setStep(7)}
@@ -1036,6 +1044,108 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 }}
               >
                 Review My Setup
+              </button>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════
+              STEP 9 — CHOOSE YOUR EXPERIENCE
+          ══════════════════════════════════════════════════════ */}
+          {step === 9 && (
+            <div style={{ padding: "8px 0" }}>
+              <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                <div style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: ACCENT, letterSpacing: "0.15em", marginBottom: "8px" }}>
+                  CHOOSE YOUR EXPERIENCE
+                </div>
+                <p style={{ ...SANS, fontSize: "13px", color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+                  FAULTLINE offers two ways to access the same intelligence.<br />
+                  You can switch at any time from the navigation.
+                </p>
+              </div>
+              {/* Option 1 — Guided Intelligence */}
+              <button
+                onClick={() => setSelectedExperience("guided")}
+                style={{
+                  width: "100%",
+                  background: selectedExperience === "guided" ? "rgba(0,212,255,0.12)" : SURFACE,
+                  border: `1px solid ${selectedExperience === "guided" ? ACCENT : BORDER}`,
+                  borderRadius: "10px",
+                  padding: "16px",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  marginBottom: "10px",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                  <div style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: selectedExperience === "guided" ? ACCENT : "#F0F4FF", letterSpacing: "0.08em" }}>
+                    GUIDED INTELLIGENCE
+                  </div>
+                  <div style={{ ...MONO_SM, fontSize: "9px", color: "rgba(0,212,255,0.7)", background: "rgba(0,212,255,0.1)", padding: "2px 8px", borderRadius: "4px", letterSpacing: "0.1em" }}>
+                    RECOMMENDED FOR FIRST VISIT
+                  </div>
+                </div>
+                <p style={{ ...SANS, fontSize: "12px", color: "rgba(255,255,255,0.55)", lineHeight: 1.6, marginBottom: "12px" }}>
+                  Organizes FAULTLINE around five essential market questions. The fastest way to understand what is happening, why it is happening, what may happen next, what to monitor, and what it means for your decisions.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {["NOW — What is happening?", "WHY — Why is it happening?", "OUTLOOK — What is likely next?", "WATCH — What should I monitor?", "ACT — What does this mean for my decisions?"].map(q => (
+                    <div key={q} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: ACCENT, flexShrink: 0 }} />
+                      <span style={{ ...SANS, fontSize: "11px", color: "rgba(255,255,255,0.5)" }}>{q}</span>
+                    </div>
+                  ))}
+                </div>
+              </button>
+              {/* Option 2 — Tools & Features */}
+              <button
+                onClick={() => setSelectedExperience("tools")}
+                style={{
+                  width: "100%",
+                  background: selectedExperience === "tools" ? "rgba(0,212,255,0.12)" : SURFACE,
+                  border: `1px solid ${selectedExperience === "tools" ? ACCENT : BORDER}`,
+                  borderRadius: "10px",
+                  padding: "16px",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  marginBottom: "20px",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <div style={{ marginBottom: "8px" }}>
+                  <div style={{ ...MONO, fontSize: "13px", fontWeight: 700, color: selectedExperience === "tools" ? ACCENT : "#F0F4FF", letterSpacing: "0.08em" }}>
+                    TOOLS & FEATURES
+                  </div>
+                </div>
+                <p style={{ ...SANS, fontSize: "12px", color: "rgba(255,255,255,0.55)", lineHeight: 1.6, marginBottom: "12px" }}>
+                  Direct access to FAULTLINE's complete analytical platform. Market intelligence, signals, Social Intelligence, Market Movers, systemic-risk analysis, historical analogs, stress testing, portfolio tools, crypto intelligence, reports, and research.
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {["Market Intelligence", "Signal Outlook", "Social Intelligence", "Market Movers", "Historical Analogs", "Stress Testing", "Portfolio Tools", "Crypto Intelligence"].map(t => (
+                    <span key={t} style={{ ...MONO_SM, fontSize: "9px", color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.05)", padding: "3px 8px", borderRadius: "4px", letterSpacing: "0.06em" }}>{t}</span>
+                  ))}
+                </div>
+              </button>
+              <p style={{ ...SANS, fontSize: "11px", color: "rgba(255,255,255,0.3)", textAlign: "center", marginBottom: "16px" }}>
+                Both experiences use the same underlying intelligence. The difference is how it is organized and presented.
+              </p>
+              <button
+                onClick={handleComplete}
+                disabled={isSaving || !selectedExperience}
+                style={{
+                  ...primaryBtn,
+                  background: (!selectedExperience || isSaving) ? "rgba(0,212,255,0.3)" : ACCENT,
+                  cursor: (!selectedExperience || isSaving) ? "default" : "pointer",
+                  marginBottom: "10px",
+                }}
+              >
+                {isSaving ? "SAVING..." : !selectedExperience ? "SELECT AN EXPERIENCE" : `ENTER ${selectedExperience === "guided" ? "GUIDED INTELLIGENCE" : "TOOLS & FEATURES"} →`}
+              </button>
+              <button
+                onClick={() => setStep(8)}
+                style={{ background: "none", border: "none", cursor: "pointer", ...SANS, fontSize: "12px", color: "rgba(255,255,255,0.3)", textDecoration: "underline", width: "100%" }}
+              >
+                ← Back
               </button>
             </div>
           )}

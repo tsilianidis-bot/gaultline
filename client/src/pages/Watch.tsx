@@ -179,15 +179,20 @@ export default function Watch() {
               {marketState?.cache.status ?? "local baseline"}
             </span>
           </div>
-          <button
-            type="button"
-            onClick={refresh}
-            disabled={isRefreshing}
-            className="inline-flex items-center gap-2 border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-400 transition hover:border-orange-300/30 hover:text-orange-200 disabled:cursor-wait disabled:opacity-50"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+<div className="flex items-center gap-2">
+            <Link href="/app/tools" className="inline-flex items-center gap-1.5 border border-white/10 px-3 py-2 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300">
+              <ArrowRight size={11} /> Tools & Features
+            </Link>
+            <button
+              type="button"
+              onClick={refresh}
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-2 border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-400 transition hover:border-orange-300/30 hover:text-orange-200 disabled:cursor-wait disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {dataError ? (
