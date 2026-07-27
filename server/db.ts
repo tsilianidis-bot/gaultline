@@ -455,6 +455,8 @@ export async function updateUserStripe(
     stripeCustomerId?: string | null;
     stripeSubscriptionId?: string | null;
     accessTier?: 'free' | 'core' | 'premium' | 'founding';
+    lifetimeAccess?: boolean;
+    lifetimePurchasedAt?: Date | null;
   }
 ): Promise<void> {
   const db = await getDb();
@@ -462,6 +464,16 @@ export async function updateUserStripe(
   await db.update(users)
     .set({ ...data, updatedAt: new Date() })
     .where(eq(users.id, userId));
+}
+
+/** Count users with lifetime access (for promotion window display). */
+export async function getLifetimeMemberCount(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const [row] = await db.select({ cnt: count() })
+    .from(users)
+    .where(eq(users.lifetimeAccess, true));
+  return Number(row?.cnt ?? 0);
 }
 
 export async function updateDashboardMode(
@@ -475,10 +487,10 @@ export async function updateDashboardMode(
     .where(eq(users.id, userId));
 }
 
-export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null } | null> {
+export async function getUserByStripeCustomerId(customerId: string): Promise<{ id: number; name: string | null; email: string | null; accessTier: string | null; lifetimeAccess: boolean } | null> {
   const db = await getDb();
   if (!db) return null;
-  const [user] = await db.select({ id: users.id, name: users.name, email: users.email, accessTier: users.accessTier })
+  const [user] = await db.select({ id: users.id, name: users.name, email: users.email, accessTier: users.accessTier, lifetimeAccess: users.lifetimeAccess })
     .from(users)
     .where(eq(users.stripeCustomerId, customerId))
     .limit(1);

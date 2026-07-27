@@ -8,6 +8,10 @@ import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { stripe } from "../stripe/client";
 import { PLANS } from "../stripe/products";
+import { getLifetimeMemberCount } from "../db";
+
+/** Maximum founding lifetime spots available at the $299 promotional price. */
+const LIFETIME_FOUNDING_LIMIT = 100;
 
 export const billingRouter = router({
   getPlans: publicProcedure.query(() => {
@@ -83,4 +87,20 @@ export const billingRouter = router({
       });
       return { url: session.url };
     }),
+
+  /**
+   * Returns the current lifetime promotion window status:
+   * how many spots have been claimed and how many remain.
+   * Used by the UserAccount page to show a real-time scarcity indicator.
+   */
+  getLifetimeStatus: publicProcedure.query(async () => {
+    const claimed = await getLifetimeMemberCount();
+    const remaining = Math.max(0, LIFETIME_FOUNDING_LIMIT - claimed);
+    return {
+      limit: LIFETIME_FOUNDING_LIMIT,
+      claimed,
+      remaining,
+      isSoldOut: remaining === 0,
+    };
+  }),
 });

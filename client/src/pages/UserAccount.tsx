@@ -509,6 +509,11 @@ export default function UserAccount() {
     },
   });
 
+  // Lifetime promotion window status (spots remaining)
+  const { data: lifetimeStatus } = trpc.billing.getLifetimeStatus.useQuery(undefined, {
+    staleTime: 60_000,
+  });
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -836,41 +841,49 @@ export default function UserAccount() {
             </button>
             <button
               onClick={() => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin })}
-              disabled={checkoutMutation.isPending}
+              disabled={checkoutMutation.isPending || lifetimeStatus?.isSoldOut}
               style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '12px 20px',
-                background: 'rgba(255,215,0,0.05)',
-                border: '1px solid rgba(255,215,0,0.2)',
+                background: lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.05)' : 'rgba(255,215,0,0.05)',
+                border: `1px solid ${lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.2)' : 'rgba(255,215,0,0.2)'}`,
                 borderRadius: '8px',
-                color: '#FFD700',
+                color: lifetimeStatus?.isSoldOut ? '#6B7280' : '#FFD700',
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: '11px', letterSpacing: '0.08em',
-                cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: checkoutMutation.isPending ? 0.6 : 1,
+                cursor: (checkoutMutation.isPending || lifetimeStatus?.isSoldOut) ? 'not-allowed' : 'pointer',
+                opacity: (checkoutMutation.isPending || lifetimeStatus?.isSoldOut) ? 0.6 : 1,
                 transition: 'all 0.2s ease',
               }}
             >
               <Crown size={13} />
-              {checkoutMutation.isPending ? 'LOADING...' : `LIFETIME — ${PRICING_PLANS.lifetime.priceLabel.toUpperCase()}`}
+              {checkoutMutation.isPending
+                ? 'LOADING...'
+                : lifetimeStatus?.isSoldOut
+                  ? 'LIFETIME — SOLD OUT'
+                  : `LIFETIME — ${PRICING_PLANS.lifetime.priceLabel.toUpperCase()}`}
             </button>
           </div>
-          {/* Limited spots disclaimer */}
+          {/* Lifetime spots disclaimer — real-time */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '8px',
             padding: '10px 14px',
-            background: 'rgba(255,215,0,0.04)',
-            border: '1px solid rgba(255,215,0,0.15)',
+            background: lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.04)' : 'rgba(255,215,0,0.04)',
+            border: `1px solid ${lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.15)' : 'rgba(255,215,0,0.15)'}`,
             borderRadius: '8px',
             marginBottom: '16px',
           }}>
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFD700', flexShrink: 0 }} />
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: lifetimeStatus?.isSoldOut ? '#6B7280' : '#FFD700', flexShrink: 0 }} />
             <span style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '9px', letterSpacing: '0.12em',
-              color: 'rgba(255,215,0,0.55)',
+              color: lifetimeStatus?.isSoldOut ? 'rgba(107,114,128,0.7)' : 'rgba(255,215,0,0.55)',
             }}>
-              FOUNDING COHORT IS LIMITED — SPOTS CLOSE WITHOUT NOTICE — PRICE LOCKS AT SIGNUP
+              {lifetimeStatus?.isSoldOut
+                ? 'LIFETIME FOUNDING COHORT IS FULL — ALL 100 SPOTS CLAIMED'
+                : lifetimeStatus
+                  ? `${lifetimeStatus.remaining} OF ${lifetimeStatus.limit} FOUNDING LIFETIME SPOTS REMAINING — PRICE LOCKS AT SIGNUP`
+                  : 'FOUNDING COHORT IS LIMITED — SPOTS CLOSE WITHOUT NOTICE — PRICE LOCKS AT SIGNUP'}
             </span>
           </div>
 

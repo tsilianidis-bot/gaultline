@@ -120,11 +120,20 @@ export async function handleStripeWebhook(req: Request, res: Response) {
         const tier = await resolveTierFromSession(session.id);
         const prevTier = await getUserTier(userId).catch(() => 'unknown');
 
+        // Detect lifetime (one-time payment) purchases via session metadata
+        const planId = session.metadata?.plan_id as string | undefined;
+        const isLifetimePurchase = planId === 'lifetime';
+
         await updateUserStripe(userId, {
           accessTier: tier,
           stripeCustomerId: customerId ?? undefined,
           stripeSubscriptionId: subscriptionId ?? undefined,
+          ...(isLifetimePurchase ? { lifetimeAccess: true, lifetimePurchasedAt: new Date() } : {}),
         });
+
+        if (isLifetimePurchase) {
+          console.log(`[Stripe Webhook] User ${userId} granted LIFETIME access (one-time payment — permanent)`);
+        }
 
         await writeEntitlementAudit({
           userId,
@@ -195,6 +204,11 @@ export async function handleStripeWebhook(req: Request, res: Response) {
 
         const user = await getUserByStripeCustomerId(customerId);
         if (user) {
+          // Lifetime members are immune to subscription cancellation — their access is permanent.
+          if (user.lifetimeAccess) {
+            console.log(`[Stripe Webhook] customer.subscription.deleted — User ${user.id} has lifetime access, skipping downgrade`);
+            break;
+          }
           const prevTier = user.accessTier;
           await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
 
@@ -249,6 +263,11 @@ export async function handleStripeWebhook(req: Request, res: Response) {
             }
           }
         } else if (status === 'canceled' || status === 'unpaid' || status === 'past_due') {
+          // Lifetime members are immune to subscription status changes — their access is permanent.
+          if (user.lifetimeAccess) {
+            console.log(`[Stripe Webhook] customer.subscription.updated:${status} — User ${user.id} has lifetime access, skipping downgrade`);
+            break;
+          }
           const prevTier = user.accessTier;
           await updateUserStripe(user.id, { accessTier: 'free', stripeSubscriptionId: null });
 

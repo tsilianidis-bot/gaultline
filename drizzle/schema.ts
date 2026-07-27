@@ -45,6 +45,13 @@ export const users = mysqlTable("users", {
   /** Active Stripe subscription ID — set by webhook on successful payment, cleared on cancellation. */
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 64 }),
   /**
+   * True when the user has purchased a lifetime (one-time payment) plan.
+   * Lifetime members are immune to subscription cancellation — their access is permanent.
+   */
+  lifetimeAccess: boolean("lifetimeAccess").default(false).notNull(),
+  /** Timestamp of the lifetime purchase. NULL for non-lifetime users. */
+  lifetimePurchasedAt: timestamp("lifetimePurchasedAt"),
+  /**
    * Timestamp of the last completed Market Preflight session.
    * NULL means the user has never completed a preflight review.
    * Used by the PreflightGate to determine if a prompt is needed on dashboard load.

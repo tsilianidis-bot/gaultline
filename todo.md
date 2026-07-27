@@ -4291,3 +4291,18 @@
 - [x] Wire ProductExperience gate into App.tsx (first-time visitors only, fl_product_experience_v1 key)
 - [x] Reduce all blink-alert animations from 1-2s to 4-6s calm idle
 - [x] Reduce all fl-pulse animations from 1-2s to 4-5s calm idle
+
+## Session 3 — Jul 26 2026
+
+### Phase 4: $299 Lifetime Stripe Product
+- [x] Add lifetimeAccess (boolean) and lifetimePurchasedAt (timestamp) to users table in schema.ts
+- [x] Generate and apply Drizzle migration 0049_curious_scarecrow.sql
+- [x] Update updateUserStripe() in db.ts to accept lifetimeAccess and lifetimePurchasedAt
+- [x] Add getLifetimeMemberCount() helper to db.ts
+- [x] Update getUserByStripeCustomerId() to return lifetimeAccess field
+- [x] Update webhook.ts: set lifetimeAccess=true on lifetime checkout.session.completed
+- [x] Update webhook.ts: skip downgrade for lifetime users on subscription.deleted and subscription.updated
+- [x] Add getLifetimeStatus procedure to billing router (spots claimed/remaining/isSoldOut)
+- [x] Add getLifetimeStatus query hook to UserAccount.tsx
+- [x] Update lifetime button to show SOLD OUT when isSoldOut=true
+- [x] Update disclaimer to show real-time spots remaining (e.g. "100 OF 100 FOUNDING LIFETIME SPOTS REMAINING")
