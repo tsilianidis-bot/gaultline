@@ -4364,3 +4364,6 @@
 - [ ] Item 6c: Full test suite — all failures fixed
 - [ ] Item 6d: Checkpoint and deploy
 - [ ] Item 7: Browser-test live production URL — screenshots, console/network errors
+
+## Root URL Fix (2026-07-27)
+- [x] Fix root URL / showing blank screen for returning visitors — changed <Route path="/"><div /></Route> to <Route path="/"><Redirect to="/app/now" /></Route> so returning visitors land on the NOW dashboard instead of a blank page

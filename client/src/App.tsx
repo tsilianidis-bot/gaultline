@@ -640,8 +640,9 @@ function Router() {
       <Route path="/stock-market-today"><Redirect to="/stock-market-risk-today" /></Route>
       <Route path="/market-briefing"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
       {/* Root / — the App component's render gate handles the cinematic/marketing/auth flow.
-           This explicit route prevents the catch-all from redirecting / to /404. */}
-      <Route path="/"><div /></Route>
+           For first-time visitors the render gate intercepts and shows cinematic/marketing/auth.
+           For returning visitors (all gates passed) redirect to the NOW dashboard. */}
+      <Route path="/"><Redirect to="/app/now" /></Route>
       {/* Marketing site moved to /about and /platform — no longer the homepage */}
       <Route path="/about">
         <ErrorBoundary>
