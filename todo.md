@@ -4342,3 +4342,25 @@
 - [x] Accessibility: aria-label on all interactive buttons, aria-hidden on decorative elements, role="navigation", role="contentinfo", aria-label on sections, SVG aria-label + role="img"
 - [x] TypeScript: 0 errors after all fixes
 - [x] Checkpoint saved
+
+## 10-Item Correction Pass (2026-07-27)
+
+- [x] Item 1a: Remove Richard Roper from ProductExperience.tsx (JT monogram + Founder, FAULTLINE)
+- [x] Item 1b: Remove Richard Roper from Press.tsx (all 7 occurrences)
+- [x] Item 1c: Remove Richard name from BuildBadge.tsx comment
+- [ ] Item 1d: Update .project-config.json OWNER_NAME
+- [ ] Item 1e: Final grep verification — no remaining founder name references
+- [ ] Item 2: Fix visitor sequence — cinematic intro FIRST, then marketing page, then ENTER FAULTLINE
+- [ ] Item 3a: Create canonical lifetime-offer config
+- [ ] Item 3b: Fix $299 copy — 6-month availability window language
+- [ ] Item 3c: Fix methodology links — use /methodology not /app/methodology
+- [ ] Item 4a: Rewrite historical validation claims to be defensible
+- [ ] Item 4b: Fix ASHA keyFindings crash — full string validation
+- [ ] Item 4c: Add regression tests for ASHA string validation
+- [ ] Item 5a: Update stale route-composition tests (ACT/WHY/WATCH/OUTLOOK)
+- [ ] Item 5b: Add blank-screen failure states — error boundary, unknown-route fallback
+- [ ] Item 6a: Preserve checkout intent through auth
+- [ ] Item 6b: TypeScript validation (0 errors)
+- [ ] Item 6c: Full test suite — all failures fixed
+- [ ] Item 6d: Checkpoint and deploy
+- [ ] Item 7: Browser-test live production URL — screenshots, console/network errors

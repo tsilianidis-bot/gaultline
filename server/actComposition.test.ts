@@ -39,7 +39,13 @@ describe("ACT destination composition", () => {
     expect(appSource).toContain('const ACT_DEEP_PATH = "/app/act/deep"');
     expect(appSource).toContain("act: Act");
     expect(appSource).toContain('<Route path={ACT_DEEP_PATH} component={SmartDiscovery} />');
-    expect(appSource.indexOf("<Route path={ACT_DEEP_PATH}")).toBeLessThan(appSource.indexOf("<CanonicalDestinationRoutes"));
+    // Deep-path route must appear before the inlined canonical destination map in the Router JSX.
+    // CanonicalDestinationRoutes was inlined in App.tsx — the anchor is the comment that precedes the map.
+    const deepPathIdx = appSource.indexOf("<Route path={ACT_DEEP_PATH}");
+    const canonicalMapIdx = appSource.indexOf("Canonical destinations \u2014 inlined to avoid wouter");
+    expect(deepPathIdx, "ACT_DEEP_PATH route must exist in App.tsx").toBeGreaterThan(-1);
+    expect(canonicalMapIdx, "Inlined canonical destination map must exist in App.tsx").toBeGreaterThan(-1);
+    expect(deepPathIdx, "ACT deep-path route must appear before the canonical destination map").toBeLessThan(canonicalMapIdx);
   });
 
   it("projects decision posture from shared canonical MarketState with explicit deterministic fallback", () => {

@@ -1,7 +1,7 @@
 /**
  * BuildBadge — fixed bottom-right badge showing the deployed commit hash and build time.
  * Fetches from /api/build-info which reads BUILD_COMMIT + BUILD_TIME env vars injected at deploy time.
- * Allows Richard to confirm which version is live at getfaultline.live.
+ * Allows the team to confirm which version is live at getfaultline.live.
  *
  * IMPORTANT: z-index is set to 40 (below the mobile bottom tab bar at z-50) and
  * bottom is offset above the tab bar (~60px) so it never intercepts tab bar taps.

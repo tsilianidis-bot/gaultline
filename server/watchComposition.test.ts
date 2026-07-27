@@ -40,7 +40,13 @@ describe("WATCH destination composition", () => {
     expect(appSource).toContain('const WATCH_DEEP_PATH = "/app/watch/deep"');
     expect(appSource).toContain("watch: Watch");
     expect(appSource).toContain('<Route path={WATCH_DEEP_PATH} component={AIWatch} />');
-    expect(appSource.indexOf("<Route path={WATCH_DEEP_PATH}")).toBeLessThan(appSource.indexOf("<CanonicalDestinationRoutes"));
+    // Deep-path route must appear before the inlined canonical destination map in the Router JSX.
+    // CanonicalDestinationRoutes was inlined in App.tsx — the anchor is the comment that precedes the map.
+    const deepPathIdx = appSource.indexOf("<Route path={WATCH_DEEP_PATH}");
+    const canonicalMapIdx = appSource.indexOf("Canonical destinations \u2014 inlined to avoid wouter");
+    expect(deepPathIdx, "WATCH_DEEP_PATH route must exist in App.tsx").toBeGreaterThan(-1);
+    expect(canonicalMapIdx, "Inlined canonical destination map must exist in App.tsx").toBeGreaterThan(-1);
+    expect(deepPathIdx, "WATCH deep-path route must appear before the canonical destination map").toBeLessThan(canonicalMapIdx);
   });
 
   it("projects monitoring evidence from shared canonical MarketState with explicit deterministic fallback", () => {

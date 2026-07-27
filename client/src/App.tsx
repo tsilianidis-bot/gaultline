@@ -19,7 +19,7 @@ import { DemoProvider, isDemoPath } from './contexts/DemoContext';
 import DemoBanner from './components/DemoBanner';
 import { OnboardingVideoModal } from './components/OnboardingVideoModal';
 import AshaLiveBriefing from './components/AshaLiveBriefing';
-import ProductExperience from './components/ProductExperience';
+import ProductExperience, { CHECKOUT_INTENT_KEY } from './components/ProductExperience';
 import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
 import { trpc } from './lib/trpc';
@@ -970,12 +970,32 @@ function App() {
   }, []);
 
   // Resolve auth gate: if auth has loaded and user is present, mark done automatically
-  useEffect(() => {
+    useEffect(() => {
     if (!authLoading && user && !authGateDone) {
       setAuthGateDone(true);
     }
   }, [authLoading, user, authGateDone]);
-
+  // ── Checkout intent preservation ──────────────────────────────────────────
+  // When an unauthenticated user clicks "Get Lifetime Access" on ProductExperience,
+  // fl_checkout_intent_v1='lifetime' is stored in localStorage before the OAuth redirect.
+  // After login completes and user resolves here, we detect the intent, auto-trigger
+  // the Stripe checkout in a new tab, then clear the flag so it only fires once.
+  const checkoutIntentMutation = trpc.billing.createCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data?.url) window.open(data.url, '_blank');
+    },
+  });
+  useEffect(() => {
+    if (authLoading || !user) return;
+    try {
+      const intent = localStorage.getItem(CHECKOUT_INTENT_KEY);
+      if (intent === 'lifetime') {
+        localStorage.removeItem(CHECKOUT_INTENT_KEY);
+        checkoutIntentMutation.mutate({ planId: 'lifetime', origin: window.location.origin });
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user?.id]);
   // Re-check ashaBriefingDone when user resolves (user id needed for per-user key).
   // For returning users, ashaBriefingDone starts as true (to prevent blank screen).
   // Once user resolves, we check the per-user today key:

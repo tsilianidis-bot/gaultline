@@ -313,9 +313,16 @@ function buildEngineAvailabilityContext(context: AshaGatewayContext): {
 // ── Validate Oracle briefing for quality issues ───────────────
 function validateOracleBriefing(parsed: Record<string, unknown>): string[] {
   const issues: string[] = [];
-  const keyFindings = Array.isArray(parsed.keyFindings) ? parsed.keyFindings as string[] : [];
-  const riskFactors = Array.isArray(parsed.riskFactors) ? parsed.riskFactors as string[] : [];
-  const invalidationConditions = Array.isArray(parsed.invalidationConditions) ? parsed.invalidationConditions as string[] : [];
+  // Filter to string-only elements to prevent .toLowerCase() crash on non-string values
+  const keyFindings = Array.isArray(parsed.keyFindings)
+    ? (parsed.keyFindings as unknown[]).filter((f): f is string => typeof f === 'string')
+    : [];
+  const riskFactors = Array.isArray(parsed.riskFactors)
+    ? (parsed.riskFactors as unknown[]).filter((f): f is string => typeof f === 'string')
+    : [];
+  const invalidationConditions = Array.isArray(parsed.invalidationConditions)
+    ? (parsed.invalidationConditions as unknown[]).filter((f): f is string => typeof f === 'string')
+    : [];
 
   if (keyFindings.length < 3) issues.push(`keyFindings has only ${keyFindings.length} items (minimum 3 required)`);
   if (riskFactors.length < 3) issues.push(`riskFactors has only ${riskFactors.length} items (minimum 3 required)`);

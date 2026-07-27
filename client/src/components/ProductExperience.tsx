@@ -18,7 +18,41 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getLoginUrl } from '../const';
+import { useAuth } from '../_core/hooks/useAuth';
 import { trpc } from '../lib/trpc';
+
+/** localStorage key for preserving checkout intent across the OAuth login redirect */
+export const CHECKOUT_INTENT_KEY = 'fl_checkout_intent_v1';
+
+// ── Canonical Lifetime Offer Configuration ──────────────────────────────────
+// Single source of truth for all lifetime offer copy and display logic.
+// Do NOT hardcode lifetime offer rules in individual components — read from here.
+export const LIFETIME_OFFER = {
+  price: '$299',
+  priceCents: 29900,
+  billingType: 'one-time' as const,
+  stripePlanId: 'lifetime' as const,
+  // Official public launch date — set this when the launch date is confirmed.
+  // Until then, display copy uses the availability-window language below.
+  launchDate: null as string | null, // ISO date string e.g. '2026-09-01'
+  // Availability window: 6 months from official public launch date.
+  availabilityWindowMonths: 6,
+  // Maximum founding cohort size (separate from the 6-month time window).
+  foundingCohortLimit: 100,
+  // Display copy — used consistently across all components.
+  displayCopy: {
+    badge: 'FOUNDING LIFETIME ACCESS',
+    headline: 'One payment. Lifetime access.',
+    subheadline: 'Limited founding lifetime access — available for six months after official launch.',
+    availabilityNote: 'The founding cohort is limited to 100 members. This offer is also time-limited: it closes six months after the official public launch date. Once either limit is reached, the lifetime offer closes permanently.',
+    priceNote: '$299 one-time · No monthly charges · No renewals',
+    secureNote: 'SECURE CHECKOUT · STRIPE · NO RECURRING CHARGES',
+    soldOutLabel: 'Founding Cohort Closed',
+    ctaLabel: 'Get Lifetime Access →',
+    ctaLoadingLabel: 'Opening Checkout…',
+    tryFreeLabel: 'Try Free First',
+  },
+} as const;
 
 // ── Assets ────────────────────────────────────────────────────
 const ASSETS = {
@@ -232,6 +266,7 @@ interface ProductExperienceProps {
 }
 
 export default function ProductExperience({ onEnter }: ProductExperienceProps) {
+  const { isAuthenticated } = useAuth();
   const [scrollY, setScrollY] = useState(0);
   const [heroVisible, setHeroVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -290,11 +325,18 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
     window.location.href = getLoginUrl();
   }, []);
 
-  // Lifetime checkout
+  // Lifetime checkout — preserves intent across OAuth login redirect for unauthenticated users
   const handleLifetimeCheckout = useCallback(() => {
     track('lifetime_cta_click', { source: 'pricing_section' });
+    if (!isAuthenticated) {
+      // Store intent so App.tsx can auto-trigger checkout after login completes
+      localStorage.setItem(CHECKOUT_INTENT_KEY, 'lifetime');
+      track('lifetime_checkout_intent_stored', { source: 'product_experience' });
+      window.location.href = getLoginUrl();
+      return;
+    }
     checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin });
-  }, [checkoutMutation]);
+  }, [checkoutMutation, isAuthenticated]);
 
   const spotsRemaining = lifetimeStatus?.remaining ?? null;
   const isSoldOut = lifetimeStatus?.isSoldOut === true;
@@ -357,7 +399,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Dot-Com Crash',
       drawdown: '−49%',
       duration: '929 days',
-      signal: 'Elevated credit spreads, extreme valuation dispersion, and deteriorating breadth would have flagged Critical Stress (80+) months before the peak.',
+      signal: 'Retrospective analysis: elevated credit spreads, extreme valuation dispersion, and deteriorating breadth would have registered Critical Stress (80+) under the current framework months before the peak.',
       accent: RED,
       delay: 0,
     },
@@ -366,7 +408,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Global Financial Crisis',
       drawdown: '−57%',
       duration: '517 days',
-      signal: 'Subprime contagion signals, TED spread explosion, and interbank liquidity collapse would have shown Critical Stress building from mid-2007.',
+      signal: 'Retrospective analysis: subprime contagion signals, TED spread explosion, and interbank liquidity collapse would have registered Critical Stress building from mid-2007 under the current framework.',
       accent: RED,
       delay: 80,
     },
@@ -375,7 +417,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'COVID Crash',
       drawdown: '−34%',
       duration: '33 days',
-      signal: 'Volatility regime shift, credit spread spike, and liquidity deterioration compressed into days — Pressure Index would have crossed 80 within the first week.',
+      signal: 'Retrospective analysis: volatility regime shift, credit spread spike, and liquidity deterioration compressed into days — the Pressure Index would have crossed 80 within the first week under the current framework.',
       accent: GOLD,
       delay: 160,
     },
@@ -384,7 +426,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Fed Tightening Bear Market',
       drawdown: '−25%',
       duration: '282 days',
-      signal: 'Inverted yield curve, real rate shock, and breadth collapse would have flagged Elevated Stress (60+) from January — before the S&P peaked.',
+      signal: 'Retrospective analysis: inverted yield curve, real rate shock, and breadth collapse would have flagged Elevated Stress (60+) from January under the current framework — before the S&P peaked.',
       accent: GOLD,
       delay: 240,
     },
@@ -393,7 +435,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Regional Banking Crisis',
       drawdown: 'KRE −40%',
       duration: '60 days',
-      signal: 'Credit spread widening in financials, deposit flight signals, and contagion risk indicators would have shown sector-specific stress weeks before SVB.',
+      signal: 'Retrospective analysis: credit spread widening in financials, deposit flight signals, and contagion risk indicators would have shown sector-specific stress weeks before SVB under the current framework.',
       accent: CYAN,
       delay: 320,
     },
@@ -402,7 +444,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Tariff Shock & AI Bubble Pressure',
       drawdown: '−19%',
       duration: 'Ongoing',
-      signal: 'AI sector concentration risk, macro regime deterioration, and trade policy uncertainty are currently tracked in real time across all five FAULTLINE engines.',
+      signal: 'Live forward tracking (ongoing): AI sector concentration risk, macro regime deterioration, and trade policy uncertainty are currently monitored in real time across all five FAULTLINE engines. This is not a completed forecast.',
       accent: CYAN,
       delay: 400,
     },
@@ -655,7 +697,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       <section
         ref={validationRef}
         id="validation"
-        aria-label="25-year historical track record"
+        aria-label="Historical backtest analysis across major market regimes"
         style={{ padding: 'clamp(60px,8vw,120px) clamp(20px,5vw,80px)', background: 'rgba(255,59,48,0.02)', borderTop: '1px solid rgba(255,59,48,0.08)', borderBottom: '1px solid rgba(255,59,48,0.08)' }}
       >
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -663,21 +705,24 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             const { ref, visible } = useFadeIn(0.1);
             return (
               <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(30px)', transition: 'all 0.7s ease', marginBottom: '56px', textAlign: 'center' }}>
-                <SectionLabel text="25-Year Track Record" color={RED} />
+                <SectionLabel text="Historical Validation" color={RED} />
                 <h2 style={{ fontFamily: MONO, fontSize: 'clamp(22px,3.5vw,40px)', color: '#F0F4FF', lineHeight: 1.2, marginBottom: '20px' }}>
-                  Every major crash since 2000.<br />
-                  <span style={{ color: RED }}>The signals were there.</span>
+                  Major market dislocations, 2000–2025.<br />
+                  <span style={{ color: RED }}>Retrospective analysis.</span>
                 </h2>
-                <p style={{ fontFamily: SANS, fontSize: 'clamp(14px,1.8vw,17px)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '640px', margin: '0 auto 32px' }}>
-                  FAULTLINE's methodology is built on 25 years of market history. The systemic pressure that preceded each major dislocation was measurable — weeks and months before the event became obvious. Here is what the platform would have shown.
+                <p style={{ fontFamily: SANS, fontSize: 'clamp(14px,1.8vw,17px)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '640px', margin: '0 auto 16px' }}>
+                  Retrospective testing shows how FAULTLINE's current framework would have interpreted systemic pressure conditions across major historical dislocations from 2000 to 2025.
+                </p>
+                <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.6, maxWidth: '640px', margin: '0 auto 32px', letterSpacing: '0.05em' }}>
+                  BACKTEST DISCLAIMER: The analysis below is retrospective. It applies FAULTLINE's current methodology to historical data. It does not represent live forward performance or a real-time prediction record. Past indicator behavior does not guarantee future results.
                 </p>
                 {/* Trust strip */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(20px,4vw,48px)', flexWrap: 'wrap', marginBottom: '16px' }}>
                   {[
-                    { value: '6', label: 'Major Crashes Analyzed' },
-                    { value: '25+', label: 'Years of Market History' },
+                    { value: '6', label: 'Market Regimes Analyzed' },
+                    { value: '2000–2025', label: 'Historical Data Range' },
                     { value: '5', label: 'Intelligence Engines' },
-                    { value: '100%', label: 'Transparent Methodology' },
+                    { value: 'Open', label: 'Methodology Documentation' },
                   ].map((stat) => (
                     <div key={stat.label} style={{ textAlign: 'center' }}>
                       <div style={{ fontFamily: MONO, fontSize: 'clamp(24px,3vw,36px)', color: CYAN, fontWeight: 700, lineHeight: 1 }}>{stat.value}</div>
@@ -703,7 +748,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
               <div ref={ref} style={{ opacity: visible ? 1 : 0, transition: 'opacity 0.7s ease', textAlign: 'center' }}>
                 <p style={{ fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.35)', marginBottom: '24px', lineHeight: 1.6 }}>
                   All historical analysis is based on publicly available market data. Methodology is fully documented and transparent.{' '}
-                  <a href="/app/methodology" style={{ color: CYAN, textDecoration: 'none' }} onClick={() => track('methodology_link_click')}>
+                  <a href="/methodology" style={{ color: CYAN, textDecoration: 'none' }} onClick={() => track('methodology_link_click')}>
                     Read the methodology →
                   </a>
                 </p>
@@ -824,10 +869,10 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                     border: `1px solid ${CYAN}40`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: MONO, fontSize: '16px', color: CYAN, fontWeight: 700,
-                  }}>R</div>
+                  }}>JT</div>
                   <div>
-                    <div style={{ fontFamily: MONO, fontSize: '13px', color: '#F0F4FF', letterSpacing: '0.05em' }}>Richard Roper</div>
-                    <div style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Founder & CEO, FAULTLINE</div>
+                    <div style={{ fontFamily: MONO, fontSize: '13px', color: '#F0F4FF', letterSpacing: '0.05em' }}>JT</div>
+                    <div style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Founder, FAULTLINE</div>
                   </div>
                 </div>
                 <div style={{ marginTop: '32px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
@@ -907,7 +952,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                         vs. $59/month Pro subscription
                       </div>
                       <div style={{ fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '32px', lineHeight: 1.5 }}>
-                        Break-even in 6 months. Every month after that is free.
+                        Limited founding lifetime access — available for six months after official launch.
                       </div>
 
                       {isSoldOut ? (
@@ -1059,7 +1104,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
         <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
           {[
             { label: 'About', href: '/about' },
-            { label: 'Methodology', href: '/app/methodology' },
+            { label: 'Methodology', href: '/methodology' },
             { label: 'Track Record', href: '/app/track-record' },
           ].map((l) => (
             <a key={l.label} href={l.href} style={{ fontFamily: MONO, fontSize: '10px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em', textDecoration: 'none', textTransform: 'uppercase' }}>{l.label}</a>

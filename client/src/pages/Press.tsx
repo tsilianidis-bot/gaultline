@@ -48,7 +48,7 @@ As of July 2026
 
 Platform: Macroeconomic Risk Intelligence
 Developer: Phoenix Systems
-Founder & CEO: Richard Roper
+Founder: JT
 Website: getfaultline.live
 Category: AI-powered financial intelligence / Systemic risk awareness
 AI Intelligence Layer: ASHA (Adaptive Systemic Heuristic Analyst)
@@ -92,7 +92,7 @@ ASHA synthesises ten live market engines in real time, delivering institutional-
 
 Unlike AI assistants that answer questions in isolation, ASHA evaluates all ten FAULTLINE engines before generating any response: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. ASHA identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
 
-"Most investors see price action. ASHA sees the structural conditions beneath it," said Richard Roper, Founder and CEO of Phoenix Systems. "Every time a user asks ASHA a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+"Most investors see price action. ASHA sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "Every time a user asks ASHA a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
 
 FAULTLINE's Seismograph™ — the platform's primary intelligence instrument — tracks systemic pressure across macroeconomic, financial, and market systems and feeds ASHA's continuous situational awareness. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
@@ -111,7 +111,7 @@ const COMPANY_OVERVIEW = `PHOENIX SYSTEMS — COMPANY OVERVIEW
 As of July 2026
 
 Company: Phoenix Systems
-Founder & CEO: Richard Roper
+Founder: JT
 Product: FAULTLINE (flagship)
 Website: getfaultline.live
 Category: AI-first financial intelligence / Macroeconomic risk intelligence
@@ -465,8 +465,8 @@ export default function Press() {
             The greatest investment advantage is not speed. It is clarity.
           </p>
           <div style={{ marginTop: "28px", paddingTop: "24px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", fontWeight: 700, color: "#F0F4FF", marginBottom: "4px" }}>Richard Roper</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B", letterSpacing: "0.1em" }}>FOUNDER & CEO · PHOENIX SYSTEMS</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", fontWeight: 700, color: "#F0F4FF", marginBottom: "4px" }}>JT</div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#64748B", letterSpacing: "0.1em" }}>FOUNDER · PHOENIX SYSTEMS</div>
           </div>
         </div>
       </section>
@@ -521,7 +521,7 @@ export default function Press() {
         <div style={{ ...card, borderColor: "rgba(0,212,255,0.12)", background: "rgba(0,212,255,0.02)" }}>
           <blockquote style={{ borderLeft: "2px solid rgba(0,212,255,0.5)", paddingLeft: "24px", margin: 0, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "16px", color: "#CBD5E1", fontStyle: "italic", lineHeight: 1.75 }}>
             "Most investors see price action. ASHA sees the structural conditions beneath it. Every time a user asks ASHA a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
-            <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "12px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>RICHARD ROPER · FOUNDER & CEO · PHOENIX SYSTEMS</div>
+            <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "12px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
         </div>
       </section>
@@ -668,7 +668,7 @@ export default function Press() {
           {[
             { label: "PLATFORM", value: "FAULTLINE" },
             { label: "DEVELOPER", value: "Phoenix Systems" },
-            { label: "FOUNDER & CEO", value: "Richard Roper" },
+            { label: "FOUNDER", value: "JT" },
             { label: "CATEGORY", value: "AI Market Intelligence OS" },
             { label: "WEBSITE", value: "getfaultline.live" },
             { label: "AVAILABILITY", value: "Web + PWA (iOS / Android)" },
@@ -707,7 +707,7 @@ export default function Press() {
           </p>
           <blockquote style={{ borderLeft: "2px solid rgba(0,212,255,0.4)", paddingLeft: "20px", margin: "24px 0", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "15px", color: "#CBD5E1", fontStyle: "italic", lineHeight: 1.7 }}>
             "Most investors see price action. ASHA sees the structural conditions beneath it. Every time a user asks ASHA a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
-            <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>RICHARD ROPER · FOUNDER & CEO · PHOENIX SYSTEMS</div>
+            <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
           <p style={prose}>
             FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Free, Core ($9.99/mo), Pro ($59/mo), and Founding Member ($49/mo, locked for life). The Founding Member tier remains available for a limited time.
