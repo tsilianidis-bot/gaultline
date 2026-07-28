@@ -133,7 +133,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { id: "admin-publishing", label: "Publishing",              icon: Library,       path: "/app/admin/publishing" },
   { id: "conv-intel",       label: "Conversation Intel",      icon: MessageSquare, path: "/app/admin/conversation-intelligence" },
   { id: "fmos-health",      label: "FMOS Health",             icon: Cpu,           path: "/app/fmos-health" },
-  { id: "intel-validation", label: "Intel Validation",        icon: LineChart,     path: "/app/intelligence-validation" },
+  { id: "intel-validation", label: "Intel Validation",        icon: LineChart,     path: "/app/validation" },
 ];
 
 // ── Searchable flat list ──────────────────────────────────────

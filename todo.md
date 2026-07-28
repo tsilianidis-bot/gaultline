@@ -4406,3 +4406,17 @@
 - [x] Pricing maps to existing Stripe planIds: core→Mobile, premium→Standard, founding→Professional, lifetime→Founder Lifetime
 - [x] Founding Member window notice added to pricing header and footer
 - [x] All 83 test files passing (1504 tests) after changes
+
+## Session: Full Platform Sweep (Launch Readiness)
+- [x] Seismograph router: added try/catch to getUnifiedIntelligence — returns null instead of crashing on empty DB
+- [x] Seismograph router: added try/catch to triggerPatternAnalysis — throws TRPCError instead of unhandled exception
+- [x] LeftNavDrawer: fixed /app/intelligence-validation → /app/validation (was 404ing)
+- [x] All 33 nav paths verified — all resolve to registered routes
+- [x] All lazy-imported page files verified — 0 missing files
+- [x] Why.tsx: invalidationConditions guarded with ?? [] — safe
+- [x] Watch.tsx: activePatterns guarded with ?? [] — safe
+- [x] Portfolio.tsx: keyDrivers guarded with ?.length > 0 check — safe
+- [x] Signals.tsx: MiniSparkline data always array — safe
+- [x] ExperienceProvider correctly nested inside tRPC provider tree
+- [x] ToolsHome.tsx uses CANONICAL_DESTINATION_BY_ID — no hardcoded paths
+- [x] All 83 test files passing, 1504 tests passing, 0 failures

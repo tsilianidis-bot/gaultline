@@ -4,6 +4,7 @@
  */
 
 import { publicProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
   getSeismographState,
@@ -147,14 +148,25 @@ export const seismographRouter = router({
    * Never returns placeholder states — always has full institutional memory.
    */
   getUnifiedIntelligence: publicProcedure.query(async () => {
-    return getUnifiedSeismographIntelligence();
+    try {
+      return await getUnifiedSeismographIntelligence();
+    } catch (err) {
+      // Return null so the client renders an empty-state instead of crashing
+      console.warn('[SeismographRouter] getUnifiedIntelligence failed — no historical data yet:', err);
+      return null;
+    }
   }),
 
   /**
    * Manually trigger a pattern analysis run (admin use).
    */
   triggerPatternAnalysis: publicProcedure.mutation(async () => {
-    await runPatternAnalysis();
-    return { success: true };
+    try {
+      await runPatternAnalysis();
+      return { success: true };
+    } catch (err) {
+      console.error('[SeismographRouter] triggerPatternAnalysis failed:', err);
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Pattern analysis failed', cause: err });
+    }
   }),
 });
