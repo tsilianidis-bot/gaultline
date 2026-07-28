@@ -2011,690 +2011,434 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   const checkoutMutation = trpc.billing.createCheckout.useMutation({
     onSuccess: (data) => {
       if (data.url) {
-        toast.info('Redirecting to checkout\u2026', { description: 'Opening Stripe secure payment page.' });
-        window.open(data.url, '_blank');
+        toast.info("Redirecting to checkout\u2026", { description: "Opening Stripe secure payment page." });
+        window.open(data.url, "_blank");
       }
     },
     onError: (err) => {
-      toast.error('Checkout unavailable', { description: err.message });
+      toast.error("Checkout unavailable", { description: err.message });
     },
   });
 
-  // Countdown: Founder Lifetime window — 6 months from launch (static display)
-  const founderDeadline = "January 2026";
-
-  type Plan = {
-    id: string;
-    name: string;
-    price: string;
-    priceSub: string;
-    tagline: string;
-    badge?: string;
-    badgeColor?: string;
-    accentColor: string;
-    glowColor: string;
-    features: string[];
-    cta: string;
-    ctaAction?: () => void;
-    ctaHref?: string;
-    featured?: boolean;
-    isFounder?: boolean;
-    isLifetime?: boolean;
+  const handleCheckout = (planId: "premium" | "founding" | "lifetime") => {
+    checkoutMutation.mutate({ planId, origin: window.location.origin });
   };
 
-  const plans: Plan[] = [
-    {
-      id: 'free',
-      name: 'Free',
-      price: 'Free',
-      priceSub: 'No credit card required',
-      tagline: 'Introduction to the platform',
-      accentColor: '#64748B',
-      glowColor: 'rgba(100,116,139,0.08)',
-      features: [
-        'Limited daily market access',
-        'Limited reports',
-        'Basic Pressure Index',
-        'Limited Signals',
-        'Designed as an introduction',
-      ],
-      cta: 'Start Free',
-      ctaHref: PLATFORM_URL,
-    },
-    {
-      id: 'core',
-      name: 'Mobile',
-      price: '$9.99',
-      priceSub: '/month \u2014 cancel anytime',
-      tagline: 'Mobile-first market intelligence',
-      badge: 'MOST POPULAR',
-      badgeColor: '#22D3EE',
-      accentColor: '#22D3EE',
-      glowColor: 'rgba(34,211,238,0.1)',
-      features: [
-        'Mobile-first experience',
-        'Pulse',
-        'Signals',
-        'Watchlist',
-        'Sector Rotation',
-        'Daily Brief',
-        'Upgrade path to full platform',
-      ],
-      cta: 'Get Mobile \u2014 $9.99/mo',
-      ctaAction: () => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin }),
-    },
-    {
-      id: 'premium',
-      name: 'Standard',
-      price: '$59',
-      priceSub: '/month \u2014 cancel anytime',
-      tagline: 'Full FAULTLINE Intelligence platform',
-      badge: 'RECOMMENDED',
-      badgeColor: '#00D4FF',
-      accentColor: '#00D4FF',
-      glowColor: 'rgba(0,212,255,0.12)',
-      featured: true,
-      features: [
-        'Full FAULTLINE Intelligence platform',
-        'Daily reports',
-        'Pressure Index',
-        'Regime Detection',
-        'Historical Analogs',
-        'Signal Outlook',
-        'Watchlists',
-        'AI Intelligence',
-        'Seismograph',
-        'Research tools',
-      ],
-      cta: 'Get Standard \u2014 $59/mo',
-      ctaAction: () => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin }),
-    },
-    {
-      id: 'founding',
-      name: 'Professional',
-      price: '$99',
-      priceSub: '/month \u2014 cancel anytime',
-      tagline: 'Institutional features + API access',
-      badge: 'INSTITUTIONAL',
-      badgeColor: '#A78BFA',
-      accentColor: '#A78BFA',
-      glowColor: 'rgba(167,139,250,0.1)',
-      features: [
-        'Everything in Standard',
-        'Advanced research',
-        'Institutional features',
-        'API access (when enabled)',
-        'Expanded data and analytics',
-        'Priority feature access',
-      ],
-      cta: 'Get Professional \u2014 $99/mo',
-      ctaAction: () => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin }),
-    },
-    {
-      id: 'lifetime',
-      name: 'Founder Lifetime',
-      price: '$299',
-      priceSub: 'one-time \u2014 lifetime access',
-      tagline: 'Founding Member Pricing \u2014 pay once, never again',
-      badge: 'FOUNDING MEMBER',
-      badgeColor: '#FFD700',
-      accentColor: '#FFD700',
-      glowColor: 'rgba(255,215,0,0.12)',
-      isLifetime: true,
-      isFounder: true,
-      features: [
-        'Everything in Standard',
-        'Lifetime access \u2014 pay once',
-        'Founding member badge',
-        'Future feature grandfathering',
-        'Roadmap previews & early beta',
-        'Priority feature access',
-        'Exclusive founder-only tools',
-        'Direct feedback channel',
-      ],
-      cta: 'Claim Founder Lifetime \u2014 $299',
-      ctaAction: () => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin }),
-    },
+  const FREE_FEATURES = [
+    "Limited daily market briefings",
+    "Limited ASHA usage",
+    "Basic Pressure Index",
+    "Sample Signals",
+    "Limited Historical Analogs",
   ];
+
+  const PRO_FEATURES = [
+    "Unlimited ASHA — AI macro intelligence",
+    "Full Seismograph Command Center",
+    "Full Signals — stocks & crypto",
+    "Portfolio Intelligence",
+    "Watchlists & custom tracking",
+    "Alerts & notifications",
+    "Institutional research tools",
+  ];
+
+  const LIFETIME_FEATURES = [
+    "Everything in Pro — forever",
+    "All future Pro features included",
+    "Never pay another subscription",
+    "Priority access to new modules",
+    "Founding member status",
+    "Available only during founding period",
+  ];
+
+  const cardBase: React.CSSProperties = {
+    position: "relative",
+    display: "flex",
+    flexDirection: "column",
+    borderRadius: "14px",
+    padding: "32px 28px 28px",
+    flex: "1 1 0",
+    minWidth: "260px",
+    maxWidth: "380px",
+    transition: "transform 0.18s ease, box-shadow 0.18s ease",
+  };
 
   return (
     <section
       id="access"
       ref={pricingRef}
-      style={{ background: '#050608', padding: '100px 0 80px', position: 'relative', overflow: 'hidden' }}
+      style={{
+        background: "linear-gradient(180deg, #050608 0%, #070a0f 100%)",
+        padding: "96px 24px 80px",
+        position: "relative",
+        overflow: "hidden",
+      }}
     >
       {/* Ambient glow */}
-      <div style={{ position: 'absolute', top: '10%', left: '50%', transform: 'translateX(-50%)', width: '700px', height: '300px', background: 'radial-gradient(ellipse at center, rgba(0,212,255,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{
+        position: "absolute", top: "0", left: "50%", transform: "translateX(-50%)",
+        width: "700px", height: "300px",
+        background: "radial-gradient(ellipse at center top, rgba(0,212,255,0.06) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px' }}>
+      <div style={{ maxWidth: "1100px", margin: "0 auto", position: "relative" }}>
+
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '64px' }}>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '10px', letterSpacing: '0.2em', color: 'rgba(0,212,255,0.5)', fontWeight: 700, marginBottom: '16px' }}>
-            INTELLIGENCE ACCESS
+        <div style={{ textAlign: "center", marginBottom: "56px" }}>
+          <div style={{
+            display: "inline-block",
+            fontFamily: "'JetBrains Mono',monospace",
+            fontSize: "10px",
+            letterSpacing: "0.22em",
+            color: "rgba(0,212,255,0.55)",
+            fontWeight: 700,
+            marginBottom: "16px",
+            padding: "6px 14px",
+            border: "1px solid rgba(0,212,255,0.15)",
+            borderRadius: "4px",
+          }}>
+            FOUNDING MEMBER PRICING — WINDOW IS OPEN
           </div>
-          <h2 style={{ fontSize: 'clamp(28px, 5vw, 48px)', fontWeight: 800, color: '#E2E8F0', lineHeight: 1.15, margin: '0 0 16px', letterSpacing: '-0.02em' }}>
+          <h2 style={{
+            fontFamily: "'Space Grotesk','Inter',sans-serif",
+            fontSize: "clamp(28px, 5vw, 42px)",
+            fontWeight: 700,
+            color: "#E2E8F0",
+            margin: "0 0 14px",
+            letterSpacing: "-0.02em",
+            lineHeight: 1.15,
+          }}>
             Choose Your Intelligence Level
           </h2>
-          <p style={{ fontSize: '16px', color: 'rgba(168,184,204,0.75)', maxWidth: '520px', margin: '0 auto', lineHeight: 1.65 }}>
-            From free access to institutional-grade intelligence. Every plan includes the FAULTLINE Pressure Index.
+          <p style={{
+            fontSize: "15px",
+            color: "rgba(148,163,184,0.75)",
+            maxWidth: "520px",
+            margin: "0 auto",
+            lineHeight: 1.6,
+          }}>
+            Institutional-grade macro intelligence. The Founding Lifetime plan locks in full access permanently — no future price increases, no subscription renewals.
           </p>
-          {/* Founder window notice */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '20px', padding: '8px 16px', background: 'rgba(255,215,0,0.06)', border: '1px solid rgba(255,215,0,0.2)', borderRadius: '8px' }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '10px', color: '#FFD700', letterSpacing: '0.1em', fontWeight: 700 }}>FOUNDING MEMBER PRICING</span>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '10px', color: 'rgba(255,215,0,0.6)' }}>Available only during the first 6 months after launch \u00b7 Closes {founderDeadline}</span>
-          </div>
         </div>
 
-        {/* Plan cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', alignItems: 'start' }}>
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
+        {/* Three-tier grid */}
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "20px",
+          justifyContent: "center",
+          alignItems: "stretch",
+        }}>
+
+          {/* ── FREE ── */}
+          <div
+            style={{
+              ...cardBase,
+              background: "rgba(255,255,255,0.025)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; }}
+          >
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "10px",
+                letterSpacing: "0.2em",
+                color: "rgba(100,116,139,0.7)",
+                fontWeight: 700,
+                marginBottom: "10px",
+              }}>FREE</div>
+              <div style={{
+                fontFamily: "'Space Grotesk','Inter',sans-serif",
+                fontSize: "36px",
+                fontWeight: 700,
+                color: "#94A3B8",
+                lineHeight: 1,
+                marginBottom: "6px",
+              }}>$0</div>
+              <div style={{ fontSize: "12px", color: "rgba(100,116,139,0.6)", fontFamily: "'JetBrains Mono',monospace" }}>
+                No credit card required
+              </div>
+            </div>
+
+            <div style={{ fontSize: "13px", color: "rgba(148,163,184,0.6)", marginBottom: "24px", lineHeight: 1.5 }}>
+              An introduction to the platform. Explore the core experience before committing.
+            </div>
+
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: "9px", flex: 1 }}>
+              {FREE_FEATURES.map(f => (
+                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "rgba(148,163,184,0.65)", lineHeight: 1.45 }}>
+                  <span style={{ color: "#64748B", flexShrink: 0, marginTop: "2px", fontSize: "11px" }}>✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <a
+              href={PLATFORM_URL}
               style={{
-                position: 'relative',
-                background: plan.featured ? 'rgba(0,212,255,0.04)' : plan.isLifetime ? 'rgba(255,215,0,0.03)' : 'rgba(255,255,255,0.02)',
-                border: `1px solid ${plan.featured ? 'rgba(0,212,255,0.3)' : plan.isLifetime ? 'rgba(255,215,0,0.25)' : 'rgba(255,255,255,0.07)'}`,
-                borderRadius: '12px',
-                padding: '28px 22px',
-                boxShadow: plan.featured ? `0 0 40px ${plan.glowColor}` : plan.isLifetime ? `0 0 30px ${plan.glowColor}` : 'none',
-                transform: plan.featured ? 'scale(1.02)' : 'scale(1)',
-                transition: 'box-shadow 0.2s ease, transform 0.2s ease',
+                display: "block",
+                width: "100%",
+                padding: "13px 16px",
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                borderRadius: "8px",
+                border: "1px solid rgba(100,116,139,0.35)",
+                background: "rgba(100,116,139,0.08)",
+                color: "#94A3B8",
+                textDecoration: "none",
+                textAlign: "center",
+                boxSizing: "border-box",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(100,116,139,0.18)";
+                e.currentTarget.style.borderColor = "rgba(100,116,139,0.6)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(100,116,139,0.08)";
+                e.currentTarget.style.borderColor = "rgba(100,116,139,0.35)";
               }}
             >
-              {/* Badge */}
-              {plan.badge && (
-                <div style={{
-                  position: 'absolute',
-                  top: '-12px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: plan.badgeColor,
-                  color: plan.isLifetime ? '#050608' : '#050608',
-                  fontFamily: "'JetBrains Mono',monospace",
-                  fontSize: '9px',
-                  fontWeight: 800,
-                  letterSpacing: '0.12em',
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {plan.badge}
-                </div>
-              )}
+              TRY FREE — NO CARD NEEDED
+            </a>
+          </div>
 
-              {/* Plan name */}
-              <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '11px', letterSpacing: '0.14em', fontWeight: 700, color: plan.accentColor, marginBottom: '6px' }}>
-                {plan.name.toUpperCase()}
+          {/* ── PRO ── */}
+          <div
+            style={{
+              ...cardBase,
+              background: "rgba(0,212,255,0.04)",
+              border: "1px solid rgba(0,212,255,0.22)",
+              boxShadow: "0 0 40px rgba(0,212,255,0.06)",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
+              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 60px rgba(0,212,255,0.12)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 40px rgba(0,212,255,0.06)";
+            }}
+          >
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "10px",
+                letterSpacing: "0.2em",
+                color: "rgba(0,212,255,0.7)",
+                fontWeight: 700,
+                marginBottom: "10px",
+              }}>PRO</div>
+              <div style={{
+                fontFamily: "'Space Grotesk','Inter',sans-serif",
+                fontSize: "36px",
+                fontWeight: 700,
+                color: "#00D4FF",
+                lineHeight: 1,
+                marginBottom: "6px",
+              }}>$59<span style={{ fontSize: "16px", fontWeight: 400, color: "rgba(0,212,255,0.55)", marginLeft: "4px" }}>/mo</span></div>
+              <div style={{ fontSize: "12px", color: "rgba(0,212,255,0.45)", fontFamily: "'JetBrains Mono',monospace" }}>
+                Cancel anytime
               </div>
-              <div style={{ fontSize: '12px', color: 'rgba(168,184,204,0.6)', marginBottom: '20px', lineHeight: 1.4 }}>
-                {plan.tagline}
-              </div>
-
-              {/* Price */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                  <span style={{ fontSize: '36px', fontWeight: 800, color: plan.accentColor, lineHeight: 1, letterSpacing: '-0.02em' }}>
-                    {plan.price}
-                  </span>
-                </div>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '10px', color: 'rgba(100,116,139,0.8)', marginTop: '4px' }}>
-                  {plan.priceSub}
-                </div>
-              </div>
-
-              {/* Founder lifetime notice */}
-              {plan.isLifetime && (
-                <div style={{ marginBottom: '16px', padding: '10px 12px', background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)', borderRadius: '6px' }}>
-                  <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '9px', color: '#FFD700', fontWeight: 700, letterSpacing: '0.1em', marginBottom: '4px' }}>
-                    FOUNDING MEMBER PRICING
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'rgba(255,215,0,0.7)', lineHeight: 1.5 }}>
-                    Replaces monthly payments for qualifying users. Will never be offered again after the founder window closes.
-                  </div>
-                </div>
-              )}
-
-              {/* Features */}
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {plan.features.map((f) => (
-                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: 'rgba(168,184,204,0.8)', lineHeight: 1.45 }}>
-                    <span style={{ color: plan.accentColor, flexShrink: 0, marginTop: '1px', fontSize: '10px' }}>\u2713</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA */}
-              {plan.ctaAction ? (
-                <button
-                  onClick={plan.ctaAction}
-                  disabled={checkoutMutation.isPending}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    fontFamily: "'JetBrains Mono',monospace",
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    borderRadius: '8px',
-                    border: `1px solid ${plan.accentColor}${plan.featured ? 'ff' : '50'}`,
-                    background: plan.featured ? plan.accentColor : plan.isLifetime ? plan.accentColor : `${plan.accentColor}12`,
-                    color: (plan.featured || plan.isLifetime) ? '#050608' : plan.accentColor,
-                    cursor: checkoutMutation.isPending ? 'not-allowed' : 'pointer',
-                    opacity: checkoutMutation.isPending ? 0.6 : 1,
-                    boxShadow: plan.featured ? `0 0 20px ${plan.accentColor}40` : plan.isLifetime ? `0 0 16px ${plan.accentColor}30` : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onMouseEnter={e => {
-                    if (!plan.featured && !plan.isLifetime) e.currentTarget.style.background = `${plan.accentColor}22`;
-                  }}
-                  onMouseLeave={e => {
-                    if (!plan.featured && !plan.isLifetime) e.currentTarget.style.background = `${plan.accentColor}12`;
-                  }}
-                >
-                  {plan.cta.toUpperCase()}
-                </button>
-              ) : (
-                <a
-                  href={plan.ctaHref}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '12px 16px',
-                    fontFamily: "'JetBrains Mono',monospace",
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    letterSpacing: '0.1em',
-                    borderRadius: '8px',
-                    border: `1px solid ${plan.accentColor}30`,
-                    background: `${plan.accentColor}08`,
-                    color: plan.accentColor,
-                    textDecoration: 'none',
-                    textAlign: 'center',
-                    transition: 'all 0.15s ease',
-                    boxSizing: 'border-box',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = `${plan.accentColor}18`; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = `${plan.accentColor}08`; }}
-                >
-                  {plan.cta.toUpperCase()}
-                </a>
-              )}
             </div>
-          ))}
-        </div>
 
-        {/* Feature comparison note */}
-        <div style={{ marginTop: '48px', padding: '24px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', textAlign: 'center' }}>
-          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: '9px', letterSpacing: '0.16em', color: 'rgba(0,212,255,0.4)', fontWeight: 700, marginBottom: '8px' }}>
-            FOUNDING MEMBER GUARANTEE
-          </div>
-          <p style={{ fontSize: '13px', color: 'rgba(168,184,204,0.65)', margin: 0, lineHeight: 1.65 }}>
-            The Founder Lifetime plan replaces monthly payments for qualifying users and will <strong style={{ color: 'rgba(255,215,0,0.8)' }}>never be offered again</strong> after the founder window closes in {founderDeadline}. All plans cancel anytime. No long-term contracts.
-          </p>
-        </div>
+            <div style={{ fontSize: "13px", color: "rgba(148,163,184,0.7)", marginBottom: "24px", lineHeight: 1.5 }}>
+              Full access to every intelligence module. Built for serious investors and traders.
+            </div>
 
-        <p style={{ textAlign: 'center', color: 'rgba(100,116,139,0.6)', fontSize: '11px', fontFamily: "'JetBrains Mono',monospace", marginTop: '24px', letterSpacing: '0.08em' }}>
-          INSTITUTIONAL-GRADE MACRO INTELLIGENCE \u00b7 ALL PLANS CANCEL ANYTIME \u00b7 FOUNDING PRICING LOCKS AT SIGNUP
-        </p>
-      </div>
-    </section>
-  );
-}: { onRequestAccess: () => void }) {
-  const [annual, setAnnual] = useState(false);
-  // Scarcity: founding slots remaining (static for now, can be made dynamic)
-  const foundingSlots = 47;
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: "9px", flex: 1 }}>
+              {PRO_FEATURES.map(f => (
+                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "rgba(168,184,204,0.8)", lineHeight: 1.45 }}>
+                  <span style={{ color: "#00D4FF", flexShrink: 0, marginTop: "2px", fontSize: "11px" }}>✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
 
-  // Fire pricing_viewed once when the section scrolls into view
-  const pricingRef = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const el = pricingRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        trackPricingViewed("marketing_site");
-        obs.disconnect();
-      }
-    }, { threshold: 0.2 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  type Tier = {
-    name: string;
-    tagline: string;
-    price: string;
-    annualPrice?: string;
-    annualSub?: string;
-    priceSub: string;
-    desc: string;
-    features: string[];
-    cta: string;
-    ctaLink?: string;
-    ctaAction?: () => void;
-    featured: boolean;
-    popularLabel?: string;
-    scarcity?: boolean;
-    accentColor: string;
-    glowColor: string;
-  };
-
-  const checkoutMutation = trpc.billing.createCheckout.useMutation({
-    onSuccess: (data) => {
-      if (data.url) {
-        toast.info('Redirecting to checkout…', { description: 'Opening Stripe secure payment page.' });
-        window.open(data.url, '_blank');
-      }
-    },
-    onError: (err) => {
-      toast.error('Checkout unavailable', { description: err.message });
-    },
-  });
-
-  const tiers: Tier[] = [
-    {
-      name: "OBSERVER",
-      tagline: "Free Intelligence",
-      price: "Free",
-      priceSub: "no credit card required",
-      desc: "See what the pressure looks like. Get a taste of the intelligence layer top funds pay millions to build.",
-      features: [
-        "FAULTLINE Pressure Index™ (delayed 24h)",
-        "1 watchlist ticker",
-        "Limited stock intelligence previews",
-        "Limited crypto signal previews",
-        "Daily macro snapshot",
-        "Public market briefings",
-      ],
-      cta: "Start Observing Free",
-      ctaLink: PLATFORM_URL,
-      featured: false,
-      accentColor: "#64748B",
-      glowColor: "rgba(100,116,139,0.12)",
-    },
-    {
-      name: "CORE",
-      tagline: "Mobile-first market intelligence.",
-      price: PRICING_PLANS.core.priceLabel,
-      priceSub: "/month — cancel anytime",
-      desc: "Fast signals, portfolio tracking, and push alerts on the go. Know the pressure reading before you enter any position.",
-      features: [
-        "Unlimited stock signals (BUY/SELL/HOLD)",
-        "Unlimited crypto signals",
-        "Portfolio tracker with live P&L",
-        "Alt Rotation tracking",
-        "Daily market briefings",
-        "Volatility monitoring",
-        "Push alerts",
-        "Unlimited Watchlist",
-        "Aftershock alerts",
-        "Macro snapshot feed",
-      ],
-      cta: "Get Core — $9.99/mo",
-      ctaAction: () => checkoutMutation.mutate({ planId: 'core', origin: window.location.origin }),
-      featured: false,
-      popularLabel: "MOST POPULAR ENTRY",
-      accentColor: "#22D3EE",
-      glowColor: "rgba(34,211,238,0.1)",
-    },
-    {
-      name: "PRO",
-      tagline: "Serious trader / portfolio manager.",
-      price: PRICING_PLANS.premium.priceLabel,
-      priceSub: "/month — cancel anytime",
-      desc: "The full intelligence platform. Every engine, every signal, every edge — fully unlocked. AI Diagnostic, Crypto Intelligence, Aftershock Engine, and full macro suite.",
-      features: [
-        "Everything in Pro",
-        "Real-time Pressure Index™",
-        "Full Signals Engine (all tickers)",
-        "AI Diagnostic Intelligence™",
-        "Full crypto intelligence engine",
-        "Advanced Aftershock Engine™",
-        "Full systemic risk analytics",
-        "Macro regime analysis",
-        "Advanced watchlists & alerts",
-        "Historical analog engine",
-      ],
-      cta: "Unlock Pro — $59/mo",
-      ctaAction: () => checkoutMutation.mutate({ planId: 'premium', origin: window.location.origin }),
-      featured: true,
-      accentColor: "#00D4FF",
-      glowColor: "rgba(0,212,255,0.15)",
-    },
-    {
-      name: "FOUNDING MEMBER",
-      tagline: "Rate locked for life.",
-      price: PRICING_PLANS.founding.priceLabel,
-      priceSub: "/month — locked forever",
-      desc: "Everything in Pro at $49/mo — locked forever. Never increases. Join the founding cohort before spots close.",
-      features: [
-        "Everything in Pro",
-        "Rate locked at $49/mo forever",
-        "Founding member badge",
-        "Future feature grandfathering",
-        "Roadmap previews & early beta",
-        "Priority feature access",
-        "Exclusive founder-only tools",
-        "Direct feedback channel",
-      ],
-      cta: "Lock In Founding — $49/mo",
-      ctaAction: () => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin }),
-      featured: false,
-      scarcity: true,
-      accentColor: "#FFD700",
-      glowColor: "rgba(255,215,0,0.12)",
-    },
-    {
-      name: "FOUNDING LIFETIME",
-      tagline: "Pay once. Never again.",
-      price: PRICING_PLANS.lifetime.priceLabel,
-      priceSub: "one-time — lifetime access",
-      desc: "Everything in Pro, forever. One payment of $299. No monthly charges, no renewals. Limited quantity.",
-      features: [
-        "Everything in Pro",
-        "Lifetime access — pay once",
-        "Founding member badge",
-        "Future feature grandfathering",
-        "Roadmap previews",
-        "Priority feature access",
-        "Early beta systems",
-        "Exclusive founder-only tools",
-      ],
-      cta: "Get Lifetime Access — $299",
-      ctaAction: () => checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin }),
-      featured: false,
-      scarcity: true,
-      accentColor: "#FFD700",
-      glowColor: "rgba(255,215,0,0.12)",
-    },
-  ];
-
-  return (
-    <section id="access" ref={pricingRef} className="py-24 bg-[#050608] relative overflow-hidden">
-      {/* Ambient glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,rgba(0,212,255,0.03)_0%,transparent_70%)]" />
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="inline-block text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 border border-[#00D4FF]/20 px-4 py-1.5 rounded-full mb-4">
-            INTELLIGENCE ACCESS
-          </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            Get the read top funds have.<br /><span className="text-[#00D4FF]">Before the quake hits.</span>
-          </h2>
-          <p className="text-[#A8B8CC] max-w-xl mx-auto text-base mb-8">
-            From free pressure monitoring to the full institutional brief — choose the tier that puts you inside the faultlines.
-          </p>
-
-          {/* Annual toggle */}
-          <div className="inline-flex items-center gap-3 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] rounded-full px-5 py-2.5">
-            <span className={`text-xs font-mono tracking-widest transition-colors ${
-              !annual ? 'text-white' : 'text-[#64748B]'
-            }`}>MONTHLY</span>
             <button
-              onClick={() => setAnnual(!annual)}
-              className="relative w-10 h-5 rounded-full transition-all duration-300"
-              style={{ background: annual ? 'rgba(0,212,255,0.4)' : 'rgba(255,255,255,0.1)' }}
-            >
-              <span
-                className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all duration-300"
-                style={{ left: annual ? '22px' : '2px', boxShadow: annual ? '0 0 8px rgba(0,212,255,0.6)' : 'none' }}
-              />
-            </button>
-            <span className={`text-xs font-mono tracking-widest transition-colors ${
-              annual ? 'text-[#00D4FF]' : 'text-[#64748B]'
-            }`}>ANNUAL</span>
-            {annual && (
-              <span className="text-[9px] font-mono font-bold tracking-widest text-[#00FF88] bg-[rgba(0,255,136,0.1)] border border-[rgba(0,255,136,0.25)] px-2 py-0.5 rounded-full">
-                SAVE 20%
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Tier cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-          {tiers.map((tier, i) => (
-            <div
-              key={i}
-              className="relative rounded-xl border transition-all duration-300 overflow-hidden"
+              onClick={() => handleCheckout("premium")}
+              disabled={checkoutMutation.isPending}
               style={{
-                background: `linear-gradient(135deg, rgba(12,15,22,0.95) 0%, rgba(8,10,16,0.98) 100%)`,
-                borderColor: tier.featured ? tier.accentColor + '50' : 'rgba(255,255,255,0.07)',
-                boxShadow: tier.featured ? `0 0 40px ${tier.glowColor}, inset 0 1px 0 rgba(255,255,255,0.05)` : `inset 0 1px 0 rgba(255,255,255,0.03)`,
+                width: "100%",
+                padding: "13px 16px",
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                borderRadius: "8px",
+                border: "1px solid #00D4FF",
+                background: "#00D4FF",
+                color: "#050608",
+                cursor: checkoutMutation.isPending ? "not-allowed" : "pointer",
+                opacity: checkoutMutation.isPending ? 0.6 : 1,
+                boxShadow: "0 0 20px rgba(0,212,255,0.3)",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={e => {
+                if (!checkoutMutation.isPending) {
+                  e.currentTarget.style.background = "#33DDFF";
+                  e.currentTarget.style.boxShadow = "0 0 30px rgba(0,212,255,0.45)";
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "#00D4FF";
+                e.currentTarget.style.boxShadow = "0 0 20px rgba(0,212,255,0.3)";
               }}
             >
-              {/* Glass shimmer top border */}
-              <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${tier.accentColor}40, transparent)` }} />
+              {checkoutMutation.isPending ? "PROCESSING\u2026" : "GET PRO — $59/MO"}
+            </button>
+          </div>
 
-              {/* Popular label */}
-              {tier.popularLabel && (
-                <div
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 text-[9px] font-mono font-bold tracking-widest px-4 py-1 rounded-full"
-                  style={{ background: tier.accentColor + '20', border: `1px solid ${tier.accentColor}50`, color: tier.accentColor }}
-                >
-                  {tier.popularLabel}
-                </div>
-              )}
+          {/* ── FOUNDING LIFETIME (Featured) ── */}
+          <div
+            style={{
+              ...cardBase,
+              background: "linear-gradient(145deg, rgba(255,215,0,0.06) 0%, rgba(255,165,0,0.03) 100%)",
+              border: "1px solid rgba(255,215,0,0.35)",
+              boxShadow: "0 0 60px rgba(255,215,0,0.08), 0 0 120px rgba(255,165,0,0.04)",
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
+              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 80px rgba(255,215,0,0.14), 0 0 140px rgba(255,165,0,0.06)";
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 60px rgba(255,215,0,0.08), 0 0 120px rgba(255,165,0,0.04)";
+            }}
+          >
+            {/* Featured badge */}
+            <div style={{
+              position: "absolute",
+              top: "-1px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "linear-gradient(90deg, #FFD700, #FFA500)",
+              color: "#050608",
+              fontFamily: "'JetBrains Mono',monospace",
+              fontSize: "9px",
+              fontWeight: 700,
+              letterSpacing: "0.18em",
+              padding: "5px 16px",
+              borderRadius: "0 0 8px 8px",
+              whiteSpace: "nowrap",
+            }}>
+              BEST VALUE · FOUNDING PERIOD ONLY
+            </div>
 
-              {/* Recommended badge */}
-              {tier.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#00D4FF] text-[#050608] text-[9px] font-mono font-bold tracking-widest px-4 py-1 rounded-full">
-                  RECOMMENDED
-                </div>
-              )}
-
-              <div className="p-6">
-                {/* Tier name + tagline */}
-                <div className="mb-4">
-                  <div className="text-[9px] font-mono tracking-[0.3em] mb-1" style={{ color: tier.accentColor + '80' }}>{tier.name}</div>
-                  <div className="text-[11px] font-mono tracking-widest mb-3" style={{ color: tier.accentColor }}>{tier.tagline}</div>
-
-                  {/* Price */}
-                  <div className="flex items-baseline gap-1 mb-0.5">
-                    <span className="text-3xl font-bold" style={{ color: tier.accentColor }}>
-                      {annual && tier.annualPrice ? tier.annualPrice : tier.price}
-                    </span>
-                    {tier.price !== 'Free' && (
-                      <span className="text-[11px] font-mono text-[#64748B]">{tier.priceSub}</span>
-                    )}
-                  </div>
-                  {annual && tier.annualSub && (
-                    <div className="text-[9px] font-mono text-[#00FF88]/70 mb-2">{tier.annualSub}</div>
-                  )}
-                  {!annual && tier.price === 'Free' && (
-                    <div className="text-[10px] font-mono text-[#64748B] mb-2">{tier.priceSub}</div>
-                  )}
-
-                  <div className="text-[#A8B8CC] text-xs leading-relaxed mt-2">{tier.desc}</div>
-                </div>
-
-                {/* Features */}
-                <ul className="space-y-2 mb-5">
-                  {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-xs text-[#A8B8CC]">
-                      <span className="mt-0.5 flex-shrink-0 text-[10px]" style={{ color: tier.accentColor }}>✓</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Scarcity block for Founding */}
-                {tier.scarcity && (
-                  <div
-                    className="mb-4 rounded-lg p-3"
-                    style={{ background: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)' }}
-                  >
-                    <div className="text-[9px] font-mono tracking-widest text-[#FFD700]/70 mb-1">LIMITED FOUNDING COHORT</div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-mono font-bold text-[#FFD700]">{foundingSlots} slots remaining</span>
-                      <span className="text-[9px] font-mono text-[#FF9500] animate-pulse">CLOSING SOON</span>
-                    </div>
-                    <div className="mt-2 h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
-                      <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${(foundingSlots / 200) * 100}%`,
-                          background: 'linear-gradient(90deg, #FFD700, #FF9500)',
-                          boxShadow: '0 0 8px rgba(255,215,0,0.4)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* CTA */}
-                {tier.ctaAction ? (
-                  <button
-                    onClick={tier.ctaAction}
-                    className="w-full py-3 font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200 active:scale-[0.97]"
-                    style={{
-                      background: tier.featured
-                        ? tier.accentColor
-                        : `${tier.accentColor}15`,
-                      border: `1px solid ${tier.accentColor}${tier.featured ? 'ff' : '40'}`,
-                      color: tier.featured ? '#050608' : tier.accentColor,
-                      boxShadow: tier.featured ? `0 0 20px ${tier.accentColor}40` : 'none',
-                    }}
-                    onMouseEnter={e => {
-                      if (!tier.featured) (e.currentTarget.style.background = `${tier.accentColor}25`);
-                    }}
-                    onMouseLeave={e => {
-                      if (!tier.featured) (e.currentTarget.style.background = `${tier.accentColor}15`);
-                    }}
-                  >
-                    {tier.cta.toUpperCase()}
-                  </button>
-                ) : (
-                  <a
-                    href={tier.ctaLink}
-                    className="block w-full py-3 text-center font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200"
-                    style={{
-                      background: `${tier.accentColor}10`,
-                      border: `1px solid ${tier.accentColor}30`,
-                      color: tier.accentColor,
-                    }}
-                    onMouseEnter={e => { (e.currentTarget.style.background = `${tier.accentColor}20`); }}
-                    onMouseLeave={e => { (e.currentTarget.style.background = `${tier.accentColor}10`); }}
-                  >
-                    {tier.cta.toUpperCase()}
-                  </a>
-                )}
+            <div style={{ marginBottom: "24px", marginTop: "16px" }}>
+              <div style={{
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "10px",
+                letterSpacing: "0.2em",
+                color: "rgba(255,215,0,0.75)",
+                fontWeight: 700,
+                marginBottom: "10px",
+              }}>FOUNDING LIFETIME</div>
+              <div style={{
+                fontFamily: "'Space Grotesk','Inter',sans-serif",
+                fontSize: "36px",
+                fontWeight: 700,
+                color: "#FFD700",
+                lineHeight: 1,
+                marginBottom: "6px",
+              }}>$299<span style={{ fontSize: "16px", fontWeight: 400, color: "rgba(255,215,0,0.5)", marginLeft: "4px" }}>one-time</span></div>
+              <div style={{ fontSize: "12px", color: "rgba(255,215,0,0.45)", fontFamily: "'JetBrains Mono',monospace" }}>
+                vs. $708/yr at Pro monthly
               </div>
             </div>
-          ))}
+
+            <div style={{ fontSize: "13px", color: "rgba(168,184,204,0.75)", marginBottom: "24px", lineHeight: 1.5 }}>
+              Pay once. Access everything — forever. Includes all future Pro features as they ship. This pricing will never be offered again after the founding period closes.
+            </div>
+
+            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: "9px", flex: 1 }}>
+              {LIFETIME_FEATURES.map(f => (
+                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "rgba(168,184,204,0.85)", lineHeight: 1.45 }}>
+                  <span style={{ color: "#FFD700", flexShrink: 0, marginTop: "2px", fontSize: "11px" }}>✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={() => handleCheckout("lifetime")}
+              disabled={checkoutMutation.isPending}
+              style={{
+                width: "100%",
+                padding: "14px 16px",
+                fontFamily: "'JetBrains Mono',monospace",
+                fontSize: "11px",
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                borderRadius: "8px",
+                border: "1px solid #FFD700",
+                background: "linear-gradient(135deg, #FFD700, #FFA500)",
+                color: "#050608",
+                cursor: checkoutMutation.isPending ? "not-allowed" : "pointer",
+                opacity: checkoutMutation.isPending ? 0.6 : 1,
+                boxShadow: "0 0 24px rgba(255,215,0,0.35)",
+                transition: "all 0.15s ease",
+              }}
+              onMouseEnter={e => {
+                if (!checkoutMutation.isPending) {
+                  e.currentTarget.style.background = "linear-gradient(135deg, #FFE033, #FFB020)";
+                  e.currentTarget.style.boxShadow = "0 0 36px rgba(255,215,0,0.5)";
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "linear-gradient(135deg, #FFD700, #FFA500)";
+                e.currentTarget.style.boxShadow = "0 0 24px rgba(255,215,0,0.35)";
+              }}
+            >
+              {checkoutMutation.isPending ? "PROCESSING\u2026" : "CLAIM FOUNDING LIFETIME — $299"}
+            </button>
+
+            {/* Value comparison note */}
+            <div style={{
+              marginTop: "12px",
+              textAlign: "center",
+              fontSize: "11px",
+              color: "rgba(255,215,0,0.45)",
+              fontFamily: "'JetBrains Mono',monospace",
+              letterSpacing: "0.06em",
+            }}>
+              SAVES $409+ IN YEAR ONE ALONE
+            </div>
+          </div>
+
         </div>
 
-        <p className="text-center text-[#64748B] text-xs font-mono mt-8 tracking-widest">
-          INSTITUTIONAL-GRADE MACRO INTELLIGENCE · ALL PLANS CANCEL ANYTIME · FOUNDING PRICING LOCKS AT SIGNUP
-        </p>
+        {/* Footer note */}
+        <div style={{ marginTop: "48px", textAlign: "center" }}>
+          <p style={{
+            fontSize: "13px",
+            color: "rgba(100,116,139,0.55)",
+            lineHeight: 1.65,
+            maxWidth: "560px",
+            margin: "0 auto 12px",
+          }}>
+            The Founding Lifetime plan will <strong style={{ color: "rgba(255,215,0,0.65)" }}>never be offered again</strong> after the founding period closes. All plans cancel anytime. No long-term contracts.
+          </p>
+          <p style={{
+            fontFamily: "'JetBrains Mono',monospace",
+            fontSize: "10px",
+            color: "rgba(100,116,139,0.4)",
+            letterSpacing: "0.1em",
+            margin: 0,
+          }}>
+            INSTITUTIONAL-GRADE MACRO INTELLIGENCE · ALL PLANS CANCEL ANYTIME · FOUNDING PRICING LOCKS AT SIGNUP
+          </p>
+        </div>
 
       </div>
     </section>
   );
 }
-
 // ── FAULTLINE Core Mobile Showcase ──────────────────────────
 function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   const tabs = [
