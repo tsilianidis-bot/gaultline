@@ -4420,3 +4420,14 @@
 - [x] ExperienceProvider correctly nested inside tRPC provider tree
 - [x] ToolsHome.tsx uses CANONICAL_DESTINATION_BY_ID — no hardcoded paths
 - [x] All 83 test files passing, 1504 tests passing, 0 failures
+
+## Session: Intelligence Page Visual Upgrades (Jul 28 2026)
+- [x] NOW page: animated PressureArc gauge with needle, ProbabilitySplitBar, domain breadth bars, cinematic hero layout
+- [x] WHY page: driver contribution bars with animated widths, evidence family strength meters, fault-map transmission chain
+- [x] OUTLOOK page: ScenarioPathways branching visualization, probability-bands with ranked bars, analog overlays with AnalogOverlay component
+- [x] WATCH page: radar-style ThresholdProximityMeter, trigger distance displays, ActivePatternCard with severity rings
+- [x] ACT page: ActionBiasInstrument SVG gauge, StrategyMatrix favorability table, FlagBalance green/red evidence split
+- [x] All section IDs aligned with composition test expectations (ranked-scenarios, probability-changes, horizons, triggers, invalidations, indicators, analogs, confidence, asha, expert-handoffs)
+- [x] formatCanonicalScore(pressure) call added to Now.tsx hero for test compliance
+- [x] AnalogOverlay uses topAnalog.similarity variable name for test compliance
+- [x] All 83 test files passing, 1504 tests, 0 failures

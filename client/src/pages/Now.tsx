@@ -21,7 +21,6 @@ import {
   PERSISTENT_UTILITY_BY_ID,
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
-import PressureGauge from "@/components/PressureGauge";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
@@ -34,35 +33,148 @@ function pressureColor(score: number) {
   return "#00e599";
 }
 
+function pressureLabel(score: number) {
+  if (score >= 75) return "CRITICAL";
+  if (score >= 60) return "ELEVATED";
+  if (score >= 40) return "MODERATE";
+  if (score >= 20) return "LOW";
+  return "MINIMAL";
+}
+
+// ── Animated arc gauge ──────────────────────────────────────────────────────
+function PressureArc({ score, accent }: { score: number; accent: string }) {
+  const r = 80;
+  const cx = 100;
+  const cy = 100;
+  const startAngle = -210;
+  const sweepAngle = 240;
+  const endAngle = startAngle + sweepAngle;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const arcPath = (from: number, to: number, radius: number) => {
+    const x1 = cx + radius * Math.cos(toRad(from));
+    const y1 = cy + radius * Math.sin(toRad(from));
+    const x2 = cx + radius * Math.cos(toRad(to));
+    const y2 = cy + radius * Math.sin(toRad(to));
+    const large = to - from > 180 ? 1 : 0;
+    return `M ${x1} ${y1} A ${radius} ${radius} 0 ${large} 1 ${x2} ${y2}`;
+  };
+  const fillAngle = startAngle + (sweepAngle * Math.min(100, Math.max(0, score))) / 100;
+  const needleAngle = fillAngle;
+  const nx = cx + (r - 10) * Math.cos(toRad(needleAngle));
+  const ny = cy + (r - 10) * Math.sin(toRad(needleAngle));
+  return (
+    <svg viewBox="0 0 200 160" className="w-full max-w-[240px]" aria-hidden="true">
+      <defs>
+        <filter id="glow-arc">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      {/* Track */}
+      <path d={arcPath(startAngle, endAngle, r)} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" strokeLinecap="round" />
+      {/* Fill */}
+      {score > 0 && (
+        <path
+          d={arcPath(startAngle, fillAngle, r)}
+          fill="none"
+          stroke={accent}
+          strokeWidth="10"
+          strokeLinecap="round"
+          filter="url(#glow-arc)"
+          style={{ transition: "all 1.2s cubic-bezier(0.23,1,0.32,1)" }}
+        />
+      )}
+      {/* Needle dot */}
+      <circle cx={nx} cy={ny} r="5" fill={accent} filter="url(#glow-arc)" style={{ transition: "all 1.2s cubic-bezier(0.23,1,0.32,1)" }} />
+      {/* Center score */}
+      <text x={cx} y={cy - 4} textAnchor="middle" fill="white" fontSize="28" fontFamily="Rajdhani, sans-serif" fontWeight="700">
+        {Math.round(score)}
+      </text>
+      <text x={cx} y={cy + 14} textAnchor="middle" fill={accent} fontSize="9" fontFamily="monospace" letterSpacing="3">
+        {pressureLabel(score)}
+      </text>
+      {/* Scale labels */}
+      <text x="22" y="135" fill="rgba(255,255,255,0.3)" fontSize="8" fontFamily="monospace">0</text>
+      <text x="170" y="135" fill="rgba(255,255,255,0.3)" fontSize="8" fontFamily="monospace">100</text>
+    </svg>
+  );
+}
+
+// ── Probability split bar ────────────────────────────────────────────────────
+function ProbabilitySplitBar({ bull, crash, softLanding, stagflation, recession }: {
+  bull: number; crash: number; softLanding: number; stagflation: number; recession: number;
+}) {
+  const segments = [
+    { label: "Bull", value: bull, color: "#00e599" },
+    { label: "Soft", value: softLanding, color: "#00e5ff" },
+    { label: "Stag", value: stagflation, color: "#ffaa00" },
+    { label: "Rec", value: recession, color: "#ff7a45" },
+    { label: "Crash", value: crash, color: "#ff4d6d" },
+  ];
+  const total = segments.reduce((s, seg) => s + seg.value, 0) || 100;
+  return (
+    <div>
+      <p className="mb-2 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Scenario distribution</p>
+      <div className="flex h-3 w-full overflow-hidden rounded-full" style={{ gap: "1px" }}>
+        {segments.map(seg => (
+          <div
+            key={seg.label}
+            style={{ width: `${(seg.value / total) * 100}%`, background: seg.color, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }}
+            title={`${seg.label}: ${formatCanonicalPercent(seg.value)}`}
+          />
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        {segments.map(seg => (
+          <div key={seg.label} className="flex items-center gap-1.5">
+            <div className="h-1.5 w-1.5 rounded-full" style={{ background: seg.color }} />
+            <span className="font-mono text-[8px] uppercase tracking-[0.1em] text-slate-400">{seg.label} {formatCanonicalPercent(seg.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Driver bar ───────────────────────────────────────────────────────────────
+function DriverBar({ label, strength, trend, index }: { label: string; strength: number; trend: string; index: number }) {
+  const color = pressureColor(strength);
+  const trendIcon = trend === "deteriorating" ? "↑" : trend === "improving" ? "↓" : "→";
+  const trendColor = trend === "deteriorating" ? "#ff4d6d" : trend === "improving" ? "#00e599" : "#64748b";
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-5 shrink-0 font-mono text-[9px] text-slate-600">{String(index + 1).padStart(2, "0")}</span>
+      <div className="flex-1">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-slate-300">{label}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-[9px]" style={{ color: trendColor }}>{trendIcon}</span>
+            <span className="font-mono text-[10px] font-semibold" style={{ color }}>{formatCanonicalScore(strength)}</span>
+          </div>
+        </div>
+        <div className="h-1 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${strength}%`, background: color, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Section wrapper ──────────────────────────────────────────────────────────
 function Section({
-  id,
-  index,
-  eyebrow,
-  title,
-  description,
-  children,
+  id, index, eyebrow, title, description, children,
 }: {
-  id: string;
-  index: string;
-  eyebrow: string;
-  title: string;
-  description: string;
-  children: React.ReactNode;
+  id: string; index: string; eyebrow: string; title: string; description: string; children: React.ReactNode;
 }) {
   return (
-    <section
-      data-now-section={id}
-      className="border-t border-white/10 py-10 md:py-14"
-      aria-labelledby={`now-${id}-title`}
-    >
+    <section data-now-section={id} className="border-t border-white/10 py-10 md:py-14" aria-labelledby={`now-${id}-title`}>
       <div className="mb-7 grid gap-3 md:grid-cols-[150px_1fr] md:gap-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/60">
-          {index} · {eyebrow}
-        </p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-cyan-300/60">{index} · {eyebrow}</p>
         <div>
-          <h2 id={`now-${id}-title`} className="font-['Rajdhani'] text-2xl font-semibold text-white md:text-3xl">
-            {title}
-          </h2>
+          <h2 id={`now-${id}-title`} className="font-['Rajdhani'] text-2xl font-semibold text-white md:text-3xl">{title}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">{description}</p>
         </div>
       </div>
@@ -71,46 +183,23 @@ function Section({
   );
 }
 
-function MetricBar({ label, value, trend }: { label: string; value: number; trend: string }) {
-  const color = pressureColor(value);
-  return (
-    <div className="rounded-sm border border-white/10 bg-white/[0.025] p-4">
-      <div className="mb-3 flex items-start justify-between gap-4">
-        <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-300">{label}</p>
-          <p className="mt-1 text-xs capitalize text-slate-500">{trend}</p>
-        </div>
-        <span className="font-mono text-sm font-semibold" style={{ color }}>
-          {formatCanonicalScore(value)}
-        </span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
-        <div className="h-full rounded-full" style={{ width: `${value}%`, background: color }} />
-      </div>
-    </div>
-  );
-}
-
+// ── Probability card ─────────────────────────────────────────────────────────
 function ProbabilityCard({ label, value, accent }: { label: string; value: number; accent: string }) {
   return (
     <div className="rounded-sm border border-white/10 bg-[#090d14] p-4">
       <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-500">{label}</p>
-      <p className="mt-3 font-['Rajdhani'] text-3xl font-semibold" style={{ color: accent }}>
-        {formatCanonicalPercent(value)}
-      </p>
+      <p className="mt-3 font-['Rajdhani'] text-3xl font-semibold" style={{ color: accent }}>{formatCanonicalPercent(value)}</p>
       <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full" style={{ width: `${value}%`, background: accent }} />
+        <div className="h-full rounded-full" style={{ width: `${value}%`, background: accent, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
       </div>
     </div>
   );
 }
 
+// ── Destination link ─────────────────────────────────────────────────────────
 function DestinationLink({ href, label, detail }: { href: string; label: string; detail: string }) {
   return (
-    <Link
-      href={href}
-      className="group flex min-h-28 flex-col justify-between rounded-sm border border-white/10 bg-white/[0.025] p-4 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
-    >
+    <Link href={href} className="group flex min-h-28 flex-col justify-between rounded-sm border border-white/10 bg-white/[0.025] p-4 transition hover:border-cyan-300/40 hover:bg-cyan-300/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300">
       <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-cyan-300">{label}</p>
       <div className="mt-5 flex items-end justify-between gap-4">
         <p className="text-sm leading-5 text-slate-400">{detail}</p>
@@ -120,17 +209,11 @@ function DestinationLink({ href, label, detail }: { href: string; label: string;
   );
 }
 
+// ── Main component ───────────────────────────────────────────────────────────
 export default function Now() {
   const {
-    output,
-    marketState,
-    marketMode,
-    sourceHealth,
-    isLoading,
-    isLive,
-    lastUpdated,
-    dataError,
-    refresh,
+    output, marketState, marketMode, sourceHealth,
+    isLoading, isLive, lastUpdated, dataError, refresh,
   } = useEngine();
 
   const fallbackDomains = useMemo(
@@ -166,18 +249,19 @@ export default function Now() {
     crash: output.probability.crashProbability,
   };
   const topAnalog = marketState?.outlook.topAnalog ?? (output.analogs[0]
-    ? {
-        period: output.analogs[0].year,
-        label: output.analogs[0].era,
-        similarity: output.analogs[0].similarity,
-        resolution: "Deterministic fallback analog; canonical resolution unavailable.",
-      }
+    ? { period: output.analogs[0].year, label: output.analogs[0].era, similarity: output.analogs[0].similarity, resolution: "Deterministic fallback analog; canonical resolution unavailable." }
     : null);
   const watchItems = marketState?.watch.whatToWatch ?? output.narrative.keyRisks;
   const changedItems = marketState?.watch.whatChanged
     ?? output.domains.filter(domain => Math.abs(domain.delta) > 0.1).map(domain => `${domain.label}: ${domain.delta > 0 ? "pressure increased" : "pressure eased"}.`);
   const modeLabel = marketState ? (isLive ? "Canonical live state" : "Canonical protected state") : "Protected fallback state";
   const accent = pressureColor(pressure);
+
+  // Top drivers with strength for driver bars
+  const topDriversWithStrength = useMemo(() => {
+    const families = evidenceFamilies.slice(0, 5);
+    return families.sort((a, b) => b.strength - a.strength);
+  }, [evidenceFamilies]);
 
   if (isLoading && !marketState) {
     return <PageLoadingState eyebrow="NOW · Current market state" message="Loading canonical market state…" />;
@@ -186,12 +270,15 @@ export default function Now() {
   return (
     <main className="min-h-screen bg-[#05080d] text-white">
       <div className="mx-auto max-w-7xl px-5 pb-16 pt-8 md:px-10 md:pt-12">
+
+        {/* ── HERO VERDICT ─────────────────────────────────────────────── */}
         <section data-now-section="verdict" className="relative overflow-hidden rounded-sm border border-white/10 bg-[#080c13] p-6 md:p-9">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-60"
-            style={{ background: `radial-gradient(circle at 85% 15%, ${accent}22, transparent 42%)` }}
-          />
+          {/* Ambient glow */}
+          <div className="pointer-events-none absolute inset-0 opacity-70" style={{ background: `radial-gradient(ellipse at 80% 0%, ${accent}18, transparent 55%)` }} />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-px w-full" style={{ background: `linear-gradient(90deg, transparent, ${accent}40, transparent)` }} />
+
           <div className="relative z-10">
+            {/* Top bar */}
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-cyan-300/25 bg-cyan-300/[0.06] px-3 py-1 font-mono text-[9px] uppercase tracking-[0.18em] text-cyan-300">
@@ -207,12 +294,7 @@ export default function Now() {
                 <Link href="/app/tools" className="flex items-center gap-1.5 rounded-sm border border-white/10 px-3 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300">
                   <ArrowRight size={11} /> Tools & Features
                 </Link>
-                <button
-                  type="button"
-                  onClick={refresh}
-                  aria-label="Refresh market data"
-                  className="flex items-center gap-2 rounded-sm border border-white/10 px-3 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300 active:scale-[0.97]"
-                >
+                <button type="button" onClick={refresh} aria-label="Refresh market data" className="flex items-center gap-2 rounded-sm border border-white/10 px-3 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300 active:scale-[0.97]">
                   <RefreshCw size={12} /> Refresh
                 </button>
               </div>
@@ -220,14 +302,13 @@ export default function Now() {
 
             {dataError && (
               <div className="mt-5">
-                <PageDegradedBanner
-                  message="Live refresh is degraded. FAULTLINE is preserving the latest verified state."
-                  detail={dataError}
-                />
+                <PageDegradedBanner message="Live refresh is degraded. FAULTLINE is preserving the latest verified state." detail={dataError} />
               </div>
             )}
 
-            <div className="mt-9 grid items-end gap-8 lg:grid-cols-[1fr_260px]">
+            {/* Main hero grid: headline + instrument */}
+            <div className="mt-9 grid items-start gap-8 lg:grid-cols-[1fr_300px]">
+              {/* Left: headline + regime badges + probability split */}
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-slate-500">FAULTLINE verdict</p>
                 <h1 className="mt-4 max-w-4xl font-['Rajdhani'] text-4xl font-semibold leading-[1.02] text-white md:text-6xl">
@@ -236,24 +317,72 @@ export default function Now() {
                 <p className="mt-5 max-w-3xl text-base leading-7 text-slate-300">
                   {marketState?.why.narrative.whatIsHappening ?? output.narrative.regimeAssessment}
                 </p>
+
+                {/* Regime badges */}
                 <div className="mt-6 flex flex-wrap gap-2">
-                  <span className="rounded-sm border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-300">{regime}</span>
+                  <span
+                    className="rounded-sm border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em]"
+                    style={{ borderColor: `${accent}50`, background: `${accent}10`, color: accent }}
+                  >
+                    {regime}
+                  </span>
                   <span className="rounded-sm border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-300">{direction}</span>
                   <span className="rounded-sm border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-300">{stressLevel} pressure</span>
+                  {historicalPercentile !== null && (
+                    <span className="rounded-sm border border-violet-300/20 bg-violet-300/[0.06] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-violet-300">
+                      {Math.round(historicalPercentile)}th percentile historically
+                    </span>
+                  )}
+                </div>
+
+                {/* Probability split bar */}
+                <div className="mt-8 rounded-sm border border-white/10 bg-white/[0.02] p-4">
+                  <ProbabilitySplitBar
+                    bull={probabilities.bull}
+                    softLanding={probabilities.softLanding}
+                    stagflation={probabilities.stagflation}
+                    recession={probabilities.recession}
+                    crash={probabilities.crash}
+                  />
+                </div>
+
+                {/* Top driver bars */}
+                <div className="mt-4 rounded-sm border border-white/10 bg-white/[0.02] p-4">
+                  <p className="mb-4 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Dominant pressure domains</p>
+                  <div className="space-y-3">
+                    {topDriversWithStrength.map((driver, i) => (
+                      <DriverBar key={driver.name} label={driver.name} strength={driver.strength} trend={driver.trend} index={i} />
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className="border-l border-white/10 pl-6 flex flex-col items-center">
-                <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500 self-start mb-2">FAULTLINE pressure</p>
-                <p className="font-['Rajdhani'] text-2xl font-semibold self-start mb-1" style={{ color: accent }}>{formatCanonicalScore(pressure)}</p>
-                <PressureGauge
-                  score={pressure}
-                  historicalPercentile={historicalPercentile}
-                  analogLabel={topAnalog?.label ?? null}
-                  analogPeriod={topAnalog?.period ? String(topAnalog.period) : null}
-                />
+
+              {/* Right: animated arc gauge */}
+              <div className="flex flex-col items-center rounded-sm border border-white/10 bg-white/[0.02] p-6" style={{ boxShadow: `0 0 40px ${accent}12` }}>
+                <p className="mb-1 self-start font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">FAULTLINE pressure index</p>
+                <p className="sr-only">{formatCanonicalScore(pressure)}</p>
+                <PressureArc score={pressure} accent={accent} />
+                {topAnalog && (
+                  <div className="mt-4 w-full rounded-sm border border-white/10 bg-white/[0.025] p-3">
+                    <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Closest historical analog</p>
+                    <p className="mt-1 font-mono text-[10px] font-semibold text-white">{topAnalog.label}</p>
+                    <p className="font-mono text-[9px] text-slate-400">{topAnalog.period} · {formatCanonicalPercent(topAnalog.similarity)} match</p>
+                  </div>
+                )}
+                <div className="mt-3 grid w-full grid-cols-2 gap-2">
+                  <div className="rounded-sm border border-white/10 bg-white/[0.025] p-2.5 text-center">
+                    <p className="font-['Rajdhani'] text-xl font-semibold text-rose-300">{building}</p>
+                    <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-slate-500">Building</p>
+                  </div>
+                  <div className="rounded-sm border border-white/10 bg-white/[0.025] p-2.5 text-center">
+                    <p className="font-['Rajdhani'] text-xl font-semibold text-emerald-300">{easing}</p>
+                    <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-slate-500">Easing</p>
+                  </div>
+                </div>
               </div>
             </div>
 
+            {/* CTA row */}
             <div className="mt-8 flex flex-wrap gap-3 border-t border-white/10 pt-6">
               <Link href={CANONICAL_DESTINATION_BY_ID.why.path} className="flex items-center gap-2 rounded-sm bg-cyan-300 px-4 py-2.5 font-mono text-[10px] font-semibold uppercase tracking-[0.13em] text-[#031014] transition hover:bg-cyan-200 active:scale-[0.97]">
                 Understand why <ArrowRight size={14} />
@@ -265,6 +394,7 @@ export default function Now() {
           </div>
         </section>
 
+        {/* ── SECTIONS ─────────────────────────────────────────────────── */}
         <Section id="summary" index="01" eyebrow="Summary" title="The market in plain English" description="A direct synthesis before charts, modules, or specialist tools.">
           <p className="max-w-4xl text-lg leading-8 text-slate-200">
             {marketState?.why.story ?? output.narrative.summary}
@@ -304,7 +434,20 @@ export default function Now() {
         <Section id="breadth" index="03" eyebrow="Breadth" title="Where pressure is concentrated" description="Every domain is normalized to the same 0–100 scale so concentration and breadth can be compared directly.">
           <div className="grid gap-3 md:grid-cols-2">
             {evidenceFamilies.map(family => (
-              <MetricBar key={family.name} label={family.name} value={family.strength} trend={family.trend} />
+              <div key={family.name} className="rounded-sm border border-white/10 bg-white/[0.025] p-4">
+                <div className="mb-3 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-slate-300">{family.name}</p>
+                    <p className="mt-1 text-xs capitalize text-slate-500">{family.trend}</p>
+                  </div>
+                  <span className="font-mono text-sm font-semibold" style={{ color: pressureColor(family.strength) }}>
+                    {formatCanonicalScore(family.strength)}
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10" aria-hidden="true">
+                  <div className="h-full rounded-full" style={{ width: `${family.strength}%`, background: pressureColor(family.strength), transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
+                </div>
+              </div>
             ))}
           </div>
         </Section>
@@ -364,7 +507,7 @@ export default function Now() {
           <div className="mt-5"><DestinationLink href={CANONICAL_DESTINATION_BY_ID.watch.path} label="Open WATCH" detail="Set thresholds, monitor signals, and follow developing conditions." /></div>
         </Section>
 
-        <Section id="asha" index="08" eyebrow="ASHA" title="Continue the interpretation with ASHA" description="Carry today’s canonical market state into a focused conversation without changing the evidence source.">
+        <Section id="asha" index="08" eyebrow="ASHA" title="Continue the interpretation with ASHA" description="Carry today's canonical market state into a focused conversation without changing the evidence source.">
           <div className="rounded-sm border border-cyan-300/20 bg-cyan-300/[0.035] p-6 md:flex md:items-center md:justify-between md:gap-8">
             <div className="flex gap-4">
               <BrainCircuit className="mt-1 shrink-0 text-cyan-300" size={22} />
@@ -398,6 +541,7 @@ export default function Now() {
             <Link href={NOW_DEEP_PATH} className="font-mono text-[9px] uppercase tracking-[0.13em] text-cyan-300 hover:text-cyan-200">Inspect every legacy dashboard module →</Link>
           </div>
         </Section>
+
       </div>
     </main>
   );

@@ -90,7 +90,7 @@ const TIER_CONFIG = {
     description: 'Everything in Pro at the founding rate. Locked forever. Never increases. Limited cohort.',
     features: [
       { label: 'Everything in Pro', available: true },
-      { label: 'Permanent founding rate ($49/mo locked)', available: true },
+      { label: 'Founding rate locked at $49/mo forever', available: true },
       { label: 'Founding member badge', available: true },
       { label: 'Future feature grandfathering', available: true },
       { label: 'Roadmap previews & early beta', available: true },

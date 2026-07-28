@@ -38,7 +38,7 @@ The platform's primary instrument is the Seismograph™ — a continuous composi
 
 All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
 
-FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Free, Core ($9.99/mo), Pro ($59/mo), and Founding Member ($49/mo, locked for life).
+FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers six access tiers: Free (Observer), Mobile ($9.99/mo), Founding Member ($49/mo locked for life), Trader ($59/mo), Power ($99/mo, coming soon), and Founding Lifetime ($299 one-time).
 
 Press contact: press@getfaultline.live
 Website: getfaultline.live`;
@@ -74,11 +74,12 @@ Platform capabilities: ASHA AI Intelligence, Seismograph™, Pressure Index™, 
 Availability: Web (getfaultline.live) + Progressive Web App (iOS/Android)
 
 Pricing tiers:
-  Free — Live Pressure Index, limited signal previews
-  Core — $9.99/mo — Full intelligence suite
-  Pro — $59/mo — Advanced tools, day trade intelligence, portfolio
-  Founding Member — $49/mo (locked for life, limited availability)
-  Lifetime — $299 one-time
+  Free (Observer) — Live Pressure Index, limited signal previews
+  Mobile — $9.99/mo — Essential intelligence on any device
+  Founding Member — $49/mo (rate locked for life, limited availability)
+  Trader — $59/mo — Full intelligence platform
+  Power — $99/mo — Advanced traders & advisors (coming soon)
+  Founding Lifetime — $299 one-time — Full access forever
 
 Press contact: press@getfaultline.live`;
 
@@ -96,7 +97,7 @@ Unlike AI assistants that answer questions in isolation, ASHA evaluates all ten 
 
 FAULTLINE's Seismograph™ — the platform's primary intelligence instrument — tracks systemic pressure across macroeconomic, financial, and market systems and feeds ASHA's continuous situational awareness. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
-FAULTLINE is available at getfaultline.live with tiered access for individual investors, active traders, and institutional users. The Founding Member tier ($49/mo, locked for life) remains available for a limited time.
+FAULTLINE is available at getfaultline.live with tiered access for individual investors, active traders, and institutional users. The Founding Member tier ($49/mo, rate locked for life) and Founding Lifetime access ($299 one-time) remain available for a limited time during the founding period.
 
 About Phoenix Systems
 Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. FAULTLINE is its flagship product.
@@ -204,7 +205,7 @@ CORE CAPABILITIES
 AVAILABILITY
 Web: getfaultline.live
 PWA: Available on iOS and Android
-Tiers: Free · Core ($9.99/mo) · Pro ($59/mo) · Founding Member ($49/mo, locked for life) · Lifetime ($299 one-time)
+Tiers: Free · Mobile ($9.99/mo) · Founding Member ($49/mo locked) · Trader ($59/mo) · Power ($99/mo, coming soon) · Lifetime ($299 one-time)
 
 DISCLAIMER
 FAULTLINE provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
@@ -710,7 +711,7 @@ export default function Press() {
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
           <p style={prose}>
-            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four access tiers: Free, Core ($9.99/mo), Pro ($59/mo), and Founding Member ($49/mo, locked for life). The Founding Member tier remains available for a limited time.
+            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers six access tiers: Free (Observer), Mobile ($9.99/mo), Founding Member ($49/mo locked for life), Trader ($59/mo), Power ($99/mo, coming soon), and Founding Lifetime ($299 one-time). The Founding Member tier remains available for a limited time.
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
             FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.

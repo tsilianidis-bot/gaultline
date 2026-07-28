@@ -74,7 +74,7 @@ const PLANS = [
     features: [
       "Everything in Pro",
       "Founding Member badge",
-      "Rate locked at $49/mo forever",
+      "Founding rate locked at $49/mo forever",
       "Early access to new features",
       "Priority support",
     ],

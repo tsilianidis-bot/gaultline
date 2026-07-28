@@ -2011,7 +2011,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   const checkoutMutation = trpc.billing.createCheckout.useMutation({
     onSuccess: (data) => {
       if (data.url) {
-        toast.info("Redirecting to checkout\u2026", { description: "Opening Stripe secure payment page." });
+        toast.info("Redirecting to checkout…", { description: "Opening Stripe secure payment page." });
         window.open(data.url, "_blank");
       }
     },
@@ -2020,418 +2020,412 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
     },
   });
 
-  const handleCheckout = (planId: "premium" | "founding" | "lifetime") => {
+  const handleCheckout = (planId: "core" | "premium" | "founding" | "lifetime") => {
     checkoutMutation.mutate({ planId, origin: window.location.origin });
   };
 
-  const FREE_FEATURES = [
-    "Limited daily market briefings",
-    "Limited ASHA usage",
-    "Basic Pressure Index",
-    "Sample Signals",
-    "Limited Historical Analogs",
-  ];
+  const MONO = "'IBM Plex Mono', 'Courier New', monospace";
 
-  const PRO_FEATURES = [
-    "Unlimited ASHA — AI macro intelligence",
-    "Full Seismograph Command Center",
-    "Full Signals — stocks & crypto",
-    "Portfolio Intelligence",
-    "Watchlists & custom tracking",
-    "Alerts & notifications",
-    "Institutional research tools",
-  ];
+  const plans = [
+    {
+      id: "free" as const,
+      name: "Observer",
+      price: "Free",
+      period: "",
+      tagline: "No credit card required",
+      color: "#6B7280",
+      glow: "rgba(107,114,128,0.15)",
+      badge: null,
+      featured: false,
+      cta: "TRY FREE — NO CARD NEEDED",
+      ctaHref: getLoginUrl(),
+      features: [
+        { label: "Pressure Index™", note: "Live reading" },
+        { label: "Daily market briefing", note: "1 per day" },
+        { label: "ASHA intelligence", note: "5 questions/day" },
+        { label: "Market signals", note: "Sample only" },
+        { label: "Watchlist", note: "3 symbols" },
+        { label: "Historical analogs", note: "Limited" },
+        { label: "Ticker lookups", note: "Limited" },
+        { label: "Advanced tools", note: "Locked" },
+      ],
+    },
+    {
+      id: "core" as const,
+      name: "FAULTLINE Mobile",
+      price: "$9.99",
+      period: "/mo",
+      tagline: "Essential intelligence on any device",
+      color: "#22D3EE",
+      glow: "rgba(34,211,238,0.12)",
+      badge: null,
+      featured: false,
+      cta: "GET MOBILE — $9.99/MO",
+      ctaHref: null,
+      features: [
+        { label: "Pressure Index™", note: "Full" },
+        { label: "Daily market brief", note: "Full" },
+        { label: "Stock signals", note: "Limited" },
+        { label: "Crypto intelligence", note: "Limited" },
+        { label: "Watchlist access", note: "Full" },
+        { label: "Sector & crypto rotation", note: "Full" },
+        { label: "Mobile-first experience", note: "PWA" },
+        { label: "ASHA intelligence", note: "20 questions/day" },
+      ],
+    },
+    {
+      id: "founding" as const,
+      name: "Founding Member",
+      price: "$49",
+      period: "/mo",
+      tagline: "Rate locked for life — limited availability",
+      color: "#A78BFA",
+      glow: "rgba(167,139,250,0.15)",
+      badge: "FOUNDING RATE",
+      featured: false,
+      cta: "LOCK IN FOUNDING — $49/MO",
+      ctaHref: null,
+      features: [
+        { label: "Everything in Trader", note: "Full" },
+        { label: "Rate locked forever", note: "Never increases" },
+        { label: "Founding member badge", note: "" },
+        { label: "Future feature grandfathering", note: "" },
+        { label: "Early beta access", note: "" },
+        { label: "Unlimited ASHA", note: "Full" },
+        { label: "Full Seismograph", note: "Full" },
+        { label: "All research tools", note: "Full" },
+      ],
+    },
+    {
+      id: "premium" as const,
+      name: "Trader",
+      price: "$59",
+      period: "/mo",
+      tagline: "The full FAULTLINE intelligence platform",
+      color: "#00D4FF",
+      glow: "rgba(0,212,255,0.18)",
+      badge: "MOST POPULAR",
+      featured: true,
+      cta: "GET TRADER — $59/MO",
+      ctaHref: null,
+      features: [
+        { label: "Unlimited ASHA", note: "Full AI intelligence" },
+        { label: "Full Seismograph Command Center", note: "" },
+        { label: "Pressure Index™", note: "Full + history" },
+        { label: "Daily institutional brief", note: "Full" },
+        { label: "Market regime analysis", note: "Full" },
+        { label: "Stock & crypto signals", note: "Full" },
+        { label: "Historical analog engine", note: "Full" },
+        { label: "Watchlists & alerts", note: "Unlimited" },
+        { label: "Scenario analysis", note: "Full" },
+        { label: "Research tools", note: "Full" },
+      ],
+    },
+    {
+      id: "premium_power" as const,
+      name: "Power",
+      price: "$99",
+      period: "/mo",
+      tagline: "Advanced traders, advisors, and power users",
+      color: "#F97316",
+      glow: "rgba(249,115,22,0.15)",
+      badge: "ADVANCED",
+      featured: false,
+      cta: "GET POWER — $99/MO",
+      ctaHref: null,
+      features: [
+        { label: "Everything in Trader", note: "Full" },
+        { label: "Portfolio intelligence", note: "Full" },
+        { label: "Expanded signals", note: "Higher limits" },
+        { label: "Professional workflows", note: "" },
+        { label: "Data export", note: "" },
+        { label: "Advanced scenario analysis", note: "" },
+        { label: "Institutional dashboards", note: "" },
+        { label: "Priority support", note: "" },
+      ],
+    },
+    {
+      id: "lifetime" as const,
+      name: "Lifetime Founding Access",
+      price: "$299",
+      period: " one-time",
+      tagline: "Pay once. Access FAULTLINE for life.",
+      color: "#FFD700",
+      glow: "rgba(255,215,0,0.2)",
+      badge: "BEST VALUE · FOUNDING PERIOD ONLY",
+      featured: false,
+      cta: "GET LIFETIME ACCESS — $299",
+      ctaHref: null,
+      features: [
+        { label: "Everything in Trader", note: "Forever" },
+        { label: "All future Pro features", note: "Included" },
+        { label: "Never pay again", note: "One payment" },
+        { label: "Founding member status", note: "" },
+        { label: "Priority beta access", note: "" },
+        { label: "Available only during founding period", note: "" },
+      ],
+    },
+  ] as const;
 
-  const LIFETIME_FEATURES = [
-    "Everything in Pro — forever",
-    "All future Pro features included",
-    "Never pay another subscription",
-    "Priority access to new modules",
-    "Founding member status",
-    "Available only during founding period",
+  // Comparison table rows
+  const COMPARISON_ROWS = [
+    { feature: "Pressure Index™",         free: "Live",     mobile: "Full",     founding: "Full",     trader: "Full + history", power: "Full + history", lifetime: "Full + history" },
+    { feature: "Daily market briefing",    free: "1/day",    mobile: "Full",     founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
+    { feature: "ASHA intelligence",        free: "5/day",    mobile: "20/day",   founding: "Unlimited",trader: "Unlimited",      power: "Unlimited",      lifetime: "Unlimited" },
+    { feature: "Seismograph Command Center",free: "—",       mobile: "—",        founding: "✓",        trader: "✓",              power: "✓",              lifetime: "✓" },
+    { feature: "Stock signals",            free: "Sample",   mobile: "Limited",  founding: "Full",     trader: "Full",           power: "Expanded",       lifetime: "Full" },
+    { feature: "Crypto intelligence",      free: "—",        mobile: "Limited",  founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
+    { feature: "Historical analog engine", free: "Limited",  mobile: "—",        founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
+    { feature: "Market regime analysis",   free: "Basic",    mobile: "Basic",    founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
+    { feature: "Watchlists",               free: "3 symbols",mobile: "Full",     founding: "Unlimited",trader: "Unlimited",      power: "Unlimited",      lifetime: "Unlimited" },
+    { feature: "Scenario analysis",        free: "—",        mobile: "—",        founding: "Full",     trader: "Full",           power: "Advanced",       lifetime: "Full" },
+    { feature: "Research tools",           free: "—",        mobile: "—",        founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
+    { feature: "Portfolio intelligence",   free: "—",        mobile: "—",        founding: "—",        trader: "—",              power: "Full",           lifetime: "—" },
+    { feature: "Data export",              free: "—",        mobile: "—",        founding: "—",        trader: "—",              power: "✓",              lifetime: "—" },
+    { feature: "Refresh frequency",        free: "15 min",   mobile: "5 min",    founding: "Real-time",trader: "Real-time",      power: "Real-time",      lifetime: "Real-time" },
+    { feature: "Support",                  free: "Community",mobile: "Email",    founding: "Priority", trader: "Email",          power: "Priority",       lifetime: "Priority" },
   ];
-
-  const cardBase: React.CSSProperties = {
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-    borderRadius: "14px",
-    padding: "32px 28px 28px",
-    flex: "1 1 0",
-    minWidth: "260px",
-    maxWidth: "380px",
-    transition: "transform 0.18s ease, box-shadow 0.18s ease",
-  };
 
   return (
     <section
-      id="access"
       ref={pricingRef}
+      id="access"
       style={{
-        background: "linear-gradient(180deg, #050608 0%, #070a0f 100%)",
-        padding: "96px 24px 80px",
+        background: "linear-gradient(180deg, #050810 0%, #070C14 100%)",
+        padding: "100px 0 80px",
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* Ambient glow */}
+      {/* Background grid */}
       <div style={{
-        position: "absolute", top: "0", left: "50%", transform: "translateX(-50%)",
-        width: "700px", height: "300px",
-        background: "radial-gradient(ellipse at center top, rgba(0,212,255,0.06) 0%, transparent 70%)",
-        pointerEvents: "none",
+        position: "absolute", inset: 0, pointerEvents: "none",
+        backgroundImage: "linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px)",
+        backgroundSize: "60px 60px",
       }} />
 
-      <div style={{ maxWidth: "1100px", margin: "0 auto", position: "relative" }}>
+      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 24px", position: "relative" }}>
 
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "56px" }}>
-          <div style={{
-            display: "inline-block",
-            fontFamily: "'JetBrains Mono',monospace",
-            fontSize: "10px",
-            letterSpacing: "0.22em",
-            color: "rgba(0,212,255,0.55)",
-            fontWeight: 700,
-            marginBottom: "16px",
-            padding: "6px 14px",
-            border: "1px solid rgba(0,212,255,0.15)",
-            borderRadius: "4px",
-          }}>
-            FOUNDING MEMBER PRICING — WINDOW IS OPEN
+        <div style={{ textAlign: "center", marginBottom: "64px" }}>
+          <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.2em", color: "#FFD700", marginBottom: "16px" }}>
+            FOUNDING PERIOD PRICING — LIMITED AVAILABILITY
           </div>
-          <h2 style={{
-            fontFamily: "'Space Grotesk','Inter',sans-serif",
-            fontSize: "clamp(28px, 5vw, 42px)",
-            fontWeight: 700,
-            color: "#E2E8F0",
-            margin: "0 0 14px",
-            letterSpacing: "-0.02em",
-            lineHeight: 1.15,
-          }}>
+          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: "#F0F4F8", margin: "0 0 16px", lineHeight: 1.1 }}>
             Choose Your Intelligence Level
           </h2>
-          <p style={{
-            fontSize: "15px",
-            color: "rgba(148,163,184,0.75)",
-            maxWidth: "520px",
-            margin: "0 auto",
-            lineHeight: 1.6,
-          }}>
-            Institutional-grade macro intelligence. The Founding Lifetime plan locks in full access permanently — no future price increases, no subscription renewals.
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "16px", color: "#64748B", maxWidth: "540px", margin: "0 auto" }}>
+            From free access to lifetime founding membership. All plans include the live FAULTLINE Pressure Index™.
           </p>
         </div>
 
-        {/* Three-tier grid */}
+        {/* 6-plan grid */}
         <div style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "20px",
-          justifyContent: "center",
-          alignItems: "stretch",
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
+          gap: "16px",
+          marginBottom: "64px",
         }}>
+          {plans.map((plan) => {
+            const isFeatured = plan.featured;
+            const isLifetime = plan.id === "lifetime";
+            const isFounding = plan.id === "founding";
+            return (
+              <div
+                key={plan.id}
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: "14px",
+                  padding: isFeatured ? "32px 24px 28px" : "28px 20px 24px",
+                  background: isFeatured
+                    ? "linear-gradient(160deg, rgba(0,212,255,0.08) 0%, rgba(0,212,255,0.03) 100%)"
+                    : isLifetime
+                    ? "linear-gradient(160deg, rgba(255,215,0,0.07) 0%, rgba(255,215,0,0.02) 100%)"
+                    : "rgba(255,255,255,0.02)",
+                  border: `1px solid ${isFeatured ? "rgba(0,212,255,0.35)" : isLifetime ? "rgba(255,215,0,0.3)" : isFounding ? "rgba(167,139,250,0.25)" : "rgba(255,255,255,0.07)"}`,
+                  boxShadow: isFeatured
+                    ? "0 0 40px rgba(0,212,255,0.12), inset 0 1px 0 rgba(0,212,255,0.1)"
+                    : isLifetime
+                    ? "0 0 40px rgba(255,215,0,0.1), inset 0 1px 0 rgba(255,215,0,0.08)"
+                    : "none",
+                  transition: "box-shadow 0.3s ease, transform 0.2s ease",
+                }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 60px ${plan.glow}, inset 0 1px 0 ${plan.glow}`;
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = isFeatured
+                    ? "0 0 40px rgba(0,212,255,0.12), inset 0 1px 0 rgba(0,212,255,0.1)"
+                    : isLifetime
+                    ? "0 0 40px rgba(255,215,0,0.1), inset 0 1px 0 rgba(255,215,0,0.08)"
+                    : "none";
+                }}
+              >
+                {/* Badge */}
+                {plan.badge && (
+                  <div style={{
+                    position: "absolute", top: "-11px", left: "50%", transform: "translateX(-50%)",
+                    background: isLifetime ? "linear-gradient(90deg, #B8860B, #FFD700, #B8860B)" : isFounding ? "#A78BFA" : plan.color,
+                    color: isLifetime ? "#000" : isFounding ? "#fff" : "#000",
+                    fontFamily: MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em",
+                    padding: "3px 12px", borderRadius: "20px", whiteSpace: "nowrap",
+                  }}>
+                    {plan.badge}
+                  </div>
+                )}
 
-          {/* ── FREE ── */}
-          <div
-            style={{
-              ...cardBase,
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.08)",
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; }}
-          >
-            <div style={{ marginBottom: "24px" }}>
-              <div style={{
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                color: "rgba(100,116,139,0.7)",
-                fontWeight: 700,
-                marginBottom: "10px",
-              }}>FREE</div>
-              <div style={{
-                fontFamily: "'Space Grotesk','Inter',sans-serif",
-                fontSize: "36px",
-                fontWeight: 700,
-                color: "#94A3B8",
-                lineHeight: 1,
-                marginBottom: "6px",
-              }}>$0</div>
-              <div style={{ fontSize: "12px", color: "rgba(100,116,139,0.6)", fontFamily: "'JetBrains Mono',monospace" }}>
-                No credit card required
+                {/* Plan name */}
+                <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.15em", color: plan.color, marginBottom: "8px" }}>
+                  {plan.name.toUpperCase()}
+                </div>
+
+                {/* Price */}
+                <div style={{ display: "flex", alignItems: "baseline", gap: "2px", marginBottom: "6px" }}>
+                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(28px,3.5vw,40px)", fontWeight: 700, color: isLifetime ? "#FFD700" : "#F0F4F8", lineHeight: 1 }}>
+                    {plan.price}
+                  </span>
+                  {plan.period && (
+                    <span style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.35)", marginLeft: "4px" }}>
+                      {plan.period}
+                    </span>
+                  )}
+                </div>
+
+                {/* Tagline */}
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", marginBottom: "20px", lineHeight: 1.4 }}>
+                  {plan.tagline}
+                </div>
+
+                {/* Features */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
+                  {plan.features.map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                      <span style={{ color: plan.color, fontSize: "12px", marginTop: "1px", flexShrink: 0, fontWeight: 700 }}>✓</span>
+                      <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.4 }}>
+                        {f.label}
+                        {f.note && <span style={{ color: "#475569", marginLeft: "4px" }}>· {f.note}</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA */}
+                {plan.ctaHref ? (
+                  <a
+                    href={plan.ctaHref}
+                    style={{
+                      display: "block", textAlign: "center", padding: "11px 16px",
+                      borderRadius: "8px", fontFamily: MONO, fontSize: "11px", fontWeight: 700,
+                      letterSpacing: "0.1em", textDecoration: "none",
+                      background: "transparent",
+                      border: `1px solid ${plan.color}`,
+                      color: plan.color,
+                      transition: "background 0.2s ease",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = `${plan.glow}`; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+                  >
+                    {plan.cta}
+                  </a>
+                ) : plan.id === "premium_power" ? (
+                  <button
+                    disabled
+                    style={{
+                      display: "block", width: "100%", textAlign: "center", padding: "11px 16px",
+                      borderRadius: "8px", fontFamily: MONO, fontSize: "11px", fontWeight: 700,
+                      letterSpacing: "0.1em", cursor: "not-allowed",
+                      background: "transparent",
+                      border: `1px dashed ${plan.color}40`,
+                      color: `${plan.color}60`,
+                    }}
+                  >
+                    COMING SOON
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleCheckout(plan.id as "core" | "premium" | "founding" | "lifetime")}
+                    disabled={checkoutMutation.isPending}
+                    style={{
+                      display: "block", width: "100%", textAlign: "center", padding: "11px 16px",
+                      borderRadius: "8px", fontFamily: MONO, fontSize: "11px", fontWeight: 700,
+                      letterSpacing: "0.1em", cursor: checkoutMutation.isPending ? "wait" : "pointer",
+                      background: isFeatured
+                        ? "linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08))"
+                        : isLifetime
+                        ? "linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.08))"
+                        : "transparent",
+                      border: `1px solid ${isFeatured ? "rgba(0,212,255,0.5)" : isLifetime ? "rgba(255,215,0,0.5)" : `${plan.color}40`}`,
+                      color: isFeatured ? "#00D4FF" : isLifetime ? "#FFD700" : plan.color,
+                      transition: "all 0.2s ease",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = plan.glow; }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLButtonElement).style.background = isFeatured
+                        ? "linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08))"
+                        : isLifetime
+                        ? "linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.08))"
+                        : "transparent";
+                    }}
+                  >
+                    {checkoutMutation.isPending ? "PROCESSING…" : plan.cta}
+                  </button>
+                )}
               </div>
-            </div>
+            );
+          })}
+        </div>
 
-            <div style={{ fontSize: "13px", color: "rgba(148,163,184,0.6)", marginBottom: "24px", lineHeight: 1.5 }}>
-              An introduction to the platform. Explore the core experience before committing.
-            </div>
-
-            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: "9px", flex: 1 }}>
-              {FREE_FEATURES.map(f => (
-                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "rgba(148,163,184,0.65)", lineHeight: 1.45 }}>
-                  <span style={{ color: "#64748B", flexShrink: 0, marginTop: "2px", fontSize: "11px" }}>✓</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            <a
-              href={PLATFORM_URL}
-              style={{
-                display: "block",
-                width: "100%",
-                padding: "13px 16px",
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                borderRadius: "8px",
-                border: "1px solid rgba(100,116,139,0.35)",
-                background: "rgba(100,116,139,0.08)",
-                color: "#94A3B8",
-                textDecoration: "none",
-                textAlign: "center",
-                boxSizing: "border-box",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = "rgba(100,116,139,0.18)";
-                e.currentTarget.style.borderColor = "rgba(100,116,139,0.6)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "rgba(100,116,139,0.08)";
-                e.currentTarget.style.borderColor = "rgba(100,116,139,0.35)";
-              }}
-            >
-              TRY FREE — NO CARD NEEDED
-            </a>
+        {/* Comparison table */}
+        <div style={{ marginBottom: "48px" }}>
+          <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.2em", color: "#64748B", textAlign: "center", marginBottom: "24px" }}>
+            PLAN COMPARISON
           </div>
-
-          {/* ── PRO ── */}
-          <div
-            style={{
-              ...cardBase,
-              background: "rgba(0,212,255,0.04)",
-              border: "1px solid rgba(0,212,255,0.22)",
-              boxShadow: "0 0 40px rgba(0,212,255,0.06)",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 60px rgba(0,212,255,0.12)";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 40px rgba(0,212,255,0.06)";
-            }}
-          >
-            <div style={{ marginBottom: "24px" }}>
-              <div style={{
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                color: "rgba(0,212,255,0.7)",
-                fontWeight: 700,
-                marginBottom: "10px",
-              }}>PRO</div>
-              <div style={{
-                fontFamily: "'Space Grotesk','Inter',sans-serif",
-                fontSize: "36px",
-                fontWeight: 700,
-                color: "#00D4FF",
-                lineHeight: 1,
-                marginBottom: "6px",
-              }}>$59<span style={{ fontSize: "16px", fontWeight: 400, color: "rgba(0,212,255,0.55)", marginLeft: "4px" }}>/mo</span></div>
-              <div style={{ fontSize: "12px", color: "rgba(0,212,255,0.45)", fontFamily: "'JetBrains Mono',monospace" }}>
-                Cancel anytime
-              </div>
-            </div>
-
-            <div style={{ fontSize: "13px", color: "rgba(148,163,184,0.7)", marginBottom: "24px", lineHeight: 1.5 }}>
-              Full access to every intelligence module. Built for serious investors and traders.
-            </div>
-
-            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: "9px", flex: 1 }}>
-              {PRO_FEATURES.map(f => (
-                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "rgba(168,184,204,0.8)", lineHeight: 1.45 }}>
-                  <span style={{ color: "#00D4FF", flexShrink: 0, marginTop: "2px", fontSize: "11px" }}>✓</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => handleCheckout("premium")}
-              disabled={checkoutMutation.isPending}
-              style={{
-                width: "100%",
-                padding: "13px 16px",
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                borderRadius: "8px",
-                border: "1px solid #00D4FF",
-                background: "#00D4FF",
-                color: "#050608",
-                cursor: checkoutMutation.isPending ? "not-allowed" : "pointer",
-                opacity: checkoutMutation.isPending ? 0.6 : 1,
-                boxShadow: "0 0 20px rgba(0,212,255,0.3)",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={e => {
-                if (!checkoutMutation.isPending) {
-                  e.currentTarget.style.background = "#33DDFF";
-                  e.currentTarget.style.boxShadow = "0 0 30px rgba(0,212,255,0.45)";
-                }
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "#00D4FF";
-                e.currentTarget.style.boxShadow = "0 0 20px rgba(0,212,255,0.3)";
-              }}
-            >
-              {checkoutMutation.isPending ? "PROCESSING\u2026" : "GET PRO — $59/MO"}
-            </button>
+          <div style={{ overflowX: "auto", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                  <th style={{ padding: "12px 16px", textAlign: "left", color: "#475569", fontFamily: MONO, fontSize: "10px", letterSpacing: "0.1em", fontWeight: 600, background: "rgba(255,255,255,0.02)", whiteSpace: "nowrap" }}>FEATURE</th>
+                  {[
+                    { label: "FREE", color: "#6B7280" },
+                    { label: "MOBILE", color: "#22D3EE" },
+                    { label: "FOUNDING", color: "#A78BFA" },
+                    { label: "TRADER", color: "#00D4FF" },
+                    { label: "POWER", color: "#F97316" },
+                    { label: "LIFETIME", color: "#FFD700" },
+                  ].map(col => (
+                    <th key={col.label} style={{ padding: "12px 12px", textAlign: "center", color: col.color, fontFamily: MONO, fontSize: "10px", letterSpacing: "0.1em", fontWeight: 700, background: "rgba(255,255,255,0.02)", whiteSpace: "nowrap" }}>
+                      {col.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON_ROWS.map((row, i) => (
+                  <tr key={row.feature} style={{ borderBottom: i < COMPARISON_ROWS.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
+                    <td style={{ padding: "10px 16px", color: "#94A3B8", whiteSpace: "nowrap" }}>{row.feature}</td>
+                    {[row.free, row.mobile, row.founding, row.trader, row.power, row.lifetime].map((val, j) => (
+                      <td key={j} style={{ padding: "10px 12px", textAlign: "center", color: val === "—" ? "#334155" : val === "✓" || val === "Full" || val === "Unlimited" || val === "Forever" ? "#4ADE80" : "#94A3B8", fontFamily: MONO, fontSize: "11px" }}>
+                        {val}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          {/* ── FOUNDING LIFETIME (Featured) ── */}
-          <div
-            style={{
-              ...cardBase,
-              background: "linear-gradient(145deg, rgba(255,215,0,0.06) 0%, rgba(255,165,0,0.03) 100%)",
-              border: "1px solid rgba(255,215,0,0.35)",
-              boxShadow: "0 0 60px rgba(255,215,0,0.08), 0 0 120px rgba(255,165,0,0.04)",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 80px rgba(255,215,0,0.14), 0 0 140px rgba(255,165,0,0.06)";
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-              (e.currentTarget as HTMLDivElement).style.boxShadow = "0 0 60px rgba(255,215,0,0.08), 0 0 120px rgba(255,165,0,0.04)";
-            }}
-          >
-            {/* Featured badge */}
-            <div style={{
-              position: "absolute",
-              top: "-1px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "linear-gradient(90deg, #FFD700, #FFA500)",
-              color: "#050608",
-              fontFamily: "'JetBrains Mono',monospace",
-              fontSize: "9px",
-              fontWeight: 700,
-              letterSpacing: "0.18em",
-              padding: "5px 16px",
-              borderRadius: "0 0 8px 8px",
-              whiteSpace: "nowrap",
-            }}>
-              BEST VALUE · FOUNDING PERIOD ONLY
-            </div>
-
-            <div style={{ marginBottom: "24px", marginTop: "16px" }}>
-              <div style={{
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: "10px",
-                letterSpacing: "0.2em",
-                color: "rgba(255,215,0,0.75)",
-                fontWeight: 700,
-                marginBottom: "10px",
-              }}>FOUNDING LIFETIME</div>
-              <div style={{
-                fontFamily: "'Space Grotesk','Inter',sans-serif",
-                fontSize: "36px",
-                fontWeight: 700,
-                color: "#FFD700",
-                lineHeight: 1,
-                marginBottom: "6px",
-              }}>$299<span style={{ fontSize: "16px", fontWeight: 400, color: "rgba(255,215,0,0.5)", marginLeft: "4px" }}>one-time</span></div>
-              <div style={{ fontSize: "12px", color: "rgba(255,215,0,0.45)", fontFamily: "'JetBrains Mono',monospace" }}>
-                vs. $708/yr at Pro monthly
-              </div>
-            </div>
-
-            <div style={{ fontSize: "13px", color: "rgba(168,184,204,0.75)", marginBottom: "24px", lineHeight: 1.5 }}>
-              Pay once. Access everything — forever. Includes all future Pro features as they ship. This pricing will never be offered again after the founding period closes.
-            </div>
-
-            <ul style={{ listStyle: "none", padding: 0, margin: "0 0 28px", display: "flex", flexDirection: "column", gap: "9px", flex: 1 }}>
-              {LIFETIME_FEATURES.map(f => (
-                <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: "8px", fontSize: "13px", color: "rgba(168,184,204,0.85)", lineHeight: 1.45 }}>
-                  <span style={{ color: "#FFD700", flexShrink: 0, marginTop: "2px", fontSize: "11px" }}>✓</span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => handleCheckout("lifetime")}
-              disabled={checkoutMutation.isPending}
-              style={{
-                width: "100%",
-                padding: "14px 16px",
-                fontFamily: "'JetBrains Mono',monospace",
-                fontSize: "11px",
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                borderRadius: "8px",
-                border: "1px solid #FFD700",
-                background: "linear-gradient(135deg, #FFD700, #FFA500)",
-                color: "#050608",
-                cursor: checkoutMutation.isPending ? "not-allowed" : "pointer",
-                opacity: checkoutMutation.isPending ? 0.6 : 1,
-                boxShadow: "0 0 24px rgba(255,215,0,0.35)",
-                transition: "all 0.15s ease",
-              }}
-              onMouseEnter={e => {
-                if (!checkoutMutation.isPending) {
-                  e.currentTarget.style.background = "linear-gradient(135deg, #FFE033, #FFB020)";
-                  e.currentTarget.style.boxShadow = "0 0 36px rgba(255,215,0,0.5)";
-                }
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = "linear-gradient(135deg, #FFD700, #FFA500)";
-                e.currentTarget.style.boxShadow = "0 0 24px rgba(255,215,0,0.35)";
-              }}
-            >
-              {checkoutMutation.isPending ? "PROCESSING\u2026" : "CLAIM FOUNDING LIFETIME — $299"}
-            </button>
-
-            {/* Value comparison note */}
-            <div style={{
-              marginTop: "12px",
-              textAlign: "center",
-              fontSize: "11px",
-              color: "rgba(255,215,0,0.45)",
-              fontFamily: "'JetBrains Mono',monospace",
-              letterSpacing: "0.06em",
-            }}>
-              SAVES $409+ IN YEAR ONE ALONE
-            </div>
-          </div>
-
         </div>
 
         {/* Footer note */}
-        <div style={{ marginTop: "48px", textAlign: "center" }}>
-          <p style={{
-            fontSize: "13px",
-            color: "rgba(100,116,139,0.55)",
-            lineHeight: 1.65,
-            maxWidth: "560px",
-            margin: "0 auto 12px",
-          }}>
-            The Founding Lifetime plan will <strong style={{ color: "rgba(255,215,0,0.65)" }}>never be offered again</strong> after the founding period closes. All plans cancel anytime. No long-term contracts.
+        <div style={{ textAlign: "center" }}>
+          <p style={{ fontFamily: MONO, fontSize: "10px", color: "#334155", letterSpacing: "0.1em", lineHeight: 1.8 }}>
+            THE FOUNDING LIFETIME PLAN WILL NEVER BE OFFERED AGAIN AFTER THE FOUNDING PERIOD CLOSES · POWER PLAN COMING SOON
           </p>
-          <p style={{
-            fontFamily: "'JetBrains Mono',monospace",
-            fontSize: "10px",
-            color: "rgba(100,116,139,0.4)",
-            letterSpacing: "0.1em",
-            margin: 0,
-          }}>
-            INSTITUTIONAL-GRADE MACRO INTELLIGENCE · ALL PLANS CANCEL ANYTIME · FOUNDING PRICING LOCKS AT SIGNUP
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#334155", marginTop: "8px" }}>
+            All plans include the live FAULTLINE Pressure Index™. No credit card required for the free Observer tier.
           </p>
         </div>
 
@@ -2439,6 +2433,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
     </section>
   );
 }
+
 // ── FAULTLINE Core Mobile Showcase ──────────────────────────
 function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   const tabs = [
