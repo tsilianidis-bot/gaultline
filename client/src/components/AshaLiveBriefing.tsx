@@ -148,7 +148,7 @@ function getPressureLabel(score: number): string {
   return "STABLE";
 }
 
-/** Strip markdown bold/italic asterisks from LLM-generated text */
+/** Strip markdown bold/italic asterisks from LLM-generated text — v87870e50 */
 function stripMarkdown(text: string): string {
   return text
     .replace(/\*\*([^*]+)\*\*/g, "$1") // **bold** → plain
