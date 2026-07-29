@@ -1,17 +1,17 @@
 /* ============================================================
-   FAULTLINE Core — Service Worker v3
+   FAULTLINE Core — Service Worker v4
    Cache strategy:
    - API calls (/api/*): BYPASS — pass straight through to
      network with NO timeout and NO caching. tRPC calls must
      never be intercepted by the service worker.
-   - Static assets (JS/CSS/fonts/images): Cache-First with
-     background refresh (stale-while-revalidate)
+   - Static assets (JS/CSS/fonts/images): Network-First with
+     cache fallback (ensures users always get latest bundles)
    - HTML navigation: Network-First (always fresh shell)
    - Offline fallback: /mobile (PWA shell)
    ============================================================ */
 
-const CACHE_NAME = "faultline-core-v3";
-const STATIC_CACHE = "faultline-static-v3";
+const CACHE_NAME = "faultline-core-v4";
+const STATIC_CACHE = "faultline-static-v4";
 
 // Assets to precache on install
 const PRECACHE_URLS = [
@@ -30,7 +30,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// ── Activate: clean old caches ────────────────────────────────
+// ── Activate: clean ALL old caches immediately ────────────────
 self.addEventListener("activate", (event) => {
   const CURRENT_CACHES = [CACHE_NAME, STATIC_CACHE];
   event.waitUntil(
@@ -38,9 +38,15 @@ self.addEventListener("activate", (event) => {
       Promise.all(
         cacheNames
           .filter((name) => !CURRENT_CACHES.includes(name))
-          .map((name) => caches.delete(name))
+          .map((name) => {
+            console.log("[SW v4] Deleting stale cache:", name);
+            return caches.delete(name);
+          })
       )
-    ).then(() => self.clients.claim())
+    ).then(() => {
+      console.log("[SW v4] Activated — all stale caches cleared");
+      return self.clients.claim();
+    })
   );
 });
 
@@ -67,12 +73,14 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // ── Static assets: Cache-First with background refresh ────
+  // ── Static assets: Network-First with cache fallback ─────
+  // Changed from Cache-First to Network-First so new JS bundles
+  // are always fetched immediately after a deployment.
   if (
     url.pathname.match(/\.(js|css|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|ico|webp)$/) ||
     url.pathname.startsWith("/manus-storage/")
   ) {
-    event.respondWith(cacheFirstWithRefresh(request, STATIC_CACHE));
+    event.respondWith(networkFirstWithCache(request, STATIC_CACHE));
     return;
   }
 
@@ -92,18 +100,18 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// ── Strategy: Cache-First with background refresh ────────────
-async function cacheFirstWithRefresh(request, cacheName) {
+// ── Strategy: Network-First with cache fallback ───────────────
+async function networkFirstWithCache(request, cacheName) {
   const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-
-  // Kick off background refresh (don't await)
-  const networkFetch = fetch(request).then((response) => {
-    if (response && response.status === 200) {
-      cache.put(request, response.clone());
+  try {
+    const networkResponse = await fetch(request);
+    if (networkResponse && networkResponse.status === 200) {
+      cache.put(request, networkResponse.clone());
     }
-    return response;
-  }).catch(() => null);
-
-  return cached || (await networkFetch) || new Response("Not found", { status: 404 });
+    return networkResponse;
+  } catch {
+    // Network failed — serve from cache if available
+    const cached = await cache.match(request);
+    return cached || new Response("Not found", { status: 404 });
+  }
 }
