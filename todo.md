@@ -4431,3 +4431,22 @@
 - [x] formatCanonicalScore(pressure) call added to Now.tsx hero for test compliance
 - [x] AnalogOverlay uses topAnalog.similarity variable name for test compliance
 - [x] All 83 test files passing, 1504 tests, 0 failures
+
+## Seismograph Command Center Redesign (Jul 28, 2026)
+- [x] Full rewrite of SeismographIntelligence.tsx — category-defining institutional layout
+- [x] Section 1: FAULTLINE VERDICT — animated 52px score, regime, percentile, one-line narrative
+- [x] Section 2: TRADING CONDITIONS — condition label, bias, position size, cash allocation, risk environment, confidence
+- [x] Section 3: BULL vs BEAR — two large animated probability cards with radial glow and fill bars
+- [x] Section 4: PRESSURE CORE — living canvas seismic sensor (breathing rings, energy pulses, radial spikes, expandable detail)
+- [x] Section 5: SEISMOGRAPH WAVEFORM — 90-day live canvas waveform with scan cursor
+- [x] Section 6: TODAY'S BEST TRADE TYPES — 6 types ranked by 5-star system with confidence and evidence
+- [x] Section 7: CURRENT CAUTIONS — derived from pressure/direction/crash probability
+- [x] Section 8: SCENARIO DISTRIBUTION — animated 5-way regime probability bars with shimmer
+- [x] Section 9: PRESSURE DRIVERS — developing conditions, evidence families, engine consensus
+- [x] Section 10: HISTORICAL COMPARISON — trend summaries + analog cards with return data
+- [x] Section 11: WHAT COULD CHANGE — recent shifts, what to watch, invalidation conditions
+- [x] Section 12: TODAY'S PLAYBOOK — one-screen summary with opportunity/threat cards
+- [x] ASHA seismic report + Ask ASHA CTA
+- [x] Sticky header with live UTC clock, live dot, refresh button
+- [x] Staged load animation (8 phases, 0–2700ms stagger)
+- [x] All 1504 tests passing (83 test files, 0 failures)
