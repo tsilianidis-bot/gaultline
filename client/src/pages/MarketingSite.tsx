@@ -3275,8 +3275,7 @@ export default function MarketingSite() {
       <EvergreenHubSection />
       <ComingSoonSection onRequestAccess={scrollToForm} />
       <Footer onDemoAccess={() => setDemoModalOpen(true)} />
-      {/* BUILD VERIFY MARKER — temporary deployment probe, remove after confirmation */}
-      <div style={{position:'fixed',bottom:'8px',right:'8px',zIndex:9999,background:'rgba(0,0,0,0.85)',border:'1px solid #00D4FF',borderRadius:'4px',padding:'4px 8px',fontFamily:'monospace',fontSize:'10px',color:'#00D4FF',pointerEvents:'none',letterSpacing:'0.05em'}}>BUILD VERIFY — a2169f13 — 2026-07-29</div>
+
     </div>
   );
 }

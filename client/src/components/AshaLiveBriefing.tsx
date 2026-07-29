@@ -148,6 +148,15 @@ function getPressureLabel(score: number): string {
   return "STABLE";
 }
 
+/** Strip markdown bold/italic asterisks from LLM-generated text */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // **bold** → plain
+    .replace(/\*([^*]+)\*/g, "$1")       // *italic* → plain
+    .replace(/\b0th historical percentile\b/gi, "low historical range") // fix 0th percentile wording
+    .replace(/\b0th percentile\b/gi, "low historical range");
+}
+
 export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) {
   const [, navigate] = useLocation();
   const { output, isLoading } = useEngine();
@@ -158,6 +167,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
   const [actionsVisible, setActionsVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [idleCalm, setIdleCalm] = useState(false);
+  const [greetingExpanded, setGreetingExpanded] = useState(false);
   const color = regime.color;
   const ashaRegimeState: AshaRegimeState =
     overall.score >= 7 ? "critical" : overall.score >= 4.5 ? "rising" : "calm";
@@ -436,8 +446,8 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           {[
             { label: "STATE", value: regime.label.split(" ")[0] ?? regime.label, color: color },
             { label: "PRESSURE", value: formatCanonicalScore(overall.score * 10), color: pressureColor },
-            { label: "BULL", value: `${output.probability?.bullProbability ?? "\u2014"}%`, color: "#00FF88" },
-            { label: "CRASH", value: `${output.probability?.crashProbability ?? "\u2014"}%`, color: "#FF2D55" },
+            { label: "BULL", value: output.probability?.bullProbability != null ? `${output.probability.bullProbability}%` : "\u2014", color: "#00FF88" },
+            { label: "CRASH", value: output.probability?.crashProbability != null ? `${output.probability.crashProbability}%` : "\u2014", color: "#FF2D55" },
             { label: "ANALOG", value: analog?.era?.split(" ").slice(0, 2).join(" ") ?? "\u2014", color: "#00E5FF" },
           ].map((stat, i) => (
             <div
@@ -509,32 +519,66 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
               ))}
             </div>
           ) : (
-            <p
-              style={{
-                fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
-                fontSize: "17px",
-                lineHeight: 1.75,
-                color: "#D8E8F8",
-                margin: 0,
-                textAlign: "center",
-                letterSpacing: "0.01em",
-              }}
-            >
-              {greetingText}
-              {!greetingDone && (
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: "2px",
-                    height: "1.1em",
-                    background: color,
-                    marginLeft: "2px",
-                    verticalAlign: "text-bottom",
-                    animation: "asha-cursor-blink 0.8s step-end infinite",
-                  }}
-                />
-              )}
-            </p>
+            <div style={{ width: "100%" }}>
+              {(() => {
+                const cleaned = stripMarkdown(greetingText);
+                // Split into sentences for mobile truncation
+                const sentences = cleaned.match(/[^.!?]+[.!?]+/g) ?? [cleaned];
+                const shortVersion = sentences.slice(0, 2).join(" ").trim();
+                const hasMore = sentences.length > 2 && greetingDone;
+                const displayText = greetingExpanded || !greetingDone ? cleaned : shortVersion;
+                return (
+                  <>
+                    <p
+                      style={{
+                        fontFamily: "'IBM Plex Sans', system-ui, sans-serif",
+                        fontSize: "clamp(14px, 4vw, 17px)",
+                        lineHeight: 1.75,
+                        color: "#D8E8F8",
+                        margin: 0,
+                        textAlign: "center",
+                        letterSpacing: "0.01em",
+                      }}
+                    >
+                      {displayText}
+                      {!greetingDone && (
+                        <span
+                          style={{
+                            display: "inline-block",
+                            width: "2px",
+                            height: "1.1em",
+                            background: color,
+                            marginLeft: "2px",
+                            verticalAlign: "text-bottom",
+                            animation: "asha-cursor-blink 0.8s step-end infinite",
+                          }}
+                        />
+                      )}
+                    </p>
+                    {hasMore && (
+                      <button
+                        onClick={() => setGreetingExpanded(v => !v)}
+                        style={{
+                          display: "block",
+                          margin: "8px auto 0",
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          fontFamily: "'IBM Plex Mono', monospace",
+                          fontSize: "9px",
+                          letterSpacing: "0.14em",
+                          color: `${color}80`,
+                          textTransform: "uppercase",
+                          padding: "4px 8px",
+                        }}
+                      >
+                        {greetingExpanded ? "SHOW LESS ▲" : "READ FULL BRIEFING ▼"}
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
           )}
         </div>
 
@@ -558,12 +602,16 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
                   background: `${action.color}08`,
                   border: `1px solid ${action.color}30`,
                   borderRadius: "6px",
-                  padding: "14px 16px",
+                  padding: "12px 14px",
                   cursor: "pointer",
                   textAlign: "left",
                   transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
                   animation: `asha-briefing-in 0.4s cubic-bezier(0.23,1,0.32,1) ${0.05 * i + 0.1}s both`,
                   minHeight: "unset",
+                  overflow: "hidden",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.background = `${action.color}14`;
@@ -581,10 +629,12 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
                 <div
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: "14px",
+                    fontSize: "clamp(11px, 3.2vw, 13px)",
                     color: action.color,
-                    marginBottom: "4px",
                     fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {action.icon} {action.label}
@@ -592,10 +642,13 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
                 <div
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: "9px",
+                    fontSize: "clamp(8px, 2.2vw, 9px)",
                     color: "rgba(148,163,184,0.45)",
                     letterSpacing: "0.06em",
                     lineHeight: 1.4,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {action.sub}
