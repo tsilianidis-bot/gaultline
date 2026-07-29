@@ -609,6 +609,36 @@ export default function SeismographIntelligence() {
     return () => clearInterval(t);
   }, []);
 
+  // ── All hooks must be called unconditionally before any early return ──
+  const loadPhase = useStagedLoad(true);
+  // Use safe fallback values for hooks that depend on intel data
+  const _score = intel?.currentScore ?? 0;
+  const _bull = intel?.regimeProbabilities5way?.bull ?? 0;
+  const _crash = (intel?.regimeProbabilities5way?.crash ?? 0) + (intel?.regimeProbabilities5way?.recession ?? 0);
+  const animatedScore = useCountUp(_score, 1100, 400);
+  const animatedBull = useCountUp(_bull, 1000, 600);
+  const animatedCrash = useCountUp(_crash, 1000, 700);
+
+  const ashaCtxMemo = useMemo(() => ({
+    page: "seismograph" as const,
+    pressureScore: intel?.currentScore ?? 0,
+    regime: intel?.currentRegime ?? "",
+    narrative: intel?.todayStory ?? "",
+    trend: intel?.currentDirection ?? "",
+    keyDrivers: (intel?.keyDevelopments ?? []).slice(0, 3),
+    historicalAnalog: intel?.analogs?.[0] ? `${intel.analogs[0].period} (similarity: ${(intel.analogs[0].similarity * 100).toFixed(0)}%)` : undefined,
+    transitionProbability: intel?.transitionProbabilities?.transitionToElevated,
+    additionalContext: {
+      stressLevel: intel?.currentStressLevel ?? "",
+      percentile: intel?.currentPercentile ?? 0,
+      enginesAgreeing: intel?.enginesAgreeing ?? [],
+      enginesDisagreeing: intel?.enginesDisagreeing ?? [],
+      dataFreshness: intel?.dataFreshness,
+    },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [intel?.currentScore, intel?.currentRegime, intel?.todayStory, intel?.currentDirection, intel?.currentStressLevel, intel?.currentPercentile, intel?.transitionProbabilities?.transitionToElevated]);
+  useRegisterAshaContext(ashaCtxMemo);
+
   const formatUtc = (d: Date) =>
     d.toISOString().replace("T", " ").substring(0, 16) + " UTC";
 
@@ -659,36 +689,11 @@ export default function SeismographIntelligence() {
   const topEngines = [...safeEngineContributions].sort((a, b) => b.contributionWeight - a.contributionWeight).slice(0, 6);
 
   const scoreColor = pressureColor(currentScore);
-  const loadPhase = useStagedLoad(true);
-  const animatedScore = useCountUp(currentScore, 1100, 400);
-  const animatedBull = useCountUp(regimeProbs.bull, 1000, 600);
-  const animatedCrash = useCountUp(regimeProbs.crash + regimeProbs.recession, 1000, 700);
 
   // Derived data
   const tradingConditions = deriveTradingConditions(currentScore, currentDirection, probabilities.confidence);
   const tradeTypes = deriveTradeTypes(currentScore, currentDirection, currentRegime, regimeProbs.bull, regimeProbs.recession, regimeProbs.crash);
   const cautions = deriveCautions(currentScore, currentDirection, regimeProbs.crash, regimeProbs.recession, currentStressLevel);
-
-  // Register ASHA page context
-  const ashaCtx = useMemo(() => ({
-    page: "seismograph" as const,
-    pressureScore: currentScore,
-    regime: currentRegime,
-    narrative: todayStory,
-    trend: currentDirection,
-    keyDrivers: safeKeyDevelopments.slice(0, 3),
-    historicalAnalog: safeAnalogs[0] ? `${safeAnalogs[0].period} (similarity: ${(safeAnalogs[0].similarity * 100).toFixed(0)}%)` : undefined,
-    transitionProbability: transitionProbabilities?.transitionToElevated,
-    additionalContext: {
-      stressLevel: currentStressLevel,
-      percentile: currentPercentile,
-      enginesAgreeing: safeEnginesAgreeing,
-      enginesDisagreeing: safeEnginesDisagreeing,
-      dataFreshness,
-    },
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [currentScore, currentRegime, todayStory, currentDirection, currentStressLevel, currentPercentile, transitionProbabilities?.transitionToElevated]);
-  useRegisterAshaContext(ashaCtx);
 
   return (
     <div style={{ minHeight: "100vh", background: "#000", color: "#e2e8f0", padding: "0 0 80px", opacity: loadPhase >= 1 ? 1 : 0, transition: "opacity 0.4s ease-out", position: "relative", overflow: "hidden" }}>
