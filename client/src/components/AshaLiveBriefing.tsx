@@ -263,7 +263,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
   const ACTIONS = [
     {
       label: "Explain Today's Market",
-      sub: "Full synthesis across all 10 engines",
+      sub: "Full synthesis across all intelligence engines",
       icon: "\u25c8",
       color: color,
       action: () => handleAction("/app/discover", "Explain today's market conditions"),
@@ -277,14 +277,14 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
     },
     {
       label: "Show the Seismograph",
-      sub: "Live pressure across all 10 engines",
+      sub: "Live pressure across all engines",
       icon: "\u2295",
       color: "#FFD700",
       action: () => handleAction("/app/seismograph-command-center"),
     },
     {
       label: "Search Any Stock or Crypto",
-      sub: "ASHA analyzes any symbol instantly",
+      sub: "Instant ASHA symbol analysis",
       icon: "\u25ce",
       color: "#B388FF",
       action: () => handleAction("/app/symbol-intelligence"),
@@ -572,7 +572,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
                           padding: "4px 8px",
                         }}
                       >
-                        {greetingExpanded ? "SHOW LESS ▲" : "READ FULL BRIEFING ▼"}
+                        {greetingExpanded ? "SHOW LESS ▲" : "VIEW FULL MARKET NOTE ▼"}
                       </button>
                     )}
                   </>
@@ -602,16 +602,16 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
                   background: `${action.color}08`,
                   border: `1px solid ${action.color}30`,
                   borderRadius: "6px",
-                  padding: "12px 14px",
+                  padding: "14px",
                   cursor: "pointer",
                   textAlign: "left",
                   transition: "all 0.18s cubic-bezier(0.23,1,0.32,1)",
                   animation: `asha-briefing-in 0.4s cubic-bezier(0.23,1,0.32,1) ${0.05 * i + 0.1}s both`,
-                  minHeight: "unset",
+                  minHeight: "76px",
                   overflow: "hidden",
                   display: "flex",
                   flexDirection: "column",
-                  gap: "4px",
+                  gap: "6px",
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.background = `${action.color}14`;
@@ -629,12 +629,12 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
                 <div
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: "clamp(11px, 3.2vw, 13px)",
+                    fontSize: "clamp(10px, 2.8vw, 12px)",
                     color: action.color,
                     fontWeight: 600,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                    lineHeight: 1.3,
                   }}
                 >
                   {action.icon} {action.label}
@@ -642,13 +642,12 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
                 <div
                   style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    fontSize: "clamp(8px, 2.2vw, 9px)",
-                    color: "rgba(148,163,184,0.45)",
-                    letterSpacing: "0.06em",
-                    lineHeight: 1.4,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    fontSize: "clamp(9px, 2.4vw, 10px)",
+                    color: "rgba(148,163,184,0.6)",
+                    letterSpacing: "0.04em",
+                    lineHeight: 1.5,
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
                   }}
                 >
                   {action.sub}

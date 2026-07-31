@@ -85,8 +85,17 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
 // Flat list for convenience
 const ALL_TABS = NAV_GROUPS.flatMap(g => g.items);
 
-// Mobile and desktop share one five-question order.
-const MOBILE_PRIMARY = ALL_TABS;
+// Mobile bottom nav: HOME shortcut (points to the NOW destination) + the five canonical questions
+const NOW_DESTINATION = CANONICAL_DESTINATION_BY_ID["now"];
+const HOME_TAB = {
+  id: "home",
+  label: "HOME",
+  shortLabel: "HOME",
+  icon: Home,
+  path: NOW_DESTINATION.path,
+  accent: NOW_DESTINATION.accent,
+};
+const MOBILE_PRIMARY = [HOME_TAB, ...ALL_TABS];
 
 interface AppLayoutProps {
   children: ReactNode;
