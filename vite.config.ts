@@ -174,7 +174,9 @@ const BUILD_TIME = getBuildTime();
 
 export default defineConfig({
   plugins,
-  cacheDir: "/tmp/vite-cache",
+  // cacheDir defaults to node_modules/.vite — do NOT use /tmp/vite-cache as it persists
+  // across container builds and causes stale bundle output in production.
+  cacheDir: "node_modules/.vite",
   define: {
     __BUILD_COMMIT__: JSON.stringify(BUILD_COMMIT),
     __BUILD_TIME__: JSON.stringify(BUILD_TIME),
