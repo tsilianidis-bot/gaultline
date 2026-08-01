@@ -1115,7 +1115,8 @@ function App() {
             >
               <RouteTracker />
               <Router />
-              <FREDDebugConsole />
+              {/* FREDDebugConsole is only visible to admin users */}
+              {user?.role === 'admin' && <FREDDebugConsole />}
             </div>
 
             {/* Onboarding Getting Started video — shown once to new users */}

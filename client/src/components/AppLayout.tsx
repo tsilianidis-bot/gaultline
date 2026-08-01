@@ -105,7 +105,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { output, rawFred, isLoading, isLive, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators } = useEngine();
+  const { output, rawFred, isLoading, isLive, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators, sourceHealth } = useEngine();
   const { user: authUser, logout } = useAuth();
   const isAdmin = authUser?.role === "admin";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -299,12 +299,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <div style={{
                 width: '6px', height: '6px', borderRadius: '50%',
-                background: isLoading ? '#4B5563' : isLive ? '#00FF88' : regime.color,
-                boxShadow: isLoading ? 'none' : `0 0 8px ${isLive ? '#00FF88' : regime.color}cc`,
+                background: isLoading ? '#4B5563' : isLive ? (sourceHealth.some(s => s.status === 'degraded') ? '#ffaa00' : '#00FF88') : regime.color,
+                boxShadow: isLoading ? 'none' : `0 0 8px ${isLive ? (sourceHealth.some(s => s.status === 'degraded') ? '#ffaa00' : '#00FF88') : regime.color}cc`,
                 animation: isLoading ? 'none' : 'pulse-gold 5s ease-in-out infinite',
               }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: isLoading ? '#4B5563' : isLive ? '#00FF88' : regime.color, letterSpacing: '0.1em' }}>
-                {isLoading ? 'LOADING' : isRefreshing ? 'UPDATING' : isLive ? 'LIVE' : 'SIM'}
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: isLoading ? '#4B5563' : isLive ? (sourceHealth.some(s => s.status === 'degraded') ? '#ffaa00' : '#00FF88') : regime.color, letterSpacing: '0.1em' }}>
+                {isLoading ? 'LOADING' : isRefreshing ? 'UPDATING' : isLive ? (sourceHealth.some(s => s.status === 'degraded') ? 'DEGRADED' : 'LIVE') : 'SIM'}
               </span>
             </div>
             {/* ── Cmd+K search button ── */}

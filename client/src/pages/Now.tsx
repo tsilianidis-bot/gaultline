@@ -197,10 +197,11 @@ function SeismicBackground({ pressure, accent }: { pressure: number; accent: str
 
 // ── Dominant pressure instrument ─────────────────────────────────────────────
 function PressureInstrument({
-  score, accent, regime, direction, historicalPercentile, confidence, lastUpdated, phase,
+  score, accent, regime, direction, historicalPercentile, confidence, lastUpdated, phase, scoreChange,
 }: {
   score: number; accent: string; regime: string; direction: string;
   historicalPercentile: number | null; confidence?: number; lastUpdated?: Date | null; phase: number;
+  scoreChange?: number | null;
 }) {
   const displayScore = useCountUp(score, 1400, phase >= 3);
   const r = 110;
@@ -359,40 +360,81 @@ function PressureInstrument({
         />
         <circle cx={nx} cy={ny} r="3" fill="white" style={{ transition: "all 1.4s cubic-bezier(0.23,1,0.32,1)" }} />
 
-        {/* Center score */}
+        {/* Pulsing inner glow circle — active sensor feel */}
+        <circle
+          cx={cx} cy={cy - 8} r="38"
+          fill="none"
+          stroke={accent}
+          strokeWidth="1"
+          opacity="0.12"
+          style={{
+            opacity: phase >= 3 ? 0.12 : 0,
+            transition: "opacity 0.8s ease",
+            animation: phase >= 3 ? "sensor-pulse 3s ease-in-out infinite" : "none",
+          }}
+        />
+        <circle
+          cx={cx} cy={cy - 8} r="26"
+          fill={`${accent}08`}
+          style={{
+            opacity: phase >= 3 ? 1 : 0,
+            transition: "opacity 0.8s ease",
+          }}
+        />
+
+        {/* Regime label above score */}
         <text
-          x={cx} y={cy - 18}
+          x={cx} y={cy - 42}
+          textAnchor="middle"
+          fill={accent}
+          fontSize="9"
+          fontFamily="monospace"
+          letterSpacing="3"
+          style={{ opacity: phase >= 3 ? 1 : 0, transition: "opacity 0.5s ease 0.2s" }}
+        >
+          {pressureLabel(score)}
+        </text>
+
+        {/* Center score — enlarged to 68px */}
+        <text
+          x={cx} y={cy + 2}
           textAnchor="middle"
           fill="white"
-          fontSize="52"
+          fontSize="68"
           fontFamily="Rajdhani, sans-serif"
           fontWeight="700"
           style={{ opacity: phase >= 3 ? 1 : 0, transition: "opacity 0.5s ease" }}
         >
           {displayScore}
         </text>
+
+        {/* Scale text below score */}
         <text
-          x={cx} y={cy + 12}
+          x={cx} y={cy + 22}
           textAnchor="middle"
-          fill={accent}
-          fontSize="10"
-          fontFamily="monospace"
-          letterSpacing="4"
-          style={{ opacity: phase >= 4 ? 1 : 0, transition: "opacity 0.5s ease" }}
-        >
-          {pressureLabel(score)}
-        </text>
-        <text
-          x={cx} y={cy + 30}
-          textAnchor="middle"
-          fill="rgba(255,255,255,0.3)"
-          fontSize="8"
+          fill="rgba(255,255,255,0.35)"
+          fontSize="9"
           fontFamily="monospace"
           letterSpacing="2"
           style={{ opacity: phase >= 4 ? 1 : 0, transition: "opacity 0.5s ease" }}
         >
-          PRESSURE INDEX
+          {score} / 100
         </text>
+
+        {/* Change from prior reading */}
+        {scoreChange !== null && scoreChange !== undefined && (
+          <text
+            x={cx} y={cy + 38}
+            textAnchor="middle"
+            fill={scoreChange > 0 ? "#ff4d6d" : scoreChange < 0 ? "#00e599" : "rgba(255,255,255,0.3)"}
+            fontSize="8"
+            fontFamily="monospace"
+            letterSpacing="1"
+            style={{ opacity: phase >= 4 ? 1 : 0, transition: "opacity 0.5s ease" }}
+          >
+            {scoreChange > 0 ? `↑ ${Math.abs(scoreChange).toFixed(1)} from prior` : scoreChange < 0 ? `↓ ${Math.abs(scoreChange).toFixed(1)} from prior` : "→ no change"}
+          </text>
+        )}
 
         {/* Scale labels */}
         <text x="28" y={cy + 55} fill="rgba(255,255,255,0.2)" fontSize="8" fontFamily="monospace">0</text>
@@ -831,6 +873,10 @@ export default function Now() {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(400%); }
         }
+        @keyframes sensor-pulse {
+          0%, 100% { opacity: 0.08; r: 36; }
+          50% { opacity: 0.22; r: 42; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .driver-shimmer { animation: none !important; }
           canvas { display: none !important; }
@@ -955,6 +1001,7 @@ export default function Now() {
                   historicalPercentile={historicalPercentile}
                   lastUpdated={lastUpdated}
                   phase={phase}
+                  scoreChange={output.overall.delta !== undefined ? parseFloat((output.overall.delta * 10).toFixed(1)) : null}
                 />
               </div>
 

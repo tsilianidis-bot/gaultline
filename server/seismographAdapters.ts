@@ -49,13 +49,21 @@ export function pressureToEvidencePacket(
     Low: 70,
   };
 
+  // Degrade confidence when FRED data is unavailable and we are using
+  // hardcoded fallback values — the score is still meaningful but less
+  // precise than a live reading.
+  const baseConfidence = levelToConfidence[output.level] ?? 75;
+  const confidence = output.dataSource === "fallback"
+    ? Math.max(50, baseConfidence - 15)
+    : baseConfidence;
+
   return {
     source: "pressure-engine",
     timestamp: Number.isFinite(outputTimestamp) ? outputTimestamp : Date.now(),
     evidenceType: "macro_pressure",
     signal,
     strength,
-    confidence: levelToConfidence[output.level] ?? 75,
+    confidence,
     primaryReading: `pressure=${score} regime=${output.regime} level=${output.level}`,
     humanReadable: `Pressure Index at ${score}/100 — ${output.regime} (${output.level})`,
     subScores: Object.fromEntries(

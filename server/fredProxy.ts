@@ -18,10 +18,69 @@ const FRED_BASE = "https://api.stlouisfed.org/fred/series/observations";
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const cache = new LRUCache<string, unknown>(200, CACHE_TTL_MS);
 
+// ── Retry helper ─────────────────────────────────────────────
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch a FRED series with up to `maxAttempts` retries and
+ * exponential backoff. Returns the parsed JSON or throws.
+ */
+async function fetchFredSeries(
+  seriesId: string,
+  limit: number,
+  sortOrder = "desc",
+  maxAttempts = 2
+): Promise<{ observations: { date: string; value: string }[] }> {
+  const url = new URL(FRED_BASE);
+  url.searchParams.set("series_id", seriesId);
+  url.searchParams.set("api_key", FRED_API_KEY);
+  url.searchParams.set("file_type", "json");
+  url.searchParams.set("sort_order", sortOrder);
+  url.searchParams.set("limit", String(limit));
+
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const fredRes = await fetch(url.toString(), {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(12000),
+      });
+
+      if (!fredRes.ok) {
+        const errMsg = `HTTP ${fredRes.status}`;
+        log.warn(`[FRED Proxy] ${seriesId} attempt ${attempt}/${maxAttempts}: ${errMsg}`);
+        lastErr = new Error(errMsg);
+        // 4xx errors are non-retryable (bad series ID, auth failure, etc.)
+        if (fredRes.status >= 400 && fredRes.status < 500) throw lastErr;
+        if (attempt < maxAttempts) await sleep(500 * attempt);
+        continue;
+      }
+
+      const data = await fredRes.json() as { observations: { date: string; value: string }[] };
+
+      // Warn if FRED returned an empty observations array — valid for new
+      // series but unusual for established macro series.
+      if (!data.observations || data.observations.length === 0) {
+        log.warn(`[FRED Proxy] ${seriesId}: observations array is empty (series may have no recent data)`);
+      }
+
+      return data;
+    } catch (err) {
+      lastErr = err;
+      log.warn(`[FRED Proxy] ${seriesId} attempt ${attempt}/${maxAttempts} failed`, { err: err as Error });
+      if (attempt < maxAttempts) await sleep(500 * attempt);
+    }
+  }
+  throw lastErr;
+}
+
 export function registerFredProxy(app: Express) {
   app.get("/api/fred", async (req: Request, res: Response) => {
     const seriesId = req.query.series_id as string;
-    const limit = req.query.limit as string ?? "2";
+    const limit = parseInt((req.query.limit as string) ?? "2", 10);
     const sortOrder = (req.query.sort_order as string) ?? "desc";
 
     if (!seriesId) {
@@ -39,33 +98,14 @@ export function registerFredProxy(app: Express) {
     }
 
     try {
-      const url = new URL(FRED_BASE);
-      url.searchParams.set("series_id", seriesId);
-      url.searchParams.set("api_key", FRED_API_KEY);
-      url.searchParams.set("file_type", "json");
-      url.searchParams.set("sort_order", sortOrder);
-      url.searchParams.set("limit", limit);
-
-      const fredRes = await fetch(url.toString(), {
-        headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(12000),
-      });
-
-      if (!fredRes.ok) {
-        log.error(`[FRED Proxy] HTTP ${fredRes.status} for ${seriesId}`);
-        captureError(new Error(`FRED HTTP ${fredRes.status} for ${seriesId}`), { source: "fredProxy", seriesId }).catch(() => {});
-        res.status(fredRes.status).json({ error: `FRED returned HTTP ${fredRes.status}` });
-        return;
-      }
-
-      const data = await fredRes.json();
+      const data = await fetchFredSeries(seriesId, limit, sortOrder);
       cache.set(cacheKey, data);
 
       res.setHeader("X-Cache", "MISS");
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.json(data);
     } catch (err) {
-      log.error(`[FRED Proxy] Error fetching ${seriesId}`, { err: err as Error });
+      log.error(`[FRED Proxy] Error fetching ${seriesId} after retries`, { err: err as Error });
       captureError(err as Error, { source: "fredProxy", seriesId }).catch(() => {});
       res.status(502).json({ error: "Failed to fetch from FRED API" });
     }
@@ -93,31 +133,30 @@ export function registerFredProxy(app: Express) {
         }
 
         try {
-          const url = new URL(FRED_BASE);
-          url.searchParams.set("series_id", id);
-          url.searchParams.set("api_key", FRED_API_KEY);
-          url.searchParams.set("file_type", "json");
-          url.searchParams.set("sort_order", "desc");
-          url.searchParams.set("limit", String(limit));
-
-          const fredRes = await fetch(url.toString(), {
-            headers: { Accept: "application/json" },
-            signal: AbortSignal.timeout(12000),
-          });
-
-          if (!fredRes.ok) {
-            results[id] = { observations: [], cached: false, error: `HTTP ${fredRes.status}` };
-            return;
-          }
-
-          const data = await fredRes.json() as { observations: { date: string; value: string }[] };
+          const data = await fetchFredSeries(id, limit, "desc");
           cache.set(cacheKey, data);
-          results[id] = { observations: data.observations ?? [], cached: false };
+
+          if (!data.observations || data.observations.length === 0) {
+            log.warn(`[FRED Proxy] Bulk: ${id} returned 0 observations — marking as error`);
+            results[id] = { observations: [], cached: false, error: "empty observations" };
+          } else {
+            results[id] = { observations: data.observations, cached: false };
+          }
         } catch (err) {
-          results[id] = { observations: [], cached: false, error: String(err) };
+          const errMsg = err instanceof Error ? err.message : String(err);
+          log.error(`[FRED Proxy] Bulk: ${id} failed after retries: ${errMsg}`);
+          results[id] = { observations: [], cached: false, error: errMsg };
         }
       })
     );
+
+    // Log a summary of which series succeeded vs failed
+    const failed = Object.entries(results)
+      .filter(([, v]) => v.error)
+      .map(([id, v]) => `${id}(${v.error})`);
+    if (failed.length > 0) {
+      log.warn(`[FRED Proxy] Bulk: ${failed.length}/${series.length} series failed: ${failed.join(", ")}`);
+    }
 
     res.json({ results, timestamp: new Date().toISOString() });
   });

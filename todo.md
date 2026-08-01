@@ -4450,3 +4450,17 @@
 - [x] Sticky header with live UTC clock, live dot, refresh button
 - [x] Staged load animation (8 phases, 0–2700ms stagger)
 - [x] All 1504 tests passing (83 test files, 0 failures)
+
+## Session: FRED Retry, Fallback Confidence, Admin Gate, Pressure Instrument (Aug 1, 2026)
+- [x] fredProxy.ts: add fetchFredSeries() helper with up to 2 retries and 500ms*attempt exponential backoff
+- [x] fredProxy.ts: treat 4xx responses as non-retryable (bad series ID / auth)
+- [x] fredProxy.ts: log warning when observations array is empty (not silent failure)
+- [x] fredProxy.ts: log bulk summary of failed series after allSettled
+- [x] fredProxy.ts: mark empty-observation series as error in bulk results
+- [x] seismographAdapters.ts: degrade confidence by 15 points when dataSource === "fallback", floor at 50
+- [x] App.tsx: gate FREDDebugConsole behind user?.role === 'admin' (hidden from regular users)
+- [x] AppLayout.tsx: add DEGRADED status pill (amber dot + text) when any sourceHealth entry is degraded
+- [x] Now.tsx PressureInstrument: add scoreChange prop, enlarge score to 68px, add regime label above, add score/100 scale text, add change-from-prior line with ↑/↓ arrows, add sensor-pulse glow animation
+- [x] fredProxy.test.ts: 19 new tests covering all above changes (all passing)
+- [x] Full test suite: 1523 passed, 22 skipped (0 failures)
+- [x] Save checkpoint
