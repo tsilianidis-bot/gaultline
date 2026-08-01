@@ -13,6 +13,21 @@
 // ============================================================
 
 import { log } from "../logger";
+import { fetchFredBulk } from "../fredClient";
+
+// ── Server-level snapshot cache ───────────────────────────────
+//
+// Preserves the most recent verified (live) snapshot so that:
+//  1. A FRED outage returns a clearly-labelled stale snapshot
+//     rather than a fallback-only estimate.
+//  2. The engine automatically returns to LIVE on the next
+//     successful refresh — no page reload or redeployment needed.
+//
+let _lastLiveSnapshot: FaultlinePressureOutput | null = null;
+let _lastLiveSnapshotAt: number | null = null;
+
+/** Maximum age before a snapshot is considered stale (30 minutes) */
+const SNAPSHOT_STALE_MS = 30 * 60 * 1000;
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -91,17 +106,12 @@ export interface FaultlinePressureOutput {
   dataSource: "live" | "fallback";
   /** ISO timestamp of the most recent data refresh */
   lastUpdated: string;
-}
-
-// ── FRED data shape returned by the bulk endpoint ────────────
-
-export interface FredBulkResult {
-  results: Record<string, {
-    observations: { date: string; value: string }[];
-    cached: boolean;
-    error?: string;
-  }>;
-  timestamp: string;
+  /**
+   * Change from the prior recorded reading (current overallPressure minus
+   * the previous run's overallPressure). Null when no prior run exists.
+   * Both values are on the canonical 0–100 scale.
+   */
+  priorPressure: number | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -476,11 +486,12 @@ function generateAlerts(vectors: RiskVector[], overallPressure: number): Pressur
 /**
  * Fetch live FRED data and compute the FAULTLINE Pressure Index.
  * Falls back to baseline values if FRED is unavailable.
+ *
+ * The engine calls fetchFredBulk() from the shared fredClient module
+ * directly — no HTTP self-call to localhost.
  */
-export async function calculateFaultlinePressure(
-  fredBaseUrl = "http://localhost:3000"
-): Promise<FaultlinePressureOutput> {
-  // ── 1. Fetch FRED data ─────────────────────────────────────
+export async function calculateFaultlinePressure(): Promise<FaultlinePressureOutput> {
+  // ── 1. Fetch FRED data via shared client (no localhost HTTP) ──
   const FRED_SERIES = [
     { id: "BAMLH0A0HYM2", limit: 2 },  // HY credit spread
     { id: "DGS10", limit: 2 },          // 10Y Treasury
@@ -496,17 +507,13 @@ export async function calculateFaultlinePressure(
   let dataSource: "live" | "fallback" = "fallback";
 
   try {
-    const res = await fetch(`${fredBaseUrl}/api/fred/bulk`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ series: FRED_SERIES }),
-      signal: AbortSignal.timeout(15000),
-    });
+    const bulk = await fetchFredBulk(FRED_SERIES);
+    const r = bulk.results;
 
-    if (res.ok) {
-      const bulk = await res.json() as FredBulkResult;
-      const r = bulk.results;
+    // Count series that returned actual data
+    const liveCount = Object.values(r).filter(v => !v.error && v.observations.length > 0).length;
 
+    if (liveCount > 0) {
       // HY spread: FRED returns as a decimal (e.g. 2.83 = 283bps) — convert to bps
       const hyRaw = latestValid(r["BAMLH0A0HYM2"]?.observations ?? []);
       rawFred["hySpread"] = hyRaw !== null ? (hyRaw > 20 ? hyRaw : hyRaw * 100) : null;
@@ -533,6 +540,9 @@ export async function calculateFaultlinePressure(
         : null;
 
       dataSource = "live";
+      log.info(`[Pressure Engine] FRED data loaded: ${liveCount}/${FRED_SERIES.length} series live`);
+    } else {
+      log.warn("[Pressure Engine] All FRED series returned errors — using fallback values");
     }
   } catch (err) {
     log.warn("[Pressure Engine] FRED fetch failed, using fallback values", { err: err as Error });
@@ -660,7 +670,7 @@ export async function calculateFaultlinePressure(
   const alerts = generateAlerts(vectors, overallPressure);
 
   const now = new Date().toISOString();
-  return {
+  const result: FaultlinePressureOutput = {
     overallPressure,
     regime,
     level,
@@ -671,5 +681,27 @@ export async function calculateFaultlinePressure(
     timestamp: now,
     lastUpdated: now,
     dataSource,
+    priorPressure: null, // set by caller after DB lookup
   };
+
+  // Persist the most recent live snapshot so we can serve it during outages
+  if (dataSource === "live") {
+    _lastLiveSnapshot = result;
+    _lastLiveSnapshotAt = Date.now();
+  } else if (_lastLiveSnapshot && _lastLiveSnapshotAt) {
+    // FRED is unavailable — return the preserved snapshot with a stale label
+    const ageMs = Date.now() - _lastLiveSnapshotAt;
+    if (ageMs < SNAPSHOT_STALE_MS) {
+      log.warn(`[Pressure Engine] FRED unavailable — serving preserved snapshot (age ${Math.round(ageMs / 60000)}m)`);
+      return {
+        ..._lastLiveSnapshot,
+        dataSource: "fallback",
+        timestamp: now,
+        lastUpdated: _lastLiveSnapshot.lastUpdated,
+      };
+    }
+    log.warn(`[Pressure Engine] Preserved snapshot is too old (${Math.round(ageMs / 60000)}m) — using hardcoded fallback`);
+  }
+
+  return result;
 }

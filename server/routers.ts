@@ -295,6 +295,14 @@ export const appRouter = router({
           throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Pressure engine is temporarily disabled for maintenance." });
         }
         const result = await calculateFaultlinePressure();
+
+        // Fetch the most recent prior run to compute a true "current vs prior" delta.
+        // We look up the last run BEFORE inserting the new one so we get the previous reading.
+        const priorRuns = await getRecentPressureRuns(1).catch(() => []);
+        if (priorRuns.length >= 1) {
+          result.priorPressure = priorRuns[0].overallPressure;
+        }
+
         // Fire-and-forget audit insert — never blocks the response
         insertPressureRun({
           overallPressure: result.overallPressure,

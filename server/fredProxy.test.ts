@@ -8,43 +8,153 @@ function source(relativePath: string): string {
   return readFileSync(resolve(projectRoot, relativePath), "utf8");
 }
 
-describe("fredProxy — retry logic and error classification", () => {
-  const fredSource = source("server/fredProxy.ts");
+// ── fredClient.ts — shared FRED fetch module ─────────────────────────────────
 
-  it("implements a retry helper function with maxAttempts parameter", () => {
-    expect(fredSource).toContain("fetchFredSeries");
-    expect(fredSource).toContain("maxAttempts");
-    expect(fredSource).toContain("attempt <= maxAttempts");
+describe("fredClient — shared FRED fetch module", () => {
+  const clientSource = source("server/fredClient.ts");
+
+  it("reads FRED_API_KEY from environment variable, not hardcoded", () => {
+    // Must reference process.env.FRED_API_KEY
+    expect(clientSource).toContain("process.env.FRED_API_KEY");
+    // Must NOT contain the old hardcoded key
+    expect(clientSource).not.toContain("458f0a0564e325c70e60f016f6f85f79");
+  });
+
+  it("logs a warning when FRED_API_KEY is missing", () => {
+    expect(clientSource).toContain("FRED_API_KEY not configured");
+    expect(clientSource).toContain("log.warn");
+  });
+
+  it("exports fetchFredSeries for single-series fetches", () => {
+    expect(clientSource).toContain("export async function fetchFredSeries");
+  });
+
+  it("exports fetchFredBulk for multi-series fetches", () => {
+    expect(clientSource).toContain("export async function fetchFredBulk");
+  });
+
+  it("exports clearFredCache for cache management", () => {
+    expect(clientSource).toContain("export function clearFredCache");
+  });
+
+  it("implements retry logic with maxAttempts parameter", () => {
+    expect(clientSource).toContain("maxAttempts");
+    expect(clientSource).toContain("attempt <= maxAttempts");
   });
 
   it("uses exponential backoff between retry attempts", () => {
-    expect(fredSource).toContain("sleep(500 * attempt)");
+    expect(clientSource).toContain("500 * attempt");
   });
 
   it("treats 4xx responses as non-retryable", () => {
-    expect(fredSource).toContain("fredRes.status >= 400 && fredRes.status < 500");
-    expect(fredSource).toContain("throw lastErr");
+    expect(clientSource).toContain("status >= 400 && ");
+    expect(clientSource).toContain("status < 500");
   });
 
   it("logs empty observations as a warning not a silent failure", () => {
-    expect(fredSource).toContain("observations array is empty");
-    expect(fredSource).toContain("log.warn");
+    expect(clientSource).toContain("observations array is empty");
   });
 
   it("logs a summary of failed series after bulk fetch", () => {
-    expect(fredSource).toContain("Bulk:");
-    expect(fredSource).toContain("series failed:");
+    expect(clientSource).toContain("series failed");
   });
 
   it("marks empty-observation series as error in bulk results", () => {
-    expect(fredSource).toContain('"empty observations"');
+    expect(clientSource).toContain('"empty observations"');
   });
 
-  it("uses the bulk endpoint for all series in parallel", () => {
-    expect(fredSource).toContain("Promise.allSettled");
-    expect(fredSource).toContain("/api/fred/bulk");
+  it("uses Promise.allSettled for parallel bulk fetches", () => {
+    expect(clientSource).toContain("Promise.allSettled");
   });
 });
+
+// ── fredProxy.ts — thin HTTP route wrapper ────────────────────────────────────
+
+describe("fredProxy — delegates to fredClient (no duplicate logic)", () => {
+  const proxySource = source("server/fredProxy.ts");
+
+  it("imports from fredClient, not reimplementing fetch logic", () => {
+    expect(proxySource).toContain("from \"./fredClient\"");
+    expect(proxySource).toContain("fetchFredSeries");
+    expect(proxySource).toContain("fetchFredBulk");
+    expect(proxySource).toContain("clearFredCache");
+  });
+
+  it("does not contain hardcoded FRED API key", () => {
+    expect(proxySource).not.toContain("458f0a0564e325c70e60f016f6f85f79");
+  });
+
+  it("does not reimplement retry logic (no maxAttempts in proxy)", () => {
+    // Retry logic lives in fredClient, not the proxy
+    expect(proxySource).not.toContain("maxAttempts");
+  });
+
+  it("registers GET /api/fred route", () => {
+    expect(proxySource).toContain('"/api/fred"');
+  });
+
+  it("registers POST /api/fred/bulk route", () => {
+    expect(proxySource).toContain('"/api/fred/bulk"');
+  });
+
+  it("registers POST /api/fred/clear-cache route", () => {
+    expect(proxySource).toContain('"/api/fred/clear-cache"');
+  });
+});
+
+// ── engine.ts — no localhost self-call ───────────────────────────────────────
+
+describe("pressure engine — no localhost HTTP self-call", () => {
+  const engineSource = source("server/pressure/engine.ts");
+
+  it("imports fetchFredBulk from fredClient directly", () => {
+    expect(engineSource).toContain("from \"../fredClient\"");
+    expect(engineSource).toContain("fetchFredBulk");
+  });
+
+  it("does not contain localhost self-call", () => {
+    expect(engineSource).not.toContain("localhost:3000");
+    expect(engineSource).not.toContain("127.0.0.1:3000");
+    expect(engineSource).not.toContain("/api/fred/bulk");
+  });
+
+  it("does not contain fredBaseUrl parameter (removed)", () => {
+    expect(engineSource).not.toContain("fredBaseUrl");
+  });
+
+  it("includes server-level snapshot cache for stale-snapshot recovery", () => {
+    expect(engineSource).toContain("_lastLiveSnapshot");
+    expect(engineSource).toContain("SNAPSHOT_STALE_MS");
+  });
+
+  it("preserves live snapshot and serves it during FRED outages", () => {
+    expect(engineSource).toContain("dataSource === \"live\"");
+    expect(engineSource).toContain("_lastLiveSnapshot = result");
+    expect(engineSource).toContain("serving preserved snapshot");
+  });
+
+  it("includes priorPressure field in FaultlinePressureOutput type", () => {
+    expect(engineSource).toContain("priorPressure");
+    expect(engineSource).toContain("number | null");
+  });
+});
+
+// ── routers.ts — prior pressure DB lookup ────────────────────────────────────
+
+describe("routers.ts — getCurrentPressure attaches prior pressure from DB", () => {
+  const routerSource = source("server/routers.ts");
+
+  it("fetches the most recent prior run before inserting the new one", () => {
+    expect(routerSource).toContain("getRecentPressureRuns(1)");
+    expect(routerSource).toContain("result.priorPressure");
+  });
+
+  it("uses the prior run's overallPressure as the reference point", () => {
+    expect(routerSource).toContain("priorRuns[0].overallPressure");
+  });
+});
+
+// ── seismographAdapters — fallback confidence degradation ────────────────────
 
 describe("seismographAdapters — fallback confidence degradation", () => {
   const adapterSource = source("server/seismographAdapters.ts");
@@ -64,6 +174,8 @@ describe("seismographAdapters — fallback confidence degradation", () => {
   });
 });
 
+// ── App.tsx — FREDDebugConsole admin gate ─────────────────────────────────────
+
 describe("App.tsx — FREDDebugConsole admin gate", () => {
   const appSource = source("client/src/App.tsx");
 
@@ -73,12 +185,12 @@ describe("App.tsx — FREDDebugConsole admin gate", () => {
   });
 
   it("does not render FREDDebugConsole unconditionally", () => {
-    // The console must only appear inside an admin role conditional
-    // Verify the pattern: {user?.role === 'admin' && <FREDDebugConsole />}
     const adminGatePattern = /user\?\.role\s*===\s*['"]admin['"]\s*&&\s*<FREDDebugConsole/;
     expect(adminGatePattern.test(appSource)).toBe(true);
   });
 });
+
+// ── Now.tsx — Pressure Index instrument strengthening ────────────────────────
 
 describe("Now.tsx — Pressure Index instrument strengthening", () => {
   const nowSource = source("client/src/pages/Now.tsx");
@@ -106,7 +218,12 @@ describe("Now.tsx — Pressure Index instrument strengthening", () => {
     expect(nowSource).toContain("↓");
   });
 
-  it("passes scoreChange derived from output.overall.delta * 10 to PressureInstrument", () => {
+  it("uses true prior reading from DB when available", () => {
+    expect(nowSource).toContain("serverPressure?.priorPressure");
+    expect(nowSource).toContain("serverPressure.overallPressure - serverPressure.priorPressure");
+  });
+
+  it("falls back to delta-vs-baseline when no DB prior exists", () => {
     expect(nowSource).toContain("output.overall.delta * 10");
   });
 

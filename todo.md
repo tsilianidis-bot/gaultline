@@ -4464,3 +4464,16 @@
 - [x] fredProxy.test.ts: 19 new tests covering all above changes (all passing)
 - [x] Full test suite: 1523 passed, 22 skipped (0 failures)
 - [x] Save checkpoint
+
+## Session: FRED Architecture Refactor + Prior Pressure Delta (Aug 1 2026)
+
+- [x] Create shared server/fredClient.ts — single canonical FRED fetch with retry, backoff, env-key, LRU cache
+- [x] Refactor fredProxy.ts to delegate to fredClient (thin HTTP wrapper, no duplicate logic)
+- [x] Eliminate localhost self-call in pressure/engine.ts — now calls fetchFredBulk() directly
+- [x] Move FRED_API_KEY from hardcoded string to FRED_API_KEY environment variable
+- [x] Add server-level snapshot cache to engine.ts for stale-snapshot recovery during FRED outages
+- [x] Add priorPressure field to FaultlinePressureOutput type
+- [x] Attach prior pressure from DB in getCurrentPressure router procedure
+- [x] Update Now.tsx scoreChange to use true current-vs-prior delta from DB (falls back to delta-vs-baseline)
+- [x] Update fredProxy.test.ts with 39 tests covering all new architecture
+- [x] Full test suite: 1543 passed, 0 failed

@@ -17,6 +17,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
 import {
   CANONICAL_DESTINATION_BY_ID,
   EXPERT_WORKSPACE_BY_ID,
@@ -808,6 +809,14 @@ export default function Now() {
     isLoading, isLive, lastUpdated, dataError, refresh,
   } = useEngine();
 
+  // Fetch the server-side pressure reading to get the true prior pressure
+  // (current vs previous DB run). Runs in parallel with EngineContext.
+  const { data: serverPressure } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
+    staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
   // Staged cinematic entry: phases 1–7 over ~5s
   const phase = useStagedLoad([0, 400, 900, 1500, 2200, 3000, 4000], [isLoading]);
 
@@ -1001,7 +1010,14 @@ export default function Now() {
                   historicalPercentile={historicalPercentile}
                   lastUpdated={lastUpdated}
                   phase={phase}
-                  scoreChange={output.overall.delta !== undefined ? parseFloat((output.overall.delta * 10).toFixed(1)) : null}
+                  scoreChange={(() => {
+                    // Use true prior reading from DB if available, otherwise fall back to delta-vs-baseline
+                    if (serverPressure?.priorPressure != null && serverPressure.overallPressure != null) {
+                      const change = serverPressure.overallPressure - serverPressure.priorPressure;
+                      return parseFloat(change.toFixed(1));
+                    }
+                    return output.overall.delta !== undefined ? parseFloat((output.overall.delta * 10).toFixed(1)) : null;
+                  })()}
                 />
               </div>
 
