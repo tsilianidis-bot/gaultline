@@ -4477,3 +4477,15 @@
 - [x] Update Now.tsx scoreChange to use true current-vs-prior delta from DB (falls back to delta-vs-baseline)
 - [x] Update fredProxy.test.ts with 39 tests covering all new architecture
 - [x] Full test suite: 1543 passed, 0 failed
+
+## Session: Home Routing + Debug UI Cleanup (Aug 1 2026)
+
+- [x] Add CANONICAL_HOME constant to shared/routeRegistry.ts pointing to /app/seismograph-command-center
+- [x] Update App.tsx root /, /app, startupPathMap["now"] to redirect to CANONICAL_HOME
+- [x] Update AppLayout.tsx logo click and HOME_TAB to navigate to CANONICAL_HOME
+- [x] Remove DataIntegrity from Dashboard.tsx (was always visible to all users)
+- [x] Replace sourceHealth provider panel in Now.tsx Section 10 with institutional confidence summary
+- [x] Gate DataIntegrity behind user?.role === 'admin' in App.tsx (alongside FREDDebugConsole)
+- [x] Update startupStateMachine.test.ts Scenario 13 to expect CANONICAL_HOME
+- [x] Add 18 routing regression tests in server/routing.test.ts
+- [x] Full suite: 63 targeted tests passed, 0 failed
