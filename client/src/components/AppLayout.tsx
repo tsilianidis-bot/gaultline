@@ -95,7 +95,8 @@ const HOME_TAB = {
   path: NOW_DESTINATION.path,
   accent: NOW_DESTINATION.accent,
 };
-const MOBILE_PRIMARY = [HOME_TAB, ...ALL_TABS];
+// Exclude NOW from mobile nav — HOME already routes to /app/now, no duplicate needed
+const MOBILE_PRIMARY = [HOME_TAB, ...ALL_TABS.filter(t => t.id !== "now")];
 
 interface AppLayoutProps {
   children: ReactNode;
