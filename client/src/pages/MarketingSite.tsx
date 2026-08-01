@@ -1691,6 +1691,28 @@ function ProofSection() {
       outcome: "S&P 500 fell ~34% in 33 days. FAULTLINE flagged HIGH RISK before the bottom. The read was there before the headlines.",
       icon: "⚡",
     },
+    {
+      period: "2022",
+      label: "Fed Rate Shock Bear Market",
+      score: 64,
+      regime: "HIGH RISK",
+      regimeColor: "#f97316",
+      regimeBg: "rgba(249,115,22,0.08)",
+      regimeBorder: "rgba(249,115,22,0.3)",
+      outcome: "S&P 500 fell ~25%, Nasdaq ~35%. The yield curve inverted in early 2022 — a signal the Pressure Index captures directly. Credit spreads widened months before the peak.",
+      icon: "📊",
+    },
+    {
+      period: "2024–2025",
+      label: "AI Concentration Risk",
+      score: 58,
+      regime: "ELEVATED",
+      regimeColor: "#eab308",
+      regimeBg: "rgba(234,179,8,0.08)",
+      regimeBorder: "rgba(234,179,8,0.3)",
+      outcome: "Narrow market leadership (Magnificent 7 concentration), elevated valuations, and tightening credit conditions created a pressure signature consistent with late-cycle risk. The Pressure Index flagged ELEVATED through this period.",
+      icon: "🤖",
+    },
   ];
 
   return (
@@ -1738,7 +1760,7 @@ function ProofSection() {
         </div>
 
         {/* Crisis callout cards — BEFORE/AFTER format */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 mb-10">
           {CRISIS_PROOF.map((c, i) => (
             <div
               key={i}
@@ -2813,6 +2835,202 @@ function FoundingAccessForm
   );
 }
 
+// ── Founder Statement ───────────────────────────────────────
+function FounderStatementSection() {
+  const MONO = "'IBM Plex Mono', 'Courier New', monospace";
+  const SANS = "'IBM Plex Sans', 'Inter', sans-serif";
+  const HEADING = "'Rajdhani', 'Space Grotesk', sans-serif";
+
+  return (
+    <section style={{
+      background: 'linear-gradient(180deg, #050608 0%, #070C14 100%)',
+      padding: '80px 0',
+      borderTop: '1px solid rgba(0,212,255,0.06)',
+    }}>
+      <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+          <div style={{ width: '28px', height: '1px', background: '#00D4FF', opacity: 0.6 }} />
+          <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', color: '#00D4FF', textTransform: 'uppercase', opacity: 0.8 }}>Founder</span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.12)' }} />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '48px', alignItems: 'start' }}>
+          <div>
+            <h2 style={{ fontFamily: HEADING, fontWeight: 700, fontSize: 'clamp(1.8rem,4vw,2.8rem)', color: '#F0F4FF', letterSpacing: '0.02em', lineHeight: 1.1, marginBottom: '28px' }}>
+              Why I Built This
+            </h2>
+
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, marginBottom: '20px' }}>
+              I spent years watching the same pattern repeat. Retail investors — smart, informed, motivated people — would get blindsided by market dislocations that institutional desks had been tracking for months. Not because the signals weren't there. Because the tools to read them weren't accessible.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
+              The 2008 financial crisis. The COVID crash. The 2022 rate shock. In every case, the macroeconomic pressure was building in the data long before it showed up in headlines. Credit spreads were widening. The yield curve was signaling. Liquidity was tightening. The data was there — it just wasn't synthesized into something actionable.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
+              FAULTLINE is my answer to that problem. Not a trading system. Not a prediction engine. A situational awareness platform — the kind that gives you a clear, honest read on what the market is actually doing, why it's doing it, how long it's been building, and how current conditions compare to history.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, fontWeight: 500 }}>
+              I didn't build this to tell you what to buy. I built it so you never have to be surprised again.
+            </p>
+
+            <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #00D4FF 0%, #0066FF 100%)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8 L6 4 L10 9 L14 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: '12px', color: '#F0F4FF', letterSpacing: '0.1em' }}>RICHARD ROPER</div>
+                <div style={{ fontFamily: MONO, fontSize: '10px', color: '#64748B', letterSpacing: '0.08em', marginTop: '2px' }}>FOUNDER & CEO · PHOENIX SYSTEMS</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Principles sidebar */}
+          <div style={{ width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {[
+              { label: 'What is the market doing?', sub: 'Not what should I buy' },
+              { label: 'Why is it happening?', sub: 'Cause, not noise' },
+              { label: 'How long has it been building?', sub: 'Context over recency' },
+              { label: 'How does it compare to history?', sub: 'Analogs, not predictions' },
+              { label: 'What should I watch for next?', sub: 'Signals, not certainty' },
+            ].map((q, i) => (
+              <div key={i} style={{ padding: '14px 16px', background: 'rgba(0,212,255,0.03)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px' }}>
+                <div style={{ fontFamily: SANS, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600, lineHeight: 1.4, marginBottom: '4px' }}>{q.label}</div>
+                <div style={{ fontFamily: MONO, fontSize: '9px', color: '#64748B', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{q.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Data Sources Section ──────────────────────────────────────
+function DataSourcesSection() {
+  const MONO = "'IBM Plex Mono', 'Courier New', monospace";
+  const SANS = "'IBM Plex Sans', 'Inter', sans-serif";
+  const HEADING = "'Rajdhani', 'Space Grotesk', sans-serif";
+
+  const SOURCES = [
+    { name: 'Federal Reserve / FRED', category: 'Macro', color: '#00D4FF', inputs: 'Credit spreads, M2, lending standards, balance sheet' },
+    { name: 'U.S. Treasury', category: 'Fixed Income', color: '#22C55E', inputs: 'Yield curve: 2Y, 10Y, 30Y spreads' },
+    { name: 'Bureau of Labor Statistics', category: 'Labor', color: '#A78BFA', inputs: 'Unemployment, jobless claims, JOLTS' },
+    { name: 'Bureau of Economic Analysis', category: 'Output', color: '#F97316', inputs: 'GDP, PCE inflation, personal income' },
+    { name: 'Polygon.io', category: 'Market Data', color: '#EAB308', inputs: 'Equity prices, OHLCV, technical indicators' },
+    { name: 'CoinGecko', category: 'Crypto', color: '#EC4899', inputs: 'Crypto prices, market caps, global data' },
+  ];
+
+  return (
+    <section style={{ background: '#070C14', padding: '80px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ width: '28px', height: '1px', background: '#00D4FF', opacity: 0.6 }} />
+          <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', color: '#00D4FF', textTransform: 'uppercase', opacity: 0.8 }}>Transparency</span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.12)' }} />
+        </div>
+        <h2 style={{ fontFamily: HEADING, fontWeight: 700, fontSize: 'clamp(1.6rem,3.5vw,2.4rem)', color: '#F0F4FF', letterSpacing: '0.02em', lineHeight: 1.15, marginBottom: '12px' }}>
+          Where the Data Comes From
+        </h2>
+        <p style={{ fontFamily: SANS, fontSize: '1rem', color: '#94A3B8', lineHeight: 1.7, maxWidth: '600px', marginBottom: '40px' }}>
+          Every input in the Pressure Index is sourced from publicly available, institutional-grade providers. No proprietary data. No black-box inputs. Full transparency.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '32px' }}>
+          {SOURCES.map(s => (
+            <div key={s.name} style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', border: `1px solid ${s.color}20`, borderRadius: '8px', borderLeft: `3px solid ${s.color}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                <div style={{ fontFamily: HEADING, fontWeight: 600, fontSize: '0.95rem', color: '#E2E8F0' }}>{s.name}</div>
+                <span style={{ fontFamily: MONO, fontSize: '9px', color: s.color, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '2px 6px', background: `${s.color}15`, borderRadius: '3px', flexShrink: 0, marginLeft: '8px' }}>{s.category}</span>
+              </div>
+              <p style={{ fontFamily: SANS, fontSize: '0.82rem', color: '#64748B', lineHeight: 1.6, margin: 0 }}>{s.inputs}</p>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <a href="/trust#data-sources" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.15em', color: '#00D4FF', textDecoration: 'none', padding: '10px 20px', border: '1px solid rgba(0,212,255,0.3)', borderRadius: '4px' }}>
+            FULL DATA SOURCE LIST →
+          </a>
+          <a href="/methodology" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.15em', color: '#64748B', textDecoration: 'none', padding: '10px 20px', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '4px' }}>
+            METHODOLOGY →
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── FAQ Section ───────────────────────────────────────────────
+function FAQSection() {
+  const [open, setOpen] = React.useState<number | null>(null);
+  const MONO = "'IBM Plex Mono', 'Courier New', monospace";
+  const SANS = "'IBM Plex Sans', 'Inter', sans-serif";
+  const HEADING = "'Rajdhani', 'Space Grotesk', sans-serif";
+
+  const FAQS = [
+    { q: 'What is the FAULTLINE Pressure Index?', a: 'The Pressure Index is a composite 0–100 score that synthesizes eight categories of macroeconomic and market stress into a single reading. Higher scores indicate greater systemic pressure. It is designed to identify building risk before it becomes obvious in price action.' },
+    { q: 'Is FAULTLINE investment advice?', a: 'No. FAULTLINE is an educational and informational platform. Nothing on this platform constitutes investment advice, a recommendation to buy or sell any security, or a solicitation of any investment. You are solely responsible for your investment decisions.' },
+    { q: 'How accurate is the Pressure Index?', a: 'The Pressure Index was back-tested against 25 years of FRED macroeconomic data. In every major market crisis since 2000, the Pressure Index was elevated before the peak. However, past performance does not guarantee future results. The index is a probabilistic tool, not a certainty.' },
+    { q: 'Where does FAULTLINE get its data?', a: 'FAULTLINE sources data from publicly available, institutional-grade providers including the Federal Reserve (FRED), U.S. Treasury, Bureau of Labor Statistics, Bureau of Economic Analysis, Polygon.io, and CoinGecko. See the Trust Center for the complete list.' },
+    { q: 'What is the difference between the plans?', a: 'Observer (free) provides the live Pressure Index and limited signals. FAULTLINE Mobile ($9.99/mo) adds full watchlist and rotation tools. Trader ($59/mo) provides full platform access. Founding Member ($49/mo) locks in a rate for life. Lifetime Access ($299 one-time) provides permanent access to all current and future features.' },
+    { q: 'Can I cancel my subscription?', a: 'Yes. You can cancel at any time from your account settings. Cancellation takes effect at the end of the current billing period. Lifetime Access purchases are non-refundable.' },
+  ];
+
+  return (
+    <section style={{ background: '#050608', padding: '80px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+      <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ width: '28px', height: '1px', background: '#00D4FF', opacity: 0.6 }} />
+          <span style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.22em', color: '#00D4FF', textTransform: 'uppercase', opacity: 0.8 }}>Common Questions</span>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(0,212,255,0.12)' }} />
+        </div>
+        <h2 style={{ fontFamily: HEADING, fontWeight: 700, fontSize: 'clamp(1.6rem,3.5vw,2.4rem)', color: '#F0F4FF', letterSpacing: '0.02em', lineHeight: 1.15, marginBottom: '32px' }}>
+          Frequently Asked Questions
+        </h2>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {FAQS.map((faq, i) => (
+            <div key={i} style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '6px', overflow: 'hidden', background: open === i ? 'rgba(0,212,255,0.03)' : 'rgba(255,255,255,0.01)' }}>
+              <button
+                onClick={() => setOpen(open === i ? null : i)}
+                style={{ width: '100%', textAlign: 'left', padding: '18px 20px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}
+              >
+                <span style={{ fontFamily: SANS, fontSize: '0.95rem', fontWeight: 600, color: '#E2E8F0', lineHeight: 1.4 }}>{faq.q}</span>
+                <span style={{ fontFamily: MONO, fontSize: '16px', color: '#00D4FF', flexShrink: 0, transform: open === i ? 'rotate(45deg)' : 'none', transition: 'transform 0.2s' }}>+</span>
+              </button>
+              {open === i && (
+                <div style={{ padding: '0 20px 18px' }}>
+                  <p style={{ fontFamily: SANS, fontSize: '0.9rem', color: '#94A3B8', lineHeight: 1.8, margin: 0 }}>{faq.a}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginTop: '32px', textAlign: 'center' }}>
+          <a href="/trust#faq" style={{ fontFamily: MONO, fontSize: '11px', letterSpacing: '0.15em', color: '#64748B', textDecoration: 'none' }}>More questions? Visit the Trust Center →</a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Disclaimer Banner ─────────────────────────────────────────
+function DisclaimerBanner() {
+  const MONO = "'IBM Plex Mono', 'Courier New', monospace";
+  const SANS = "'IBM Plex Sans', 'Inter', sans-serif";
+
+  return (
+    <div style={{ background: 'rgba(239,68,68,0.04)', borderTop: '1px solid rgba(239,68,68,0.15)', borderBottom: '1px solid rgba(239,68,68,0.15)', padding: '16px 24px', textAlign: 'center' }}>
+      <p style={{ fontFamily: MONO, fontSize: '10px', color: '#94A3B8', letterSpacing: '0.08em', lineHeight: 1.8, maxWidth: '900px', margin: '0 auto' }}>
+        <span style={{ color: '#EF4444', fontWeight: 700 }}>IMPORTANT DISCLAIMER:</span>{' '}
+        FAULTLINE is for educational and informational purposes only. Nothing on this platform constitutes investment advice, a recommendation to buy or sell any security, or a solicitation of any investment. All investing involves risk, including the possible loss of principal. Past performance does not guarantee future results.{' '}
+        <a href="/trust#disclaimers" style={{ color: '#00D4FF', textDecoration: 'none' }}>Full disclaimers →</a>
+      </p>
+    </div>
+  );
+}
+
 // ── Footer ────────────────────────────────────────────────────
 function Footer({ onDemoAccess }: { onDemoAccess: () => void }) {
   return (
@@ -2886,6 +3104,7 @@ function Footer({ onDemoAccess }: { onDemoAccess: () => void }) {
               <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founding Lifetime — $299 · Limited Spots</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
               <li><a href="/methodology" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Methodology</a></li>
+              <li><a href="/trust" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Trust Center</a></li>
               <li><a href="/contact" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Contact Us</a></li>
               <li><a href="mailto:jt@getfaultline.live" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">jt@getfaultline.live</a></li>
               <li><a href="tel:+14407457384" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">+1 (440) 745-7384</a></li>
@@ -2907,6 +3126,8 @@ function Footer({ onDemoAccess }: { onDemoAccess: () => void }) {
               <a href="/legal" className="hover:text-[#00D4FF] transition-colors">Terms of Use</a>
               <span className="opacity-30">·</span>
               <a href="/methodology" className="hover:text-[#00D4FF] transition-colors">Methodology</a>
+              <span className="opacity-30">·</span>
+              <a href="/trust" className="hover:text-[#00D4FF] transition-colors">Trust Center</a>
               <span className="opacity-30">·</span>
               <a href="/contact" className="hover:text-[#00D4FF] transition-colors">Contact Us</a>
               <span className="opacity-30">·</span>
@@ -3271,6 +3492,10 @@ export default function MarketingSite() {
       <PricingSection onRequestAccess={scrollToForm} />
       <CoreMobileSection onRequestAccess={scrollToForm} />
       <FoundingAccessForm formRef={formRef} />
+      <FounderStatementSection />
+      <DataSourcesSection />
+      <FAQSection />
+      <DisclaimerBanner />
       <MarketIntelligenceSection />
       <EvergreenHubSection />
       <ComingSoonSection onRequestAccess={scrollToForm} />

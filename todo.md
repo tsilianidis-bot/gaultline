@@ -4489,3 +4489,42 @@
 - [x] Update startupStateMachine.test.ts Scenario 13 to expect CANONICAL_HOME
 - [x] Add 18 routing regression tests in server/routing.test.ts
 - [x] Full suite: 63 targeted tests passed, 0 failed
+
+## Phase 1 Trust Layer (Aug 1 2026)
+
+- [ ] Strengthen WhyFaultlineExistsSection in MarketingSite.tsx with full mission narrative
+- [ ] Add FounderStatementSection to MarketingSite.tsx
+- [ ] Expand ProofSection to 5 events (add 2022 Bear Market + 2024-2025 AI environment)
+- [ ] Add DataSourcesSection to MarketingSite.tsx
+- [ ] Add FAQSection to MarketingSite.tsx
+- [ ] Add DisclaimerBanner component to MarketingSite.tsx
+- [ ] Restructure homepage flow per brief (Cinematic → Marketing → Why → Five Questions → Dashboard Preview → Historical → Methodology → Founder → Pricing → FAQ → Enter)
+- [ ] Build TrustCenter.tsx page (Methodology, Data Sources, Privacy, Terms, Disclaimers, FAQ, Security, Contact)
+- [ ] Add /trust route to App.tsx
+- [ ] Rebuild About.tsx with 6 questions framework
+- [ ] Improve Pricing page with clear "who it's for" descriptions per plan
+- [ ] Add disclaimers throughout site where claims are made
+- [ ] Fix duplicate /about routing in App.tsx (lines 419 and 649 both match /about)
+- [ ] Fix /pricing redirect to point to marketing site pricing section instead of /app/account
+- [ ] Improve index.html SEO: better structured data, static copy for AI crawlers
+- [ ] Add Open Graph and Twitter card improvements
+- [ ] Add /trust link to footer and nav
+
+## Phase 1 Trust Layer (Aug 1 2026)
+
+- [x] Expand ProofSection from 3 to 5 historical events (add 2022 Bear Market + 2024-2025 AI Concentration)
+- [x] Update ProofSection grid layout to 5-column responsive
+- [x] Add FounderStatementSection with full mission narrative, 5 questions sidebar, and Richard Roper attribution
+- [x] Add DataSourcesSection with 6 provider cards (FRED, Treasury, BLS, BEA, Polygon, CoinGecko)
+- [x] Add FAQSection with 6 accordion Q&As (Pressure Index, investment advice, accuracy, data sources, plans, cancellation)
+- [x] Add DisclaimerBanner with investment disclaimer and link to Trust Center
+- [x] Create TrustCenter.tsx page with 8 tabs: Methodology, Data Sources, Disclaimers, FAQ, Privacy, Terms, Security, Contact
+- [x] Wire /trust route in App.tsx with lazy import
+- [x] Add Trust Center link to footer (Access column and bottom bar)
+- [x] Update homepage flow to include FounderStatement, DataSources, FAQ, Disclaimer before Footer
+- [x] Improve index.html meta description with trust-oriented copy and disclaimer note
+- [x] Improve Organization structured data with sameAs, contactPoint, and trust-oriented description
+- [x] Add FAQPage JSON-LD structured data with 4 key Q&As for AI/crawler readability
+- [x] Expand noscript static copy with Why FAULTLINE Exists, Historical Validation, Data Sources, Disclaimer sections
+- [x] Fix pre-existing TS errors in aftershockEngine.ts (priorPressure) and Outlook.tsx (remainingProbability)
+- [x] Full test suite: 1543 passed, 22 skipped, 0 failed

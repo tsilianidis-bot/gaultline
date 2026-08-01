@@ -167,6 +167,7 @@ const ConversationIntelligence = lazy(() => import("./pages/admin/ConversationIn
 const PhoenixSystems = lazy(() => import("./pages/PhoenixSystems"));
 const Press = lazy(() => import("./pages/Press"));
 const About = lazy(() => import("./pages/About"));
+const TrustCenter = lazy(() => import("./pages/TrustCenter"));
 const PromoRedeem = lazy(() => import("./pages/PromoRedeem"));
 const AdminPromoDashboard = lazy(() => import("./pages/AdminPromoDashboard"));
 const Roadmap             = lazy(() => import("./pages/Roadmap"));
@@ -420,6 +421,14 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <About />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      {/* Trust Center — standalone public page */}
+      <Route path="/trust">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <TrustCenter />
           </Suspense>
         </ErrorBoundary>
       </Route>

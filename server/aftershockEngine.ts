@@ -425,6 +425,7 @@ export async function runAftershockEngine(): Promise<AftershockEngineOutput> {
       timestamp: new Date().toISOString(),
       lastUpdated: new Date().toISOString(),
       dataSource: "fallback",
+      priorPressure: null,
     };
   }
 
