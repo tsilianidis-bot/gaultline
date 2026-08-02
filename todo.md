@@ -4528,3 +4528,18 @@
 - [x] Expand noscript static copy with Why FAULTLINE Exists, Historical Validation, Data Sources, Disclaimer sections
 - [x] Fix pre-existing TS errors in aftershockEngine.ts (priorPressure) and Outlook.tsx (remainingProbability)
 - [x] Full test suite: 1543 passed, 22 skipped, 0 failed
+
+## Phase 2: Canonical Login-to-Home Experience (Aug 2 2026)
+
+- [ ] Update CANONICAL_HOME to /app/now/deep (Dashboard.tsx is the canonical Deep Dashboard)
+- [ ] Update all home entry points (root /, /app, logo, HOME tab, ASHA completion, startupPathMap) to use /app/now/deep
+- [ ] Add "skip welcome" user preference to account settings (DB field + tRPC + UI toggle)
+- [ ] Fix ASHA welcome: ENTER MARKET INTELLIGENCE navigates to /app/now/deep
+- [ ] Add SKIP WELCOME button to ASHA welcome screen (already has one via handleContinueToDashboard — verify it navigates to /app/now/deep)
+- [ ] Standardize 0-100 Pressure Index display in Dashboard.tsx (replace any 0-10 displays)
+- [ ] Add Intelligence Lab nav section to AppLayout sidebar with all specialist tools
+- [ ] Add Intelligence Lab route /app/intelligence-lab
+- [ ] Verify mobile experience: no overflow, cards stack, bottom nav stable
+- [ ] Remove DataIntegrity from Dashboard.tsx (verify already done)
+- [ ] Add regression tests for all 15 flow scenarios
+- [ ] Save checkpoint

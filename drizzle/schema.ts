@@ -1234,6 +1234,8 @@ export const userPreferences = mysqlTable("user_preferences", {
   startupPage:        varchar("startupPage", { length: 32 }).default("now"),
   /** Platform experience mode: 'guided' (five-question) | 'tools' (direct tool access) */
   experienceMode:     varchar("experienceMode", { length: 16 }).default("guided"),
+  /** Skip the ASHA welcome briefing on login — go directly to the dashboard */
+  skipAshaWelcome:    boolean("skipAshaWelcome").default(false).notNull(),
   /** Snapshot of last engine state for "Since Your Last Visit" diff — JSON */
   lastVisitSnapshot:  text("lastVisitSnapshot"),
   /** Timestamp of last visit */

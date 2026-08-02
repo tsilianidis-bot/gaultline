@@ -92,6 +92,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "RESEARCH & PROOF",
     items: [
+      { id: "time-machine",      label: "TIME MACHINE™",          icon: Clock,        path: "/app/time-machine" },
       { id: "track-record",      label: "Track Record",           icon: Trophy,       path: "/app/track-record" },
       { id: "methodology",       label: "Methodology",            icon: Scale,        path: "/methodology" },
       { id: "validation-lab",    label: "Validation Lab",         icon: FlaskConical, path: "/app/validation-lab" },

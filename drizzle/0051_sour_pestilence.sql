@@ -1,0 +1,1 @@
+ALTER TABLE `user_preferences` ADD `skipAshaWelcome` boolean DEFAULT false NOT NULL;

@@ -2929,6 +2929,67 @@ function FoundingAccessForm
 }
 
 // ── Founder Statement ───────────────────────────────────────
+function TimeMachineTeaserSection() {
+  return (
+    <section className="py-20 px-6" style={{ background: 'linear-gradient(180deg, #060912 0%, #0A0E1A 50%, #060912 100%)' }}>
+      <div className="max-w-5xl mx-auto">
+        <div className="rounded-2xl border border-[#FFB800]/20 bg-[#FFB800]/4 p-10 text-center relative overflow-hidden">
+          {/* Ambient glow */}
+          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255,184,0,0.06) 0%, transparent 70%)' }} />
+
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FFB800]/30 bg-[#FFB800]/8 mb-6">
+              <span className="text-[10px] font-bold text-[#FFB800] tracking-widest uppercase">Historical Truth Engine</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4 leading-tight">
+              FAULTLINE TIME MACHINE™
+            </h2>
+
+            <p className="text-lg text-white/60 max-w-2xl mx-auto mb-3 leading-relaxed">
+              Choose any market period you know.
+            </p>
+            <p className="text-base text-white/50 max-w-2xl mx-auto mb-8 leading-relaxed">
+              Travel back to that moment and see what FAULTLINE would have known using only the information available at the time.
+              Watch pressure build. See when the regime changed. Examine the evidence. Compare the warning with what happened next.
+            </p>
+
+            <p className="text-[#FFB800] font-bold text-sm tracking-wider uppercase mb-8">
+              You choose the period. You judge the result.
+            </p>
+
+            {/* 5 crisis previews */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-10">
+              {[
+                { label: '2008 GFC', peak: '94', color: '#FF3B30' },
+                { label: '2020 COVID', peak: '91', color: '#FF6B35' },
+                { label: '2022 Bear', peak: '79', color: '#FFB800' },
+                { label: '2001 Dot-Com', peak: '82', color: '#FF6B35' },
+                { label: '2024–25 AI Risk', peak: '67', color: '#00E5FF' },
+              ].map(c => (
+                <div key={c.label} className="p-3 rounded-xl border border-white/8 bg-white/3 text-center">
+                  <div className="text-[10px] text-white/40 mb-1">{c.label}</div>
+                  <div className="text-2xl font-black" style={{ color: c.color }}>{c.peak}</div>
+                  <div className="text-[9px] text-white/30">PEAK PRESSURE</div>
+                </div>
+              ))}
+            </div>
+
+            <a
+              href="/app/time-machine"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-black text-sm tracking-wider uppercase transition-all duration-200 hover:scale-105"
+              style={{ background: 'linear-gradient(135deg, #FFB800 0%, #FF8C00 100%)', boxShadow: '0 0 30px rgba(255,184,0,0.25)' }}
+            >
+              Challenge FAULTLINE
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FounderStatementSection() {
   const MONO = "'IBM Plex Mono', 'Courier New', monospace";
   const SANS = "'IBM Plex Sans', 'Inter', sans-serif";
@@ -3573,6 +3634,7 @@ export default function MarketingSite() {
       <PromoVideoSection />
       <RiskFirstPhilosophySection />
       <ProofSection />
+      <TimeMachineTeaserSection />
       <AboutSection />
       <VisualShowcaseSection onRequestAccess={scrollToForm} />
       <FeaturesSection />

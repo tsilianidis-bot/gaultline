@@ -63,6 +63,7 @@ const AdminBlog        = lazy(() => import("./pages/AdminBlog"));
 const XPostGenerator   = lazy(() => import("./pages/XPostGenerator"));
 const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
+const TimeMachine      = lazy(() => import("./pages/TimeMachine"));
 const DayTradeIntelligence = lazy(() => import("./pages/DayTradeIntelligence"));
 const MarketMovers         = lazy(() => import("./pages/MarketMovers"));
 const SeoOptimizer = lazy(() => import("./pages/SeoOptimizer"));
@@ -773,6 +774,7 @@ function Router() {
               <Route path="/app/blog/:slug" component={BlogPost} />
               <Route path="/app/blog" component={Blog} />
               <Route path="/app/track-record" component={TrackRecord} />
+              <Route path="/app/time-machine" component={TimeMachine} />
               <Route path="/app/reading-history" component={ReadingHistory} />
               <Route path="/app/seo-optimizer" component={SeoOptimizer} />
               <Route path="/app/analytics" component={AnalyticsDashboard} />
