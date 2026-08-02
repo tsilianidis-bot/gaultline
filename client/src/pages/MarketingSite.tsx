@@ -2048,165 +2048,103 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
 
   const MONO = "'IBM Plex Mono', 'Courier New', monospace";
 
+  // ── 3-tier plan definitions per brief ──────────────────────
   const plans = [
     {
       id: "free" as const,
-      name: "Observer",
-      price: "Free",
+      name: "Free",
+      price: "$0",
       period: "",
-      tagline: "No credit card required",
+      tagline: "Experience FAULTLINE before committing",
       color: "#6B7280",
       glow: "rgba(107,114,128,0.15)",
-      badge: null,
+      badge: null as string | null,
       featured: false,
-      cta: "TRY FREE — NO CARD NEEDED",
-      ctaHref: getLoginUrl(),
+      isLifetime: false,
+      cta: "START FREE",
+      ctaHref: getLoginUrl() as string | null,
       features: [
-        { label: "Pressure Index™", note: "Live reading" },
-        { label: "Daily market briefing", note: "1 per day" },
-        { label: "ASHA intelligence", note: "5 questions/day" },
-        { label: "Market signals", note: "Sample only" },
-        { label: "Watchlist", note: "3 symbols" },
-        { label: "Historical analogs", note: "Limited" },
-        { label: "Ticker lookups", note: "Limited" },
-        { label: "Advanced tools", note: "Locked" },
-      ],
-    },
-    {
-      id: "core" as const,
-      name: "FAULTLINE Mobile",
-      price: "$9.99",
-      period: "/mo",
-      tagline: "Essential intelligence on any device",
-      color: "#22D3EE",
-      glow: "rgba(34,211,238,0.12)",
-      badge: null,
-      featured: false,
-      cta: "GET MOBILE — $9.99/MO",
-      ctaHref: null,
-      features: [
-        { label: "Pressure Index™", note: "Full" },
-        { label: "Daily market brief", note: "Full" },
-        { label: "Stock signals", note: "Limited" },
-        { label: "Crypto intelligence", note: "Limited" },
-        { label: "Watchlist access", note: "Full" },
-        { label: "Sector & crypto rotation", note: "Full" },
-        { label: "Mobile-first experience", note: "PWA" },
-        { label: "ASHA intelligence", note: "20 questions/day" },
-      ],
-    },
-    {
-      id: "founding" as const,
-      name: "Founding Member",
-      price: "$49",
-      period: "/mo",
-      tagline: "Rate locked for life — limited availability",
-      color: "#A78BFA",
-      glow: "rgba(167,139,250,0.15)",
-      badge: "FOUNDING RATE",
-      featured: false,
-      cta: "LOCK IN FOUNDING — $49/MO",
-      ctaHref: null,
-      features: [
-        { label: "Everything in Trader", note: "Full" },
-        { label: "Rate locked forever", note: "Never increases" },
-        { label: "Founding member badge", note: "" },
-        { label: "Future feature grandfathering", note: "" },
-        { label: "Early beta access", note: "" },
-        { label: "Unlimited ASHA", note: "Full" },
-        { label: "Full Seismograph", note: "Full" },
-        { label: "All research tools", note: "Full" },
+        { label: "Daily market overview" },
+        { label: "Basic Pressure Index™" },
+        { label: "Sample signals" },
+        { label: "Limited ASHA questions", note: "5/day" },
+        { label: "Limited historical validation" },
+        { label: "Limited watchlist", note: "3 symbols" },
       ],
     },
     {
       id: "premium" as const,
-      name: "Trader",
+      name: "Pro",
       price: "$59",
-      period: "/mo",
-      tagline: "The full FAULTLINE intelligence platform",
+      period: "/month",
+      tagline: "Daily active investors and traders",
       color: "#00D4FF",
       glow: "rgba(0,212,255,0.18)",
-      badge: "MOST POPULAR",
+      badge: "MOST POPULAR" as string | null,
       featured: true,
-      cta: "GET TRADER — $59/MO",
-      ctaHref: null,
+      isLifetime: false,
+      cta: "START PRO",
+      ctaHref: null as string | null,
       features: [
-        { label: "Unlimited ASHA", note: "Full AI intelligence" },
-        { label: "Full Seismograph Command Center", note: "" },
-        { label: "Pressure Index™", note: "Full + history" },
-        { label: "Daily institutional brief", note: "Full" },
-        { label: "Market regime analysis", note: "Full" },
-        { label: "Stock & crypto signals", note: "Full" },
-        { label: "Historical analog engine", note: "Full" },
-        { label: "Watchlists & alerts", note: "Unlimited" },
-        { label: "Scenario analysis", note: "Full" },
-        { label: "Research tools", note: "Full" },
-      ],
-    },
-    {
-      id: "premium_power" as const,
-      name: "Power",
-      price: "$99",
-      period: "/mo",
-      tagline: "Advanced traders, advisors, and power users",
-      color: "#F97316",
-      glow: "rgba(249,115,22,0.15)",
-      badge: "ADVANCED",
-      featured: false,
-      cta: "GET POWER — $99/MO",
-      ctaHref: null,
-      features: [
-        { label: "Everything in Trader", note: "Full" },
-        { label: "Portfolio intelligence", note: "Full" },
-        { label: "Expanded signals", note: "Higher limits" },
-        { label: "Professional workflows", note: "" },
-        { label: "Data export", note: "" },
-        { label: "Advanced scenario analysis", note: "" },
-        { label: "Institutional dashboards", note: "" },
-        { label: "Priority support", note: "" },
+        { label: "Unlimited ASHA" },
+        { label: "Full Seismograph Dashboard" },
+        { label: "Complete Signal Intelligence" },
+        { label: "Portfolio Intelligence" },
+        { label: "Unlimited Watchlists & Alerts" },
+        { label: "Situation Room" },
+        { label: "Historical Analogs" },
+        { label: "Research Library" },
+        { label: "Institutional Portfolio tools", note: "when released" },
       ],
     },
     {
       id: "lifetime" as const,
-      name: "Lifetime Founding Access",
+      name: "Founding Lifetime",
       price: "$299",
       period: " one-time",
-      tagline: "Pay once. Access FAULTLINE for life.",
+      tagline: "Limited to the first 100 founding members.",
       color: "#FFD700",
       glow: "rgba(255,215,0,0.2)",
-      badge: "BEST VALUE · FOUNDING PERIOD ONLY",
+      badge: "★ FOUNDING MEMBER — 100 SPOTS ONLY" as string | null,
       featured: false,
-      cta: "GET LIFETIME ACCESS — $299",
-      ctaHref: null,
+      isLifetime: true,
+      cta: "BECOME ONE OF THE FIRST 100 FOUNDING MEMBERS",
+      ctaHref: null as string | null,
       features: [
-        { label: "Everything in Trader", note: "Forever" },
-        { label: "All future Pro features", note: "Included" },
-        { label: "Never pay again", note: "One payment" },
-        { label: "Founding member status", note: "" },
-        { label: "Priority beta access", note: "" },
-        { label: "Available only during founding period", note: "" },
+        { label: "Everything in Pro" },
+        { label: "Lifetime access to all current Pro features" },
+        { label: "Lifetime access to future core Pro features" },
+        { label: "Founding Member badge" },
+        { label: "Early access to major releases" },
+        { label: "Priority consideration for new feature requests" },
+        { label: "Recognition as one of FAULTLINE's first 100 members" },
+        { label: "No recurring subscription — ever" },
       ],
     },
-  ] as const;
-
-  // Comparison table rows
-  const COMPARISON_ROWS = [
-    { feature: "Pressure Index™",         free: "Live",     mobile: "Full",     founding: "Full",     trader: "Full + history", power: "Full + history", lifetime: "Full + history" },
-    { feature: "Daily market briefing",    free: "1/day",    mobile: "Full",     founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
-    { feature: "ASHA intelligence",        free: "5/day",    mobile: "20/day",   founding: "Unlimited",trader: "Unlimited",      power: "Unlimited",      lifetime: "Unlimited" },
-    { feature: "Seismograph Command Center",free: "—",       mobile: "—",        founding: "✓",        trader: "✓",              power: "✓",              lifetime: "✓" },
-    { feature: "Stock signals",            free: "Sample",   mobile: "Limited",  founding: "Full",     trader: "Full",           power: "Expanded",       lifetime: "Full" },
-    { feature: "Crypto intelligence",      free: "—",        mobile: "Limited",  founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
-    { feature: "Historical analog engine", free: "Limited",  mobile: "—",        founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
-    { feature: "Market regime analysis",   free: "Basic",    mobile: "Basic",    founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
-    { feature: "Watchlists",               free: "3 symbols",mobile: "Full",     founding: "Unlimited",trader: "Unlimited",      power: "Unlimited",      lifetime: "Unlimited" },
-    { feature: "Scenario analysis",        free: "—",        mobile: "—",        founding: "Full",     trader: "Full",           power: "Advanced",       lifetime: "Full" },
-    { feature: "Research tools",           free: "—",        mobile: "—",        founding: "Full",     trader: "Full",           power: "Full",           lifetime: "Full" },
-    { feature: "Portfolio intelligence",   free: "—",        mobile: "—",        founding: "—",        trader: "—",              power: "Full",           lifetime: "—" },
-    { feature: "Data export",              free: "—",        mobile: "—",        founding: "—",        trader: "—",              power: "✓",              lifetime: "—" },
-    { feature: "Refresh frequency",        free: "15 min",   mobile: "5 min",    founding: "Real-time",trader: "Real-time",      power: "Real-time",      lifetime: "Real-time" },
-    { feature: "Support",                  free: "Community",mobile: "Email",    founding: "Priority", trader: "Email",          power: "Priority",       lifetime: "Priority" },
   ];
+
+  // ── Feature comparison table (3 plans) ──────────────────────
+  const COMPARISON_ROWS = [
+    { feature: "Pressure Index™",           free: "Basic",    pro: "Full + history",  lifetime: "Full + history" },
+    { feature: "Daily market overview",     free: "✓",        pro: "Full",            lifetime: "Full" },
+    { feature: "ASHA intelligence",         free: "5/day",    pro: "Unlimited",       lifetime: "Unlimited" },
+    { feature: "Seismograph Command Center",free: "—",        pro: "✓",              lifetime: "✓" },
+    { feature: "Signal Intelligence",       free: "Sample",   pro: "Full",            lifetime: "Full" },
+    { feature: "Crypto intelligence",       free: "—",        pro: "Full",            lifetime: "Full" },
+    { feature: "Historical analog engine",  free: "Limited",  pro: "Full",            lifetime: "Full" },
+    { feature: "Watchlists",                free: "3 symbols",pro: "Unlimited",       lifetime: "Unlimited" },
+    { feature: "Alerts",                    free: "—",        pro: "✓",              lifetime: "✓" },
+    { feature: "Situation Room",            free: "—",        pro: "✓",              lifetime: "✓" },
+    { feature: "Portfolio Intelligence",    free: "—",        pro: "✓",              lifetime: "✓" },
+    { feature: "Research Library",          free: "—",        pro: "✓",              lifetime: "✓" },
+    { feature: "Founding Member badge",     free: "—",        pro: "—",              lifetime: "✓" },
+    { feature: "All future Pro features",   free: "—",        pro: "—",              lifetime: "✓" },
+    { feature: "No recurring charges",      free: "—",        pro: "—",              lifetime: "✓" },
+    { feature: "Support",                   free: "Community",pro: "Email",           lifetime: "Priority" },
+  ];
+
+  // ── Founding member real-time counter ─────────────────────────────────
+  const { data: lifetimeStatus } = trpc.billing.getLifetimeStatus.useQuery();
 
   return (
     <section
@@ -2226,32 +2164,44 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         backgroundSize: "60px 60px",
       }} />
 
-      <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 24px", position: "relative" }}>
+      {/* Ambient gold glow for founding emphasis */}
+      <div style={{
+        position: "absolute", top: "20%", right: "-10%", width: "600px", height: "600px",
+        background: "radial-gradient(ellipse, rgba(255,215,0,0.04) 0%, transparent 70%)",
+        pointerEvents: "none",
+      }} />
+
+      <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "0 24px", position: "relative" }}>
 
         {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: "64px" }}>
+        <div style={{ textAlign: "center", marginBottom: "72px" }}>
           <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.2em", color: "#FFD700", marginBottom: "16px" }}>
-            FOUNDING PERIOD PRICING — LIMITED AVAILABILITY
+            FOUNDING PERIOD PRICING
           </div>
-          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: "#F0F4F8", margin: "0 0 16px", lineHeight: 1.1 }}>
+          <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(28px,4vw,52px)", fontWeight: 700, color: "#F0F4F8", margin: "0 0 16px", lineHeight: 1.1 }}>
             Choose Your Intelligence Level
           </h2>
-          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "16px", color: "#64748B", maxWidth: "540px", margin: "0 auto" }}>
-            From free access to lifetime founding membership. All plans include the live FAULTLINE Pressure Index™.
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "17px", color: "#64748B", maxWidth: "560px", margin: "0 auto", lineHeight: 1.6 }}>
+            All plans include the live FAULTLINE Pressure Index™.
+            No credit card required to start free.
           </p>
         </div>
 
-        {/* 6-plan grid */}
+        {/* ── 3-column plan cards ─────────────────────────────────────────────────── */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))",
-          gap: "16px",
-          marginBottom: "64px",
-        }}>
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: "20px",
+          marginBottom: "72px",
+          alignItems: "stretch",
+        }}
+        className="max-sm:grid-cols-1 sm:max-lg:grid-cols-1"
+        >
           {plans.map((plan) => {
             const isFeatured = plan.featured;
-            const isLifetime = plan.id === "lifetime";
-            const isFounding = plan.id === "founding";
+            const isLifetime = plan.isLifetime;
+            const isSoldOut = isLifetime && lifetimeStatus?.isSoldOut;
+
             return (
               <div
                 key={plan.id}
@@ -2259,77 +2209,141 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   position: "relative",
                   display: "flex",
                   flexDirection: "column",
-                  borderRadius: "14px",
-                  padding: isFeatured ? "32px 24px 28px" : "28px 20px 24px",
-                  background: isFeatured
-                    ? "linear-gradient(160deg, rgba(0,212,255,0.08) 0%, rgba(0,212,255,0.03) 100%)"
-                    : isLifetime
-                    ? "linear-gradient(160deg, rgba(255,215,0,0.07) 0%, rgba(255,215,0,0.02) 100%)"
+                  borderRadius: "16px",
+                  padding: isLifetime ? "40px 28px 32px" : isFeatured ? "36px 24px 28px" : "28px 20px 24px",
+                  background: isLifetime
+                    ? "linear-gradient(160deg, rgba(255,215,0,0.09) 0%, rgba(255,215,0,0.03) 60%, rgba(5,8,16,0.8) 100%)"
+                    : isFeatured
+                    ? "linear-gradient(160deg, rgba(0,212,255,0.08) 0%, rgba(0,212,255,0.02) 100%)"
                     : "rgba(255,255,255,0.02)",
-                  border: `1px solid ${isFeatured ? "rgba(0,212,255,0.35)" : isLifetime ? "rgba(255,215,0,0.3)" : isFounding ? "rgba(167,139,250,0.25)" : "rgba(255,255,255,0.07)"}`,
-                  boxShadow: isFeatured
-                    ? "0 0 40px rgba(0,212,255,0.12), inset 0 1px 0 rgba(0,212,255,0.1)"
-                    : isLifetime
-                    ? "0 0 40px rgba(255,215,0,0.1), inset 0 1px 0 rgba(255,215,0,0.08)"
+                  border: `1px solid ${isLifetime ? "rgba(255,215,0,0.4)" : isFeatured ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.07)"}`,
+                  boxShadow: isLifetime
+                    ? "0 0 60px rgba(255,215,0,0.12), 0 0 120px rgba(255,215,0,0.05), inset 0 1px 0 rgba(255,215,0,0.12)"
+                    : isFeatured
+                    ? "0 0 40px rgba(0,212,255,0.1), inset 0 1px 0 rgba(0,212,255,0.08)"
                     : "none",
                   transition: "box-shadow 0.3s ease, transform 0.2s ease",
+                  transform: isLifetime ? "scale(1.02)" : "scale(1)",
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 60px ${plan.glow}, inset 0 1px 0 ${plan.glow}`;
+                  (e.currentTarget as HTMLDivElement).style.transform = isLifetime ? "scale(1.02) translateY(-4px)" : "translateY(-3px)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 80px ${plan.glow}, inset 0 1px 0 ${plan.glow}`;
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = isFeatured
-                    ? "0 0 40px rgba(0,212,255,0.12), inset 0 1px 0 rgba(0,212,255,0.1)"
-                    : isLifetime
-                    ? "0 0 40px rgba(255,215,0,0.1), inset 0 1px 0 rgba(255,215,0,0.08)"
+                  (e.currentTarget as HTMLDivElement).style.transform = isLifetime ? "scale(1.02)" : "scale(1)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = isLifetime
+                    ? "0 0 60px rgba(255,215,0,0.12), 0 0 120px rgba(255,215,0,0.05), inset 0 1px 0 rgba(255,215,0,0.12)"
+                    : isFeatured
+                    ? "0 0 40px rgba(0,212,255,0.1), inset 0 1px 0 rgba(0,212,255,0.08)"
                     : "none";
                 }}
               >
                 {/* Badge */}
                 {plan.badge && (
                   <div style={{
-                    position: "absolute", top: "-11px", left: "50%", transform: "translateX(-50%)",
-                    background: isLifetime ? "linear-gradient(90deg, #B8860B, #FFD700, #B8860B)" : isFounding ? "#A78BFA" : plan.color,
-                    color: isLifetime ? "#000" : isFounding ? "#fff" : "#000",
+                    position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)",
+                    background: isLifetime
+                      ? "linear-gradient(90deg, #8B6914, #FFD700, #B8860B, #FFD700, #8B6914)"
+                      : "rgba(0,212,255,0.15)",
+                    color: isLifetime ? "#000" : "#00D4FF",
                     fontFamily: MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em",
-                    padding: "3px 12px", borderRadius: "20px", whiteSpace: "nowrap",
+                    padding: "4px 16px", borderRadius: "20px", whiteSpace: "nowrap",
+                    border: isLifetime ? "none" : "1px solid rgba(0,212,255,0.3)",
                   }}>
                     {plan.badge}
                   </div>
                 )}
 
                 {/* Plan name */}
-                <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.15em", color: plan.color, marginBottom: "8px" }}>
+                <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.2em", color: plan.color, marginBottom: "10px" }}>
                   {plan.name.toUpperCase()}
                 </div>
 
-                {/* Price */}
-                <div style={{ display: "flex", alignItems: "baseline", gap: "2px", marginBottom: "6px" }}>
-                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(28px,3.5vw,40px)", fontWeight: 700, color: isLifetime ? "#FFD700" : "#F0F4F8", lineHeight: 1 }}>
-                    {plan.price}
-                  </span>
-                  {plan.period && (
-                    <span style={{ fontFamily: MONO, fontSize: "12px", color: "rgba(255,255,255,0.35)", marginLeft: "4px" }}>
-                      {plan.period}
+                {/* Price block */}
+                <div style={{ marginBottom: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
+                    <span style={{
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      fontSize: isLifetime ? "52px" : "44px",
+                      fontWeight: 700,
+                      color: isLifetime ? "#FFD700" : "#F0F4F8",
+                      lineHeight: 1,
+                    }}>
+                      {plan.price}
                     </span>
+                    {plan.period && (
+                      <span style={{ fontFamily: MONO, fontSize: "13px", color: "rgba(255,255,255,0.35)", marginLeft: "4px" }}>
+                        {plan.period}
+                      </span>
+                    )}
+                  </div>
+                  {/* Future price for lifetime */}
+                  {isLifetime && (
+                    <div style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontFamily: MONO, fontSize: "10px", color: "#475569", letterSpacing: "0.1em" }}>FUTURE PRICE:</span>
+                      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "16px", fontWeight: 600, color: "#475569", textDecoration: "line-through" }}>$1,199</span>
+                    </div>
                   )}
                 </div>
 
                 {/* Tagline */}
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", marginBottom: "20px", lineHeight: 1.4 }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: isLifetime ? "#94A3B8" : "#64748B", marginBottom: "20px", lineHeight: 1.5 }}>
                   {plan.tagline}
                 </div>
 
+                {/* Real-time founding counter (lifetime only) */}
+                {isLifetime && lifetimeStatus && !lifetimeStatus.isSoldOut && (
+                  <div style={{
+                    marginBottom: "20px",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    background: "rgba(255,215,0,0.06)",
+                    border: "1px solid rgba(255,215,0,0.2)",
+                  }}>
+                    <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.15em", color: "#FFD700", marginBottom: "6px" }}>
+                      FOUNDING MEMBERSHIPS
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      {/* Progress bar */}
+                      <div style={{ flex: 1, height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                        <div style={{
+                          height: "100%",
+                          width: `${(lifetimeStatus.claimed / lifetimeStatus.limit) * 100}%`,
+                          background: "linear-gradient(90deg, #B8860B, #FFD700)",
+                          borderRadius: "2px",
+                          transition: "width 0.6s ease",
+                        }} />
+                      </div>
+                      <span style={{ fontFamily: MONO, fontSize: "11px", color: "#94A3B8", whiteSpace: "nowrap", flexShrink: 0 }}>
+                        {lifetimeStatus.claimed} of {lifetimeStatus.limit} claimed
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", marginTop: "6px" }}>
+                      {lifetimeStatus.remaining} founding memberships remaining
+                    </div>
+                  </div>
+                )}
+                {isLifetime && lifetimeStatus?.isSoldOut && (
+                  <div style={{
+                    marginBottom: "20px",
+                    padding: "10px 14px",
+                    borderRadius: "8px",
+                    background: "rgba(255,45,85,0.06)",
+                    border: "1px solid rgba(255,45,85,0.2)",
+                    fontFamily: MONO, fontSize: "11px", color: "#FF2D55", letterSpacing: "0.1em",
+                  }}>
+                    ALL 100 FOUNDING MEMBERSHIPS HAVE BEEN CLAIMED
+                  </div>
+                )}
+
                 {/* Features */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px" }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "9px", marginBottom: "28px" }}>
                   {plan.features.map((f, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                      <span style={{ color: plan.color, fontSize: "12px", marginTop: "1px", flexShrink: 0, fontWeight: 700 }}>✓</span>
-                      <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.4 }}>
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "9px" }}>
+                      <span style={{ color: plan.color, fontSize: "13px", marginTop: "1px", flexShrink: 0, fontWeight: 700 }}>✓</span>
+                      <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: isLifetime ? "#CBD5E1" : "#94A3B8", lineHeight: 1.45 }}>
                         {f.label}
-                        {f.note && <span style={{ color: "#475569", marginLeft: "4px" }}>· {f.note}</span>}
+                        {"note" in f && f.note && <span style={{ color: "#475569", marginLeft: "4px" }}>· {f.note}</span>}
                       </span>
                     </div>
                   ))}
@@ -2340,86 +2354,155 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   <a
                     href={plan.ctaHref}
                     style={{
-                      display: "block", textAlign: "center", padding: "11px 16px",
-                      borderRadius: "8px", fontFamily: MONO, fontSize: "11px", fontWeight: 700,
+                      display: "block", textAlign: "center",
+                      padding: "13px 20px",
+                      borderRadius: "9px", fontFamily: MONO, fontSize: "11px", fontWeight: 700,
                       letterSpacing: "0.1em", textDecoration: "none",
                       background: "transparent",
                       border: `1px solid ${plan.color}`,
                       color: plan.color,
                       transition: "background 0.2s ease",
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = `${plan.glow}`; }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = plan.glow; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
                   >
                     {plan.cta}
                   </a>
-                ) : plan.id === "premium_power" ? (
-                  <button
-                    disabled
-                    style={{
-                      display: "block", width: "100%", textAlign: "center", padding: "11px 16px",
-                      borderRadius: "8px", fontFamily: MONO, fontSize: "11px", fontWeight: 700,
-                      letterSpacing: "0.1em", cursor: "not-allowed",
-                      background: "transparent",
-                      border: `1px dashed ${plan.color}40`,
-                      color: `${plan.color}60`,
-                    }}
-                  >
-                    COMING SOON
-                  </button>
                 ) : (
                   <button
-                    onClick={() => handleCheckout(plan.id as "core" | "premium" | "founding" | "lifetime")}
-                    disabled={checkoutMutation.isPending}
+                    onClick={() => !isSoldOut && handleCheckout(plan.id as "premium" | "lifetime")}
+                    disabled={checkoutMutation.isPending || !!isSoldOut}
                     style={{
-                      display: "block", width: "100%", textAlign: "center", padding: "11px 16px",
-                      borderRadius: "8px", fontFamily: MONO, fontSize: "11px", fontWeight: 700,
-                      letterSpacing: "0.1em", cursor: checkoutMutation.isPending ? "wait" : "pointer",
-                      background: isFeatured
-                        ? "linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08))"
-                        : isLifetime
-                        ? "linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.08))"
+                      display: "block", width: "100%", textAlign: "center",
+                      padding: isLifetime ? "15px 20px" : "13px 20px",
+                      borderRadius: "9px", fontFamily: MONO,
+                      fontSize: isLifetime ? "12px" : "11px",
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      cursor: checkoutMutation.isPending || isSoldOut ? "not-allowed" : "pointer",
+                      background: isLifetime
+                        ? (isSoldOut ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,215,0,0.1))")
+                        : isFeatured
+                        ? "linear-gradient(135deg, rgba(0,212,255,0.18), rgba(0,212,255,0.06))"
                         : "transparent",
-                      border: `1px solid ${isFeatured ? "rgba(0,212,255,0.5)" : isLifetime ? "rgba(255,215,0,0.5)" : `${plan.color}40`}`,
-                      color: isFeatured ? "#00D4FF" : isLifetime ? "#FFD700" : plan.color,
+                      border: isLifetime
+                        ? (isSoldOut ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,215,0,0.55)")
+                        : isFeatured
+                        ? "1px solid rgba(0,212,255,0.45)"
+                        : `1px solid ${plan.color}40`,
+                      color: isLifetime
+                        ? (isSoldOut ? "#475569" : "#FFD700")
+                        : isFeatured ? "#00D4FF" : plan.color,
                       transition: "all 0.2s ease",
+                      boxShadow: isLifetime && !isSoldOut ? "0 0 20px rgba(255,215,0,0.15)" : "none",
                     }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = plan.glow; }}
+                    onMouseEnter={e => {
+                      if (!isSoldOut) (e.currentTarget as HTMLButtonElement).style.background = plan.glow;
+                    }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.background = isFeatured
-                        ? "linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.08))"
-                        : isLifetime
-                        ? "linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.08))"
+                      (e.currentTarget as HTMLButtonElement).style.background = isLifetime
+                        ? (isSoldOut ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,215,0,0.1))")
+                        : isFeatured
+                        ? "linear-gradient(135deg, rgba(0,212,255,0.18), rgba(0,212,255,0.06))"
                         : "transparent";
                     }}
                   >
-                    {checkoutMutation.isPending ? "PROCESSING…" : plan.cta}
+                    {checkoutMutation.isPending ? "PROCESSING…" : isSoldOut ? "FOUNDING PERIOD CLOSED" : plan.cta}
                   </button>
+                )}
+
+                {/* Break-even callout for lifetime */}
+                {isLifetime && !isSoldOut && (
+                  <div style={{ marginTop: "14px", textAlign: "center" }}>
+                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.5 }}>
+                      Pro costs <span style={{ color: "#94A3B8" }}>$59/mo</span>.
+                      Break-even at <span style={{ color: "#94A3B8" }}>5 months</span>.
+                      Everything after that is included for life.
+                    </div>
+                    <div style={{ marginTop: "6px", fontFamily: MONO, fontSize: "10px", color: "#FFD700", letterSpacing: "0.1em" }}>
+                      SAVE $900 vs. FUTURE LIFETIME PRICE
+                    </div>
+                  </div>
                 )}
               </div>
             );
           })}
         </div>
 
-        {/* Comparison table */}
+        {/* ── Value comparison bar ─────────────────────────────────────────────────── */}
+        <div style={{
+          marginBottom: "64px",
+          padding: "28px 32px",
+          borderRadius: "14px",
+          background: "linear-gradient(135deg, rgba(255,215,0,0.06) 0%, rgba(255,215,0,0.02) 100%)",
+          border: "1px solid rgba(255,215,0,0.15)",
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.2em", color: "#FFD700", marginBottom: "20px", textAlign: "center" }}>
+            WHY FOUNDING LIFETIME IS THE CLEAR CHOICE
+          </div>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "16px",
+            textAlign: "center",
+          }}
+          className="max-sm:grid-cols-2"
+          >
+            {[
+              { label: "Free", price: "$0", note: "Limited access", color: "#6B7280" },
+              { label: "Pro", price: "$59/mo", note: "$708/year", color: "#00D4FF" },
+              { label: "Founding Lifetime", price: "$299", note: "One-time — forever", color: "#FFD700", highlight: true },
+              { label: "Future Lifetime", price: "$1,199", note: "After founding period", color: "#475569", strikethrough: true },
+            ].map((item) => (
+              <div key={item.label} style={{
+                padding: "16px 12px",
+                borderRadius: "10px",
+                background: item.highlight ? "rgba(255,215,0,0.06)" : "rgba(255,255,255,0.02)",
+                border: `1px solid ${item.highlight ? "rgba(255,215,0,0.25)" : "rgba(255,255,255,0.05)"}`,
+              }}>
+                <div style={{ fontFamily: MONO, fontSize: "9px", letterSpacing: "0.15em", color: item.color, marginBottom: "8px", opacity: item.strikethrough ? 0.5 : 1 }}>
+                  {item.label.toUpperCase()}
+                </div>
+                <div style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontSize: item.highlight ? "26px" : "20px",
+                  fontWeight: 700,
+                  color: item.highlight ? "#FFD700" : item.strikethrough ? "#334155" : "#F0F4F8",
+                  textDecoration: item.strikethrough ? "line-through" : "none",
+                  lineHeight: 1,
+                  marginBottom: "6px",
+                }}>
+                  {item.price}
+                </div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: item.strikethrough ? "#334155" : "#64748B" }}>
+                  {item.note}
+                </div>
+                {item.highlight && (
+                  <div style={{ marginTop: "8px", fontFamily: MONO, fontSize: "9px", color: "#FFD700", letterSpacing: "0.1em" }}>
+                    SAVE $900
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Feature comparison table ─────────────────────────────────────────────────── */}
         <div style={{ marginBottom: "48px" }}>
           <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.2em", color: "#64748B", textAlign: "center", marginBottom: "24px" }}>
-            PLAN COMPARISON
+            FEATURE COMPARISON
           </div>
           <div style={{ overflowX: "auto", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.06)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px" }}>
               <thead>
                 <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                  <th style={{ padding: "12px 16px", textAlign: "left", color: "#475569", fontFamily: MONO, fontSize: "10px", letterSpacing: "0.1em", fontWeight: 600, background: "rgba(255,255,255,0.02)", whiteSpace: "nowrap" }}>FEATURE</th>
+                  <th style={{ padding: "14px 20px", textAlign: "left", color: "#475569", fontFamily: MONO, fontSize: "10px", letterSpacing: "0.1em", fontWeight: 600, background: "rgba(255,255,255,0.02)", whiteSpace: "nowrap" }}>FEATURE</th>
                   {[
                     { label: "FREE", color: "#6B7280" },
-                    { label: "MOBILE", color: "#22D3EE" },
-                    { label: "FOUNDING", color: "#A78BFA" },
-                    { label: "TRADER", color: "#00D4FF" },
-                    { label: "POWER", color: "#F97316" },
-                    { label: "LIFETIME", color: "#FFD700" },
+                    { label: "PRO", color: "#00D4FF" },
+                    { label: "FOUNDING LIFETIME", color: "#FFD700" },
                   ].map(col => (
-                    <th key={col.label} style={{ padding: "12px 12px", textAlign: "center", color: col.color, fontFamily: MONO, fontSize: "10px", letterSpacing: "0.1em", fontWeight: 700, background: "rgba(255,255,255,0.02)", whiteSpace: "nowrap" }}>
+                    <th key={col.label} style={{ padding: "14px 20px", textAlign: "center", color: col.color, fontFamily: MONO, fontSize: "10px", letterSpacing: "0.12em", fontWeight: 700, background: col.color === "#FFD700" ? "rgba(255,215,0,0.04)" : "rgba(255,255,255,0.02)", whiteSpace: "nowrap" }}>
                       {col.label}
                     </th>
                   ))}
@@ -2428,9 +2511,19 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
               <tbody>
                 {COMPARISON_ROWS.map((row, i) => (
                   <tr key={row.feature} style={{ borderBottom: i < COMPARISON_ROWS.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
-                    <td style={{ padding: "10px 16px", color: "#94A3B8", whiteSpace: "nowrap" }}>{row.feature}</td>
-                    {[row.free, row.mobile, row.founding, row.trader, row.power, row.lifetime].map((val, j) => (
-                      <td key={j} style={{ padding: "10px 12px", textAlign: "center", color: val === "—" ? "#334155" : val === "✓" || val === "Full" || val === "Unlimited" || val === "Forever" ? "#4ADE80" : "#94A3B8", fontFamily: MONO, fontSize: "11px" }}>
+                    <td style={{ padding: "11px 20px", color: "#94A3B8" }}>{row.feature}</td>
+                    {([row.free, row.pro, row.lifetime] as string[]).map((val, j) => (
+                      <td key={j} style={{
+                        padding: "11px 20px",
+                        textAlign: "center",
+                        background: j === 2 ? "rgba(255,215,0,0.02)" : "transparent",
+                        color: val === "—" ? "#334155"
+                          : val === "✓" || val === "Full" || val === "Unlimited" || val === "Forever" ? "#4ADE80"
+                          : j === 2 ? "#FFD700"
+                          : "#94A3B8",
+                        fontFamily: MONO, fontSize: "12px",
+                        fontWeight: val === "✓" ? 700 : 400,
+                      }}>
                         {val}
                       </td>
                     ))}
@@ -2444,10 +2537,10 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         {/* Footer note */}
         <div style={{ textAlign: "center" }}>
           <p style={{ fontFamily: MONO, fontSize: "10px", color: "#334155", letterSpacing: "0.1em", lineHeight: 1.8 }}>
-            THE FOUNDING LIFETIME PLAN WILL NEVER BE OFFERED AGAIN AFTER THE FOUNDING PERIOD CLOSES · POWER PLAN COMING SOON
+            THE FOUNDING LIFETIME PLAN WILL NOT BE OFFERED AGAIN AFTER ALL 100 MEMBERSHIPS ARE CLAIMED · FUTURE LIFETIME PRICE: $1,199
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#334155", marginTop: "8px" }}>
-            All plans include the live FAULTLINE Pressure Index™. No credit card required for the free Observer tier.
+            Not investment advice. All plans include the live FAULTLINE Pressure Index™. No credit card required for the free plan.
           </p>
         </div>
 
