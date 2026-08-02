@@ -146,7 +146,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
           <div className="hidden md:flex items-center gap-8">
             <a href="/analysis" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">ANALYSIS</a>
             <a href="/track-record" className="text-[11px] font-mono tracking-widest transition-colors" style={{ color: '#22C55E', textShadow: '0 0 8px rgba(34,197,94,0.3)' }} onMouseEnter={e => (e.currentTarget.style.color = '#4ADE80')} onMouseLeave={e => (e.currentTarget.style.color = '#22C55E')}>
-              TRACK RECORD <span style={{ fontSize: '7px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 4px', borderRadius: '2px', letterSpacing: '0.1em', verticalAlign: 'middle' }}>VERIFIED</span>
+              HISTORICAL VALIDATION <span style={{ fontSize: '7px', background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', padding: '1px 4px', borderRadius: '2px', letterSpacing: '0.1em', verticalAlign: 'middle' }}>2000–2025</span>
             </a>
             {NAV_ITEMS.map((item) => (
               <a key={item.label} href={item.href} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors">
@@ -157,14 +157,14 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
 
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
-            <button onClick={() => { trackDemoStarted("nav"); onRequestAccess(); }} className="text-[11px] font-mono tracking-widest text-[#FFD700] hover:text-white transition-colors px-4 py-2 border border-[#FFD700]/30 hover:border-[#FFD700]/60 rounded">
-              MOVE FIRST →
-            </button>
+            <a href="#pricing" className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-[#00D4FF] transition-colors px-4 py-2">
+              PRICING
+            </a>
             <a href={getLoginUrl()} onClick={() => trackSignupStarted("nav")} className="text-[11px] font-mono tracking-widest text-[#A8B8CC] hover:text-white transition-colors px-4 py-2 border border-[rgba(168,184,204,0.25)] hover:border-[rgba(168,184,204,0.55)] rounded">
-              MEMBER LOGIN
+              SIGN IN
             </a>
             <a href={PLATFORM_URL} onClick={() => trackStartFreeClicked("homepage_nav")} className="text-[11px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 transition-colors px-4 py-2 rounded font-bold">
-              EXPLORE FREE →
+              ENTER PLATFORM →
             </a>
           </div>
 
@@ -251,8 +251,8 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-                  <span className="text-[13px] font-mono tracking-widest" style={{ color: '#22C55E' }}>TRACK RECORD</span>
-                  <span className="text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22C55E' }}>VERIFIED</span>
+                  <span className="text-[13px] font-mono tracking-widest" style={{ color: '#22C55E' }}>HISTORICAL VALIDATION</span>
+                  <span className="text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded" style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.3)', color: '#22C55E' }}>2000–2025</span>
                 </div>
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#22C55E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.5">
                   <path d="M2 7h10M8 3l4 4-4 4" />
@@ -304,7 +304,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A8B8CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" />
               </svg>
-              <span className="text-[12px] font-mono tracking-widest text-[#A8B8CC]">MEMBER LOGIN</span>
+              <span className="text-[12px] font-mono tracking-widest text-[#A8B8CC]">SIGN IN</span>
             </a>
 
             {/* Bottom spacer for safe area */}
@@ -481,7 +481,7 @@ function BrandHero({ onRequestAccess }: { onRequestAccess: () => void }) {
                   {
                     label: "PRESSURE INDEX",
                     value: "47 / 100",
-                    sub: "MODERATE RISK — 68th percentile",
+                    sub: "ILLUSTRATIVE EXAMPLE · Not the current market reading",
                     color: "#FF9500",
                     accent: "rgba(255,149,0,0.08)",
                     border: "rgba(255,149,0,0.2)",
@@ -1573,7 +1573,7 @@ function HowItWorksSection() {
   );
 }
 
-// ── Proof / Track Record Section ──────────────────────────────
+// ── Proof / Historical Validation Section ──────────────────────────────
 // ── Promo Video Section ──────────────────────────────────────
 function PromoVideoSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -1732,14 +1732,17 @@ function ProofSection() {
         <div className="text-center mb-14">
           <div className="inline-flex items-center gap-2 text-[10px] font-mono tracking-[0.3em] px-4 py-1.5 rounded-full mb-5 border" style={{ color: '#22C55E', borderColor: 'rgba(34,197,94,0.3)', background: 'rgba(34,197,94,0.05)' }}>
             <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] animate-pulse" />
-            METHODOLOGY VALIDATED — 25 YEARS OF PROOF
+            HISTORICAL VALIDATION · 2000–2025
           </div>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-5 leading-[1.1]">
             The pressure was there<br />
             <span className="text-[#22C55E]">before every major crash.</span>
           </h2>
           <p className="text-[#A8B8CC] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            FAULTLINE’s Pressure Engine was back-tested against 25 years of FRED macroeconomic data — the same engine running live today. In every case, the pressure signature was elevated before the collapse. Top funds read those signals. Most traders didn’t.
+            FAULTLINE's Pressure Engine was back-tested against 25 years of FRED macroeconomic data — the same engine running live today. In every case, the pressure signature was elevated before the collapse. Top funds read those signals. Most traders didn't.
+          </p>
+          <p className="text-[#64748B] text-xs font-mono max-w-2xl mx-auto mt-3 leading-relaxed">
+            Retrospective analysis applies the current FAULTLINE methodology to historical data. It does not represent signals generated live at those historical dates.
           </p>
         </div>
 
@@ -1832,7 +1835,7 @@ function ProofSection() {
             onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(34,197,94,0.7)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(34,197,94,0.1)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(34,197,94,0.4)'; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(34,197,94,0.05)'; }}
           >
-            VIEW FULL TRACK RECORD
+            VIEW HISTORICAL VALIDATION
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
@@ -2043,19 +2046,21 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   });
 
   const handleCheckout = (planId: "core" | "premium" | "founding" | "lifetime") => {
+    // 'free' plan has no checkout — handled by ctaHref
     checkoutMutation.mutate({ planId, origin: window.location.origin });
   };
 
   const MONO = "'IBM Plex Mono', 'Courier New', monospace";
 
   // ── 3-tier plan definitions per brief ──────────────────────
+  // ── 5-tier plan definitions (from shared/tiers.ts) ──────────────────────
   const plans = [
     {
       id: "free" as const,
       name: "Free",
       price: "$0",
       period: "",
-      tagline: "Experience FAULTLINE before committing",
+      tagline: "No credit card required",
       color: "#6B7280",
       glow: "rgba(107,114,128,0.15)",
       badge: null as string | null,
@@ -2064,12 +2069,39 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       cta: "START FREE",
       ctaHref: getLoginUrl() as string | null,
       features: [
-        { label: "Daily market overview" },
-        { label: "Basic Pressure Index™" },
-        { label: "Sample signals" },
-        { label: "Limited ASHA questions", note: "5/day" },
-        { label: "Limited historical validation" },
-        { label: "Limited watchlist", note: "3 symbols" },
+        { label: "Live FAULTLINE Pressure Index™" },
+        { label: "Stock & Crypto Market Regimes" },
+        { label: "Risk-On / Mixed / Risk-Off reading" },
+        { label: "Daily Intelligence Brief" },
+        { label: "Bull/Bear probabilities" },
+        { label: "Top 3 Opportunity Radar" },
+        { label: "Ask Intelligence", note: "10/day" },
+        { label: "Watchlist", note: "3 symbols" },
+      ],
+    },
+    {
+      id: "core" as const,
+      name: "Core",
+      price: "$9.99",
+      period: "/month",
+      tagline: "Market intelligence anywhere",
+      color: "#22D3EE",
+      glow: "rgba(34,211,238,0.18)",
+      badge: "MOST POPULAR" as string | null,
+      featured: true,
+      isLifetime: false,
+      cta: "UNLOCK CORE",
+      ctaHref: null as string | null,
+      features: [
+        { label: "Unlimited Ask Intelligence" },
+        { label: "Complete Symbol Intelligence" },
+        { label: "Full Signal Outlook" },
+        { label: "Unlimited Watchlists" },
+        { label: "Portfolio Intelligence" },
+        { label: "Complete Opportunity Radar" },
+        { label: "Entry/Exit analysis" },
+        { label: "Advanced Alerts & Trade Journal" },
+        { label: "Full Daily Intelligence Report" },
       ],
     },
     {
@@ -2077,24 +2109,45 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       name: "Pro",
       price: "$59",
       period: "/month",
-      tagline: "Daily active investors and traders",
+      tagline: "Institutional investment committee intelligence",
       color: "#00D4FF",
       glow: "rgba(0,212,255,0.18)",
-      badge: "MOST POPULAR" as string | null,
-      featured: true,
+      badge: "INSTITUTIONAL" as string | null,
+      featured: false,
       isLifetime: false,
-      cta: "START PRO",
+      cta: "UNLOCK PRO",
       ctaHref: null as string | null,
       features: [
-        { label: "Unlimited ASHA" },
-        { label: "Full Seismograph Dashboard" },
-        { label: "Complete Signal Intelligence" },
-        { label: "Portfolio Intelligence" },
-        { label: "Unlimited Watchlists & Alerts" },
+        { label: "Everything in Core" },
         { label: "Situation Room" },
-        { label: "Historical Analogs" },
-        { label: "Research Library" },
-        { label: "Institutional Portfolio tools", note: "when released" },
+        { label: "Market Preflight" },
+        { label: "Institutional dashboards" },
+        { label: "Historical analog engine" },
+        { label: "Deep macro intelligence" },
+        { label: "Scenario modeling" },
+        { label: "Advanced probability models" },
+        { label: "Full Crypto Intelligence suite" },
+      ],
+    },
+    {
+      id: "founding" as const,
+      name: "Founding Member",
+      price: "$49",
+      period: "/month",
+      tagline: "Rate locked for life — limited spots",
+      color: "#FFD700",
+      glow: "rgba(255,215,0,0.2)",
+      badge: "★ RATE LOCKED FOREVER" as string | null,
+      featured: false,
+      isLifetime: false,
+      cta: "LOCK IN FOUNDING RATE",
+      ctaHref: null as string | null,
+      features: [
+        { label: "Everything in Pro" },
+        { label: "$49/mo locked forever" },
+        { label: "Founding member badge" },
+        { label: "Future feature grandfathering" },
+        { label: "Early beta access" },
       ],
     },
     {
@@ -2190,12 +2243,12 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         {/* ── 3-column plan cards ─────────────────────────────────────────────────── */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "20px",
+          gridTemplateColumns: "repeat(5, 1fr)",
+          gap: "16px",
           marginBottom: "72px",
           alignItems: "stretch",
         }}
-        className="max-sm:grid-cols-1 sm:max-lg:grid-cols-1"
+        className="max-sm:grid-cols-1 sm:max-xl:grid-cols-2 xl:grid-cols-5"
         >
           {plans.map((plan) => {
             const isFeatured = plan.featured;
@@ -2370,7 +2423,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   </a>
                 ) : (
                   <button
-                    onClick={() => !isSoldOut && handleCheckout(plan.id as "premium" | "lifetime")}
+                    onClick={() => !isSoldOut && plan.id !== "free" && handleCheckout(plan.id as "core" | "premium" | "founding" | "lifetime")}
                     disabled={checkoutMutation.isPending || !!isSoldOut}
                     style={{
                       display: "block", width: "100%", textAlign: "center",
@@ -2559,6 +2612,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
     { label: "BRIEF", icon: "▤", desc: "Daily macro brief, top signal, top rotation note" },
   ];
 
+  // Illustrative values — not the current live reading
   const sc = { score: 61, regime: "ELEVATED", regimeColor: "#FF9500", bull: 45, crash: 43 };
   const circumference = 2 * Math.PI * 44;
 
@@ -2702,6 +2756,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-2xl font-bold font-mono" style={{ color: sc.regimeColor }}>{sc.score}</span>
                       <span className="text-[7px] font-mono text-[#64748B]">/100</span>
+                      <span className="text-[5px] font-mono text-[#475569] mt-0.5 tracking-wide">ILLUSTRATIVE</span>
                     </div>
                   </div>
 
@@ -2930,61 +2985,239 @@ function FoundingAccessForm
 
 // ── Founder Statement ───────────────────────────────────────
 function TimeMachineTeaserSection() {
+  const CRISES = [
+    { label: '2008 GFC', period: 'Sep–Nov 2008', peak: 94, color: '#FF3B30', regime: 'CRITICAL', desc: 'Lehman collapse. S&P −57% peak-to-trough.' },
+    { label: '2001 Dot-Com', period: '2001–2002', peak: 82, color: '#FF6B35', regime: 'CRITICAL', desc: 'Nasdaq −78%. Credit spreads blew out months before.' },
+    { label: '2020 COVID', period: 'Feb–Mar 2020', peak: 91, color: '#FF6B35', regime: 'CRITICAL', desc: 'S&P −34% in 33 days. Pressure spiked before the bottom.' },
+    { label: '2022 Bear', period: 'Jan–Oct 2022', peak: 79, color: '#FFB800', regime: 'HIGH RISK', desc: 'Fed rate shock. Yield curve inverted months before the peak.' },
+    { label: '2024–25 AI Risk', period: '2024–2025', peak: 67, color: '#00E5FF', regime: 'ELEVATED', desc: 'Mag-7 concentration + tightening credit. Pressure flagged ELEVATED.' },
+  ];
+
   return (
-    <section className="py-20 px-6" style={{ background: 'linear-gradient(180deg, #060912 0%, #0A0E1A 50%, #060912 100%)' }}>
-      <div className="max-w-5xl mx-auto">
-        <div className="rounded-2xl border border-[#FFB800]/20 bg-[#FFB800]/4 p-10 text-center relative overflow-hidden">
-          {/* Ambient glow */}
-          <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255,184,0,0.06) 0%, transparent 70%)' }} />
+    <section
+      style={{
+        background: 'linear-gradient(180deg, #050608 0%, #080C16 40%, #050608 100%)',
+        padding: '100px 0',
+        position: 'relative',
+        overflow: 'hidden',
+        borderTop: '1px solid rgba(255,184,0,0.08)',
+        borderBottom: '1px solid rgba(255,184,0,0.08)',
+      }}
+    >
+      {/* Ambient gold radial glow */}
+      <div style={{
+        position: 'absolute', top: '50%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '900px', height: '600px',
+        background: 'radial-gradient(ellipse, rgba(255,184,0,0.06) 0%, transparent 65%)',
+        pointerEvents: 'none',
+      }} />
+      {/* Subtle grid */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.025,
+        backgroundImage: 'linear-gradient(rgba(255,184,0,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,184,0,1) 1px, transparent 1px)',
+        backgroundSize: '60px 60px',
+      }} />
 
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#FFB800]/30 bg-[#FFB800]/8 mb-6">
-              <span className="text-[10px] font-bold text-[#FFB800] tracking-widest uppercase">Historical Truth Engine</span>
-            </div>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 1 }}>
 
-            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4 leading-tight">
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            padding: '6px 16px', borderRadius: '999px',
+            border: '1px solid rgba(255,184,0,0.35)',
+            background: 'rgba(255,184,0,0.06)',
+            marginBottom: '20px',
+          }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFB800', display: 'inline-block' }} />
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.25em', color: '#FFB800', fontWeight: 700 }}>
               FAULTLINE TIME MACHINE™
-            </h2>
-
-            <p className="text-lg text-white/60 max-w-2xl mx-auto mb-3 leading-relaxed">
-              Choose any market period you know.
-            </p>
-            <p className="text-base text-white/50 max-w-2xl mx-auto mb-8 leading-relaxed">
-              Travel back to that moment and see what FAULTLINE would have known using only the information available at the time.
-              Watch pressure build. See when the regime changed. Examine the evidence. Compare the warning with what happened next.
-            </p>
-
-            <p className="text-[#FFB800] font-bold text-sm tracking-wider uppercase mb-8">
-              You choose the period. You judge the result.
-            </p>
-
-            {/* 5 crisis previews */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-10">
-              {[
-                { label: '2008 GFC', peak: '94', color: '#FF3B30' },
-                { label: '2020 COVID', peak: '91', color: '#FF6B35' },
-                { label: '2022 Bear', peak: '79', color: '#FFB800' },
-                { label: '2001 Dot-Com', peak: '82', color: '#FF6B35' },
-                { label: '2024–25 AI Risk', peak: '67', color: '#00E5FF' },
-              ].map(c => (
-                <div key={c.label} className="p-3 rounded-xl border border-white/8 bg-white/3 text-center">
-                  <div className="text-[10px] text-white/40 mb-1">{c.label}</div>
-                  <div className="text-2xl font-black" style={{ color: c.color }}>{c.peak}</div>
-                  <div className="text-[9px] text-white/30">PEAK PRESSURE</div>
-                </div>
-              ))}
-            </div>
-
-            <a
-              href="/app/time-machine"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-black text-sm tracking-wider uppercase transition-all duration-200 hover:scale-105"
-              style={{ background: 'linear-gradient(135deg, #FFB800 0%, #FF8C00 100%)', boxShadow: '0 0 30px rgba(255,184,0,0.25)' }}
-            >
-              Challenge FAULTLINE
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </a>
+            </span>
           </div>
+
+          <h2 style={{
+            fontFamily: "'Space Grotesk', 'Rajdhani', sans-serif",
+            fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+            fontWeight: 800,
+            color: '#F0F4FF',
+            margin: '0 0 20px',
+            lineHeight: 1.05,
+          }}>
+            Go back to any crisis.<br />
+            <span style={{ color: '#FFB800' }}>See what FAULTLINE would have known.</span>
+          </h2>
+
+          <p style={{
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: '1.1rem',
+            color: '#94A3B8',
+            maxWidth: '680px',
+            margin: '0 auto 12px',
+            lineHeight: 1.7,
+          }}>
+            Travel back to any market period using only the data available at that moment in time.
+            Watch the Pressure Index build. See when the regime changed. Examine the evidence.
+            Compare the warning with what happened next.
+          </p>
+          <p style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '13px',
+            color: '#FFB800',
+            fontWeight: 700,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+          }}>
+            You choose the period. You judge the result.
+          </p>
         </div>
+
+        {/* Crisis cards */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, 1fr)',
+          gap: '16px',
+          marginBottom: '52px',
+        }}
+        className="max-sm:grid-cols-1 sm:max-xl:grid-cols-2 xl:grid-cols-5"
+        >
+          {CRISES.map(c => (
+            <a
+              key={c.label}
+              href="/app/time-machine"
+              style={{
+                display: 'block',
+                padding: '20px 16px',
+                borderRadius: '12px',
+                border: `1px solid ${c.color}25`,
+                background: `${c.color}06`,
+                textDecoration: 'none',
+                transition: 'transform 0.2s ease, border-color 0.2s ease, background 0.2s ease',
+                cursor: 'pointer',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-3px)';
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = `${c.color}55`;
+                (e.currentTarget as HTMLAnchorElement).style.background = `${c.color}10`;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)';
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = `${c.color}25`;
+                (e.currentTarget as HTMLAnchorElement).style.background = `${c.color}06`;
+              }}
+            >
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#64748B', letterSpacing: '0.2em', marginBottom: '6px' }}>
+                {c.period}
+              </div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 700, color: '#F0F4FF', marginBottom: '10px' }}>
+                {c.label}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginBottom: '6px' }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '36px', fontWeight: 900, color: c.color, lineHeight: 1 }}>{c.peak}</span>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#64748B' }}>/100</span>
+              </div>
+              <div style={{
+                display: 'inline-block',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '8px',
+                fontWeight: 700,
+                letterSpacing: '0.15em',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                background: `${c.color}15`,
+                border: `1px solid ${c.color}35`,
+                color: c.color,
+                marginBottom: '10px',
+              }}>
+                {c.regime}
+              </div>
+              <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#64748B', lineHeight: 1.5, margin: 0 }}>
+                {c.desc}
+              </p>
+            </a>
+          ))}
+        </div>
+
+        {/* How it works row */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '24px',
+          marginBottom: '52px',
+          padding: '32px',
+          borderRadius: '16px',
+          border: '1px solid rgba(255,255,255,0.06)',
+          background: 'rgba(255,255,255,0.02)',
+        }}
+        className="max-sm:grid-cols-1"
+        >
+          {[
+            { step: '01', title: 'Choose a crisis period', desc: 'Select any market period from 2000 to today. The Time Machine loads only data available at that moment.' },
+            { step: '02', title: 'Watch the pressure build', desc: 'See the Pressure Index reconstruct in real time. Watch the regime shift from MODERATE to HIGH RISK to CRITICAL.' },
+            { step: '03', title: 'Compare with what happened', desc: 'The outcome is shown after you examine the evidence. You decide whether the signal was clear before the collapse.' },
+          ].map(s => (
+            <div key={s.step} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+              <div style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#FFB800',
+                opacity: 0.5,
+                flexShrink: 0,
+                marginTop: '2px',
+              }}>{s.step}</div>
+              <div>
+                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '14px', fontWeight: 700, color: '#F0F4FF', marginBottom: '6px' }}>{s.title}</div>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#64748B', lineHeight: 1.6 }}>{s.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div style={{ textAlign: 'center' }}>
+          <a
+            href="/app/time-machine"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '16px 40px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, #FFB800 0%, #FF8C00 100%)',
+              color: '#000',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: '13px',
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              boxShadow: '0 0 40px rgba(255,184,0,0.3)',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1.03)';
+              (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 60px rgba(255,184,0,0.45)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLAnchorElement).style.transform = 'scale(1)';
+              (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 40px rgba(255,184,0,0.3)';
+            }}
+          >
+            CHALLENGE FAULTLINE
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <p style={{
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: '10px',
+            color: '#475569',
+            marginTop: '12px',
+            letterSpacing: '0.1em',
+          }}>
+            RETROSPECTIVE ANALYSIS · DATA FROM FRED · NO HINDSIGHT BIAS
+          </p>
+        </div>
+
       </div>
     </section>
   );
@@ -3232,7 +3465,7 @@ function Footer({ onDemoAccess }: { onDemoAccess: () => void }) {
                 { label: "Crypto Signals", href: "/crypto-signals" },
                 { label: "AI Bubble Risk Tracker", href: "/ai-bubble-risk-tracker" },
                 { label: "Diagnostic AI", href: "/diagnostic-ai" },
-                { label: "Track Record", href: "/track-record" },
+                { label: "Historical Validation", href: "/track-record" },
                 { label: "Daily Intelligence Brief", href: "/daily-brief" },
                 { label: "Intelligence Library", href: "/intelligence-library" },
                 { label: "Blog", href: "/blog" },

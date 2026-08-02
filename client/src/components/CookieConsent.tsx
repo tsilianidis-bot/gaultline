@@ -1,12 +1,15 @@
 /* ============================================================
    FAULTLINE — GDPR Cookie Consent Banner
+   Compact, bottom-edge, non-obstructive.
+   Desktop: thin horizontal bar pinned to the bottom edge.
+   Mobile: compact bottom-sheet that never covers CTAs.
    Persists user choice in localStorage.
    Shows on first visit; hides permanently after accept/decline.
    ============================================================ */
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
 
-const STORAGE_KEY = 'faultline_cookie_consent';
+const STORAGE_KEY = 'faultline_cookie_consent_v2';
 
 export type ConsentChoice = 'accepted' | 'declined' | null;
 
@@ -14,6 +17,12 @@ export function getConsentChoice(): ConsentChoice {
   try {
     const v = localStorage.getItem(STORAGE_KEY);
     if (v === 'accepted' || v === 'declined') return v;
+    // Migrate from old key
+    const old = localStorage.getItem('faultline_cookie_consent');
+    if (old === 'accepted' || old === 'declined') {
+      localStorage.setItem(STORAGE_KEY, old);
+      return old;
+    }
   } catch {}
   return null;
 }
@@ -22,10 +31,9 @@ export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Slight delay so it doesn't flash immediately on load
     const timer = setTimeout(() => {
       if (getConsentChoice() === null) setVisible(true);
-    }, 1200);
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -42,77 +50,89 @@ export default function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div
-      role="dialog"
-      aria-label="Cookie consent"
-      style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 9999,
-        width: 'min(560px, calc(100vw - 24px))',
-        background: 'rgba(10,12,16,0.97)',
-        border: '1px solid rgba(0,212,255,0.18)',
-        borderRadius: '8px',
-        padding: '14px 16px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,212,255,0.06)',
-        animation: 'fade-slide-up 0.35s cubic-bezier(0.23,1,0.32,1) both',
-        backdropFilter: 'blur(12px)',
-        boxSizing: 'border-box',
-      }}
-    >
-      {/* Top accent line */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-        background: 'linear-gradient(90deg, transparent, rgba(0,212,255,0.4), transparent)',
-        borderRadius: '8px 8px 0 0',
-      }} />
-
-      {/* Icon + text row — stacks on very narrow screens */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flexWrap: 'wrap' }}>
-        {/* Icon */}
+    <>
+      <style>{`
+        @keyframes cookie-slide-up {
+          from { transform: translateY(100%); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
+      `}</style>
+      <div
+        role="dialog"
+        aria-label="Cookie consent"
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          background: 'rgba(8,10,16,0.97)',
+          borderTop: '1px solid rgba(0,212,255,0.14)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          animation: 'cookie-slide-up 0.3s cubic-bezier(0.23,1,0.32,1) both',
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.5)',
+        }}
+      >
+        {/* Top accent line */}
         <div style={{
-          width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-          background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginTop: '1px',
-        }}>
-          <span style={{ fontSize: '13px' }}>🍪</span>
-        </div>
+          position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
+          background: 'linear-gradient(90deg, transparent 0%, rgba(0,212,255,0.35) 30%, rgba(0,212,255,0.35) 70%, transparent 100%)',
+        }} />
 
-        <div style={{ flex: '1 1 200px', minWidth: 0 }}>
+        {/* Inner layout — horizontal on desktop, stacked on mobile */}
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          padding: '10px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap',
+        }}>
+          {/* Icon */}
           <div style={{
-            fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
-            color: '#00D4FF', letterSpacing: '0.12em', textTransform: 'uppercase',
-            marginBottom: '4px',
+            width: '24px', height: '24px', borderRadius: '50%', flexShrink: 0,
+            background: 'rgba(0,212,255,0.08)', border: '1px solid rgba(0,212,255,0.18)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            COOKIES &amp; ANALYTICS
+            <span style={{ fontSize: '11px' }}>🍪</span>
           </div>
+
+          {/* Text */}
           <p style={{
-            fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px',
-            color: '#9CA3AF', lineHeight: 1.55, margin: '0 0 10px',
-            wordBreak: 'break-word',
+            fontFamily: "'IBM Plex Sans', sans-serif",
+            fontSize: '12px',
+            color: '#94A3B8',
+            lineHeight: 1.5,
+            margin: 0,
+            flex: '1 1 260px',
+            minWidth: 0,
           }}>
-            FAULTLINE uses analytics cookies to understand how the platform is used and improve the experience.
-            No personal data is sold or shared with third parties.{' '}
+            FAULTLINE uses analytics cookies to understand platform usage and improve the experience. No personal data is sold.{' '}
             <Link href="/legal" style={{ color: '#00D4FF', textDecoration: 'none', borderBottom: '1px solid rgba(0,212,255,0.3)' }}>
               Privacy Policy
             </Link>
           </p>
 
-          {/* Buttons — wrap to next line on narrow screens */}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Buttons */}
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
             <button
               onClick={handleAccept}
               style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
-                letterSpacing: '0.08em', padding: '8px 18px',
-                background: 'rgba(0,212,255,0.12)', border: '1px solid rgba(0,212,255,0.35)',
-                borderRadius: '4px', color: '#00D4FF', cursor: 'pointer',
-                transition: 'all 0.15s ease', flexShrink: 0,
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '10px',
+                letterSpacing: '0.08em',
+                padding: '7px 16px',
+                background: 'rgba(0,212,255,0.12)',
+                border: '1px solid rgba(0,212,255,0.35)',
+                borderRadius: '4px',
+                color: '#00D4FF',
+                cursor: 'pointer',
+                transition: 'background 0.15s ease',
+                whiteSpace: 'nowrap',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.2)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.22)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(0,212,255,0.12)')}
             >
               ACCEPT ALL
@@ -120,13 +140,19 @@ export default function CookieConsent() {
             <button
               onClick={handleDecline}
               style={{
-                fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px',
-                letterSpacing: '0.08em', padding: '8px 18px',
-                background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '4px', color: '#6B7280', cursor: 'pointer',
-                transition: 'all 0.15s ease', flexShrink: 0,
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: '10px',
+                letterSpacing: '0.08em',
+                padding: '7px 16px',
+                background: 'transparent',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '4px',
+                color: '#6B7280',
+                cursor: 'pointer',
+                transition: 'border-color 0.15s ease',
+                whiteSpace: 'nowrap',
               }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)')}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.22)')}
               onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
             >
               DECLINE
@@ -134,6 +160,6 @@ export default function CookieConsent() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

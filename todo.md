@@ -4556,3 +4556,14 @@
 - [x] Bump service worker cache version from v4 to v5 in client/public/sw.js
 - [x] Add /app/time-machine to PRESERVED_UNIQUE_APP_PATHS in shared/routeConsolidation.ts (fixes test regression)
 - [x] All 1553 tests passing
+
+## Marketing Page Corrections (Aug 2, 2026)
+- [x] Cookie banner — compact, bottom-edge, non-obstructive (horizontal desktop / bottom-sheet mobile)
+- [x] Rename "Track Record" → "Historical Validation" + retrospective disclaimer
+- [x] Label hero Pressure Index card as "ILLUSTRATIVE EXAMPLE · Not the current market reading"
+- [x] Label mobile gauge with "ILLUSTRATIVE" micro-label
+- [x] Replace 3-tier pricing with 5-tier layout (Free, Core $9.99, Pro $59, Founding $49, Lifetime $299)
+- [x] Plan card grid updated from 3-col to 5-col (responsive)
+- [x] TimeMachineTeaserSection rebuilt as full-width prominent section with crisis cards, how-it-works row, and dual CTAs
+- [x] Desktop nav: PRICING / SIGN IN / ENTER PLATFORM
+- [x] Mobile menu: SIGN IN label
