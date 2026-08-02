@@ -4543,3 +4543,16 @@
 - [ ] Remove DataIntegrity from Dashboard.tsx (verify already done)
 - [ ] Add regression tests for all 15 flow scenarios
 - [ ] Save checkpoint
+
+## Production Routing Fix (Session 2026-08-02)
+- [x] Add CANONICAL_HOME export to shared/routeRegistry.ts (points to /app/now)
+- [x] Add CANONICAL_HOME to import in client/src/App.tsx
+- [x] Add RootRoute component to App.tsx (unauthenticated → MarketingSite, authenticated → CANONICAL_HOME)
+- [x] Change root / route to use RootRoute instead of redirect
+- [x] Add initialSection prop to MarketingSite export function
+- [x] Add useEffect in MarketingSite to scroll to #pricing when initialSection="pricing"
+- [x] Change PricingSection outer wrapper id from "access" to "pricing"
+- [x] Add /api/version endpoint to server/_core/index.ts (returns version, commit, buildTime, nodeEnv)
+- [x] Bump service worker cache version from v4 to v5 in client/public/sw.js
+- [x] Add /app/time-machine to PRESERVED_UNIQUE_APP_PATHS in shared/routeConsolidation.ts (fixes test regression)
+- [x] All 1553 tests passing

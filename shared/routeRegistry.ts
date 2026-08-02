@@ -113,3 +113,8 @@ export function resolveCanonicalDestination(pathname: string): CanonicalDestinat
   const targetPath = stripRouteContext(target);
   return CANONICAL_DESTINATIONS.find(item => targetPath === item.path || targetPath === `${item.path}/deep`);
 }
+
+// ── Canonical home destination for authenticated users ────────────────────────
+// The first page authenticated users land on after login or when navigating
+// to / while already logged in. Points to the primary NOW dashboard.
+export const CANONICAL_HOME = CANONICAL_DESTINATION_BY_ID.now.path;

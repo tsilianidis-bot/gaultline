@@ -2149,7 +2149,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
   return (
     <section
       ref={pricingRef}
-      id="access"
+      id="pricing"
       style={{
         background: "linear-gradient(180deg, #050810 0%, #070C14 100%)",
         padding: "100px 0 80px",
@@ -3603,9 +3603,20 @@ function AboutSection() {
 }
 
 // ── Main export ───────────────────────────────────────────────
-export default function MarketingSite() {
+export default function MarketingSite({ initialSection }: { initialSection?: string } = {}) {
   const formRef = useRef<HTMLDivElement>(null);
   const [demoModalOpen, setDemoModalOpen] = useState(false);
+
+  // Scroll to the requested section on mount (e.g. /pricing → #pricing)
+  useEffect(() => {
+    if (!initialSection) return;
+    // Allow the page to render first, then scroll
+    const timer = setTimeout(() => {
+      const el = document.getElementById(initialSection);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [initialSection]);
 
   useSEO({
     title: "FAULTLINE — AI Market Intelligence & Portfolio Risk Monitoring Platform",

@@ -1,5 +1,5 @@
 /* ============================================================
-   FAULTLINE Core — Service Worker v4
+   FAULTLINE Core — Service Worker v5
    Cache strategy:
    - API calls (/api/*): BYPASS — pass straight through to
      network with NO timeout and NO caching. tRPC calls must
@@ -10,8 +10,8 @@
    - Offline fallback: /mobile (PWA shell)
    ============================================================ */
 
-const CACHE_NAME = "faultline-core-v4";
-const STATIC_CACHE = "faultline-static-v4";
+const CACHE_NAME = "faultline-core-v5";
+const STATIC_CACHE = "faultline-static-v5";
 
 // Assets to precache on install
 const PRECACHE_URLS = [
@@ -39,12 +39,12 @@ self.addEventListener("activate", (event) => {
         cacheNames
           .filter((name) => !CURRENT_CACHES.includes(name))
           .map((name) => {
-            console.log("[SW v4] Deleting stale cache:", name);
+            console.log("[SW v5] Deleting stale cache:", name);
             return caches.delete(name);
           })
       )
     ).then(() => {
-      console.log("[SW v4] Activated — all stale caches cleared");
+      console.log("[SW v5] Activated — all stale caches cleared");
       return self.clients.claim();
     })
   );

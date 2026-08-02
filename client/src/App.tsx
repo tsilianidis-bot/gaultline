@@ -24,7 +24,7 @@ import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
 import { trpc } from './lib/trpc';
 import { useLocation } from 'wouter';
-import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, EXPERT_WORKSPACE_BY_ID, preserveRouteContext, type CanonicalDestinationId } from '@shared/routeRegistry';
+import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, EXPERT_WORKSPACE_BY_ID, preserveRouteContext, type CanonicalDestinationId, CANONICAL_HOME } from '@shared/routeRegistry';
 
 // ── Lazy-loaded pages — each page is a separate chunk ─────────
 // Dashboard is eager (first page, must be instant)
@@ -242,6 +242,20 @@ function CanonicalDestinationRoutes() {
       </Route>
     );
   });
+}
+
+// ── RootRoute — / serves marketing site for guests, redirects auth users to home ──
+function RootRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (user) return <Redirect to={CANONICAL_HOME} />;
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <MarketingSite />
+      </Suspense>
+    </ErrorBoundary>
+  );
 }
 
 // ── Session key: show cinematic intro once per browser session (returning users) ──
@@ -651,10 +665,11 @@ function Router() {
       <Route path="/altcoin-season-index"><Redirect to="/alt-season-indicator" /></Route>
       <Route path="/stock-market-today"><Redirect to="/stock-market-risk-today" /></Route>
       <Route path="/market-briefing"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
-      {/* Root / — the App component's render gate handles the cinematic/marketing/auth flow.
-           For first-time visitors the render gate intercepts and shows cinematic/marketing/auth.
-           For returning visitors (all gates passed) redirect to the NOW dashboard. */}
-      <Route path="/"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
+      {/* Root / — unauthenticated users see the public marketing page;
+           authenticated users are redirected to the canonical home dashboard.
+           The cinematic render gate (first-time visitors) still intercepts before
+           Router() runs, so this only affects returning unauthenticated visitors. */}
+      <Route path="/"><RootRoute /></Route>
       {/* Marketing site moved to /about and /platform — no longer the homepage */}
       <Route path="/about">
         <ErrorBoundary>
@@ -678,8 +693,14 @@ function Router() {
           </Suspense>
         </ErrorBoundary>
       </Route>
-      {/* /pricing — redirect to landing page pricing section */}
-      <Route path="/pricing"><Redirect to="/app/account" /></Route>
+      {/* /pricing — public pricing page, no auth required */}
+      <Route path="/pricing">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <MarketingSite initialSection="pricing" />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
       {/* Admin promo dashboard — admin only, no AppLayout */}
       <Route path="/admin/promo">
         <ErrorBoundary>

@@ -206,6 +206,16 @@ async function startServer() {
     });
   });
 
+  // Version endpoint — public, returns build metadata for deployment verification
+  app.get("/api/version", (_req, res) => {
+    res.json({
+      version: process.env.npm_package_version ?? "1.0.0",
+      commit: process.env.BUILD_COMMIT ?? "dev",
+      buildTime: process.env.BUILD_TIME ?? new Date().toISOString(),
+      nodeEnv: process.env.NODE_ENV ?? "unknown",
+    });
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

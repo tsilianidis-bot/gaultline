@@ -60,6 +60,7 @@ export const PRESERVED_UNIQUE_APP_PATHS = [
   "/app/fmos-health",
   "/app/seismograph-command-center",
   "/app/tools",
+  "/app/time-machine",
 ] as const;
 
 const canonicalPaths = new Set(CANONICAL_DESTINATIONS.map(route => route.path));
