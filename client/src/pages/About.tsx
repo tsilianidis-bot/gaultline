@@ -527,6 +527,115 @@ export default function About() {
         </div>
       </section>
 
+      {/* ── Founder Letter ── */}
+      <section
+        style={{
+          background: "rgba(0,212,255,0.02)",
+          borderTop: "1px solid rgba(0,212,255,0.08)",
+          borderBottom: "1px solid rgba(0,212,255,0.08)",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "760px",
+            margin: "0 auto",
+            padding: "64px 24px",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "9px",
+              letterSpacing: "0.25em",
+              color: "rgba(0,212,255,0.5)",
+              textTransform: "uppercase",
+              marginBottom: "16px",
+            }}
+          >
+            ◆ Why I Built FAULTLINE
+          </div>
+          <h2
+            style={{
+              fontFamily: "'Rajdhani', sans-serif",
+              fontSize: "clamp(24px, 3.5vw, 36px)",
+              fontWeight: 700,
+              color: "#F0F4FF",
+              letterSpacing: "0.03em",
+              lineHeight: 1.15,
+              margin: "0 0 32px",
+            }}
+          >
+            Why I Built FAULTLINE
+          </h2>
+
+          <p style={{ fontSize: "15px", color: "#CBD5E1", lineHeight: 1.85, margin: "0 0 20px" }}>
+            I built the tool I wished I had while making some of the biggest investment decisions of my life.
+          </p>
+          <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>
+            Finding great investments was not the hardest part. Recognizing when the environment had changed enough that protecting capital deserved more attention than pursuing additional returns — that was.
+          </p>
+          <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>
+            Every major dislocation — 2008, 2020, 2022 — had a pressure signature building in the data long before it showed up in headlines. Credit spreads widened. The yield curve signaled. Liquidity tightened. The evidence was there. It was not synthesized into something accessible.
+          </p>
+          <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>
+            FAULTLINE is my answer to that problem. Not a trading system. Not a prediction engine. A market awareness platform — one that gives investors a clear, honest read on what the current environment is, why it is changing, how long the shift has been developing, and how today's conditions compare with history.
+          </p>
+          <p style={{ fontSize: "15px", color: "#CBD5E1", lineHeight: 1.85, margin: "0 0 32px", fontWeight: 500 }}>
+            I did not build this to tell you what to buy or sell. I built it to help investors better understand when the market environment has changed enough that protecting capital deserves as much attention as pursuing opportunity.
+          </p>
+
+          <div
+            style={{
+              paddingTop: "24px",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              display: "flex",
+              alignItems: "center",
+              gap: "14px",
+            }}
+          >
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                background: "linear-gradient(135deg, #00D4FF 0%, #0066FF 100%)",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8 L6 4 L10 9 L14 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div>
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "12px",
+                  color: "#F0F4FF",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                RICHARD ROPER
+              </div>
+              <div
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  color: "#64748B",
+                  letterSpacing: "0.08em",
+                  marginTop: "2px",
+                }}
+              >
+                FOUNDER &amp; CEO · PHOENIX SYSTEMS
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── Disclaimer ── */}
       <section
         style={{

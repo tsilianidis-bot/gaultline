@@ -4567,3 +4567,16 @@
 - [x] TimeMachineTeaserSection rebuilt as full-width prominent section with crisis cards, how-it-works row, and dual CTAs
 - [x] Desktop nav: PRICING / SIGN IN / ENTER PLATFORM
 - [x] Mobile menu: SIGN IN label
+
+## Messaging & Copy Refinement Pass (Aug 2 2026)
+- [x] Shift hero and global messaging from "predicting" to "recognizing changing market conditions"
+- [x] Refine Why FAULTLINE Exists section — remove theatrical h2, replace with analytical framing
+- [x] Tone down Time Machine section — remove "Go back to any crisis / See what FAULTLINE would have known" theatrical language; replace with analytical copy
+- [x] Rename Time Machine CTA from "CHALLENGE FAULTLINE" to "OPEN HISTORICAL TRUTH ENGINE"
+- [x] Improve pricing section header — "Founding Cohort" label, refined h2 and subheadline
+- [x] Improve plan taglines — remove vague/hype language, replace with clear value statements
+- [x] Remove fake "100 of 100 spots" countdown counter — replace with static "Founding Cohort" label
+- [x] Remove "100 SPOTS ONLY" from Founding Lifetime badge
+- [x] Update Lifetime plan CTA from "BECOME ONE OF THE FIRST 100 FOUNDING MEMBERS" to "BECOME A FOUNDING MEMBER"
+- [x] Add "Why I Built FAULTLINE" Founder Letter section to /about page
+- [x] Remove FounderStatementSection from homepage render order — replace with subtle one-line "WHY I BUILT THIS →" link to /about

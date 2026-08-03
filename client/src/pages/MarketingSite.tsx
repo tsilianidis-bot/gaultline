@@ -56,12 +56,12 @@ const TICKER_ITEMS = [
   "SIGNALS ENGINE: ONLINE",
   "TREASURY STRESS: ELEVATED",
   "AI CONCENTRATION: 74%",
-  "FAULTLINES FORMING — READ THEM NOW",
+  "REGIME SHIFT DETECTION ACTIVE",
   "LIQUIDITY CONDITIONS: TIGHTENING",
   "CREDIT SPREADS: WIDENING",
-  "POSITIONED BEFORE THE QUAKE",
+  "REGIME AWARENESS ACTIVE",
   "AFTERSHOCK ENGINE: SCANNING",
-  "TOP FUNDS MOVE FIRST — NOW YOU CAN TOO",
+  "UNDERSTAND THE MARKET ENVIRONMENT BEFORE IT BECOMES OBVIOUS",
 ];
 
 function StatusTicker() {
@@ -216,7 +216,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div>
-                  <div className="text-[13px] font-mono font-black tracking-widest text-[#050608]">ENTER FREE PREVIEW</div>
+                  <div className="text-[13px] font-mono font-black tracking-widest text-[#050608]">ENTER PLATFORM FREE</div>
                   <div className="text-[10px] font-mono text-[#050608]/60 mt-0.5">No card required · Instant access</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#050608" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -229,8 +229,8 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
                 style={{ WebkitTapHighlightColor: "transparent" }}
               >
                 <div>
-                  <div className="text-[13px] font-mono font-bold tracking-widest text-[#FFD700]">MOVE BEFORE THE QUAKE</div>
-                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Founding rate · $49/mo locked forever · Limited spots remaining</div>
+                  <div className="text-[13px] font-mono font-bold tracking-widest text-[#FFD700]">FOUNDING ACCESS</div>
+                  <div className="text-[10px] font-mono text-[#FFD700]/50 mt-0.5">Founding Cohort · $49/mo rate locked · Limited availability</div>
                 </div>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M3 8h10M9 4l4 4-4 4" />
@@ -383,17 +383,13 @@ function BrandHero({ onRequestAccess }: { onRequestAccess: () => void }) {
 
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-6 leading-[1.05]">
-              FAULTLINE doesn't just<br />
-              <span className="text-[#00D4FF]">measure the market.</span><br />
-              It explains it.
+              Recognize changing market conditions
+              <span className="text-[#00D4FF]">before they become obvious.</span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-base sm:text-lg text-[#A8B8CC] mb-10 leading-relaxed">
-              Most platforms tell you what happened. FAULTLINE helps you understand{" "}
-              <strong className="text-white/80">what is happening beneath the surface</strong>,{" "}
-              why it is happening, how long it has been developing, and how today's market{" "}
-              compares with history — so you can make better-informed investment decisions.
+              FAULTLINE is a market awareness platform. It helps investors understand what the current market environment is, why it is changing, how long the shift has been developing, and how today's conditions compare with history — so capital allocation decisions are grounded in evidence, not reaction.
             </p>
 
             {/* CTAs */}
@@ -404,7 +400,7 @@ function BrandHero({ onRequestAccess }: { onRequestAccess: () => void }) {
                 className="flex items-center justify-center gap-2 px-8 py-4 bg-[#00D4FF] hover:bg-[#00BBEE] text-[#050608] font-mono font-black text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97]"
                 style={{ boxShadow: "0 0 32px rgba(0,212,255,0.25)", minHeight: "52px" }}
               >
-                See Today's Market Story
+                See Today's Market Environment
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#050608" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 7h10M8 3l4 4-4 4" />
                 </svg>
@@ -642,24 +638,24 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
 
         {/* Headline */}
         <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white mb-3 leading-[1.05]">
-          Understand the market<br />
-          <span className="text-[#00D4FF]">before everyone else does.</span>
+          Recognize when the market environment
+          <span className="text-[#00D4FF]">has changed.</span>
         </h1>
         {/* Secondary headline */}
         <p className="text-lg sm:text-xl font-semibold text-white/70 mb-4 leading-snug">
-          FAULTLINE doesn't just measure the market.<br />
-          <span className="text-white/90">It explains it.</span>
+          Not a prediction engine.
+          <span className="text-white/90">A market awareness platform.</span>
         </p>
 
         {/* Sub */}
         <p className="text-base sm:text-lg text-[#A8B8CC] max-w-2xl mx-auto mb-8 leading-relaxed">
-          Understand what is happening, why it is happening, how long it has been developing, and how today's market compares with history — all through institutional-grade market intelligence.
+          FAULTLINE helps investors recognize when the market environment has changed enough that protecting capital deserves as much attention as pursuing additional returns.
         </p>
 
         {/* Live intelligence strip */}
         <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
           {[
-            { label: "LIVE VERDICT", value: "STAY SELECTIVE", color: "#FFD700" },
+            { label: "CURRENT REGIME", value: "ELEVATED RISK", color: "#FFD700" },
             { label: "OPP SCORE", value: "62 / 100", color: "#00D4FF" },
             { label: "RISK REGIME", value: "ELEVATED", color: "#FF9500" },
             { label: "SIGNALS ACTIVE", value: "247", color: "#00FF88" },
@@ -683,7 +679,7 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-10 py-4 bg-[#00D4FF] hover:bg-[#00BBEE] text-[#050608] font-mono font-black text-sm tracking-widest rounded-xl transition-all duration-150 active:scale-[0.97] shadow-lg"
             style={{ WebkitTapHighlightColor: "transparent", minHeight: "56px", boxShadow: "0 0 32px rgba(0,212,255,0.25)" }}
           >
-            See Today's Market Story
+            See Today's Market Environment
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#050608" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 7h10M8 3l4 4-4 4" />
             </svg>
@@ -697,7 +693,7 @@ function Hero({ onRequestAccess, onTryDemo }: { onRequestAccess: () => void; onT
               <circle cx="6.5" cy="6.5" r="5" />
               <path d="M6.5 4v3.5l2 1" />
             </svg>
-            Explore the Pressure Index
+            View the Pressure Index
           </a>
         </div>
 
@@ -878,7 +874,7 @@ function WhyFaultlineExistsSection() {
               <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: 1.75 }}>
                 At the center of the platform is the{' '}
                 <span style={{ color: '#00D4FF', fontWeight: 600 }}>Faultline Market Operating System (FMOS)</span>
-                {' '}— a proprietary intelligence engine designed to continuously evaluate market conditions, weigh independent evidence, identify regime changes, compare historical analogs, calculate probabilities, and explain not only what it believes, but why.
+                {' '}— a proprietary intelligence engine designed to continuously evaluate market conditions, weigh independent evidence, identify regime changes, compare historical analogs, and explain not only what the current environment is, but why it is changing.
               </p>
               <p style={{ fontSize: '1rem', color: '#94A3B8', lineHeight: 1.75 }}>
                 Our objective is not to predict every move. Our objective is to improve awareness. Because investors who better understand changing market conditions make better long-term decisions.
@@ -923,7 +919,7 @@ function WhyFaultlineExistsSection() {
                 paddingTop: '24px',
                 margin: 0,
               }}>
-                &ldquo;I didn&rsquo;t build FAULTLINE to tell people what to buy or sell. I built it because I believed investors deserved the same level of market awareness that institutional investors use to navigate uncertainty.&rdquo;
+                &ldquo;I built the tool I wished I had while making some of the biggest investment decisions of my life. Finding great investments wasn&rsquo;t the hardest part. Recognizing when the environment had changed was.&rdquo;
               </blockquote>
               <div style={{
                 marginTop: '20px',
@@ -969,7 +965,7 @@ function WhyFaultlineExistsSection() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
                   'Evidence over opinions',
-                  'Probabilities over predictions',
+                  'Probabilities over certainty',
                   'Awareness over certainty',
                   'Transparency over black-box AI',
                   'Risk management before return seeking',
@@ -1114,7 +1110,7 @@ function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => voi
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 text-center">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-[#050608]/90 border border-[#00D4FF]/20 rounded-lg backdrop-blur-sm">
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
-            <span className="text-[11px] font-mono tracking-[0.25em] text-[#00D4FF]/80">LIVE INTELLIGENCE TERMINAL — MOVE WITHIN THE FAULTLINES</span>
+            <span className="text-[11px] font-mono tracking-[0.25em] text-[#00D4FF]/80">LIVE INTELLIGENCE TERMINAL — MARKET ENVIRONMENT AWARENESS</span>
           </div>
         </div>
       </div>
@@ -1151,7 +1147,7 @@ function VisualShowcaseSection({ onRequestAccess }: { onRequestAccess: () => voi
               onClick={onRequestAccess}
               className="px-8 py-4 bg-[#FFD700] hover:bg-[#FFD700]/90 text-[#050608] font-mono font-bold text-sm tracking-widest rounded transition-all duration-150 active:scale-[0.97]"
             >
-              POSITION INSIDE THE FAULTLINES
+              UNDERSTAND TODAY'S MARKET ENVIRONMENT
             </button>
           </div>
           <div className="order-1 lg:order-2 relative">
@@ -1279,7 +1275,7 @@ function SituationRoomSection({ onRequestAccess }: { onRequestAccess: () => void
             Brief before you trade.<br /><span className="text-[#00D4FF]">Like the top funds do.</span>
           </h2>
           <p className="text-[#A8B8CC] max-w-2xl mx-auto text-base leading-relaxed mb-3">
-            Every institutional desk runs a pre-trade brief before risking capital. The Situation Room gives you that same process: stress-test your next move against regime pressure, crash risk, liquidity, credit stress, volatility, and AI speculation — before you pull the trigger.
+            Every institutional desk runs a pre-trade brief before risking capital. The Situation Room gives you that same process: evaluate your next move against the current regime pressure, liquidity conditions, credit stress, volatility, and concentration risk — before committing capital.
           </p>
           <p className="text-[#64748B] max-w-xl mx-auto text-sm leading-relaxed">
             Position inside the faultlines. Not after the break.
@@ -1939,7 +1935,7 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         <div className="text-center max-w-4xl mx-auto">
           {/* Eyebrow */}
           <div className="inline-block text-[10px] font-mono tracking-[0.4em] text-[#FFD700]/60 border border-[#FFD700]/20 px-4 py-1.5 rounded-full mb-10">
-            FOUNDER ACCESS — MOVE BEFORE THE QUAKE
+            FOUNDING MEMBER ACCESS
           </div>
 
           {/* Sleeper headline — reveals on scroll */}
@@ -2009,7 +2005,7 @@ function IWantInSection({ onRequestAccess }: { onRequestAccess: () => void }) {
             style={{ opacity: revealed ? 1 : 0, transitionDelay: "800ms" }}
           >
             <div className="w-1.5 h-1.5 rounded-full bg-[#00FF88] animate-pulse" />
-            <span className="text-[10px] font-mono tracking-[0.3em] text-[#64748B]">FOUNDING COHORT IS LIMITED — SPOTS CLOSE WITHOUT NOTICE — PRICE LOCKS AT SIGNUP</span>
+            <span className="text-[10px] font-mono tracking-[0.3em] text-[#64748B]">FOUNDING COHORT · LIMITED LIFETIME ACCESS AVAILABLE FOR FOUNDING MEMBERS</span>
           </div>
         </div>
       </div>
@@ -2060,7 +2056,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       name: "Free",
       price: "$0",
       period: "",
-      tagline: "No credit card required",
+      tagline: "Start with live regime intelligence. No commitment.",
       color: "#6B7280",
       glow: "rgba(107,114,128,0.15)",
       badge: null as string | null,
@@ -2084,7 +2080,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       name: "Core",
       price: "$9.99",
       period: "/month",
-      tagline: "Market intelligence anywhere",
+      tagline: "Full platform access for active investors.",
       color: "#22D3EE",
       glow: "rgba(34,211,238,0.18)",
       badge: "MOST POPULAR" as string | null,
@@ -2109,7 +2105,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       name: "Pro",
       price: "$59",
       period: "/month",
-      tagline: "Institutional investment committee intelligence",
+      tagline: "The complete intelligence suite. Institutional depth.",
       color: "#00D4FF",
       glow: "rgba(0,212,255,0.18)",
       badge: "INSTITUTIONAL" as string | null,
@@ -2134,7 +2130,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       name: "Founding Member",
       price: "$49",
       period: "/month",
-      tagline: "Rate locked for life — limited spots",
+      tagline: "Founding Cohort. Pro access at a rate locked forever.",
       color: "#FFD700",
       glow: "rgba(255,215,0,0.2)",
       badge: "★ RATE LOCKED FOREVER" as string | null,
@@ -2155,13 +2151,13 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
       name: "Founding Lifetime",
       price: "$299",
       period: " one-time",
-      tagline: "Limited to the first 100 founding members.",
+      tagline: "Founding Cohort. Lifetime access for founding members.",
       color: "#FFD700",
       glow: "rgba(255,215,0,0.2)",
-      badge: "★ FOUNDING MEMBER — 100 SPOTS ONLY" as string | null,
+      badge: "★ FOUNDING MEMBER" as string | null,
       featured: false,
       isLifetime: true,
-      cta: "BECOME ONE OF THE FIRST 100 FOUNDING MEMBERS",
+      cta: "BECOME A FOUNDING MEMBER",
       ctaHref: null as string | null,
       features: [
         { label: "Everything in Pro" },
@@ -2170,7 +2166,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         { label: "Founding Member badge" },
         { label: "Early access to major releases" },
         { label: "Priority consideration for new feature requests" },
-        { label: "Recognition as one of FAULTLINE's first 100 members" },
+        { label: "Founding member recognition" },
         { label: "No recurring subscription — ever" },
       ],
     },
@@ -2229,13 +2225,13 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: "72px" }}>
           <div style={{ fontFamily: MONO, fontSize: "11px", letterSpacing: "0.2em", color: "#FFD700", marginBottom: "16px" }}>
-            FOUNDING PERIOD PRICING
+            FOUNDING COHORT
           </div>
           <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "clamp(28px,4vw,52px)", fontWeight: 700, color: "#F0F4F8", margin: "0 0 16px", lineHeight: 1.1 }}>
-            Choose Your Intelligence Level
+            Join a Serious Market Intelligence Platform
           </h2>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "17px", color: "#64748B", maxWidth: "560px", margin: "0 auto", lineHeight: 1.6 }}>
-            All plans include the live FAULTLINE Pressure Index™.
+            Every plan includes the live FAULTLINE Pressure Index™ and daily regime intelligence.
             No credit card required to start free.
           </p>
         </div>
@@ -2345,7 +2341,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                 </div>
 
                 {/* Real-time founding counter (lifetime only) */}
-                {isLifetime && lifetimeStatus && !lifetimeStatus.isSoldOut && (
+                {isLifetime && (
                   <div style={{
                     marginBottom: "20px",
                     padding: "10px 14px",
@@ -2353,39 +2349,12 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                     background: "rgba(255,215,0,0.06)",
                     border: "1px solid rgba(255,215,0,0.2)",
                   }}>
-                    <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.15em", color: "#FFD700", marginBottom: "6px" }}>
-                      FOUNDING MEMBERSHIPS
+                    <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.15em", color: "#FFD700", marginBottom: "4px" }}>
+                      FOUNDING COHORT
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      {/* Progress bar */}
-                      <div style={{ flex: 1, height: "4px", borderRadius: "2px", background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
-                        <div style={{
-                          height: "100%",
-                          width: `${(lifetimeStatus.claimed / lifetimeStatus.limit) * 100}%`,
-                          background: "linear-gradient(90deg, #B8860B, #FFD700)",
-                          borderRadius: "2px",
-                          transition: "width 0.6s ease",
-                        }} />
-                      </div>
-                      <span style={{ fontFamily: MONO, fontSize: "11px", color: "#94A3B8", whiteSpace: "nowrap", flexShrink: 0 }}>
-                        {lifetimeStatus.claimed} of {lifetimeStatus.limit} claimed
-                      </span>
+                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.5 }}>
+                      Limited lifetime access available for founding members.
                     </div>
-                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", marginTop: "6px" }}>
-                      {lifetimeStatus.remaining} founding memberships remaining
-                    </div>
-                  </div>
-                )}
-                {isLifetime && lifetimeStatus?.isSoldOut && (
-                  <div style={{
-                    marginBottom: "20px",
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    background: "rgba(255,45,85,0.06)",
-                    border: "1px solid rgba(255,45,85,0.2)",
-                    fontFamily: MONO, fontSize: "11px", color: "#FF2D55", letterSpacing: "0.1em",
-                  }}>
-                    ALL 100 FOUNDING MEMBERSHIPS HAVE BEEN CLAIMED
                   </div>
                 )}
 
@@ -3032,7 +3001,7 @@ function TimeMachineTeaserSection() {
           }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FFB800', display: 'inline-block' }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.25em', color: '#FFB800', fontWeight: 700 }}>
-              FAULTLINE TIME MACHINE™
+              HISTORICAL TRUTH ENGINE
             </span>
           </div>
 
@@ -3044,8 +3013,8 @@ function TimeMachineTeaserSection() {
             margin: '0 0 20px',
             lineHeight: 1.05,
           }}>
-            Go back to any crisis.<br />
-            <span style={{ color: '#FFB800' }}>See what FAULTLINE would have known.</span>
+            Reconstruct any point in history
+            <span style={{ color: '#FFB800' }}>using only the information available at that time.</span>
           </h2>
 
           <p style={{
@@ -3056,9 +3025,7 @@ function TimeMachineTeaserSection() {
             margin: '0 auto 12px',
             lineHeight: 1.7,
           }}>
-            Travel back to any market period using only the data available at that moment in time.
-            Watch the Pressure Index build. See when the regime changed. Examine the evidence.
-            Compare the warning with what happened next.
+            Select any historical market period. FAULTLINE reconstructs the Pressure Index, regime classification, and signal readings using only the data that existed on that date. No hindsight. No future data. Only the evidence available at that moment.
           </p>
           <p style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -3068,7 +3035,7 @@ function TimeMachineTeaserSection() {
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
           }}>
-            You choose the period. You judge the result.
+            NO HINDSIGHT · NO FUTURE DATA · ONLY THE EVIDENCE AVAILABLE ON THAT DATE
           </p>
         </div>
 
@@ -3152,9 +3119,9 @@ function TimeMachineTeaserSection() {
         className="max-sm:grid-cols-1"
         >
           {[
-            { step: '01', title: 'Choose a crisis period', desc: 'Select any market period from 2000 to today. The Time Machine loads only data available at that moment.' },
-            { step: '02', title: 'Watch the pressure build', desc: 'See the Pressure Index reconstruct in real time. Watch the regime shift from MODERATE to HIGH RISK to CRITICAL.' },
-            { step: '03', title: 'Compare with what happened', desc: 'The outcome is shown after you examine the evidence. You decide whether the signal was clear before the collapse.' },
+            { step: '01', title: 'Select a historical period', desc: 'Choose any market period from 2000 to today. The engine loads only the data that existed at that point in time.' },
+            { step: '02', title: 'Examine the evidence', desc: 'Review the Pressure Index, regime classification, and signal readings as they appeared on that date. No outcomes are shown during analysis.' },
+            { step: '03', title: 'Compare with the outcome', desc: 'After reviewing the evidence, the historical outcome is revealed. Evaluate whether the available signals were sufficient to inform a positioning decision.' },
           ].map(s => (
             <div key={s.step} style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
               <div style={{
@@ -3204,7 +3171,7 @@ function TimeMachineTeaserSection() {
               (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 0 40px rgba(255,184,0,0.3)';
             }}
           >
-            CHALLENGE FAULTLINE
+            OPEN HISTORICAL TRUTH ENGINE
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </a>
           <p style={{
@@ -3214,7 +3181,7 @@ function TimeMachineTeaserSection() {
             marginTop: '12px',
             letterSpacing: '0.1em',
           }}>
-            RETROSPECTIVE ANALYSIS · DATA FROM FRED · NO HINDSIGHT BIAS
+            RETROSPECTIVE ANALYSIS · FRED DATA · NO HINDSIGHT · NO FUTURE DATA
           </p>
         </div>
 
@@ -3244,20 +3211,20 @@ function FounderStatementSection() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '48px', alignItems: 'start' }}>
           <div>
             <h2 style={{ fontFamily: HEADING, fontWeight: 700, fontSize: 'clamp(1.8rem,4vw,2.8rem)', color: '#F0F4FF', letterSpacing: '0.02em', lineHeight: 1.1, marginBottom: '28px' }}>
-              Why I Built This
+              Why I Built FAULTLINE
             </h2>
 
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, marginBottom: '20px' }}>
-              I spent years watching the same pattern repeat. Retail investors — smart, informed, motivated people — would get blindsided by market dislocations that institutional desks had been tracking for months. Not because the signals weren't there. Because the tools to read them weren't accessible.
+              I built the tool I wished I had while making some of the biggest investment decisions of my life. Finding great investments was not the hardest part. Recognizing when the environment had changed enough that protecting capital deserved more attention than pursuing additional returns — that was.
             </p>
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
-              The 2008 financial crisis. The COVID crash. The 2022 rate shock. In every case, the macroeconomic pressure was building in the data long before it showed up in headlines. Credit spreads were widening. The yield curve was signaling. Liquidity was tightening. The data was there — it just wasn't synthesized into something actionable.
+              Every major dislocation — 2008, 2020, 2022 — had a pressure signature building in the data long before it showed up in headlines. Credit spreads widened. The yield curve signaled. Liquidity tightened. The evidence was there. It was not synthesized into something accessible.
             </p>
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
-              FAULTLINE is my answer to that problem. Not a trading system. Not a prediction engine. A situational awareness platform — the kind that gives you a clear, honest read on what the market is actually doing, why it's doing it, how long it's been building, and how current conditions compare to history.
+              FAULTLINE is my answer to that problem. Not a trading system. Not a prediction engine. A market awareness platform — one that gives investors a clear, honest read on what the current environment is, why it is changing, how long the shift has been developing, and how today's conditions compare with history.
             </p>
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, fontWeight: 500 }}>
-              I didn't build this to tell you what to buy. I built it so you never have to be surprised again.
+              I did not build this to tell you what to buy or sell. I built it to help investors better understand when the market environment has changed enough that protecting capital deserves as much attention as pursuing opportunity.
             </p>
 
             <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -3488,7 +3455,7 @@ function Footer({ onDemoAccess }: { onDemoAccess: () => void }) {
                   Launch Platform →
                 </a>
               </li>
-              <li><a href="#access-form" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Founding Lifetime — $299 · Limited Spots</a></li>
+              <li><a href="#pricing" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing</a></li>
               <li><a href="#access" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Pricing Tiers</a></li>
               <li><a href="/methodology" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Methodology</a></li>
               <li><a href="/trust" className="text-[#A8B8CC] hover:text-[#00D4FF] text-sm transition-colors">Trust Center</a></li>
@@ -3504,7 +3471,7 @@ function Footer({ onDemoAccess }: { onDemoAccess: () => void }) {
             © 2026 FAULTLINE · A <a href="/phoenix-systems" className="hover:text-[#00D4FF] transition-colors">Phoenix Systems</a> Platform
           </div>
           <div className="text-[#00D4FF]/40 text-[10px] font-mono tracking-widest">
-            MOVE WITHIN THE FAULTLINES. BEFORE THE QUAKE.
+            MARKET AWARENESS. BEFORE THE CONSENSUS FORMS.
           </div>
           <div className="text-[#4B5563] text-[10px] font-mono">
             <span className="flex gap-3 flex-wrap justify-center sm:justify-end">
@@ -3802,8 +3769,8 @@ function AboutSection() {
               WHY FAULTLINE EXISTS
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6 leading-tight">
-              Top funds don’t react to crashes.<br />
-              <span className="text-[#00D4FF]">They’re positioned before them.</span>
+              Protecting capital requires understanding
+              <span className="text-[#00D4FF]">when the environment has changed.</span>
             </h2>
             <p className="text-[#A8B8CC] text-sm leading-relaxed mb-4">
               Every major dislocation — 2008, 2020, 2022 — had a pressure signature weeks before the break. Yield curves inverted. Liquidity dried up. Volatility suppression gave way. The signals were there. The funds that read them moved first. Most traders waited for the headline.
@@ -3812,7 +3779,7 @@ function AboutSection() {
               FAULTLINE was built to close that gap. We aggregate macro stress indicators, credit spreads, Treasury liquidity, AI concentration risk, and regime telemetry into one unified pressure score — the <span className="text-[#00D4FF] font-mono">FAULTLINE Pressure Index™</span>. The same read institutional desks spend millions to generate, now accessible to self-directed traders.
             </p>
             <p className="text-[#A8B8CC] text-sm leading-relaxed">
-              It’s not a prediction engine. It’s a pressure gauge. Move within the faultlines while they’re still forming. Not after the quake.
+              It is not a prediction engine. It is a market awareness platform — built to help investors recognize when the environment has shifted enough that protecting capital deserves as much attention as pursuing additional returns.
             </p>
           </div>
           {/* Right: stats/facts */}
@@ -3891,7 +3858,17 @@ export default function MarketingSite({ initialSection }: { initialSection?: str
       <PricingSection onRequestAccess={scrollToForm} />
       <CoreMobileSection onRequestAccess={scrollToForm} />
       <FoundingAccessForm formRef={formRef} />
-      <FounderStatementSection />
+      {/* Founder letter moved to /about — subtle link instead of full section on homepage */}
+      <section style={{ background: '#050608', padding: '32px 0', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+        <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#64748B', margin: 0, lineHeight: 1.6 }}>
+            FAULTLINE was built to help investors recognize when the market environment has changed enough that protecting capital deserves as much attention as pursuing opportunity.
+          </p>
+          <a href="/about" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.15em', color: '#00D4FF', textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            WHY I BUILT THIS →
+          </a>
+        </div>
+      </section>
       <DataSourcesSection />
       <FAQSection />
       <DisclaimerBanner />
