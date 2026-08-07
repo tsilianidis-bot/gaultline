@@ -6,5 +6,5 @@
 - [x] Track SPA route changes as GA4 page_view events
 - [x] Instrument high-value authentication and subscription conversion actions where supported by existing flows
 - [x] Add Vitest coverage for GA4 configuration, page views, and event sanitization
-- [ ] Run TypeScript, unit-test, production-build, and browser verification
-- [ ] Document the GA4 Measurement ID and DebugView verification steps
+- [x] Run TypeScript, unit-test, production-build, and browser verification
+- [x] Document the GA4 Measurement ID and DebugView verification steps
