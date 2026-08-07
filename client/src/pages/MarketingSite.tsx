@@ -3316,7 +3316,7 @@ function DataSourcesSection() {
 
 // ── FAQ Section ───────────────────────────────────────────────
 function FAQSection() {
-  const [open, setOpen] = React.useState<number | null>(null);
+  const [open, setOpen] = useState<number | null>(null);
   const MONO = "'IBM Plex Mono', 'Courier New', monospace";
   const SANS = "'IBM Plex Sans', 'Inter', sans-serif";
   const HEADING = "'Rajdhani', 'Space Grotesk', sans-serif";

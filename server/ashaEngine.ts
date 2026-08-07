@@ -233,6 +233,11 @@ function readEnum<T extends string>(value: unknown, allowed: readonly T[]): T | 
     : undefined;
 }
 
+// Strip markdown code fences (```json ... ```) that some LLM responses wrap around JSON
+function stripCodeFences(raw: string): string {
+  return raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+}
+
 function readBoundedScore(value: unknown, fallback: number): number {
   const safeFallback = Number.isFinite(fallback) ? fallback : 50;
   const candidate = typeof value === "number" && Number.isFinite(value) ? value : safeFallback;
@@ -472,9 +477,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   let modelTrace = initialModelTrace;
 
   try {
-    const raw = llmResponse.choices?.[0]?.message?.content as string;
-    parsed = JSON.parse(raw);
-  } catch {
+  const raw = llmResponse.choices?.[0]?.message?.content as string;
+  parsed = JSON.parse(stripCodeFences(raw));
+} catch {
     const raw = (llmResponse.choices?.[0]?.message?.content as string) ?? "";
     parsed = { reply: raw };
   }
@@ -561,7 +566,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
         },
       });
       const retryRaw = retryResponse.choices?.[0]?.message?.content as string;
-      const retryParsed = JSON.parse(retryRaw);
+      const retryParsed = JSON.parse(stripCodeFences(retryRaw));
       const retryIssues = validateOracleBriefing(retryParsed);
       if (retryIssues.length < validationIssues.length) {
         console.log("[ASHA Oracle] Retry improved quality:", retryIssues);

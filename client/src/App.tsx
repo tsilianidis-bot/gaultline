@@ -670,21 +670,6 @@ function Router() {
            The cinematic render gate (first-time visitors) still intercepts before
            Router() runs, so this only affects returning unauthenticated visitors. */}
       <Route path="/"><RootRoute /></Route>
-      {/* Marketing site moved to /about and /platform — no longer the homepage */}
-      <Route path="/about">
-        <ErrorBoundary>
-          <Suspense fallback={<PageLoader />}>
-            <MarketingSite />
-          </Suspense>
-        </ErrorBoundary>
-      </Route>
-      <Route path="/platform">
-        <ErrorBoundary>
-          <Suspense fallback={<PageLoader />}>
-            <MarketingSite />
-          </Suspense>
-        </ErrorBoundary>
-      </Route>
       {/* Promo campaign redemption — public, no AppLayout */}
       <Route path="/promo/:code">
         <ErrorBoundary>

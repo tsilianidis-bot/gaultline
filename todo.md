@@ -4580,3 +4580,18 @@
 - [x] Update Lifetime plan CTA from "BECOME ONE OF THE FIRST 100 FOUNDING MEMBERS" to "BECOME A FOUNDING MEMBER"
 - [x] Add "Why I Built FAULTLINE" Founder Letter section to /about page
 - [x] Remove FounderStatementSection from homepage render order — replace with subtle one-line "WHY I BUILT THIS →" link to /about
+
+## Production Beta QA Audit (Aug 7 2026)
+- [x] Verify production deployment pipeline — build-info and version endpoints return 200
+- [x] Fix ASHA Oracle JSON parse crash — added stripCodeFences() to both JSON.parse calls in ashaEngine.ts
+- [x] Fix React.useState UMD global reference in FAQSection (MarketingSite.tsx)
+- [x] Remove duplicate /about and /platform route definitions in App.tsx (stale entries rendering MarketingSite instead of About.tsx)
+- [x] Verify Pressure Index calculation — composite 29.15 rounds to 29, matches reported score, weights sum to 1.00
+- [x] Verify all FRED API endpoints return 200 with live data (DGS10, BAMLH0A0HYM2, SOFR, FEDFUNDS, UNRATE)
+- [x] Verify crypto global endpoint returns live data
+- [x] Verify Stripe billing plans — 4 of 6 plans configured (core, premium, founding, lifetime); annual plans missing price IDs (not yet offered)
+- [x] Verify webhook handler assigns correct access tier on checkout.session.completed
+- [x] Verify ASHA receives canonical FAULTLINE market state context in every call
+- [x] Verify admin-only routes (FmosHealthDashboard, ValidationLab, SEOOptimizer) are in ADMIN_NAV_ITEMS only
+- [x] Verify mobile nav order: HOME · WHAT · WHY · OUTLOOK · WATCH · ACT (no duplicate NOW tab)
+- [x] Run full test suite — 1553 passed, 22 skipped, 0 failures
