@@ -18,7 +18,8 @@ import {
   resetScrollMilestones,
   trackSignupCompleted,
 } from "@/hooks/useAnalytics";
-import { getConsentChoice } from "@/components/CookieConsent";
+import { getConsentChoice } from "@/lib/analyticsConsent";
+import { GA4_READY_EVENT } from "@/lib/ga4";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { queueInternalPageView } from "@/lib/internalAnalytics";
 import { CANONICAL_DESTINATIONS } from "@shared/routeRegistry";
@@ -141,9 +142,9 @@ function getUtmParams() {
 
 // ── POST to internal analytics endpoint (fire-and-forget) ─────────────────────
 function sendInternalPageView(path: string, title: string, userId?: number) {
-  // Only track if user has accepted cookies, or hasn't decided yet (default allow)
+  // Internal usage analytics follows the same explicit consent choice as GA4.
   const consent = getConsentChoice();
-  if (consent === "declined") return;
+  if (consent !== "accepted") return;
 
   const sessionId = getOrCreateSessionId();
   const visitorId = getOrCreateVisitorId();
@@ -204,6 +205,19 @@ export default function RouteTracker() {
 
     return () => clearTimeout(timer);
   }, [location]);
+
+  // Consent can be accepted after this route has already mounted. Record the
+  // current virtual page as soon as the GA4 runtime becomes available.
+  useEffect(() => {
+    const handleGa4Ready = () => {
+      const title = getPageTitle(location);
+      trackPageView(location, title);
+      sendInternalPageView(location, title, userId);
+    };
+
+    window.addEventListener(GA4_READY_EVENT, handleGa4Ready);
+    return () => window.removeEventListener(GA4_READY_EVENT, handleGa4Ready);
+  }, [location, userId]);
 
   // Fire session_start once per session
   useEffect(() => {

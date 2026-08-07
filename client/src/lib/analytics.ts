@@ -9,6 +9,8 @@
  *   trackEvent("start_free_clicked", { location: "homepage_hero" });
  */
 
+import { trackGa4Event } from "@/lib/ga4";
+
 /** All recognised FAULTLINE GA4 event names */
 export type FaultlineEvent =
   | "start_free_clicked"
@@ -36,13 +38,7 @@ export type EventParams = Record<string, string | number | boolean | undefined>;
  * Silently no-ops if gtag is unavailable (blocked, not loaded, etc.).
  */
 export function trackEvent(eventName: FaultlineEvent, params?: EventParams): void {
-  try {
-    if (typeof window !== "undefined" && typeof window.gtag === "function") {
-      window.gtag("event", eventName, params ?? {});
-    }
-  } catch {
-    // Never let analytics errors bubble up and break the UI
-  }
+  trackGa4Event(eventName, params ?? {});
 }
 
 /**

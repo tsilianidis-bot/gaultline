@@ -15,30 +15,30 @@
  * ============================================================
  */
 import { PRICING_PLANS } from "../../../shared/tiers";
+import {
+  GA4_MEASUREMENT_ID,
+  trackGa4Event,
+  trackGa4PageView,
+} from "@/lib/ga4";
 
-const GA_ID = "G-YLJ9EQZK7P";
+const GA_ID = GA4_MEASUREMENT_ID;
 
 // ── Type-safe gtag wrapper ────────────────────────────────────
 
 function gtag(...args: unknown[]) {
-  if (typeof window === "undefined") return;
-  if (typeof window.gtag === "function") {
-    window.gtag(...args);
-  } else {
-    // Fallback: push to dataLayer directly
-    window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push(args);
-  }
+  const [command, eventName, params] = args;
+  if (command !== "event" || typeof eventName !== "string") return;
+  trackGa4Event(
+    eventName,
+    typeof params === "object" && params !== null
+      ? params as Record<string, unknown>
+      : {},
+  );
 }
 
 // ── Page view (SPA route change) ─────────────────────────────
 export function trackPageView(path: string, title?: string) {
-  gtag("event", "page_view", {
-    page_path: path,
-    page_title: title || document.title,
-    page_location: window.location.href,
-    send_to: GA_ID,
-  });
+  trackGa4PageView(path, title);
 }
 
 // ── Session / engagement ──────────────────────────────────────
@@ -287,4 +287,3 @@ export function trackSituationRoomUsed(opts: { assetType: "stock" | "crypto" | "
     send_to: GA_ID,
   });
 }
-

@@ -8,24 +8,7 @@
    ============================================================ */
 import { useState, useEffect } from 'react';
 import { Link } from 'wouter';
-
-const STORAGE_KEY = 'faultline_cookie_consent_v2';
-
-export type ConsentChoice = 'accepted' | 'declined' | null;
-
-export function getConsentChoice(): ConsentChoice {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY);
-    if (v === 'accepted' || v === 'declined') return v;
-    // Migrate from old key
-    const old = localStorage.getItem('faultline_cookie_consent');
-    if (old === 'accepted' || old === 'declined') {
-      localStorage.setItem(STORAGE_KEY, old);
-      return old;
-    }
-  } catch {}
-  return null;
-}
+import { getConsentChoice, setConsentChoice } from '@/lib/analyticsConsent';
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -38,12 +21,12 @@ export default function CookieConsent() {
   }, []);
 
   function handleAccept() {
-    try { localStorage.setItem(STORAGE_KEY, 'accepted'); } catch {}
+    setConsentChoice('accepted');
     setVisible(false);
   }
 
   function handleDecline() {
-    try { localStorage.setItem(STORAGE_KEY, 'declined'); } catch {}
+    setConsentChoice('declined');
     setVisible(false);
   }
 

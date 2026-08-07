@@ -181,48 +181,10 @@
     }
     </script>
 
-    <!-- ── Google Analytics GA4 ─────────────────────────────── -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-YLJ9EQZK7P"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      // Enhanced measurement: SPA-friendly config
-      // send_page_view: false — we fire page_view manually via RouteTracker
-      // so we don't get duplicate hits on initial load
-      var isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      gtag('config', 'G-YLJ9EQZK7P', {
-        send_page_view: false,
-        cookie_flags: 'SameSite=None;Secure',
-        allow_google_signals: true,
-        allow_ad_personalization_signals: false,
-        restricted_data_processing: false,
-        debug_mode: isDev
-      });
-      // Fire the initial page_view immediately (before React hydrates)
-      gtag('event', 'page_view', {
-        page_path: window.location.pathname + window.location.search,
-        page_title: document.title,
-        page_location: window.location.href,
-        send_to: 'G-YLJ9EQZK7P'
-      });
-    </script>
-
-    <!-- ── Microsoft Clarity ─────────────────────────────────── -->
-    <script type="text/javascript">
-      (function(c,l,a,r,i,t,y){
-          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-      })(window, document, "clarity", "script", "xleeth85ys");
-    </script>
+    <!-- GA4 and Microsoft Clarity initialize client-side only after stored analytics consent. -->
 
     <!-- ── LCP Preload: hero background image ─────────────────── -->
     <link rel="preload" as="image" href="/manus-storage/faultline_hero_bg_7d6aaf14.jpg" fetchpriority="high" />
-    <!-- ── Preconnect: GA4 ────────────────────────────────────── -->
-    <link rel="preconnect" href="https://www.googletagmanager.com" />
-    <link rel="dns-prefetch" href="https://www.google-analytics.com" />
-
     <!-- ── Fonts ───────────────────────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -9,7 +9,10 @@ import { getLoginUrl } from "./const";
 import { TickerStoreProvider } from "./contexts/TickerStore";
 import { AshaProvider } from "./contexts/AshaContext";
 import { ExperienceProvider } from "./contexts/ExperienceContext";
+import { initializeAnalytics } from "./lib/ga4";
 import "./index.css";
+
+initializeAnalytics();
 
 /**
  * FIX: Intercept HTTP responses that are NOT superjson-encoded tRPC envelopes.

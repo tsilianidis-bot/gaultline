@@ -20,6 +20,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { getLoginUrl } from '../const';
 import { useAuth } from '../_core/hooks/useAuth';
 import { trpc } from '../lib/trpc';
+import { trackGa4Event } from '../lib/ga4';
 
 /** localStorage key for preserving checkout intent across the OAuth login redirect */
 export const CHECKOUT_INTENT_KEY = 'fl_checkout_intent_v1';
@@ -73,15 +74,7 @@ const SANS   = "'IBM Plex Sans', system-ui, sans-serif";
 
 // ── Analytics helper ──────────────────────────────────────────
 function track(eventName: string, params?: Record<string, string | number>) {
-  try {
-    if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).gtag) {
-      ((window as unknown as Record<string, unknown>).gtag as (...args: unknown[]) => void)(
-        'event', eventName, { ...params, send_to: 'G-YLJ9EQZK7P' }
-      );
-    }
-  } catch {
-    // non-blocking
-  }
+  trackGa4Event(eventName, params);
 }
 
 // ── Intersection-observer fade-in hook ────────────────────────
