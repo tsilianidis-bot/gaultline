@@ -4595,3 +4595,12 @@
 - [x] Verify admin-only routes (FmosHealthDashboard, ValidationLab, SEOOptimizer) are in ADMIN_NAV_ITEMS only
 - [x] Verify mobile nav order: HOME · WHAT · WHY · OUTLOOK · WATCH · ACT (no duplicate NOW tab)
 - [x] Run full test suite — 1553 passed, 22 skipped, 0 failures
+
+## FRED Pipeline Fix (Aug 8 2026)
+- [x] Identify root cause: legacy SeismographOutput (27 days old) had providerProvenance=null, causing FALLBACK status
+- [x] Fix seismographUnified.ts: infer providerProvenance from dataFreshness for legacy snapshots (live→live, recent→fallback, stale→unavailable)
+- [x] Trigger seismograph pipeline on production to generate fresh snapshot with providerProvenance.fred.status=live
+- [x] Rewrite FREDDebugConsole.tsx v2: shows sourceHealth + pressure vectors with correct data, no mobile overflow
+- [x] Fix mobile overflow: width=min(360px,calc(100vw-16px)), overflowX=hidden, wordBreak=break-word, whiteSpace=pre-wrap
+- [x] Fix STATUS: now reflects required providers only (seismograph, historical-memory, fred); coingecko is OPTIONAL
+- [x] Verify production: all 3 required sources healthy, warnings=[], cache.status=refreshed

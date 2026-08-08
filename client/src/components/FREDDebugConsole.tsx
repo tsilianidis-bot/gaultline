@@ -1,41 +1,50 @@
 // ============================================================
-// FAULTLINE — FRED Debug Console (Temporary Diagnostic Tool)
+// FAULTLINE — FRED Debug Console v2
 //
-// Shows per-series fetch status, live values, success/fail counts.
-// Toggle with the [DEBUG] button in the bottom-right corner.
-// Remove this component once live data is verified stable.
+// Shows canonical source health and per-vector FRED status.
+// Data sourced from marketState.sourceHealth + pressure vectors.
+// Admin-only diagnostic tool.
 // ============================================================
 import { useState } from 'react';
 import { useEngine } from '@/contexts/EngineContext';
+import { trpc } from '@/lib/trpc';
 
-const SERIES_LABELS: Record<string, { label: string; unit: string; apiSource: string }> = {
-  DGS10:        { label: '10Y Treasury',     unit: '%',   apiSource: 'FRED/DGS10' },
-  DGS30:        { label: '30Y Treasury',     unit: '%',   apiSource: 'FRED/DGS30' },
-  T10Y2Y:       { label: 'Yield Curve',      unit: 'raw', apiSource: 'FRED/T10Y2Y' },
-  CPIAUCSL:     { label: 'CPI Index',        unit: 'idx', apiSource: 'FRED/CPIAUCSL' },
-  PPIACO:       { label: 'PPI Index',        unit: 'idx', apiSource: 'FRED/PPIACO' },
-  UNRATE:       { label: 'Unemployment',     unit: '%',   apiSource: 'FRED/UNRATE' },
-  M2SL:         { label: 'M2 Money Supply',  unit: '$B',  apiSource: 'FRED/M2SL' },
-  BAMLH0A0HYM2: { label: 'HY Credit Spread', unit: '%',  apiSource: 'FRED/BAMLH0A0HYM2' },
-  NFCI:         { label: 'NFCI Liquidity',   unit: 'idx', apiSource: 'FRED/NFCI' },
-  SOFR:         { label: 'SOFR Rate',        unit: '%',   apiSource: 'FRED/SOFR' },
+const STATUS_COLOR: Record<string, string> = {
+  healthy:     '#00FF88',
+  degraded:    '#FF9500',
+  unavailable: '#FF2D55',
+  live:        '#00FF88',
+  fallback:    '#FF9500',
+  cached:      '#00D4FF',
+  delayed:     '#FF9500',
+  static:      '#A78BFA',
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  healthy:     'LIVE',
+  degraded:    'DEGRADED',
+  unavailable: 'UNAVAILABLE',
+  live:        'LIVE',
+  fallback:    'FALLBACK',
+  cached:      'CACHED',
+  delayed:     'DELAYED',
+  static:      'STATIC',
 };
 
 export default function FREDDebugConsole() {
   const [open, setOpen] = useState(false);
-  const {
-    fetchStatuses,
-    successCount,
-    failCount,
-    isLoading,
-    isLive,
-    lastUpdated,
-    dataError,
-    rawFred,
-    forceRefresh,
-  } = useEngine();
+  const { sourceHealth, isLoading, lastUpdated } = useEngine();
+  const pressureQuery = trpc.pressure.getCurrentPressure.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  const pressure = pressureQuery.data;
 
-  const totalSeries = Object.keys(SERIES_LABELS).length;
+  const fredSource = sourceHealth.find(s => s.id === 'fred');
+  const requiredSources = sourceHealth.filter(s => s.required);
+  const allHealthy = requiredSources.every(s => s.status === 'healthy');
+  const overallStatus = isLoading ? 'LOADING' : allHealthy ? 'LIVE' : 'DEGRADED';
+  const overallColor = isLoading ? '#FF9500' : allHealthy ? '#00FF88' : '#FF2D55';
 
   return (
     <>
@@ -47,13 +56,13 @@ export default function FREDDebugConsole() {
           bottom: '80px',
           right: '12px',
           zIndex: 9999,
-          background: isLive ? 'rgba(0,255,136,0.15)' : 'rgba(255,45,85,0.15)',
-          border: `1px solid ${isLive ? 'rgba(0,255,136,0.4)' : 'rgba(255,45,85,0.4)'}`,
+          background: allHealthy ? 'rgba(0,255,136,0.15)' : 'rgba(255,45,85,0.15)',
+          border: `1px solid ${allHealthy ? 'rgba(0,255,136,0.4)' : 'rgba(255,45,85,0.4)'}`,
           borderRadius: '4px',
           padding: '4px 8px',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: '9px',
-          color: isLive ? '#00FF88' : '#FF2D55',
+          color: overallColor,
           letterSpacing: '0.1em',
           cursor: 'pointer',
           display: 'flex',
@@ -63,11 +72,11 @@ export default function FREDDebugConsole() {
       >
         <span style={{
           width: '5px', height: '5px', borderRadius: '50%',
-          background: isLoading ? '#FF9500' : isLive ? '#00FF88' : '#FF2D55',
+          background: overallColor,
           animation: isLoading ? 'pulse-gold 1s ease-in-out infinite' : 'none',
           flexShrink: 0,
         }} />
-        {isLoading ? 'LOADING' : isLive ? `LIVE ${successCount}/${totalSeries}` : `SIM ${successCount}/${totalSeries}`}
+        {overallStatus}
       </button>
 
       {/* Console panel */}
@@ -75,16 +84,18 @@ export default function FREDDebugConsole() {
         <div style={{
           position: 'fixed',
           bottom: '110px',
-          right: '12px',
-          width: '340px',
-          maxHeight: '480px',
+          right: '8px',
+          width: 'min(360px, calc(100vw - 16px))',
+          maxHeight: '70vh',
           overflowY: 'auto',
+          overflowX: 'hidden',
           zIndex: 9998,
           background: 'rgba(5, 6, 8, 0.97)',
           border: '1px solid rgba(0, 212, 255, 0.2)',
           borderRadius: '6px',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: '10px',
+          boxSizing: 'border-box',
         }}>
           {/* Header */}
           <div style={{
@@ -94,20 +105,21 @@ export default function FREDDebugConsole() {
             padding: '8px 12px',
             borderBottom: '1px solid rgba(0,212,255,0.1)',
             background: 'rgba(0,212,255,0.04)',
+            gap: '8px',
           }}>
-            <span style={{ color: '#00D4FF', letterSpacing: '0.1em', fontWeight: 700 }}>
+            <span style={{ color: '#00D4FF', letterSpacing: '0.1em', fontWeight: 700, fontSize: '9px', whiteSpace: 'nowrap' }}>
               FRED DEBUG CONSOLE
             </span>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
               <button
-                onClick={forceRefresh}
-                style={{ background: 'transparent', border: '1px solid rgba(0,212,255,0.3)', borderRadius: '3px', padding: '2px 6px', color: '#00D4FF', cursor: 'pointer', fontSize: '9px', letterSpacing: '0.08em' }}
+                onClick={() => { pressureQuery.refetch(); }}
+                style={{ background: 'transparent', border: '1px solid rgba(0,212,255,0.3)', borderRadius: '3px', padding: '2px 6px', color: '#00D4FF', cursor: 'pointer', fontSize: '9px', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}
               >
                 REFRESH
               </button>
               <button
                 onClick={() => setOpen(false)}
-                style={{ background: 'transparent', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: '12px', padding: '0 2px' }}
+                style={{ background: 'transparent', border: 'none', color: '#6B7280', cursor: 'pointer', fontSize: '14px', padding: '0 2px', lineHeight: 1 }}
               >
                 ×
               </button>
@@ -117,103 +129,124 @@ export default function FREDDebugConsole() {
           {/* Summary row */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr 1fr',
+            gridTemplateColumns: '1fr 1fr 1fr',
             gap: '1px',
-            background: 'rgba(0,212,255,0.05)',
             padding: '8px 12px',
             borderBottom: '1px solid rgba(0,212,255,0.08)',
           }}>
             <div>
               <div style={{ color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em', marginBottom: '2px' }}>STATUS</div>
-              <div style={{ color: isLoading ? '#FF9500' : isLive ? '#00FF88' : '#FF2D55', fontWeight: 700 }}>
-                {isLoading ? 'LOADING' : isLive ? 'LIVE' : 'FALLBACK'}
+              <div style={{ color: overallColor, fontWeight: 700, fontSize: '10px' }}>{overallStatus}</div>
+            </div>
+            <div>
+              <div style={{ color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em', marginBottom: '2px' }}>FRED</div>
+              <div style={{ color: STATUS_COLOR[fredSource?.status ?? 'unavailable'] ?? '#FF2D55', fontWeight: 700, fontSize: '10px' }}>
+                {STATUS_LABEL[fredSource?.status ?? 'unavailable'] ?? 'UNKNOWN'}
               </div>
             </div>
             <div>
-              <div style={{ color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em', marginBottom: '2px' }}>SUCCESS</div>
-              <div style={{ color: '#00FF88', fontWeight: 700 }}>{successCount}/{totalSeries}</div>
-            </div>
-            <div>
-              <div style={{ color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em', marginBottom: '2px' }}>FAILED</div>
-              <div style={{ color: failCount > 0 ? '#FF2D55' : '#4B5563', fontWeight: 700 }}>{failCount}</div>
-            </div>
-            <div>
               <div style={{ color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em', marginBottom: '2px' }}>UPDATED</div>
-              <div style={{ color: '#94A3B8' }}>
-                {lastUpdated ? lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
+              <div style={{ color: '#94A3B8', fontSize: '9px' }}>
+                {lastUpdated ? lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '—'}
               </div>
             </div>
           </div>
 
-          {/* Error banner */}
-          {dataError && (
-            <div style={{ padding: '6px 12px', background: 'rgba(255,45,85,0.08)', borderBottom: '1px solid rgba(255,45,85,0.15)', color: '#FF2D55', fontSize: '9px' }}>
-              ⚠ {dataError}
+          {/* FRED detail */}
+          {fredSource && (
+            <div style={{ padding: '6px 12px', borderBottom: '1px solid rgba(0,212,255,0.06)', background: 'rgba(0,212,255,0.02)' }}>
+              <div style={{ color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em', marginBottom: '3px' }}>FRED MACRO &amp; CREDIT</div>
+              <div style={{ color: '#94A3B8', fontSize: '9px', lineHeight: '1.5', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+                {fredSource.detail}
+              </div>
+              {fredSource.asOf && (
+                <div style={{ color: '#4B5563', fontSize: '8px', marginTop: '3px' }}>
+                  as of {new Date(fredSource.asOf).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Per-series rows */}
-          <div style={{ padding: '4px 0' }}>
-            {fetchStatuses.length === 0 ? (
-              <div style={{ padding: '12px', color: '#4B5563', textAlign: 'center' }}>
-                {isLoading ? 'Fetching FRED data...' : 'No fetch data yet'}
+          {/* Pressure vectors — per-vector FRED status */}
+          {pressure?.vectors && pressure.vectors.length > 0 && (
+            <div style={{ padding: '4px 0' }}>
+              <div style={{ padding: '4px 12px 2px', color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em' }}>
+                PRESSURE VECTORS · {pressure.dataSource?.toUpperCase() ?? '—'}
               </div>
-            ) : (
-              fetchStatuses.map(s => {
-                const meta = SERIES_LABELS[s.seriesId];
-                const rawVal = rawFred[s.seriesId];
-                const isOk = s.status === 'ok' && s.latestValue !== null;
+              {pressure.vectors.map(v => {
+                const ds = v.dataStatus ?? 'unknown';
+                const dotColor = STATUS_COLOR[ds] ?? '#6B7280';
                 return (
                   <div
-                    key={s.seriesId}
+                    key={v.id}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '6px 1fr auto auto',
+                      gridTemplateColumns: '6px 1fr auto',
                       gap: '8px',
-                      alignItems: 'center',
+                      alignItems: 'start',
                       padding: '5px 12px',
                       borderBottom: '1px solid rgba(255,255,255,0.03)',
                     }}
                   >
-                    {/* Status dot */}
-                    <div style={{
-                      width: '5px', height: '5px', borderRadius: '50%',
-                      background: isOk ? '#00FF88' : s.status === 'error' ? '#FF2D55' : '#FF9500',
-                      boxShadow: isOk ? '0 0 4px rgba(0,255,136,0.5)' : 'none',
-                    }} />
-
-                    {/* Label */}
-                    <div>
-                      <div style={{ color: '#E2E8F0', fontSize: '9px', letterSpacing: '0.06em' }}>
-                        {meta?.label ?? s.seriesId}
+                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: dotColor, marginTop: '3px', flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: '#E2E8F0', fontSize: '9px', letterSpacing: '0.06em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {v.label ?? v.id}
                       </div>
-                      <div style={{ color: '#374151', fontSize: '8px' }}>
-                        {meta?.apiSource ?? s.seriesId}
-                        {s.cached && <span style={{ color: '#4B5563', marginLeft: '4px' }}>[cached]</span>}
+                      <div style={{ color: '#374151', fontSize: '8px', wordBreak: 'break-word', lineHeight: '1.4', marginTop: '1px' }}>
+                        {v.source ?? v.id}
                       </div>
                     </div>
-
-                    {/* Date */}
-                    <div style={{ color: '#4B5563', fontSize: '8px', textAlign: 'right' }}>
-                      {s.latestDate ?? '—'}
-                    </div>
-
-                    {/* Value */}
-                    <div style={{
-                      color: isOk ? '#00D4FF' : '#FF2D55',
-                      fontWeight: 700,
-                      fontSize: '10px',
-                      minWidth: '60px',
-                      textAlign: 'right',
-                    }}>
-                      {rawVal != null
-                        ? `${rawVal.toFixed(rawVal > 100 ? 1 : 3)} ${meta?.unit ?? ''}`
-                        : s.error ?? '—'}
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ color: '#00D4FF', fontWeight: 700, fontSize: '10px' }}>{v.score}</div>
+                      <div style={{ color: dotColor, fontSize: '8px', letterSpacing: '0.06em' }}>
+                        {STATUS_LABEL[ds] ?? ds.toUpperCase()}
+                      </div>
                     </div>
                   </div>
                 );
-              })
-            )}
+              })}
+            </div>
+          )}
+
+          {/* Provider health — all sources */}
+          <div style={{ padding: '4px 0', borderTop: '1px solid rgba(0,212,255,0.06)' }}>
+            <div style={{ padding: '4px 12px 2px', color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em' }}>
+              PROVIDER HEALTH
+            </div>
+            {sourceHealth.map(s => (
+              <div
+                key={s.id}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '6px 1fr auto',
+                  gap: '8px',
+                  alignItems: 'start',
+                  padding: '4px 12px',
+                  borderBottom: '1px solid rgba(255,255,255,0.02)',
+                }}
+              >
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: STATUS_COLOR[s.status] ?? '#6B7280', marginTop: '3px', flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: '#CBD5E1', fontSize: '9px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {s.label ?? s.id}
+                  </div>
+                  {s.status !== 'healthy' && s.detail && (
+                    <div style={{ color: '#4B5563', fontSize: '8px', wordBreak: 'break-word', lineHeight: '1.4', marginTop: '1px' }}>
+                      {s.detail}
+                    </div>
+                  )}
+                </div>
+                <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                  <div style={{ color: STATUS_COLOR[s.status] ?? '#6B7280', fontSize: '8px', fontWeight: 700, letterSpacing: '0.06em' }}>
+                    {STATUS_LABEL[s.status] ?? s.status.toUpperCase()}
+                  </div>
+                  {!s.required && (
+                    <div style={{ color: '#374151', fontSize: '7px', letterSpacing: '0.06em' }}>OPTIONAL</div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Footer */}
@@ -223,8 +256,9 @@ export default function FREDDebugConsole() {
             color: '#374151',
             fontSize: '8px',
             letterSpacing: '0.08em',
+            wordBreak: 'break-word',
           }}>
-            PROXY: /api/fred/bulk · TTL: 15min · TEMP DIAGNOSTIC TOOL
+            REQUIRED: seismograph · historical-memory · fred · OPTIONAL: coingecko
           </div>
         </div>
       )}

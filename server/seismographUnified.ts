@@ -522,15 +522,40 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     latestAssembled
       ? new Date(latestAssembled.computedAt).toISOString()
       : new Date().toISOString();
-  const providerProvenance: SeismographProviderProvenance = latestAssembled?.providerProvenance ?? {
-    fred: {
-      status: "unavailable",
-      detail: latestAssembled
-        ? "This legacy Seismograph snapshot predates provider-level FRED provenance."
-        : "No assembled Seismograph output is available to verify FRED provenance.",
-      asOf: latestAssembled?.computedAt ?? Date.parse(lastUpdated),
-    },
-  };
+  // Infer providerProvenance when a legacy snapshot exists but predates the provenance field.
+  // A snapshot with dataFreshness="live" was computed from live FRED data — treat it as live.
+  // Only mark FRED as unavailable when there is genuinely no assembled output at all.
+  let providerProvenance: SeismographProviderProvenance;
+  if (latestAssembled?.providerProvenance) {
+    // Fresh snapshot with explicit provenance — use it directly.
+    providerProvenance = latestAssembled.providerProvenance;
+  } else if (latestAssembled) {
+    // Legacy snapshot (predates provenance field) — infer from dataFreshness.
+    const inferredStatus = latestAssembled.dataFreshness === "live" ? "live"
+      : latestAssembled.dataFreshness === "recent" ? "fallback"
+      : "unavailable";
+    const inferredDetail = latestAssembled.dataFreshness === "live"
+      ? "Inferred live: this snapshot was computed from live FRED data (provenance field predates this schema version)."
+      : latestAssembled.dataFreshness === "recent"
+      ? "Inferred from recent cache: snapshot predates provenance field; FRED data was available at compute time."
+      : "Legacy snapshot predates provider-level FRED provenance; data freshness is stale.";
+    providerProvenance = {
+      fred: {
+        status: inferredStatus,
+        detail: inferredDetail,
+        asOf: latestAssembled.computedAt,
+      },
+    };
+  } else {
+    // No assembled output at all.
+    providerProvenance = {
+      fred: {
+        status: "unavailable",
+        detail: "No assembled Seismograph output is available to verify FRED provenance.",
+        asOf: Date.parse(lastUpdated),
+      },
+    };
+  }
 
   return {
     currentScore,
