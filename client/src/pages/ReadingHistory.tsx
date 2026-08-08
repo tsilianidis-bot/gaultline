@@ -12,6 +12,7 @@
  * - All disclaimers present
  */
 import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import PageHeader from "@/components/PageHeader";
@@ -212,7 +213,21 @@ function ScenarioCard({ scenario, isTop }: { scenario: ScenarioSupport; isTop: b
 }
 
 function TimeframePanel({ timeframe }: { timeframe: "today" | "week" | "month" | "year" }) {
-  const { data, isLoading, error } = trpc.readingHistory.getTimeframeAnalysis.useQuery({ timeframe });
+  const [retryCount, setRetryCount] = useState(0);
+  const { data, isLoading, error, refetch, isFetching } = trpc.readingHistory.getTimeframeAnalysis.useQuery(
+    { timeframe },
+    {
+      // Retry up to 3 times with exponential backoff: 500ms, 1.5s, 3s
+      retry: 3,
+      retryDelay: (attempt) => Math.min(500 * Math.pow(3, attempt), 10_000),
+      // Keep previous data visible while refetching (no blank flash)
+      placeholderData: (prev) => prev,
+    }
+  );
+  const handleRetry = useCallback(() => {
+    setRetryCount(c => c + 1);
+    refetch();
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -226,9 +241,42 @@ function TimeframePanel({ timeframe }: { timeframe: "today" | "week" | "month" |
 
   if (error || !data) {
     return (
-      <div className="flex items-center gap-2 p-4 rounded-lg border border-destructive/30 bg-destructive/5 text-sm text-destructive">
-        <AlertCircle className="w-4 h-4 shrink-0" />
-        Failed to load timeframe data. Please try again.
+      <div className="space-y-4">
+        {/* Graceful degraded intelligence-status message */}
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                {timeframe === "month" ? "MONTHLY" : timeframe === "week" ? "WEEKLY" : timeframe === "year" ? "YEARLY" : "DAILY"} INTELLIGENCE TEMPORARILY UNAVAILABLE
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Historical data synchronization is currently unavailable for this timeframe.
+                Current market intelligence remains fully operational.
+              </p>
+              {error && (
+                <p className="text-[10px] text-muted-foreground/50 font-mono">
+                  Subsystem: readingHistory.getTimeframeAnalysis · Timeframe: {timeframe}
+                </p>
+              )}
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRetry}
+            disabled={isFetching}
+            className="text-xs h-7 gap-1.5"
+          >
+            <RefreshCw className={`w-3 h-3 ${isFetching ? "animate-spin" : ""}`} />
+            {isFetching ? "Retrying…" : "Retry"}
+          </Button>
+        </div>
+        {/* Reassurance that other features are working */}
+        <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
+          The FAULTLINE Pressure Index, ASHA, and all real-time intelligence features remain operational.
+          Timeframe history requires historical snapshots to be available in the database.
+        </p>
       </div>
     );
   }

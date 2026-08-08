@@ -67,6 +67,7 @@ import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from '.
 import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
 import { saveDayTradeSnapshot, loadDayTradeSnapshot, getPipelineHealthLogs, getPipelineHealthSummary } from './db';
 import { logPipelineFailure } from './pipelineLogger';
+import { log } from './logger';
 import { getDayTradeWatchlist, addDayTradeWatchlistItem, removeDayTradeWatchlistItem, isDayTradeWatchlisted } from './db';
 import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntry, deleteTradeJournalEntry, getTradeJournalStats } from './db';
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
@@ -1532,6 +1533,40 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const today = await getTodaySnapshot();
         return await getTimeframeReading(input.timeframe, today);
+      }),
+    // Get timeframe analysis: today | week | month | year — with fault tolerance
+    getTimeframeAnalysisV2: protectedProcedure
+      .input(z.object({
+        timeframe: z.enum(["today", "week", "month", "year"]),
+      }))
+      .query(async ({ input }) => {
+        const { timeframe } = input;
+        const requestId = Math.random().toString(36).slice(2, 10);
+        const startMs = Date.now();
+        try {
+          const today = await getTodaySnapshot();
+          const reading = await getTimeframeReading(timeframe, today);
+          const latencyMs = Date.now() - startMs;
+          const slim = (timeframe === "today" || timeframe === "week")
+            ? reading
+            : { ...reading, snapshots: reading.snapshots.slice(0, 10) };
+          log.info("[Timeframe] Request complete", { requestId, timeframe, latencyMs, snapshotCount: reading.snapshots.length, available: reading.available });
+          return slim;
+        } catch (err) {
+          const latencyMs = Date.now() - startMs;
+          log.error("[Timeframe] Request failed", { requestId, timeframe, latencyMs, error: err instanceof Error ? err.message : String(err) });
+          const labelMap: Record<string, string> = { today: "Today", week: "This Week", month: "This Month", year: "This Year" };
+          return {
+            timeframe, label: labelMap[timeframe] ?? timeframe, available: false,
+            scoreStart: null, scoreEnd: null, scoreDelta: null,
+            direction: "unknown" as const, directionLabel: "Data temporarily unavailable",
+            averageScore: null, highestScore: null, lowestScore: null,
+            regimeChanges: [] as string[], mainDriver: null, mostSupportedScenario: null,
+            watchNext: [] as string[],
+            dataNote: `${labelMap[timeframe] ?? timeframe} intelligence temporarily unavailable. Current market intelligence remains operational. [ref: ${requestId}]`,
+            snapshots: [], _error: true, _requestId: requestId,
+          };
+        }
       }),
 
     // Generate (or regenerate) today's snapshot — admin only

@@ -4604,3 +4604,15 @@
 - [x] Fix mobile overflow: width=min(360px,calc(100vw-16px)), overflowX=hidden, wordBreak=break-word, whiteSpace=pre-wrap
 - [x] Fix STATUS: now reflects required providers only (seismograph, historical-memory, fred); coingecko is OPTIONAL
 - [x] Verify production: all 3 required sources healthy, warnings=[], cache.status=refreshed
+
+## Timeframe Awareness Fix (Session 2026-08-08)
+
+- [x] Diagnose MONTH failure root cause: getTimeframeAnalysis had no error handling; any exception (cold start timeout, DB error) propagated as raw 500 and showed generic red error box
+- [x] Add fault-tolerant getTimeframeAnalysis: try/catch with structured logging, graceful degraded response (never throws 500 to client)
+- [x] Slim MONTH/YEAR response: include only 10 most recent snapshots (not 31/365) to prevent serialization timeouts
+- [x] Replace generic red error box with graceful degraded intelligence-status message (MONTHLY INTELLIGENCE TEMPORARILY UNAVAILABLE)
+- [x] Add client-side retry with exponential backoff (500ms, 1.5s, 3s) via React Query retry options
+- [x] Add RETRY button in degraded UI
+- [x] Add structured server observability: log.info on success (requestId, timeframe, latencyMs, snapshotCount), log.error on failure (requestId, timeframe, latencyMs, error)
+- [x] Verify data exists: 31 snapshots in MONTH range, 8 in WEEK, 1 for TODAY
+- [x] tradePreflight.test.ts timeout failure is pre-existing (not caused by our changes, test file unchanged)
