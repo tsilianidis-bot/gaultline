@@ -9,7 +9,7 @@ export const GA4_READY_EVENT = "faultline:ga4-ready";
 
 const GA4_SCRIPT_ID = "faultline-ga4-script";
 const CLARITY_SCRIPT_ID = "faultline-clarity-script";
-const CLARITY_PROJECT_ID = "xleeth85ys";
+const CLARITY_PROJECT_ID = "xlipasu6ui";
 const MAX_EVENT_NAME_LENGTH = 40;
 const MAX_PARAM_KEY_LENGTH = 40;
 const MAX_PARAM_STRING_LENGTH = 500;
