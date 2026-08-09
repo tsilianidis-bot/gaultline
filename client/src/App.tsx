@@ -175,6 +175,8 @@ const Roadmap             = lazy(() => import("./pages/Roadmap"));
 const ChatInbox           = lazy(() => import("./pages/admin/ChatInbox"));
 const SeismographIntelligence = lazy(() => import("./pages/SeismographIntelligence"));
 const ToolsHome              = lazy(() => import("./pages/ToolsHome"));
+const SocialIntelligence     = lazy(() => import("./pages/SocialIntelligence"));
+const InsiderIntelligence    = lazy(() => import("./pages/InsiderIntelligence"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -787,6 +789,8 @@ function Router() {
 	              <Route path="/app/validation-lab" component={ValidationLab} />
 	              <Route path="/app/fmos-health" component={FmosHealthDashboard} />
               <Route path="/owner/simulation" component={OwnerSimulation} />
+              <Route path="/app/social-intelligence" component={SocialIntelligence} />
+              <Route path="/app/insider-intelligence" component={InsiderIntelligence} />
               {/* Unknown /app/* sub-routes — redirect to standalone 404 */}
               <Route><Redirect to="/404" /></Route>
             </Switch>

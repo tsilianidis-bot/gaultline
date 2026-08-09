@@ -60,11 +60,12 @@ describe("codebase-driven route consolidation", () => {
     });
   });
 
-  it("removes duplicate analytical mounts while retaining registry aliases", () => {
+  it("removes duplicate analytical mounts while retaining registry aliases (social/insider now have dedicated routes)", () => {
     Object.keys(ANALYTICAL_LEGACY_ALIASES)
       .filter(route => route.startsWith("/app/"))
       .forEach(route => expect(explicitAppRoutes).not.toContain(route));
-    expect(appSource).not.toMatch(/component=\{(?:DailyReport|AftershockEngine|SeismographicDash|MarketIntelligence|CryptoRegimeDashboard|SocialIntelligence|InsiderIntelligence|StockHeatmap)\}/);
+    // SocialIntelligence and InsiderIntelligence are now first-class routes (removed from legacy aliases)
+    expect(appSource).not.toMatch(/component=\{(?:DailyReport|AftershockEngine|SeismographicDash|MarketIntelligence|CryptoRegimeDashboard|StockHeatmap)\}/);
   });
 
   it("redirects public and demo compatibility routes directly to registry-owned destinations", () => {

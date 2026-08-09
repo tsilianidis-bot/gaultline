@@ -42,10 +42,10 @@ export const LEGACY_CAPABILITY_AUDIT: readonly LegacyCapabilityAuditEntry[] = [
   { page: "TradePreflight", legacyPath: "/app/trade-preflight", classification: "preserve_deep_or_expert", destination: "/app/decision-engine#trade-preflight", source: "manual" },
   { page: "SituationRoom", legacyPath: "/app/situation-room", classification: "redundant", destination: "/app/now/deep", source: "recovered" },
   { page: "PreFlight", legacyPath: "/app/pre-flight", classification: "redundant", destination: "/app/now/deep", source: "recovered" },
-  { page: "InsiderIntelligence", legacyPath: "/app/insider-intelligence", classification: "redundant", destination: "/app/watch/deep", source: "recovered" },
+  { page: "InsiderIntelligence", legacyPath: "/app/insider-intelligence", classification: "preserve_unique", destination: "/app/insider-intelligence", mountPath: "/app/insider-intelligence", source: "recovered" },
   { page: "StockHeatmap", legacyPath: "/app/stock-heatmap", classification: "redundant", destination: "/app/now/deep", source: "recovered" },
   { page: "SimPortfolio", legacyPath: "/app/sim-portfolio", classification: "preserve_unique", destination: "/app/sim-portfolio", mountPath: "/app/sim-portfolio", source: "recovered" },
-  { page: "SocialIntelligence", legacyPath: "/app/social-intelligence", classification: "redundant", destination: "/app/watch/deep", source: "recovered" },
+  { page: "SocialIntelligence", legacyPath: "/app/social-intelligence", classification: "preserve_unique", destination: "/app/social-intelligence", mountPath: "/app/social-intelligence", source: "recovered" },
   { page: "TradeJournal", legacyPath: "/app/trade-journal", classification: "preserve_unique", destination: "/app/trade-journal", mountPath: "/app/trade-journal", source: "recovered" },
   { page: "Opportunities", legacyPath: "/app/opportunities", classification: "redundant", destination: "/app/act/deep", source: "recovered" },
   { page: "IntelligenceValidation", legacyPath: "/app/intelligence-validation", classification: "preserve_deep_or_expert", destination: "/app/validation", mountPath: "/app/validation", source: "recovered" },
@@ -62,4 +62,3 @@ export const LEGACY_CAPABILITY_AUDIT: readonly LegacyCapabilityAuditEntry[] = [
 export const RECOVERED_CAPABILITY_AUDIT = LEGACY_CAPABILITY_AUDIT.filter(entry => entry.source === "recovered");
 export const MANUAL_CAPABILITY_AUDIT = LEGACY_CAPABILITY_AUDIT.filter(entry => entry.source === "manual");
 export const PRESERVED_CAPABILITY_PATHS = LEGACY_CAPABILITY_AUDIT.flatMap(entry => entry.mountPath ? [entry.mountPath] : []);
-

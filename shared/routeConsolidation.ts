@@ -61,6 +61,8 @@ export const PRESERVED_UNIQUE_APP_PATHS = [
   "/app/seismograph-command-center",
   "/app/tools",
   "/app/time-machine",
+  "/app/social-intelligence",
+  "/app/insider-intelligence",
 ] as const;
 
 const canonicalPaths = new Set(CANONICAL_DESTINATIONS.map(route => route.path));

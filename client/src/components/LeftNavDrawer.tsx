@@ -4,7 +4,7 @@
    - Warm ivory/stone edge tab — always visible
    - Slides in from left on tap/click
    - Dark charcoal text on light stone surface
-   - 4-group hierarchy: Primary / Market Intelligence / Personal / System
+   - 4-group hierarchy: THE FIVE QUESTIONS / INTELLIGENCE / RESEARCH / TOOLS
    - Active state: amber left indicator + stronger weight
    - Global search at top
    - Keyboard: Cmd+B toggles
@@ -52,7 +52,7 @@ type NavGroup = {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    label: "MARKET QUESTIONS",
+    label: "THE FIVE QUESTIONS",
     items: CANONICAL_DESTINATIONS.map(destination => ({
       id: destination.id,
       label: destination.label,
@@ -61,62 +61,46 @@ const NAV_GROUPS: NavGroup[] = [
     })),
   },
   {
-    label: "UTILITIES",
-    items: PERSISTENT_UTILITIES.flatMap(utility => utility.path ? [{
-      id: utility.id,
-      label: utility.label,
-      icon: getRouteIcon(utility.icon),
-      path: utility.path,
-    }] : []),
-  },
-  {
-    label: "EXPERT WORKSPACES",
-    items: EXPERT_WORKSPACES.map(workspace => ({
-      id: workspace.id,
-      label: workspace.label,
-      icon: getRouteIcon(workspace.icon),
-      path: workspace.path,
-    })),
-  },
-  {
-    label: "KNOWLEDGE CENTER",
+    label: "INTELLIGENCE",
     items: [
-      { id: "daily-brief",       label: "Daily Brief Archive",    icon: Newspaper,    path: "/daily-brief" },
-      { id: "intel-library",     label: "Intelligence Library",   icon: Library,      path: "/intelligence-library" },
-      { id: "intel-archive",     label: "Historical Briefings",   icon: History,      path: "/intel-archive" },
-      { id: "reading-history",   label: "Reading History",        icon: BookMarked,   path: "/app/reading-history" },
-      { id: "blog",              label: "Blog",                   icon: Newspaper,    path: "/blog" },
-      { id: "glossary",          label: "Glossary",               icon: GraduationCap, path: "/app/glossary" },
-    ],
-  },
-  {
-    label: "RESEARCH & PROOF",
-    items: [
-      { id: "time-machine",      label: "TIME MACHINE™",          icon: Clock,        path: "/app/time-machine" },
-      { id: "track-record",      label: "Track Record",           icon: Trophy,       path: "/app/track-record" },
-      { id: "methodology",       label: "Methodology",            icon: Scale,        path: "/methodology" },
-      { id: "validation-lab",    label: "Validation Lab",         icon: FlaskConical, path: "/app/validation-lab" },
-      { id: "validation",        label: "Intel Validation",       icon: FlaskRound,   path: "/app/validation" },
-      { id: "decision-ledger",   label: "Decision Ledger",        icon: BookOpen,     path: "/app/decision-ledger" },
-    ],
-  },
-  {
-    label: "MARKET TOOLS",
-    items: [
-      { id: "tools-home",         label: "Tools & Features Hub",    icon: LayoutDashboard, path: "/app/tools" },
       { id: "seismograph",        label: "Seismograph Intelligence", icon: Activity,     path: "/app/seismograph-command-center" },
-      { id: "signals",           label: "Signals",                icon: Radio,        path: "/app/signals" },
-      { id: "crypto-signals",    label: "Crypto Signals",         icon: Bitcoin,      path: "/app/crypto-signals" },
-      { id: "crypto-hub",        label: "Crypto Hub",             icon: Layers,       path: "/app/crypto" },
-      { id: "historical-analogs",label: "Historical Analogs",     icon: History,      path: "/app/historical-analogs" },
-      { id: "simulate-pressure", label: "Simulate Pressure",      icon: Gauge,        path: "/app/simulate-pressure" },
-      { id: "trade-journal",     label: "Trade Journal",          icon: JournalIcon,  path: "/app/trade-journal" },
+      { id: "daily-brief",        label: "Daily Brief",             icon: Newspaper,    path: "/daily-brief" },
+      { id: "intel-archive",      label: "Historical Briefings",    icon: History,      path: "/intel-archive" },
+      { id: "reading-history",    label: "Reading History",         icon: BookMarked,   path: "/app/reading-history" },
+      { id: "crypto-hub",         label: "Crypto Hub",              icon: Layers,       path: "/app/crypto" },
+      { id: "signal-outlook",     label: "Signal Outlook Center",   icon: Telescope,    path: "/app/signal-outlook" },
+      { id: "intel-library",      label: "Intelligence Library",    icon: Library,      path: "/intelligence-library" },
     ],
   },
   {
-    label: "COMMUNITY",
+    label: "RESEARCH",
     items: [
-      { id: "roadmap",           label: "Roadmap",                icon: Map,          path: "/app/roadmap" },
+      { id: "time-machine",       label: "TIME MACHINE™",           icon: Clock,        path: "/app/time-machine" },
+      { id: "historical-analogs", label: "Historical Analogs",      icon: History,      path: "/app/historical-analogs" },
+      { id: "simulate-pressure",  label: "Simulate Pressure",       icon: Gauge,        path: "/app/simulate-pressure" },
+      { id: "track-record",       label: "Track Record",            icon: Trophy,       path: "/app/track-record" },
+      { id: "validation-lab",     label: "Validation Lab",          icon: FlaskConical, path: "/app/validation-lab" },
+      { id: "decision-ledger",    label: "Decision Ledger",         icon: BookOpen,     path: "/app/decision-ledger" },
+      { id: "methodology",        label: "Methodology",             icon: Scale,        path: "/methodology" },
+    ],
+  },
+  {
+    label: "TOOLS",
+    items: [
+      { id: "social-intelligence",  label: "Social Intelligence",        icon: MessageSquare, path: "/app/social-intelligence" },
+      { id: "insider-intelligence", label: "Insider Intelligence",       icon: Eye,           path: "/app/insider-intelligence" },
+      { id: "watchlist",            label: "Watchlist",                  icon: Bookmark,      path: "/app/watchlist" },
+      { id: "alerts",               label: "Alerts",                     icon: BellRing,      path: "/app/alerts" },
+      { id: "symbol-intelligence",  label: "Symbol Intelligence",        icon: SearchIcon,    path: "/app/symbol-intelligence" },
+      { id: "day-trade",            label: "Day Trade Intelligence",     icon: Target,        path: "/app/day-trade-intelligence" },
+      { id: "decision-engine",      label: "Decision Engine",            icon: Crosshair,     path: "/app/decision-engine" },
+      { id: "smart-discovery",      label: "Smart Discovery",            icon: Sparkles,      path: "/app/discover" },
+      { id: "signals",              label: "Signals",                    icon: Radio,         path: "/app/signals" },
+      { id: "crypto-signals",       label: "Crypto Signals",             icon: Bitcoin,       path: "/app/crypto-signals" },
+      { id: "pressure-engine",      label: "Pressure Engine",            icon: Gauge,         path: "/app/pressure" },
+      { id: "trade-journal",        label: "Trade Journal",              icon: JournalIcon,   path: "/app/trade-journal" },
+      { id: "glossary",             label: "Glossary",                   icon: GraduationCap, path: "/app/glossary" },
+      { id: "roadmap",              label: "Roadmap",                    icon: Map,           path: "/app/roadmap" },
     ],
   },
 ];
@@ -429,31 +413,55 @@ export default function LeftNavDrawer({ breachCount = 0 }: LeftNavDrawerProps) {
             </div>
           ) : (
             /* Grouped nav */
-            groups.map((group, gi) => (
-              <div key={group.label} style={{ marginTop: gi === 0 ? 4 : 16 }}>
-                <div style={{
-                  fontFamily: "'IBM Plex Mono', monospace",
-                  fontSize: "9px",
-                  letterSpacing: "0.2em",
-                  color: group.label === "OWNER PORTAL" ? "#B8860B" : TEXT_MUTED,
-                  textTransform: "uppercase",
-                  padding: "6px 16px 4px",
-                  borderTop: gi > 0 ? `1px solid ${DRAWER_BORDER}` : undefined,
-                  paddingTop: gi > 0 ? 14 : 6,
-                }}>
-                  {group.label}
+            groups.map((group, gi) => {
+              const isFiveQ = group.label === "THE FIVE QUESTIONS";
+              const subtitleMap: Record<string, string> = {
+                "THE FIVE QUESTIONS": "Market Decision Framework",
+                "INTELLIGENCE": "Understand it more deeply",
+                "RESEARCH": "Investigate the evidence",
+                "TOOLS": "Explore, monitor and analyze",
+              };
+              const subtitle = subtitleMap[group.label];
+              return (
+                <div key={group.label} style={{ marginTop: gi === 0 ? 4 : 16 }}>
+                  <div style={{
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: isFiveQ ? "10px" : "9px",
+                    letterSpacing: "0.2em",
+                    color: isFiveQ ? ACTIVE_ACCENT : group.label === "OWNER PORTAL" ? "#B8860B" : TEXT_MUTED,
+                    fontWeight: isFiveQ ? 700 : 400,
+                    textTransform: "uppercase",
+                    padding: "6px 16px 4px",
+                    borderTop: gi > 0 ? `1px solid ${DRAWER_BORDER}` : undefined,
+                    paddingTop: gi > 0 ? 14 : 6,
+                  }}>
+                    {group.label}
+                    {subtitle && (
+                      <div style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: "8px",
+                        letterSpacing: "0.06em",
+                        color: TEXT_MUTED,
+                        fontWeight: 400,
+                        textTransform: "none",
+                        marginTop: "2px",
+                      }}>
+                        {subtitle}
+                      </div>
+                    )}
+                  </div>
+                  {group.items.map(item => (
+                    <NavRow
+                      key={item.id}
+                      item={item}
+                      active={isActive(item.path)}
+                      onNavigate={handleNavigate}
+                      breachCount={item.id === "watchlist" ? breachCount : 0}
+                    />
+                  ))}
                 </div>
-                {group.items.map(item => (
-                  <NavRow
-                    key={item.id}
-                    item={item}
-                    active={isActive(item.path)}
-                    onNavigate={handleNavigate}
-                    breachCount={item.id === "watchlist" ? breachCount : 0}
-                  />
-                ))}
-              </div>
-            ))
+              );
+            })
           )}
 
           {/* Sign in / out */}

@@ -4627,3 +4627,18 @@
 - [x] Verified no duplicate API calls: CryptoHub does not call altRotation.getData; only AltRotationInner does (3-min refetch interval)
 - [x] Verified existing /app/alt-rotation legacy alias still intact in routeRegistry.ts
 - [x] All 1,557 tests passing, 0 failures
+
+## Navigation IA Reorganization (Session Aug 9, 2026)
+- [x] Audit all existing sidebar destinations, routes, and categories
+- [x] Create feature → route → new category mapping
+- [x] Rewrite LeftNavDrawer NAV_GROUPS with 4-category structure (THE FIVE QUESTIONS / INTELLIGENCE / RESEARCH / TOOLS)
+- [x] Add visual priority treatment to THE FIVE QUESTIONS header (amber color, larger font, subtitle)
+- [x] Add subtitles to INTELLIGENCE, RESEARCH, TOOLS category headers
+- [x] Register /app/social-intelligence → SocialIntelligence.tsx (new first-class route)
+- [x] Register /app/insider-intelligence → InsiderIntelligence.tsx (new first-class route)
+- [x] Remove social/insider from ANALYTICAL_LEGACY_ALIASES (promoted to dedicated routes)
+- [x] Add social/insider to PRESERVED_UNIQUE_APP_PATHS in routeConsolidation.ts
+- [x] Update legacyCapabilityAudit.ts: promote social/insider to preserve_unique
+- [x] Update routeConsolidation.test.ts to reflect new route status
+- [x] HTTP 200 verified for all 33 nav destinations
+- [x] 1557 tests passing, 0 failures
