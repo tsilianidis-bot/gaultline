@@ -7,17 +7,18 @@
    ============================================================ */
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Bitcoin, Radio, Bookmark, Search } from "lucide-react";
+import { Bitcoin, Radio, Bookmark, Search, RotateCw } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import CryptoSearch from "./CryptoSearch";
 import CryptoSignals from "./CryptoSignals";
 import CryptoWatchlist from "./CryptoWatchlist";
+import AltRotation from "./AltRotation";
 
 const MONO = "'IBM Plex Mono', monospace";
 const SANS = "'IBM Plex Sans', sans-serif";
 const RAJDHANI = "'Rajdhani', sans-serif";
 
-type CryptoTab = "analysis" | "signals" | "watchlist";
+type CryptoTab = "analysis" | "rotation" | "signals" | "watchlist";
 
 const TABS: { id: CryptoTab; label: string; shortLabel: string; icon: React.ElementType; description: string }[] = [
   {
@@ -26,6 +27,13 @@ const TABS: { id: CryptoTab; label: string; shortLabel: string; icon: React.Elem
     shortLabel: "Analysis",
     icon: Search,
     description: "Deep-dive intelligence on any digital asset",
+  },
+  {
+    id: "rotation",
+    label: "Rotation",
+    shortLabel: "Rotation",
+    icon: RotateCw,
+    description: "Crypto sector rotation, altcoin momentum, and macro regime alignment",
   },
   {
     id: "signals",
@@ -133,6 +141,7 @@ export default function CryptoHub() {
       {/* ── Tab Content ── */}
       <div>
         {activeTab === "analysis" && <CryptoSearch />}
+        {activeTab === "rotation" && <AltRotation />}
         {activeTab === "signals" && <CryptoSignals />}
         {activeTab === "watchlist" && <CryptoWatchlist />}
       </div>

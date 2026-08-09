@@ -4616,3 +4616,14 @@
 - [x] Add structured server observability: log.info on success (requestId, timeframe, latencyMs, snapshotCount), log.error on failure (requestId, timeframe, latencyMs, error)
 - [x] Verify data exists: 31 snapshots in MONTH range, 8 in WEEK, 1 for TODAY
 - [x] tradePreflight.test.ts timeout failure is pre-existing (not caused by our changes, test file unchanged)
+
+## Crypto Hub Rotation Integration (Session 2026-08-09)
+
+- [x] Located existing Crypto Rotation module: client/src/pages/AltRotation.tsx
+- [x] Existing route: /app/alt-rotation (legacy alias → /app/why/deep, preserved intact)
+- [x] Main component: AltRotation (default export from AltRotation.tsx, wraps AltRotationInner in PremiumGateFull)
+- [x] Added ROTATION tab to CryptoHub.tsx: Analysis | Rotation | Signals | Watchlist
+- [x] Imported AltRotation directly — one canonical implementation, no duplication
+- [x] Verified no duplicate API calls: CryptoHub does not call altRotation.getData; only AltRotationInner does (3-min refetch interval)
+- [x] Verified existing /app/alt-rotation legacy alias still intact in routeRegistry.ts
+- [x] All 1,557 tests passing, 0 failures
