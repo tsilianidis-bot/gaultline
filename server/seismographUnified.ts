@@ -633,13 +633,39 @@ function compute5WayRegimeProbabilities(
   if (breadthFam?.signal === "bullish" || breadthFam?.signal === "recovering") { bull += 8; softLanding += 5; recession -= 5; }
   if (aiBubbleFam?.signal === "stressed" || aiBubbleFam?.signal === "bearish") { stagflation += 5; crash += 3; }
   const total = bull + softLanding + stagflation + recession + crash;
-  return {
-    bull: Math.round((bull / total) * 100),
-    softLanding: Math.round((softLanding / total) * 100),
-    stagflation: Math.round((stagflation / total) * 100),
-    recession: Math.round((recession / total) * 100),
-    crash: Math.round((crash / total) * 100),
-  };
+  // Normalize to 0–100 proportions using floor + deterministic residual correction.
+  // Math.round() on each component independently causes sums of 99 or 101 in ~61% of inputs.
+  // Correct approach: clamp negatives to 0 FIRST (signal adjustments can push bull negative),
+  // then re-normalize, then floor + distribute residual. Guarantees sum = exactly 100.
+  const cBull  = Math.max(0, bull);
+  const cSoft  = Math.max(0, softLanding);
+  const cStag  = Math.max(0, stagflation);
+  const cRec   = Math.max(0, recession);
+  const cCrash = Math.max(0, crash);
+  const cTotal = cBull + cSoft + cStag + cRec + cCrash;
+  if (cTotal === 0) return { bull: 20, softLanding: 20, stagflation: 20, recession: 20, crash: 20 };
+  const rawBull  = (cBull  / cTotal) * 100;
+  const rawSoft  = (cSoft  / cTotal) * 100;
+  const rawStag  = (cStag  / cTotal) * 100;
+  const rawRec   = (cRec   / cTotal) * 100;
+  const rawCrash = (cCrash / cTotal) * 100;
+  const fBull  = Math.floor(rawBull);
+  const fSoft  = Math.floor(rawSoft);
+  const fStag  = Math.floor(rawStag);
+  const fRec   = Math.floor(rawRec);
+  const fCrash = Math.floor(rawCrash);
+  const residual = 100 - (fBull + fSoft + fStag + fRec + fCrash);
+  // Distribute residual points to the keys with the largest fractional remainders (deterministic)
+  const fracs = [
+    { key: "bull"        as const, frac: rawBull  - fBull  },
+    { key: "softLanding" as const, frac: rawSoft  - fSoft  },
+    { key: "stagflation" as const, frac: rawStag  - fStag  },
+    { key: "recession"   as const, frac: rawRec   - fRec   },
+    { key: "crash"       as const, frac: rawCrash - fCrash },
+  ].sort((a, b) => b.frac - a.frac);
+  const out: Record<string, number> = { bull: fBull, softLanding: fSoft, stagflation: fStag, recession: fRec, crash: fCrash };
+  for (let i = 0; i < residual; i++) out[fracs[i % fracs.length].key] += 1;
+  return { bull: out.bull, softLanding: out.softLanding, stagflation: out.stagflation, recession: out.recession, crash: out.crash };
 }
 function buildEvidenceFamilies(
   latest: HistoricalMonth,

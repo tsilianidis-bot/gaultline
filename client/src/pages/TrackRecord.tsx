@@ -174,7 +174,7 @@ const CRISIS_CALLOUTS = [
     label: "Dot-com Bust + 9/11",
     peak: 72,
     regime: "HIGH RISK",
-    description: "FAULTLINE registered HIGH RISK from Sep 2001 through Feb 2003 — 18 consecutive months. Credit contagion and liquidity stress spiked as tech valuations collapsed and post-9/11 uncertainty froze capital markets.",
+    description: "Retrospective analysis shows HIGH RISK readings from Sep 2001 through Feb 2003 — 18 consecutive months. Credit contagion and liquidity stress spiked as tech valuations collapsed and post-9/11 uncertainty froze capital markets.",
     outcome: "S&P 500 fell ~49% from peak (Mar 2000) to trough (Oct 2002).",
   },
   {
@@ -182,7 +182,7 @@ const CRISIS_CALLOUTS = [
     label: "Global Financial Crisis",
     peak: 82,
     regime: "CRITICAL",
-    description: "The model reached CRITICAL (82/100) in October 2008 — the month Lehman Brothers collapsed. Baa credit spreads hit 5.53% (HY proxy ~11.45%), and the model sustained CRITICAL readings for 8 consecutive months through May 2009.",
+    description: "Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month Lehman Brothers collapsed. Baa credit spreads hit 5.53% (HY proxy ~11.45%), with CRITICAL readings sustained for 8 consecutive months through May 2009.",
     outcome: "S&P 500 fell ~57% from peak (Oct 2007) to trough (Mar 2009). Unemployment peaked at 10%.",
   },
   {
@@ -198,7 +198,7 @@ const CRISIS_CALLOUTS = [
     label: "COVID-19 Shock",
     peak: 72,
     regime: "HIGH RISK",
-    description: "The model registered HIGH RISK in March 2020 as credit spreads spiked and unemployment surged to 14.8% by April. The rapid Fed response (QE, rate cuts to zero) compressed spreads quickly, limiting the duration of the HIGH RISK signal.",
+    description: "Retrospective analysis shows HIGH RISK in March 2020 as credit spreads spiked and unemployment surged to 14.8% by April. The rapid Fed response (QE, rate cuts to zero) compressed spreads quickly, limiting the duration of the HIGH RISK reading.",
     outcome: "S&P 500 fell ~34% in 33 days (Feb–Mar 2020). Recovered to new highs by August 2020.",
   },
 ];
@@ -207,7 +207,7 @@ const CRISIS_CALLOUTS = [
 export default function TrackRecord() {
   useSEO({
     title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
-    description: "FAULTLINE's historical Pressure Index from 2000 to present. See how the model scored the 2008 financial crisis (82/CRITICAL), COVID crash (72/HIGH RISK), and dot-com bust against actual market outcomes.",
+    description: "FAULTLINE's retrospective Pressure Index from 2000 to present — applying the current methodology to historical FRED data. See how the indicators scored the 2008 financial crisis (82/CRITICAL), COVID crash (72/HIGH RISK), and dot-com bust against actual market outcomes. Retrospective analysis only.",
     canonical: "/track-record",
   });
 

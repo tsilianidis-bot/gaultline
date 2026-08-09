@@ -4651,3 +4651,13 @@
 - [x] Verified esbuild exit 0 on SignalOutlookCenter.tsx
 - [x] signalOutlook.test.ts: 15 tests passing
 - [x] routeConsolidation.test.ts: 8 tests passing
+
+## Remediation Pass (Aug 9, 2026)
+- [x] C-1: Replace "50+ sources" claim with accurate "7 providers, 24 FRED series" in MarketingSite.tsx
+- [x] C-2: Remove "warned institutional desks" language — replaced with retrospective framing
+- [x] C-3: CONFIRMED DEFECT per reconciliation report — replaced with neutral retrospective language
+- [x] H-1: Fixed 5-way probability normalization — clamp negatives before renormalize, floor+residual, 5454 combinations tested
+- [x] H-3: Removed VIX reference from ASHA system prompt — replaced with yield-curve/rate-environment description
+- [x] H-4: VERIFIED NOT A DEFECT — HY spread unit conversion already correct in engine.ts line 519
+- [x] H-2: VERIFIED ALREADY ADDRESSED — AI Bubble dataStatus="static" already in output and FREDDebugConsole
+- [x] Historical Backtest Reconciliation Report produced (FAULTLINE_Historical_Backtest_Reconciliation.md)

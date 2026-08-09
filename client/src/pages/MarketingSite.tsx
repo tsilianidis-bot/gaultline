@@ -1176,7 +1176,7 @@ const FEATURES = [
   { icon: "◉", title: "Faultline Detection Across Asset Classes", desc: "Cross-asset stress mapped in real time — equities, bonds, crypto, commodities. See where pressure is concentrating before it cascades." },
   { icon: "◎", title: "Signals Intelligence Screener", desc: "Every equity and asset classified by macro regime alignment and systemic pressure exposure. Know which names are positioned for the current environment." },
   { icon: "◈", title: "Pre-Move Stress Testing", desc: "Run your next trade through the Situation Room before you risk capital. Get a probability-weighted favorability score, threat board, and action bias." },
-  { icon: "◉", title: "Liquidity & Credit Early Warning", desc: "Repo rates, reserve balances, credit spreads, and funding stress — tracked continuously. The same signals that warned institutional desks in 2008 and 2020." },
+  { icon: "◉", title: "Liquidity & Credit Early Warning", desc: "Repo rates, reserve balances, credit spreads, and funding stress — tracked continuously. The same indicators that macro desks monitor for early signs of systemic stress." },
   { icon: "◈", title: "Complete Market Awareness™", desc: "Daily Market Preflight — review the full risk picture before acting. Tracks your daily awareness score from 0–100. Know your environment before you trade it." },
 ];
 
@@ -1524,7 +1524,7 @@ function HowItWorksSection() {
     {
       num: "01",
       title: "The Pressure Builds Before the Break",
-      desc: "Every major dislocation — 2008, 2020, 2022 — had a pressure signature weeks before the collapse. FRED, Treasury, inflation, liquidity, and AI concentration signals streamed continuously from 50+ sources. The fractures form in the data first.",
+      desc: "Applying FAULTLINE's methodology retrospectively to 2008, 2020, and 2022 shows elevated pressure signatures building in the data before each dislocation. Credit spreads widened. The yield curve signaled. Liquidity tightened. The evidence was there — it was not synthesized into something accessible.",
     },
     {
       num: "02",
@@ -1735,7 +1735,7 @@ function ProofSection() {
             <span className="text-[#22C55E]">before every major crash.</span>
           </h2>
           <p className="text-[#A8B8CC] text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-            FAULTLINE's Pressure Engine was back-tested against 25 years of FRED macroeconomic data — the same engine running live today. In every case, the pressure signature was elevated before the collapse. Top funds read those signals. Most traders didn't.
+            FAULTLINE's methodology has been applied retrospectively to 25 years of FRED macroeconomic data. In major crisis periods, the underlying indicators — credit spreads, yield curve, liquidity conditions — showed measurable stress in the months surrounding each dislocation. These are retrospective reconstructions, not signals generated in real time.
           </p>
           <p className="text-[#64748B] text-xs font-mono max-w-2xl mx-auto mt-3 leading-relaxed">
             Retrospective analysis applies the current FAULTLINE methodology to historical data. It does not represent signals generated live at those historical dates.
@@ -3218,7 +3218,7 @@ function FounderStatementSection() {
               I built the tool I wished I had while making some of the biggest investment decisions of my life. Finding great investments was not the hardest part. Recognizing when the environment had changed enough that protecting capital deserved more attention than pursuing additional returns — that was.
             </p>
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
-              Every major dislocation — 2008, 2020, 2022 — had a pressure signature building in the data long before it showed up in headlines. Credit spreads widened. The yield curve signaled. Liquidity tightened. The evidence was there. It was not synthesized into something accessible.
+              In major dislocations — 2008, 2020, 2022 — the underlying indicators showed measurable stress in the data: credit spreads widened, the yield curve signaled, liquidity tightened. That evidence existed. It was not synthesized into something accessible to most investors.
             </p>
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
               FAULTLINE is my answer to that problem. Not a trading system. Not a prediction engine. A market awareness platform — one that gives investors a clear, honest read on what the current environment is, why it is changing, how long the shift has been developing, and how today's conditions compare with history.
@@ -3773,7 +3773,7 @@ function AboutSection() {
               <span className="text-[#00D4FF]">when the environment has changed.</span>
             </h2>
             <p className="text-[#A8B8CC] text-sm leading-relaxed mb-4">
-              Every major dislocation — 2008, 2020, 2022 — had a pressure signature weeks before the break. Yield curves inverted. Liquidity dried up. Volatility suppression gave way. The signals were there. The funds that read them moved first. Most traders waited for the headline.
+              In major dislocations — 2008, 2020, 2022 — the underlying macro indicators showed measurable stress before the break became visible in headlines. Yield curves signaled. Liquidity tightened. Credit spreads widened. That evidence existed in the data. FAULTLINE is built to make it accessible.
             </p>
             <p className="text-[#A8B8CC] text-sm leading-relaxed mb-4">
               FAULTLINE was built to close that gap. We aggregate macro stress indicators, credit spreads, Treasury liquidity, AI concentration risk, and regime telemetry into one unified pressure score — the <span className="text-[#00D4FF] font-mono">FAULTLINE Pressure Index™</span>. The same read institutional desks spend millions to generate, now accessible to self-directed traders.
@@ -3786,7 +3786,7 @@ function AboutSection() {
           <div className="space-y-4">
             {[
               { num: "8,400+", label: "Risk signals processed daily", color: "#00D4FF" },
-              { num: "50+", label: "Macro data sources (FRED, Polygon, CoinGecko)", color: "#00D4FF" },
+              { num: "4", label: "Institutional data providers (FRED, Polygon, CoinGecko, X)", color: "#00D4FF" },
               { num: "6", label: "Proprietary intelligence engines", color: "#FFD700" },
               { num: "Real-time", label: "Pressure Index updates — not end-of-day", color: "#00FF88" },
             ].map(({ num, label, color }) => (
