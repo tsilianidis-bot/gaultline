@@ -168,4 +168,95 @@ export const adminRouter = router({
       await setFeatureFlag(input.key, input.enabled, ctx.user.id);
       return { success: true };
     }),
+  // ── V3-H Shadow Model admin procedures ────────────────────────────────────
+  getShadowStats: adminProcedure
+    .query(async () => {
+      const { getDb } = await import("../db");
+      const { shadowModelReadings: smr } = await import("../../drizzle/schema");
+      const { desc: descOp } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return null;
+      const readings = await db.select().from(smr).orderBy(descOp(smr.readingAt)).limit(500);
+      if (readings.length === 0) return { readingCount: 0 };
+      const avgDiff = readings.reduce((s: number, r: any) => s + r.scoreDiff, 0) / readings.length;
+      const absDiff = readings.reduce((s: number, r: any) => s + r.absScoreDiff, 0) / readings.length;
+      const regimeAgreementRate = readings.filter((r: any) => r.regimeAgreement).length / readings.length;
+      const latest = readings[0]!;
+      return {
+        readingCount: readings.length,
+        avgDiff: Math.round(avgDiff * 10) / 10,
+        avgAbsDiff: Math.round(absDiff * 10) / 10,
+        regimeAgreementRate: Math.round(regimeAgreementRate * 1000) / 10,
+        divergence10Count: readings.filter((r: any) => r.flagDivergence10).length,
+        stlfsiSpikeCount: readings.filter((r: any) => r.flagStlfsiSpike).length,
+        fallbackCount: readings.filter((r: any) => r.flagFallback).length,
+        latestV1: latest.v1Pressure,
+        latestV3H: latest.v3hPressure,
+        latestDiff: latest.scoreDiff,
+        latestStlfsiRaw: latest.stlfsiRaw ? parseFloat(latest.stlfsiRaw) : null,
+        latestStlfsiZ: latest.stlfsiZ ? parseFloat(latest.stlfsiZ) : null,
+        latestReadingAt: latest.readingAt,
+        shadowPeriodStart: "2026-08-09",
+        shadowPeriodEnd: "2026-11-07",
+      };
+    }),
+  getShadowReadings: adminProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(500).default(100) }))
+    .query(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const { shadowModelReadings: smr } = await import("../../drizzle/schema");
+      const { desc: descOp } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return { readings: [], total: 0 };
+      const readings = await db.select().from(smr).orderBy(descOp(smr.readingAt)).limit(input.limit);
+      return { readings, total: readings.length };
+    }),
+  getShadowDailySummaries: adminProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(200).default(90) }))
+    .query(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const { shadowDailySummaries: sds } = await import("../../drizzle/schema");
+      const { desc: descOp } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return { summaries: [] };
+      const summaries = await db.select().from(sds).orderBy(descOp(sds.summaryDate)).limit(input.limit);
+      return { summaries };
+    }),
+  addStressAnnotation: adminProcedure
+    .input(z.object({
+      eventAt: z.string().datetime(),
+      eventType: z.string().min(1).max(50),
+      title: z.string().min(1).max(200),
+      description: z.string().optional(),
+      severity: z.enum(["low", "moderate", "high", "critical"]),
+      v1AtEvent: z.number().int().min(0).max(100).optional(),
+      v3hAtEvent: z.number().int().min(0).max(100).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { getDb } = await import("../db");
+      const { shadowStressAnnotations: ssa } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      await db.insert(ssa).values({
+        eventAt: new Date(input.eventAt),
+        eventType: input.eventType,
+        title: input.title,
+        description: input.description,
+        severity: input.severity,
+        v1AtEvent: input.v1AtEvent ?? null,
+        v3hAtEvent: input.v3hAtEvent ?? null,
+        createdBy: ctx.user.id,
+      });
+      return { success: true };
+    }),
+  getStressAnnotations: adminProcedure
+    .query(async () => {
+      const { getDb } = await import("../db");
+      const { shadowStressAnnotations: ssa } = await import("../../drizzle/schema");
+      const { desc: descOp } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return { annotations: [] };
+      const annotations = await db.select().from(ssa).orderBy(descOp(ssa.eventAt)).limit(100);
+      return { annotations };
+    }),
 });

@@ -14,6 +14,7 @@
 
 import { log } from "../logger";
 import { fetchFredBulk } from "../fredClient";
+import { runV3HShadow } from "./shadowEngine";
 
 // ── Server-level snapshot cache ───────────────────────────────
 //
@@ -703,5 +704,7 @@ export async function calculateFaultlinePressure(): Promise<FaultlinePressureOut
     log.warn(`[Pressure Engine] Preserved snapshot is too old (${Math.round(ageMs / 60000)}m) — using hardcoded fallback`);
   }
 
+  // V3-H shadow model — fire-and-forget, never blocks V1 response
+  runV3HShadow(result).catch(() => {});
   return result;
 }

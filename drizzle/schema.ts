@@ -1862,3 +1862,98 @@ export const entitlementAuditLog = mysqlTable("entitlementAuditLog", {
 }));
 export type EntitlementAuditEntry = typeof entitlementAuditLog.$inferSelect;
 export type InsertEntitlementAuditEntry = typeof entitlementAuditLog.$inferInsert;
+
+// ── V3-H Shadow Model Tables ──────────────────────────────────────────────────
+export const shadowModelReadings = mysqlTable("shadowModelReadings", {
+  id:                  int("id").autoincrement().primaryKey(),
+  readingAt:           timestamp("readingAt").defaultNow().notNull(),
+  v1Pressure:          int("v1Pressure").notNull(),
+  v3hPressure:         int("v3hPressure").notNull(),
+  scoreDiff:           int("scoreDiff").notNull(),
+  absScoreDiff:        int("absScoreDiff").notNull(),
+  v1Regime:            varchar("v1Regime", { length: 50 }).notNull(),
+  v3hRegime:           varchar("v3hRegime", { length: 50 }).notNull(),
+  regimeAgreement:     boolean("regimeAgreement").notNull().default(true),
+  v3hLiquidityScore:   int("v3hLiquidityScore"),
+  v3hCreditScore:      int("v3hCreditScore"),
+  v3hVolatilityScore:  int("v3hVolatilityScore"),
+  v3hMacroScore:       int("v3hMacroScore"),
+  v3hBreadthScore:     int("v3hBreadthScore"),
+  v3hAiBubbleScore:    int("v3hAiBubbleScore"),
+  v3hStlfsiScore:      int("v3hStlfsiScore"),
+  stlfsiRaw:           decimal("stlfsiRaw", { precision: 8, scale: 4 }),
+  stlfsiZ:             decimal("stlfsiZ", { precision: 8, scale: 4 }),
+  flagDivergence5:     boolean("flagDivergence5").notNull().default(false),
+  flagDivergence10:    boolean("flagDivergence10").notNull().default(false),
+  flagRegimeDisagreement: boolean("flagRegimeDisagreement").notNull().default(false),
+  flagStlfsiSpike:     boolean("flagStlfsiSpike").notNull().default(false),
+  flagStaleStlfsi:     boolean("flagStaleStlfsi").notNull().default(false),
+  flagFallback:        boolean("flagFallback").notNull().default(false),
+  engineVersion:       varchar("engineVersion", { length: 20 }).default("v3h-1.0.0"),
+}, (t) => ({
+  readingAtIdx:  index("shadowModelReadings_readingAt_idx").on(t.readingAt),
+  divergenceIdx: index("shadowModelReadings_divergence_idx").on(t.flagDivergence10),
+}));
+export type ShadowModelReading = typeof shadowModelReadings.$inferSelect;
+export type InsertShadowModelReading = typeof shadowModelReadings.$inferInsert;
+
+export const shadowForwardOutcomes = mysqlTable("shadowForwardOutcomes", {
+  id:                  int("id").autoincrement().primaryKey(),
+  shadowReadingId:     int("shadowReadingId").notNull().references(() => shadowModelReadings.id, { onDelete: "cascade" }),
+  horizon:             mysqlEnum("horizon", ["1d", "5d", "20d"]).notNull(),
+  dueAt:               timestamp("dueAt").notNull(),
+  collectedAt:         timestamp("collectedAt"),
+  sp500ReturnPct:      decimal("sp500ReturnPct", { precision: 8, scale: 4 }),
+  nasdaqReturnPct:     decimal("nasdaqReturnPct", { precision: 8, scale: 4 }),
+  vixAtOutcome:        decimal("vixAtOutcome", { precision: 6, scale: 2 }),
+  stressEventOccurred: boolean("stressEventOccurred").default(false),
+  notes:               text("notes"),
+}, (t) => ({
+  shadowReadingIdx: index("shadowForwardOutcomes_shadowReadingId_idx").on(t.shadowReadingId),
+  dueAtIdx:         index("shadowForwardOutcomes_dueAt_idx").on(t.dueAt),
+}));
+export type ShadowForwardOutcome = typeof shadowForwardOutcomes.$inferSelect;
+export type InsertShadowForwardOutcome = typeof shadowForwardOutcomes.$inferInsert;
+
+export const shadowStressAnnotations = mysqlTable("shadowStressAnnotations", {
+  id:                  int("id").autoincrement().primaryKey(),
+  eventAt:             timestamp("eventAt").notNull(),
+  eventType:           varchar("eventType", { length: 50 }).notNull(),
+  title:               varchar("title", { length: 200 }).notNull(),
+  description:         text("description"),
+  severity:            mysqlEnum("severity", ["low", "moderate", "high", "critical"]).notNull(),
+  v1AtEvent:           int("v1AtEvent"),
+  v3hAtEvent:          int("v3hAtEvent"),
+  v1RegimeAtEvent:     varchar("v1RegimeAtEvent", { length: 50 }),
+  v3hRegimeAtEvent:    varchar("v3hRegimeAtEvent", { length: 50 }),
+  createdBy:           int("createdBy").notNull(),
+  createdAt:           timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  eventAtIdx: index("shadowStressAnnotations_eventAt_idx").on(t.eventAt),
+}));
+export type ShadowStressAnnotation = typeof shadowStressAnnotations.$inferSelect;
+export type InsertShadowStressAnnotation = typeof shadowStressAnnotations.$inferInsert;
+
+export const shadowDailySummaries = mysqlTable("shadowDailySummaries", {
+  id:                  int("id").autoincrement().primaryKey(),
+  summaryDate:         varchar("summaryDate", { length: 10 }).notNull().unique(),
+  v1Pressure:          int("v1Pressure").notNull(),
+  v3hPressure:         int("v3hPressure").notNull(),
+  scoreDiff:           int("scoreDiff").notNull(),
+  v1Regime:            varchar("v1Regime", { length: 50 }),
+  v3hRegime:           varchar("v3hRegime", { length: 50 }),
+  regimeAgreement:     boolean("regimeAgreement"),
+  stlfsiRaw:           decimal("stlfsiRaw", { precision: 8, scale: 4 }),
+  stlfsiZ:             decimal("stlfsiZ", { precision: 8, scale: 4 }),
+  stlfsiContribution:  int("stlfsiContribution"),
+  largestComponentChange: varchar("largestComponentChange", { length: 200 }),
+  fallbackUsed:        boolean("fallbackUsed").default(false),
+  anomalousFlag:       boolean("anomalousFlag").default(false),
+  reviewRequired:      boolean("reviewRequired").default(false),
+  readingCount:        int("readingCount").notNull().default(0),
+  generatedAt:         timestamp("generatedAt").defaultNow().notNull(),
+}, (t) => ({
+  summaryDateIdx: index("shadowDailySummaries_summaryDate_idx").on(t.summaryDate),
+}));
+export type ShadowDailySummary = typeof shadowDailySummaries.$inferSelect;
+export type InsertShadowDailySummary = typeof shadowDailySummaries.$inferInsert;

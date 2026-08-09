@@ -58,6 +58,7 @@ export const PRESERVED_UNIQUE_APP_PATHS = [
   "/app/analytics",
   "/app/validation-lab",
   "/app/fmos-health",
+  "/app/admin/shadow-monitor",
   "/app/seismograph-command-center",
   "/app/tools",
   "/app/time-machine",

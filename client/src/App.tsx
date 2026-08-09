@@ -177,6 +177,7 @@ const SeismographIntelligence = lazy(() => import("./pages/SeismographIntelligen
 const ToolsHome              = lazy(() => import("./pages/ToolsHome"));
 const SocialIntelligence     = lazy(() => import("./pages/SocialIntelligence"));
 const InsiderIntelligence    = lazy(() => import("./pages/InsiderIntelligence"));
+const ShadowMonitor          = lazy(() => import("./pages/ShadowMonitor"));
 
 // ── Mobile PWA pages ─────────────────────────────────────────
 const MobileLayout   = lazy(() => import("./components/MobileLayout"));
@@ -788,6 +789,7 @@ function Router() {
               <Route path="/app/analytics" component={AnalyticsDashboard} />
 	              <Route path="/app/validation-lab" component={ValidationLab} />
 	              <Route path="/app/fmos-health" component={FmosHealthDashboard} />
+              <Route path="/app/admin/shadow-monitor" component={ShadowMonitor} />
               <Route path="/owner/simulation" component={OwnerSimulation} />
               <Route path="/app/social-intelligence" component={SocialIntelligence} />
               <Route path="/app/insider-intelligence" component={InsiderIntelligence} />

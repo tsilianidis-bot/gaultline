@@ -9,6 +9,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { classifyTicker, clearClassCache, getClassCacheStats } from "./signalsClassifier";
 import { calculateFaultlinePressure } from "./pressure/engine";
+import { runV3HShadow } from "./pressure/shadowEngine";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeHomepageBriefing } from "./homepageBriefing";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
@@ -322,6 +323,8 @@ export const appRouter = router({
           // Non-fatal: audit failure must never break the pressure response
           console.warn("[Pressure Audit] Failed to write run record", err);
         });
+        // V3-H shadow — fire-and-forget
+        result && runV3HShadow(result).catch(() => {});
         return result;
       } catch (err) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Pressure engine failed", cause: err });

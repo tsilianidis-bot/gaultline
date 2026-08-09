@@ -31,6 +31,7 @@ import { handleScheduledLedgerEvaluation } from "../scheduledLedgerEvaluation";
 import { weeklyImprovementReportHandler } from "../scheduledWeeklyImprovementReport";
 import { handleDripEmail } from "../scheduledDripEmail";
 import { handleScheduledSeismograph } from "../scheduledSeismograph";
+import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../scheduledShadowModel";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -187,6 +188,8 @@ async function startServer() {
   app.post("/api/scheduled/weekly-improvement-report", requireCron, weeklyImprovementReportHandler);
   app.post("/api/scheduled/drip-email", requireCron, handleDripEmail);
   app.post("/api/scheduled/seismograph-daily", requireCron, handleScheduledSeismograph);
+  app.post("/api/scheduled/shadow-forward-outcomes", requireCron, handleShadowForwardOutcomes);
+  app.post("/api/scheduled/shadow-daily-summary", requireCron, handleShadowDailySummary);
   // Autonomous publishing pipeline
   app.post("/api/scheduled/daily-brief", requireCron, handleDailyBrief);
   app.post("/api/scheduled/weekly-review", requireCron, handleWeeklyReview);

@@ -4661,3 +4661,16 @@
 - [x] H-4: VERIFIED NOT A DEFECT — HY spread unit conversion already correct in engine.ts line 519
 - [x] H-2: VERIFIED ALREADY ADDRESSED — AI Bubble dataStatus="static" already in output and FREDDebugConsole
 - [x] Historical Backtest Reconciliation Report produced (FAULTLINE_Historical_Backtest_Reconciliation.md)
+
+## V3-H Shadow Model Deployment (2026-08-09)
+- [x] DB schema: shadowModelReadings, shadowForwardOutcomes, shadowStressAnnotations, shadowDailySummaries tables created
+- [x] server/pressure/shadowEngine.ts: V3-H engine with STLFSI4 scoring, DB persistence, forward outcome scheduling
+- [x] server/pressure/engine.ts: runV3HShadow wired as fire-and-forget after every V1 calculation
+- [x] server/scheduledShadowModel.ts: forward outcome collection and daily summary generation handlers
+- [x] server/_core/index.ts: /api/scheduled/shadow-forward-outcomes and /api/scheduled/shadow-daily-summary endpoints registered
+- [x] server/routers/admin.ts: getShadowStats, getShadowReadings, getShadowDailySummaries, addStressAnnotation, getStressAnnotations admin procedures
+- [x] client/src/pages/ShadowMonitor.tsx: admin-only V3-H Shadow Monitor dashboard at /app/admin/shadow-monitor
+- [x] client/src/App.tsx: ShadowMonitor lazy import and route registered
+- [x] shared/routeConsolidation.ts: /app/admin/shadow-monitor added to PRESERVED_UNIQUE_APP_PATHS
+- [x] Shadow period: 2026-08-09 to 2026-11-07 (90 days)
+- [x] NO-TUNING RULE: V3-H parameters frozen for shadow period
