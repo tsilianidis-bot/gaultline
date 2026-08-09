@@ -4642,3 +4642,12 @@
 - [x] Update routeConsolidation.test.ts to reflect new route status
 - [x] HTTP 200 verified for all 33 nav destinations
 - [x] 1557 tests passing, 0 failures
+
+## Signal Outlook Timeframe Crash Fix (Session Aug 9, 2026)
+- [x] Reproduce the exact failure: DOGE crypto → change timeframe → crash
+- [x] Identify root cause: Rules of Hooks violation in FullOutlookView (useIsMobile called after conditional early returns)
+- [x] Fix: moved useIsMobile() unconditionally before isLoading and error early returns
+- [x] Added isFetching indicator: "UPDATING ANALYSIS FOR X TIMEFRAME..." shown during timeframe transitions
+- [x] Verified esbuild exit 0 on SignalOutlookCenter.tsx
+- [x] signalOutlook.test.ts: 15 tests passing
+- [x] routeConsolidation.test.ts: 8 tests passing

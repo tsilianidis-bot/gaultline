@@ -384,10 +384,13 @@ function FullOutlookView({
   timeframe: OutlookTimeframe;
   onBack: () => void;
 }) {
-  const { data, isLoading, error, refetch } = trpc.outlook.getOutlook.useQuery(
+  const { data, isLoading, isFetching, error, refetch } = trpc.outlook.getOutlook.useQuery(
     { symbol, assetType, timeframe },
     { staleTime: 8 * 60 * 1000 }
   );
+  // MUST call all hooks unconditionally before any early returns (Rules of Hooks).
+  // Moving useIsMobile() here prevents React Error #310 on timeframe change.
+  const isMobile = useIsMobile();
 
   if (isLoading) {
     return <NarrativeLoader variant="signal-outlook" symbol={symbol} />;
@@ -436,13 +439,27 @@ function FullOutlookView({
   }
 
   const d = data;
-  const isMobile = useIsMobile();
   const dirColor = directionColor(d.direction);
   const rkColor = riskColor(d.riskLevel);
   const rdColor = readinessColor(d.tradeReadiness);
 
   return (
     <div>
+      {/* Timeframe-switch loading indicator */}
+      {isFetching && !isLoading && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          padding: "6px 12px", marginBottom: "12px",
+          background: "rgba(0,212,255,0.06)",
+          border: "1px solid rgba(0,212,255,0.15)",
+          borderRadius: "6px",
+        }}>
+          <RefreshCw size={12} color="#00D4FF" style={{ animation: "spin 1s linear infinite" }} />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#00D4FF" }}>
+            UPDATING ANALYSIS FOR {timeframe.toUpperCase()} TIMEFRAME…
+          </span>
+        </div>
+      )}
       {/* Back + refresh */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <button onClick={onBack} style={{
