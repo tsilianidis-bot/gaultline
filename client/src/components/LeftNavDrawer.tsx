@@ -89,7 +89,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { id: "social-intelligence",  label: "Social Intelligence",        icon: MessageSquare, path: "/app/social-intelligence" },
       { id: "insider-intelligence", label: "Insider Intelligence",       icon: Eye,           path: "/app/insider-intelligence" },
-      { id: "watchlist",            label: "Watchlist",                  icon: Bookmark,      path: "/app/watchlist" },
+      { id: "watchlist",            label: "Watchlist",                  icon: BookMarked,    path: "/app/watchlist" },
       { id: "alerts",               label: "Alerts",                     icon: BellRing,      path: "/app/alerts" },
       { id: "symbol-intelligence",  label: "Symbol Intelligence",        icon: SearchIcon,    path: "/app/symbol-intelligence" },
       { id: "day-trade",            label: "Day Trade Intelligence",     icon: Target,        path: "/app/day-trade-intelligence" },
