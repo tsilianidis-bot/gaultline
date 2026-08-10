@@ -42,10 +42,7 @@ const PAGE_META: Record<string, PageMeta> = {
     title: "Intelligence Archive — FAULTLINE Historical Market Records",
     description: "Complete archive of FAULTLINE intelligence records, regime readings, and market pressure history. Full transparency and track record.",
   },
-  "/track-record": {
-    title: "Track Record — FAULTLINE Signal Performance History",
-    description: "FAULTLINE's complete signal performance history. Transparent track record of market regime calls, crash warnings, and recovery signals.",
-  },
+
   "/pressure-index": {
     title: "FAULTLINE Pressure Index™ — Live Systemic Market Risk Score",
     description: "The FAULTLINE Pressure Index™ aggregates volatility, credit spreads, liquidity, and breadth into a single real-time systemic risk score (0–100).",
@@ -193,6 +190,34 @@ const PAGE_META: Record<string, PageMeta> = {
     title: "Legal — Terms, Disclaimers & Privacy | FAULTLINE",
     description: "FAULTLINE legal terms, disclaimers, and privacy policy. Not financial advice — for informational purposes only.",
   },
+  "/about": {
+    title: "About FAULTLINE — Why I Built This Platform",
+    description: "FAULTLINE was built to help investors recognize when the market environment has changed enough that protecting capital deserves as much attention as pursuing opportunity. Read the founder letter.",
+  },
+  "/trust": {
+    title: "FAULTLINE Trust Center — Methodology, Data & Disclaimers",
+    description: "FAULTLINE Trust Center: full methodology documentation, data sources, disclaimers, FAQ, privacy policy, and security information. Transparent by design.",
+  },
+  "/press": {
+    title: "FAULTLINE Press — Media Kit & Coverage",
+    description: "FAULTLINE press resources, media kit, and coverage. Contact the FAULTLINE team for media inquiries, interviews, and partnership opportunities.",
+  },
+  "/pricing": {
+    title: "FAULTLINE Pricing — Free, Pro & Founding Member Plans",
+    description: "FAULTLINE pricing plans: Free access to the Pressure Index, Pro at $59/month for full intelligence, and Founding Lifetime membership at $299 one-time. Limited founding cohort.",
+  },
+  "/intelligence-library": {
+    title: "Intelligence Library — FAULTLINE Research & Analysis",
+    description: "FAULTLINE Intelligence Library: deep-dive research, macro analysis, and market intelligence reports. Institutional-quality research for self-directed investors.",
+  },
+  "/daily-brief": {
+    title: "Daily Intelligence Brief — FAULTLINE Market Briefings",
+    description: "FAULTLINE Daily Intelligence Brief: real-time market briefings, regime updates, and systemic risk alerts. Published daily from live FRED and market data.",
+  },
+  "/track-record": {
+    title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
+    description: "FAULTLINE retrospective Pressure Index from 2000 to present. See how the indicators scored the 2008 GFC (82/CRITICAL), COVID crash (72/HIGH RISK), and dot-com bust. Retrospective analysis only — not live predictions.",
+  },
 };
 
 /**
@@ -246,8 +271,94 @@ export function getPageMeta(urlPath: string): PageMeta {
  * Inject per-page metadata into the HTML template.
  * Replaces title, description, OG, Twitter, and canonical tags.
  */
-export function injectPageMeta(html: string, urlPath: string): string {
-  const meta = getPageMeta(urlPath);
+import { getBlogPostBySlug, getBlogPosts } from "./db";
+
+/**
+ * Async version: resolves blog post metadata from DB for /blog/:slug routes.
+ */
+export async function injectPageMetaAsync(html: string, urlPath: string): Promise<string> {
+  const cleanPath = urlPath.split("?")[0].split("#")[0];
+
+  // Blog post: inject post-specific title/description from DB
+  const blogSlugMatch = cleanPath.match(/^\/blog\/([^/]+)$/);
+  if (blogSlugMatch) {
+    try {
+      const post = await getBlogPostBySlug(blogSlugMatch[1]);
+      if (post && post.published) {
+        const postTitle = (post as any).metaTitle ?? post.title;
+        const postDesc = (post as any).metaDescription ?? post.subtitle ?? post.title;
+        const postMeta: PageMeta = {
+          title: `${postTitle} | FAULTLINE`,
+          description: postDesc,
+          ogType: "article",
+        };
+        // Also inject Article JSON-LD into the HTML
+        let result = injectPageMeta(html, urlPath, postMeta);
+        const canonicalUrl = `${BASE_URL}/blog/${blogSlugMatch[1]}`;
+        const articleLd = {
+          "@context": "https://schema.org",
+          "@type": "BlogPosting",
+          "headline": post.title,
+          "description": postDesc,
+          "url": canonicalUrl,
+          "author": { "@type": "Person", "name": post.author ?? "FAULTLINE" },
+          "publisher": { "@type": "Organization", "name": "FAULTLINE", "url": BASE_URL },
+          "datePublished": post.publishedAt ?? post.createdAt,
+          "dateModified": post.updatedAt ?? post.publishedAt ?? post.createdAt,
+        };
+        const ldScript = `<script type="application/ld+json">${JSON.stringify(articleLd)}</script>`;
+        result = result.replace("</head>", `${ldScript}</head>`);
+        return result;
+      }
+    } catch { /* fall through to generic blog meta */ }
+  }
+
+  // Blog index: inject article list as noscript content for crawlers
+  if (cleanPath === "/blog") {
+    try {
+      const posts = await getBlogPosts({ publishedOnly: true, limit: 20 });
+      let result = injectPageMeta(html, urlPath);
+      if (posts.length > 0) {
+        const articleLinks = posts.map(p => {
+          const excerpt = (p.subtitle ?? "").slice(0, 160);
+          return `<article><h2><a href="${BASE_URL}/blog/${p.slug}">${p.title}</a></h2>${excerpt ? `<p>${excerpt}</p>` : ""}<time datetime="${p.publishedAt ?? p.createdAt}">${new Date(p.publishedAt ?? p.createdAt ?? Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</time></article>`;
+        }).join("\n");
+        const noscriptBlock = `<noscript><section aria-label="FAULTLINE Intelligence Briefings"><h1>FAULTLINE Intelligence Briefings</h1><p>Institutional macro commentary, market risk analysis, and systemic pressure updates.</p>${articleLinks}</section></noscript>`;
+        result = result.replace("</body>", `${noscriptBlock}</body>`);
+      }
+      return result;
+    } catch { /* fall through */ }
+  }
+
+  // Track Record: inject retrospective historical data as noscript for crawlers
+  if (cleanPath === "/track-record") {
+    let result = injectPageMeta(html, urlPath);
+    const trackRecordNoscript = `<noscript><section aria-label="FAULTLINE Track Record — Historical Pressure Index">
+<h1>FAULTLINE Track Record — Historical Pressure Index 2000–Present</h1>
+<p><strong>RETROSPECTIVE ANALYSIS ONLY.</strong> The following scores were computed by applying the current FAULTLINE Pressure Index methodology to historical FRED macroeconomic data. These readings were not generated live at the time. They represent a retrospective audit of how the model would have scored historical conditions.</p>
+<h2>Historical Validation Events</h2>
+<ul>
+<li><strong>2000–2002 Dot-com Bust:</strong> Retrospective analysis shows HIGH RISK readings from Sep 2001 through Feb 2003 — 18 consecutive months. Credit contagion and liquidity stress spiked as tech valuations collapsed and post-9/11 uncertainty froze capital markets. S&amp;P 500 fell ~49% over 30 months.</li>
+<li><strong>October 2008 Lehman Collapse:</strong> Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month Lehman Brothers collapsed. Baa credit spreads hit 5.53% (HY proxy ~11.45%), with CRITICAL readings sustained for 8 consecutive months through May 2009. S&amp;P 500 fell ~57% peak-to-trough.</li>
+<li><strong>2010–2012 Eurozone Crisis:</strong> Elevated unemployment (9–10%) and persistent credit stress kept the model in HIGH RISK territory through much of 2010–2012, capturing the eurozone sovereign debt contagion that threatened global financial stability.</li>
+<li><strong>March 2020 COVID Crash:</strong> Retrospective analysis shows HIGH RISK in March 2020 as credit spreads spiked and unemployment surged to 14.8% by April. The rapid Fed response (QE, rate cuts to zero) compressed spreads quickly, limiting the duration of the HIGH RISK reading. S&amp;P 500 fell ~34% in 33 days.</li>
+<li><strong>2022 Fed Rate Shock:</strong> Retrospective analysis shows ELEVATED RISK as the Fed raised rates from 0% to 5.25% in 18 months — the fastest tightening cycle since 1980. S&amp;P 500 fell ~25%, Nasdaq ~35%.</li>
+</ul>
+<h2>Methodology</h2>
+<p>The FAULTLINE Pressure Index™ is a composite of six weighted vectors: Liquidity Stress (20%), Credit Contagion (20%), Macro Sensitivity (20%), Volatility Regime (15%), AI Bubble Risk (15%), and Market Breadth (10%). Each vector is scored 0–100 using FRED macroeconomic data. The composite is a weighted average producing a final score of 0–100.</p>
+<p>Regime thresholds: 0–25 MINIMAL RISK, 26–45 MODERATE RISK, 46–60 ELEVATED RISK, 61–75 HIGH RISK, 76–100 CRITICAL.</p>
+<h2>Important Limitations</h2>
+<p>This is retrospective analysis. FAULTLINE did not exist during the 2000, 2008, or 2020 crises. These scores represent what the current methodology would have produced using the data available at those times. Past performance of the methodology does not guarantee future accuracy. Not investment advice.</p>
+</section></noscript>`;
+    result = result.replace("</body>", `${trackRecordNoscript}</body>`);
+    return result;
+  }
+
+  return injectPageMeta(html, urlPath);
+}
+
+export function injectPageMeta(html: string, urlPath: string, overrideMeta?: PageMeta): string {
+  const meta = overrideMeta ?? getPageMeta(urlPath);
   const canonicalUrl = `${BASE_URL}${urlPath === "/" ? "" : urlPath.split("?")[0]}`;
   const ogImage = meta.ogImage || DEFAULT_OG_IMAGE;
   const ogType = meta.ogType || "website";
@@ -271,11 +382,21 @@ export function injectPageMeta(html: string, urlPath: string): string {
     `<meta name="description" content="${safeDesc}"`
   );
 
-  // Replace canonical
-  result = result.replace(
-    /<link rel="canonical" href="[^"]*"/,
-    `<link rel="canonical" href="${safeCanonical}"`
-  );
+  // Add noindex for authenticated app routes
+  const isAppRoute = urlPath.startsWith("/app/") || urlPath === "/app";
+  if (isAppRoute) {
+    // Insert noindex meta after the canonical link
+    result = result.replace(
+      /<link rel="canonical" href="[^"]*"/,
+      `<link rel="canonical" href="${safeCanonical}"><meta name="robots" content="noindex,follow"`
+    );
+  } else {
+    // Replace canonical
+    result = result.replace(
+      /<link rel="canonical" href="[^"]*"/,
+      `<link rel="canonical" href="${safeCanonical}"`
+    );
+  }
 
   // Replace OG title
   result = result.replace(

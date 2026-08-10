@@ -4683,3 +4683,17 @@
 - [x] Add retry: 3 with exponential backoff to tRPC symbolSetup query
 - [x] Wrap each tab content in SectionErrorBoundary (Overview, Trade Setup, Risk Analysis, AI Analysis)
 - [x] Add provider health status panel (PARTIAL INTELLIGENCE REPORT banner when any provider degraded)
+
+## SEO & Public Route Discoverability (Session 2026-08-10)
+- [x] robots.txt: Disallow all /app/* routes, /demo/, /r/, /promo/, /admin/, UTM params
+- [x] robots.txt: Allow all important public pages (about, trust, press, pricing, intel-archive, daily-brief, intelligence-library)
+- [x] sitemap.xml: Add /about, /trust, /press, /pricing, /intel-archive, /intelligence-library, /daily-brief
+- [x] seoMeta.ts: Add unique server-side metadata for /about, /trust, /press, /pricing, /intelligence-library, /daily-brief
+- [x] seoMeta.ts: Fix /track-record metadata to use accurate retrospective description
+- [x] seoMeta.ts: Make injectPageMeta async (injectPageMetaAsync) with DB lookup for /blog/:slug
+- [x] seoMeta.ts: Blog index (/blog) injects article list as noscript for crawlers
+- [x] seoMeta.ts: Blog posts inject Article JSON-LD with post-specific title/description from DB
+- [x] seoMeta.ts: Track Record injects retrospective historical data as noscript for crawlers
+- [x] seoMeta.ts: /app/* routes get noindex,follow meta tag injected server-side
+- [x] vite.ts: Updated to use injectPageMetaAsync for both dev and prod serving
+- [x] Methodology.tsx: Fixed 0-10 scale references to use 0-100 with correct regime thresholds

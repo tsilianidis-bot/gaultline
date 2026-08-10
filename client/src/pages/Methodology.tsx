@@ -79,13 +79,13 @@ const METHODOLOGY_CARDS = [
   {
     icon: "◈",
     title: "Weighted Composite Scoring",
-    body: "Each risk vector is scored 0–10 using a piecewise linear function calibrated to historical stress episodes (2008 GFC, 2020 COVID crash, 2022 rate shock). The overall Pressure Index is a weighted composite of all vectors. Weights are fixed and disclosed in the open-source model.",
+    body: "Each risk vector is scored 0–100 using a piecewise linear function calibrated to historical stress episodes (2008 GFC, 2020 COVID crash, 2022 rate shock). The overall Pressure Index is a weighted composite of all vectors. Weights are fixed and disclosed in the methodology documentation.",
     color: "#00D4FF",
   },
   {
     icon: "◉",
     title: "Regime Classification",
-    body: "The overall score maps to five regimes: Low Risk (0–3.5), Moderate Risk (3.5–5.5), Elevated Stress (5.5–7.0), Late-Cycle Fragility (7.0–8.5), and Systemic Crisis (8.5–10). Regime boundaries were calibrated against NBER recession dates and CBOE VIX spike events.",
+    body: "The overall score maps to five regimes: Minimal Risk (0–25), Moderate Risk (26–45), Elevated Risk (46–60), High Risk (61–75), and Critical (76–100). Regime boundaries were calibrated against NBER recession dates and historical credit spread extremes.",
     color: "#22D3EE",
   },
   {

@@ -6,11 +6,19 @@ Allow: /blog
 Allow: /blog/
 Allow: /track-record
 Allow: /pressure-index
+Allow: /pricing
+Allow: /about
+Allow: /trust
+Allow: /press
 Allow: /legal
 Allow: /contact
 Allow: /methodology
+Allow: /intel-archive
+Allow: /intelligence-library
+Allow: /daily-brief
+Allow: /daily-brief/
 
-# ── Public SEO landing pages (canonical URLs for app features) ─
+# ── Public SEO landing pages ───────────────────────────────────
 Allow: /signals
 Allow: /crypto-signals
 Allow: /situation-room
@@ -19,50 +27,53 @@ Allow: /stock-market-risk-dashboard
 Allow: /crypto-market-risk-dashboard
 Allow: /ai-bubble-risk-tracker
 Allow: /diagnostic-ai
+Allow: /market-crash-probability-2026
+Allow: /market-crash-indicator
+Allow: /recession-probability
+Allow: /alt-season-indicator
+Allow: /bitcoin-risk-dashboard
+Allow: /ethereum-risk-dashboard
+Allow: /federal-reserve-tracker
+Allow: /liquidity-monitor
+Allow: /volatility-dashboard
+Allow: /ai-stocks-dashboard
+Allow: /ai-stock-signals
+Allow: /crypto-signals-intelligence
+Allow: /market-regime-tracker
+Allow: /bull-or-bear-market
+Allow: /bull-bear-conditions
+Allow: /treasury-yield-stress
+Allow: /credit-market-stress
+Allow: /stock-market-risk-today
+Allow: /is-now-good-time-to-buy-stocks
+Allow: /best-market-risk-indicators
+Allow: /best-stock-market-risk-dashboard
+Allow: /crypto-bull-or-bear
+Allow: /crypto-market-regime
+Allow: /bitcoin-vs-stock-market
+Allow: /stock/
+Allow: /crypto/
+Allow: /learn/
+Allow: /vs/
 
-# ── Authenticated app pages (indexable for discoverability) ────
-Allow: /app/pressure
-Allow: /app/signals
-Allow: /app/scores
-Allow: /app/charts
-Allow: /app/ai-watch
-Allow: /app/scenarios
-Allow: /app/alerts
-Allow: /app/analogs
-Allow: /app/aftershock
-Allow: /app/crypto
-Allow: /app/crypto-signals
-Allow: /app/report
-Allow: /app/guide
-Allow: /app/blog
-Allow: /app/track-record
-Allow: /app/diagnostic
-Allow: /app/simulate
-Allow: /app/alt-rotation
-Allow: /app/situation-room
-Allow: /app/pre-flight
-Allow: /app/insider-intelligence
-Allow: /app/signal-outlook
-Allow: /app/stock-heatmap
-Allow: /app/trade-preflight
+# ── Authenticated application — do NOT index ──────────────────
+Disallow: /app/
+Disallow: /app
 
-# ── Private / account / payment pages ─────────────────────────
-Disallow: /app/admin
-Disallow: /app/admin/
-Disallow: /app/account
-Disallow: /app/portfolio
-Disallow: /app/watchlist
-Disallow: /app/crypto-watchlist
-Disallow: /app/reading-history
-Disallow: /app/x-posts
-Disallow: /app/x-post-queue
-Disallow: /app/analytics
-Disallow: /app/seo-optimizer
+# ── Private / account / payment / admin pages ─────────────────
 Disallow: /owner/
 Disallow: /checkout/
 Disallow: /billing/
 Disallow: /login/
 Disallow: /api/
 Disallow: /mobile/
+Disallow: /admin/
+Disallow: /promo/
+Disallow: /demo/
+Disallow: /r/
+
+# ── Query parameters / UTM ────────────────────────────────────
+Disallow: /*?utm_
+Disallow: /*?ref=
 
 Sitemap: https://getfaultline.live/sitemap.xml
