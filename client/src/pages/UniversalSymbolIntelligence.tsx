@@ -597,7 +597,12 @@ function UniversalSymbolIntelligence() {
 
   const { data, isLoading, error, refetch, isFetching } = trpc.dayTrade.symbolSetup.useQuery(
     { symbol: submitted?.symbol ?? "", assetType: submitted?.assetType ?? "stock", direction: "both" },
-    { enabled: !!submitted, staleTime: 3 * 60 * 1000 }
+    {
+      enabled: !!submitted,
+      staleTime: 3 * 60 * 1000,
+      retry: 3,
+      retryDelay: (attempt: number) => Math.min(500 * Math.pow(2, attempt), 8000),
+    }
   );
 
   const report = data as DayTradeReport | null | undefined;
@@ -881,16 +886,31 @@ function UniversalSymbolIntelligence() {
               ))}
             </div>
 
+            {/* Provider health status — shown when any provider is degraded */}
+            {report._providerHealth && (
+              Object.values(report._providerHealth).some(v => v === "degraded" || v === "unavailable")
+            ) && (
+              <div style={{ marginBottom: "12px", padding: "8px 12px", background: "rgba(255,170,0,0.06)", border: "1px solid rgba(255,170,0,0.2)", borderRadius: "6px", display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#FFAA00", letterSpacing: "0.06em" }}>
+                  PARTIAL INTELLIGENCE REPORT
+                </span>
+                {Object.entries(report._providerHealth).map(([key, status]) => status !== "not_applicable" && (
+                  <span key={key} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: status === "live" ? "#00FF88" : status === "degraded" ? "#FFAA00" : "#FF6B6B", padding: "2px 6px", background: status === "live" ? "rgba(0,255,136,0.06)" : status === "degraded" ? "rgba(255,170,0,0.08)" : "rgba(255,107,107,0.08)", borderRadius: "3px", border: `1px solid ${status === "live" ? "rgba(0,255,136,0.15)" : status === "degraded" ? "rgba(255,170,0,0.2)" : "rgba(255,107,107,0.2)"}` }}>
+                    {key.toUpperCase()}: {status.toUpperCase()}
+                  </span>
+                ))}
+              </div>
+            )}
             {/* ASHA Symbol Interpretation */}
             <div style={{ marginBottom: '20px' }}>
               <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="symbol-interpretation" /></SectionErrorBoundary>
             </div>
 
             {/* Tab content */}
-            {activeTab === "overview" && <OverviewTab report={report} />}
-            {activeTab === "trade"    && <TradeSetupTab report={report} />}
-            {activeTab === "risk"     && <RiskAnalysisTab report={report} />}
-            {activeTab === "ai"       && <AIAnalysisTab report={report} />}
+            {activeTab === "overview" && <SectionErrorBoundary label="Overview"><OverviewTab report={report} /></SectionErrorBoundary>}
+            {activeTab === "trade"    && <SectionErrorBoundary label="Trade Setup"><TradeSetupTab report={report} /></SectionErrorBoundary>}
+            {activeTab === "risk"     && <SectionErrorBoundary label="Risk Analysis"><RiskAnalysisTab report={report} /></SectionErrorBoundary>}
+            {activeTab === "ai"       && <SectionErrorBoundary label="AI Analysis"><AIAnalysisTab report={report} /></SectionErrorBoundary>}
           </div>
         )}
       </div>

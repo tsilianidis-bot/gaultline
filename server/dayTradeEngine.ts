@@ -115,6 +115,34 @@ export interface DayTradeReport extends DayTradeSetup {
   alternativePath: string;
   recommendedTimeframe: string;
   bestStrategy: string;
+  // Provider health — drives graceful UI degradation
+  _providerHealth?: SymbolProviderHealth;
+  // Intelligence confidence — COMPLETE | PARTIAL | DEGRADED | UNAVAILABLE
+  _intelligenceConfidence?: "COMPLETE" | "PARTIAL" | "DEGRADED" | "UNAVAILABLE";
+  // Degraded sources list
+  _degradedSources?: string[];
+  _errorMessage?: string;
+}
+
+// Provider health status type for Symbol Intelligence reports
+export type ProviderStatus = "live" | "degraded" | "unavailable";
+export interface SymbolProviderHealth {
+  price: ProviderStatus;
+  technicals: ProviderStatus;
+  regime: ProviderStatus;
+  aiEnrichment: ProviderStatus;
+  fundamentals?: ProviderStatus | "not_applicable";
+}
+
+/** Compute intelligence confidence from provider health */
+export function computeIntelligenceConfidence(
+  ph: SymbolProviderHealth,
+  degradedSources: string[]
+): "COMPLETE" | "PARTIAL" | "DEGRADED" | "UNAVAILABLE" {
+  if (ph.price === "unavailable") return "UNAVAILABLE";
+  if (degradedSources.length === 0 && ph.aiEnrichment === "live" && ph.regime === "live") return "COMPLETE";
+  if (ph.price === "live" && ph.technicals === "live") return "PARTIAL";
+  return "DEGRADED";
 }
 
 export interface ScannerInput {
@@ -1100,6 +1128,14 @@ export async function dayTradeSymbolSetup(
       recommendedTimeframe: enrichmentCrypto.recommendedTimeframe,
       bestStrategy: enrichmentCrypto.bestStrategy,
       ...(!enrichment ? { _degradedSources: ["llm-enrichment"] } : {}),
+      _providerHealth: {
+        price: "live",
+        technicals: "live",
+        regime: regime !== "Unknown" ? "live" : "degraded",
+        aiEnrichment: enrichment ? "live" : "degraded",
+        fundamentals: "not_applicable",
+      },
+      _intelligenceConfidence: !enrichment ? "PARTIAL" : (regime !== "Unknown" ? "COMPLETE" : "PARTIAL"),
     };
 
     reportCache.set(cacheKey, report);
@@ -1264,6 +1300,14 @@ export async function dayTradeSymbolSetup(
     recommendedTimeframe: enrichmentStock.recommendedTimeframe,
     bestStrategy: enrichmentStock.bestStrategy,
     ...(!enrichment ? { _degradedSources: ["llm-enrichment"] } : {}),
+    _providerHealth: {
+      price: "live",
+      technicals: bars.length > 0 ? "live" : "degraded",
+      regime: regime !== "Unknown" ? "live" : "degraded",
+      aiEnrichment: enrichment ? "live" : "degraded",
+      fundamentals: "not_applicable",
+    },
+    _intelligenceConfidence: !enrichment ? "PARTIAL" : (regime !== "Unknown" && bars.length > 0 ? "COMPLETE" : "PARTIAL"),
   };
 
   reportCache.set(cacheKey, report);

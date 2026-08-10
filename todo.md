@@ -4674,3 +4674,12 @@
 - [x] shared/routeConsolidation.ts: /app/admin/shadow-monitor added to PRESERVED_UNIQUE_APP_PATHS
 - [x] Shadow period: 2026-08-09 to 2026-11-07 (90 days)
 - [x] NO-TUNING RULE: V3-H parameters frozen for shadow period
+
+## Symbol Intelligence Hardening (2026-08-09)
+- [x] Fix ShadowMonitor.tsx bad useAuth import (production build failure)
+- [x] Add SymbolProviderHealth interface and computeIntelligenceConfidence() to dayTradeEngine.ts
+- [x] Add _providerHealth and _intelligenceConfidence fields to DayTradeReport interface
+- [x] Attach _providerHealth to crypto and stock report assemblies
+- [x] Add retry: 3 with exponential backoff to tRPC symbolSetup query
+- [x] Wrap each tab content in SectionErrorBoundary (Overview, Trade Setup, Risk Analysis, AI Analysis)
+- [x] Add provider health status panel (PARTIAL INTELLIGENCE REPORT banner when any provider degraded)

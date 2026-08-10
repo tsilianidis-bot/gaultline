@@ -4,7 +4,7 @@
  * Access: admin only
  */
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Redirect } from "wouter";
 import { useState } from "react";
 import { CANONICAL_HOME } from "@shared/routeRegistry";
