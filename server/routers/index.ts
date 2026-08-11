@@ -21,3 +21,4 @@ export { promoRouter } from "./promo";
 export { gscRouter } from "./gsc";
 export { marketStateRouter } from "./marketState";
 export { timeMachineRouter } from "./timeMachine";
+export { marketsRouter } from "./markets";

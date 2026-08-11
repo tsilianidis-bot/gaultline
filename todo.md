@@ -4697,3 +4697,14 @@
 - [x] seoMeta.ts: /app/* routes get noindex,follow meta tag injected server-side
 - [x] vite.ts: Updated to use injectPageMetaAsync for both dev and prod serving
 - [x] Methodology.tsx: Fixed 0-10 scale references to use 0-100 with correct regime thresholds
+
+## Global Markets Experience (Session 2026-08-10)
+- [x] server/routers/markets.ts: marketsRouter with getGlobalSnapshot — 23 instruments, 90s LRU cache, summary classifications, strongest/weakest
+- [x] server/routers/index.ts: Export marketsRouter
+- [x] server/routers.ts: Register markets: marketsRouter in appRouter
+- [x] client/src/pages/Markets.tsx: Full 7-section Global Markets page at /app/markets
+- [x] client/src/components/GlobalMarketTicker.tsx: Slim 24px live price ticker (SPX, DJI, IXIC, RUT, VIX, DXY, 10Y, Gold, WTI, BTC, ETH, FTSE, DAX, Nikkei)
+- [x] client/src/components/AppLayout.tsx: Wire GlobalMarketTicker below AppMarketHeader
+- [x] client/src/App.tsx: Add lazy import + Route for /app/markets
+- [x] client/src/components/LeftNavDrawer.tsx: Add Global Markets to INTELLIGENCE nav group
+- [x] shared/routeConsolidation.ts: Add /app/markets to PRESERVED_UNIQUE_APP_PATHS

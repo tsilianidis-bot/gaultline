@@ -821,3 +821,5 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </DrawerProvider>
   );
 }
+import GlobalMarketTicker from "@/components/GlobalMarketTicker";
+        <GlobalMarketTicker />

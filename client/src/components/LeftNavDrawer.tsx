@@ -63,6 +63,7 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: "INTELLIGENCE",
     items: [
+      { id: "global-markets",       label: "Global Markets",          icon: BarChart3,    path: "/app/markets" },
       { id: "seismograph",        label: "Seismograph Intelligence", icon: Activity,     path: "/app/seismograph-command-center" },
       { id: "daily-brief",        label: "Daily Brief",             icon: Newspaper,    path: "/daily-brief" },
       { id: "intel-archive",      label: "Historical Briefings",    icon: History,      path: "/intel-archive" },

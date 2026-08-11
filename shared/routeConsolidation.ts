@@ -64,6 +64,7 @@ export const PRESERVED_UNIQUE_APP_PATHS = [
   "/app/time-machine",
   "/app/social-intelligence",
   "/app/insider-intelligence",
+  "/app/markets",
 ] as const;
 
 const canonicalPaths = new Set(CANONICAL_DESTINATIONS.map(route => route.path));

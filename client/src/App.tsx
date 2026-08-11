@@ -1157,3 +1157,5 @@ function App() {
 }
 
 export default App;
+const Markets                = lazy(() => import("./pages/Markets"));
+              <Route path="/app/markets" component={Markets} />
