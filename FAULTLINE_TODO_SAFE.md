@@ -1,3 +1,160 @@
+# FAULTLINE Safe TODO Export
+
+> Generated from root `todo*.md` files for disaster recovery. Secret-like values were automatically redacted. The unredacted originals are intentionally excluded from the safe archive.
+
+--- SOURCE: todo-5hndw4we.md (sensitive values redacted) ---
+
+# Project TODO
+
+- [x] Confirm repository HEAD, working-tree cleanliness, dependency state, TypeScript status, and current test baseline before editing
+- [ ] Make the pre-existing `tradePreflight` output-shape test deterministic so live LLM latency cannot cause the 30-second regression-suite timeout
+- [x] Inventory the five canonical destination routes and centralized legacy-alias ownership from the actual route registry and application mounts
+- [x] Enumerate every remaining legacy analytical page component and map each page to its current public route or absence from routing
+- [x] Process the recovered 33-row audit plus three direct-source manual classifications after abandoning the stalled parallel classification run
+- [x] Record the recovered legacy analytical capability decisions and overlap with NOW, WHY, OUTLOOK, WATCH, ACT, and preserved expert workspaces
+- [x] Classify every audited legacy analytical page as preserve, redirect, or archive through the authoritative code-level audit
+- [x] Preserve direct routes for legacy analytical pages whose unique capabilities are not covered by the five canonical destinations
+- [x] Redirect redundant legacy analytical routes directly to the correct canonical or expert destination without redirect chains
+- [x] Archive the unreachable redundant `CryptoIntelligence` source by keeping it unmounted with no compatibility alias
+- [x] Extend route-contract tests to cover every preserve, redirect, archive, deep-view, utility, and expert-workspace decision
+- [x] Run TypeScript validation and targeted route tests for the completed legacy-route audit implementation
+- [x] Generate an authoritative inventory of maintained source files over 800 lines, including test source while excluding generated artifacts, dependencies, migrations, and test snapshots
+- [ ] Decompose oversized shared and server modules into focused single-responsibility files while preserving public exports and runtime behavior
+- [ ] Add or update Vitest coverage for decomposed shared and server behavior
+- [ ] Run TypeScript validation and targeted tests, then checkpoint each validated shared/server decomposition batch
+- [x] Extract the `cryptoIntelligence` domain contract into a focused type module, preserve its public exports, keep both modules below 800 lines, and validate all 21 focused tests
+- [x] Split the `intentResolver` contract and query taxonomy into focused modules, preserve its public API, reduce the resolver to 764 lines, and validate 10 deterministic resolver tests
+- [x] Extract the `seismographCore` evidence contract into a focused module, preserve its public type exports, reduce the core to 774 lines, and validate 13 focused and existing provenance tests
+- [ ] Decompose oversized NOW, WHY, OUTLOOK, WATCH, ACT, ASHA, and analytical UI modules into focused components, hooks, data modules, and types
+- [x] Extract the global market ticker and regime indicator header from oversized `AppLayout.tsx`, reduce the shell to 791 lines, and validate deterministic rendering and route-consumer coverage
+- [x] Extract the alert editor and shared severity/category presentation constants from oversized `Watchlist.tsx`, reduce the page to 627 lines, and validate deterministic item-builder and route-consumer coverage
+- [ ] Add or update Vitest coverage for behavior moved out of oversized canonical and analytical UI modules
+- [ ] Run TypeScript validation and targeted tests, then checkpoint each validated canonical/UI decomposition batch
+- [ ] Decompose every remaining production source file over 800 lines without changing user-visible scope
+- [ ] Verify with a deterministic line-count audit that no in-scope production source file remains over 800 lines
+- [ ] Inspect NOW, WHY, OUTLOOK, WATCH, and ACT at desktop and narrow mobile widths for horizontal overflow, clipped labels, unbroken text, and grid/flex min-width failures
+- [ ] Fix canonical-destination text containment with intrinsic sizing, wrapping, truncation, or scroll containment appropriate to each content type
+- [ ] Add or update regression tests for reusable text-containment and responsive-layout contracts where applicable
+- [ ] Verify responsive layouts for NOW, WHY, OUTLOOK, WATCH, and ACT at representative mobile viewports without changing their information hierarchy
+- [ ] Verify touch target sizing, tap interactions, drawers, tabs, tables, charts, and horizontally dense controls across all five destinations
+- [ ] Verify the unified ASHA gateway opens, closes, accepts input, preserves the shared thread, and maintains cross-surface continuity on mobile
+- [ ] Run TypeScript validation, targeted tests, and mobile visual verification, then checkpoint overflow and mobile-parity changes
+- [ ] Run the full Vitest suite, TypeScript validation, production build, route regression suite, and browser-console/network-log checks
+- [ ] Run a bounded production-performance audit on the five canonical destinations and address only regressions introduced or exposed by this reorganization
+- [ ] Review this complete ledger and mark every validated item accurately before the final checkpoint
+- [ ] Create the final FAULTLINE_Production-Verified checkpoint and document the route audit, decomposition results, mobile evidence, overflow fixes, tests, and any bounded residual risks
+
+
+--- SOURCE: todo-ud63am3n.md (sensitive values redacted) ---
+
+# Project TODO
+
+- [x] Audit existing client analytics, routing, consent, and environment configuration
+- [x] Define a typed GA4 configuration and event-tracking contract
+- [x] Add guarded GA4 script initialization without duplicating automatic page views
+- [x] Track SPA route changes as GA4 page_view events
+- [x] Instrument high-value authentication and subscription conversion actions where supported by existing flows
+- [x] Add Vitest coverage for GA4 configuration, page views, and event sanitization
+- [x] Run TypeScript, unit-test, production-build, and browser verification
+- [x] Document the GA4 Measurement ID and DebugView verification steps
+
+
+--- SOURCE: todo-xuxnfh1l.md (sensitive values redacted) ---
+
+# FAULTLINE Reorganization Session TODO
+
+- [x] Create and verify immutable tag `FAULTLINE_Pre-Reorganization_2026-07-22` on the existing untouched checkpoint `f6106e41`.
+- [x] Validate all 158 page-map rows and all 56 large-file-audit rows; record untouched route, TypeScript, Vitest, and build baselines.
+- [x] Recover and archive the validated route-registry, canonical-market-state, browser projection, provider provenance, and unified-ASHA gateway Foundation in independently committed batches.
+- [x] Create one typed route registry for NOW, WHY, OUTLOOK, WATCH, ACT, utilities, aliases, access, icons, analytics, search, and CTAs.
+- [x] Make `/app` resolve to `/app/now`; make desktop, tablet, mobile, onboarding, search, analytics, links, CTAs, and wrappers consume the registry.
+- [x] Expose only NOW, WHY, OUTLOOK, WATCH, ACT as analytical navigation; keep ASHA, Search, Help, Account, Alerts as utilities.
+- [x] Add registry order, uniqueness, metadata, access, and context-preserving alias tests.
+- [x] Define one versioned typed server-generated canonical 0–100 market-state snapshot and deterministic scoring core.
+- [x] Make browser live state a projection of canonical state while retaining explicit deterministic simulation controls.
+- [x] Establish one macro/FRED provider, cache owner, retry/fallback path, truthful provenance, and no fabricated live values.
+- [x] Add scoring, canonical-state assembly, cache, real provider-path, freshness, fallback, provenance, and projection tests.
+- [x] Create one shared ASHA context contract and one advisor-facing gateway retaining bounded specialist engines.
+- [x] Implement ASHA as persistent utility, contextual panel, and `/app/asha` workspace with shared continuity.
+- [x] Resolve ASHA models from the live catalogue and remove the retired hardcoded model ID.
+- [x] Add ASHA model, context, continuity, response, provenance, boundary, and error tests.
+- [x] Correct probability and pressure rendering so canonical 0–100 values are formatted once.
+- [x] Validate and archive `FAULTLINE_Post-Foundation` as checkpoint plus immutable tag.
+- [x] Compose and validate NOW in the required conclusion-first sequence with complete Seismograph depth.
+- [x] Archive `FAULTLINE_Post-NOW` as checkpoint plus immutable tag.
+- [x] Compose and validate WHY, OUTLOOK, WATCH, and ACT in their required information orders.
+- [x] Preserve Pressure, Signal Outlook, Decision Engine, Day Trade, Symbol Intelligence, and Smart Discovery as expert workspaces outside primary navigation.
+- [x] Apply the exact treatment to all 158 page-map rows, preserving public/support/account/admin/internal/mobile behavior and legacy context.
+- [x] Add page-treatment and legacy-route parity tests.
+- [ ] Apply all required large-file decompositions behind stable exports and compatibility façades.
+- [ ] Complete mobile parity and preserve every valuable capability without placeholders, mocks, fabricated data, or demos.
+- [ ] Verify loading, empty, stale, partial, provider-error, retry, responsive, keyboard, focus, semantic, chart/table, and reduced-motion behavior.
+- [ ] Validate and archive `FAULTLINE_Post-Full-Reorganization` as checkpoint plus immutable tag.
+- [ ] Resolve all source defects and run full Vitest, TypeScript, build, browser, console, network, server-log, route, public, admin, and authenticated-flow validation.
+- [ ] Review this ledger and accurately mark all completed requirements.
+- [ ] Archive `FAULTLINE_Production-Verified` as checkpoint plus immutable tag.
+- [x] Fix the two committed CommandSearch route-registry TypeScript errors.
+- [x] Fix all thirteen pre-existing TypeScript errors in SeismographicDash and Stripe configuration.
+- [x] Run the complete TypeScript check and confirm zero errors before feature work resumes.
+- [x] Inspect the rendered application, logs, console, and network activity; fix every runtime crash and error-boundary failure.
+- [x] Verify all five canonical routes and the account authentication gate render cleanly before creating the pre-reorganization tag.
+- [x] Fix the Stripe `evt_test_` webhook passthrough runtime failure and restore its focused test.
+- [x] Reconcile the global ASHA placeholder contract with its existing focused test.
+- [x] Document the user-waived SendGrid HTTP 401 as a known external-dependency issue and explicitly skip only its live credential assertion.
+- [ ] Validate a signed-in authenticated route end to end during production verification.
+- [x] Verify and convert remaining mobile, onboarding, link, CTA, and wrapper consumers to shared route-registry ownership.
+- [x] Confirm destination-order, path-uniqueness, access-metadata, and context-preserving alias test coverage explicitly.
+- [x] Prove the deterministic MarketState 0–100 scoring path with focused tests or add the missing canonical scoring boundary.
+- [x] Centralize canonical pressure and probability formatting and cover its UI consumers with focused tests.
+- [x] Wire browser live-state consumers to the canonical `marketState` API while preserving explicit deterministic simulation controls.
+- [x] Add focused MarketState provider, freshness, stale-if-error, provenance, and client-projection coverage.
+- [x] Prove the authoritative macro/FRED provider path, source health, freshness, stale-if-error behavior, and no-fabrication provenance with explicit focused assertions.
+- [x] Implement shared ASHA conversation continuity across the persistent utility, contextual panel, and `/app/asha` workspace.
+- [x] Add focused ASHA continuity plus explicit live response and error-path coverage.
+- [x] Prove deferred ASHA continuity across the persistent utility, contextual panel, and `/app/asha` workspace during Stage 2/3 destination work.
+- [x] Reconstruct and validate the lost conclusion-first NOW destination from the recorded Stage 2 specification.
+- [x] Collapse the overlapping `CinematicAuthGate` render branches in `App.tsx` into one gate instance.
+- [x] Convert the ASHA hero plus NOW-adjacent pressure displays to the shared canonical 0–100 formatter.
+- [x] Re-verify the hydrated NOW route and confirm no legacy pressure `/10` presentation remains in the NOW flow.
+- [x] Compose WHY from canonical MarketState in causal order: explanation, primary drivers, transmission, positioning, duration/change, history, invalidation, confidence, ASHA, and expert handoffs.
+- [x] Preserve the current `TodaysStory` experience at `/app/why/deep` while making `/app/why` the canonical WHY composition.
+- [x] Add focused WHY composition, route ownership, source-state, provenance, and deep-view regression coverage.
+- [x] Validate the hydrated WHY route in the browser, run TypeScript plus focused tests, and commit the Stage 3 milestone.
+- [x] Compose OUTLOOK from canonical MarketState in decision order: ranked scenarios, probability changes, horizons, triggers, invalidations, indicators, historical analogs, confidence, ASHA, and expert handoffs.
+- [x] Preserve the current `SignalOutlookCenter` experience at `/app/outlook/deep` while making `/app/outlook` the canonical OUTLOOK composition.
+- [x] Add focused OUTLOOK composition, route ownership, probability-scale, source-state, provenance, and deep-view regression coverage.
+- [x] Validate the hydrated OUTLOOK route in the browser, run TypeScript plus focused tests, and commit the Stage 4 milestone.
+- [x] Compose WATCH from canonical MarketState in monitoring order: what changed, developing conditions, active patterns, leading indicators, duration/trend, expected impact, invalidations, confidence, ASHA, and expert handoffs.
+- [x] Preserve the current `AiWatchAssistant` experience at `/app/watch/deep` while making `/app/watch` the canonical WATCH composition.
+- [x] Add focused WATCH composition, route ownership, source-state, duration/trend, provenance, and deep-view regression coverage.
+- [x] Validate the hydrated WATCH route in the browser, run TypeScript plus focused tests, and commit the Stage 5 milestone.
+- [x] Compose ACT from canonical MarketState in decision order: posture, decision summary, evidence boundary, scenario responses, risk controls, invalidation, monitored triggers, confidence, ASHA, and expert handoffs.
+- [x] Preserve the current `SmartDiscovery` experience at `/app/act/deep` while making `/app/act` the canonical ACT composition.
+- [x] Add focused ACT composition, route ownership, decision-boundary, risk-control, provenance, and deep-view regression coverage.
+- [x] Validate the hydrated ACT route in the browser, run TypeScript plus focused tests, and commit the Stage 6 milestone.
+- [x] Inventory the persistent ASHA utility, destination-context panel/CTA surfaces, `/app/asha` workspace, shared context contract, and advisor gateway without creating a parallel assistant stack.
+- [x] Preserve the existing root-scoped `AshaProvider` architecture per explicit user direction; do not introduce a second conversation provider.
+- [x] Extend the existing root-scoped `AshaProvider` with minimal session-persisted thread history and provenance; do not create another provider or server stack.
+- [x] Expose the existing ASHA Intelligence workspace at canonical `/app/asha` while preserving its current aliases.
+- [x] Add one focused regression proving the root provider, persistent utility request path, contextual ASHA handoff, persisted conversation-memory query, and `/app/asha` workspace route form one continuity chain.
+- [x] Run the focused ASHA continuity test plus zero-error TypeScript validation, commit the bounded milestone, and move immediately to page consolidation.
+- [x] Enumerate every explicit and registry-generated route in the current `App.tsx` assembly and classify it as canonical, deep-view, utility/auth/settings/onboarding, redundant analytical, or uniquely functional.
+- [x] Keep the five canonical destinations, their `/deep` routes, canonical `/app/asha`, and all required utility/auth/settings/onboarding routes.
+- [x] Redirect or remove only legacy analytical pages whose valuable functions are fully served by NOW, WHY, OUTLOOK, WATCH, ACT, or their deep views.
+- [x] Preserve every current route with a unique function not covered by the canonical destinations, including specialist expert workspaces outside primary navigation.
+- [x] Add route-inventory, treatment, redirect-target, uniqueness, utility-preservation, and expert-workspace parity tests; validate and commit consolidation incrementally.
+- [x] Reconcile all 33 recovered successful capability-audit classifications against the committed route treatment registry without rerunning the audit.
+- [x] Manually inspect and classify only the three capability-audit rows that did not return results, using their current source implementations.
+- [x] Apply every capability-backed redirect or preservation decision, extend parity tests, and archive the completed Stage 4 milestone in a commit and checkpoint.
+- [x] Restore the orphaned admin Chat Inbox implementation at `/app/admin/chat-inbox` instead of routing that path to the unrelated ASHA Intelligence Center.
+- [x] Add a committed full-page treatment manifest and regression test proving all 158 authoritative baseline rows plus the five new canonical destinations retain an explicit treatment.
+- [x] Cover ASHA live-catalog selection, bounded cache refresh, empty-catalog fallback, and catalogue transport failure without hardcoded retired models.
+- [x] Cover ASHA canonical context truncation, truthful provenance, model failover trace, and all-candidate gateway failure.
+- [x] Cover ASHA structured, plain-text, empty, history-bearing, unavailable-source, and live gateway-error response paths at the engine and client boundaries.
+
+
+--- SOURCE: todo.md (sensitive values redacted) ---
+
 # FAULTLINE — Project TODO
 
 ## GA4 Event Tracking
@@ -792,7 +949,7 @@
 - [x] Add STRIPE_CORE_PRICE_ID, STRIPE_PREMIUM_PRICE_ID, STRIPE_FOUNDING_PRICE_ID to secrets
 - [x] Create webhook endpoint for https://getfaultline.live/api/stripe/webhook
 - [x] Subscribe webhook to 4 events
-- [x] STRIPE_WEBHOOK_SECRET is a built-in managed secret — new signing secret is whsec_pEqvz2m76f67YpuLVpd9udJPGJtIOf8l (must be updated manually in Settings → Payment)
+- [x] STRIPE_WEBHOOK_SECRET is a built-in managed secret — new signing secret is [REDACTED_STRIPE_WEBHOOK_SECRET] (must be updated manually in Settings → Payment)
 - [x] Webhook test verification fix deployed — evt_test_ detected before signature check
 
 ## Multi-Tier Risk Framework (Stop-Loss Redesign)
@@ -4719,5 +4876,5 @@
 - [x] Create FAULTLINE_ENVIRONMENT_TEMPLATE.env.example with safe placeholders only
 - [x] Create FAULTLINE_PRODUCT_BIBLE.md and FAULTLINE_CURRENT_STATE.md from current source and task state
 - [x] Create FAULTLINE_BACKUP_MANIFEST.csv and FAULTLINE_RESTORE_CHECKLIST.md
-- [x] Create, inspect, and verify safe FAULTLINE_FULL_BACKUP_2026-08-13.zip archive excluding secrets, dependencies, caches, and logs
+- [ ] Create, inspect, and verify safe FAULTLINE_FULL_BACKUP_2026-08-13.zip archive excluding secrets, dependencies, caches, and logs
 - [ ] Save the backup-package production checkpoint and deliver a concise restoration report
