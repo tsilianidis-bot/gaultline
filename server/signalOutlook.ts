@@ -29,6 +29,8 @@ import { getQuote } from "./yahooProxy";
 import { getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
 import { fetchDailyBars } from "./signalsProxy";
 import { computeCalculatedLevels, type CalculatedLevels } from "./priceLevels";
+import { getVerifiedSocialSnapshot } from "./socialIntelligence";
+import { scoreRisingStar, type RisingStarResult } from "./risingStars";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -1734,9 +1736,15 @@ export interface DiscoveryBucket {
 
 export interface OpportunityDiscoveryResult {
   buckets: DiscoveryBucket[];
+  risingStars: RisingStarItem[];
   pressureIndex: number;
   regime: string;
   generatedAt: number;
+}
+
+export interface RisingStarItem extends RisingStarResult {
+  assetType: "stock";
+  dataAsOf: number;
 }
 
 const DISCOVERY_CATEGORY_META: Record<DiscoveryCategory, { label: string; description: string }> = {
@@ -2220,6 +2228,114 @@ function discoveryActionBias(score: number, pressure: number): DiscoveryItem["ac
   return "AVOID";
 }
 
+const RISING_STAR_CANDIDATES: Array<{ symbol: string; name: string }> = [
+  { symbol: "PLTR", name: "Palantir Technologies" },
+  { symbol: "RKLB", name: "Rocket Lab USA" },
+  { symbol: "IONQ", name: "IonQ Inc." },
+  { symbol: "SOFI", name: "SoFi Technologies" },
+  { symbol: "CRWD", name: "CrowdStrike Holdings" },
+];
+
+type DailyBar = { close: number; open: number; high: number; low: number; volume: number; timestamp: number };
+
+function average(values: number[]): number {
+  return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+}
+
+function buildRisingStarTechnical(bars: DailyBar[]) {
+  const latest = bars.at(-1);
+  const close20 = bars.slice(-20).map(bar => bar.close);
+  const close50 = bars.slice(-50).map(bar => bar.close);
+  const priorFive = bars.at(-6)?.close;
+  const priorTwenty = bars.at(-21)?.close;
+  const priorVolume = bars.slice(-21, -1).map(bar => bar.volume);
+  if (!latest || close20.length < 20 || !priorFive || !priorTwenty || priorVolume.length < 10) return null;
+
+  const sma20 = average(close20);
+  const sma50 = close50.length >= 40 ? average(close50) : sma20;
+  const high20 = Math.max(...bars.slice(-20).map(bar => bar.high));
+  const return5 = ((latest.close / priorFive) - 1) * 100;
+  const return20 = ((latest.close / priorTwenty) - 1) * 100;
+  const volumeRatio = latest.volume / Math.max(1, average(priorVolume));
+  const extensionPct = ((latest.close / sma20) - 1) * 100;
+
+  return {
+    relativeStrength: clamp(50 + return20 * 3 + return5 * 2),
+    volumeAccumulation: clamp(45 + (volumeRatio - 1) * 45),
+    momentumInflection: clamp(50 + return5 * 4 + Math.max(0, return20) * 1.5),
+    technicalStructure: clamp(
+      40
+      + (latest.close >= sma20 ? 20 : -15)
+      + (latest.close >= sma50 ? 15 : -10)
+      + Math.max(0, 20 - ((high20 - latest.close) / Math.max(1, high20)) * 100)
+    ),
+    asymmetry: clamp(extensionPct <= 2 ? 85 : extensionPct <= 7 ? 70 : extensionPct <= 12 ? 45 : 25),
+    note: `Technical inputs from ${bars.length} completed daily bars; latest volume is ${(volumeRatio * 100).toFixed(0)}% of its recent average.`,
+  };
+}
+
+async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<RisingStarItem[]> {
+  const apiKey = process.env.POLYGON_API_KEY;
+  if (!apiKey) return [];
+
+  // The small covered universe respects the configured Polygon free-plan cadence.
+  const attempts = await Promise.allSettled(RISING_STAR_CANDIDATES.map(async candidate => {
+    try {
+      const [bars, social] = await Promise.all([
+        fetchDailyBars(apiKey, candidate.symbol, 60),
+        getVerifiedSocialSnapshot(candidate.symbol, "stock"),
+      ]);
+      const technical = buildRisingStarTechnical(bars);
+      if (!technical) return null;
+
+      const newsAvailable = social.newsCount >= 2;
+      const result = scoreRisingStar({
+        ticker: candidate.symbol,
+        name: candidate.name,
+        technical,
+        catalyst: newsAvailable
+          ? {
+              available: true,
+              score: clamp(50 + social.sentimentScore * 30 + Math.min(20, (social.positiveNews + social.negativeNews) * 4)),
+              note: `${social.positiveNews + social.negativeNews} directionally classified recent public-news items.`,
+            }
+          : { available: false, note: "Insufficient recent public-news coverage; excluded from score." },
+        macroAlignment: {
+          score: clamp(100 - pressure.overallPressure * 0.75),
+          note: `Current FAULTLINE pressure is ${pressure.overallPressure}/100 (${pressure.regime}).`,
+        },
+        sectorTailwind: { available: false, note: "No source-backed sector/theme flow feed is connected; excluded from score." },
+        social: {
+          available: social.sourceCount >= 2,
+          sourceCount: social.sourceCount,
+          socialVolume: social.socialVolume,
+          sentimentScore: social.sentimentScore,
+          positiveNews: social.positiveNews,
+          negativeNews: social.negativeNews,
+          memeHypeDetected: social.extremeAttentionDetected,
+          note: social.sourceCount >= 2
+            ? `${social.sourceCount} social/news sources available; data refreshed ${new Date(social.fetchedAt).toLocaleTimeString()}.`
+            : "Fewer than two social/news sources responded; excluded from score.",
+        },
+        // The current insider module is deterministic synthetic data, so it is deliberately excluded.
+        insider: { available: false, note: "Existing Insider Intelligence is not yet backed by live public filings; excluded from score." },
+        // No source-backed options-flow engine currently exists in this project.
+        options: { available: false, note: "No source-backed options-flow provider is connected; excluded from score." },
+      });
+      return { ...result, assetType: "stock" as const, dataAsOf: Math.max(social.fetchedAt, bars.at(-1)?.timestamp ?? 0) };
+    } catch (error) {
+      console.warn(`[RisingStars] ${candidate.symbol} unavailable`, error instanceof Error ? error.message : error);
+      return null;
+    }
+  }));
+
+  return attempts
+    .filter((attempt): attempt is PromiseFulfilledResult<RisingStarItem | null> => attempt.status === "fulfilled")
+    .map(attempt => attempt.value)
+    .filter((item): item is RisingStarItem => item !== null)
+    .sort((a, b) => b.risingStarScore - a.risingStarScore);
+}
+
 export async function getOpportunityDiscovery(): Promise<OpportunityDiscoveryResult> {
   const cached = discoveryCache.get("discovery");
   if (cached) return cached;
@@ -2289,8 +2405,10 @@ export async function getOpportunityDiscovery(): Promise<OpportunityDiscoveryRes
     return avgB - avgA;
   });
 
+  const risingStars = await buildRisingStars(pressure);
   const result: OpportunityDiscoveryResult = {
     buckets: sortedBuckets,
+    risingStars,
     pressureIndex: p,
     regime: pressure.regime,
     generatedAt: now,

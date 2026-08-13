@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import React from "react";
 import { PremiumGateFull } from "@/components/PremiumGate";
+import RisingStarsPanel from "@/components/RisingStarsPanel";
 
 // ── Types ─────────────────────────────────────────────────────
 interface DiscoveryItem {
@@ -557,6 +558,13 @@ function OpportunitiesInner() {
       {/* ── CONTENT ─────────────────────────────────────────────── */}
       <div style={{ padding: "16px 20px 32px", maxWidth: "1400px", margin: "0 auto" }}>
         {isLoading && <NarrativeLoader variant="opportunity-discovery" />}
+
+        {data && (
+          <RisingStarsPanel
+            items={data.risingStars ?? []}
+            onAnalyze={ticker => handleAnalyze(ticker, "stock")}
+          />
+        )}
 
         {error && (
           <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "20px", background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.2)", borderRadius: "6px", color: "#F87171" }}>

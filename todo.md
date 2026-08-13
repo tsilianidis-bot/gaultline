@@ -4720,4 +4720,15 @@
 - [x] Create FAULTLINE_PRODUCT_BIBLE.md and FAULTLINE_CURRENT_STATE.md from current source and task state
 - [x] Create FAULTLINE_BACKUP_MANIFEST.csv and FAULTLINE_RESTORE_CHECKLIST.md
 - [x] Create, inspect, and verify safe FAULTLINE_FULL_BACKUP_2026-08-13.zip archive excluding secrets, dependencies, caches, and logs
-- [ ] Save the backup-package production checkpoint and deliver a concise restoration report
+- [x] Save the backup-package production checkpoint and deliver a concise restoration report
+
+## Rising Stars — Social, Insider, and Options Intelligence Expansion (Session 2026-08-13)
+- [x] Audit existing Rising Stars implementation and the currently available social, insider, and options intelligence data contracts
+- [x] Define reliability-weighted Social Discovery, Insider Conviction, Options Conviction, Cross-Signal Confidence, Information Lead, and Crowding/Extension scoring with neutral missing-data handling
+- [x] Integrate only lawful/public source-backed social, insider, and options evidence into the Rising Star Score where reliable data exists
+- [x] Add early-discovery versus late-hype/crowding detection without treating activity alone as bullish
+- [x] Add context-aware insider transaction classification and avoid implying non-public information access
+- [x] Add options interpretation safeguards that distinguish ambiguity, hedging, closing activity, covered calls, and directional conviction where data permits
+- [x] Add concise “Why FAULTLINE Is Seeing It Early” explanations and data-confidence/limitation surfaces per Rising Star asset
+- [x] Add scoring and UI tests; validate missing/degraded data does not penalize assets or create false precision
+- [ ] Save the Rising Stars expansion checkpoint and deliver implementation results

@@ -200,6 +200,24 @@ export interface MultiSourceSocialData {
   fetchedAt: number;
 }
 
+/**
+ * Raw public-source snapshot for deterministic scoring systems. This omits LLM
+ * synthesis so consumers can rely only on fetched source measurements.
+ */
+export interface VerifiedSocialSnapshot {
+  symbol: string;
+  assetType: "stock" | "crypto";
+  sources: SourceSentiment[];
+  sourceCount: number;
+  socialVolume: number;
+  newsCount: number;
+  sentimentScore: number;
+  positiveNews: number;
+  negativeNews: number;
+  extremeAttentionDetected: boolean;
+  fetchedAt: number;
+}
+
 // ── Cache ─────────────────────────────────────────────────────
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -207,6 +225,7 @@ let cachedData: SocialIntelligenceData | null = null;
 let cacheTime = 0;
 
 const tickerSocialCache = new Map<string, { data: MultiSourceSocialData; time: number }>();
+const verifiedSocialSnapshotCache = new Map<string, { data: VerifiedSocialSnapshot; time: number }>();
 const TICKER_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -1114,11 +1133,48 @@ export async function getTickerSocialData(
   return result;
 }
 
+export async function getVerifiedSocialSnapshot(
+  symbol: string,
+  assetType: "stock" | "crypto"
+): Promise<VerifiedSocialSnapshot> {
+  const cacheKey = `${symbol.toUpperCase()}_${assetType}`;
+  const cached = verifiedSocialSnapshotCache.get(cacheKey);
+  if (cached && Date.now() - cached.time < TICKER_CACHE_TTL_MS) return cached.data;
+
+  const [stocktwits, news, redditPosts] = await Promise.all([
+    fetchStockTwitsData(symbol, assetType),
+    fetchTickerNews(symbol),
+    fetchRedditPosts(symbol, assetType),
+  ]);
+  const sources = buildSourceAttribution(stocktwits, news, redditPosts, assetType);
+  const composite = computeCompositeScore(stocktwits, news, redditPosts);
+  const sourceCount = sources.filter(source => source.available).length;
+  const socialVolume = (stocktwits?.messages.length ?? 0) + news.length + redditPosts.length;
+  const result: VerifiedSocialSnapshot = {
+    symbol: symbol.toUpperCase(),
+    assetType,
+    sources,
+    sourceCount,
+    socialVolume,
+    newsCount: news.length,
+    sentimentScore: composite.overallSentimentScore,
+    positiveNews: news.filter(article => article.sentiment === "positive").length,
+    negativeNews: news.filter(article => article.sentiment === "negative").length,
+    extremeAttentionDetected: sourceCount >= 2 && socialVolume >= 75 && composite.overallSentimentScore >= 0.7,
+    fetchedAt: Date.now(),
+  };
+  verifiedSocialSnapshotCache.set(cacheKey, { data: result, time: Date.now() });
+  return result;
+}
+
 export function clearTickerSocialCache(symbol?: string): void {
   if (symbol) {
     tickerSocialCache.delete(`${symbol.toUpperCase()}_stock`);
     tickerSocialCache.delete(`${symbol.toUpperCase()}_crypto`);
+    verifiedSocialSnapshotCache.delete(`${symbol.toUpperCase()}_stock`);
+    verifiedSocialSnapshotCache.delete(`${symbol.toUpperCase()}_crypto`);
   } else {
     tickerSocialCache.clear();
+    verifiedSocialSnapshotCache.clear();
   }
 }
