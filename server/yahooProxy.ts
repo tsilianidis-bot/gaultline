@@ -31,6 +31,8 @@ export interface YahooQuote {
   marketState: "REGULAR" | "PRE" | "POST" | "CLOSED" | "PREPRE" | "POSTPOST" | "UNKNOWN";
   isDelayed: boolean;
   source: "yahoo" | "polygon-prev" | "error";
+  /** Provider-reported market observation time when available; never inferred as live. */
+  observedAt?: number | null;
   fetchedAt: number;
   error?: string;
 }
@@ -101,6 +103,7 @@ async function fetchYahooQuote(ticker: string): Promise<YahooQuote> {
     marketState,
     isDelayed:     true,
     source:        "yahoo",
+    observedAt:    typeof meta.regularMarketTime === "number" ? meta.regularMarketTime * 1000 : null,
     fetchedAt:     Date.now(),
   };
 }
@@ -133,6 +136,7 @@ async function fetchPolygonPrevClose(ticker: string): Promise<YahooQuote> {
     marketState:   "CLOSED",
     isDelayed:     true,
     source:        "polygon-prev",
+    observedAt:    typeof bar.t === "number" ? bar.t : null,
     fetchedAt:     Date.now(),
   };
 }
@@ -171,6 +175,7 @@ async function fetchQuoteWithFallback(ticker: string): Promise<YahooQuote> {
     marketState: "UNKNOWN",
     isDelayed: true,
     source: "error",
+    observedAt: null,
     fetchedAt: Date.now(),
     error: "Both Yahoo and Polygon failed",
   };

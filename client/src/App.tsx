@@ -41,6 +41,8 @@ const HistoricalAnalogs = lazy(() => import("./pages/HistoricalAnalogs"));
 const SimulatePressure = lazy(() => import("./pages/SimulatePressure"));
 const Watchlist       = lazy(() => import("./pages/Watchlist"));
 const Signals         = lazy(() => import("./pages/Signals"));
+const RisingStars     = lazy(() => import("./pages/RisingStars"));
+const Markets         = lazy(() => import("./pages/Markets"));
 const Portfolio       = lazy(() => import("./pages/Portfolio"));
 const CryptoSearch    = lazy(() => import("./pages/CryptoSearch"));
 const CryptoWatchlist = lazy(() => import("./pages/CryptoWatchlist"));
@@ -735,8 +737,10 @@ function Router() {
 		              <Route path="/app/alerts" component={Alerts} />
 		              <Route path="/app/historical-analogs" component={HistoricalAnalogs} />
 		              <Route path="/app/simulate-pressure" component={SimulatePressure} />
-		              <Route path="/app/watchlist" component={Watchlist} />
-		              <Route path="/app/signals" component={Signals} />
+	              <Route path="/app/watchlist" component={Watchlist} />
+	              <Route path="/app/rising-stars" component={RisingStars} />
+	              <Route path="/app/signals" component={Signals} />
+	              <Route path="/app/markets" component={Markets} />
 		              <Route path="/app/portfolio" component={Portfolio} />
 		              <Route path="/app/crypto" component={CryptoHub} />
 		              <Route path="/app/crypto-search" component={CryptoSearch} />
@@ -1157,5 +1161,3 @@ function App() {
 }
 
 export default App;
-const Markets                = lazy(() => import("./pages/Markets"));
-              <Route path="/app/markets" component={Markets} />

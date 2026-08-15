@@ -4745,3 +4745,15 @@
 - [x] Add unit and integration tests for snapshot consistency, validation controls, and Rising Stars rendering/data availability
 - [ ] Verify production-representative Daily Brief and Signals views, then save and deliver the repair checkpoint
 - [x] Synchronize the Signals Rising Stars URL query with the mounted view state so sub-navigation reliably opens the panel
+
+## Standalone Rising Stars and Canonical Global Markets Ticker (Session 2026-08-15)
+- [x] Audit the existing Rising Stars route/components, GlobalMarketTicker/Markets contracts, and canonical market-data provider coverage
+- [x] Define normalized instruments, freshness states, market-session emphasis, category filtering, useful ticker destinations, and safe unavailable-data behavior
+- [x] Add standalone authenticated `/app/rising-stars` route that reuses existing Rising Stars data, scoring, components, and analysis destinations without forked logic
+- [x] Add Global Markets ticker coverage for supported US, Europe, Asia, rates, FX, commodities, and crypto instruments using batched normalized data only
+- [x] Add canonical observedAt, fetchedAt, provider, freshness, delayed/stale status, and market-session treatment to ticker data
+- [x] Add responsive ticker category filters, mobile horizontal interaction, and direct useful destinations without exposing provider/debug internals
+- [x] Reuse the canonical ticker in appropriate established intelligence surfaces without adding duplicate data requests or changing dashboard architecture
+- [x] Add tests for Rising Stars direct routing, ticker normalization/categories/freshness/session states, mappings, fallback behavior, and ticker destinations
+- [x] Validate desktop/mobile behavior, endpoint performance, no stale-as-live values, production routing, and full regression suite
+- [ ] Save and deliver the standalone Rising Stars and canonical ticker checkpoint

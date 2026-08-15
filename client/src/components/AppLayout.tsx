@@ -32,6 +32,7 @@ import RightActionDrawer from "@/components/RightActionDrawer";
 import { CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { getRouteIcon } from "@/lib/routeIcons";
 import AppMarketHeader, { type MarketTickerItem } from "@/components/AppMarketHeader";
+import GlobalMarketTicker from "@/components/GlobalMarketTicker";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: command → markets → intelligence → analysis → account
@@ -253,6 +254,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         zIndex: 50,
       }}>
         <AppMarketHeader items={liveTickerItems} intelligence={miData} isMobile={isMobile} />
+        <GlobalMarketTicker />
 
         {/* Logo row + status */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
@@ -821,5 +823,3 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </DrawerProvider>
   );
 }
-import GlobalMarketTicker from "@/components/GlobalMarketTicker";
-        <GlobalMarketTicker />

@@ -1745,6 +1745,17 @@ export interface OpportunityDiscoveryResult {
 export interface RisingStarItem extends RisingStarResult {
   assetType: "stock";
   dataAsOf: number;
+  marketDataAsOf: number;
+  latestPrice: number;
+  dailyChange: number | null;
+  dailyChangePercent: number | null;
+  signalDirection: "CONSTRUCTIVE" | "WATCH";
+  signalStrength: ConfidenceBand;
+  momentumScore: number;
+  relativeStrengthScore: number;
+  volumeParticipationScore: number;
+  riskLevel: "MODERATE" | "ELEVATED";
+  macroContext: string;
 }
 
 const DISCOVERY_CATEGORY_META: Record<DiscoveryCategory, { label: string; description: string }> = {
@@ -2287,6 +2298,13 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
       ]);
       const technical = buildRisingStarTechnical(bars);
       if (!technical) return null;
+      const latest = bars.at(-1);
+      const prior = bars.at(-2);
+      if (!latest) return null;
+      const dailyChange = prior ? latest.close - prior.close : null;
+      const dailyChangePercent = prior && prior.close !== 0
+        ? ((latest.close - prior.close) / prior.close) * 100
+        : null;
 
       const newsAvailable = social.newsCount >= 2;
       const result = scoreRisingStar({
@@ -2322,7 +2340,22 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         // No source-backed options-flow engine currently exists in this project.
         options: { available: false, note: "No source-backed options-flow provider is connected; excluded from score." },
       });
-      return { ...result, assetType: "stock" as const, dataAsOf: Math.max(social.fetchedAt, bars.at(-1)?.timestamp ?? 0) };
+      return {
+        ...result,
+        assetType: "stock" as const,
+        dataAsOf: Math.max(social.fetchedAt, latest.timestamp),
+        marketDataAsOf: latest.timestamp,
+        latestPrice: latest.close,
+        dailyChange,
+        dailyChangePercent,
+        signalDirection: result.risingStarScore >= 65 ? "CONSTRUCTIVE" as const : "WATCH" as const,
+        signalStrength: result.crossSignalConfidence,
+        momentumScore: technical.momentumInflection,
+        relativeStrengthScore: technical.relativeStrength,
+        volumeParticipationScore: technical.volumeAccumulation,
+        riskLevel: technical.asymmetry <= 45 ? "ELEVATED" as const : "MODERATE" as const,
+        macroContext: `FAULTLINE pressure ${pressure.overallPressure}/100 · ${pressure.regime}`,
+      };
     } catch (error) {
       console.warn(`[RisingStars] ${candidate.symbol} unavailable`, error instanceof Error ? error.message : error);
       return null;
