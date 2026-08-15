@@ -24,6 +24,7 @@ import { getDb } from "./db";
 import {
   organicContent,
   dailyBriefSchedule,
+  dailyBriefSnapshots,
   users,
 } from "../drizzle/schema";
 import { invokeLLM } from "./_core/llm";
@@ -33,6 +34,7 @@ import { sendEmail } from "./email";
 import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
 import { getDiagnosticReport, type DiagnosticReport } from "./diagnosticAI";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
+import { buildDailyBriefPromptContext, buildDailyBriefSnapshot, DAILY_BRIEF_PROMPT_VERSION, validateDailyBriefNarrative } from "./dailyBriefSnapshot";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -47,6 +49,7 @@ interface EngineSnapshot {
   topDrivers: string[];
   dataAvailable: boolean;
   missingFields: string[];
+  pressureOutput: FaultlinePressureOutput | null;
 }
 
 interface PublishResult {
@@ -166,9 +169,11 @@ async function collectEngineData(): Promise<EngineSnapshot> {
   let crashProbability: number | null = null;
   let bullProbability: number | null = null;
   const topDrivers: string[] = [];
+  let pressureOutput: FaultlinePressureOutput | null = null;
 
   try {
     const pressure = await calculateFaultlinePressure();
+    pressureOutput = pressure;
     pressureScore = pressure.overallPressure ?? null;
     regime = pressure.regime ?? null;
     stressLevel = pressure.level ?? null;
@@ -198,6 +203,7 @@ async function collectEngineData(): Promise<EngineSnapshot> {
     topDrivers,
     dataAvailable,
     missingFields,
+    pressureOutput,
   };
 }
 
@@ -475,7 +481,7 @@ async function runPublishingPipeline(
 
   const config = PUBLISH_CONFIG[publishType];
   const now = new Date();
-  const dateStr = now.toISOString().split("T")[0];
+  const dateStr = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
   const slug = `${config.slugPrefix}-${dateStr}`;
 
   // ── Step 1: Data availability guard ──────────────────────────────────────
@@ -491,12 +497,36 @@ async function runPublishingPipeline(
     return { ok: true, status: "skipped", slug, reason: "duplicate" };
   }
 
-  // ── Step 3: Build context string ─────────────────────────────────────────
-  // Try to get the assembled Seismograph context for richer Daily Brief content
+  // ── Step 3: Build one immutable context snapshot ─────────────────────────
+  // Daily Briefs never mix direct engine values with an older Seismograph output.
   const seismographOutput = await getLatestSeismographOutput().catch(() => null);
   const briefCtx = seismographOutput?.forDailyBrief;
 
-  const ctx = briefCtx ? [
+  const dailySnapshot = publishType === "daily_brief"
+    ? buildDailyBriefSnapshot({ pressure: engineData.pressureOutput, seismograph: seismographOutput, now: now.getTime() })
+    : null;
+
+  if (dailySnapshot) {
+    await db.insert(dailyBriefSnapshots).values({
+      snapshotId: dailySnapshot.briefSnapshotId,
+      briefDateEt: dailySnapshot.briefDateEt,
+      tradingDate: dailySnapshot.tradingDate,
+      generatedAt: new Date(dailySnapshot.generatedAt),
+      engineComputedAt: dailySnapshot.canonicalSource === "pressure_engine" ? new Date(dailySnapshot.generatedAt) : null,
+      seismographComputedAt: dailySnapshot.canonicalSource === "seismograph" ? new Date(seismographOutput!.computedAt) : null,
+      status: dailySnapshot.validation.passed ? "generating" : "blocked",
+      promptVersion: DAILY_BRIEF_PROMPT_VERSION,
+      snapshotJson: JSON.stringify(dailySnapshot),
+      inputFreshnessJson: JSON.stringify(dailySnapshot.sourceInputs),
+      validationJson: JSON.stringify(dailySnapshot.validation),
+      warningsJson: JSON.stringify(dailySnapshot.validation.warnings),
+    });
+    if (!dailySnapshot.validation.passed) {
+      return { ok: true, status: "draft", reason: `snapshot-validation-failed:${dailySnapshot.validation.errors.join(",")}` };
+    }
+  }
+
+  const ctx = dailySnapshot ? buildDailyBriefPromptContext(dailySnapshot) : briefCtx ? [
     `FAULTLINE Pressure Index™: ${briefCtx.pressureScore}/100`,
     `Market Regime: ${briefCtx.regime}`,
     `Stress Level: ${briefCtx.stressLevel}`,
@@ -521,7 +551,7 @@ async function runPublishingPipeline(
 
   const linkSuggestions = INTERNAL_LINKS.slice(0, 6).map(l => `[${l.text}](${l.href})`).join(", ");
 
-  const systemPrompt = `You are the FAULTLINE Intelligence Engine — an institutional-grade market analysis system. You write authoritative, data-driven market intelligence for sophisticated investors. Your content is grounded in the provided FAULTLINE engine data only. Never fabricate statistics, prices, or market data not provided. Write in third person. Use markdown with H2 and H3 headings. Do not use placeholder text like [INSERT DATA HERE].`;
+  const systemPrompt = `You are the FAULTLINE Intelligence Engine — an institutional-grade market analysis system. Your content is grounded solely in the supplied brief snapshot. Never fabricate statistics, prices, yields, market direction, policy actions, or data that is not supplied. Treat missing data as unavailable: state "Current [category] data was not available in this intelligence snapshot" rather than inferring it from another metric. Clearly label FAULTLINE Pressure Index, regime, structural stress, probabilities, transition confidence, Market Memory, Evidence Consensus, and historical analog similarity as FAULTLINE proprietary outputs. A historical analog is feature-set similarity only; never infer current Fed policy, rate direction, liquidity, or a future market outcome from its name. Do not call a model score a confidence interval and do not use "statistically significant", "almost perfectly mirrors", "highly predictive", "near certainty", "guaranteed", "inevitable", or promotional opportunity language. Use measured institutional phrasing such as "may indicate", "suggests", "warrants monitoring", and "conditional on confirmation". Write in third person using markdown H2/H3 headings. Do not use placeholder text.`;
 
   const sectionList = config.sections.map((s, i) => `${i + 1}. ${s}`).join("\n");
 
@@ -604,7 +634,11 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
   const wordCount = rawContent.split(/\s+/).filter(Boolean).length;
 
   // ── Step 6: Validate ──────────────────────────────────────────────────────
-  const validation = validateContent(rawContent, title, metaDescription, config.minWords, config.sections);
+  const contentValidation = validateContent(rawContent, title, metaDescription, config.minWords, config.sections);
+  const narrativeValidation = publishType === "daily_brief" ? validateDailyBriefNarrative(rawContent) : { passed: true, issues: [] };
+  const validation: ValidationResult = narrativeValidation.passed
+    ? contentValidation
+    : { passed: false, score: Math.min(contentValidation.score, 20), reason: narrativeValidation.issues.join(",") };
 
   // ── Step 7: Determine publish vs draft ────────────────────────────────────
   const shouldPublish = validation.passed && validation.score >= confidenceThreshold;
@@ -629,8 +663,9 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
     qualityScore: validation.score,
     wordCount,
     rejectionReason: validation.reason ?? null,
-    pressureScore: engineData.pressureScore,
-    regime: engineData.regime,
+    pressureScore: dailySnapshot ? Math.round(dailySnapshot.pressureIndex) : engineData.pressureScore,
+    regime: dailySnapshot?.regime ?? engineData.regime,
+    briefSnapshotId: dailySnapshot?.briefSnapshotId ?? null,
     publishedAt: shouldPublish ? now : null,
   });
 
@@ -638,6 +673,15 @@ CRITICAL: Base all analysis on the provided data. Do not invent statistics. Mini
     .from(organicContent)
     .where(eq(organicContent.slug, slug))
     .limit(1);
+
+  if (dailySnapshot) {
+    await db.update(dailyBriefSnapshots).set({
+      articleId: inserted?.id ?? null,
+      status: shouldPublish ? "published" : "draft",
+      validationJson: JSON.stringify({ ...dailySnapshot.validation, contentValidation: validation, narrativeValidation }),
+      warningsJson: JSON.stringify([...dailySnapshot.validation.warnings, ...narrativeValidation.issues]),
+    }).where(eq(dailyBriefSnapshots.snapshotId, dailySnapshot.briefSnapshotId));
+  }
 
   console.log(`[AutoPublish] ${status}: "${title}" (${wordCount} words, score: ${validation.score}) → /intelligence/${slug}`);
 

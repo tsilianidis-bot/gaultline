@@ -2,7 +2,7 @@ import { z } from "zod";
 import { eq, desc, and, gte, lte, count, sql, isNull, isNotNull } from "drizzle-orm";
 import { router, publicProcedure, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { organicContent, signalPages, contentCtaClicks, pageViews } from "../../drizzle/schema";
+import { organicContent, signalPages, contentCtaClicks, pageViews, dailyBriefSnapshots } from "../../drizzle/schema";
 import { generateOrganicContent, generateSignalPage, TRACKED_STOCKS, TRACKED_CRYPTO, type ContentType } from "../organicContentEngine";
 import { TRPCError } from "@trpc/server";
 
@@ -64,7 +64,28 @@ export const organicContentRouter = router({
         ))
         .limit(1);
 
-      return item ?? null;
+      if (!item) return null;
+
+      if (!item.briefSnapshotId) return { ...item, briefSnapshot: null };
+      const [snapshot] = await db.select({
+        snapshotId: dailyBriefSnapshots.snapshotId,
+        generatedAt: dailyBriefSnapshots.generatedAt,
+        tradingDate: dailyBriefSnapshots.tradingDate,
+        status: dailyBriefSnapshots.status,
+        inputFreshnessJson: dailyBriefSnapshots.inputFreshnessJson,
+        validationJson: dailyBriefSnapshots.validationJson,
+      }).from(dailyBriefSnapshots)
+        .where(eq(dailyBriefSnapshots.snapshotId, item.briefSnapshotId))
+        .limit(1);
+
+      return {
+        ...item,
+        briefSnapshot: snapshot ? {
+          ...snapshot,
+          inputFreshness: JSON.parse(snapshot.inputFreshnessJson),
+          validation: JSON.parse(snapshot.validationJson),
+        } : null,
+      };
     }),
 
   // ── Public: get signal page data for a symbol ──────────────────────────────

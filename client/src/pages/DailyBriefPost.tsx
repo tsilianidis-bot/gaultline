@@ -19,16 +19,17 @@ function formatDate(d: Date | string | null | undefined): string {
 
 function getPressureColor(score: number | null): string {
   if (score == null) return "#6B7280";
-  if (score >= 7) return "#FF4444";
-  if (score >= 5) return "#FF9500";
+  if (score >= 70) return "#FF4444";
+  if (score >= 45) return "#FF9500";
   return "#00FF88";
 }
 
 function getPressureLabel(score: number | null): string {
   if (score == null) return "Unknown";
-  if (score >= 7) return "HIGH PRESSURE";
-  if (score >= 5) return "ELEVATED";
-  return "LOW PRESSURE";
+  if (score >= 70) return "CRISIS";
+  if (score >= 45) return "ELEVATED";
+  if (score >= 25) return "MODERATE";
+  return "MINIMAL";
 }
 
 export default function DailyBriefPost() {
@@ -165,7 +166,7 @@ export default function DailyBriefPost() {
                   background: `${getPressureColor(item.pressureScore)}08`,
                 }}
               >
-                {getPressureLabel(item.pressureScore)} · PI {item.pressureScore.toFixed(1)}
+                {item.briefSnapshot ? getPressureLabel(item.pressureScore) : 'ARCHIVED METADATA'} · PI {item.pressureScore.toFixed(0)} / 100
               </Badge>
             )}
           </div>
@@ -198,7 +199,24 @@ export default function DailyBriefPost() {
               <Shield style={{ width: 13, height: 13 }} />
               <span>FAULTLINE Engine</span>
             </div>
+            {item.briefSnapshot && (
+              <div className="flex items-center gap-1.5" title={`Snapshot ${item.briefSnapshot.snapshotId}`}>
+                <Clock style={{ width: 13, height: 13 }} />
+                <span>Reading used for this brief: {formatDate(item.briefSnapshot.generatedAt)}</span>
+              </div>
+            )}
           </div>
+
+          {item.briefSnapshot && (
+            <p style={{ marginTop: '0.75rem', color: '#64748B', fontSize: '0.75rem', lineHeight: 1.6, fontFamily: "'IBM Plex Mono', monospace" }}>
+              Snapshot {item.briefSnapshot.snapshotId.slice(0, 8)} · This article reflects its saved FAULTLINE intelligence snapshot. It does not silently replace that reading with later live values.
+            </p>
+          )}
+          {!item.briefSnapshot && item.contentType === 'daily_market_brief' && (
+            <p style={{ marginTop: '0.75rem', color: '#FBBF24', fontSize: '0.75rem', lineHeight: 1.6, fontFamily: "'IBM Plex Mono', monospace" }}>
+              Archived brief: this article predates FAULTLINE’s snapshot-binding controls. The displayed pressure metadata was saved with the publication record and may not be the same generation-time reading referenced inside the legacy article text.
+            </p>
+          )}
 
           {/* Meta description */}
           {item.metaDescription && (

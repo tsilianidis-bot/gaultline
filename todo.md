@@ -4731,4 +4731,16 @@
 - [x] Add options interpretation safeguards that distinguish ambiguity, hedging, closing activity, covered calls, and directional conviction where data permits
 - [x] Add concise “Why FAULTLINE Is Seeing It Early” explanations and data-confidence/limitation surfaces per Rising Star asset
 - [x] Add scoring and UI tests; validate missing/degraded data does not penalize assets or create false precision
-- [ ] Save the Rising Stars expansion checkpoint and deliver implementation results
+- [x] Save the Rising Stars expansion checkpoint and deliver implementation results
+
+## Daily Intelligence Brief Integrity and Signals Rising Stars Repair (Session 2026-08-13)
+- [x] Audit Daily Brief header/body Pressure Index mismatch across routes, cache layers, snapshot records, and generation-time data
+- [x] Trace existing Daily Brief generation, database, API, frontend rendering, and scheduled publication paths
+- [x] Define and implement an authoritative brief snapshot contract with consistent values and explicit live-versus-brief labeling where mixed timeframes are intentional
+- [x] Add source, as-of timestamp, successful-update time, expected cadence, and freshness state to snapshot inputs and disclosures
+- [x] Add pre-publication freshness, trading-date, probability-sum, and cross-component consistency validation with safe suppression on failure
+- [x] Add narrative grounding controls for missing data, observed facts, proprietary outputs, interpretation, analogs, statistical terminology, and structural-stress language
+- [x] Audit Signals Rising Stars route, data source, API contract, eligibility filters, and rendering path to identify the root cause of missing output
+- [x] Repair Signals Rising Stars source-to-frontend rendering without hardcoded fallback data
+- [x] Add unit and integration tests for snapshot consistency, validation controls, and Rising Stars rendering/data availability
+- [ ] Verify production-representative Daily Brief and Signals views, then save and deliver the repair checkpoint

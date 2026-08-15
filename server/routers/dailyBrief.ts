@@ -11,10 +11,10 @@
  */
 
 import { z } from "zod";
-import { eq } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { desc, eq } from "drizzle-orm";
+import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { userPreferences } from "../../drizzle/schema";
+import { dailyBriefSnapshots, userPreferences } from "../../drizzle/schema";
 import { invokeLLM } from "../_core/llm";
 
 // ── Zod schemas ──────────────────────────────────────────────────────────────
@@ -182,6 +182,32 @@ function computeChanges(
 
 export const dailyBriefRouter = router({
 
+  // ── Admin: snapshot audit trail ───────────────────────────────────────────
+  getSnapshotAudit: adminProcedure
+    .input(z.object({ snapshotId: z.string().optional(), limit: z.number().min(1).max(30).default(10) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(dailyBriefSnapshots)
+        .where(input.snapshotId ? eq(dailyBriefSnapshots.snapshotId, input.snapshotId) : undefined)
+        .orderBy(desc(dailyBriefSnapshots.createdAt))
+        .limit(input.limit);
+      return rows.map(row => ({
+        snapshotId: row.snapshotId,
+        briefDateEt: row.briefDateEt,
+        tradingDate: row.tradingDate,
+        generatedAt: row.generatedAt,
+        status: row.status,
+        articleId: row.articleId,
+        promptVersion: row.promptVersion,
+        modelVersion: row.modelVersion,
+        snapshot: JSON.parse(row.snapshotJson),
+        inputFreshness: JSON.parse(row.inputFreshnessJson),
+        validation: JSON.parse(row.validationJson),
+        warnings: row.warningsJson ? JSON.parse(row.warningsJson) : [],
+      }));
+    }),
+
   // ── Preferences: get ──────────────────────────────────────────────────────
   getPreferences: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
@@ -314,21 +340,9 @@ export const dailyBriefRouter = router({
       if (engineSnapshot.overallPressure > 55) topRisks.push("Macro uncertainty — elevated pressure index");
       if ((engineSnapshot.vix ?? 0) > 25) topRisks.push("VIX elevated — options market pricing risk");
       if ((engineSnapshot.treasury10y ?? 0) > 4.5) topRisks.push("High long-term yields constraining valuations");
-      // Fill to 5 if needed
-      const defaultRisks = ["Geopolitical uncertainty", "Fed policy uncertainty", "Earnings revision risk", "Dollar strength headwinds", "Sector rotation risk"];
-      let i = 0;
-      while (topRisks.length < 5 && i < defaultRisks.length) {
-        if (!topRisks.includes(defaultRisks[i])) topRisks.push(defaultRisks[i]);
-        i++;
-      }
-
-      // Build today's events (macro calendar — static but realistic)
-      const todaysEvents = [
-        { event: "FOMC Meeting Minutes", category: "Fed", importance: "high", whyItMatters: "Reveals Fed's internal debate on rate path and inflation tolerance" },
-        { event: "Initial Jobless Claims", category: "Employment", importance: "medium", whyItMatters: "Weekly labor market health indicator — rising claims signal softening demand" },
-        { event: "10-Year Treasury Auction", category: "Treasury Auctions", importance: "medium", whyItMatters: "Demand at auction affects long-term yields and borrowing costs" },
-        { event: "S&P 500 Earnings Season", category: "Major Earnings", importance: "high", whyItMatters: "Corporate guidance revisions drive sector rotation and index direction" },
-      ];
+      // No calendar adapter is passed into this procedure. Returning an explicit
+      // unavailable state is safer than showing a plausible-looking static calendar.
+      const todaysEvents: Array<{ event: string; category: string; importance: string; whyItMatters: string }> = [];
 
       // LLM: generate CIO-style institutional insight (3 sentences max)
       let institutionalInsight = "";
@@ -337,11 +351,8 @@ export const dailyBriefRouter = router({
           messages: [
             {
               role: "system",
-              content: `You are a CIO at a top-tier institutional investment firm writing the opening paragraph of a daily market brief. 
-Write exactly 3 sentences. Be specific, declarative, and institutional. 
-No hedging language ("could", "may", "possibly"). No generic AI phrases. 
-Reference actual market conditions from the data provided.
-Format: plain text, no markdown, no bullet points.`,
+              content: `You write a concise, institutional Daily Brief opening from supplied FAULTLINE inputs only.
+Write exactly 3 sentences in measured language. Do not invent price action, market direction, policy changes, or missing data. Label model-derived statements as FAULTLINE outputs. Do not infer external conditions from a proprietary score. Format: plain text, no markdown, no bullet points.`,
             },
             {
               role: "user",
@@ -365,22 +376,16 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
         });
         institutionalInsight = (llmResp.choices?.[0]?.message?.content as string) ?? "";
       } catch {
-        institutionalInsight = `${engineSnapshot.regime} conditions persist with a Pressure Index of ${engineSnapshot.overallPressure}. ${institutionalBias} institutional positioning reflects current liquidity and breadth dynamics. Monitor credit markets and upcoming macro data for regime confirmation.`;
+        institutionalInsight = `FAULTLINE currently identifies ${engineSnapshot.regime} conditions with a Pressure Index of ${engineSnapshot.overallPressure}. The model-derived institutional bias is ${institutionalBias}, based on the supplied breadth and liquidity inputs. Monitor subsequent confirmed data for changes in the current assessment.`;
       }
 
-      // Watchlist intelligence — generate change signals for each ticker
+      // A symbol-specific data packet is not supplied to this procedure, so do
+      // not manufacture confidence changes or directional watchlist calls.
       const watchlistIntelligence = (watchlistTickers ?? []).slice(0, 8).map((ticker) => {
-        // Derive a plausible signal from the engine state
-        const pressure = engineSnapshot.overallPressure;
-        const signals = [
-          pressure < 30 ? `Momentum strengthening` : pressure > 60 ? `Risk increasing` : `Conditions stable`,
-          `Confidence ${Math.random() > 0.5 ? "+" : "-"}${Math.floor(Math.random() * 12 + 3)}`,
-          pressure < 40 ? `Opportunity improving` : `Watch for regime confirmation`,
-        ];
         return {
           ticker,
-          signal: signals[Math.floor(Math.random() * signals.length)],
-          direction: (pressure < 40 ? "positive" : pressure > 60 ? "negative" : "neutral") as "positive" | "negative" | "neutral",
+          signal: "Current symbol-specific data was not included in this intelligence snapshot.",
+          direction: "neutral" as const,
         };
       });
 
@@ -402,15 +407,16 @@ Write the 3-sentence CIO institutional insight for today's brief.`,
         watchlistIntelligence,
         // Section 6: Today's Events
         todaysEvents,
+        eventsAvailability: "Current economic-calendar data was not included in this intelligence snapshot.",
         // Section 8: Institutional Insight (LLM-generated)
         institutionalInsight,
         // Section 11: Engine Status
         engineStatus: {
           fmosVersion:        "FMOS v3.0",
-          engineHealth:       98,
-          dataFreshness:      "< 5 minutes",
-          liveDataSources:    18,
-          averageLatency:     "340ms",
+          engineHealth:       null,
+          dataFreshness:      "Source-specific freshness was not included in this procedure input.",
+          liveDataSources:    null,
+          averageLatency:     null,
           lastUpdated:        new Date().toISOString(),
         },
         generatedAt: Date.now(),

@@ -30,6 +30,7 @@ import { TickerChip } from "@/components/TickerActionMenu";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import ScoreExplainer from "@/components/ScoreExplainer";
+import RisingStarsPanel, { type RisingStarItem } from "@/components/RisingStarsPanel";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -1349,12 +1350,13 @@ function TradingSignalsSummaryBar({ signals }: { signals: TradingSignalResult[] 
 // ── Signals Module Sub-Nav ──────────────────────────────────────────────────
 const SIGNALS_SUB_TABS = [
   { id: 'signals',       label: 'Stock Signals',   icon: '⚡', path: '/app/signals' },
+  { id: 'rising-stars',  label: 'Rising Stars',    icon: '✦', path: '/app/signals?view=rising-stars' },
   { id: 'crypto-signals',label: 'Crypto Signals',  icon: '₿', path: '/app/crypto-signals' },
   { id: 'signal-outlook',label: 'Signal Outlook',  icon: '◎', path: '/app/signal-outlook' },
 ];
 function SignalsSubNav() {
   const [location, navigate] = useLocation();
-  const active = SIGNALS_SUB_TABS.find(t => location === t.path || location.startsWith(t.path + '/'))?.id ?? 'signals';
+  const active = location.includes('view=rising-stars') ? 'rising-stars' : SIGNALS_SUB_TABS.find(t => location === t.path || location.startsWith(t.path + '/'))?.id ?? 'signals';
   return (
     <div style={{ display: 'flex', gap: '4px', padding: '0 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(4,6,10,0.98)', marginBottom: '0' }}>
       {SIGNALS_SUB_TABS.map(tab => {
@@ -1478,13 +1480,29 @@ function SignalsInner() {
   const [filters, setFilters] = useState<SignalFilters>(DEFAULT_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
   const [activeCategory, setActiveCategory] = useState<ScreeningCategory | 'All'>('All');
-  const [activeView, setActiveView] = useState<'signals' | 'asymmetric'>('signals');
+  const [activeView, setActiveView] = useState<'signals' | 'asymmetric' | 'rising-stars'>(() => window.location.search.includes('view=rising-stars') ? 'rising-stars' : 'signals');
 
   // ── Asymmetric Opportunities query ────────────────────────
   const { data: asymData, isLoading: asymLoading, refetch: asymRefetch } = trpc.stocks.getAsymmetricOpportunities.useQuery(
     { limit: 20 },
     { staleTime: 5 * 60 * 1000, enabled: activeView === 'asymmetric' }
   );
+
+  // Uses the same source-backed Opportunity Discovery contract used by Radar.
+  // This keeps Signals and Rising Stars aligned without hardcoded candidates.
+  const risingStarsQuery = trpc.outlook.getOpportunityDiscovery.useQuery(undefined, {
+    enabled: activeView === 'rising-stars',
+    staleTime: 2 * 60 * 1000,
+    retry: 2,
+    retryDelay: attempt => Math.min(1_000 * (attempt + 1), 3_000),
+    refetchInterval: activeView === 'rising-stars' ? 5 * 60 * 1000 : false,
+  });
+  const risingStars = (risingStarsQuery.data?.risingStars ?? []) as RisingStarItem[];
+
+  const selectSignalsView = useCallback((view: 'signals' | 'asymmetric' | 'rising-stars') => {
+    setActiveView(view);
+    window.history.replaceState(null, '', view === 'rising-stars' ? '/app/signals?view=rising-stars' : '/app/signals');
+  }, []);
 
   const updateFilter = useCallback(<K extends keyof SignalFilters>(key: K, value: SignalFilters[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -1632,11 +1650,12 @@ function SignalsInner() {
       }}>
         {([
           { key: 'signals', label: 'SIGNALS', icon: '⚡', color: regimeColor },
+          { key: 'rising-stars', label: 'RISING STARS', icon: '✦', color: '#00D4FF' },
           { key: 'asymmetric', label: 'ASYMMETRIC OPPORTUNITIES', icon: '◈', color: '#A855F7' },
         ] as const).map(tab => (
           <button
             key={tab.key}
-            onClick={() => setActiveView(tab.key)}
+            onClick={() => selectSignalsView(tab.key)}
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: '12px', letterSpacing: '0.12em',
@@ -1663,6 +1682,28 @@ function SignalsInner() {
           regimeLabel={engine?.output?.regime?.label ?? 'MODERATE RISK'}
           pressureIndex={engine?.output?.overall?.score ?? 5}
         />
+      )}
+
+      {activeView === 'rising-stars' && (
+        <div style={{ padding: '16px', maxWidth: 1320, margin: '0 auto' }}>
+          {risingStarsQuery.isLoading ? (
+            <div style={{ border: '1px solid rgba(0,212,255,0.16)', borderRadius: 8, padding: 18, color: 'rgba(176,196,216,0.65)', background: 'rgba(0,212,255,0.035)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: '0.06em' }}>
+              LOADING VERIFIED RISING STARS INTELLIGENCE…
+            </div>
+          ) : risingStarsQuery.isError ? (
+            <div style={{ border: '1px solid rgba(255,77,106,0.32)', borderRadius: 8, padding: 18, color: '#FDA4AF', background: 'rgba(255,77,106,0.05)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, lineHeight: 1.6 }}>
+              <strong style={{ color: '#FF6B6B' }}>RISING STARS DATA TEMPORARILY UNAVAILABLE</strong><br />
+              The data request did not complete. This is not a zero-result signal. <button onClick={() => risingStarsQuery.refetch()} style={{ color: '#00D4FF', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', textDecoration: 'underline' }}>RETRY</button>
+            </div>
+          ) : (
+            <RisingStarsPanel items={risingStars} onAnalyze={(ticker) => window.location.assign(`/app/stock/${ticker}`)} />
+          )}
+          {!risingStarsQuery.isLoading && !risingStarsQuery.isError && risingStars.length === 0 && (
+            <p style={{ margin: '-8px 0 0', color: 'rgba(148,163,184,0.55)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, lineHeight: 1.55 }}>
+              No tracked asset currently meets the valid Rising Stars criteria. This is distinct from a data/API error.
+            </p>
+          )}
+        </div>
       )}
 
       {activeView === 'signals' && (<>

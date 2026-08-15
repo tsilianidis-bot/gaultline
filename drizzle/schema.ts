@@ -892,6 +892,8 @@ export const organicContent = mysqlTable("organicContent", {
   pressureScore:        int("pressureScore"),
   /** Market regime label at time of generation */
   regime:               varchar("regime", { length: 80 }),
+  /** Authoritative Daily Brief snapshot used for this article, when applicable */
+  briefSnapshotId:      varchar("briefSnapshotId", { length: 64 }),
   publishedAt:          timestamp("publishedAt"),
   createdAt:            timestamp("createdAt").defaultNow().notNull(),
   updatedAt:            timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -899,9 +901,46 @@ export const organicContent = mysqlTable("organicContent", {
   slugIdx:        index("organicContent_slug_idx").on(t.slug),
   typeStatusIdx:  index("organicContent_type_status_idx").on(t.contentType, t.status),
   publishedAtIdx: index("organicContent_publishedAt_idx").on(t.publishedAt),
+  briefSnapshotIdx: index("organicContent_briefSnapshotId_idx").on(t.briefSnapshotId),
 }));
 export type OrganicContent = typeof organicContent.$inferSelect;
 export type InsertOrganicContent = typeof organicContent.$inferInsert;
+
+// ── Daily Brief Snapshot Ledger ───────────────────────────────
+/**
+ * Immutable generation-time intelligence snapshot for a Daily Brief. It stores
+ * the exact proprietary outputs, input provenance/freshness, validation result,
+ * and prompt version that the published article must represent.
+ */
+export const dailyBriefSnapshots = mysqlTable("dailyBriefSnapshots", {
+  id:                  int("id").autoincrement().primaryKey(),
+  snapshotId:          varchar("snapshotId", { length: 64 }).notNull().unique(),
+  briefDateEt:         varchar("briefDateEt", { length: 10 }).notNull(),
+  tradingDate:         varchar("tradingDate", { length: 10 }),
+  generatedAt:         timestamp("generatedAt").notNull(),
+  engineComputedAt:    timestamp("engineComputedAt"),
+  seismographComputedAt: timestamp("seismographComputedAt"),
+  /** generating | blocked | published | draft */
+  status:              mysqlEnum("status", ["generating", "blocked", "published", "draft"]).default("generating").notNull(),
+  articleId:           int("articleId"),
+  promptVersion:       varchar("promptVersion", { length: 40 }).notNull(),
+  modelVersion:        varchar("modelVersion", { length: 80 }),
+  /** Full source-of-truth payload consumed by the prompt and UI. */
+  snapshotJson:        text("snapshotJson").notNull(),
+  /** Per-input provenance, expected cadence, as-of, and freshness. */
+  inputFreshnessJson:  text("inputFreshnessJson").notNull(),
+  /** Pre-publication consistency and narrative validation outcomes. */
+  validationJson:      text("validationJson").notNull(),
+  warningsJson:        text("warningsJson"),
+  createdAt:           timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:           timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  snapshotIdIdx: index("dailyBriefSnapshots_snapshotId_idx").on(t.snapshotId),
+  briefDateIdx: index("dailyBriefSnapshots_briefDateEt_idx").on(t.briefDateEt),
+  articleIdIdx: index("dailyBriefSnapshots_articleId_idx").on(t.articleId),
+}));
+export type DailyBriefSnapshot = typeof dailyBriefSnapshots.$inferSelect;
+export type InsertDailyBriefSnapshot = typeof dailyBriefSnapshots.$inferInsert;
 
 // ── Signal Pages Cache ───────────────────────────────────────
 /**
