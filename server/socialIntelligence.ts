@@ -1167,6 +1167,19 @@ export async function getVerifiedSocialSnapshot(
   return result;
 }
 
+/**
+ * Returns a previously verified social snapshot without initiating provider calls.
+ * Discovery surfaces use this to keep a market-data request bounded; a missing
+ * snapshot is intentionally treated as unavailable and excluded from scoring.
+ */
+export function getCachedVerifiedSocialSnapshot(
+  symbol: string,
+  assetType: "stock" | "crypto"
+): VerifiedSocialSnapshot | null {
+  const cached = verifiedSocialSnapshotCache.get(`${symbol.toUpperCase()}_${assetType}`);
+  return cached && Date.now() - cached.time < TICKER_CACHE_TTL_MS ? cached.data : null;
+}
+
 export function clearTickerSocialCache(symbol?: string): void {
   if (symbol) {
     tickerSocialCache.delete(`${symbol.toUpperCase()}_stock`);

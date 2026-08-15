@@ -4756,4 +4756,14 @@
 - [x] Reuse the canonical ticker in appropriate established intelligence surfaces without adding duplicate data requests or changing dashboard architecture
 - [x] Add tests for Rising Stars direct routing, ticker normalization/categories/freshness/session states, mappings, fallback behavior, and ticker destinations
 - [x] Validate desktop/mobile behavior, endpoint performance, no stale-as-live values, production routing, and full regression suite
-- [ ] Save and deliver the standalone Rising Stars and canonical ticker checkpoint
+- [x] Save and deliver the standalone Rising Stars and canonical ticker checkpoint
+
+## Rising Stars Public-Market Discovery Engine Upgrade (Session 2026-08-15)
+- [x] Audit the remainder of the Rising Stars discovery requirements and current source-backed coverage for listing date, exchange, market cap, sector, themes, catalysts, risks, and company descriptions
+- [x] Define canonical public-market eligibility, listing-age, market-cap, Magnificent Seven, sector, theme, and opportunity-characteristic taxonomy with explicit unavailable-data behavior
+- [x] Extend the shared Rising Stars contract with verified company metadata and current-market-data freshness without creating a second ranking engine or including private, pre-IPO, OTC, or pink-sheet companies
+- [x] Implement simple top-level filtering, combined advanced filtering, active-filter summaries, result counts, clear-filters behavior, and no-duplicate result logic
+- [x] Enhance every Rising Star card with company identity, exchange, price freshness, market cap, listing context, public-market classification, plain-English description, thesis, catalyst, risk, and direct full-analysis action where source-backed
+- [x] Add expandable canonical score methodology and concise data-coverage disclosures without fabricating missing classifications
+- [x] Add tests for eligibility, listing-age and market-cap classification, Mag 7 filtering, AND filtering, unavailable-data behavior, price freshness, and direct-analysis destinations
+- [ ] Validate desktop/mobile discovery flows and full regression suite, then publish the discovery-engine checkpoint

@@ -25,12 +25,12 @@ import { getDb } from "./db";
 import { outlookHistory } from "../drizzle/schema";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import { desc, eq, and, gte } from "drizzle-orm";
-import { getQuote } from "./yahooProxy";
+import { getDailyBars as getYahooDailyBars, getQuote } from "./yahooProxy";
 import { getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
-import { fetchDailyBars } from "./signalsProxy";
 import { computeCalculatedLevels, type CalculatedLevels } from "./priceLevels";
-import { getVerifiedSocialSnapshot } from "./socialIntelligence";
+import { getCachedVerifiedSocialSnapshot } from "./socialIntelligence";
 import { scoreRisingStar, type RisingStarResult } from "./risingStars";
+import { MAGNIFICENT_SEVEN, classifyListingAge, classifyMarketCap, deriveFaultlineThemes, deriveSector, getPublicCompanyProfile, marketCapLabel, type ListingAgeCategory, type MarketCapCategory } from "./risingStarsDiscovery";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -1756,6 +1756,22 @@ export interface RisingStarItem extends RisingStarResult {
   volumeParticipationScore: number;
   riskLevel: "MODERATE" | "ELEVATED";
   macroContext: string;
+  exchange: string;
+  marketCap: number | null;
+  marketCapCategory: MarketCapCategory | null;
+  marketCapLabel: string | null;
+  listingDate: string | null;
+  listingAgeCategory: ListingAgeCategory;
+  yearsPublic: number | null;
+  monthsPublic: number | null;
+  sector: string | null;
+  industry: string | null;
+  themes: string[];
+  description: string;
+  primaryCatalyst: string;
+  keyRisk: string;
+  isMagnificentSeven: boolean;
+  priceStatus: "DELAYED" | "LAST_CLOSE";
 }
 
 const DISCOVERY_CATEGORY_META: Record<DiscoveryCategory, { label: string; description: string }> = {
@@ -2245,6 +2261,14 @@ const RISING_STAR_CANDIDATES: Array<{ symbol: string; name: string }> = [
   { symbol: "IONQ", name: "IonQ Inc." },
   { symbol: "SOFI", name: "SoFi Technologies" },
   { symbol: "CRWD", name: "CrowdStrike Holdings" },
+  // Magnificent Seven is a defined benchmark group, not a hand-maintained growth classification.
+  { symbol: "AAPL", name: "Apple Inc." },
+  { symbol: "MSFT", name: "Microsoft Corporation" },
+  { symbol: "GOOGL", name: "Alphabet Inc." },
+  { symbol: "AMZN", name: "Amazon.com Inc." },
+  { symbol: "NVDA", name: "NVIDIA Corporation" },
+  { symbol: "META", name: "Meta Platforms Inc." },
+  { symbol: "TSLA", name: "Tesla Inc." },
 ];
 
 type DailyBar = { close: number; open: number; high: number; low: number; volume: number; timestamp: number };
@@ -2289,13 +2313,17 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
   const apiKey = process.env.POLYGON_API_KEY;
   if (!apiKey) return [];
 
-  // The small covered universe respects the configured Polygon free-plan cadence.
+  // The covered universe is intentionally limited and each record must clear verified
+  // public-company eligibility before it can enter the standard discovery experience.
   const attempts = await Promise.allSettled(RISING_STAR_CANDIDATES.map(async candidate => {
     try {
-      const [bars, social] = await Promise.all([
-        fetchDailyBars(apiKey, candidate.symbol, 60),
-        getVerifiedSocialSnapshot(candidate.symbol, "stock"),
+      const [bars, profile, quote] = await Promise.all([
+        getYahooDailyBars(candidate.symbol, "3mo"),
+        getPublicCompanyProfile(apiKey, candidate.symbol),
+        getQuote(candidate.symbol),
       ]);
+      if (!profile?.description) return null;
+      const social = getCachedVerifiedSocialSnapshot(candidate.symbol, "stock");
       const technical = buildRisingStarTechnical(bars);
       if (!technical) return null;
       const latest = bars.at(-1);
@@ -2306,16 +2334,16 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         ? ((latest.close - prior.close) / prior.close) * 100
         : null;
 
-      const newsAvailable = social.newsCount >= 2;
+      const newsAvailable = (social?.newsCount ?? 0) >= 2;
       const result = scoreRisingStar({
         ticker: candidate.symbol,
-        name: candidate.name,
+        name: profile.name,
         technical,
         catalyst: newsAvailable
           ? {
               available: true,
-              score: clamp(50 + social.sentimentScore * 30 + Math.min(20, (social.positiveNews + social.negativeNews) * 4)),
-              note: `${social.positiveNews + social.negativeNews} directionally classified recent public-news items.`,
+              score: clamp(50 + social!.sentimentScore * 30 + Math.min(20, (social!.positiveNews + social!.negativeNews) * 4)),
+              note: `${social!.positiveNews + social!.negativeNews} directionally classified recent public-news items.`,
             }
           : { available: false, note: "Insufficient recent public-news coverage; excluded from score." },
         macroAlignment: {
@@ -2324,28 +2352,29 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         },
         sectorTailwind: { available: false, note: "No source-backed sector/theme flow feed is connected; excluded from score." },
         social: {
-          available: social.sourceCount >= 2,
-          sourceCount: social.sourceCount,
-          socialVolume: social.socialVolume,
-          sentimentScore: social.sentimentScore,
-          positiveNews: social.positiveNews,
-          negativeNews: social.negativeNews,
-          memeHypeDetected: social.extremeAttentionDetected,
-          note: social.sourceCount >= 2
-            ? `${social.sourceCount} social/news sources available; data refreshed ${new Date(social.fetchedAt).toLocaleTimeString()}.`
-            : "Fewer than two social/news sources responded; excluded from score.",
+          available: (social?.sourceCount ?? 0) >= 2,
+          sourceCount: social?.sourceCount ?? 0,
+          socialVolume: social?.socialVolume ?? 0,
+          sentimentScore: social?.sentimentScore ?? 0,
+          positiveNews: social?.positiveNews ?? 0,
+          negativeNews: social?.negativeNews ?? 0,
+          memeHypeDetected: social?.extremeAttentionDetected ?? false,
+          note: (social?.sourceCount ?? 0) >= 2
+            ? `${social!.sourceCount} social/news sources available; data refreshed ${new Date(social!.fetchedAt).toLocaleTimeString()}.`
+            : "No cached multi-source social snapshot is available; excluded from score.",
         },
         // The current insider module is deterministic synthetic data, so it is deliberately excluded.
         insider: { available: false, note: "Existing Insider Intelligence is not yet backed by live public filings; excluded from score." },
         // No source-backed options-flow engine currently exists in this project.
         options: { available: false, note: "No source-backed options-flow provider is connected; excluded from score." },
       });
+      const listing = classifyListingAge(profile.listingDate);
       return {
         ...result,
         assetType: "stock" as const,
-        dataAsOf: Math.max(social.fetchedAt, latest.timestamp),
-        marketDataAsOf: latest.timestamp,
-        latestPrice: latest.close,
+        dataAsOf: Math.max(social?.fetchedAt ?? 0, latest.timestamp, profile.profileAsOf),
+        marketDataAsOf: quote?.observedAt ?? latest.timestamp,
+        latestPrice: quote?.price ?? latest.close,
         dailyChange,
         dailyChangePercent,
         signalDirection: result.risingStarScore >= 65 ? "CONSTRUCTIVE" as const : "WATCH" as const,
@@ -2355,6 +2384,26 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
         volumeParticipationScore: technical.volumeAccumulation,
         riskLevel: technical.asymmetry <= 45 ? "ELEVATED" as const : "MODERATE" as const,
         macroContext: `FAULTLINE pressure ${pressure.overallPressure}/100 · ${pressure.regime}`,
+        exchange: profile.exchange,
+        marketCap: profile.marketCap,
+        marketCapCategory: classifyMarketCap(profile.marketCap),
+        marketCapLabel: marketCapLabel(classifyMarketCap(profile.marketCap)),
+        listingDate: profile.listingDate,
+        listingAgeCategory: listing.category,
+        yearsPublic: listing.yearsPublic,
+        monthsPublic: listing.monthsPublic,
+        sector: deriveSector(profile),
+        industry: profile.industry,
+        themes: deriveFaultlineThemes(profile),
+        description: profile.description,
+        primaryCatalyst: newsAvailable
+          ? `${social!.positiveNews + social!.negativeNews} recent directionally classified public-news items`
+          : "Verified price and volume structure",
+        keyRisk: technical.asymmetry <= 45
+          ? "Extended technical structure can reverse sharply"
+          : "The current technical setup can fail if momentum weakens",
+        isMagnificentSeven: MAGNIFICENT_SEVEN.has(candidate.symbol),
+        priceStatus: quote?.price != null ? "DELAYED" as const : "LAST_CLOSE" as const,
       };
     } catch (error) {
       console.warn(`[RisingStars] ${candidate.symbol} unavailable`, error instanceof Error ? error.message : error);

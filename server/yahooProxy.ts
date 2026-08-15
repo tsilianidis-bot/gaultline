@@ -40,6 +40,49 @@ export interface YahooQuote {
 // Per-ticker LRU cache — max 500 tickers, 60s TTL
 const quoteCache = new LRUCache<string, YahooQuote>(500, CACHE_TTL_MS);
 
+export interface YahooDailyBar {
+  close: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: number;
+  timestamp: number;
+}
+
+const dailyBarCache = new LRUCache<string, YahooDailyBar[]>(200, 60 * 60_000);
+
+/**
+ * Fetches completed daily bars from the same delayed Yahoo adapter used by the
+ * market ticker. This avoids consuming Polygon free-tier requests for each
+ * discovery candidate while preserving a source-backed technical history.
+ */
+export async function getDailyBars(ticker: string, range: "3mo" | "6mo" = "3mo"): Promise<YahooDailyBar[]> {
+  const cacheKey = `${ticker.toUpperCase()}_${range}`;
+  const cached = dailyBarCache.get(cacheKey);
+  if (cached) return cached;
+  try {
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${range}&includePrePost=false`, {
+      headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json", "Referer": "https://finance.yahoo.com/" },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!response.ok) throw new Error(`Yahoo daily bars HTTP ${response.status}`);
+    const payload = await response.json() as { chart?: { result?: Array<{ timestamp?: number[]; indicators?: { quote?: Array<{ close?: Array<number | null>; open?: Array<number | null>; high?: Array<number | null>; low?: Array<number | null>; volume?: Array<number | null> }> } }> } };
+    const result = payload.chart?.result?.[0];
+    const quote = result?.indicators?.quote?.[0];
+    const timestamps = result?.timestamp ?? [];
+    if (!quote || timestamps.length === 0) return [];
+    const bars = timestamps.map((timestamp, index) => ({
+      close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
+      low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
+    dailyBarCache.set(cacheKey, bars);
+    return bars;
+  } catch (error) {
+    log.warn(`[Yahoo Proxy] Daily bars unavailable for ${ticker}: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
+}
+
 // ── Yahoo fetcher ─────────────────────────────────────────────
 
 /** Derive market state from Yahoo's currentTradingPeriod timestamps when marketState is missing */

@@ -89,6 +89,27 @@ vi.mock("./yahooProxy", () => ({
     { ticker: "AMD",  changePercent: 1.9 },
     { ticker: "PLTR", changePercent: 1.7 },
   ]),
+  getQuote: vi.fn().mockResolvedValue({ price: 100, isDelayed: true, observedAt: Date.parse("2026-08-14T20:00:00Z") }),
+  getDailyBars: vi.fn().mockResolvedValue(Array.from({ length: 60 }, (_, index) => ({
+    close: 75 + index, open: 74 + index, high: 76 + index, low: 73 + index, volume: 1_000_000 + index * 10_000, timestamp: Date.parse("2026-06-01T00:00:00Z") + index * 86_400_000,
+  }))),
+}));
+
+vi.mock("./risingStarsDiscovery", () => ({
+  MAGNIFICENT_SEVEN: new Set(["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"]),
+  classifyListingAge: () => ({ category: "three_plus_y", yearsPublic: 4, monthsPublic: 48 }),
+  classifyMarketCap: () => "large",
+  deriveFaultlineThemes: () => ["AI Infrastructure"],
+  deriveSector: () => "Technology",
+  getPublicCompanyProfile: vi.fn().mockResolvedValue({
+    ticker: "TEST", name: "Verified Test Company", exchange: "Nasdaq", exchangeCode: "XNAS", marketCap: 12_000_000_000,
+    listingDate: "2022-01-01", sector: null, industry: "Software", description: "Verified provider description for a public software company.", active: true, profileAsOf: Date.now(),
+  }),
+  marketCapLabel: () => "Large Cap",
+}));
+
+vi.mock("./socialIntelligence", () => ({
+  getCachedVerifiedSocialSnapshot: vi.fn().mockReturnValue(null),
 }));
 
 // ── Mock CoinGecko proxy ─────────────────────────────────────
