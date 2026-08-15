@@ -1375,6 +1375,7 @@ function SignalsSubNav() {
 function SignalsInner() {
   useSEO(PAGE_SEO.signals);
   const engine = useEngine();
+  const [location] = useLocation();
 
   // ── Live Yahoo Finance data state ─────────────────────────────
   const [quotesData, setQuotesData] = useState<QuotesResponse | null>(null);
@@ -1481,6 +1482,12 @@ function SignalsInner() {
   const [showFilters, setShowFilters] = useState(false);
   const [activeCategory, setActiveCategory] = useState<ScreeningCategory | 'All'>('All');
   const [activeView, setActiveView] = useState<'signals' | 'asymmetric' | 'rising-stars'>(() => window.location.search.includes('view=rising-stars') ? 'rising-stars' : 'signals');
+
+  // Wouter owns route changes while the browser owns query strings. Keep the
+  // mounted view aligned when users use the Signals sub-navigation or history.
+  useEffect(() => {
+    setActiveView(new URLSearchParams(window.location.search).get('view') === 'rising-stars' ? 'rising-stars' : 'signals');
+  }, [location]);
 
   // ── Asymmetric Opportunities query ────────────────────────
   const { data: asymData, isLoading: asymLoading, refetch: asymRefetch } = trpc.stocks.getAsymmetricOpportunities.useQuery(

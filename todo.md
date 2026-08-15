@@ -4744,3 +4744,4 @@
 - [x] Repair Signals Rising Stars source-to-frontend rendering without hardcoded fallback data
 - [x] Add unit and integration tests for snapshot consistency, validation controls, and Rising Stars rendering/data availability
 - [ ] Verify production-representative Daily Brief and Signals views, then save and deliver the repair checkpoint
+- [x] Synchronize the Signals Rising Stars URL query with the mounted view state so sub-navigation reliably opens the panel
