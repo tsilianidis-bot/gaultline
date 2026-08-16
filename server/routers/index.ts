@@ -22,3 +22,4 @@ export { gscRouter } from "./gsc";
 export { marketStateRouter } from "./marketState";
 export { timeMachineRouter } from "./timeMachine";
 export { marketsRouter } from "./markets";
+export { institutionalMemoryRouter } from "./institutionalMemory";

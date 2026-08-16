@@ -890,6 +890,79 @@ export const risingStarHistoryJobs = mysqlTable("risingStarHistoryJobs", {
 export type RisingStarHistoryJob = typeof risingStarHistoryJobs.$inferSelect;
 export type InsertRisingStarHistoryJob = typeof risingStarHistoryJobs.$inferInsert;
 
+// ── Institutional Memory — Immutable Verified Events ─────────────────────────
+/**
+ * Cross-engine append-only ledger of observations FAULTLINE actually recorded.
+ * Event payloads are never updated: later market effects belong in
+ * institutionalEventOutcomes, not in the original observation.
+ */
+export const institutionalEvents = mysqlTable("institutionalEvents", {
+  id:                  int("id").autoincrement().primaryKey(),
+  eventKey:            varchar("eventKey", { length: 220 }).notNull().unique(),
+  eventType:           varchar("eventType", { length: 96 }).notNull(),
+  sourceEngine:        varchar("sourceEngine", { length: 96 }).notNull(),
+  entityType:          varchar("entityType", { length: 64 }).notNull().default("market"),
+  entityId:            varchar("entityId", { length: 96 }),
+  assetClass:          varchar("assetClass", { length: 48 }),
+  severity:            mysqlEnum("severity", ["info", "low", "moderate", "high", "critical"]).notNull().default("info"),
+  direction:           mysqlEnum("direction", ["improving", "deteriorating", "stable", "neutral"]).notNull().default("neutral"),
+  eventAt:             timestamp("eventAt").notNull(),
+  sourceObservedAt:    timestamp("sourceObservedAt"),
+  dataFreshness:       varchar("dataFreshness", { length: 32 }).notNull(),
+  pressureIndex:       int("pressureIndex"),
+  marketRegime:        varchar("marketRegime", { length: 96 }),
+  magnitude:           decimal("magnitude", { precision: 18, scale: 6 }),
+  relevantValue:       decimal("relevantValue", { precision: 18, scale: 6 }),
+  headline:            varchar("headline", { length: 255 }).notNull(),
+  explanation:         text("explanation").notNull(),
+  previousStateJson:   text("previousStateJson"),
+  newStateJson:        text("newStateJson").notNull(),
+  supportingStateJson: text("supportingStateJson").notNull(),
+  historyClass:        mysqlEnum("historyClass", ["live_verified"]).notNull().default("live_verified"),
+  recordedAt:          timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  eventAtIdx:       index("institutionalEvents_eventAt_idx").on(t.eventAt),
+  sourceTypeIdx:    index("institutionalEvents_sourceType_idx").on(t.sourceEngine, t.eventType),
+  regimeIdx:        index("institutionalEvents_regime_idx").on(t.marketRegime),
+  severityIdx:      index("institutionalEvents_severity_idx").on(t.severity),
+  entityIdx:        index("institutionalEvents_entity_idx").on(t.entityType, t.entityId),
+}));
+export type InstitutionalEvent = typeof institutionalEvents.$inferSelect;
+export type InsertInstitutionalEvent = typeof institutionalEvents.$inferInsert;
+
+/** Append-only subsequent market effects; never modifies the original event. */
+export const institutionalEventOutcomes = mysqlTable("institutionalEventOutcomes", {
+  id:                 int("id").autoincrement().primaryKey(),
+  outcomeKey:         varchar("outcomeKey", { length: 240 }).notNull().unique(),
+  eventId:            int("eventId").notNull(),
+  horizonTradingDays: int("horizonTradingDays").notNull(),
+  observedAt:         timestamp("observedAt").notNull(),
+  outcomeJson:        text("outcomeJson").notNull(),
+  provenanceJson:     text("provenanceJson").notNull(),
+  recordedAt:         timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  eventIdx:           index("institutionalEventOutcomes_event_idx").on(t.eventId),
+  horizonIdx:         index("institutionalEventOutcomes_horizon_idx").on(t.horizonTradingDays),
+}));
+export type InstitutionalEventOutcome = typeof institutionalEventOutcomes.$inferSelect;
+export type InsertInstitutionalEventOutcome = typeof institutionalEventOutcomes.$inferInsert;
+
+/** Operational health record for the project-owned institutional-memory jobs. */
+export const institutionalMemoryJobs = mysqlTable("institutionalMemoryJobs", {
+  id:                 int("id").autoincrement().primaryKey(),
+  jobKey:             varchar("jobKey", { length: 96 }).notNull().unique(),
+  scheduleCronTaskUid:varchar("scheduleCronTaskUid", { length: 65 }),
+  cronExpression:     varchar("cronExpression", { length: 64 }).notNull(),
+  lastRunAt:          timestamp("lastRunAt"),
+  lastSuccessAt:      timestamp("lastSuccessAt"),
+  lastFailureAt:      timestamp("lastFailureAt"),
+  lastFailureMessage: text("lastFailureMessage"),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:          timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type InstitutionalMemoryJob = typeof institutionalMemoryJobs.$inferSelect;
+export type InsertInstitutionalMemoryJob = typeof institutionalMemoryJobs.$inferInsert;
+
 // ── Visitor Profiles ─────────────────────────────────────────────────────────
 /**
  * One row per anonymous visitor (identified by a stable localStorage UUID).

@@ -4834,3 +4834,14 @@
 - [ ] Expand Global Markets command center, sector rotation, analog visuals, alerts timeline, and proof center using real recorded data only
 - [ ] Upgrade ASHA visual answer cards, system-wide chart interactions, and evidence/freshness disclosures
 - [ ] Conduct platform visual-consistency, mobile, performance, provenance, and regression validation before staged publication
+
+## FAULTLINE Institutional Memory — Immutable Events and Alerts Archive (Session 2026-08-16)
+- [x] Audit existing Rising Stars history, market snapshots, alerts, outcomes, engine transitions, and server persistence paths
+- [x] Define append-only immutable event, daily state snapshot, and appended outcome records with complete provenance and explicit LIVE VERIFIED versus reconstruction classification
+- [ ] Capture genuine verified market regime, pressure threshold/variance, liquidity, credit, volatility, macro sensitivity, sector rotation, Rising Stars, signal, Day Trade, analog, probability, and posture transitions where source engines actually expose a change
+- [ ] Preserve original event payloads without overwrites and append 1d/5d/20d/60d outcome observations separately where eligible
+- [ ] Schedule idempotent daily continuity snapshots and outcome collection with health monitoring for failed writes
+- [ ] Build a searchable, mobile-safe Alerts Archive with date, engine, regime, severity, direction, and asset-class filters plus stable event deep links
+- [ ] Add evidence-first event cards covering what changed, why, conditional relevance, confirmation, reversal, freshness, and source-observation time
+- [ ] Integrate real archive retrieval into ASHA and shared event references across WHY, OUTLOOK, WATCH, Rising Stars, Signals, Day Trade, Track Record, and historical replay
+- [ ] Add immutability, duplicate, transition, outcome, archive-filter, deep-link, and non-fabrication tests; validate production build

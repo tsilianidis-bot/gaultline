@@ -386,6 +386,13 @@
       "when": 1786896950981,
       "tag": "0054_nappy_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "5",
+      "when": 1786906148362,
+      "tag": "0055_bumpy_rocket_racer",
+      "breakpoints": true
     }
   ]
 }
