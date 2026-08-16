@@ -4783,3 +4783,22 @@
 - [x] Make canonical Deep Dashboard Home (`/app/now`) the only default post-welcome and post-login continuation target unless an explicit user preference overrides it
 - [x] Ensure ACT remains a deliberate decision-support destination and never opens automatically after ASHA welcome
 - [ ] Add routing regression tests and live desktop/mobile verification for all default continuation paths
+
+## Rising Stars Visual Chart Analysis Experience (Session 2026-08-16)
+- [x] Audit the remaining chart-analysis requirements and current source-backed contracts for OHLC, volume, detection history, score evolution, technical levels, decision context, and chart rendering
+- [x] Define chart ranges, interaction behavior, detection/event provenance, source timestamps, and explicit unavailable-history states without fabricating events or levels
+- [x] Reuse canonical market-data and Rising Stars services to provide chart-ready OHLC, volume, verified stored observations, factor contributions, and current market context
+- [ ] Add a detail route from Rising Stars that opens with a dominant institutional chart, compact executive signal strip, and source-backed score/volume/momentum visuals
+- [ ] Add detection, evolution, timeline, support/resistance, and decision-zone overlays only where immutable stored or calculated inputs exist; otherwise show clear verified-history boundaries
+- [ ] Add concise Why FAULTLINE Flagged It, What Changed Since Detection, ASHA chart questions, and supporting research ordered after the visual analysis
+- [ ] Add tests for chart range mapping, no-fabrication detection history, source timestamps, card-to-detail routing, and unavailable-data behavior
+- [ ] Validate desktop/mobile chart interaction, component resilience, full regression suite, and deployed production behavior before publishing
+
+## Rising Stars Daily Verified History and Event Ledger (Option B)
+- [x] Define immutable Rising Stars detection, observation, and state-change event records with source and provenance fields
+- [x] Store append-only daily continuity snapshots for every eligible source-backed Rising Star
+- [ ] Capture genuine observed first qualification, score threshold, strengthening, weakening, confirmation, risk/invalidation, and removal events without retrospective reconstruction
+- [x] Preserve immutable detection price/time, canonical score/evidence, relevant technical state, pressure, regime, sector/macro context, and source timestamps for reconstruction
+- [x] Expose stored history only as LIVE VERIFIED HISTORY and keep unrecorded/backtest history explicitly separate
+- [ ] Schedule daily continuity capture using the established application background-job architecture with safe idempotency
+- [ ] Add tests for immutable writes, duplicate suppression, event transitions, provenance, and non-fabrication safeguards

@@ -32,6 +32,7 @@ import { weeklyImprovementReportHandler } from "../scheduledWeeklyImprovementRep
 import { handleDripEmail } from "../scheduledDripEmail";
 import { handleScheduledSeismograph } from "../scheduledSeismograph";
 import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../scheduledShadowModel";
+import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -190,6 +191,7 @@ async function startServer() {
   app.post("/api/scheduled/seismograph-daily", requireCron, handleScheduledSeismograph);
   app.post("/api/scheduled/shadow-forward-outcomes", requireCron, handleShadowForwardOutcomes);
   app.post("/api/scheduled/shadow-daily-summary", requireCron, handleShadowDailySummary);
+  app.post("/api/scheduled/rising-stars-continuity", requireCron, handleScheduledRisingStarsContinuity);
   // Autonomous publishing pipeline
   app.post("/api/scheduled/daily-brief", requireCron, handleDailyBrief);
   app.post("/api/scheduled/weekly-review", requireCron, handleWeeklyReview);

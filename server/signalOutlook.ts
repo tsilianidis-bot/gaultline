@@ -31,6 +31,7 @@ import { computeCalculatedLevels, type CalculatedLevels } from "./priceLevels";
 import { getCachedVerifiedSocialSnapshot } from "./socialIntelligence";
 import { scoreRisingStar, type RisingStarResult } from "./risingStars";
 import { MAGNIFICENT_SEVEN, classifyListingAge, classifyMarketCap, deriveFaultlineThemes, deriveSector, getPublicCompanyProfile, marketCapLabel, type ListingAgeCategory, type MarketCapCategory } from "./risingStarsDiscovery";
+import { recordRisingStarObservation } from "./risingStarsHistory";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -2418,8 +2419,8 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
     .sort((a, b) => b.risingStarScore - a.risingStarScore);
 }
 
-export async function getOpportunityDiscovery(): Promise<OpportunityDiscoveryResult> {
-  const cached = discoveryCache.get("discovery");
+export async function getOpportunityDiscovery(options: { forceRefresh?: boolean; captureEngineEvents?: boolean } = {}): Promise<OpportunityDiscoveryResult> {
+  const cached = options.forceRefresh ? undefined : discoveryCache.get("discovery");
   if (cached) return cached;
 
   const pressure = await calculateFaultlinePressure();
@@ -2495,6 +2496,17 @@ export async function getOpportunityDiscovery(): Promise<OpportunityDiscoveryRes
     regime: pressure.regime,
     generatedAt: now,
   };
+
+  // The existing discovery evaluation is the only source for genuine intraday
+  // Rising Stars state changes.  Persist an append-only engine observation only
+  // where a material transition is actually observed; never reconstruct one
+  // from later bars or absent provider data.
+  if (options.captureEngineEvents !== false && risingStars.length > 0) {
+    const context = { pressureIndex: p, regime: pressure.regime, observedAt: now, source: "rising_stars_engine" as const };
+    const writes = await Promise.allSettled(risingStars.map(item => recordRisingStarObservation(item, context, "engine")));
+    const failures = writes.filter(write => write.status === "rejected").length;
+    if (failures) console.warn(`[RisingStars] ${failures} immutable event-ledger writes failed; discovery result remains available.`);
+  }
 
   discoveryCache.set("discovery", result);
   return result;

@@ -805,6 +805,91 @@ export const outlookHistory = mysqlTable("outlookHistory", {
 export type OutlookHistory = typeof outlookHistory.$inferSelect;
 export type InsertOutlookHistory = typeof outlookHistory.$inferInsert;
 
+// ── Rising Stars Verified History ──────────────────────────────
+/**
+ * Immutable observations captured from the live Rising Stars engine.  These
+ * rows are append-only evidence records; they are never recalculated or
+ * overwritten when the model, market data, or enrichment changes later.
+ */
+export const risingStarSnapshots = mysqlTable("risingStarSnapshots", {
+  id:                 int("id").autoincrement().primaryKey(),
+  /** Stable idempotency key: daily continuity uses TICKER:daily:YYYY-MM-DD; engine observations use an input fingerprint. */
+  snapshotKey:        varchar("snapshotKey", { length: 180 }).notNull().unique(),
+  ticker:             varchar("ticker", { length: 30 }).notNull(),
+  assetType:          mysqlEnum("assetType", ["stock"]).notNull().default("stock"),
+  observationType:    mysqlEnum("observationType", ["daily", "engine"]).notNull(),
+  /** UTC trading-date continuity key.  Intraday engine observations retain their exact observedAt timestamp. */
+  observationDate:    varchar("observationDate", { length: 10 }).notNull(),
+  observedAt:         timestamp("observedAt").notNull(),
+  marketDataAsOf:     timestamp("marketDataAsOf"),
+  sourceFetchedAt:    timestamp("sourceFetchedAt"),
+  qualification:      mysqlEnum("qualification", ["qualified", "watchlist"]).notNull(),
+  risingStarScore:    int("risingStarScore").notNull(),
+  baseScore:          int("baseScore").notNull(),
+  crowdingPenalty:    int("crowdingPenalty").notNull().default(0),
+  crossSignalConfidence: varchar("crossSignalConfidence", { length: 20 }).notNull(),
+  informationLead:    varchar("informationLead", { length: 20 }).notNull(),
+  crowdingRisk:       varchar("crowdingRisk", { length: 20 }).notNull(),
+  price:              decimal("price", { precision: 18, scale: 6 }),
+  dailyChangePercent: decimal("dailyChangePercent", { precision: 10, scale: 4 }),
+  momentumScore:      int("momentumScore").notNull(),
+  relativeStrengthScore: int("relativeStrengthScore").notNull(),
+  volumeParticipationScore: int("volumeParticipationScore").notNull(),
+  riskLevel:          varchar("riskLevel", { length: 24 }).notNull(),
+  pressureIndex:      int("pressureIndex").notNull(),
+  marketRegime:       varchar("marketRegime", { length: 64 }).notNull(),
+  sector:             varchar("sector", { length: 128 }),
+  industry:           varchar("industry", { length: 160 }),
+  macroContext:       text("macroContext"),
+  /** Complete score evidence, technical state, company data, and provider provenance captured exactly at observation time. */
+  evidenceJson:       text("evidenceJson").notNull(),
+  technicalJson:      text("technicalJson").notNull(),
+  provenanceJson:     text("provenanceJson").notNull(),
+  historyClass:       mysqlEnum("historyClass", ["live_verified"]).notNull().default("live_verified"),
+  recordedAt:         timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  tickerObservedIdx:  index("risingStarSnapshots_ticker_observed_idx").on(t.ticker, t.observedAt),
+  typeDateIdx:        index("risingStarSnapshots_type_date_idx").on(t.observationType, t.observationDate),
+}));
+export type RisingStarSnapshot = typeof risingStarSnapshots.$inferSelect;
+export type InsertRisingStarSnapshot = typeof risingStarSnapshots.$inferInsert;
+
+/**
+ * Append-only ledger of material live-engine state changes.  An event exists
+ * only when it was observed by a recorded engine or daily snapshot; it is not
+ * inferred from later historical price data.
+ */
+export const risingStarEvents = mysqlTable("risingStarEvents", {
+  id:                 int("id").autoincrement().primaryKey(),
+  eventKey:           varchar("eventKey", { length: 220 }).notNull().unique(),
+  ticker:             varchar("ticker", { length: 30 }).notNull(),
+  snapshotId:         int("snapshotId").notNull(),
+  eventType:          mysqlEnum("eventType", ["first_qualification", "score_strengthened", "score_weakened", "confirmation", "risk_threshold", "invalidation", "removed"]).notNull(),
+  eventAt:            timestamp("eventAt").notNull(),
+  headline:           varchar("headline", { length: 255 }).notNull(),
+  detailsJson:        text("detailsJson").notNull(),
+  historyClass:       mysqlEnum("historyClass", ["live_verified"]).notNull().default("live_verified"),
+  recordedAt:         timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  tickerEventIdx:     index("risingStarEvents_ticker_event_idx").on(t.ticker, t.eventAt),
+  snapshotIdx:        index("risingStarEvents_snapshot_idx").on(t.snapshotId),
+}));
+export type RisingStarEvent = typeof risingStarEvents.$inferSelect;
+export type InsertRisingStarEvent = typeof risingStarEvents.$inferInsert;
+
+/** Project-owned schedule metadata for the daily immutable continuity capture. */
+export const risingStarHistoryJobs = mysqlTable("risingStarHistoryJobs", {
+  id:                 int("id").autoincrement().primaryKey(),
+  jobKey:             varchar("jobKey", { length: 64 }).notNull().unique(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  cronExpression:     varchar("cronExpression", { length: 64 }).notNull(),
+  lastRunAt:          timestamp("lastRunAt"),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:          timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RisingStarHistoryJob = typeof risingStarHistoryJobs.$inferSelect;
+export type InsertRisingStarHistoryJob = typeof risingStarHistoryJobs.$inferInsert;
+
 // ── Visitor Profiles ─────────────────────────────────────────────────────────
 /**
  * One row per anonymous visitor (identified by a stable localStorage UUID).

@@ -379,6 +379,13 @@
       "when": 1786768218129,
       "tag": "0053_vengeful_norman_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "5",
+      "when": 1786896950981,
+      "tag": "0054_nappy_beast",
+      "breakpoints": true
     }
   ]
 }
