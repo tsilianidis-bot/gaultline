@@ -4767,3 +4767,19 @@
 - [x] Add expandable canonical score methodology and concise data-coverage disclosures without fabricating missing classifications
 - [x] Add tests for eligibility, listing-age and market-cap classification, Mag 7 filtering, AND filtering, unavailable-data behavior, price freshness, and direct-analysis destinations
 - [ ] Validate desktop/mobile discovery flows and full regression suite, then publish the discovery-engine checkpoint
+
+## Critical Deep Action Navigation and ASHA Interaction Repair (Session 2026-08-15)
+- [x] Reproduce the `/app/act/deep` reload behavior on production and inspect current pathname, handlers, hrefs, router state, event propagation, forms, and overlays
+- [x] Create a source-backed route/action map for every visible Deep Action card, quick action, suggested ASHA question, and bottom-navigation control
+- [x] Identify and repair the shared root cause without individually hardcoding unrelated controls or redesigning the page
+- [x] Ensure every non-submit button within Deep Action is explicitly safe from accidental form submission
+- [x] Verify canonical Home, Why, Outlook, Watch, and Act bottom-navigation destinations and active-tab behavior
+- [x] Verify suggested ASHA questions inject the intended query and open the intended ASHA experience without page refresh
+- [x] Add regression tests for major Deep Action destinations, ASHA actions, current-route preservation, and no accidental full-page reload
+- [ ] Validate desktop/mobile behavior, full regression suite, deployed production build, and live route behavior before publishing the repair
+
+## Deferred — ASHA Post-Welcome Canonical Home Routing (Start after Deep Action repair)
+- [ ] Audit successful login, ASHA welcome completion, Enter Market Intelligence, Home button, logo, bottom Home navigation, and Continue to Dashboard routes
+- [ ] Make canonical Deep Dashboard Home (`/app/now`) the only default post-welcome and post-login continuation target unless an explicit user preference overrides it
+- [ ] Ensure ACT remains a deliberate decision-support destination and never opens automatically after ASHA welcome
+- [ ] Add routing regression tests and live desktop/mobile verification for all default continuation paths

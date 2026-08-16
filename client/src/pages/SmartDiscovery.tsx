@@ -2619,6 +2619,7 @@ export default function SmartDiscovery() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const stepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const ambientEngineRef = useRef<AshaAmbientEngine | null>(null);
 
@@ -2927,7 +2928,6 @@ export default function SmartDiscovery() {
         }
       }
       setError(errorMsg);
-      setConversation(prev => prev.slice(0, -1));
     } finally {
       setIsExecuting(false);
     }
@@ -2943,6 +2943,26 @@ export default function SmartDiscovery() {
     setTicker(ticker, name, assetType);
     navigate("/app/symbol-intelligence");
   }, [navigate, setTicker]);
+
+  // Smart Discovery is an in-place workspace, not a form. This shared guard
+  // prevents accidental native submission if a nested component ever adds one.
+  const preventUnexpectedSubmission = useCallback((event: React.FormEvent) => {
+    event.preventDefault();
+  }, []);
+
+  const handlePromptAction = useCallback((event: React.MouseEvent<HTMLButtonElement>, prompt: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    void handleSubmit(prompt);
+  }, [handleSubmit]);
+
+  // All buttons in this workspace are in-place controls. Apply the explicit
+  // non-submit type centrally to static cards and dynamically rendered answers.
+  useEffect(() => {
+    workspaceRef.current?.querySelectorAll<HTMLButtonElement>("button:not([type])").forEach((button) => {
+      button.type = "button";
+    });
+  });
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -2973,7 +2993,7 @@ export default function SmartDiscovery() {
         .fl-answer { animation: fl-fade-in 0.4s ease; }
       `}</style>
 
-      <div style={{
+      <div ref={workspaceRef} onSubmitCapture={preventUnexpectedSubmission} style={{
         display: "flex",
         flexDirection: "column",
         minHeight: "calc(100vh - 56px)",
@@ -3034,7 +3054,8 @@ export default function SmartDiscovery() {
                   {QUICK_ACTIONS.map((action, i) => (
                     <button
                       key={i}
-                      onClick={() => void handleSubmit(action.prompt)}
+                      type="button"
+                      onClick={(event) => handlePromptAction(event, action.prompt)}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -3079,7 +3100,8 @@ export default function SmartDiscovery() {
                 {SUGGESTED_QUESTIONS.map((q, i) => (
                   <button
                     key={i}
-                    onClick={() => void handleSubmit(q)}
+                    type="button"
+                    onClick={(event) => handlePromptAction(event, q)}
                     style={{
                       padding: "10px 14px",
                       background: "rgba(255,255,255,0.03)",
@@ -3219,6 +3241,7 @@ export default function SmartDiscovery() {
                 }}>
                   <span style={{ ...MONO_SM, color: ACCENT, fontWeight: 700 }}>{contextTicker.ticker}</span>
                   <button
+                    type="button"
                     onClick={clearTicker}
                     title="Clear context — switch to global mode"
                     style={{
@@ -3256,7 +3279,8 @@ export default function SmartDiscovery() {
                 }}
               />
               <button
-                onClick={() => void handleSubmit()}
+                type="button"
+                onClick={(event) => handlePromptAction(event, query)}
                 disabled={!query.trim() || isExecuting}
                 style={{
                   display: "flex",
@@ -3288,6 +3312,7 @@ export default function SmartDiscovery() {
                 </span>
               )}
               <button
+                type="button"
                 onClick={() => { setConversation([]); setError(null); }}
                 style={{
                   background: "none",
