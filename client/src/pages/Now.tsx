@@ -989,6 +989,19 @@ export default function Now() {
                   )}
                 </div>
 
+                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                  <div className="rounded border border-rose-300/20 bg-rose-300/[0.045] p-3">
+                    <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-rose-200/65">Top threat</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100">{topDrivers[0] ?? "No dominant verified threat"}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">Current highest-contribution pressure channel.</p>
+                  </div>
+                  <div className="rounded border border-violet-300/20 bg-violet-300/[0.045] p-3">
+                    <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-violet-200/65">Closest historical analog</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100">{topAnalog ? `${topAnalog.label} · ${topAnalog.period}` : "No verified analog available"}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">{topAnalog ? `${formatCanonicalPercent(topAnalog.similarity)} similarity · context, not a forecast.` : "Historical comparison remains unavailable."}</p>
+                  </div>
+                </div>
+
                 {/* CTA */}
                 <div className="mt-6 flex flex-wrap gap-2">
                   <Link href={CANONICAL_DESTINATION_BY_ID.why.path} className="flex items-center gap-2 rounded bg-cyan-300 px-4 py-2.5 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] text-[#031014] transition hover:bg-cyan-200 active:scale-[0.97]">

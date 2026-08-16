@@ -4823,3 +4823,14 @@
 - [ ] Reuse the interactive system across every current UnifiedIntelligenceChart consumer and document unavailable consumer boundaries
 - [ ] Add interaction and data-integrity tests for exact bar selection, marker data, line-only mode, and touch behavior
 - [ ] Validate Rising Stars, Signals, and Day Trade chart behavior before publishing
+
+## FAULTLINE Visual Intelligence Operating System Overhaul (Session 2026-08-16)
+- [ ] Audit existing Deep Dashboard, Five Questions, Global Markets, sector, history, analog, alerts, proof, ASHA, and design-system surfaces without replacing working engines
+- [ ] Establish reusable visual-intelligence components, branded loading/empty states, tooltips, micro-interactions, and responsive design rules
+- [ ] Upgrade Deep Dashboard hierarchy with canonical pressure, regime, posture, probabilities, top threat, analog, ASHA summary, pressure history, engine contributions, and daily change strip
+- [ ] Upgrade WHY with a clean causal transmission map and source-backed contribution/driver explanations
+- [ ] Upgrade OUTLOOK with comparative scenario board, probability changes, evidence, confirmation/invalidation, and analog context
+- [ ] Upgrade ACT with a concise decision matrix and WATCH with a source-backed intelligence heatmap linking to relevant analysis
+- [ ] Expand Global Markets command center, sector rotation, analog visuals, alerts timeline, and proof center using real recorded data only
+- [ ] Upgrade ASHA visual answer cards, system-wide chart interactions, and evidence/freshness disclosures
+- [ ] Conduct platform visual-consistency, mobile, performance, provenance, and regression validation before staged publication
