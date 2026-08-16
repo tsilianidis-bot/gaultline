@@ -1,6 +1,8 @@
-import { desc, eq } from "drizzle-orm";
-import { institutionalEvents } from "../drizzle/schema";
+import { desc, eq, lte } from "drizzle-orm";
+import { institutionalEventOutcomes, institutionalEvents } from "../drizzle/schema";
 import { getDb } from "./db";
+import { fetchFredSeries } from "./fredClient";
+import { getDailyBars } from "./yahooProxy";
 
 export type InstitutionalSeverity = "info" | "low" | "moderate" | "high" | "critical";
 export type InstitutionalDirection = "improving" | "deteriorating" | "stable" | "neutral";
@@ -221,4 +223,83 @@ export async function recordDailyMarketEvidence(current: MarketEvidenceState) {
   }
   const results = await Promise.all(writes);
   return { created: results.filter(result => result.created).length, ids: results.map(result => result.id).filter((id): id is number => id != null) };
+}
+
+const BROAD_OUTCOME_HORIZONS = [1, 5, 20, 60] as const;
+
+function isoDay(timestamp: number | Date) {
+  return new Date(timestamp).toISOString().slice(0, 10);
+}
+
+function fredValueOnOrBefore(observations: Array<{ date: string; value: string }>, day: string) {
+  const eligible = observations.filter((observation) => observation.date <= day && observation.value !== ".");
+  const latest = eligible[eligible.length - 1];
+  const value = latest ? Number(latest.value) : NaN;
+  return Number.isFinite(value) ? { date: latest.date, value } : null;
+}
+
+/**
+ * Appends completed trading-day outcomes for broad, market-level institutional
+ * events. The original event is never updated. SPY, DGS10, Pressure Index and
+ * regime are intentionally stored as separate observations—not a synthetic
+ * performance score. Missing source observations defer a horizon rather than
+ * inserting a partial or inferred result.
+ */
+export async function collectBroadInstitutionalEventOutcomes() {
+  const db = await getDb();
+  if (!db) return { appended: 0, deferred: 0 };
+
+  const [events, spyBars, dgs10] = await Promise.all([
+    db.select({ id: institutionalEvents.id, eventAt: institutionalEvents.eventAt, pressureIndex: institutionalEvents.pressureIndex, marketRegime: institutionalEvents.marketRegime })
+      .from(institutionalEvents)
+      .where(eq(institutionalEvents.entityType, "market"))
+      .orderBy(desc(institutionalEvents.eventAt))
+      .limit(250),
+    getDailyBars("SPY", "6mo"),
+    fetchFredSeries("DGS10", 180, "asc"),
+  ]);
+  if (!spyBars.length || dgs10.error) return { appended: 0, deferred: events.length * BROAD_OUTCOME_HORIZONS.length };
+
+  const dailyStates = await db.select({ eventAt: institutionalEvents.eventAt, newStateJson: institutionalEvents.newStateJson })
+    .from(institutionalEvents)
+    .where(eq(institutionalEvents.eventType, "daily_market_snapshot"))
+    .orderBy(desc(institutionalEvents.eventAt))
+    .limit(400);
+
+  let appended = 0;
+  let deferred = 0;
+  for (const event of events) {
+    const baseIndex = spyBars.map((bar) => bar.timestamp).filter((timestamp) => timestamp <= event.eventAt.getTime()).length - 1;
+    if (baseIndex < 0) { deferred += BROAD_OUTCOME_HORIZONS.length; continue; }
+    for (const horizonTradingDays of BROAD_OUTCOME_HORIZONS) {
+      const outcomeKey = `institutional-event:${event.id}:broad-benchmark:${horizonTradingDays}td`;
+      const existing = await db.select({ id: institutionalEventOutcomes.id }).from(institutionalEventOutcomes).where(eq(institutionalEventOutcomes.outcomeKey, outcomeKey)).limit(1);
+      if (existing[0]) continue;
+      const target = spyBars[baseIndex + horizonTradingDays];
+      const base = spyBars[baseIndex];
+      if (!target || !base) { deferred++; continue; }
+      const baseYield = fredValueOnOrBefore(dgs10.observations, isoDay(base.timestamp));
+      const targetYield = fredValueOnOrBefore(dgs10.observations, isoDay(target.timestamp));
+      const laterState = dailyStates.find((state) => state.eventAt.getTime() <= target.timestamp);
+      if (!baseYield || !targetYield || !laterState) { deferred++; continue; }
+      let state: MarketEvidenceState;
+      try { state = JSON.parse(laterState.newStateJson) as MarketEvidenceState; } catch { deferred++; continue; }
+      await db.insert(institutionalEventOutcomes).values({
+        outcomeKey,
+        eventId: event.id,
+        horizonTradingDays,
+        observedAt: new Date(target.timestamp),
+        outcomeJson: JSON.stringify({
+          historyClass: "live_verified",
+          spy: { baseClose: base.close, targetClose: target.close, returnPercent: ((target.close - base.close) / base.close) * 100, observedAt: isoDay(target.timestamp) },
+          tenYearTreasury: { baseYieldPercent: baseYield.value, targetYieldPercent: targetYield.value, changeBasisPoints: (targetYield.value - baseYield.value) * 100, sourceSeries: "DGS10", baseObservedAt: baseYield.date, targetObservedAt: targetYield.date },
+          pressureIndex: { base: event.pressureIndex, target: state.pressureIndex, change: event.pressureIndex == null ? null : state.pressureIndex - event.pressureIndex },
+          regime: { base: event.marketRegime, target: state.regime },
+        }),
+        provenanceJson: JSON.stringify({ spy: "Yahoo completed daily bars", tenYearTreasury: "FRED DGS10", pressureAndRegime: "FAUL TLINE canonical daily Seismograph snapshots", tradingDayHorizon: horizonTradingDays }),
+      });
+      appended++;
+    }
+  }
+  return { appended, deferred };
 }

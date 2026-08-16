@@ -4845,3 +4845,11 @@
 - [ ] Add evidence-first event cards covering what changed, why, conditional relevance, confirmation, reversal, freshness, and source-observation time
 - [ ] Integrate real archive retrieval into ASHA and shared event references across WHY, OUTLOOK, WATCH, Rising Stars, Signals, Day Trade, Track Record, and historical replay
 - [ ] Add immutability, duplicate, transition, outcome, archive-filter, deep-link, and non-fabrication tests; validate production build
+
+## Broad Institutional Event Outcomes — SPY, 10Y, Pressure, and Regime (Option B)
+- [x] Define trading-day 1d/5d/20d/60d horizons and append-only outcome keys for broad institutional events
+- [x] Collect and preserve separate observed SPY returns, 10-year Treasury yield changes in basis points, Pressure Index changes, and regime state at each eligible horizon
+- [ ] Preserve instrument-specific own-price outcomes for Rising Stars, Signals, and future symbol events without combining them with broad benchmarks
+- [x] Prevent any synthetic combined performance/success score or overwrite of original events and previously collected outcomes
+- [x] Add idempotent scheduled outcome collection using only completed daily source observations and archive display of separate outcome fields
+- [ ] Add tests for trading-day eligibility, source provenance, append-only behavior, separate equity/rates/pressure/regime fields, and unavailable-data handling

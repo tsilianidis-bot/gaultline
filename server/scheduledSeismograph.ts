@@ -37,7 +37,7 @@ import {
 import type { FaultlinePressureOutput } from "./pressure/engine";
 import type { FMOSUniversalOutput } from "./fmos/types";
 import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
-import { recordDailyMarketEvidence } from "./institutionalMemory";
+import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -150,6 +150,7 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
       activePatternCount: seismographOutput.activePatterns.length,
     },
   });
+  await collectBroadInstitutionalEventOutcomes();
   invalidateCanonicalMarketStateCache();
   console.log("[Seismograph] Output persisted to Market Memory");
 
