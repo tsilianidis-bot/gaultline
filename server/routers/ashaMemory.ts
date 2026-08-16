@@ -8,7 +8,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { conversationLogs, conversationMessages } from "../../drizzle/schema";
+import { conversationLogs, conversationMessages, institutionalEvents } from "../../drizzle/schema";
 import { eq, desc, and, gte, sql } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 
@@ -29,6 +29,29 @@ function sevenDaysAgo(): Date {
 // ── Router ───────────────────────────────────────────────────────────────────
 
 export const ashaMemoryRouter = router({
+
+  /**
+   * Real recorded market events for ASHA answers such as "what changed today?".
+   * This procedure intentionally returns only live verified server events.
+   */
+  getVerifiedEventArchive: protectedProcedure
+    .input(z.object({
+      days: z.number().int().min(1).max(90).default(7),
+      eventType: z.string().max(96).optional(),
+      limit: z.number().int().min(1).max(100).default(25),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return { events: [], historyClass: "live_verified" as const };
+      const since = new Date(Date.now() - input.days * 24 * 60 * 60 * 1000);
+      const filters = [gte(institutionalEvents.eventAt, since)];
+      if (input.eventType) filters.push(eq(institutionalEvents.eventType, input.eventType));
+      const events = await db.select().from(institutionalEvents)
+        .where(and(...filters))
+        .orderBy(desc(institutionalEvents.eventAt))
+        .limit(input.limit);
+      return { events, historyClass: "live_verified" as const };
+    }),
 
   /**
    * Returns today's conversation messages for the current user,
