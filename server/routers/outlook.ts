@@ -17,6 +17,7 @@ import { calculateFaultlinePressure } from "../pressure/engine";
 import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { invokeLLM } from "../_core/llm";
 import { getQuote } from "../yahooProxy";
+import { getRisingStarVisualDetail } from "../risingStarsVisual";
 
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
@@ -142,6 +143,28 @@ export const outlookRouter = router({
       } catch (err) {
         console.error("[outlook.getOpportunityDiscovery] Error:", err);
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Opportunity discovery unavailable." });
+      }
+    }),
+
+  /**
+   * Chart-first detail for an eligible Rising Star. Historical FAULTLINE
+   * markers are returned only from immutable live verified records; market
+   * OHLC bars never imply a reconstructed historical detection.
+   */
+  getRisingStarVisualDetail: publicProcedure
+    .input(z.object({
+      ticker: z.string().min(1).max(20).toUpperCase(),
+      range: z.enum(["1W", "1M", "3M", "6M"]).default("3M"),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const detail = await getRisingStarVisualDetail(input.ticker, input.range);
+        if (!detail) throw new TRPCError({ code: "NOT_FOUND", message: `${input.ticker} is not currently in the verified Rising Stars universe.` });
+        return sanitizeNumbers(detail) as typeof detail;
+      } catch (err) {
+        if (err instanceof TRPCError) throw err;
+        console.error("[outlook.getRisingStarVisualDetail] Error:", err);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Rising Stars visual analysis is temporarily unavailable." });
       }
     }),
 

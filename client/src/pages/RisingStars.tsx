@@ -127,7 +127,7 @@ export default function RisingStars() {
   }), [items, topCategory, listingAge, sector, theme, characteristic, sort]);
   const filtersActive = topCategory !== "all" || Boolean(listingAge || sector || theme || characteristic || sort !== "score");
   const clearFilters = () => { setTopCategory("all"); setListingAge(""); setSector(""); setTheme(""); setCharacteristic(""); setSort("score"); };
-  const analyze = (ticker: string) => navigate(`/app/stock/${ticker}`);
+  const analyze = (ticker: string) => navigate(`/app/rising-stars/${ticker}`);
 
   return <main style={{ minHeight: "100vh", background: "#050608", color: "#F0F4FF", padding: "24px 16px 90px" }}><div style={{ maxWidth: 1380, margin: "0 auto" }}>
     <button onClick={() => navigate("/app/signals?view=rising-stars")} style={{ background: "transparent", border: "none", padding: 0, color: "rgba(176,196,216,0.62)", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, display: "inline-flex", alignItems: "center", gap: 6 }}><ArrowLeft size={13} /> BACK TO SIGNALS</button>
