@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useLocation, useRoute } from "wouter";
 import { ArrowLeft, BrainCircuit, ChevronDown, RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { UnifiedIntelligenceChart } from "@/components/UnifiedIntelligenceChart";
 
 type Range = "1W" | "1M" | "3M" | "6M";
 const ranges: Range[] = ["1W", "1M", "3M", "6M"];
@@ -18,14 +19,15 @@ function Chart({ bars, events, mode }: { bars: Array<{ timestamp:number; open:nu
   const y=(p:number)=>18+((domain.max-p)/(domain.max-domain.min))*285;
   const maxVol=Math.max(...bars.map(b=>b.volume),1);
   const eventFor=(bar:any)=>events.find(e=>Math.abs(e.eventAt-bar.timestamp)<43_200_000);
-  return <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Rising Stars price, volume, and verified detection chart" style={{width:"100%", minWidth:600, display:"block", background:"#060A10"}}>
+  return <UnifiedIntelligenceChart bars={bars} markers={events.map(event=>({ eventAt:event.eventAt, type:event.type, headline:event.headline }))} mode={mode} ariaLabel="Rising Stars price, volume, and verified detection chart"/>;
+  /* Legacy rendering retained below temporarily for source comparison.
     {[0,1,2,3,4].map(i=><line key={i} x1="52" x2="982" y1={18+i*71} y2={18+i*71} stroke="rgba(148,163,184,.13)" />)}
     <text x="10" y="18" fill="rgba(180,201,224,.55)" fontSize="11">{fmt(domain.max)}</text><text x="10" y="305" fill="rgba(180,201,224,.55)" fontSize="11">{fmt(domain.min)}</text>
     {mode==="line" ? <polyline fill="none" stroke={cyan} strokeWidth="2.5" points={bars.map((b,i)=>`${x(i)},${y(b.close)}`).join(" ")} /> : bars.map((b,i)=>{const up=b.close>=b.open; const color=up?"#00FF88":"#FF4D6A"; const bw=Math.max(3,700/bars.length); return <g key={b.timestamp}><line x1={x(i)} x2={x(i)} y1={y(b.high)} y2={y(b.low)} stroke={color}/><rect x={x(i)-bw/2} y={y(Math.max(b.open,b.close))} width={bw} height={Math.max(2,Math.abs(y(b.open)-y(b.close)))} fill={color}/></g>})}
     {bars.map((b,i)=><rect key={`v${b.timestamp}`} x={x(i)-Math.max(2,650/bars.length)/2} y={volumeTop+(1-b.volume/maxVol)*56} width={Math.max(2,650/bars.length)} height={(b.volume/maxVol)*56} fill={b.close>=b.open?"rgba(0,255,136,.42)":"rgba(255,77,106,.42)"}/>) }
     <text x="52" y="355" fill="rgba(180,201,224,.5)" fontSize="10">VOLUME · COMPLETED DAILY BARS</text>
     {bars.map((b,i)=>{const event=eventFor(b); return event?<g key={`e${event.type}${b.timestamp}`}><line x1={x(i)} x2={x(i)} y1="10" y2="347" stroke="#FACC15" strokeDasharray="4 4"/><circle cx={x(i)} cy="18" r="7" fill="#FACC15"/><title>{event.headline}</title></g>:null})}
-  </svg>;
+  </svg>; */
 }
 
 export default function RisingStarDetail() {

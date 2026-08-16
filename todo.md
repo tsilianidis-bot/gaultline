@@ -4801,3 +4801,15 @@
 - [x] Expose stored history only as LIVE VERIFIED HISTORY and keep unrecorded/backtest history explicitly separate
 - [x] Schedule daily continuity capture using the established application background-job architecture with safe idempotency
 - [x] Add tests for immutable writes, duplicate suppression, event transitions, provenance, and non-fabrication safeguards
+
+## Unified Signals and Day Trade Chart Intelligence Framework (Session 2026-08-16)
+- [ ] Audit existing Signals, Day Trade Intelligence, Alerts Archive, ASHA, canonical market-data, and verified-history contracts
+- [ ] Define a reusable chart framework interface for daily and supported intraday bars, line/candle modes, volume, range, markers, levels, freshness, and safe unavailable-data behavior
+- [ ] Refactor the approved Rising Stars chart primitives into one reusable source-backed component without changing its existing behavior
+- [ ] Add chart-first Signals detail routes using real engine score, confidence, status, detected time/price, confirmation, invalidation, and verified state events only
+- [ ] Add chart-first Day Trade detail routes using existing tactical setup, trigger, confirmation, invalidation, session, and supported intraday data only
+- [ ] Add immutable daily continuity and genuine observed event capture for Signals and Day Trade Intelligence without retrospective markers
+- [ ] Integrate meaningful source-backed Signal and Day Trade events into Alerts Archive with direct chart-history links
+- [ ] Add module-grounded ASHA chart questions and canonical data-consistency/freshness disclosures across all three chart experiences
+- [ ] Add tests for source routing, real-data availability, history provenance, shared chart behavior, alert links, and no fabricated events
+- [ ] Validate one Rising Star, Signal, and Day Trade candidate on desktop/mobile, then publish the unified-chart checkpoint
