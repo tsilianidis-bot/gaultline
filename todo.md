@@ -4813,3 +4813,13 @@
 - [ ] Add module-grounded ASHA chart questions and canonical data-consistency/freshness disclosures across all three chart experiences
 - [ ] Add tests for source routing, real-data availability, history provenance, shared chart behavior, alert links, and no fabricated events
 - [ ] Validate one Rising Star, Signal, and Day Trade candidate on desktop/mobile, then publish the unified-chart checkpoint
+
+## Shared Chart Crosshair and Exact Price Inspection (Session 2026-08-16)
+- [ ] Audit shared chart consumers and exact plotted OHLC, line-price, volume, timestamp, event, and current-price fields
+- [ ] Add a source-exact desktop crosshair with price-axis label, time-axis label, and non-obstructive FAULTLINE tooltip
+- [ ] Add candle/line inspection that shows only the fields genuinely available for the selected plotted point
+- [ ] Add combined verified-event detail to the inspection tooltip without replacing the OHLC/price readout
+- [ ] Add touch-and-drag crosshair behavior and persistent current-price marker without interpolation or estimated values
+- [ ] Reuse the interactive system across every current UnifiedIntelligenceChart consumer and document unavailable consumer boundaries
+- [ ] Add interaction and data-integrity tests for exact bar selection, marker data, line-only mode, and touch behavior
+- [ ] Validate Rising Stars, Signals, and Day Trade chart behavior before publishing

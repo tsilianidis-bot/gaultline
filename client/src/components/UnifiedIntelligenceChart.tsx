@@ -1,20 +1,26 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 
 export type IntelligenceBar = { timestamp:number; open:number; high:number; low:number; close:number; volume:number };
-export type IntelligenceMarker = { eventAt:number; type:string; headline:string; detail?:string; color?:string };
+export type IntelligenceMarker = { eventAt:number; type:string; headline:string; detail?:string; color?:string; score?:number; status?:string };
 export type IntelligenceLevel = { label:string; value:number; color?:string; dashed?:boolean };
+const W=1040,H=460,L=52,R=982,T=18,B=303,VTOP=365;
+const money=(n:number)=>`$${n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+const vol=(n:number)=>n>=1e6?`${(n/1e6).toFixed(2)}M`:n>=1e3?`${(n/1e3).toFixed(1)}K`:n.toFixed(0);
 
 export function UnifiedIntelligenceChart({ bars, markers=[], levels=[], mode="candle", ariaLabel="FAULTLINE visual intelligence chart" }: { bars: IntelligenceBar[]; markers?: IntelligenceMarker[]; levels?: IntelligenceLevel[]; mode?:"candle"|"line"; ariaLabel?:string }) {
-  const width=1040,height=460,volumeTop=365;
-  const domain=useMemo(()=>{ const lows=bars.map(b=>b.low), highs=bars.map(b=>b.high); return {min:Math.min(...lows)*.995,max:Math.max(...highs)*1.005};},[bars]);
-  if(!bars.length) return <div style={{padding:26,border:"1px solid rgba(0,212,255,.2)",borderRadius:8,color:"#A6B6C7",fontSize:11}}>CHART HISTORY IS TEMPORARILY UNAVAILABLE.</div>;
-  const x=(i:number)=>52+(i/(Math.max(1,bars.length-1)))*930, y=(p:number)=>18+((domain.max-p)/(domain.max-domain.min))*285, maxVol=Math.max(...bars.map(b=>b.volume),1);
-  return <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel} style={{width:"100%",minWidth:600,display:"block",background:"#060A10"}}>
-    {[0,1,2,3,4].map(i=><line key={i} x1="52" x2="982" y1={18+i*71} y2={18+i*71} stroke="rgba(148,163,184,.13)"/>)}
-    {levels.filter(l=>Number.isFinite(l.value)).map(level=><g key={level.label}><line x1="52" x2="982" y1={y(level.value)} y2={y(level.value)} stroke={level.color??"#FACC15"} strokeDasharray={level.dashed===false?undefined:"5 4"} opacity=".75"/><text x="986" y={y(level.value)+4} fill={level.color??"#FACC15"} fontSize="10">{level.label}</text></g>)}
+  const ref=useRef<SVGSVGElement>(null); const [index,setIndex]=useState<number|null>(null);
+  const domain=useMemo(()=>{const lo=Math.min(...bars.map(b=>b.low)),hi=Math.max(...bars.map(b=>b.high));return {min:lo*.995,max:hi*1.005};},[bars]);
+  if(!bars.length)return <div style={{padding:26,border:"1px solid rgba(0,212,255,.2)",borderRadius:8,color:"#A6B6C7",fontSize:11}}>CHART HISTORY IS TEMPORARILY UNAVAILABLE.</div>;
+  const x=(i:number)=>L+i/(Math.max(1,bars.length-1))*(R-L), y=(p:number)=>T+(domain.max-p)/(domain.max-domain.min)*(B-T),maxVol=Math.max(...bars.map(b=>b.volume),1);
+  const point=(clientX:number)=>{const rect=ref.current?.getBoundingClientRect();if(!rect)return; const pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));setIndex(Math.round(pct*(bars.length-1)));};
+  const bar=index==null?null:bars[index]; const activeMarker=bar?markers.find(m=>Math.abs(m.eventAt-bar.timestamp)<43_200_000):undefined; const current=bars.at(-1)!;
+  return <div style={{position:"relative",overflow:"hidden",touchAction:"none"}}><svg ref={ref} viewBox={`0 0 ${W} ${H}`} role="img" aria-label={ariaLabel} onMouseMove={e=>point(e.clientX)} onMouseLeave={()=>setIndex(null)} onPointerDown={e=>point(e.clientX)} onPointerMove={e=>{if(e.pointerType!=="mouse"||e.buttons)point(e.clientX)}} onPointerUp={()=>setIndex(null)} style={{width:"100%",minWidth:600,display:"block",background:"#060A10",cursor:"crosshair"}}>
+    {[0,1,2,3,4].map(i=><line key={i} x1={L} x2={R} y1={T+i*71} y2={T+i*71} stroke="rgba(148,163,184,.13)"/>)}
+    {levels.filter(l=>Number.isFinite(l.value)).map(l=><g key={l.label}><line x1={L} x2={R} y1={y(l.value)} y2={y(l.value)} stroke={l.color??"#FACC15"} strokeDasharray={l.dashed===false?undefined:"5 4"} opacity=".75"/><text x="986" y={y(l.value)+4} fill={l.color??"#FACC15"} fontSize="10">{l.label}</text></g>)}
     {mode==="line"?<polyline fill="none" stroke="#00D4FF" strokeWidth="2.5" points={bars.map((b,i)=>`${x(i)},${y(b.close)}`).join(" ")}/>:bars.map((b,i)=>{const c=b.close>=b.open?"#00FF88":"#FF4D6A",w=Math.max(3,700/bars.length);return <g key={b.timestamp}><line x1={x(i)} x2={x(i)} y1={y(b.high)} y2={y(b.low)} stroke={c}/><rect x={x(i)-w/2} y={y(Math.max(b.open,b.close))} width={w} height={Math.max(2,Math.abs(y(b.open)-y(b.close)))} fill={c}/></g>})}
-    {bars.map((b,i)=><rect key={`v${b.timestamp}`} x={x(i)-Math.max(2,650/bars.length)/2} y={volumeTop+(1-b.volume/maxVol)*56} width={Math.max(2,650/bars.length)} height={(b.volume/maxVol)*56} fill={b.close>=b.open?"rgba(0,255,136,.42)":"rgba(255,77,106,.42)"}/>) }
-    <text x="52" y="355" fill="rgba(180,201,224,.5)" fontSize="10">VOLUME · COMPLETED SOURCE BARS</text>
-    {markers.map(marker=>{const index=bars.reduce((best,b,i)=>Math.abs(b.timestamp-marker.eventAt)<Math.abs(bars[best].timestamp-marker.eventAt)?i:best,0);return <g key={`${marker.type}${marker.eventAt}`}><line x1={x(index)} x2={x(index)} y1="10" y2="347" stroke={marker.color??"#FACC15"} strokeDasharray="4 4"/><circle cx={x(index)} cy="18" r="7" fill={marker.color??"#FACC15"}/><title>{marker.headline}{marker.detail?` — ${marker.detail}`:""}</title></g>})}
-  </svg>;
+    {bars.map((b,i)=><rect key={`v${b.timestamp}`} x={x(i)-Math.max(2,650/bars.length)/2} y={VTOP+(1-b.volume/maxVol)*56} width={Math.max(2,650/bars.length)} height={b.volume/maxVol*56} fill={b.close>=b.open?"rgba(0,255,136,.42)":"rgba(255,77,106,.42)"}/>) }<text x={L} y="355" fill="rgba(180,201,224,.5)" fontSize="10">VOLUME · COMPLETED SOURCE BARS</text>
+    {markers.map(m=>{const i=bars.reduce((best,b,j)=>Math.abs(b.timestamp-m.eventAt)<Math.abs(bars[best].timestamp-m.eventAt)?j:best,0);return <g key={`${m.type}${m.eventAt}`}><line x1={x(i)} x2={x(i)} y1="10" y2="347" stroke={m.color??"#FACC15"} strokeDasharray="4 4"/><circle cx={x(i)} cy="18" r="7" fill={m.color??"#FACC15"}/></g>})}
+    <line x1={R} x2={R+1} y1={y(current.close)} y2={y(current.close)} stroke="#00D4FF"/><rect x={R+2} y={y(current.close)-10} width="56" height="20" fill="#063747"/><text x={R+5} y={y(current.close)+4} fill="#EAF5FF" fontSize="10">{money(current.close)}</text>
+    {bar&&<><line x1={x(index!)} x2={x(index!)} y1={T} y2="421" stroke="rgba(234,245,255,.7)" strokeDasharray="3 3"/><line x1={L} x2={R} y1={y(bar.close)} y2={y(bar.close)} stroke="rgba(234,245,255,.7)" strokeDasharray="3 3"/><rect x={R+2} y={y(bar.close)-10} width="56" height="20" fill="#00D4FF"/><text x={R+5} y={y(bar.close)+4} fill="#020305" fontSize="10">{money(bar.close)}</text><rect x={x(index!)-40} y="424" width="80" height="18" rx="2" fill="#10202C"/><text x={x(index!)-35} y="437" fill="#EAF5FF" fontSize="9">{new Date(bar.timestamp).toLocaleDateString()}</text></>}
+  </svg>{bar&&<div style={{position:"absolute",left:12,top:12,pointerEvents:"none",background:"rgba(3,7,12,.92)",border:"1px solid rgba(0,212,255,.35)",borderRadius:5,padding:"8px 10px",fontFamily:"IBM Plex Mono,monospace",fontSize:10,color:"#DCE9F6",lineHeight:1.55,minWidth:190}}><b style={{color:"#00D4FF",fontSize:12}}>{money(bar.close)}</b> · {new Date(bar.timestamp).toLocaleString()}<br/>O {money(bar.open)} · H {money(bar.high)} · L {money(bar.low)} · C {money(bar.close)}<br/>VOLUME {vol(bar.volume)}{activeMarker&&<><hr style={{border:"none",borderTop:"1px solid rgba(255,255,255,.12)"}}/><b style={{color:"#FACC15"}}>{activeMarker.type.toUpperCase()}</b> · {activeMarker.headline}{activeMarker.score!=null&&<> · SCORE {activeMarker.score}</>}{activeMarker.status&&<> · {activeMarker.status}</>}{activeMarker.detail&&<><br/>{activeMarker.detail}</>}</>}</div>}</div>;
 }

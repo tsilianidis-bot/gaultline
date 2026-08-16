@@ -1703,7 +1703,7 @@ function SignalsInner() {
               The data request did not complete. This is not a zero-result signal. <button onClick={() => risingStarsQuery.refetch()} style={{ color: '#00D4FF', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', textDecoration: 'underline' }}>RETRY</button>
             </div>
           ) : (
-            <RisingStarsPanel items={risingStars} onAnalyze={(ticker) => window.location.assign(`/app/stock/${ticker}`)} />
+            <RisingStarsPanel items={risingStars} onAnalyze={(ticker) => window.location.assign(`/app/rising-stars/${ticker}`)} />
           )}
           {!risingStarsQuery.isLoading && !risingStarsQuery.isError && risingStars.length === 0 && (
             <p style={{ margin: '-8px 0 0', color: 'rgba(148,163,184,0.55)', fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, lineHeight: 1.55 }}>
