@@ -855,12 +855,6 @@ function App() {
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
 
-  // Fetch user's preferred startup page (defaults to 'now')
-  const { data: startupPageData } = trpc.dailyBrief.getStartupPage.useQuery(
-    undefined,
-    { enabled: !!user, staleTime: 5 * 60 * 1000 }
-  );
-
   // ── ARCHITECTURAL RULE ─────────────────────────────────────────────────────
   // CinematicIntro is the ABSOLUTE ROOT render for first-time users.
   // Nothing else mounts until it completes or is skipped.
@@ -944,19 +938,10 @@ function App() {
       sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
     } catch {}
     setAshaBriefingDone(true);
-    // Navigate to user's preferred startup page (default: NOW/Seismograph)
-    const startupPref = startupPageData?.startupPage ?? 'now';
-    const startupPathMap: Record<string, string> = {
-      now:     CANONICAL_DESTINATION_BY_ID.now.path,
-      why:     CANONICAL_DESTINATION_BY_ID.why.path,
-      outlook: CANONICAL_DESTINATION_BY_ID.outlook.path,
-      watch:   CANONICAL_DESTINATION_BY_ID.watch.path,
-      act:     CANONICAL_DESTINATION_BY_ID.act.path,
-      last:    window.location.pathname, // stay on current page
-    };
-    const targetPath = startupPathMap[startupPref] ?? CANONICAL_DESTINATION_BY_ID.now.path;
-    navigate(targetPath);
-  }, [user, startupPageData, navigate]);
+    // ASHA is the front door; Home is the command center. Post-welcome
+    // continuation must never inherit a prior drill-down or user preference.
+    navigate(CANONICAL_HOME);
+  }, [user, navigate]);
 
   // Auth gate — shown after cinematic when user is not authenticated.
   // ASHA must never greet by name before identity is confirmed.

@@ -4776,10 +4776,10 @@
 - [x] Verify canonical Home, Why, Outlook, Watch, and Act bottom-navigation destinations and active-tab behavior
 - [x] Verify suggested ASHA questions inject the intended query and open the intended ASHA experience without page refresh
 - [x] Add regression tests for major Deep Action destinations, ASHA actions, current-route preservation, and no accidental full-page reload
-- [ ] Validate desktop/mobile behavior, full regression suite, deployed production build, and live route behavior before publishing the repair
+- [x] Validate desktop/mobile behavior, full regression suite, deployed production build, and live route behavior before publishing the repair
 
 ## Deferred — ASHA Post-Welcome Canonical Home Routing (Start after Deep Action repair)
-- [ ] Audit successful login, ASHA welcome completion, Enter Market Intelligence, Home button, logo, bottom Home navigation, and Continue to Dashboard routes
-- [ ] Make canonical Deep Dashboard Home (`/app/now`) the only default post-welcome and post-login continuation target unless an explicit user preference overrides it
-- [ ] Ensure ACT remains a deliberate decision-support destination and never opens automatically after ASHA welcome
+- [x] Audit successful login, ASHA welcome completion, Enter Market Intelligence, Home button, logo, bottom Home navigation, and Continue to Dashboard routes
+- [x] Make canonical Deep Dashboard Home (`/app/now`) the only default post-welcome and post-login continuation target unless an explicit user preference overrides it
+- [x] Ensure ACT remains a deliberate decision-support destination and never opens automatically after ASHA welcome
 - [ ] Add routing regression tests and live desktop/mobile verification for all default continuation paths
