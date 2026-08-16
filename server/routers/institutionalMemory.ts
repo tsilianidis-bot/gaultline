@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import { z } from "zod";
-import { institutionalEvents } from "../../drizzle/schema";
+import { institutionalEventOutcomes, institutionalEvents } from "../../drizzle/schema";
 import { getDb } from "../db";
 import { publicProcedure, router } from "../_core/trpc";
 
@@ -32,7 +32,21 @@ export const institutionalMemoryRouter = router({
       db.select().from(institutionalEvents).where(where).orderBy(desc(institutionalEvents.eventAt)).limit(input.limit),
       db.select({ count: sql<number>`count(*)` }).from(institutionalEvents).where(where),
     ]);
-    return { events, total: Number(countRows[0]?.count ?? 0), historyClass: "live_verified" as const };
+    const eventIds = events.map((event) => event.id);
+    const outcomes = eventIds.length
+      ? await db.select().from(institutionalEventOutcomes).where(inArray(institutionalEventOutcomes.eventId, eventIds)).orderBy(desc(institutionalEventOutcomes.horizonTradingDays))
+      : [];
+    const outcomesByEvent = new Map<number, typeof outcomes>();
+    for (const outcome of outcomes) {
+      const list = outcomesByEvent.get(outcome.eventId) ?? [];
+      list.push(outcome);
+      outcomesByEvent.set(outcome.eventId, list);
+    }
+    return {
+      events: events.map((event) => ({ ...event, outcomes: outcomesByEvent.get(event.id) ?? [] })),
+      total: Number(countRows[0]?.count ?? 0),
+      historyClass: "live_verified" as const,
+    };
   }),
   getEvent: publicProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
     const db = await getDb();

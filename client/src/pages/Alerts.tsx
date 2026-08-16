@@ -35,6 +35,7 @@ type ArchivedEvent = {
   previousStateJson: string | null;
   newStateJson: string;
   supportingStateJson: string;
+  outcomes?: Array<{ horizonTradingDays: number; outcomeJson: string; observedAt: Date | string }>;
 };
 
 function archivedSeverityColor(severity: ArchivedEvent["severity"]) {
@@ -45,6 +46,9 @@ function InstitutionalEventCard({ event, index }: { event: ArchivedEvent; index:
   const [expanded, setExpanded] = useState(false);
   const color = archivedSeverityColor(event.severity);
   const eventAt = new Date(event.eventAt);
+  const outcomes = (event.outcomes ?? []).flatMap((outcome) => {
+    try { return [{ horizon: outcome.horizonTradingDays, data: JSON.parse(outcome.outcomeJson) as any }]; } catch { return []; }
+  });
   return (
     <article onClick={() => setExpanded(!expanded)} style={{ background: "rgba(10,12,16,0.92)", border: `1px solid ${color}30`, borderLeft: `3px solid ${color}`, borderRadius: "6px", padding: "12px", cursor: "pointer", animation: `fade-slide-up 0.35s cubic-bezier(0.23, 1, 0.32, 1) ${index * 35}ms both` }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
@@ -67,6 +71,7 @@ function InstitutionalEventCard({ event, index }: { event: ArchivedEvent; index:
         <div style={{ marginTop: "11px", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "10px", display: "grid", gap: "9px" }}>
           <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color, letterSpacing: "0.1em" }}>WHY IT CHANGED</div><div style={{ color: "#B8C2D4", fontSize: "12px", lineHeight: 1.6, marginTop: "3px" }}>{event.explanation}</div></div>
           <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#6B7280", letterSpacing: "0.1em" }}>EVIDENCE BOUNDARY</div><div style={{ color: "#8792A5", fontSize: "11px", lineHeight: 1.5, marginTop: "3px" }}>Original observation preserved at source time. Later outcomes, if collected, are appended separately and never modify this event.</div></div>
+          {outcomes.length > 0 && <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.1em" }}>APPENDED BROAD-MARKET OUTCOMES · LIVE VERIFIED</div><div style={{ display: "grid", gap: "6px", marginTop: "5px" }}>{outcomes.map(({ horizon, data }) => <div key={horizon} style={{ display: "grid", gridTemplateColumns: "42px repeat(4, minmax(0, 1fr))", gap: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#AAB6C8" }}><span style={{ color: "#00D4FF" }}>{horizon}TD</span><span>SPY {typeof data.spy?.returnPercent === "number" ? `${data.spy.returnPercent >= 0 ? "+" : ""}${data.spy.returnPercent.toFixed(2)}%` : "—"}</span><span>10Y {typeof data.tenYearTreasury?.changeBasisPoints === "number" ? `${data.tenYearTreasury.changeBasisPoints >= 0 ? "+" : ""}${data.tenYearTreasury.changeBasisPoints.toFixed(1)}bp` : "—"}</span><span>PI {typeof data.pressureIndex?.change === "number" ? `${data.pressureIndex.change >= 0 ? "+" : ""}${data.pressureIndex.change.toFixed(1)}` : "—"}</span><span>{data.regime?.target ?? "—"}</span></div>)}</div></div>}
         </div>
       )}
     </article>
