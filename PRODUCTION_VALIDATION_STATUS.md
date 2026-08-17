@@ -40,3 +40,16 @@ a client-side route-definition error in the current project.
 | `https://getfaultline.live/app/day-trade-intelligence/NVDA?asset=stock` | FAULTLINE 404 — new route absent from served bundle |
 | Local preview Day Trade deep link | Resolves to the app shell; protected visual content requires sign-in |
 | Current project checkpoint containing Day Trade route | `df2a0dad` |
+
+## Post-checkpoint confirmation
+
+After checkpoint `ded19125`, the custom-domain URL
+`https://getfaultline.live/app/day-trade-intelligence/NVDA?asset=stock&validation=ded19125`
+again loaded the older application shell without the current Day Trade Visual
+Analysis content. It also showed the standard sign-in path rather than the
+newly published permanent QA path. The managed preview resolves the same route
+and QA principal correctly.
+
+> The public custom-domain target is therefore still serving an older bundle.
+> This remains a deployment propagation/routing infrastructure dependency, not
+> a defect in the current Day Trade route or permanent QA implementation.
