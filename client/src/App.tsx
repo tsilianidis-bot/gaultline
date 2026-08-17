@@ -69,6 +69,7 @@ const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
 const TimeMachine      = lazy(() => import("./pages/TimeMachine"));
 const DayTradeIntelligence = lazy(() => import("./pages/DayTradeIntelligence"));
+const DayTradeDetail       = lazy(() => import("./pages/DayTradeDetail"));
 const MarketMovers         = lazy(() => import("./pages/MarketMovers"));
 const SeoOptimizer = lazy(() => import("./pages/SeoOptimizer"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
@@ -785,6 +786,7 @@ function Router() {
               <Route path="/app/x-post-queue" component={XPostQueue} />
 	              <Route path="/app/decision-engine" component={DecisionEngine} />
 	              <Route path="/app/signal-outlook" component={SignalOutlookCenter} />
+	              <Route path="/app/day-trade-intelligence/:symbol" component={DayTradeDetail} />
 	              <Route path="/app/day-trade-intelligence" component={DayTradeIntelligence} />
 	              <Route path="/app/market-movers" component={MarketMovers} />
 	              <Route path="/app/symbol-intelligence" component={UniversalSymbolIntelligence} />

@@ -4894,6 +4894,8 @@
 - [x] Complete canonical source-backed observed-event coverage and the evidence-first searchable Alerts Archive with stable deep links; unsupported source domains remain unavailable rather than synthesized
 - [x] Capture only genuinely observed daily vector and regime-probability material changes as additional append-only institutional events
 - [x] Add evidence-first Alerts Archive search, source/type filters, and stable selected-event deep links without altering immutable records
-- [ ] Add append-only instrument-specific outcomes for Rising Stars, Signals, and future symbol events without synthetic combined scores
-- [ ] Build Day Trade Visual Analysis using only source-backed supported tactical/intraday data and no retrospective signal markers
+- [x] Add append-only instrument-specific outcomes through a generic ledger for Rising Stars and future eligible symbol events; Signals and Day Trade remain pending until genuine immutable source events exist, with no retrospective reconstruction
+- [x] Build Day Trade Visual Analysis using only source-backed supported tactical/intraday data and no retrospective signal markers
+- [x] Add a generic append-only symbol-event outcome ledger that attaches observed own-instrument follow-through to existing eligible recorded events
+- [x] Add `/app/day-trade-intelligence/:symbol` using the canonical Day Trade report, observed completed daily bars where available, calculated levels, and explicit intraday-history limitations
 - [ ] Run consolidated authenticated desktop/mobile acceptance, production-domain checks when infrastructure permits, and full regressions

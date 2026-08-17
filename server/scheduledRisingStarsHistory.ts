@@ -4,6 +4,7 @@ import { risingStarHistoryJobs } from "../drizzle/schema";
 import { getDb } from "./db";
 import { recordDailyRisingStarsContinuity } from "./risingStarsHistory";
 import { getOpportunityDiscovery } from "./signalOutlook";
+import { collectRisingStarEventOutcomes } from "./symbolEventOutcomes";
 
 /**
  * Project-owned Heartbeat handler.  Daily entries are idempotent by
@@ -19,6 +20,7 @@ export async function handleScheduledRisingStarsContinuity(_req: Request, res: R
       observedAt: discovery.generatedAt,
       source: "rising_stars_engine",
     });
+    const outcomes = await collectRisingStarEventOutcomes();
 
     const db = await getDb();
     if (db) {
@@ -27,7 +29,7 @@ export async function handleScheduledRisingStarsContinuity(_req: Request, res: R
         .where(eq(risingStarHistoryJobs.jobKey, "rising-stars-daily-continuity"));
     }
 
-    res.json({ ok: true, historyClass: "live_verified", generatedAt: discovery.generatedAt, ...continuity });
+    res.json({ ok: true, historyClass: "live_verified", generatedAt: discovery.generatedAt, ...continuity, outcomes });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[RisingStarsHistory] Daily continuity capture failed", { message });

@@ -67,6 +67,7 @@ import {
 } from './ownerSimulation';
 import { getInsiderRadar, getInsiderCompany, getInsiderAlertsForTicker } from './insiderIntelligence';
 import { dayTradeScanner, dayTradeSymbolSetup, getDayTradeFavorability, clearDayTradeCache } from './dayTradeEngine';
+import { fetchDailyBars } from './signalsProxy';
 import { saveDayTradeSnapshot, loadDayTradeSnapshot, getPipelineHealthLogs, getPipelineHealthSummary } from './db';
 import { logPipelineFailure } from './pipelineLogger';
 import { log } from './logger';
@@ -2814,6 +2815,61 @@ export const appRouter = router({
             _errorMessage: errMsg,
           };
         }
+      }),
+    getVisualDetail: coreProcedure
+      .input(z.object({
+        symbol: z.string().min(1).max(20).toUpperCase(),
+        assetType: z.enum(["stock", "crypto"]),
+        direction: z.enum(["bullish", "bearish", "both"]).default("both"),
+      }))
+      .query(async ({ input }) => {
+        const reportResult = await Promise.allSettled([
+          dayTradeSymbolSetup(input.symbol, input.assetType, input.direction),
+        ]);
+        const report = reportResult[0]?.status === "fulfilled" ? reportResult[0].value : null;
+        const reportDiagnostics = report as (typeof report & { _errorMessage?: string }) | null;
+        const providerError = reportResult[0]?.status === "rejected"
+          ? (reportResult[0].reason instanceof Error ? reportResult[0].reason.message : String(reportResult[0].reason))
+          : reportDiagnostics?._errorMessage ?? null;
+
+        let bars: Array<{ timestamp: number; open: number; high: number; low: number; close: number; volume: number }> = [];
+        let barsStatus: "available" | "unavailable" | "not_supported" = input.assetType === "crypto" ? "not_supported" : "unavailable";
+        if (input.assetType === "stock" && process.env.POLYGON_API_KEY) {
+          try {
+            bars = (await fetchDailyBars(process.env.POLYGON_API_KEY, input.symbol, 60))
+              .filter(bar => Number.isFinite(bar.timestamp) && Number.isFinite(bar.open) && Number.isFinite(bar.high) && Number.isFinite(bar.low) && Number.isFinite(bar.close) && Number.isFinite(bar.volume));
+            barsStatus = bars.length ? "available" : "unavailable";
+          } catch {
+            barsStatus = "unavailable";
+          }
+        }
+
+        const validLevel = (label: string, value: number | null | undefined, color: string, dashed = true) => value != null && Number.isFinite(value) && value > 0 ? { label, value, color, dashed } : null;
+        const levels = report && report.currentPrice > 0 ? [
+          validLevel("ENTRY LOW", report.entryZoneLow, "#00D4FF"),
+          validLevel("ENTRY HIGH", report.entryZoneHigh, "#00D4FF"),
+          validLevel("TARGET 1", report.target1, "#00FF88"),
+          validLevel("TARGET 2", report.target2, "#6EE7FF"),
+          validLevel("STOP", report.stopLoss, "#FF4D6A"),
+          validLevel("INVALIDATION", report.invalidationLevel, "#FFAA00"),
+          validLevel("SUPPORT", report.supportLevel, "#A78BFA"),
+          validLevel("RESISTANCE", report.resistanceLevel, "#FACC15"),
+        ].filter((level): level is NonNullable<typeof level> => level != null) : [];
+
+        return {
+          report,
+          bars,
+          levels,
+          observedAt: report?.generatedAt ?? Date.now(),
+          providerHealth: report?._providerHealth ?? { price: report?.currentPrice ? "degraded" : "unavailable", technicals: barsStatus === "available" ? "live" : "unavailable", regime: "degraded", aiEnrichment: "degraded" },
+          sourceStatus: {
+            report: report && report.currentPrice > 0 ? "available" as const : "unavailable" as const,
+            completedDailyBars: barsStatus,
+            intradayBars: "not_supported" as const,
+            detail: providerError ?? (barsStatus === "available" ? "Canonical Day Trade report and completed daily reference bars available." : "Day Trade report may be available, but completed daily reference bars are unavailable."),
+          },
+          chartPolicy: "Completed daily bars only. FAULTLINE does not currently display a synthetic or unsupported intraday bar series.",
+        };
       }),
     getWatchlist: coreProcedure.query(async ({ ctx }) => {
       return await getDayTradeWatchlist(ctx.user.id);

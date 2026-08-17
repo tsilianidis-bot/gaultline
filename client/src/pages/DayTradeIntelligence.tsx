@@ -5,7 +5,7 @@
    ============================================================ */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { useSearch } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import NarrativeLoader from "@/components/NarrativeLoader";
@@ -1883,7 +1883,7 @@ function DayTradeIntelligenceInner() {
   const urlAutorun = urlParams.get("autorun") === "1";
 
     const [activeTab, setActiveTab] = useState(urlSymbol && urlAutorun ? "symbol" : "overview");
-  const [, navigate] = useState<string>("");
+  const [, navigate] = useLocation();
   // Auto-recovery: track last known data source across all scan queries
   const [lastDataSource, setLastDataSource] = useState<'live' | 'snapshot' | 'fallback'>('live');
   const [recoveryCountdown, setRecoveryCountdown] = useState(0);
@@ -1917,18 +1917,14 @@ function DayTradeIntelligenceInner() {
   // Auto-dispatch when navigated from Smart Discovery
   useEffect(() => {
     if (urlSymbol && urlAutorun) {
-      setActiveTab("symbol");
-      window.dispatchEvent(new CustomEvent("dt-search", { detail: { symbol: urlSymbol, assetType: urlType } }));
+      navigate(`/app/day-trade-intelligence/${urlSymbol}?asset=${urlType}`);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlSymbol, urlType, urlAutorun]);
 
   const handleSearch = useCallback((sym: string, type: "stock" | "crypto") => {
-    setActiveTab("symbol");
-    // Trigger search via URL-like state — SymbolSearchTab handles this via its own state
-    // We use a global event approach for simplicity
-    window.dispatchEvent(new CustomEvent("dt-search", { detail: { symbol: sym, assetType: type } }));
-  }, []);
+    navigate(`/app/day-trade-intelligence/${sym.toUpperCase()}?asset=${type}`);
+  }, [navigate]);
 
   if (authLoading) {
     return (

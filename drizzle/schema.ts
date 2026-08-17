@@ -877,6 +877,31 @@ export const risingStarEvents = mysqlTable("risingStarEvents", {
 export type RisingStarEvent = typeof risingStarEvents.$inferSelect;
 export type InsertRisingStarEvent = typeof risingStarEvents.$inferInsert;
 
+/**
+ * Append-only own-instrument follow-through for symbol events actually
+ * recorded by FAULTLINE. The origin record is never updated or replaced.
+ * Signals and Day Trade may use this table only after they create genuine
+ * live event records; no historical records are reconstructed for them.
+ */
+export const symbolEventOutcomes = mysqlTable("symbolEventOutcomes", {
+  id:                 int("id").autoincrement().primaryKey(),
+  outcomeKey:         varchar("outcomeKey", { length: 240 }).notNull().unique(),
+  sourceEventType:    varchar("sourceEventType", { length: 64 }).notNull(),
+  sourceEventKey:     varchar("sourceEventKey", { length: 220 }).notNull(),
+  symbol:             varchar("symbol", { length: 30 }).notNull(),
+  assetClass:         varchar("assetClass", { length: 48 }).notNull(),
+  horizonTradingDays: int("horizonTradingDays").notNull(),
+  observedAt:         timestamp("observedAt").notNull(),
+  outcomeJson:        text("outcomeJson").notNull(),
+  provenanceJson:     text("provenanceJson").notNull(),
+  recordedAt:         timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  sourceEventIdx:     index("symbolEventOutcomes_source_event_idx").on(t.sourceEventType, t.sourceEventKey),
+  symbolHorizonIdx:   index("symbolEventOutcomes_symbol_horizon_idx").on(t.symbol, t.horizonTradingDays),
+}));
+export type SymbolEventOutcome = typeof symbolEventOutcomes.$inferSelect;
+export type InsertSymbolEventOutcome = typeof symbolEventOutcomes.$inferInsert;
+
 /** Project-owned schedule metadata for the daily immutable continuity capture. */
 export const risingStarHistoryJobs = mysqlTable("risingStarHistoryJobs", {
   id:                 int("id").autoincrement().primaryKey(),
