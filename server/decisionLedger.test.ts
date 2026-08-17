@@ -65,6 +65,12 @@ vi.mock("./db", () => {
   };
 });
 
+// The ledger persistence contract is independent of live quote retrieval.
+// Stub that optional enrichment so provider latency cannot mask DB behavior.
+vi.mock("./yahooProxy", () => ({
+  getQuote: vi.fn().mockResolvedValue({ price: 100 }),
+}));
+
 // ── Helpers ───────────────────────────────────────────────────
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
@@ -93,38 +99,44 @@ function createAuthContext(userId = 1): TrpcContext {
 
 describe("smartDiscovery.logRecommendation", () => {
   it("returns success:true when DB is available", async () => {
-    const { appRouter } = await import("./routers");
-    const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
+const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
+const ctx = createAuthContext();
+const caller = smartDiscoveryRouter.createCaller(ctx);
 
-    const result = await caller.smartDiscovery.logRecommendation({
-      ticker: "NVDA",
-      assetType: "stock",
-      verdict: "STRONG BUY",
+    const result = await caller.logRecommendation({
+ticker: "NVDA",
+assetType: "stock",
+verdict: "STRONG BUY",
       opportunityScore: 82,
       confidence: 74,
-      primaryDriver: "AI infrastructure cycle driving record data center demand.",
-      expectedTimeframe: "2-4 weeks",
-      queryType: "single-ticker",
+    primaryDriver: "AI infrastructure cycle driving record data center demand.",
+    expectedTimeframe: "2-4 weeks",
+    queryType: "single-ticker",
+    stockRegimeAtTime: "TEST REGIME",
+    cryptoRegimeAtTime: "TEST REGIME",
+    alignmentAtTime: "TEST ALIGNMENT",
     });
 
     expect(result).toMatchObject({ success: true });
   });
 
   it("returns success:true when ticker is null (macro query)", async () => {
-    const { appRouter } = await import("./routers");
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
     const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
+    const caller = smartDiscoveryRouter.createCaller(ctx);
 
-    const result = await caller.smartDiscovery.logRecommendation({
-      ticker: null,
-      assetType: null,
+    const result = await caller.logRecommendation({
+    ticker: null,
+    assetType: null,
       verdict: "WAIT",
       opportunityScore: 35,
-      confidence: 45,
-      primaryDriver: "Macro uncertainty ahead of FOMC meeting.",
-      expectedTimeframe: "1-2 weeks",
-      queryType: "macro",
+    confidence: 45,
+    primaryDriver: "Macro uncertainty ahead of FOMC meeting.",
+    expectedTimeframe: "1-2 weeks",
+    queryType: "macro",
+    stockRegimeAtTime: "TEST REGIME",
+    cryptoRegimeAtTime: "TEST REGIME",
+    alignmentAtTime: "TEST ALIGNMENT",
     });
 
     expect(result).toMatchObject({ success: true });
@@ -133,24 +145,24 @@ describe("smartDiscovery.logRecommendation", () => {
 
 describe("smartDiscovery.getLedger", () => {
   it("returns an array (possibly empty) for authenticated user", async () => {
-    const { appRouter } = await import("./routers");
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
     const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
+    const caller = smartDiscoveryRouter.createCaller(ctx);
 
-    const result = await caller.smartDiscovery.getLedger({ limit: 50 });
+    const result = await caller.getLedger({ limit: 50 });
     expect(Array.isArray(result)).toBe(true);
   });
 });
 
 describe("smartDiscovery.updateOutcome", () => {
   it("returns success:true when updating outcome", async () => {
-    const { appRouter } = await import("./routers");
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
     const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
+    const caller = smartDiscoveryRouter.createCaller(ctx);
 
-    const result = await caller.smartDiscovery.updateOutcome({
-      id: 1,
-      outcome: "correct",
+    const result = await caller.updateOutcome({
+    id: 1,
+    outcome: "correct",
       notes: "NVDA hit target within 2 weeks.",
     });
 
@@ -158,12 +170,12 @@ describe("smartDiscovery.updateOutcome", () => {
   });
 
   it("accepts all three outcome values", async () => {
-    const { appRouter } = await import("./routers");
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
     const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
+    const caller = smartDiscoveryRouter.createCaller(ctx);
 
     for (const outcome of ["correct", "incorrect", "pending"] as const) {
-      const result = await caller.smartDiscovery.updateOutcome({ id: 1, outcome });
+      const result = await caller.updateOutcome({ id: 1, outcome });
       expect(result).toMatchObject({ success: true });
     }
   });
@@ -171,11 +183,11 @@ describe("smartDiscovery.updateOutcome", () => {
 
 describe("smartDiscovery.getLedgerStats", () => {
   it("returns stats object with required fields", async () => {
-    const { appRouter } = await import("./routers");
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
     const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
+    const caller = smartDiscoveryRouter.createCaller(ctx);
 
-    const stats = await caller.smartDiscovery.getLedgerStats();
+    const stats = await caller.getLedgerStats();
 
     expect(stats).toHaveProperty("total");
     expect(stats).toHaveProperty("resolved");
@@ -190,11 +202,11 @@ describe("smartDiscovery.getLedgerStats", () => {
   });
 
   it("winRate is null when no resolved entries", async () => {
-    const { appRouter } = await import("./routers");
+    const { smartDiscoveryRouter } = await import("./routers/smartDiscovery");
     const ctx = createAuthContext();
-    const caller = appRouter.createCaller(ctx);
+    const caller = smartDiscoveryRouter.createCaller(ctx);
 
-    const stats = await caller.smartDiscovery.getLedgerStats();
+    const stats = await caller.getLedgerStats();
     // With our mock, all entries are pending so winRate should be null
     expect(typeof stats.winRate === "number" || stats.winRate === null).toBe(true);
   });

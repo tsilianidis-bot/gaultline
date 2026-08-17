@@ -321,6 +321,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
   tradingSignal?: TradingSignalResult;
   signalBlocked?: boolean;
 }) {
+  const [, navigate] = useLocation();
   const [expanded, setExpanded] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
 
@@ -352,13 +353,15 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
   return (
     <div
       onClick={() => {
-        const next = !expanded;
-        setExpanded(next);
-        if (next && !signalViewFired.current) {
+        if (!signalViewFired.current) {
           signalViewFired.current = true;
           trackStockSignalViewed(stock.ticker, 'daily');
         }
+        navigate(`/app/signals/${stock.ticker}`);
       }}
+      onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); navigate(`/app/signals/${stock.ticker}`); } }}
+      role="link"
+      tabIndex={0}
       style={{
         background: 'rgba(8,10,14,0.9)',
         border: `1px solid ${actionColor}${actionBorderOpacity}`,

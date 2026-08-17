@@ -4863,3 +4863,17 @@
 - [x] Add responsive mobile interaction with readable markers, horizontal range controls, touch crosshair, and expandable event details
 - [x] Add tests for canonical history consistency, marker timestamps, outcome separation, pending horizons, and no-fabrication behavior
 - [x] Validate desktop/mobile interaction, full regressions, and production route behavior; publish and stop before Historical Analogs
+
+## Signals Visual Analysis Migration
+- [x] Audit Signals overview actions, canonical signal report outputs, source-backed chart data, calculated levels, and genuine stored signal history
+- [x] Reuse UnifiedIntelligenceChart and define the Signal Visual Analysis payload with real price bars, levels, current signal evidence, and explicit no-history boundaries
+- [x] Add dedicated `/app/signals/:symbol` analysis routing while preserving the Signals discovery/scanner overview
+- [x] Add current signal levels, real support/resistance, entry/risk/target/invalidation levels, technical evidence, current market context, and source-based WHY/WHAT CHANGED sections without historical signal markers
+- [x] Add ASHA Explain This Chart handoff with structured current signal and explicit no-history context only
+- [x] Add direct supported-ticker actions from Signals cards and preserve return navigation to the scanner
+- [x] Add tests for route behavior, shared-chart reuse, canonical level/evidence mapping, immutable signal-history boundaries, precision formatting, and unavailable data
+- [x] Validate direct-route access behavior and full regressions; authenticated desktop/mobile interaction inspection deferred at user direction
+- [x] Stabilize external-dependent regression tests through deterministic test boundaries without altering live market intelligence behavior
+- [x] Build and validate the canonical server-side Signals visual-detail adapter before the client route consumes it
+- [x] Implement `signals.getSignalVisualDetail` from observed Yahoo quote, completed daily bars, current Seismograph context, and the existing `computeTradingSignal` engine without synthetic history
+- [x] Build `/app/signals/:symbol` with the shared chart, explicit source status, and scanner-card handoff while preserving the Signals overview

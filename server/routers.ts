@@ -13,6 +13,7 @@ import { runV3HShadow } from "./pressure/shadowEngine";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { computeHomepageBriefing } from "./homepageBriefing";
 import { computeTradingSignals, computeTradingSignal, clearSignalCache } from "./tradingSignals";
+import { getSignalVisualDetailPayload } from "./signalVisualDetail";
 import { getDiagnosticReport, clearDiagnosticCache } from "./diagnosticAI";
 import { getPositionGuidance, clearGuidanceCache, getGuidanceForTicker } from "./positionGuidance";
 import { getPositionsByUser, addPosition, updatePosition, deletePosition, getAllUsers,
@@ -282,6 +283,14 @@ export const appRouter = router({
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trading signal computation failed", cause: err });
         }
       }),
+
+    // Canonical, source-backed detail payload for /app/signals/:symbol.
+    // Existing scanner procedures remain unchanged.
+    getSignalVisualDetail: coreProcedure
+      .input(z.object({
+        symbol: z.string().min(1).max(10).trim().regex(/^[A-Za-z0-9.\-]+$/).transform(symbol => symbol.toUpperCase()),
+      }))
+      .query(({ input }) => getSignalVisualDetailPayload(input.symbol)),
 
     // Clear the trading signal cache
     clearSignalCache: protectedProcedure.mutation(() => {

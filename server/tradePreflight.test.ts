@@ -24,6 +24,13 @@ vi.mock("./_core/llm", () => ({
   }),
 }));
 
+// Trade Preflight output-shape tests do not exercise the live opportunity scanner.
+// Keeping this boundary local prevents provider timeouts/rate limits from masking
+// deterministic risk-scoring regressions.
+vi.mock("./ownerSimulation", () => ({
+  scanOpportunities: vi.fn().mockResolvedValue([]),
+}));
+
 // ── Mock pressure engine ──────────────────────────────────────
 const LOW_PRESSURE_OUTPUT = {
   overallPressure: 22,

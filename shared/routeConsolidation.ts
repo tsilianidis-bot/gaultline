@@ -28,6 +28,7 @@ export const PRESERVED_UNIQUE_APP_PATHS = [
   "/app/simulate-pressure",
   "/app/watchlist",
   "/app/signals",
+  "/app/signals/:symbol",
   "/app/rising-stars",
   "/app/portfolio",
   "/app/crypto",
