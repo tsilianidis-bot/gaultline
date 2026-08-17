@@ -74,6 +74,7 @@ const ContactUs = lazy(() => import("./pages/ContactUs"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
+const PressureHistory  = lazy(() => import("./pages/PressureHistory"));
 const Methodology      = lazy(() => import("./pages/Methodology"));
 const OwnerSimulation  = lazy(() => import("./pages/OwnerSimulation"));
 const PublicSharedReport = lazy(() => import("./pages/PublicSharedReport"));
@@ -734,6 +735,7 @@ function Router() {
 		                </Route>
 		              ))}
 	              <Route path="/app/pressure" component={Pressure} />
+	              <Route path="/app/pressure-history" component={PressureHistory} />
 		              <Route path="/app/discover" component={SmartDiscovery} />
 		              <Route path="/app/alerts" component={Alerts} />
 		              <Route path="/app/historical-analogs" component={HistoricalAnalogs} />

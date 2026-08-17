@@ -4853,3 +4853,13 @@
 - [x] Prevent any synthetic combined performance/success score or overwrite of original events and previously collected outcomes
 - [x] Add idempotent scheduled outcome collection using only completed daily source observations and archive display of separate outcome fields
 - [ ] Add tests for trading-day eligibility, source provenance, append-only behavior, separate equity/rates/pressure/regime fields, and unavailable-data handling
+
+## Canonical Pressure Index History + Verified Event Timeline (Option 1)
+- [x] Audit canonical Pressure history, regime records, immutable institutional events/outcomes, existing history routes, and shared chart payloads
+- [x] Define a single source-backed history payload with actual observation timestamps, marker provenance, original-state fields, separate outcomes, and visible pending horizons
+- [x] Build the chart-first Pressure Index History route with shared crosshair, line/area pressure history, regime transitions, and immutable LIVE VERIFIED markers
+- [x] Add expandable event detail showing the exact original event, original Pressure/regime, evidence/provenance, and separately appended 1D/5D/20D/60D outcomes
+- [x] Keep incomplete follow-through as explicit PENDING states; prohibit interpolation, backfill, marker repositioning, and synthetic success scores
+- [x] Add responsive mobile interaction with readable markers, horizontal range controls, touch crosshair, and expandable event details
+- [x] Add tests for canonical history consistency, marker timestamps, outcome separation, pending horizons, and no-fabrication behavior
+- [x] Validate desktop/mobile interaction, full regressions, and production route behavior; publish and stop before Historical Analogs
