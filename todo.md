@@ -4877,3 +4877,10 @@
 - [x] Build and validate the canonical server-side Signals visual-detail adapter before the client route consumes it
 - [x] Implement `signals.getSignalVisualDetail` from observed Yahoo quote, completed daily bars, current Seismograph context, and the existing `computeTradingSignal` engine without synthetic history
 - [x] Build `/app/signals/:symbol` with the shared chart, explicit source status, and scanner-card handoff while preserving the Signals overview
+
+## ORACLE Briefing Presentation Hierarchy
+- [x] Audit ORACLE generation, structured briefing data, and rendering paths without changing analytical conclusions
+- [x] Reorder ORACLE output around direct answer, mission snapshot, core thesis, key findings, cross-engine synthesis, confirmation, invalidation, and concise recommendation
+- [x] Preserve all underlying engine calculations, thesis, risk assessment, and recommendations unless correcting an objective contradiction or formatting error
+- [x] Add regression coverage for mandatory non-empty hierarchy sections, fact-versus-inference labeling, and small-sample caveats
+- [x] Validate responsive layout safeguards and run the full regression suite before publishing

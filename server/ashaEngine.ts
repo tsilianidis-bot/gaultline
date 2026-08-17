@@ -163,7 +163,9 @@ export interface AshaResponse {
   invalidationTriggers?: string[];
 
   // Oracle Briefing structured fields
+  directAnswer?: string;
   executiveSummary?: string;
+  coreThesis?: string;
   marketBias?: "BULLISH" | "BEARISH" | "NEUTRAL";
   marketRegime?: string;
   threatLevel?: "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
@@ -174,8 +176,14 @@ export interface AshaResponse {
   bearProbability?: number;
   keyFindings?: string[];
   supportingEvidence?: string[];
+  crossEngineSynthesis?: Array<{
+    engine: string;
+    currentSignal: string;
+    relevance: string;
+  }>;
   historicalAnalog?: string;
   riskFactors?: string[];
+  confirmationConditions?: string[];
   invalidationConditions?: string[];
   missionRecommendation?: string;
   // Structured mission recommendation with decision paths
@@ -328,10 +336,22 @@ function validateOracleBriefing(parsed: Record<string, unknown>): string[] {
   const invalidationConditions = Array.isArray(parsed.invalidationConditions)
     ? (parsed.invalidationConditions as unknown[]).filter((f): f is string => typeof f === 'string')
     : [];
+  const confirmationConditions = Array.isArray(parsed.confirmationConditions)
+    ? (parsed.confirmationConditions as unknown[]).filter((f): f is string => typeof f === 'string')
+    : [];
+  const crossEngineSynthesis = Array.isArray(parsed.crossEngineSynthesis)
+    ? parsed.crossEngineSynthesis.filter(item => item && typeof item === "object")
+    : [];
+  const directAnswer = typeof parsed.directAnswer === "string" ? parsed.directAnswer.trim() : "";
+  const coreThesis = typeof parsed.coreThesis === "string" ? parsed.coreThesis.trim() : "";
 
+  if (!directAnswer) issues.push("directAnswer is missing");
+  if (!coreThesis) issues.push("coreThesis is missing");
   if (keyFindings.length < 3) issues.push(`keyFindings has only ${keyFindings.length} items (minimum 3 required)`);
   if (riskFactors.length < 3) issues.push(`riskFactors has only ${riskFactors.length} items (minimum 3 required)`);
+  if (confirmationConditions.length < 2) issues.push(`confirmationConditions has only ${confirmationConditions.length} items (minimum 2 required)`);
   if (invalidationConditions.length < 2) issues.push(`invalidationConditions has only ${invalidationConditions.length} items (minimum 2 required)`);
+  if (crossEngineSynthesis.length < 3) issues.push(`crossEngineSynthesis has only ${crossEngineSynthesis.length} items (minimum 3 required)`);
 
   const execSummary = typeof parsed.executiveSummary === "string" ? parsed.executiveSummary.trim() : "";
   const missionRec = typeof parsed.missionRecommendation === "string" ? parsed.missionRecommendation.trim() : "";
@@ -375,16 +395,20 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
       ? "Crypto Intelligence Engine: AVAILABLE — you may reference FAULTLINE crypto data."
       : "Crypto Intelligence Engine: UNAVAILABLE — do NOT claim FAULTLINE-native crypto analysis. Acknowledge this limitation explicitly in the limitations field.",
     `\n## ORACLE BRIEFING RULES (STRICT)`,
-    "1. executiveSummary: EXACTLY 2-4 sentences summarizing the core finding. DO NOT copy missionRecommendation into this field. DO NOT include disclaimers here.",
-    "2. keyFindings: EXACTLY 3-5 DISTINCT findings. Each must address a different aspect (price, macro, technical, on-chain, sentiment). NO duplicates. NO disclaimers.",
-    "3. riskFactors: EXACTLY 3-5 DISTINCT risks. Each must be a different risk vector. NO duplicates.",
-    "4. invalidationConditions: EXACTLY 2-4 DISTINCT conditions. Each must be a specific, measurable event.",
-    "5. missionRecommendation: Actionable guidance paragraph. DO NOT repeat executiveSummary. DO NOT include disclaimers here.",
-    "6. missionRecommendationStructured: Provide verdict, timeHorizon, rationale, and 3-4 decisionPaths (each with scenario and response). Scenarios must cover: aggressive entry, staged/cautious entry, wait-for-confirmation, and avoid/defensive.",
-    "7. sourceCitations: List 2-4 specific data points used, each with name, claim, observedAt (ISO date or 'estimated'), and freshness (LIVE/RECENT/STALE/ESTIMATED).",
-    "8. disclaimer: EXACTLY ONE disclaimer sentence. Place it ONLY in this field. Do not repeat it anywhere else.",
-    "9. limitations: List any engine unavailability or data quality issues. If all engines are available, return an empty array.",
-    "10. reply: Full narrative. 3-6 paragraphs. No bullet points. No disclaimers in this field.",
+    "1. directAnswer: EXACTLY ONE decisive sentence answering the mission question immediately. It must state whether the risk or opportunity is current or developing. DO NOT include disclaimers.",
+    "2. executiveSummary: EXACTLY 2-4 sentences explaining what matters now, why it matters, what is not obvious from headline conditions, and whether it is current or developing. DO NOT copy missionRecommendation. DO NOT include disclaimers.",
+    "3. coreThesis: ONE strong paragraph identifying the single most important underlying insight. Add interpretation; do not repeat executiveSummary word-for-word.",
+    "4. keyFindings: EXACTLY 3-5 DISTINCT findings. Each must identify a material observation or divergence and why it matters. NO duplicates. NO disclaimers.",
+    "5. crossEngineSynthesis: EXACTLY 3-6 rows. Each row must contain engine, currentSignal, and relevance. Use only available engines, distinguish observed readings from analytical inference, and name meaningful divergence when present. Do not invent measurements.",
+    "6. riskFactors: EXACTLY 3-5 DISTINCT risks. Each must be a different risk vector. NO duplicates.",
+    "7. confirmationConditions: EXACTLY 2-4 DISTINCT measurable conditions that would strengthen the thesis, using only available FAULTLINE data. Do not invent thresholds or unavailable series.",
+    "8. invalidationConditions: EXACTLY 2-4 DISTINCT conditions that would weaken or invalidate the assessment. Each must be specific and measurable.",
+    "9. missionRecommendation: A concise actionable guidance paragraph. DO NOT repeat executiveSummary. DO NOT include disclaimers.",
+    "10. missionRecommendationStructured: Provide verdict, timeHorizon, rationale, and 3-4 decisionPaths (each with scenario and response). Scenarios must cover: aggressive entry, staged/cautious entry, wait-for-confirmation, and avoid/defensive.",
+    "11. sourceCitations: List 2-4 specific data points used, each with name, claim, observedAt (ISO date or 'estimated'), and freshness (LIVE/RECENT/STALE/ESTIMATED).",
+    "12. disclaimer: EXACTLY ONE disclaimer sentence. Place it ONLY in this field. Do not repeat it anywhere else.",
+    "13. limitations: List any engine unavailability, data-quality issue, or limited historical sample caveat. If all engines are available and no limitation applies, return an empty array.",
+    "14. reply: Full narrative. 3-6 paragraphs. No bullet points. No disclaimers in this field.",
   ].join("\n");
 
   const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext) + engineAvailabilityBlock;
@@ -406,7 +430,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
           type: "object",
           properties: {
             reply: { type: "string", description: "Full narrative intelligence response. 3-6 paragraphs. No bullet points. No disclaimers in this field." },
+            directAnswer: { type: "string", description: "EXACTLY ONE clear sentence that answers the mission question immediately and states whether the thesis is current or developing. No disclaimer." },
             executiveSummary: { type: "string", description: "EXACTLY 2-4 sentences summarizing the core finding. MUST be different from missionRecommendation. MUST NOT contain disclaimers." },
+            coreThesis: { type: "string", description: "One strong paragraph naming the single most important underlying insight without repeating executiveSummary word-for-word." },
             marketBias: { type: "string", enum: ["BULLISH", "BEARISH", "NEUTRAL"], description: "Overall market directional bias." },
             marketRegime: { type: "string", description: "Current market regime label (e.g. Late Cycle, Stagflation, Expansion)." },
             threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"], description: "Systemic threat level." },
@@ -417,8 +443,23 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             bearProbability: { type: "number", description: "Bear scenario probability 0-100." },
             keyFindings: { type: "array", items: { type: "string" }, description: "EXACTLY 3-5 DISTINCT key findings. Each must address a different aspect. NO duplicates. NO disclaimers." },
             supportingEvidence: { type: "array", items: { type: "string" }, description: "3-5 supporting evidence points from available engines." },
+            crossEngineSynthesis: {
+              type: "array",
+              description: "EXACTLY 3-6 source-backed engine synthesis rows. Name only available engines and distinguish observation from inference.",
+              items: {
+                type: "object",
+                properties: {
+                  engine: { type: "string" },
+                  currentSignal: { type: "string" },
+                  relevance: { type: "string" },
+                },
+                required: ["engine", "currentSignal", "relevance"],
+                additionalProperties: false,
+              },
+            },
             historicalAnalog: { type: "string", description: "Most relevant historical period comparison with key similarities and differences." },
             riskFactors: { type: "array", items: { type: "string" }, description: "EXACTLY 3-5 DISTINCT risk factors. Each must be a different risk vector. NO duplicates." },
+            confirmationConditions: { type: "array", items: { type: "string" }, description: "EXACTLY 2-4 measurable conditions supported by available FAULTLINE data that would strengthen the thesis." },
             invalidationConditions: { type: "array", items: { type: "string" }, description: "EXACTLY 2-4 DISTINCT invalidation conditions. Each must be a specific measurable event." },
             missionRecommendation: { type: "string", description: "Actionable recommendation paragraph. MUST be different from executiveSummary. NO disclaimers." },
             missionRecommendationStructured: {
@@ -466,7 +507,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             expectedTimeframe: { type: "string", description: "Expected timeframe for this assessment (e.g. 2-4 weeks, 3-6 months)." },
             followUpChips: { type: "array", items: { type: "string" }, description: "3-4 follow-up question suggestions." },
           },
-          required: ["reply", "executiveSummary", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "historicalAnalog", "riskFactors", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
+          required: ["reply", "directAnswer", "executiveSummary", "coreThesis", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "crossEngineSynthesis", "historicalAnalog", "riskFactors", "confirmationConditions", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
           additionalProperties: false,
         },
       },
@@ -490,10 +531,12 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     issue.includes("keyFindings has only 0") ||
     issue.includes("riskFactors has only 0") ||
     issue.includes("invalidationConditions has only 0") ||
-    issue.includes("keyFindings has only 1") ||
-    issue.includes("riskFactors has only 1") ||
-    issue.includes("riskFactors has only 2") ||
-    issue.includes("executiveSummary is too long")
+          issue.includes("keyFindings has only 1") ||
+          issue.includes("riskFactors has only 1") ||
+          issue.includes("riskFactors has only 2") ||
+          issue.includes("directAnswer is missing") ||
+          issue.includes("coreThesis is missing") ||
+          issue.includes("executiveSummary is too long")
   );
 
   if (criticalFailures.length > 0) {
@@ -509,6 +552,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
           "",
           "Please regenerate the complete Oracle briefing JSON, fixing all of the above issues.",
           "Remember: keyFindings, riskFactors, and invalidationConditions MUST be populated with distinct items.",
+          "directAnswer MUST be one decisive sentence and coreThesis MUST be one strong paragraph.",
+          "confirmationConditions and crossEngineSynthesis MUST use only currently available FAULTLINE evidence.",
           "The executiveSummary MUST be 2-4 sentences only — not the full narrative.",
           "Do not repeat disclaimer text in executiveSummary or keyFindings.",
         ].join("\n"),
@@ -526,7 +571,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
               type: "object",
               properties: {
                 reply: { type: "string" },
+                directAnswer: { type: "string" },
                 executiveSummary: { type: "string" },
+                coreThesis: { type: "string" },
                 marketBias: { type: "string", enum: ["BULLISH", "BEARISH", "NEUTRAL"] },
                 marketRegime: { type: "string" },
                 threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"] },
@@ -537,8 +584,10 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
                 bearProbability: { type: "number" },
                 keyFindings: { type: "array", items: { type: "string" } },
                 supportingEvidence: { type: "array", items: { type: "string" } },
+                crossEngineSynthesis: { type: "array", items: { type: "object", properties: { engine: { type: "string" }, currentSignal: { type: "string" }, relevance: { type: "string" } }, required: ["engine", "currentSignal", "relevance"], additionalProperties: false } },
                 historicalAnalog: { type: "string" },
                 riskFactors: { type: "array", items: { type: "string" } },
+                confirmationConditions: { type: "array", items: { type: "string" } },
                 invalidationConditions: { type: "array", items: { type: "string" } },
                 missionRecommendation: { type: "string" },
                 missionRecommendationStructured: {
@@ -559,7 +608,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
                 expectedTimeframe: { type: "string" },
                 followUpChips: { type: "array", items: { type: "string" } },
               },
-              required: ["reply", "executiveSummary", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "historicalAnalog", "riskFactors", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
+              required: ["reply", "directAnswer", "executiveSummary", "coreThesis", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "crossEngineSynthesis", "historicalAnalog", "riskFactors", "confirmationConditions", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
               additionalProperties: false,
             },
           },
@@ -583,7 +632,20 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   }
 
   const reply = readString(parsed.reply) || "I was unable to generate a response. Please try again.";
+  const directAnswer = readString(parsed.directAnswer) || readString(parsed.executiveSummary) || reply.split("\n")[0];
+  const coreThesis = readString(parsed.coreThesis) || readString(parsed.executiveSummary) || reply;
+  const confirmationConditions = readStringArray(parsed.confirmationConditions);
   const invalidationConditions = readStringArray(parsed.invalidationConditions);
+
+  const crossEngineSynthesis = Array.isArray(parsed.crossEngineSynthesis)
+    ? (parsed.crossEngineSynthesis as Array<Record<string, unknown>>)
+        .map(row => ({
+          engine: readString(row.engine) || "",
+          currentSignal: readString(row.currentSignal) || "",
+          relevance: readString(row.relevance) || "",
+        }))
+        .filter(row => row.engine && row.currentSignal && row.relevance)
+    : [];
 
   // Parse structured mission recommendation
   let missionRecommendationStructured: AshaResponse["missionRecommendationStructured"] | undefined;
@@ -637,7 +699,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     lastUpdated: gatewayContext.marketState.sourceUpdatedAt,
     invalidationTriggers: invalidationConditions.length > 0 ? invalidationConditions : undefined,
     // Oracle Briefing structured fields
+    directAnswer,
     executiveSummary: readString(parsed.executiveSummary) || reply.split("\n")[0],
+    coreThesis,
     marketBias: readEnum(parsed.marketBias, ["BULLISH", "BEARISH", "NEUTRAL"] as const) || "NEUTRAL",
     marketRegime: readString(parsed.marketRegime) || gatewayContext.marketState.now.regime,
     threatLevel: readEnum(parsed.threatLevel, ["LOW", "ELEVATED", "HIGH", "CRITICAL"] as const) || "ELEVATED",
@@ -648,8 +712,10 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     bearProbability: readBoundedScore(parsed.bearProbability, gatewayContext.marketState.outlook.probabilities.bear),
     keyFindings: readStringArray(parsed.keyFindings),
     supportingEvidence: readStringArray(parsed.supportingEvidence),
+    crossEngineSynthesis: crossEngineSynthesis.length > 0 ? crossEngineSynthesis : undefined,
     historicalAnalog: readString(parsed.historicalAnalog),
     riskFactors: readStringArray(parsed.riskFactors),
+    confirmationConditions: confirmationConditions.length > 0 ? confirmationConditions : undefined,
     invalidationConditions,
     missionRecommendation: readString(parsed.missionRecommendation) || "",
     missionRecommendationStructured,
