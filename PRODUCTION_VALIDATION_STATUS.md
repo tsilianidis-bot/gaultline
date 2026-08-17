@@ -23,3 +23,20 @@ Recent checkpoints are successfully publishing from the project environment, but
 | Marketing entry controls | Present |
 | Authenticated protected-route validation | Not available in the current browser session |
 | Latest protected bundle attribution | Not determinable from the public landing route alone |
+
+## Follow-up live-route check
+
+On the same custom domain, the prior deployed parameterized route
+`/app/signals/AAPL` resolves into the Signals Visual Analysis shell, while the
+newly published `/app/day-trade-intelligence/NVDA?asset=stock` deep link routes
+to the FAULTLINE 404 screen. The local preview contains the Day Trade route and
+its regression coverage passes. This difference confirms that the custom domain
+is still serving a bundle older than checkpoint `df2a0dad`, rather than exposing
+a client-side route-definition error in the current project.
+
+| Additional URL checked | Result |
+|---|---|
+| `https://getfaultline.live/app/signals/AAPL` | Existing parameterized route loads the prior Signals analysis shell |
+| `https://getfaultline.live/app/day-trade-intelligence/NVDA?asset=stock` | FAULTLINE 404 — new route absent from served bundle |
+| Local preview Day Trade deep link | Resolves to the app shell; protected visual content requires sign-in |
+| Current project checkpoint containing Day Trade route | `df2a0dad` |

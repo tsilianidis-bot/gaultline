@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const page = readFileSync(resolve(process.cwd(), "client/src/pages/HistoricalAnalogs.tsx"), "utf8");
+const engine = readFileSync(resolve(process.cwd(), "server/historicalContextEngine.ts"), "utf8");
 
 describe("Historical Analogs canonical experience", () => {
   it("uses the canonical historical-context procedure rather than an illustrative client-side era model", () => {
@@ -27,5 +28,8 @@ describe("Historical Analogs canonical experience", () => {
     expect(page).toContain("No comparison is shown while canonical context is unavailable");
     expect(page).toContain("current regime has no completed monthly history observation yet");
     expect(page).toContain("function ordinal");
+    expect(engine).toContain("const ordinal = (value: number)");
+    expect(engine).toContain("no completed monthly history observation yet");
+    expect(engine).not.toContain("the ${percentile}th percentile");
   });
 });

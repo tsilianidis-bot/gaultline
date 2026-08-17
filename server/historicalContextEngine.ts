@@ -560,17 +560,24 @@ export async function computeHistoricalContext(
     explanation: trendExplanation,
   };
 
+  const ordinal = (value: number) => {
+    const suffix = value % 100 >= 11 && value % 100 <= 13 ? "TH" : value % 10 === 1 ? "ST" : value % 10 === 2 ? "ND" : value % 10 === 3 ? "RD" : "TH";
+    return `${value}${suffix}`;
+  };
+
   // ── Deterministic source-backed narrative ───────────────────
   // Narrative is intentionally assembled from the calculated contract. It must
   // never delay the canonical history endpoint or introduce unobservable claims.
   const topDriver = drivers[0];
   const sampleReference = historyN >= 10
-    ? `the ${percentile}th percentile of ${historyN} recorded monthly observations since ${dataStartMonth}`
+    ? `the ${ordinal(percentile)} percentile of ${historyN} recorded monthly observations since ${dataStartMonth}`
     : `an insufficient historical sample (${historyN} recorded monthly observations)`;
   const marketStory = `Market pressure is currently ${pressure.overallPressure}/100 (${pressure.regime}), placing it in ${sampleReference}. ` +
-    `The largest measured contributor is ${topDriver?.label ?? "unavailable"} at ${topDriver?.score ?? 0}/100, ` +
+    `The largest measured contributor is ${topDriver?.label ?? "unavailable"}${typeof topDriver?.score === "number" ? ` at ${topDriver.score}/100` : " with an unavailable score"}, ` +
     `and the calculated direction is ${trendDirection.toLowerCase()}. ` +
-    `The current regime has ${monthsInCurrentRegime} completed monthly observation${monthsInCurrentRegime === 1 ? "" : "s"}.`;
+    (monthsInCurrentRegime > 0
+      ? `The current regime has ${monthsInCurrentRegime} completed monthly observation${monthsInCurrentRegime === 1 ? "" : "s"}.`
+      : "The current regime has no completed monthly history observation yet.");
   const institutionalInterpretation = `This is a retrospective description of recorded pressure and driver data, not a forecast or recommendation. ` +
     `The closest reference period is ${analogMatches[0]?.label ?? "unavailable"} at ${analogMatches[0]?.similarity ?? 0}% vector similarity; ` +
     `its outcome is historical context only and does not establish an expected path for the current environment.`;

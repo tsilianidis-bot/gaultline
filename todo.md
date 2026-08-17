@@ -4899,3 +4899,5 @@
 - [x] Add a generic append-only symbol-event outcome ledger that attaches observed own-instrument follow-through to existing eligible recorded events
 - [x] Add `/app/day-trade-intelligence/:symbol` using the canonical Day Trade report, observed completed daily bars where available, calculated levels, and explicit intraday-history limitations
 - [ ] Run consolidated authenticated desktop/mobile acceptance, production-domain checks when infrastructure permits, and full regressions
+- [x] Correct the remaining live Historical Analogs generated-context ordinal and no-history wording found during production-domain validation
+- [ ] Repair production deep-link recognition for `/app/day-trade-intelligence/:symbol` after live acceptance exposed a server-side 404
