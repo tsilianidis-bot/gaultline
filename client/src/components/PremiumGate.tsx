@@ -434,6 +434,7 @@ export function PremiumGateFull({
   children,
 }: PremiumGateFullProps) {
   const { isAuthenticated, loading, user } = useAuth();
+  const isQaSession = Boolean((user as { isQaSession?: boolean } | null)?.isQaSession);
   const checkoutMutation = trpc.billing.createCheckout.useMutation({
     onSuccess: (data) => {
       if (data.url) {
@@ -462,7 +463,7 @@ export function PremiumGateFull({
     },
   });
   const tierQuery = trpc.user.getAccessTier.useQuery(undefined, {
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isQaSession,
     retry: false,
     staleTime: 60_000,
   });
@@ -476,11 +477,11 @@ export function PremiumGateFull({
     );
   }
 
-  const tier = tierQuery.data?.tier ?? 'free';
+  const tier = isQaSession ? 'founding' : (tierQuery.data?.tier ?? 'free');
   const cfg = GATE_CONFIGS[variant];
   // Admin users always have full access to all gated content — no upgrade gate shown
   const isAdmin = isAuthenticated && (user as { role?: string } | null)?.role === 'admin';
-  const hasAccess = isAdmin || (isAuthenticated && tierMeetsRequirement(tier as AccessTier, GATE_REQUIRED_TIER[variant]));
+  const hasAccess = isQaSession || isAdmin || (isAuthenticated && tierMeetsRequirement(tier as AccessTier, GATE_REQUIRED_TIER[variant]));
 
   // User has sufficient access — show full content
   if (hasAccess) {

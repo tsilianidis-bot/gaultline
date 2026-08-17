@@ -12,6 +12,8 @@ describe("Day Trade Visual Analysis", () => {
     expect(router).toContain("getVisualDetail: coreProcedure");
     expect(router).toContain("dayTradeSymbolSetup(input.symbol, input.assetType, input.direction)");
     expect(router).toContain("fetchDailyBars(process.env.POLYGON_API_KEY, input.symbol, 60)");
+    expect(router).toContain('Canonical Day Trade report", 12_000');
+    expect(router).toContain('Completed daily reference bars", 8_000');
     expect(router).toContain('intradayBars: "not_supported"');
     expect(page).toContain("Historical setup markers are intentionally absent");
     expect(router).toContain("Completed daily bars only.");

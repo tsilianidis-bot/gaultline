@@ -1061,6 +1061,13 @@ export const appRouter = router({
     // Get current user profile including access tier
     getProfile: protectedProcedure.query(async ({ ctx }) => {
       try {
+        if (ctx.user.isQaSession) {
+          return {
+            id: ctx.user.id, name: ctx.user.name, email: ctx.user.email, role: ctx.user.role,
+            accessTier: "founding" as const, loginMethod: ctx.user.loginMethod,
+            createdAt: ctx.user.createdAt, lastSignedIn: ctx.user.lastSignedIn, isQaSession: true as const,
+          };
+        }
         const tier = await getUserTier(ctx.user.id);
         return {
           id: ctx.user.id,
@@ -1080,6 +1087,7 @@ export const appRouter = router({
     // Get just the access tier (lightweight, used by PremiumGate)
     getAccessTier: protectedProcedure.query(async ({ ctx }) => {
       try {
+        if (ctx.user.isQaSession) return { tier: "founding" as const, isQaSession: true as const };
         const tier = await getUserTier(ctx.user.id);
         return { tier };
       } catch (err) {
@@ -2823,8 +2831,12 @@ export const appRouter = router({
         direction: z.enum(["bullish", "bearish", "both"]).default("both"),
       }))
       .query(async ({ input }) => {
+        const withTimeout = <T,>(promise: Promise<T>, label: string, timeoutMs: number) => new Promise<T>((resolve, reject) => {
+          const timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+          promise.then(value => { clearTimeout(timer); resolve(value); }, error => { clearTimeout(timer); reject(error); });
+        });
         const reportResult = await Promise.allSettled([
-          dayTradeSymbolSetup(input.symbol, input.assetType, input.direction),
+          withTimeout(dayTradeSymbolSetup(input.symbol, input.assetType, input.direction), "Canonical Day Trade report", 12_000),
         ]);
         const report = reportResult[0]?.status === "fulfilled" ? reportResult[0].value : null;
         const reportDiagnostics = report as (typeof report & { _errorMessage?: string }) | null;
@@ -2836,7 +2848,7 @@ export const appRouter = router({
         let barsStatus: "available" | "unavailable" | "not_supported" = input.assetType === "crypto" ? "not_supported" : "unavailable";
         if (input.assetType === "stock" && process.env.POLYGON_API_KEY) {
           try {
-            bars = (await fetchDailyBars(process.env.POLYGON_API_KEY, input.symbol, 60))
+            bars = (await withTimeout(fetchDailyBars(process.env.POLYGON_API_KEY, input.symbol, 60), "Completed daily reference bars", 8_000))
               .filter(bar => Number.isFinite(bar.timestamp) && Number.isFinite(bar.open) && Number.isFinite(bar.high) && Number.isFinite(bar.low) && Number.isFinite(bar.close) && Number.isFinite(bar.volume));
             barsStatus = bars.length ? "available" : "unavailable";
           } catch {

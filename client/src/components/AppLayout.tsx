@@ -239,6 +239,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <DrawerProvider>
     <div className="min-h-screen flex flex-col" style={{ background: '#080A0F', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+      {(authUser as { isQaSession?: boolean } | null)?.isQaSession && (
+        <div role="status" style={{ position: "fixed", right: 12, bottom: 74, zIndex: 80, border: "1px solid rgba(0,212,255,0.45)", background: "rgba(0,20,28,0.96)", color: "#00D4FF", borderRadius: 4, padding: "7px 10px", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.12em", boxShadow: "0 0 16px rgba(0,212,255,0.12)" }}>
+          OWNER QA · READ ONLY
+        </div>
+      )}
 
       {/* ── Edge navigation drawers ── */}
       <LeftNavDrawer breachCount={breachCount} />

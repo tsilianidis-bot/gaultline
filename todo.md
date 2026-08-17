@@ -4898,6 +4898,13 @@
 - [x] Build Day Trade Visual Analysis using only source-backed supported tactical/intraday data and no retrospective signal markers
 - [x] Add a generic append-only symbol-event outcome ledger that attaches observed own-instrument follow-through to existing eligible recorded events
 - [x] Add `/app/day-trade-intelligence/:symbol` using the canonical Day Trade report, observed completed daily bars where available, calculated levels, and explicit intraday-history limitations
+- [x] Prevent Day Trade Visual Analysis from waiting indefinitely when an upstream canonical report provider is unavailable; surface explicit source status instead
 - [ ] Run consolidated authenticated desktop/mobile acceptance, production-domain checks when infrastructure permits, and full regressions
 - [x] Correct the remaining live Historical Analogs generated-context ordinal and no-history wording found during production-domain validation
 - [ ] Repair production deep-link recognition for `/app/day-trade-intelligence/:symbol` after live acceptance exposed a server-side 404
+
+## Permanent Owner QA Access
+- [x] Define and document permanent owner-controlled QA access with server-side verification, audit visibility, and explicit non-production-entitlement semantics
+- [x] Implement a permanent read-only QA principal that can render protected intelligence pages but cannot mutate data, accounts, payments, schedules, or application settings
+- [x] Add a persistent owner-controlled QA entry route with visible QA status and no secret exposure in URLs or client bundles
+- [x] Add security regression coverage for QA access boundaries and validate protected visual routes through the QA principal

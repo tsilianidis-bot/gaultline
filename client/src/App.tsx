@@ -82,6 +82,7 @@ const OwnerSimulation  = lazy(() => import("./pages/OwnerSimulation"));
 const PublicSharedReport = lazy(() => import("./pages/PublicSharedReport"));
 const SignalOutlookCenter = lazy(() => import("./pages/SignalOutlookCenter"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
+const QaAccess = lazy(() => import("./pages/QaAccess"));
 
 // ── Public SEO landing pages (no auth required, crawlable) ────────
 const PublicSignals        = lazy(() => import("./pages/PublicSignals"));
@@ -692,6 +693,13 @@ function Router() {
         <ErrorBoundary>
           <Suspense fallback={<PageLoader />}>
             <MarketingSite initialSection="pricing" />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
+      <Route path="/qa-access">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <QaAccess />
           </Suspense>
         </ErrorBoundary>
       </Route>

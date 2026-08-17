@@ -37,6 +37,7 @@ import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { captureError, flushErrorTracking } from "../errorTracking";
+import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -91,6 +92,14 @@ const signalsLimiter = rateLimit({
   legacyHeaders: false,
   handler: makeTrpcRateLimitHandler("Market data rate limit exceeded. Please wait a moment."),
   skip: (req) => process.env.NODE_ENV === "development",
+});
+
+const qaAccessLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: "qa_access_rate_limited" },
 });
 
 async function startServer() {
@@ -159,6 +168,8 @@ async function startServer() {
   registerFredProxy(app);
   registerSignalsProxy(app);
   registerCoinGeckoProxy(app);
+  app.post("/api/qa/access", qaAccessLimiter, handleQaAccess);
+  app.post("/api/qa/logout", handleQaAccessLogout);
   registerSEORoutes(app);
   app.use("/api/analytics", analyticsRoutes);
 
