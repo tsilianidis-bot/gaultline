@@ -4888,7 +4888,9 @@
 ## Approved Execution Roadmap — Completion Pass
 - [x] Establish reliable production validation or document the external deployment dependency and exact live-build limitation
 - [x] Repair the V3-H shadow-reading schema drift and verify a persisted source-backed shadow reading plus append-only 1d/5d/20d future outcomes
-- [ ] Build the canonical source-backed Historical Analogs experience with explicit retrospective and provenance boundaries
+- [x] Build the canonical source-backed Historical Analogs experience with explicit retrospective and provenance boundaries
+- [x] Ensure the Historical Analogs canonical query returns deterministic source-backed context without waiting indefinitely for external narrative generation
+- [x] Correct Historical Analogs ordinal wording and distinguish no completed regime-history observations from a numeric zero
 - [ ] Complete immutable observed-event coverage and the evidence-first searchable Alerts Archive with stable deep links
 - [ ] Add append-only instrument-specific outcomes for Rising Stars, Signals, and future symbol events without synthetic combined scores
 - [ ] Build Day Trade Visual Analysis using only source-backed supported tactical/intraday data and no retrospective signal markers

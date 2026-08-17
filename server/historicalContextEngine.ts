@@ -16,7 +16,6 @@
 
 import { getPressureHistory, getPressureHistoryStats, getRecentPressureRuns } from "./db";
 import { computeHistoricalAnalogs } from "./fmos/engines/historicalAnalog";
-import { invokeLLM } from "./_core/llm";
 import type { FaultlinePressureOutput, RiskVector } from "./pressure/engine";
 import type { FMOSHistoricalAnalog } from "./fmos/types";
 
@@ -561,92 +560,20 @@ export async function computeHistoricalContext(
     explanation: trendExplanation,
   };
 
-  // ── LLM Sections: Market Story + Institutional Interpretation ──
-  const vectorSummary = drivers
-    .slice(0, 4)
-    .map(d => `${d.label}: ${d.score}/100 (${d.level}, ${d.direction})`)
-    .join('; ');
-
-  const analogSummary = analogMatches
-    .slice(0, 3)
-    .map(a => `${a.label} (${a.similarity}% similarity)`)
-    .join(', ');
-
-  const timelineContext = `${timeline.monthsInCurrentRegime} months in ${currentRegime} regime, ` +
-    `${timeline.consecutiveElevatedMonths} consecutive months at elevated pressure or above, ` +
-    `trend: ${trendDirection}`;
-
-  const rarityContext2 = `${percentile}th percentile vs ${historyN} months of history (${dataStartMonth}–${dataEndMonth})`;
-
-  let marketStory = "";
-  let institutionalInterpretation = "";
-
-  try {
-    const llmPrompt = `You are a senior macro strategist at a major institutional investment firm.
-
-Current FAULTLINE Pressure Index: ${pressure.overallPressure}/100 (${pressure.regime})
-Percentile vs history: ${percentile}th (${rarityLabel})
-Timeline: ${timelineContext}
-Top drivers: ${vectorSummary}
-Closest historical analogs: ${analogSummary}
-Trend direction: ${trendDirection}
-
-Write two sections:
-
-SECTION_MARKET_STORY:
-Write 3–4 sentences explaining what is happening in the market, why the Pressure Index is at this level, which factors are contributing most, and whether conditions are improving or deteriorating. Write as an institutional macro strategist explaining to a sophisticated investor — not as an AI summarizing data. Be specific. Reference the actual drivers and trend direction.
-
-SECTION_INSTITUTIONAL_INTERPRETATION:
-Write 2–3 sentences explaining how an experienced macro investor would interpret this environment. Focus on what risks deserve attention, what the historical context implies, and what the trend direction means for risk management. Do NOT provide buy or sell recommendations. Do NOT predict the future. Explain the environment only.
-
-Respond in JSON format: {"marketStory": "...", "institutionalInterpretation": "..."}`;
-
-    const llmResp = await invokeLLM({
-      messages: [
-        { role: "system", content: "You are a senior macro strategist. Respond only in the JSON format requested." },
-        { role: "user", content: llmPrompt },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "market_story",
-          strict: true,
-          schema: {
-            type: "object",
-            properties: {
-              marketStory: { type: "string" },
-              institutionalInterpretation: { type: "string" },
-            },
-            required: ["marketStory", "institutionalInterpretation"],
-            additionalProperties: false,
-          },
-        },
-      },
-    });
-
-    const content = llmResp.choices[0]?.message?.content;
-    if (typeof content === "string") {
-      const parsed = JSON.parse(content);
-      marketStory = parsed.marketStory ?? "";
-      institutionalInterpretation = parsed.institutionalInterpretation ?? "";
-    }
-  } catch (err) {
-    // Non-fatal: LLM failure falls back to rule-based narrative
-    const topDriver = drivers[0];
-    marketStory = `Market pressure is currently at ${pressure.overallPressure}/100 (${pressure.regime}), ` +
-      `placing it in the ${percentile}th percentile of all ${historyN} historical monthly readings since ${dataStartMonth}. ` +
-      `The primary driver is ${topDriver?.label ?? "unknown"} at ${topDriver?.score ?? 0}/100, ` +
-      `with the overall trend ${trendDirection.toLowerCase()}. ` +
-      `The market has been in the ${currentRegime} regime for ${monthsInCurrentRegime} consecutive months.`;
-
-    institutionalInterpretation = `An experienced macro investor would note that the current ${pressure.regime} regime ` +
-      `is in the ${percentile}th historical percentile, suggesting ${
-        percentile >= 70 ? "above-average systemic stress warranting defensive positioning" :
-        percentile >= 50 ? "moderate stress with selective risk management appropriate" :
-        "below-average stress, though monitoring of the trend direction remains prudent"
-      }. ` +
-      `The closest historical analog is ${analogMatches[0]?.label ?? "unknown"} with ${analogMatches[0]?.similarity ?? 0}% similarity.`;
-  }
+  // ── Deterministic source-backed narrative ───────────────────
+  // Narrative is intentionally assembled from the calculated contract. It must
+  // never delay the canonical history endpoint or introduce unobservable claims.
+  const topDriver = drivers[0];
+  const sampleReference = historyN >= 10
+    ? `the ${percentile}th percentile of ${historyN} recorded monthly observations since ${dataStartMonth}`
+    : `an insufficient historical sample (${historyN} recorded monthly observations)`;
+  const marketStory = `Market pressure is currently ${pressure.overallPressure}/100 (${pressure.regime}), placing it in ${sampleReference}. ` +
+    `The largest measured contributor is ${topDriver?.label ?? "unavailable"} at ${topDriver?.score ?? 0}/100, ` +
+    `and the calculated direction is ${trendDirection.toLowerCase()}. ` +
+    `The current regime has ${monthsInCurrentRegime} completed monthly observation${monthsInCurrentRegime === 1 ? "" : "s"}.`;
+  const institutionalInterpretation = `This is a retrospective description of recorded pressure and driver data, not a forecast or recommendation. ` +
+    `The closest reference period is ${analogMatches[0]?.label ?? "unavailable"} at ${analogMatches[0]?.similarity ?? 0}% vector similarity; ` +
+    `its outcome is historical context only and does not establish an expected path for the current environment.`;
 
   // ── Assemble Result ────────────────────────────────────────
   return {
