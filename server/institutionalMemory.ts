@@ -43,6 +43,17 @@ export type MarketEvidenceState = {
 
 const PRESSURE_THRESHOLDS = [25, 50, 75] as const;
 const MATERIAL_PRESSURE_VARIANCE = 10;
+const MATERIAL_VECTOR_VARIANCE = 15;
+const MATERIAL_PROBABILITY_VARIANCE = 15;
+
+function numericStateRecord(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value as Record<string, unknown>).filter(([, candidate]) => typeof candidate === "number" && Number.isFinite(candidate))) as Record<string, number>;
+}
+
+function observedLabel(id: string) {
+  return id.replace(/[-_]/g, " ").replace(/\b\w/g, letter => letter.toUpperCase());
+}
 
 function utcDate(date: Date) {
   return date.toISOString().slice(0, 10);
@@ -219,6 +230,66 @@ export async function recordDailyMarketEvidence(current: MarketEvidenceState) {
           supportingState: current.sourceState ?? {},
         }));
       }
+    }
+
+    const priorVectors = numericStateRecord(previous.state.sourceState?.vectorScores);
+    const currentVectors = numericStateRecord(current.sourceState?.vectorScores);
+    for (const [vectorId, currentScore] of Object.entries(currentVectors)) {
+      const priorScore = priorVectors[vectorId];
+      if (priorScore == null) continue;
+      const vectorDelta = currentScore - priorScore;
+      if (Math.abs(vectorDelta) < MATERIAL_VECTOR_VARIANCE) continue;
+      writes.push(recordVerifiedInstitutionalEvent({
+        eventKey: `market_state:vector_variance:${previous.id}:${vectorId}:${currentScore}`,
+        eventType: "pressure_vector_material_change",
+        sourceEngine: "seismograph_pipeline",
+        entityType: "market_vector",
+        entityId: vectorId,
+        severity: severityForPressure(currentScore),
+        direction: normalizeDirection(priorScore, currentScore),
+        eventAt: current.observedAt,
+        sourceObservedAt: current.observedAt,
+        dataFreshness: current.dataFreshness,
+        pressureIndex: current.pressureIndex,
+        marketRegime: current.regime,
+        magnitude: vectorDelta,
+        relevantValue: currentScore,
+        headline: `${observedLabel(vectorId)} moved ${vectorDelta > 0 ? "higher" : "lower"} by ${Math.abs(vectorDelta)} points.`,
+        explanation: `A canonical observed pressure vector moved by at least ${MATERIAL_VECTOR_VARIANCE} points between consecutive verified daily market states.`,
+        previousState: previous.state,
+        newState: baseState,
+        supportingState: { vectorId, priorScore, currentScore, threshold: MATERIAL_VECTOR_VARIANCE },
+      }));
+    }
+
+    const priorProbabilities = numericStateRecord(previous.state.probabilities);
+    const currentProbabilities = numericStateRecord(current.probabilities);
+    for (const [regimeId, currentProbability] of Object.entries(currentProbabilities)) {
+      const priorProbability = priorProbabilities[regimeId];
+      if (priorProbability == null) continue;
+      const probabilityDelta = currentProbability - priorProbability;
+      if (Math.abs(probabilityDelta) < MATERIAL_PROBABILITY_VARIANCE) continue;
+      writes.push(recordVerifiedInstitutionalEvent({
+        eventKey: `market_state:regime_probability:${previous.id}:${regimeId}:${currentProbability}`,
+        eventType: "regime_probability_material_change",
+        sourceEngine: "seismograph_pipeline",
+        entityType: "regime_probability",
+        entityId: regimeId,
+        severity: severityForPressure(current.pressureIndex),
+        direction: probabilityDelta > 0 ? "deteriorating" : "improving",
+        eventAt: current.observedAt,
+        sourceObservedAt: current.observedAt,
+        dataFreshness: current.dataFreshness,
+        pressureIndex: current.pressureIndex,
+        marketRegime: current.regime,
+        magnitude: probabilityDelta,
+        relevantValue: currentProbability,
+        headline: `${observedLabel(regimeId)} regime probability moved ${probabilityDelta > 0 ? "higher" : "lower"} by ${Math.abs(probabilityDelta)} points.`,
+        explanation: `A canonical regime-probability reading moved by at least ${MATERIAL_PROBABILITY_VARIANCE} points between consecutive verified daily market states.`,
+        previousState: previous.state,
+        newState: baseState,
+        supportingState: { regimeId, priorProbability, currentProbability, threshold: MATERIAL_PROBABILITY_VARIANCE },
+      }));
     }
   }
   const results = await Promise.all(writes);

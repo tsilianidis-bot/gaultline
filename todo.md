@@ -4891,7 +4891,9 @@
 - [x] Build the canonical source-backed Historical Analogs experience with explicit retrospective and provenance boundaries
 - [x] Ensure the Historical Analogs canonical query returns deterministic source-backed context without waiting indefinitely for external narrative generation
 - [x] Correct Historical Analogs ordinal wording and distinguish no completed regime-history observations from a numeric zero
-- [ ] Complete immutable observed-event coverage and the evidence-first searchable Alerts Archive with stable deep links
+- [x] Complete canonical source-backed observed-event coverage and the evidence-first searchable Alerts Archive with stable deep links; unsupported source domains remain unavailable rather than synthesized
+- [x] Capture only genuinely observed daily vector and regime-probability material changes as additional append-only institutional events
+- [x] Add evidence-first Alerts Archive search, source/type filters, and stable selected-event deep links without altering immutable records
 - [ ] Add append-only instrument-specific outcomes for Rising Stars, Signals, and future symbol events without synthetic combined scores
 - [ ] Build Day Trade Visual Analysis using only source-backed supported tactical/intraday data and no retrospective signal markers
 - [ ] Run consolidated authenticated desktop/mobile acceptance, production-domain checks when infrastructure permits, and full regressions

@@ -4,7 +4,7 @@
    regime transition events, alert history, and pressure gauges.
    ============================================================ */
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { AlertTriangle, Bell, BellOff, Shield, TrendingUp, TrendingDown, X, CheckCheck, Trash2, Activity } from 'lucide-react';
+import { AlertTriangle, Bell, BellOff, Shield, TrendingUp, TrendingDown, X, CheckCheck, Trash2, Activity, Copy, Search } from 'lucide-react';
 import { useEngine } from '@/contexts/EngineContext';
 import { getRiskColor } from '@/components/RiskBadge';
 import {
@@ -42,15 +42,15 @@ function archivedSeverityColor(severity: ArchivedEvent["severity"]) {
   return severity === "critical" ? "#FF2D55" : severity === "high" ? "#FF9500" : severity === "moderate" ? "#FFD700" : "#00D4FF";
 }
 
-function InstitutionalEventCard({ event, index }: { event: ArchivedEvent; index: number }) {
-  const [expanded, setExpanded] = useState(false);
+function InstitutionalEventCard({ event, index, selectedEventId, onSelect }: { event: ArchivedEvent; index: number; selectedEventId: number | null; onSelect: (id: number | null) => void }) {
+  const expanded = selectedEventId === event.id;
   const color = archivedSeverityColor(event.severity);
   const eventAt = new Date(event.eventAt);
   const outcomes = (event.outcomes ?? []).flatMap((outcome) => {
     try { return [{ horizon: outcome.horizonTradingDays, data: JSON.parse(outcome.outcomeJson) as any }]; } catch { return []; }
   });
   return (
-    <article onClick={() => setExpanded(!expanded)} style={{ background: "rgba(10,12,16,0.92)", border: `1px solid ${color}30`, borderLeft: `3px solid ${color}`, borderRadius: "6px", padding: "12px", cursor: "pointer", animation: `fade-slide-up 0.35s cubic-bezier(0.23, 1, 0.32, 1) ${index * 35}ms both` }}>
+    <article onClick={() => onSelect(expanded ? null : event.id)} style={{ background: expanded ? `${color}0c` : "rgba(10,12,16,0.92)", border: `1px solid ${expanded ? color : `${color}30`}`, borderLeft: `3px solid ${color}`, borderRadius: "6px", padding: "12px", cursor: "pointer", animation: `fade-slide-up 0.35s cubic-bezier(0.23, 1, 0.32, 1) ${index * 35}ms both` }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
         <div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color, letterSpacing: "0.12em", marginBottom: "4px" }}>
@@ -305,12 +305,34 @@ function AlertsInner() {
   const { overall, domains, regime, alertPressure } = output;
   const [archiveSeverity, setArchiveSeverity] = useState<"all" | ArchivedEvent["severity"]>("all");
   const [archiveDirection, setArchiveDirection] = useState<"all" | ArchivedEvent["direction"]>("all");
-  const archiveQuery = trpc.institutionalMemory.listEvents.useQuery({ limit: 100 });
+  const [archiveSearch, setArchiveSearch] = useState("");
+  const [archiveSource, setArchiveSource] = useState("all");
+  const [archiveType, setArchiveType] = useState("all");
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(() => {
+    const raw = new URLSearchParams(window.location.search).get("event");
+    const id = raw ? Number(raw) : NaN;
+    return Number.isInteger(id) && id > 0 ? id : null;
+  });
+  const archiveQuery = trpc.institutionalMemory.listEvents.useQuery({
+    limit: 100,
+    severity: archiveSeverity === "all" ? undefined : archiveSeverity,
+    direction: archiveDirection === "all" ? undefined : archiveDirection,
+    sourceEngine: archiveSource === "all" ? undefined : archiveSource,
+    eventType: archiveType === "all" ? undefined : archiveType,
+  });
   const archiveEvents = (archiveQuery.data?.events ?? []) as ArchivedEvent[];
+  const archiveSources = useMemo(() => [...new Set(archiveEvents.map(event => event.sourceEngine))].sort(), [archiveEvents]);
+  const archiveTypes = useMemo(() => [...new Set(archiveEvents.map(event => event.eventType))].sort(), [archiveEvents]);
   const filteredArchiveEvents = archiveEvents.filter(event =>
-    (archiveSeverity === "all" || event.severity === archiveSeverity) &&
-    (archiveDirection === "all" || event.direction === archiveDirection)
+    (!archiveSearch.trim() || `${event.headline} ${event.explanation} ${event.eventType} ${event.sourceEngine}`.toLowerCase().includes(archiveSearch.trim().toLowerCase()))
   );
+  const selectArchiveEvent = (id: number | null) => {
+    setSelectedEventId(id);
+    const params = new URLSearchParams(window.location.search);
+    if (id == null) params.delete("event"); else params.set("event", String(id));
+    const query = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  };
 
   // Alert history state
   const [alertHistory, setAlertHistory] = useState<RegimeAlert[]>([]);
@@ -508,7 +530,13 @@ function AlertsInner() {
             {(["all", "critical", "high", "moderate", "low", "info"] as const).map(value => <button type="button" key={value} onClick={() => setArchiveSeverity(value)} style={{ border: "none", borderRadius: "3px", padding: "4px 7px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: archiveSeverity === value ? "#050608" : "#94A3B8", background: archiveSeverity === value ? "#00D4FF" : "rgba(255,255,255,0.06)" }}>{value.toUpperCase()}</button>)}
             {(["all", "deteriorating", "improving", "stable", "neutral"] as const).map(value => <button type="button" key={value} onClick={() => setArchiveDirection(value)} style={{ border: "none", borderRadius: "3px", padding: "4px 7px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: archiveDirection === value ? "#050608" : "#94A3B8", background: archiveDirection === value ? "#00D4FF" : "rgba(255,255,255,0.06)" }}>{value.toUpperCase()}</button>)}
           </div>
-          {archiveQuery.isLoading ? <div style={{ color: "#6B7280", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", padding: "14px 0" }}>LOADING VERIFIED EVENT ARCHIVE…</div> : filteredArchiveEvents.length ? <div style={{ display: "grid", gap: "6px" }}>{filteredArchiveEvents.map((event, index) => <InstitutionalEventCard key={event.id} event={event} index={index} />)}</div> : <div style={{ color: "#6B7280", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", padding: "14px 0" }}>NO VERIFIED SERVER EVENTS MATCH THESE FILTERS. DAILY CONTINUITY BEGINS WITH THE NEXT CANONICAL PIPELINE CAPTURE.</div>}
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(180px,1fr) repeat(2,minmax(120px,.5fr)) auto", gap: "6px", marginBottom: "10px" }}>
+            <label style={{ position: "relative" }}><Search size={12} style={{ position: "absolute", left: 8, top: 8, color: "#6B7280" }} /><input aria-label="Search immutable archive" value={archiveSearch} onChange={event => setArchiveSearch(event.target.value)} placeholder="Search verified evidence…" style={{ width: "100%", boxSizing: "border-box", padding: "7px 8px 7px 28px", borderRadius: 4, border: "1px solid rgba(255,255,255,.1)", background: "rgba(0,0,0,.24)", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9 }} /></label>
+            <select aria-label="Filter immutable archive by source" value={archiveSource} onChange={event => setArchiveSource(event.target.value)} style={{ borderRadius: 4, border: "1px solid rgba(255,255,255,.1)", background: "#0A0C10", color: "#94A3B8", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "6px" }}><option value="all">ALL SOURCES</option>{archiveSources.map(source => <option key={source} value={source}>{source.replace(/_/g, " ").toUpperCase()}</option>)}</select>
+            <select aria-label="Filter immutable archive by event type" value={archiveType} onChange={event => setArchiveType(event.target.value)} style={{ borderRadius: 4, border: "1px solid rgba(255,255,255,.1)", background: "#0A0C10", color: "#94A3B8", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "6px" }}><option value="all">ALL TYPES</option>{archiveTypes.map(type => <option key={type} value={type}>{type.replace(/_/g, " ").toUpperCase()}</option>)}</select>
+            <button type="button" disabled={selectedEventId == null} onClick={() => navigator.clipboard.writeText(window.location.href)} title="Copy selected-event link" style={{ border: "1px solid rgba(0,212,255,.25)", borderRadius: 4, color: selectedEventId == null ? "#4B5563" : "#00D4FF", background: "transparent", cursor: selectedEventId == null ? "not-allowed" : "pointer", padding: "6px 8px" }}><Copy size={12} /></button>
+          </div>
+          {archiveQuery.isLoading ? <div style={{ color: "#6B7280", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", padding: "14px 0" }}>LOADING VERIFIED EVENT ARCHIVE…</div> : filteredArchiveEvents.length ? <div style={{ display: "grid", gap: "6px" }}>{filteredArchiveEvents.map((event, index) => <InstitutionalEventCard key={event.id} event={event} index={index} selectedEventId={selectedEventId} onSelect={selectArchiveEvent} />)}</div> : <div style={{ color: "#6B7280", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", padding: "14px 0" }}>NO VERIFIED SERVER EVENTS MATCH THESE FILTERS. DAILY CONTINUITY BEGINS WITH THE NEXT CANONICAL PIPELINE CAPTURE.</div>}
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", letterSpacing: "0.12em", marginBottom: "9px" }}>SESSION-LOCAL THRESHOLD MONITOR · NOT A PROOF ARCHIVE</div>
         {/* Filter bar */}

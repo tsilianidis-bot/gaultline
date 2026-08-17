@@ -148,6 +148,7 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
       evidenceConsensus: seismographOutput.evidenceConsensus,
       analogCount: seismographOutput.analogMatches.length,
       activePatternCount: seismographOutput.activePatterns.length,
+      vectorScores: Object.fromEntries((pressureOutput.vectors ?? []).filter(vector => vector.id && typeof vector.score === "number").map(vector => [vector.id, vector.score])),
     },
   });
   await collectBroadInstitutionalEventOutcomes();
