@@ -7,7 +7,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { stripe } from "../stripe/client";
-import { PLANS } from "../stripe/products";
+import { PLANS, verifyStripePlanConfiguration } from "../stripe/products";
 import { getLifetimeMemberCount } from "../db";
 
 /** Maximum founding lifetime spots available at the $299 promotional price. */
@@ -34,6 +34,13 @@ export const billingRouter = router({
       const plan = PLANS[input.planId];
       if (!plan.priceId) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "This plan is not yet available for purchase. Please contact us." });
+      }
+      const verification = await verifyStripePlanConfiguration(plan);
+      if (!verification.verified) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Checkout is unavailable until Stripe configuration is verified. ${verification.reason}`,
+        });
       }
       const session = await stripe.checkout.sessions.create({
         mode: plan.interval === "one_time" ? "payment" : "subscription",

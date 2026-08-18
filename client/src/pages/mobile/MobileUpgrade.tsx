@@ -1,5 +1,5 @@
 /* ============================================================
-   FAULTLINE Core — Upgrade Tab
+   FAULTLINE Membership — Upgrade Tab
    Pricing cards, feature comparison, Stripe checkout,
    and Founding Member upsell.
    ============================================================ */
@@ -15,86 +15,50 @@ import {
 // ── Plan definitions ──────────────────────────────────────────
 const PLANS = [
   {
-    id: "core" as const,
-    name: "Core",
-    badge: "MOBILE ENTRY",
-    price: PRICING_PLANS.core.priceLabel,
-    color: "#22D3EE",
-    glow: "rgba(34,211,238,0.15)",
-    icon: <Activity size={18} />,
-    features: [
-      "10 stock signals / day",
-      "5 crypto signals / day",
-      "1 Signal Outlook / day",
-      "3 Situation Room / month",
-      "Watchlist (20 assets)",
-      "Sector Rotation",
-      "Market Brief",
-      "Mobile PWA access",
-    ],
-    locked: [
-      "Unlimited signals",
-      "AI Diagnostic™",
-      "Aftershock Engine™",
-      "Full macro suite",
-    ],
-  },
-  {
-    id: "premium" as const,
-    name: "Core",
-    badge: "RECOMMENDED",
-    price: PRICING_PLANS.premium.priceLabel,
-    color: "#00D4FF",
-    glow: "rgba(0,212,255,0.15)",
-    icon: <Zap size={18} />,
-    features: [
-      "Unlimited stock signals",
-      "Unlimited crypto signals",
-      "Unlimited Signal Outlooks",
-      "Unlimited Situation Room",
-      "Unlimited watchlist",
-      "AI Diagnostic™",
-      "Aftershock Engine™",
-      "Full macro suite",
-      "Social Intelligence",
-      "Insider Intelligence",
-      "Alt Rotation",
-      "Historical Analogs",
-    ],
-    locked: [],
-  },
-  {
     id: "founding" as const,
     name: "Founding Member",
-    badge: "RATE LOCKED FOR LIFE",
+    badge: "FOUNDING RATE — LOCKED",
     price: PRICING_PLANS.founding.priceLabel,
     color: "#FFD700",
     glow: "rgba(255,215,0,0.12)",
     icon: <Crown size={18} />,
     features: [
-      "Everything in Pro",
+      "Founding-member access to FAULTLINE",
       "Founding Member badge",
-      "Founding rate locked at $49/mo forever",
-      "Early access to new features",
-      "Priority support",
+      "Locked $49 monthly rate while active",
+      "Core market intelligence and monitoring",
     ],
     locked: [],
   },
   {
-    id: "lifetime" as const,
-    name: "Founding Lifetime",
-    badge: "PAY ONCE — NEVER AGAIN",
-    price: PRICING_PLANS.lifetime.priceLabel,
-    color: "#FFD700",
-    glow: "rgba(255,215,0,0.12)",
-    icon: <Crown size={18} />,
+    id: "core" as const,
+    name: "Trader",
+    badge: "PRIMARY EXPERIENCE",
+    price: PRICING_PLANS.core.priceLabel,
+    color: "#00D4FF",
+    glow: "rgba(0,212,255,0.15)",
+    icon: <Activity size={18} />,
     features: [
-      "Everything in Pro",
-      "Lifetime access — pay once",
-      "Founding Member badge",
-      "Future feature grandfathering",
-      "Roadmap previews & early beta",
-      "Exclusive founder-only tools",
+      "Market intelligence and monitoring",
+      "Signals, watch tools, and interpretation",
+      "Decision support for active investors",
+      "Full investor workflow",
+    ],
+    locked: [],
+  },
+  {
+    id: "premium" as const,
+    name: "Power",
+    badge: "FULL PROFESSIONAL TOOLSET",
+    price: PRICING_PLANS.premium.priceLabel,
+    color: "#A78BFA",
+    glow: "rgba(167,139,250,0.15)",
+    icon: <Zap size={18} />,
+    features: [
+      "Everything in Trader",
+      "Advanced analysis and research",
+      "Deepest intelligence experience",
+      "Full professional toolset",
     ],
     locked: [],
   },
@@ -209,27 +173,12 @@ export default function MobileUpgrade() {
   const { user, loading: authLoading } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const tierQuery = trpc.user.getAccessTier.useQuery(undefined, { enabled: !!user });
-  const checkoutMut = trpc.billing.createCheckout.useMutation();
 
   const tier = tierQuery.data?.tier ?? "free";
 
-  const handleSelect = async (planId: string) => {
-    if (!user) {
-      window.location.href = getLoginUrl();
-      return;
-    }
-    setLoadingPlan(planId);
-    try {
-      const { url } = await checkoutMut.mutateAsync({
-        planId: planId as any,
-        origin: window.location.origin,
-      });
-      if (url) window.open(url, "_blank");
-    } catch (err: any) {
-      alert(err?.message ?? "Checkout failed. Please try again.");
-    } finally {
-      setLoadingPlan(null);
-    }
+  const handleSelect = (planId: string) => {
+    const name = PLANS.find((plan) => plan.id === planId)?.name ?? "Selected membership";
+    alert(`${name} is displayed at its current public rate. Checkout will remain unavailable until its Stripe price configuration is independently verified.`);
   };
 
   if (authLoading || tierQuery.isLoading) {
@@ -251,7 +200,7 @@ export default function MobileUpgrade() {
         <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-1">FAULTLINE PLANS</div>
         <h1 className="text-[20px] font-bold text-white mb-1">Upgrade Your Intelligence</h1>
         <p className="text-[12px] text-[#64748B] leading-relaxed">
-          Subscriptions are managed via secure web checkout. You will be redirected to complete payment.
+          Choose the level of intelligence you need. Checkout activates only after the displayed Stripe price is independently verified.
         </p>
       </div>
 
@@ -274,9 +223,8 @@ export default function MobileUpgrade() {
         <div className="flex items-start gap-2">
           <Star size={12} className="text-[#64748B] flex-shrink-0 mt-0.5" />
           <div className="text-[10px] font-mono text-[#64748B] leading-relaxed">
-            Observer, Trader, Power, and Founding plans are billed monthly and can be cancelled anytime via the billing portal.
-            The Founding Lifetime plan is a one-time payment with no recurring charges.
-            Payments are processed securely by Stripe. FAULTLINE is not a registered investment
+            Founding Member, Trader, and Power are monthly memberships. Existing subscriptions remain managed through the billing portal.
+            Payments are processed securely by Stripe only after a matching price configuration is verified. FAULTLINE is not a registered investment
             adviser. All content is for informational purposes only.
           </div>
         </div>

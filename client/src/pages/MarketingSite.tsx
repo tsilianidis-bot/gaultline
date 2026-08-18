@@ -919,7 +919,7 @@ function WhyFaultlineExistsSection() {
                 paddingTop: '24px',
                 margin: 0,
               }}>
-                &ldquo;I built the tool I wished I had while making some of the biggest investment decisions of my life. Finding great investments wasn&rsquo;t the hardest part. Recognizing when the environment had changed was.&rdquo;
+                &ldquo;I built FAULTLINE because I wish I had a tool like this the first time I made life-changing gains. Finding the right assets isn&rsquo;t always the hardest part of investing. Knowing what to do after you&rsquo;ve found them can be.&rdquo;
               </blockquote>
               <div style={{
                 marginTop: '20px',
@@ -2029,171 +2029,86 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
     return () => obs.disconnect();
   }, []);
 
-  const checkoutMutation = trpc.billing.createCheckout.useMutation({
-    onSuccess: (data) => {
-      if (data.url) {
-        toast.info("Redirecting to checkout…", { description: "Opening Stripe secure payment page." });
-        window.open(data.url, "_blank");
-      }
-    },
-    onError: (err) => {
-      toast.error("Checkout unavailable", { description: err.message });
-    },
-  });
-
-  const handleCheckout = (planId: "core" | "premium" | "founding" | "lifetime") => {
-    // 'free' plan has no checkout — handled by ctaHref
-    checkoutMutation.mutate({ planId, origin: window.location.origin });
+  const handleCheckout = (planName: string) => {
+    toast.info("Checkout configuration pending", {
+      description: `${planName} is displayed at its current public rate, but checkout will remain unavailable until its Stripe price is independently verified.`,
+    });
   };
 
   const MONO = "'IBM Plex Mono', 'Courier New', monospace";
 
-  // ── 3-tier plan definitions per brief ──────────────────────
-  // ── 5-tier plan definitions (from shared/tiers.ts) ──────────────────────
+  // ── Public three-tier plan definitions ──────────────────────
   const plans = [
-    {
-      id: "free" as const,
-      name: "Free",
-      price: "$0",
-      period: "",
-      tagline: "Start with live regime intelligence. No commitment.",
-      color: "#6B7280",
-      glow: "rgba(107,114,128,0.15)",
-      badge: null as string | null,
-      featured: false,
-      isLifetime: false,
-      cta: "START FREE",
-      ctaHref: getLoginUrl() as string | null,
-      features: [
-        { label: "Live FAULTLINE Pressure Index™" },
-        { label: "Stock & Crypto Market Regimes" },
-        { label: "Risk-On / Mixed / Risk-Off reading" },
-        { label: "Daily Intelligence Brief" },
-        { label: "Bull/Bear probabilities" },
-        { label: "Top 3 Opportunity Radar" },
-        { label: "Ask Intelligence", note: "10/day" },
-        { label: "Watchlist", note: "3 symbols" },
-      ],
-    },
-    {
-      id: "core" as const,
-      name: "Core",
-      price: "$9.99",
-      period: "/month",
-      tagline: "Full platform access for active investors.",
-      color: "#22D3EE",
-      glow: "rgba(34,211,238,0.18)",
-      badge: "MOST POPULAR" as string | null,
-      featured: true,
-      isLifetime: false,
-      cta: "UNLOCK CORE",
-      ctaHref: null as string | null,
-      features: [
-        { label: "Unlimited Ask Intelligence" },
-        { label: "Complete Symbol Intelligence" },
-        { label: "Full Signal Outlook" },
-        { label: "Unlimited Watchlists" },
-        { label: "Portfolio Intelligence" },
-        { label: "Complete Opportunity Radar" },
-        { label: "Entry/Exit analysis" },
-        { label: "Advanced Alerts & Trade Journal" },
-        { label: "Full Daily Intelligence Report" },
-      ],
-    },
-    {
-      id: "premium" as const,
-      name: "Pro",
-      price: "$59",
-      period: "/month",
-      tagline: "The complete intelligence suite. Institutional depth.",
-      color: "#00D4FF",
-      glow: "rgba(0,212,255,0.18)",
-      badge: "INSTITUTIONAL" as string | null,
-      featured: false,
-      isLifetime: false,
-      cta: "UNLOCK PRO",
-      ctaHref: null as string | null,
-      features: [
-        { label: "Everything in Core" },
-        { label: "Situation Room" },
-        { label: "Market Preflight" },
-        { label: "Institutional dashboards" },
-        { label: "Historical analog engine" },
-        { label: "Deep macro intelligence" },
-        { label: "Scenario modeling" },
-        { label: "Advanced probability models" },
-        { label: "Full Crypto Intelligence suite" },
-      ],
-    },
     {
       id: "founding" as const,
       name: "Founding Member",
       price: "$49",
       period: "/month",
-      tagline: "Founding Cohort. Pro access at a rate locked forever.",
+      tagline: "Join FAULTLINE during the founding period and keep your $49 monthly rate locked as long as your membership remains active.",
       color: "#FFD700",
       glow: "rgba(255,215,0,0.2)",
-      badge: "★ RATE LOCKED FOREVER" as string | null,
+      badge: "FOUNDING RATE — LOCKED" as string | null,
       featured: false,
       isLifetime: false,
       cta: "LOCK IN FOUNDING RATE",
       ctaHref: null as string | null,
       features: [
-        { label: "Everything in Pro" },
-        { label: "$49/mo locked forever" },
+        { label: "Founding-member access to FAULTLINE" },
+        { label: "$49 monthly rate locked while active" },
         { label: "Founding member badge" },
-        { label: "Future feature grandfathering" },
-        { label: "Early beta access" },
+        { label: "Core market intelligence and monitoring" },
       ],
     },
     {
-      id: "lifetime" as const,
-      name: "Founding Lifetime",
-      price: "$299",
-      period: " one-time",
-      tagline: "Founding Cohort. Lifetime access for founding members.",
-      color: "#FFD700",
-      glow: "rgba(255,215,0,0.2)",
-      badge: "★ FOUNDING MEMBER" as string | null,
-      featured: false,
-      isLifetime: true,
-      cta: "BECOME A FOUNDING MEMBER",
+      id: "trader" as const,
+      name: "Trader",
+      price: "$59",
+      period: "/month",
+      tagline: "For serious investors who want FAULTLINE’s core market intelligence, monitoring, signals, watch tools, market interpretation, and decision support.",
+      color: "#00D4FF",
+      glow: "rgba(0,212,255,0.18)",
+      badge: "PRIMARY EXPERIENCE" as string | null,
+      featured: true,
+      isLifetime: false,
+      cta: "GET TRADER",
       ctaHref: null as string | null,
       features: [
-        { label: "Everything in Pro" },
-        { label: "Lifetime access to all current Pro features" },
-        { label: "Lifetime access to future core Pro features" },
-        { label: "Founding Member badge" },
-        { label: "Early access to major releases" },
-        { label: "Priority consideration for new feature requests" },
-        { label: "Founding member recognition" },
-        { label: "No recurring subscription — ever" },
+        { label: "Market intelligence and monitoring" },
+        { label: "Signals, watch tools, and interpretation" },
+        { label: "Decision support for active investors" },
+        { label: "Full investor workflow" },
+      ],
+    },
+    {
+      id: "power" as const,
+      name: "Power",
+      price: "$99",
+      period: "/month",
+      tagline: "For users who want the deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.",
+      color: "#A78BFA",
+      glow: "rgba(167,139,250,0.18)",
+      badge: "FULL PROFESSIONAL TOOLSET" as string | null,
+      featured: false,
+      isLifetime: false,
+      cta: "GET POWER",
+      ctaHref: null as string | null,
+      features: [
+        { label: "Everything in Trader" },
+        { label: "Advanced analysis and research" },
+        { label: "Deepest intelligence experience" },
+        { label: "Full professional toolset" },
       ],
     },
   ];
 
-  // ── Feature comparison table (3 plans) ──────────────────────
+  // ── Concise public capability comparison ───────────────────
   const COMPARISON_ROWS = [
-    { feature: "Pressure Index™",           free: "Basic",    pro: "Full + history",  lifetime: "Full + history" },
-    { feature: "Daily market overview",     free: "✓",        pro: "Full",            lifetime: "Full" },
-    { feature: "ASHA intelligence",         free: "5/day",    pro: "Unlimited",       lifetime: "Unlimited" },
-    { feature: "Seismograph Command Center",free: "—",        pro: "✓",              lifetime: "✓" },
-    { feature: "Signal Intelligence",       free: "Sample",   pro: "Full",            lifetime: "Full" },
-    { feature: "Crypto intelligence",       free: "—",        pro: "Full",            lifetime: "Full" },
-    { feature: "Historical analog engine",  free: "Limited",  pro: "Full",            lifetime: "Full" },
-    { feature: "Watchlists",                free: "3 symbols",pro: "Unlimited",       lifetime: "Unlimited" },
-    { feature: "Alerts",                    free: "—",        pro: "✓",              lifetime: "✓" },
-    { feature: "Situation Room",            free: "—",        pro: "✓",              lifetime: "✓" },
-    { feature: "Portfolio Intelligence",    free: "—",        pro: "✓",              lifetime: "✓" },
-    { feature: "Research Library",          free: "—",        pro: "✓",              lifetime: "✓" },
-    { feature: "Founding Member badge",     free: "—",        pro: "—",              lifetime: "✓" },
-    { feature: "All future Pro features",   free: "—",        pro: "—",              lifetime: "✓" },
-    { feature: "No recurring charges",      free: "—",        pro: "—",              lifetime: "✓" },
-    { feature: "Support",                   free: "Community",pro: "Email",           lifetime: "Priority" },
+    { feature: "Market intelligence", founding: "✓", trader: "✓", power: "✓" },
+    { feature: "Signals and watch tools", founding: "✓", trader: "✓", power: "✓" },
+    { feature: "Decision support", founding: "Core", trader: "Full", power: "Full" },
+    { feature: "Advanced analysis and research", founding: "—", trader: "—", power: "✓" },
+    { feature: "Professional toolset", founding: "—", trader: "—", power: "✓" },
   ];
-
-  // ── Founding member real-time counter ─────────────────────────────────
-  const { data: lifetimeStatus } = trpc.billing.getLifetimeStatus.useQuery();
 
   return (
     <section
@@ -2248,8 +2163,7 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         >
           {plans.map((plan) => {
             const isFeatured = plan.featured;
-            const isLifetime = plan.isLifetime;
-            const isSoldOut = isLifetime && lifetimeStatus?.isSoldOut;
+            const isFounding = plan.id === "founding";
 
             return (
               <div
@@ -2259,28 +2173,28 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   display: "flex",
                   flexDirection: "column",
                   borderRadius: "16px",
-                  padding: isLifetime ? "40px 28px 32px" : isFeatured ? "36px 24px 28px" : "28px 20px 24px",
-                  background: isLifetime
+                  padding: isFounding ? "36px 26px 30px" : isFeatured ? "36px 24px 28px" : "28px 20px 24px",
+                  background: isFounding
                     ? "linear-gradient(160deg, rgba(255,215,0,0.09) 0%, rgba(255,215,0,0.03) 60%, rgba(5,8,16,0.8) 100%)"
                     : isFeatured
                     ? "linear-gradient(160deg, rgba(0,212,255,0.08) 0%, rgba(0,212,255,0.02) 100%)"
                     : "rgba(255,255,255,0.02)",
-                  border: `1px solid ${isLifetime ? "rgba(255,215,0,0.4)" : isFeatured ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.07)"}`,
-                  boxShadow: isLifetime
+                  border: `1px solid ${isFounding ? "rgba(255,215,0,0.4)" : isFeatured ? "rgba(0,212,255,0.3)" : "rgba(255,255,255,0.07)"}`,
+                  boxShadow: isFounding
                     ? "0 0 60px rgba(255,215,0,0.12), 0 0 120px rgba(255,215,0,0.05), inset 0 1px 0 rgba(255,215,0,0.12)"
                     : isFeatured
                     ? "0 0 40px rgba(0,212,255,0.1), inset 0 1px 0 rgba(0,212,255,0.08)"
                     : "none",
                   transition: "box-shadow 0.3s ease, transform 0.2s ease",
-                  transform: isLifetime ? "scale(1.02)" : "scale(1)",
+                  transform: isFounding ? "scale(1.02)" : "scale(1)",
                 }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLDivElement).style.transform = isLifetime ? "scale(1.02) translateY(-4px)" : "translateY(-3px)";
+                  (e.currentTarget as HTMLDivElement).style.transform = isFounding ? "scale(1.02) translateY(-4px)" : "translateY(-3px)";
                   (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 80px ${plan.glow}, inset 0 1px 0 ${plan.glow}`;
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLDivElement).style.transform = isLifetime ? "scale(1.02)" : "scale(1)";
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = isLifetime
+                  (e.currentTarget as HTMLDivElement).style.transform = isFounding ? "scale(1.02)" : "scale(1)";
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = isFounding
                     ? "0 0 60px rgba(255,215,0,0.12), 0 0 120px rgba(255,215,0,0.05), inset 0 1px 0 rgba(255,215,0,0.12)"
                     : isFeatured
                     ? "0 0 40px rgba(0,212,255,0.1), inset 0 1px 0 rgba(0,212,255,0.08)"
@@ -2291,13 +2205,13 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                 {plan.badge && (
                   <div style={{
                     position: "absolute", top: "-12px", left: "50%", transform: "translateX(-50%)",
-                    background: isLifetime
+                    background: isFounding
                       ? "linear-gradient(90deg, #8B6914, #FFD700, #B8860B, #FFD700, #8B6914)"
                       : "rgba(0,212,255,0.15)",
-                    color: isLifetime ? "#000" : "#00D4FF",
+                    color: isFounding ? "#000" : "#00D4FF",
                     fontFamily: MONO, fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em",
                     padding: "4px 16px", borderRadius: "20px", whiteSpace: "nowrap",
-                    border: isLifetime ? "none" : "1px solid rgba(0,212,255,0.3)",
+                    border: isFounding ? "none" : "1px solid rgba(0,212,255,0.3)",
                   }}>
                     {plan.badge}
                   </div>
@@ -2313,9 +2227,9 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   <div style={{ display: "flex", alignItems: "baseline", gap: "4px" }}>
                     <span style={{
                       fontFamily: "'Space Grotesk', sans-serif",
-                      fontSize: isLifetime ? "52px" : "44px",
+                      fontSize: isFounding ? "52px" : "44px",
                       fontWeight: 700,
-                      color: isLifetime ? "#FFD700" : "#F0F4F8",
+                      color: isFounding ? "#FFD700" : "#F0F4F8",
                       lineHeight: 1,
                     }}>
                       {plan.price}
@@ -2326,44 +2240,20 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                       </span>
                     )}
                   </div>
-                  {/* Future price for lifetime */}
-                  {isLifetime && (
-                    <div style={{ marginTop: "6px", display: "flex", alignItems: "center", gap: "8px" }}>
-                      <span style={{ fontFamily: MONO, fontSize: "10px", color: "#475569", letterSpacing: "0.1em" }}>FUTURE PRICE:</span>
-                      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "16px", fontWeight: 600, color: "#475569", textDecoration: "line-through" }}>$1,199</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Tagline */}
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: isLifetime ? "#94A3B8" : "#64748B", marginBottom: "20px", lineHeight: 1.5 }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: isFounding ? "#94A3B8" : "#64748B", marginBottom: "20px", lineHeight: 1.5 }}>
                   {plan.tagline}
                 </div>
 
-                {/* Real-time founding counter (lifetime only) */}
-                {isLifetime && (
-                  <div style={{
-                    marginBottom: "20px",
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    background: "rgba(255,215,0,0.06)",
-                    border: "1px solid rgba(255,215,0,0.2)",
-                  }}>
-                    <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.15em", color: "#FFD700", marginBottom: "4px" }}>
-                      FOUNDING COHORT
-                    </div>
-                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.5 }}>
-                      Limited lifetime access available for founding members.
-                    </div>
-                  </div>
-                )}
 
                 {/* Features */}
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "9px", marginBottom: "28px" }}>
                   {plan.features.map((f, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "9px" }}>
                       <span style={{ color: plan.color, fontSize: "13px", marginTop: "1px", flexShrink: 0, fontWeight: 700 }}>✓</span>
-                      <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: isLifetime ? "#CBD5E1" : "#94A3B8", lineHeight: 1.45 }}>
+                      <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: isFounding ? "#CBD5E1" : "#94A3B8", lineHeight: 1.45 }}>
                         {f.label}
                         {"note" in f && f.note && <span style={{ color: "#475569", marginLeft: "4px" }}>· {f.note}</span>}
                       </span>
@@ -2392,66 +2282,52 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   </a>
                 ) : (
                   <button
-                    onClick={() => !isSoldOut && plan.id !== "free" && handleCheckout(plan.id as "core" | "premium" | "founding" | "lifetime")}
-                    disabled={checkoutMutation.isPending || !!isSoldOut}
+                    onClick={() => handleCheckout(plan.name)}
                     style={{
                       display: "block", width: "100%", textAlign: "center",
-                      padding: isLifetime ? "15px 20px" : "13px 20px",
+                      padding: isFounding ? "15px 20px" : "13px 20px",
                       borderRadius: "9px", fontFamily: MONO,
-                      fontSize: isLifetime ? "12px" : "11px",
+                      fontSize: isFounding ? "12px" : "11px",
                       fontWeight: 700,
                       letterSpacing: "0.08em",
-                      cursor: checkoutMutation.isPending || isSoldOut ? "not-allowed" : "pointer",
-                      background: isLifetime
-                        ? (isSoldOut ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,215,0,0.1))")
+                      cursor: "pointer",
+                      background: isFounding
+                        ? "linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,215,0,0.1))"
                         : isFeatured
                         ? "linear-gradient(135deg, rgba(0,212,255,0.18), rgba(0,212,255,0.06))"
                         : "transparent",
-                      border: isLifetime
-                        ? (isSoldOut ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(255,215,0,0.55)")
+                      border: isFounding
+                        ? "1px solid rgba(255,215,0,0.55)"
                         : isFeatured
                         ? "1px solid rgba(0,212,255,0.45)"
                         : `1px solid ${plan.color}40`,
-                      color: isLifetime
-                        ? (isSoldOut ? "#475569" : "#FFD700")
+                      color: isFounding
+                        ? "#FFD700"
                         : isFeatured ? "#00D4FF" : plan.color,
                       transition: "all 0.2s ease",
-                      boxShadow: isLifetime && !isSoldOut ? "0 0 20px rgba(255,215,0,0.15)" : "none",
+                      boxShadow: isFounding ? "0 0 20px rgba(255,215,0,0.15)" : "none",
                     }}
                     onMouseEnter={e => {
-                      if (!isSoldOut) (e.currentTarget as HTMLButtonElement).style.background = plan.glow;
+                      (e.currentTarget as HTMLButtonElement).style.background = plan.glow;
                     }}
                     onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.background = isLifetime
-                        ? (isSoldOut ? "rgba(255,255,255,0.04)" : "linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,215,0,0.1))")
+                      (e.currentTarget as HTMLButtonElement).style.background = isFounding
+                        ? "linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,215,0,0.1))"
                         : isFeatured
                         ? "linear-gradient(135deg, rgba(0,212,255,0.18), rgba(0,212,255,0.06))"
                         : "transparent";
                     }}
                   >
-                    {checkoutMutation.isPending ? "PROCESSING…" : isSoldOut ? "FOUNDING PERIOD CLOSED" : plan.cta}
+                    {plan.cta}
                   </button>
                 )}
 
-                {/* Break-even callout for lifetime */}
-                {isLifetime && !isSoldOut && (
-                  <div style={{ marginTop: "14px", textAlign: "center" }}>
-                    <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.5 }}>
-                      Pro costs <span style={{ color: "#94A3B8" }}>$59/mo</span>.
-                      Break-even at <span style={{ color: "#94A3B8" }}>5 months</span>.
-                      Everything after that is included for life.
-                    </div>
-                    <div style={{ marginTop: "6px", fontFamily: MONO, fontSize: "10px", color: "#FFD700", letterSpacing: "0.1em" }}>
-                      SAVE $900 vs. FUTURE LIFETIME PRICE
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}
         </div>
 
-        {/* ── Value comparison bar ─────────────────────────────────────────────────── */}
+        {/* ── Plan summary ─────────────────────────────────────────────────── */}
         <div style={{
           marginBottom: "64px",
           padding: "28px 32px",
@@ -2460,21 +2336,20 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
           border: "1px solid rgba(255,215,0,0.15)",
         }}>
           <div style={{ fontFamily: MONO, fontSize: "10px", letterSpacing: "0.2em", color: "#FFD700", marginBottom: "20px", textAlign: "center" }}>
-            WHY FOUNDING LIFETIME IS THE CLEAR CHOICE
+            THREE MONTHLY MEMBERSHIPS · NO ANNUAL PRICING DISPLAYED
           </div>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(3, 1fr)",
             gap: "16px",
             textAlign: "center",
           }}
           className="max-sm:grid-cols-2"
           >
             {[
-              { label: "Free", price: "$0", note: "Limited access", color: "#6B7280" },
-              { label: "Pro", price: "$59/mo", note: "$708/year", color: "#00D4FF" },
-              { label: "Founding Lifetime", price: "$299", note: "One-time — forever", color: "#FFD700", highlight: true },
-              { label: "Future Lifetime", price: "$1,199", note: "After founding period", color: "#475569", strikethrough: true },
+              { label: "Founding Member", price: "$49/mo", note: "Rate locked while active", color: "#FFD700", highlight: true },
+              { label: "Trader", price: "$59/mo", note: "Primary investor experience", color: "#00D4FF" },
+              { label: "Power", price: "$99/mo", note: "Full professional toolset", color: "#A78BFA" },
             ].map((item) => (
               <div key={item.label} style={{
                 padding: "16px 12px",
@@ -2489,21 +2364,16 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   fontFamily: "'Space Grotesk', sans-serif",
                   fontSize: item.highlight ? "26px" : "20px",
                   fontWeight: 700,
-                  color: item.highlight ? "#FFD700" : item.strikethrough ? "#334155" : "#F0F4F8",
-                  textDecoration: item.strikethrough ? "line-through" : "none",
+                  color: item.highlight ? "#FFD700" : "#F0F4F8",
+                  textDecoration: "none",
                   lineHeight: 1,
                   marginBottom: "6px",
                 }}>
                   {item.price}
                 </div>
-                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: item.strikethrough ? "#334155" : "#64748B" }}>
+                <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "11px", color: "#64748B" }}>
                   {item.note}
                 </div>
-                {item.highlight && (
-                  <div style={{ marginTop: "8px", fontFamily: MONO, fontSize: "9px", color: "#FFD700", letterSpacing: "0.1em" }}>
-                    SAVE $900
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -2520,9 +2390,9 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                 <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
                   <th style={{ padding: "14px 20px", textAlign: "left", color: "#475569", fontFamily: MONO, fontSize: "10px", letterSpacing: "0.1em", fontWeight: 600, background: "rgba(255,255,255,0.02)", whiteSpace: "nowrap" }}>FEATURE</th>
                   {[
-                    { label: "FREE", color: "#6B7280" },
-                    { label: "PRO", color: "#00D4FF" },
-                    { label: "FOUNDING LIFETIME", color: "#FFD700" },
+                    { label: "FOUNDING MEMBER", color: "#FFD700" },
+                    { label: "TRADER", color: "#00D4FF" },
+                    { label: "POWER", color: "#A78BFA" },
                   ].map(col => (
                     <th key={col.label} style={{ padding: "14px 20px", textAlign: "center", color: col.color, fontFamily: MONO, fontSize: "10px", letterSpacing: "0.12em", fontWeight: 700, background: col.color === "#FFD700" ? "rgba(255,215,0,0.04)" : "rgba(255,255,255,0.02)", whiteSpace: "nowrap" }}>
                       {col.label}
@@ -2534,14 +2404,14 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                 {COMPARISON_ROWS.map((row, i) => (
                   <tr key={row.feature} style={{ borderBottom: i < COMPARISON_ROWS.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)" }}>
                     <td style={{ padding: "11px 20px", color: "#94A3B8" }}>{row.feature}</td>
-                    {([row.free, row.pro, row.lifetime] as string[]).map((val, j) => (
+                    {([row.founding, row.trader, row.power] as string[]).map((val, j) => (
                       <td key={j} style={{
                         padding: "11px 20px",
                         textAlign: "center",
-                        background: j === 2 ? "rgba(255,215,0,0.02)" : "transparent",
+                        background: j === 0 ? "rgba(255,215,0,0.02)" : "transparent",
                         color: val === "—" ? "#334155"
                           : val === "✓" || val === "Full" || val === "Unlimited" || val === "Forever" ? "#4ADE80"
-                          : j === 2 ? "#FFD700"
+                          : j === 0 ? "#FFD700"
                           : "#94A3B8",
                         fontFamily: MONO, fontSize: "12px",
                         fontWeight: val === "✓" ? 700 : 400,
@@ -2559,10 +2429,10 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
         {/* Footer note */}
         <div style={{ textAlign: "center" }}>
           <p style={{ fontFamily: MONO, fontSize: "10px", color: "#334155", letterSpacing: "0.1em", lineHeight: 1.8 }}>
-            THE FOUNDING LIFETIME PLAN WILL NOT BE OFFERED AGAIN AFTER ALL 100 MEMBERSHIPS ARE CLAIMED · FUTURE LIFETIME PRICE: $1,199
+            MONTHLY PRICING · CANCEL ANYTIME · CHECKOUT ACTIVATES ONLY AFTER VERIFIED STRIPE PRICE CONFIGURATION
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#334155", marginTop: "8px" }}>
-            Not investment advice. All plans include the live FAULTLINE Pressure Index™. No credit card required for the free plan.
+            Not investment advice. All paid memberships include access to the live FAULTLINE Pressure Index™ and the stated intelligence experience.
           </p>
         </div>
 
@@ -2597,14 +2467,14 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
               MOBILE COMPANION
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
-              FAULTLINE Core —<br />
+              FAULTLINE Trader —<br />
               <span className="text-[#22D3EE]">Mobile Market Intelligence</span>
             </h2>
             <p className="text-[#A8B8CC] text-base leading-relaxed mb-4">
               Fast access to market signals, crypto rotation, volatility shifts, and daily macro intelligence — all in your pocket.
             </p>
             <p className="text-[#A8B8CC] text-sm leading-relaxed mb-8">
-              FAULTLINE Core is a ${PRICING_PLANS.core.priceLabel}/month mobile companion. Install it to your iPhone or Android home screen and get institutional-grade signals without the institutional price.
+              FAULTLINE Trader is the $59/month core investor experience. Install it to your iPhone or Android home screen for market intelligence, monitoring, signals, watch tools, and decision support.
             </p>
 
             {/* 5 tabs */}
@@ -2628,7 +2498,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
               <div className="text-[9px] font-mono tracking-[0.25em] text-[#22D3EE]/60 mb-3">ADD TO HOME SCREEN</div>
               <div className="space-y-2">
                 {[
-                  { step: "1", text: "Open FAULTLINE Core in Safari on iPhone" },
+                  { step: "1", text: "Open FAULTLINE Trader in Safari on iPhone" },
                   { step: "2", text: "Tap the Share button (□↑) at the bottom" },
                   { step: "3", text: 'Scroll down and tap "Add to Home Screen"' },
                   { step: "4", text: "Tap Add — it launches like a native app" },
@@ -2655,14 +2525,14 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 0 20px rgba(34,211,238,0.1)",
                 }}
               >
-                OPEN CORE APP →
+                OPEN TRADER APP →
               </a>
               <button
                 onClick={onRequestAccess}
                 className="px-6 py-3 font-mono font-bold text-sm tracking-widest rounded-lg transition-all duration-200"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#A8B8CC" }}
               >
-                UPGRADE TO PRO
+                VIEW POWER ACCESS
               </button>
             </div>
           </div>
@@ -2697,7 +2567,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                 {/* App top bar */}
                 <div className="px-4 py-2 flex items-center justify-between">
                   <div>
-                    <div className="text-[7px] font-mono tracking-[0.3em] text-[#22D3EE]/50">FAULTLINE CORE</div>
+                    <div className="text-[7px] font-mono tracking-[0.3em] text-[#22D3EE]/50">FAULTLINE TRADER</div>
                     <div className="text-[8px] font-mono text-[#64748B]">PRESSURE ENGINE™</div>
                   </div>
                   <div className="w-6 h-6 rounded-full bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.2)] flex items-center justify-center">
@@ -2806,12 +2676,12 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(34,211,238,0.1)",
                 }}
               >
-                <div className="text-[8px] font-mono tracking-widest text-[#22D3EE]/60 mb-0.5">FAULTLINE CORE</div>
+                <div className="text-[8px] font-mono tracking-widest text-[#22D3EE]/60 mb-0.5">FAULTLINE TRADER</div>
                 <div className="text-xl font-bold text-[#22D3EE]">{PRICING_PLANS.core.priceLabel}</div>
                 <div className="text-[8px] font-mono text-[#64748B]">MOST POPULAR ENTRY</div>
               </div>
 
-              {/* Pro badge floating — top left */}
+              {/* Power badge floating — top left */}
               <div
                 className="absolute -top-4 -left-4 rounded-xl px-4 py-3"
                 style={{
@@ -2820,7 +2690,7 @@ function CoreMobileSection({ onRequestAccess }: { onRequestAccess: () => void })
                   boxShadow: "0 8px 24px rgba(0,0,0,0.4), 0 0 20px rgba(0,212,255,0.1)",
                 }}
               >
-                <div className="text-[8px] font-mono tracking-widest text-[#00D4FF]/60 mb-0.5">FAULTLINE PRO</div>
+                <div className="text-[8px] font-mono tracking-widest text-[#00D4FF]/60 mb-0.5">FAULTLINE POWER</div>
                 <div className="text-xl font-bold text-[#00D4FF]">$59<span className="text-xs font-normal text-[#64748B]">/mo</span></div>
                 <div className="text-[8px] font-mono text-[#64748B]">FULL INTELLIGENCE</div>
               </div>
@@ -3351,8 +3221,8 @@ function FAQSection() {
     { q: 'Is FAULTLINE investment advice?', a: 'No. FAULTLINE is an educational and informational platform. Nothing on this platform constitutes investment advice, a recommendation to buy or sell any security, or a solicitation of any investment. You are solely responsible for your investment decisions.' },
     { q: 'How accurate is the Pressure Index?', a: 'The Pressure Index was back-tested against 25 years of FRED macroeconomic data. In every major market crisis since 2000, the Pressure Index was elevated before the peak. However, past performance does not guarantee future results. The index is a probabilistic tool, not a certainty.' },
     { q: 'Where does FAULTLINE get its data?', a: 'FAULTLINE sources data from publicly available, institutional-grade providers including the Federal Reserve (FRED), U.S. Treasury, Bureau of Labor Statistics, Bureau of Economic Analysis, Polygon.io, and CoinGecko. See the Trust Center for the complete list.' },
-    { q: 'What is the difference between the plans?', a: 'Observer (free) provides the live Pressure Index and limited signals. FAULTLINE Mobile ($9.99/mo) adds full watchlist and rotation tools. Trader ($59/mo) provides full platform access. Founding Member ($49/mo) locks in a rate for life. Lifetime Access ($299 one-time) provides permanent access to all current and future features.' },
-    { q: 'Can I cancel my subscription?', a: 'Yes. You can cancel at any time from your account settings. Cancellation takes effect at the end of the current billing period. Lifetime Access purchases are non-refundable.' },
+    { q: 'What is the difference between the plans?', a: 'Founding Member ($49/mo) provides a locked founding rate while membership remains active. Trader ($59/mo) is the primary full investor experience. Power ($99/mo) adds the deepest advanced intelligence, research, and professional tools.' },
+    { q: 'Can I cancel my subscription?', a: 'Monthly memberships can be cancelled from account settings. Cancellation takes effect at the end of the current billing period.' },
   ];
 
   return (

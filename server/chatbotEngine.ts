@@ -41,40 +41,26 @@ export interface IntentAnalysis {
  * Never hardcode prices in the system prompt or anywhere else.
  */
 export const CANONICAL_PRICING = {
-  free: {
-    name: "Free",
-    price: "$0",
-    priceLabel: "Free",
-    interval: "forever",
-    description: "Dashboard overview, limited previews, basic regime reading",
-  },
   core: {
-    name: "Mobile (Core)",
+    name: "Trader",
     price: `$${(PRICING_PLANS.core.amountCents / 100).toFixed(2)}`,
     priceLabel: PRICING_PLANS.core.priceLabel,
     interval: "month",
-    description: "Signals screener, full Pressure Index, Diagnostic AI, Portfolio tracker, Alt Rotation",
+    description: "Core market intelligence, monitoring, signals, watch tools, market interpretation, and decision support.",
   },
   premium: {
-    name: "Trader (Pro)",
+    name: "Power",
     price: `$${(PRICING_PLANS.premium.amountCents / 100).toFixed(2)}`,
     priceLabel: PRICING_PLANS.premium.priceLabel,
     interval: "month",
-    description: "Full intelligence platform — DTI, Situation Room, Trade Journal, Crypto Signals, Symbol Intelligence, S.O.B. panel, all advanced engines",
+    description: "The deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.",
   },
   founding: {
     name: "Founding Member",
     price: `$${(PRICING_PLANS.founding.amountCents / 100).toFixed(2)}`,
     priceLabel: PRICING_PLANS.founding.priceLabel,
     interval: "month",
-    description: "Everything in Trader — rate locked forever at $49/mo. Never increases. Limited founding cohort.",
-  },
-  lifetime: {
-    name: "Lifetime",
-    price: `$${(PRICING_PLANS.lifetime.amountCents / 100).toFixed(2)}`,
-    priceLabel: PRICING_PLANS.lifetime.priceLabel,
-    interval: "one_time",
-    description: "Everything in Trader, forever. One payment, no monthly charges, no renewals. Limited quantity.",
+    description: "Founding-member access to FAULTLINE with a $49/month rate locked while membership remains active.",
   },
 } as const;
 
@@ -90,11 +76,9 @@ CRITICAL INSTRUCTION: You MUST use ONLY the prices listed below. Never generate,
 
 | Plan | Price | What's Included |
 |------|-------|-----------------|
-| **${p.free.name}** | ${p.free.priceLabel} | ${p.free.description} |
-| **${p.core.name}** | ${p.core.priceLabel}/month | ${p.core.description} |
-| **${p.premium.name}** | ${p.premium.priceLabel}/month | ${p.premium.description} |
 | **${p.founding.name}** | ${p.founding.priceLabel} | ${p.founding.description} |
-| **${p.lifetime.name}** | ${p.lifetime.priceLabel} | ${p.lifetime.description} |
+| **${p.core.name}** | ${p.core.priceLabel} | ${p.core.description} |
+| **${p.premium.name}** | ${p.premium.priceLabel} | ${p.premium.description} |
 
 FORBIDDEN PRICES — Never quote these (they are outdated/wrong):
 - $29.99, $29/mo, $39, $39/mo, $79, $79/mo, $199, $1,200, any price not in the table above
@@ -156,35 +140,27 @@ Professional but approachable. Think: knowledgeable analyst who genuinely wants 
  * Any response containing a dollar amount NOT in this set is flagged as invalid.
  */
 const VALID_PRICE_STRINGS = new Set([
-  "$0",
-  "free",
-  "Free",
-  "$9.99",
-  "9.99",
   "$59",
   "59",
+  "$99",
+  "99",
   "$49",
   "49",
-  "$299",
-  "299",
   // Allow formatted variants
-  "$9.99/mo",
-  "$9.99/month",
   "$59/mo",
   "$59/month",
+  "$99/mo",
+  "$99/month",
   "$49/mo",
   "$49/month",
-  "$49/mo (locked for life)",
-  "$299 one-time",
-  "$7.99", // annual core
-  "$47",   // annual premium
+  "$49/mo (locked while active)",
 ]);
 
 /**
  * Forbidden price patterns — if any of these appear in a response, it is invalid.
  * These are legacy/wrong prices that must never be quoted.
  */
-const FORBIDDEN_PRICE_PATTERN = /\$29\.99|\$29\/mo|\$39|\$79|\$199|\$1,200|\$1200|\$29\b/g;
+const FORBIDDEN_PRICE_PATTERN = /\$9\.99|\$299|\$1,199|\$1,200|\$1200|\$29\.99|\$29\/mo|\$39|\$79|\$199|\$29\b/g;
 
 /**
  * Validate a bot response to ensure it doesn't contain forbidden pricing.
@@ -198,18 +174,16 @@ export function validatePricing(response: string): boolean {
 }
 
 // ── Intent Detection ──────────────────────────────────────────────────────────
-const PRICING_KEYWORDS = ["price", "pricing", "cost", "how much", "plan", "plans", "subscription", "pay", "paid", "free", "premium", "core", "founding", "upgrade", "tier", "monthly", "annual", "$", "mobile", "trader", "lifetime"];
+const PRICING_KEYWORDS = ["price", "pricing", "cost", "how much", "plan", "plans", "subscription", "pay", "paid", "power", "trader", "founding", "upgrade", "tier", "monthly", "annual", "$"];
 const SIGNUP_KEYWORDS = ["sign up", "signup", "register", "join", "get started", "create account", "start", "try", "access"];
 const UPGRADE_KEYWORDS = ["upgrade", "premium", "founding", "paid plan", "unlock", "full access", "trader", "lifetime"];
 const SECURITY_PATTERN = /\b([A-Z]{1,5})\b|bitcoin|ethereum|btc|eth|nvda|aapl|tsla|spy|qqq|meta|pltr|sol|tao/gi;
 const PLAN_KEYWORDS: Record<string, string> = {
-  free: "free",
-  mobile: "core",
   core: "core",
-  trader: "premium",
+  trader: "core",
+  power: "premium",
   premium: "premium",
   founding: "founding",
-  lifetime: "lifetime",
 };
 
 export function detectIntent(message: string): IntentAnalysis {
@@ -246,7 +220,7 @@ export function detectIntent(message: string): IntentAnalysis {
   if (signupIntent) leadScore += 25;
   if (upgradeIntent) leadScore += 35;
   if (hasSecurityMention) leadScore += 10;
-  if (planInterest === "founding" || planInterest === "lifetime") leadScore += 20;
+  if (planInterest === "founding") leadScore += 20;
   else if (planInterest === "premium") leadScore += 15;
   else if (planInterest === "core") leadScore += 10;
   leadScore = Math.min(100, leadScore);
@@ -275,11 +249,9 @@ function buildFallbackPricingResponse(): string {
   const p = CANONICAL_PRICING;
   return `Here are the current FAULTLINE plans:
 
-• **${p.free.name}** — ${p.free.priceLabel}: ${p.free.description}
-• **${p.core.name}** — ${p.core.priceLabel}/month: ${p.core.description}
-• **${p.premium.name}** — ${p.premium.priceLabel}/month: ${p.premium.description}
 • **${p.founding.name}** — ${p.founding.priceLabel}: ${p.founding.description}
-• **${p.lifetime.name}** — ${p.lifetime.priceLabel}: ${p.lifetime.description}
+• **${p.core.name}** — ${p.core.priceLabel}: ${p.core.description}
+• **${p.premium.name}** — ${p.premium.priceLabel}: ${p.premium.description}
 
 Visit https://getfaultline.live to get started. Remember: FAULTLINE provides market intelligence and risk analysis, not personalized financial advice.`;
 }

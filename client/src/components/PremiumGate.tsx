@@ -34,6 +34,16 @@ interface PremiumGateConfig {
   requiredTier: GateTier;    // minimum tier to unlock
 }
 
+function publicPlanCopy(value: string) {
+  return value
+    .replace(/^Unlock Core/, "Get Trader")
+    .replace(/^Unlock Pro/, "Get Power")
+    .replace(/^Pro Access/, "Power Access")
+    .replace(/^Founding Access/, "Founding Member")
+    .replace(/\bCore at /g, "Trader at ")
+    .replace(/\bPro membership/g, "Power membership");
+}
+
 const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
   founding: {
     title: "Pro Intelligence Required",
@@ -641,7 +651,7 @@ export function PremiumGateFull({
                     }}
                   >
                     <Zap className="w-4 h-4" />
-                    {checkoutMutation.isPending ? 'Loading...' : `Unlock Core — ${PRICING_PLANS.core.priceLabel}`}
+                    {checkoutMutation.isPending ? 'Loading...' : `Get Trader — ${PRICING_PLANS.core.priceLabel}`}
                   </button>
                 )}
                 <button
@@ -653,7 +663,7 @@ export function PremiumGateFull({
                     : { background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "#00D4FF" }}
                 >
                   <Crown className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : `Unlock Pro — ${PRICING_PLANS.premium.priceLabel}`}
+                  {checkoutMutation.isPending ? 'Loading...' : `Get Power — ${PRICING_PLANS.premium.priceLabel}`}
                 </button>
                 <button
                   onClick={() => checkoutMutation.mutate({ planId: 'founding', origin: window.location.origin })}
@@ -666,7 +676,7 @@ export function PremiumGateFull({
                   }}
                 >
                   <Shield className="w-4 h-4" />
-                  {checkoutMutation.isPending ? 'Loading...' : `Founding Access — ${PRICING_PLANS.founding.priceLabel}`}
+                  {checkoutMutation.isPending ? 'Loading...' : `Founding Member — ${PRICING_PLANS.founding.priceLabel}`}
                 </button>
               </>
             ) : (
@@ -682,14 +692,14 @@ export function PremiumGateFull({
                   }}
                 >
                   <LogIn className="w-4 h-4" />
-                  {cfg.ctaPrimary}
+                  {publicPlanCopy(cfg.ctaPrimary)}
                 </a>
                 <a
                   href={loginUrl}
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm tracking-widest text-white/50 hover:text-white transition-all duration-200 hover:scale-[1.02] active:scale-[0.97]"
                   style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                 >
-                  {cfg.ctaSecondary}
+                  {publicPlanCopy(cfg.ctaSecondary)}
                 </a>
               </>
             )}
@@ -746,7 +756,7 @@ export function PremiumGateCard({
             color: cfg.accentHex,
           }}
         >
-          {cfg.ctaPrimary}
+          {publicPlanCopy(cfg.ctaPrimary)}
         </a>
       </div>
     );
@@ -800,7 +810,7 @@ export function PremiumGateCard({
           }}
         >
           <Zap className="w-4 h-4" />
-          {cfg.ctaPrimary}
+          {publicPlanCopy(cfg.ctaPrimary)}
         </a>
       </div>
     </div>

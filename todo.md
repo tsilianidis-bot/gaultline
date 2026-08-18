@@ -4924,3 +4924,15 @@
 - [x] Preserve the existing visual system while emphasizing the opening, five questions, and closing statement in place
 - [x] Add regression coverage that confirms the old Founder Statement is absent and supplied key copy is present
 - [ ] Validate desktop/mobile line wrapping and current production rendering after publication
+
+## Surgical FAULTLINE Brand & Pricing Repair
+- [x] Identify active public marketing, About/Founder, pricing, billing, title/metadata, and checkout source paths that power the current FAULTLINE deployment
+- [x] Audit public-facing AlphaPulse branding, legacy plan labels, $9.99 Core references, annual pricing behavior, and current entitlement/display mappings; configured Stripe IDs are currently not verifiable against the configured Stripe account
+- [x] Replace active Product Experience, About, and public marketing founder copy with the supplied personal `WHY I BUILT FAULTLINE` narrative and retain the Five Questions architecture
+- [x] Remove stale public-facing AlphaPulse branding from active client paths; no AlphaPulse string remains in public pages, components, or tier-display source
+- [x] Implement the public pricing presentation: Founding Member $49/month locked while active, Trader $59/month, and Power $99/month
+- [x] Remove public annual pricing display and annual-discount calculations; legacy annual plans remain unavailable for new checkout
+- [x] Audit Stripe price mappings and add a server-side exact name/amount/currency/interval verification guard; no checkout occurs for missing or mismatched Founding Member, Trader, or Power prices
+- [x] Preserve existing subscriptions, customer records, internal entitlement IDs, billing portal management, dashboards, ASHA, Five Questions, and unrelated product behavior
+- [x] Add regression coverage for pricing, branding, retired lifetime/annual offers, Founder copy, chatbot pricing, and verified checkout mapping boundaries
+- [ ] Validate affected desktop/mobile surfaces and production URLs after publication
