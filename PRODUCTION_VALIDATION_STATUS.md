@@ -53,3 +53,21 @@ and QA principal correctly.
 > The public custom-domain target is therefore still serving an older bundle.
 > This remains a deployment propagation/routing infrastructure dependency, not
 > a defect in the current Day Trade route or permanent QA implementation.
+
+## Founder Statement checkpoint validation
+
+After checkpoint `ddeaf4f5`, the custom-domain URL
+`https://getfaultline.live/?founder-statement=ddeaf4f5` returned the FAULTLINE
+page title but rendered a blank black client surface with no visible interactive
+elements in the available browser session. The updated Founder Statement could
+therefore not be visually confirmed on the live domain from this session.
+
+| Additional URL checked | Result |
+|---|---|
+| `https://getfaultline.live/?founder-statement=ddeaf4f5` | Blank client surface; no visible Founder Statement or controls |
+| Local Founder Statement source | Supplied replacement copy present in the active Product Experience section |
+| Regression coverage | Confirms the previous Product Experience Founder Statement is absent and requested opening, questions, and closing are present |
+
+> This live-render result is consistent with the existing external custom-domain
+> bundle/propagation problem. It does not change the validated local source or
+> full-suite result for checkpoint `ddeaf4f5`.
