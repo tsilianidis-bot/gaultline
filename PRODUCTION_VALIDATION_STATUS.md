@@ -71,3 +71,22 @@ therefore not be visually confirmed on the live domain from this session.
 > This live-render result is consistent with the existing external custom-domain
 > bundle/propagation problem. It does not change the validated local source or
 > full-suite result for checkpoint `ddeaf4f5`.
+
+## Public Founder and pricing repair checkpoint validation
+
+After checkpoint `d69b0fc6`, the custom-domain URL
+`https://getfaultline.live/pricing?public-repair=d69b0fc6` reached the production
+shell but remained at **LOADING MODULE…**. This prevented desktop or mobile
+visual confirmation of the new Founder copy and the Founding Member / Trader /
+Power pricing cards. The page title continued to identify the prior
+**Free, Pro & Founding Member** bundle.
+
+| Additional URL checked | Result |
+|---|---|
+| `https://getfaultline.live/pricing?public-repair=d69b0fc6` | Production shell loaded but stalled at **LOADING MODULE…** |
+| Current public source and regression suite | Founder, pricing, retired-offer, chatbot, and verified-checkout guard checks pass locally |
+| Current published repair checkpoint | `d69b0fc6` |
+
+> The live custom-domain client still does not serve a verifiable current pricing
+> module. This remains an external deployment/module propagation dependency, not
+> a validated local source or test failure.
