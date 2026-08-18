@@ -24,6 +24,7 @@ import {
   PERSISTENT_UTILITY_BY_ID,
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
+import { formatOrdinal } from "@shared/historicalPercentile";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
@@ -454,7 +455,7 @@ function PressureInstrument({
         <div className="rounded border border-white/10 bg-white/[0.03] p-2.5 text-center">
           <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Percentile</p>
           <p className="mt-1 font-mono text-[10px] font-semibold text-white">
-            {historicalPercentile !== null ? `${Math.round(historicalPercentile)}th` : "—"}
+            {historicalPercentile !== null ? formatOrdinal(historicalPercentile) : "—"}
           </p>
         </div>
         {confidence !== undefined && (
@@ -984,7 +985,7 @@ export default function Now() {
                   <span className="rounded border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-300">{stressLevel} pressure</span>
                   {historicalPercentile !== null && (
                     <span className="rounded border border-violet-300/20 bg-violet-300/[0.06] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-violet-300">
-                      {Math.round(historicalPercentile)}th percentile
+                      {formatOrdinal(historicalPercentile)} percentile
                     </span>
                   )}
                 </div>

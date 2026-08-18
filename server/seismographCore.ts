@@ -32,6 +32,7 @@ import type {
   EvidenceType,
   SeismographProviderProvenance,
 } from "./seismographCore.contract";
+import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
 
 export type {
   EvidenceContributor,
@@ -447,7 +448,7 @@ export function buildASHAContextBlock(output: SeismographOutput): ASHAContextBlo
 - Confidence: ${probabilities.confidence}%
 
 **Historical Context:**
-- Percentile: ${output.historicalPercentile}th (${output.historicalPercentile > 75 ? "historically elevated" : output.historicalPercentile > 50 ? "above average" : "below average"})
+- Percentile: ${formatOrdinal(output.historicalPercentile)} (${describeHistoricalPercentile(output.historicalPercentile)})
 - Closest Analog: ${topAnalog ? `${topAnalog.label} (${topAnalog.similarity}% similarity)` : "No close analog"}
 - Market Streak: ${marketMemory.streakDays} days ${marketMemory.streakDirection}
 
@@ -551,7 +552,7 @@ export function buildMacroContextBlock(output: SeismographOutput): MacroContextB
 
   const historicalContext = output.topAnalog
     ? `Current conditions most closely resemble ${output.topAnalog.label} (${output.topAnalog.similarity}% similarity). ${output.topAnalog.description}`
-    : `At the ${output.historicalPercentile}th historical percentile, current conditions are ${output.historicalPercentile > 75 ? "historically elevated" : "within normal range"}.`;
+    : `At the ${formatOrdinal(output.historicalPercentile)} historical percentile, current conditions are ${describeHistoricalPercentile(output.historicalPercentile)}.`;
 
   return {
     pressureScore: output.pressureScore,

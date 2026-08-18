@@ -27,8 +27,8 @@ describe("Historical Analogs canonical experience", () => {
     expect(page).toContain("Fewer than 10 recorded monthly observations");
     expect(page).toContain("No comparison is shown while canonical context is unavailable");
     expect(page).toContain("current regime has no completed monthly history observation yet");
-    expect(page).toContain("function ordinal");
-    expect(engine).toContain("const ordinal = (value: number)");
+    expect(page).toContain('formatOrdinal(data.rarityContext.percentile)');
+    expect(page).toContain('from "@shared/historicalPercentile"');
     expect(engine).toContain("no completed monthly history observation yet");
     expect(engine).not.toContain("the ${percentile}th percentile");
   });

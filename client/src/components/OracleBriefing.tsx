@@ -5,6 +5,7 @@
    no typing animation, no chatbot feel.
    ============================================================ */
 import { useState, useEffect, useRef } from "react";
+import type { AshaQuestionAnalysis } from "@shared/ashaQuestionAnalysis";
 
 // ── Types ──────────────────────────────────────────────────
 export interface OracleBriefingData {
@@ -27,6 +28,7 @@ export interface OracleBriefingData {
   // Probability
   bullProbability: number;
   bearProbability: number;
+  questionAnalysis?: AshaQuestionAnalysis;
 
   // Intelligence sections
   keyFindings: string[];
@@ -179,6 +181,13 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     `Bias: ${data.marketBias} | Threat: ${data.threatLevel} | Confidence: ${data.confidence}%`,
     `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex}/100 | Time Horizon: ${data.missionRecommendationStructured?.timeHorizon || data.expectedTimeframe}`,
     `Action: ${data.missionRecommendationStructured?.verdict || data.finalVerdictAction}`,
+    ...(data.questionAnalysis ? [
+      `Scope: ${data.questionAnalysis.analysisScope}`,
+      `Event: ${data.questionAnalysis.eventDefinition}`,
+      `Horizon: ${data.questionAnalysis.timeHorizon ?? "Current assessment"}`,
+      `Probability: ${data.questionAnalysis.probability === null ? "Not calibrated for this exact event" : `${data.questionAnalysis.probability}%`}`,
+      `Probability provenance: ${data.questionAnalysis.probabilityProvenance.explanation}`,
+    ] : []),
     ``,
     `CORE THESIS`,
     data.coreThesis || data.executiveSummary,
@@ -348,6 +357,26 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
             MISSION QUESTION · {data.question}
           </div>
         </BriefingSection>
+
+        {data.questionAnalysis && (
+          <BriefingSection delay={40}>
+            <SectionHeader label="QUESTION ANALYSIS" />
+            <div style={{ padding: "14px 16px", background: "rgba(0,229,255,0.035)", border: "1px solid rgba(0,229,255,0.14)", borderRadius: "4px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px" }}>
+              {[
+                { label: "SCOPE", value: data.questionAnalysis.analysisScope.replaceAll("_", " "), color: "#E2E8F0" },
+                { label: "EVENT", value: data.questionAnalysis.eventDefinition, color: "#E2E8F0" },
+                { label: "HORIZON", value: data.questionAnalysis.timeHorizon ?? "CURRENT", color: "#E2E8F0" },
+                { label: "PROBABILITY", value: data.questionAnalysis.probability === null ? "NOT CALIBRATED" : `${data.questionAnalysis.probability}%`, color: data.questionAnalysis.probability === null ? "#FFAA00" : "#00E5FF" },
+              ].map(item => (
+                <div key={item.label}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.14em", color: "rgba(148,163,184,0.7)" }}>{item.label}</div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "15px", lineHeight: 1.25, fontWeight: 700, color: item.color }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: "8px", fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", lineHeight: 1.55, color: "rgba(226,232,240,0.72)" }}>{data.questionAnalysis.probabilityProvenance.explanation}</div>
+          </BriefingSection>
+        )}
 
         {/* ── Executive Summary ── */}
         <BriefingSection delay={80}>

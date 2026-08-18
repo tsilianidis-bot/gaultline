@@ -15,6 +15,12 @@ import {
   getAshaContextProvenance,
   invokeAshaGateway,
 } from "./ashaGateway";
+import {
+  buildAshaQuestionAnalysis,
+  classifyAshaQuestionScope,
+  restrictAshaPageContextForScope,
+  type AshaQuestionAnalysis,
+} from "../shared/ashaQuestionAnalysis";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -209,6 +215,7 @@ export interface AshaResponse {
   finalVerdictAction?: string;
   expectedTimeframe?: string;
   followUpChips?: string[];
+  questionAnalysis: AshaQuestionAnalysis;
   provenance: AshaContextProvenance;
   modelTrace: AshaModelTrace;
 }
@@ -381,7 +388,11 @@ function validateOracleBriefing(parsed: Record<string, unknown>): string[] {
 
 // ── Main ASHA ask function ────────────────────────────────────
 export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
-  const gatewayContext = await createAshaGatewayContext(req.pageContext);
+  const provisionalScope = classifyAshaQuestionScope(req.userMessage, req.pageContext);
+  const scopedPageContext = restrictAshaPageContextForScope(req.pageContext, provisionalScope);
+  const initialGatewayContext = await createAshaGatewayContext(scopedPageContext);
+  const questionAnalysis = buildAshaQuestionAnalysis(req.userMessage, req.pageContext, initialGatewayContext.marketState);
+  const gatewayContext = { ...initialGatewayContext, questionAnalysis };
   const engineCtx = buildEngineAvailabilityContext(gatewayContext);
 
   // Build engine availability block to inject into system prompt
@@ -409,6 +420,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     "12. disclaimer: EXACTLY ONE disclaimer sentence. Place it ONLY in this field. Do not repeat it anywhere else.",
     "13. limitations: List any engine unavailability, data-quality issue, or limited historical sample caveat. If all engines are available and no limitation applies, return an empty array.",
     "14. reply: Full narrative. 3-6 paragraphs. No bullet points. No disclaimers in this field.",
+    "15. Question scope is authoritative. For MARKET scope, do not include selected ticker/company evidence in any field. For MARKET_TICKER_RELATIONSHIP, clearly separate market evidence from ticker transmission evidence.",
+    "16. For an exact event whose questionAnalysis.probabilityProvenance.availability is NOT_CALIBRATED, state that no calibrated precise probability is published; never manufacture a percentage. When CALIBRATED, reuse questionAnalysis.probability, eventDefinition, and timeHorizon exactly across directAnswer, thesis, conditions, and follow-up chips.",
+    "17. Historical analog similarity is not forecast probability. Explain weighting from the supplied evidence and never let one analog replace the combined current evidence.",
   ].join("\n");
 
   const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext) + engineAvailabilityBlock;
@@ -725,6 +739,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const) || "WATCH",
     expectedTimeframe: readString(parsed.expectedTimeframe) || "2-4 weeks",
     followUpChips: readStringArray(parsed.followUpChips),
+    questionAnalysis,
     provenance: getAshaContextProvenance(gatewayContext),
     modelTrace,
   };

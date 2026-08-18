@@ -275,6 +275,7 @@ export default function AshaPanel() {
         missionRecommendationStructured: response.missionRecommendationStructured,
         finalVerdictAction: response.finalVerdictAction || "WATCH",
         expectedTimeframe: response.expectedTimeframe || "2-4 weeks",
+        questionAnalysis: response.questionAnalysis,
         sourceCitations: response.sourceCitations,
         limitations: response.limitations,
         disclaimer: response.disclaimer || "This briefing is for informational purposes only and does not constitute financial advice.",

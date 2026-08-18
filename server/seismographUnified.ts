@@ -28,6 +28,7 @@ import {
 import { desc, asc, sql } from "drizzle-orm";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import type { SeismographProviderProvenance } from "./seismographCore";
+import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1414,7 +1415,7 @@ function buildTodayStory(
       ? ` Current conditions most closely resemble ${analogs[0].label} (${analogs[0].similarity}% similarity).`
       : "";
 
-  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, placing current conditions in the ${percentile}th historical percentile across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary pressure driver is ${topFamily.name.toLowerCase()}, which is signaling ${topFamily.signal} conditions.` : ""}${analogRef}`;
+  const todayStory = `FAULTLINE's Seismograph is reading ${score}/100 — ${stressDesc} — ${directionDesc}. The market is in a ${regimeLabel(regime)} regime, placing current conditions in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) across ${evidenceFamilies.length > 0 ? `${evidenceFamilies.length} intelligence domains` : "all tracked domains"}.${topFamily ? ` The primary pressure driver is ${topFamily.name.toLowerCase()}, which is signaling ${topFamily.signal} conditions.` : ""}${analogRef}`;
 
   return {
     todayStory,
@@ -1446,7 +1447,7 @@ function buildWhyThisScore(
 ): string {
   const stressed = evidenceFamilies.filter((f) => f.signal === "stressed" || f.signal === "bearish");
   const constructive = evidenceFamilies.filter((f) => f.signal === "bullish" || f.signal === "recovering");
-  return `The ${score}/100 reading reflects ${stressed.length} of ${evidenceFamilies.length} intelligence engines signaling elevated stress, with ${constructive.length} signaling constructive conditions. This places current pressure in the ${percentile}th historical percentile — meaning ${percentile}% of all historical months recorded lower pressure than today.`;
+  return `The ${score}/100 reading reflects ${stressed.length} of ${evidenceFamilies.length} intelligence engines signaling elevated stress, with ${constructive.length} signaling constructive conditions. This places current pressure in the ${formatOrdinal(percentile)} historical percentile (${describeHistoricalPercentile(percentile)}) — meaning ${percentile}% of all historical months recorded lower pressure than today.`;
 }
 
 function buildWhyThisRegime(
@@ -1677,10 +1678,10 @@ function buildMarketNarrative(
 
   // 1. What is happening?
   const whatIsHappening = currentScore >= 65
-    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), placing current conditions in the ${currentPercentile}th percentile of all observations since 2000. ${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress, with ${currentRegime} as the prevailing regime classification.`
+    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), placing current conditions in the ${formatOrdinal(currentPercentile)} percentile (${describeHistoricalPercentile(currentPercentile)}) of all observations since 2000. ${stressed.length} of ${evidenceFamilies.length} intelligence engines are signaling stress, with ${currentRegime} as the prevailing regime classification.`
     : currentScore >= 45
-    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${currentPercentile}th percentile historically. Conditions are mixed — ${stressed.length} engines signal stress while ${bullish.length} signal strength, producing a divergent environment that requires careful monitoring.`
-    : `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${currentPercentile}th percentile historically. ${bullish.length} of ${evidenceFamilies.length} intelligence engines are signaling strength or recovery, consistent with a constructive risk environment.`;
+    ? `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${formatOrdinal(currentPercentile)} percentile historically (${describeHistoricalPercentile(currentPercentile)}). Conditions are mixed — ${stressed.length} engines signal stress while ${bullish.length} signal strength, producing a divergent environment that requires careful monitoring.`
+    : `The market is operating under ${stressLevel} systemic pressure (${currentScore}/100), in the ${formatOrdinal(currentPercentile)} percentile historically (${describeHistoricalPercentile(currentPercentile)}). ${bullish.length} of ${evidenceFamilies.length} intelligence engines are signaling strength or recovery, consistent with a constructive risk environment.`;
 
   // 2. Why is it happening?
   const topStressed = stressed.slice(0, 3).map((f) => `${f.name} (${f.currentValue})`).join(", ");

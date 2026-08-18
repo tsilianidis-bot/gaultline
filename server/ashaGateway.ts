@@ -14,6 +14,7 @@ import type {
   AshaModelTrace,
   AshaPageContext,
 } from "../shared/ashaContext";
+import type { AshaQuestionAnalysis } from "../shared/ashaQuestionAnalysis";
 import type { CanonicalMarketState } from "../shared/marketState";
 import { getCanonicalMarketState } from "./marketStateService";
 import {
@@ -49,7 +50,7 @@ export async function createAshaGatewayContext(
 ): Promise<AshaGatewayContext> {
   const marketState = await (dependencies.getMarketState ?? getCanonicalMarketState)();
   return {
-    version: "1.0",
+    version: "1.1",
     destination: resolvePageDestination(page.page),
     page,
     marketState,
@@ -109,10 +110,17 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
     },
     act: marketState.act,
     history: marketState.history,
+    questionAnalysis: context.questionAnalysis ?? null,
     pageSupplement: context.page,
   };
 
-  return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(boundedContext)}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values.`;
+  const scopeRule = context.questionAnalysis?.analysisScope === "MARKET"
+    ? "QUESTION SCOPE IS MARKET. Do not retrieve, infer from, or mention active-ticker/company fundamentals, price levels, technicals, catalysts, LEAP commentary, or ticker invalidation conditions."
+    : context.questionAnalysis?.analysisScope === "TICKER"
+      ? "QUESTION SCOPE IS TICKER. Use ticker-specific evidence only when it is present in the sanitized page supplement and relevant to the user’s question."
+      : "QUESTION SCOPE IS MARKET_TICKER_RELATIONSHIP. Separate broad-market evidence from the ticker-specific transmission analysis.";
+
+  return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(boundedContext)}\n\nSCOPE RULE: ${scopeRule}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values. Historical analog similarity is evidence of regime resemblance, never forecast probability. Use questionAnalysis probability only when its availability is CALIBRATED; never convert a similarity score or generic bear scenario into an unsupported event probability.`;
 }
 
 export async function invokeAshaGateway(

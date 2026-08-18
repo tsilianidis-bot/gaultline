@@ -4908,3 +4908,13 @@
 - [x] Implement a permanent read-only QA principal that can render protected intelligence pages but cannot mutate data, accounts, payments, schedules, or application settings
 - [x] Add a persistent owner-controlled QA entry route with visible QA status and no secret exposure in URLs or client bundles
 - [x] Add security regression coverage for QA access boundaries and validate protected visual routes through the QA principal
+
+## ASHA Intelligence Scope, Consistency & Emergency Audio Fix
+- [x] Audit complete ASHA scope classification, evidence retrieval, probability output, historical-analog treatment, and current audio trigger paths
+- [x] Classify ASHA questions as MARKET, TICKER, or MARKET_TICKER_RELATIONSHIP before evidence retrieval and prevent active-ticker leakage into MARKET answers
+- [x] Introduce a canonical probability-analysis object for direct market-event questions and use it across ASHA/Oracle answer, verdict, evidence, and follow-up context without inventing unsupported event precision
+- [x] Standardize `>10% broad-market correction` and preserve the user-requested 6–8 week horizon whenever the exact event is discussed; explicitly show NOT CALIBRATED when no exact model window exists
+- [x] Separate analog similarity from forecast probability and expose evidence-weighted bullish/bearish explanation, provenance, confirmation, invalidation, and escalation conditions without inventing standalone analog weights
+- [x] Correct active historical percentile ordinal and qualitative-label inconsistencies through one shared formatter, while preserving explicit unavailable states instead of numeric zero
+- [x] Restrict the emergency whistle to explicit EMERGENCY severity through a bounded single-cue controller, prevent loops/retriggers/overlap, and keep normal ASHA state silent
+- [x] Add regression coverage for scope isolation, probability consistency/provenance, analog separation, historical labels, and emergency-audio safety

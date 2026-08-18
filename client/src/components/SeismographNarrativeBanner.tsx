@@ -17,6 +17,7 @@ import { ChevronDown, ChevronUp, Activity, Clock, BarChart2, AlertTriangle, Tren
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { formatCanonicalScore } from "@shared/marketMetrics";
+import { formatOrdinal } from "@shared/historicalPercentile";
 
 // ── Types (mirrors SeismographOutput from server) ─────────────
 interface SeismographAnalog {
@@ -354,7 +355,7 @@ export default function SeismographNarrativeBanner({
         <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>HOW THIS COMPARES TO HISTORY</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
-            This reading is at the <strong style={{ color: "#E2E8F0" }}>{output.historicalPercentile}th percentile</strong> — {getHistoricalPercentileLabel(output.historicalPercentile)}.
+            This reading is at the <strong style={{ color: "#E2E8F0" }}>{formatOrdinal(output.historicalPercentile)} percentile</strong> — {getHistoricalPercentileLabel(output.historicalPercentile)}.
           </div>
         </div>
 

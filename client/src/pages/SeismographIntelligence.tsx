@@ -28,6 +28,7 @@ import { Link } from "wouter";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
+import { formatOrdinal } from "@shared/historicalPercentile";
 
 // ── Reduced-motion helper ─────────────────────────────────────────────────────
 function prefersReducedMotion(): boolean {
@@ -861,7 +862,7 @@ export default function SeismographIntelligence() {
                   {[
                     { label: "PRESSURE INDEX", value: `${currentScore}`, color: scoreColor },
                     { label: "STRESS LEVEL", value: currentStressLevel, color: stressColor(currentStressLevel) },
-                    { label: "HISTORICAL PERCENTILE", value: `${currentPercentile}th`, color: scoreColor },
+                    { label: "HISTORICAL PERCENTILE", value: formatOrdinal(currentPercentile), color: scoreColor },
                     { label: "TODAY'S CHANGE", value: currentDirection, color: directionColor(currentDirection) },
                   ].map(({ label, value, color }) => (
                     <div key={label}>
