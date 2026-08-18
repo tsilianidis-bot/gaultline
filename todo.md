@@ -4918,3 +4918,9 @@
 - [x] Correct active historical percentile ordinal and qualitative-label inconsistencies through one shared formatter, while preserving explicit unavailable states instead of numeric zero
 - [x] Restrict the emergency whistle to explicit EMERGENCY severity through a bounded single-cue controller, prevent loops/retriggers/overlap, and keep normal ASHA state silent
 - [x] Add regression coverage for scope isolation, probability consistency/provenance, analog separation, historical labels, and emergency-audio safety
+
+## Founder Statement Copy Refresh
+- [x] Locate the existing Founder Statement in the live marketing surface and preserve its current surrounding layout contract
+- [x] Preserve the existing visual system while emphasizing the opening, five questions, and closing statement in place
+- [x] Add regression coverage that confirms the old Founder Statement is absent and supplied key copy is present
+- [ ] Validate desktop/mobile line wrapping and current production rendering after publication

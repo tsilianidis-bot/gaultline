@@ -3211,20 +3211,45 @@ function FounderStatementSection() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '48px', alignItems: 'start' }}>
           <div>
             <h2 style={{ fontFamily: HEADING, fontWeight: 700, fontSize: 'clamp(1.8rem,4vw,2.8rem)', color: '#F0F4FF', letterSpacing: '0.02em', lineHeight: 1.1, marginBottom: '28px' }}>
-              Why I Built FAULTLINE
+              Founder Statement
             </h2>
 
+            <p style={{ fontFamily: HEADING, fontSize: 'clamp(1.45rem,3.1vw,2.1rem)', color: '#F0F4FF', lineHeight: 1.18, fontWeight: 700, marginBottom: '28px', maxWidth: '650px' }}>
+              <span style={{ display: 'block' }}>Finding the right assets isn’t the hardest part of investing.</span>
+              <span style={{ display: 'block', color: '#00D4FF', marginTop: '6px' }}>Knowing when to act is.</span>
+            </p>
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, marginBottom: '20px' }}>
-              I built the tool I wished I had while making some of the biggest investment decisions of my life. Finding great investments was not the hardest part. Recognizing when the environment had changed enough that protecting capital deserved more attention than pursuing additional returns — that was.
+              I built FAULTLINE because I wish I had a tool like this the first time I made life-changing gains.
             </p>
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
-              In major dislocations — 2008, 2020, 2022 — the underlying indicators showed measurable stress in the data: credit spreads widened, the yield curve signaled, liquidity tightened. That evidence existed. It was not synthesized into something accessible to most investors.
+              I knew I had found the right assets. What I didn’t have was a system that could clearly show me what was happening around them — when conditions were changing, when risk was building, when momentum was weakening, or when it was time to protect what I had made.
             </p>
             <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
-              FAULTLINE is my answer to that problem. Not a trading system. Not a prediction engine. A market awareness platform — one that gives investors a clear, honest read on what the current environment is, why it is changing, how long the shift has been developing, and how today's conditions compare with history.
+              That experience stayed with me.
             </p>
-            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, fontWeight: 500 }}>
-              I did not build this to tell you what to buy or sell. I built it to help investors better understand when the market environment has changed enough that protecting capital deserves as much attention as pursuing opportunity.
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, marginBottom: '20px', fontWeight: 500 }}>
+              Because making money in the market is only part of the challenge. <strong style={{ color: '#F0F4FF' }}>Knowing what to do once you’ve made it can be even harder.</strong>
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
+              Markets give us endless charts, headlines, indicators, opinions, and predictions. But more information doesn’t necessarily create better decisions.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, marginBottom: '20px', fontWeight: 600 }}>
+              What investors need is clarity.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
+              Those five questions became the foundation of FAULTLINE.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
+              I wanted to build the tool I wish had been sitting in front of me during those moments — something that could cut through the noise, help me understand the environment around my investments, and give me a clearer picture of when the odds were beginning to change.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#94A3B8', lineHeight: 1.85, marginBottom: '20px' }}>
+              FAULTLINE isn’t about predicting every move.
+            </p>
+            <p style={{ fontFamily: SANS, fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.85, marginBottom: '28px', fontWeight: 500 }}>
+              It’s about seeing the market more clearly when the decisions matter most.
+            </p>
+            <p style={{ fontFamily: HEADING, fontSize: 'clamp(1.25rem,2.6vw,1.7rem)', color: '#F0F4FF', lineHeight: 1.35, fontWeight: 700, margin: '0' }}>
+              Finding the opportunity can change your portfolio. <span style={{ color: '#00D4FF' }}>Knowing when to move can change your life.</span>
             </p>
 
             <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -3241,11 +3266,11 @@ function FounderStatementSection() {
           {/* Principles sidebar */}
           <div style={{ width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {[
-              { label: 'What is the market doing?', sub: 'Not what should I buy' },
-              { label: 'Why is it happening?', sub: 'Cause, not noise' },
-              { label: 'How long has it been building?', sub: 'Context over recency' },
-              { label: 'How does it compare to history?', sub: 'Analogs, not predictions' },
-              { label: 'What should I watch for next?', sub: 'Signals, not certainty' },
+              { label: 'What’s happening?', sub: 'Observe the environment' },
+              { label: 'Why is it happening?', sub: 'Understand the drivers' },
+              { label: 'What’s likely to happen next?', sub: 'Assess the evidence' },
+              { label: 'What should I be watching?', sub: 'Track what could change' },
+              { label: 'And what should I do?', sub: 'Act with greater clarity' },
             ].map((q, i) => (
               <div key={i} style={{ padding: '14px 16px', background: 'rgba(0,212,255,0.03)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '6px' }}>
                 <div style={{ fontFamily: SANS, fontSize: '0.82rem', color: '#E2E8F0', fontWeight: 600, lineHeight: 1.4, marginBottom: '4px' }}>{q.label}</div>

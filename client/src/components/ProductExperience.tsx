@@ -853,7 +853,21 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   paddingLeft: '28px', margin: '0 0 32px',
                   fontStyle: 'normal',
                 }}>
-                  "I built FAULTLINE because I kept watching the same pattern repeat: the signals were always there before the crash — in credit spreads, in liquidity, in volatility regimes — but they were scattered across Bloomberg terminals, Fed data releases, and institutional research that most investors never see. I wanted one platform that synthesized all of it into something clear, actionable, and honest about what it knows and what it doesn't. That's what FAULTLINE is."
+                  <p style={{ margin: '0 0 22px', color: '#F0F4FF', fontFamily: MONO, fontSize: 'clamp(19px,2.4vw,25px)', lineHeight: 1.35, fontWeight: 700 }}>
+                    <span style={{ display: 'block' }}>Finding the right assets isn’t the hardest part of investing.</span>
+                    <span style={{ display: 'block', color: CYAN, marginTop: '5px' }}>Knowing when to act is.</span>
+                  </p>
+                  <p style={{ margin: '0 0 18px' }}>I built FAULTLINE because I wish I had a tool like this the first time I made life-changing gains.</p>
+                  <p style={{ margin: '0 0 18px' }}>I knew I had found the right assets. What I didn’t have was a system that could clearly show me what was happening around them — when conditions were changing, when risk was building, when momentum was weakening, or when it was time to protect what I had made.</p>
+                  <p style={{ margin: '0 0 18px' }}>That experience stayed with me.</p>
+                  <p style={{ margin: '0 0 18px' }}>Because making money in the market is only part of the challenge. <strong style={{ color: '#F0F4FF' }}>Knowing what to do once you’ve made it can be even harder.</strong></p>
+                  <p style={{ margin: '0 0 18px' }}>Markets give us endless charts, headlines, indicators, opinions, and predictions. But more information doesn’t necessarily create better decisions.</p>
+                  <p style={{ margin: '0 0 18px', color: '#F0F4FF', fontWeight: 600 }}>What investors need is clarity.</p>
+                  <p style={{ margin: '0 0 18px' }}>Those five questions became the foundation of FAULTLINE.</p>
+                  <p style={{ margin: '0 0 18px' }}>I wanted to build the tool I wish had been sitting in front of me during those moments — something that could cut through the noise, help me understand the environment around my investments, and give me a clearer picture of when the odds were beginning to change.</p>
+                  <p style={{ margin: '0 0 18px' }}>FAULTLINE isn’t about predicting every move.</p>
+                  <p style={{ margin: '0 0 22px' }}>It’s about seeing the market more clearly when the decisions matter most.</p>
+                  <p style={{ margin: 0, color: '#F0F4FF', fontWeight: 700, fontSize: 'clamp(18px,2.2vw,23px)', lineHeight: 1.45 }}>Finding the opportunity can change your portfolio. <span style={{ color: CYAN }}>Knowing when to move can change your life.</span></p>
                 </blockquote>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{
@@ -870,9 +884,11 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                 </div>
                 <div style={{ marginTop: '32px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
                   {[
-                    { label: 'Transparent Methodology', desc: 'Every signal is documented and explainable' },
-                    { label: 'No Black Boxes', desc: 'You see the data, the drivers, and the logic' },
-                    { label: 'Built for Clarity', desc: 'Institutional rigor, accessible to any investor' },
+                    { label: 'What’s happening?', desc: 'Observe the market environment' },
+                    { label: 'Why is it happening?', desc: 'Understand the drivers' },
+                    { label: 'What’s likely to happen next?', desc: 'Assess the evidence' },
+                    { label: 'What should I be watching?', desc: 'Track what could change' },
+                    { label: 'And what should I do?', desc: 'Act with greater clarity' },
                   ].map((item) => (
                     <div key={item.label} style={{ flex: '1 1 180px' }}>
                       <div style={{ fontFamily: MONO, fontSize: '10px', color: CYAN, letterSpacing: '0.15em', marginBottom: '4px' }}>{item.label}</div>
