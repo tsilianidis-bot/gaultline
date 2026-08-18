@@ -15,6 +15,14 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(PRICING_PLANS.premium.planId).toBe('premium');
   });
 
+  it('initializes Product Experience color constants before public pricing configuration', () => {
+    const productExperience = read('client/src/components/ProductExperience.tsx');
+    const goldConstant = productExperience.indexOf('const GOLD');
+    const publicPricing = productExperience.indexOf('const PUBLIC_PRICING');
+    expect(goldConstant).toBeGreaterThanOrEqual(0);
+    expect(publicPricing).toBeGreaterThan(goldConstant);
+  });
+
   it('does not publicly offer annual or lifetime checkout pricing', () => {
     expect(PRICING_PLANS.core_annual.available).toBe(false);
     expect(PRICING_PLANS.premium_annual.available).toBe(false);

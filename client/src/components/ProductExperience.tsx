@@ -23,6 +23,23 @@ import { trackGa4Event } from '../lib/ga4';
 /** localStorage key for preserving checkout intent across the OAuth login redirect */
 export const CHECKOUT_INTENT_KEY = 'fl_checkout_intent_v1';
 
+// ── Assets ────────────────────────────────────────────────────
+const ASSETS = {
+  heroBg:          '/manus-storage/faultline_hero_bg_7d6aaf14.jpg',
+  dashboardMockup: '/manus-storage/faultline_dashboard_mockup_456bb973.jpg',
+  macroIntel:      '/manus-storage/faultline_macro_intel_09b4c85d.jpg',
+  riskEngine:      '/manus-storage/faultline_risk_engine_fd070c61.jpg',
+  ctaAtmosphere:   '/manus-storage/faultline_cta_atmosphere_93bd4048.jpg',
+};
+
+const CYAN   = '#00E5FF';
+const GOLD   = '#FFAA00';
+const GREEN  = '#00FF88';
+const PURPLE = '#A78BFA';
+const RED    = '#FF3B30';
+const MONO   = "'IBM Plex Mono', 'Courier New', monospace";
+const SANS   = "'IBM Plex Sans', system-ui, sans-serif";
+
 // ── Public Pricing Configuration ───────────────────────────────────────────
 // Public presentation only. Checkout stays unavailable until its matching
 // Stripe Price ID has been independently verified server-side.
@@ -46,23 +63,6 @@ const PUBLIC_PRICING = [
     features: ['Everything in Trader', 'Advanced analysis and expanded research', 'Full professional intelligence toolset'],
   },
 ] as const;
-
-// ── Assets ────────────────────────────────────────────────────
-const ASSETS = {
-  heroBg:          '/manus-storage/faultline_hero_bg_7d6aaf14.jpg',
-  dashboardMockup: '/manus-storage/faultline_dashboard_mockup_456bb973.jpg',
-  macroIntel:      '/manus-storage/faultline_macro_intel_09b4c85d.jpg',
-  riskEngine:      '/manus-storage/faultline_risk_engine_fd070c61.jpg',
-  ctaAtmosphere:   '/manus-storage/faultline_cta_atmosphere_93bd4048.jpg',
-};
-
-const CYAN   = '#00E5FF';
-const GOLD   = '#FFAA00';
-const GREEN  = '#00FF88';
-const PURPLE = '#A78BFA';
-const RED    = '#FF3B30';
-const MONO   = "'IBM Plex Mono', 'Courier New', monospace";
-const SANS   = "'IBM Plex Sans', system-ui, sans-serif";
 
 // ── Analytics helper ──────────────────────────────────────────
 function track(eventName: string, params?: Record<string, string | number>) {

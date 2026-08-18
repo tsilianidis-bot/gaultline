@@ -4936,3 +4936,9 @@
 - [x] Preserve existing subscriptions, customer records, internal entitlement IDs, billing portal management, dashboards, ASHA, Five Questions, and unrelated product behavior
 - [x] Add regression coverage for pricing, branding, retired lifetime/annual offers, Founder copy, chatbot pricing, and verified checkout mapping boundaries
 - [ ] Validate affected desktop/mobile surfaces and production URLs after publication
+
+## Live Site Loading Incident
+- [x] Capture the live custom-domain loading failure, client-console state, and current bundle response evidence
+- [x] Identify and repair the confirmed Product Experience color-constant temporal-dead-zone fault without changing product behavior
+- [ ] Verify preview and live custom-domain loading on desktop/mobile and run focused plus full regressions
+- [x] Fix the confirmed Product Experience `GOLD` temporal-dead-zone initialization crash that prevents the public app module from loading
