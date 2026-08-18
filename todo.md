@@ -4942,3 +4942,16 @@
 - [x] Identify and repair the confirmed Product Experience color-constant temporal-dead-zone fault without changing product behavior
 - [ ] Verify preview and live custom-domain loading on desktop/mobile and run focused plus full regressions
 - [x] Fix the confirmed Product Experience `GOLD` temporal-dead-zone initialization crash that prevents the public app module from loading
+
+## Additive Founder Member Lifetime Option
+- [x] Audit the current Founder Member card, active Richard Roper attribution, and current Lifetime Stripe mapping while preserving the existing $49/month offer exactly
+- [x] Add a gold-integrated limited-time $299 lifetime section and separate CTA inside the Founder Member card without removing or changing any current option
+- [x] Change only active Founder Statement attribution from Richard Roper to JT
+- [x] Keep lifetime checkout behind the existing exact Stripe verification boundary; the added button uses the same safe configuration-required action until a matching price is independently verified
+- [x] Add regression coverage for additive Founder monthly-plus-lifetime presentation, attribution scope, pricing safety, and responsive card-grid behavior
+
+## Additive Founder Member Lifetime Option
+- [x] Audit the current Founder Member card and current Lifetime Stripe mapping while preserving the existing $49/month offer exactly
+- [x] Add a gold-integrated limited-time $299 lifetime section and separate CTA inside the Founder Member card without removing or changing any current option
+- [x] Keep lifetime checkout behind the existing exact Stripe verification boundary until a matching Stripe price is independently verified
+- [x] Add regression coverage for additive Founder monthly-plus-lifetime presentation and responsive card-grid behavior

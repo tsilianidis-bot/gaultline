@@ -23,14 +23,18 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(publicPricing).toBeGreaterThan(goldConstant);
   });
 
-  it('does not publicly offer annual or lifetime checkout pricing', () => {
+  it('keeps annual checkout unavailable while adding lifetime only inside the Founder Member card', () => {
     expect(PRICING_PLANS.core_annual.available).toBe(false);
     expect(PRICING_PLANS.premium_annual.available).toBe(false);
     expect(PRICING_PLANS.lifetime.available).toBe(false);
 
     const productExperience = read('client/src/components/ProductExperience.tsx');
     const marketing = read('client/src/pages/MarketingSite.tsx');
-    expect(productExperience).not.toContain('Get Lifetime Access');
+    expect(productExperience).toContain('LIMITED TIME LIFETIME ACCESS');
+    expect(productExperience).toContain('GET LIFETIME ACCESS — $299');
+    expect(productExperience).toContain('LOCK IN FOUNDER RATE');
+    expect(productExperience).toContain("handlePricingInterest('Lifetime Access — $299')");
+    expect(productExperience).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'");
     expect(marketing).not.toContain('FOUNDING LIFETIME');
     expect(marketing).not.toContain('$9.99');
   });
@@ -44,6 +48,12 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(publicSource).toContain('I built FAULTLINE because I wish I had a tool like this the first time I made life-changing gains.');
     expect(publicSource).toContain('Knowing what to do after you’ve found them can be.');
     expect(publicSource).not.toMatch(/AlphaPulse|Alpha Pulse/i);
+  });
+
+  it('changes only the active Product Experience founder attribution to JT', () => {
+    const productExperience = read('client/src/components/ProductExperience.tsx');
+    expect(productExperience).toContain('>JT</div>');
+    expect(productExperience).not.toContain('RICHARD ROPER');
   });
 
   it('blocks checkout unless configured Stripe price metadata exactly matches the public plan', () => {

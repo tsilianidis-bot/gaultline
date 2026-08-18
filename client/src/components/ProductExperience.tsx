@@ -64,6 +64,13 @@ const PUBLIC_PRICING = [
   },
 ] as const;
 
+const FOUNDER_LIFETIME_OPTION = {
+  label: 'LIMITED TIME LIFETIME ACCESS',
+  price: '$299',
+  description: 'One-time payment • Lifetime access • No recurring monthly charge',
+  cta: 'GET LIFETIME ACCESS — $299',
+} as const;
+
 // ── Analytics helper ──────────────────────────────────────────
 function track(eventName: string, params?: Record<string, string | number>) {
   trackGa4Event(eventName, params);
@@ -830,9 +837,9 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                     border: `1px solid ${CYAN}40`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: MONO, fontSize: '16px', color: CYAN, fontWeight: 700,
-                  }}>RR</div>
+                  }}>JT</div>
                   <div>
-                    <div style={{ fontFamily: MONO, fontSize: '13px', color: '#F0F4FF', letterSpacing: '0.05em' }}>RICHARD ROPER</div>
+                    <div style={{ fontFamily: MONO, fontSize: '13px', color: '#F0F4FF', letterSpacing: '0.05em' }}>JT</div>
                     <div style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Founder & CEO, FAULTLINE</div>
                   </div>
                 </div>
@@ -890,6 +897,17 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                     {plan.features.map((feature) => <div key={feature} style={{ display: 'flex', gap: '9px', fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45 }}><span style={{ color: plan.color }}>✓</span><span>{feature}</span></div>)}
                   </div>
                   <button onClick={() => handlePricingInterest(plan.name)} style={{ width: '100%', padding: '14px', background: isFounding ? 'rgba(255,170,0,0.16)' : 'transparent', border: `1px solid ${plan.color}70`, borderRadius: '8px', color: plan.color, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', fontWeight: 700, cursor: 'pointer' }}>{plan.cta}</button>
+                  {isFounding && (
+                    <div style={{ marginTop: '16px', paddingTop: '18px', borderTop: `1px solid ${GOLD}35` }}>
+                      <div style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', color: GOLD, marginBottom: '9px' }}>{FOUNDER_LIFETIME_OPTION.label}</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginBottom: '7px' }}>
+                        <span style={{ fontFamily: MONO, fontSize: '30px', color: GOLD, fontWeight: 700, lineHeight: 1 }}>{FOUNDER_LIFETIME_OPTION.price}</span>
+                        <span style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>one time</span>
+                      </div>
+                      <p style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.55, margin: '0 0 14px' }}>{FOUNDER_LIFETIME_OPTION.description}</p>
+                      <button onClick={() => handlePricingInterest('Lifetime Access — $299')} style={{ width: '100%', padding: '12px', background: 'rgba(255,170,0,0.1)', border: `1px solid ${GOLD}80`, borderRadius: '8px', color: GOLD, fontFamily: MONO, fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700, cursor: 'pointer' }}>{FOUNDER_LIFETIME_OPTION.cta}</button>
+                    </div>
+                  )}
                 </div>
               );
             })}

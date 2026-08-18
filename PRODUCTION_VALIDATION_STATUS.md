@@ -90,3 +90,17 @@ Power pricing cards. The page title continued to identify the prior
 > The live custom-domain client still does not serve a verifiable current pricing
 > module. This remains an external deployment/module propagation dependency, not
 > a validated local source or test failure.
+
+## Live site loading repair checkpoint validation
+
+The client crash was traced to a Product Experience temporal-dead-zone error:
+`Cannot access 'GOLD' before initialization`. The local repair was published in
+checkpoint `5c27def7` after focused coverage and the full regression suite.
+Managed preview now reaches the FAULTLINE cinematic intro rather than the module
+fallback.
+
+The custom domain continues to serve `/assets/index-DdEZALCW.js`, the older
+bundle captured before checkpoint `5c27def7`. It contains the prior public
+pricing module and still renders a blank client surface. The custom-domain asset
+hash therefore confirms that the code repair has not propagated to the live
+deployment target yet.
