@@ -2322,6 +2322,23 @@ function PricingSection({ onRequestAccess }: { onRequestAccess: () => void }) {
                   </button>
                 )}
 
+                {isFounding && (
+                  <div style={{ marginTop: "16px", paddingTop: "18px", borderTop: "1px solid rgba(255,215,0,0.28)" }}>
+                    <div style={{ fontFamily: MONO, fontSize: "9px", letterSpacing: "0.15em", color: "#FFD700", marginBottom: "8px" }}>LIMITED TIME LIFETIME ACCESS</div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "7px", marginBottom: "7px" }}>
+                      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "30px", fontWeight: 700, color: "#FFD700", lineHeight: 1 }}>$299</span>
+                      <span style={{ fontFamily: MONO, fontSize: "10px", color: "rgba(255,255,255,0.42)" }}>ONE TIME</span>
+                    </div>
+                    <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", lineHeight: 1.55, color: "#94A3B8", margin: "0 0 14px" }}>One-time payment • Lifetime access • No recurring monthly charge</p>
+                    <button
+                      onClick={() => handleCheckout("Lifetime Access — $299")}
+                      style={{ display: "block", width: "100%", textAlign: "center", padding: "12px 16px", borderRadius: "9px", fontFamily: MONO, fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", cursor: "pointer", background: "rgba(255,215,0,0.09)", border: "1px solid rgba(255,215,0,0.62)", color: "#FFD700" }}
+                    >
+                      GET LIFETIME ACCESS — $299
+                    </button>
+                  </div>
+                )}
+
               </div>
             );
           })}
@@ -3127,7 +3144,7 @@ function FounderStatementSection() {
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8 L6 4 L10 9 L14 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
               <div>
-                <div style={{ fontFamily: MONO, fontSize: '12px', color: '#F0F4FF', letterSpacing: '0.1em' }}>RICHARD ROPER</div>
+                <div style={{ fontFamily: MONO, fontSize: '12px', color: '#F0F4FF', letterSpacing: '0.1em' }}>JT</div>
                 <div style={{ fontFamily: MONO, fontSize: '10px', color: '#64748B', letterSpacing: '0.08em', marginTop: '2px' }}>FOUNDER & CEO · PHOENIX SYSTEMS</div>
               </div>
             </div>

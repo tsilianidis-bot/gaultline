@@ -4955,3 +4955,7 @@
 - [x] Add a gold-integrated limited-time $299 lifetime section and separate CTA inside the Founder Member card without removing or changing any current option
 - [x] Keep lifetime checkout behind the existing exact Stripe verification boundary until a matching Stripe price is independently verified
 - [x] Add regression coverage for additive Founder monthly-plus-lifetime presentation and responsive card-grid behavior
+
+## Live Founder Lifetime Surface Alignment
+- [x] Add the same strictly additive $299 lifetime option to the active public Marketing Site Founder card after live validation confirmed it is the production root surface
+- [x] Preserve the active Marketing Site $49/month Founder option, benefits, and monthly CTA while changing only the founder attribution to JT where present
