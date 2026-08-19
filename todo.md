@@ -4959,3 +4959,13 @@
 ## Live Founder Lifetime Surface Alignment
 - [x] Add the same strictly additive $299 lifetime option to the active public Marketing Site Founder card after live validation confirmed it is the production root surface
 - [x] Preserve the active Marketing Site $49/month Founder option, benefits, and monthly CTA while changing only the founder attribution to JT where present
+- [ ] Reconfirm the custom domain serves checkpoint `fb7a563a` or later after live text validation did not yet expose the additive lifetime option or JT attribution
+
+## FAULTLINE Champion Algorithm Audit
+- [x] Inventory the production Champion score, indicators, transformations, weights, thresholds, data sources, API paths, historical record, database tables, and scheduled dependencies
+- [x] Create an immutable Champion Baseline specification and deterministic stored-vector reproducibility harness without altering production score behavior or historical records
+- [x] Reconcile current-weight Champion recreation against stored historical scores and document the formula-version mismatch before any Challenger analysis
+- [x] Assess point-in-time availability, data revisions, release-date alignment, normalization leakage, and historical limitations; historical records are not yet validated as point-in-time backtests
+- [x] Measure Champion observational threshold behavior, stability, explainability, outcome coverage, and correlation/double-counting characteristics; calibration and warning-quality claims remain blocked by unreconciled formula and missing outcome data
+- [x] Define the required separate stress outcomes and document a Challenger no-go; no Challenger hypothesis is tested until Champion reproducibility, point-in-time integrity, and outcome coverage are established
+- [x] Publish an evidence-bound algorithm audit report; current recommendation is no production scoring change until Champion reproducibility and outcome gates are satisfied
