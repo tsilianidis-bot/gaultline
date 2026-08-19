@@ -656,6 +656,120 @@ export const verifiedHistoricalValidationRuns = mysqlTable("verifiedHistoricalVa
 }));
 export type VerifiedHistoricalValidationRun = typeof verifiedHistoricalValidationRuns.$inferSelect;
 
+// ── Reconstructed Historical Research (Phase 1B; separate from verified history) ──
+/**
+ * Explicitly reconstructed historical research only. These tables must never be
+ * joined into verified point-in-time history, production pressure history, or
+ * public performance claims without an independently approved disclosure.
+ */
+export const reconstructedHistoricalFormulaVersions = mysqlTable("reconstructedHistoricalFormulaVersions", {
+  id:                      int("id").autoincrement().primaryKey(),
+  modelVersion:            varchar("modelVersion", { length: 128 }).notNull().unique(),
+  formulaHash:             varchar("formulaHash", { length: 128 }).notNull(),
+  sourceCommit:            varchar("sourceCommit", { length: 96 }).notNull(),
+  policyVersion:           varchar("policyVersion", { length: 128 }).notNull(),
+  policyPath:              varchar("policyPath", { length: 255 }).notNull(),
+  formulaJson:             text("formulaJson").notNull(),
+  status:                  mysqlEnum("status", ["frozen", "deprecated"]).default("frozen").notNull(),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+});
+export type ReconstructedHistoricalFormulaVersion = typeof reconstructedHistoricalFormulaVersions.$inferSelect;
+
+export const reconstructedHistoricalSourceObservations = mysqlTable("reconstructedHistoricalSourceObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  sourceKey:                varchar("sourceKey", { length: 255 }).notNull().unique(),
+  seriesId:                 varchar("seriesId", { length: 96 }).notNull(),
+  sourceClass:              mysqlEnum("sourceClass", ["ARCHIVED_OFFICIAL_REVISED", "CURRENT_OFFICIAL_REVISED", "OFFICIAL_PROXY_RECONSTRUCTED", "UNAVAILABLE"]).notNull(),
+  observationDate:          varchar("observationDate", { length: 10 }).notNull(),
+  valueText:                varchar("valueText", { length: 128 }),
+  valueNumeric:             double("valueNumeric"),
+  publicationAvailableAt:   timestamp("publicationAvailableAt"),
+  sourceUrl:                text("sourceUrl").notNull(),
+  transformation:           text("transformation").notNull(),
+  sourceMetadataJson:       text("sourceMetadataJson").notNull(),
+  retrievedAt:              timestamp("retrievedAt").defaultNow().notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  seriesDateIdx: index("reconstructed_source_series_date_idx").on(t.seriesId, t.observationDate),
+  sourceClassIdx: index("reconstructed_source_class_idx").on(t.sourceClass),
+}));
+export type ReconstructedHistoricalSourceObservation = typeof reconstructedHistoricalSourceObservations.$inferSelect;
+
+export const reconstructedHistoricalScores = mysqlTable("reconstructedHistoricalScores", {
+  id:                      int("id").autoincrement().primaryKey(),
+  scoreKey:                varchar("scoreKey", { length: 255 }).notNull().unique(),
+  formulaVersionId:        int("formulaVersionId").notNull(),
+  scoreMonth:              varchar("scoreMonth", { length: 7 }).notNull(),
+  scoreTimestamp:          timestamp("scoreTimestamp").notNull(),
+  scoreStatus:             mysqlEnum("scoreStatus", ["COMPLETE", "INCOMPLETE", "EXCLUDED"]).notNull(),
+  overallPressure:         int("overallPressure"),
+  regime:                  varchar("regime", { length: 80 }),
+  vectorScoresJson:        text("vectorScoresJson").notNull(),
+  rawInputsJson:           text("rawInputsJson").notNull(),
+  sourceObservationKeysJson: text("sourceObservationKeysJson").notNull(),
+  qualitySummary:          mysqlEnum("qualitySummary", ["RECONSTRUCTED_HISTORICAL", "UNAVAILABLE"]).notNull(),
+  missingFlagsJson:        text("missingFlagsJson").notNull(),
+  datasetChecksum:         varchar("datasetChecksum", { length: 128 }).notNull(),
+  calculatedAt:            timestamp("calculatedAt").defaultNow().notNull(),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  formulaFk: foreignKey({
+    columns: [t.formulaVersionId],
+    foreignColumns: [reconstructedHistoricalFormulaVersions.id],
+    name: "reconstructed_score_formula_fk",
+  }).onDelete("restrict"),
+  formulaMonthIdx: uniqueIndex("reconstructed_score_formula_month_idx").on(t.formulaVersionId, t.scoreMonth),
+  timestampIdx: index("reconstructed_score_timestamp_idx").on(t.scoreTimestamp),
+  statusIdx: index("reconstructed_score_status_idx").on(t.scoreStatus),
+}));
+export type ReconstructedHistoricalScore = typeof reconstructedHistoricalScores.$inferSelect;
+
+export const reconstructedHistoricalOutcomes = mysqlTable("reconstructedHistoricalOutcomes", {
+  id:                     int("id").autoincrement().primaryKey(),
+  outcomeKey:             varchar("outcomeKey", { length: 255 }).notNull().unique(),
+  reconstructedScoreId:   int("reconstructedScoreId").notNull(),
+  horizonTradingDays:     int("horizonTradingDays").notNull(),
+  startDate:              varchar("startDate", { length: 10 }).notNull(),
+  endDate:                varchar("endDate", { length: 10 }),
+  forwardReturnPct:       double("forwardReturnPct"),
+  maximumDrawdownPct:     double("maximumDrawdownPct"),
+  maximumAdverseExcursionPct: double("maximumAdverseExcursionPct"),
+  realizedVolatilityPct:  double("realizedVolatilityPct"),
+  outcomeStatus:          mysqlEnum("outcomeStatus", ["COMPLETE", "PENDING", "UNAVAILABLE"]).notNull(),
+  outcomeJson:            text("outcomeJson").notNull(),
+  sourceMetadataJson:     text("sourceMetadataJson").notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  reconstructedScoreFk: foreignKey({
+    columns: [t.reconstructedScoreId],
+    foreignColumns: [reconstructedHistoricalScores.id],
+    name: "reconstructed_outcome_score_fk",
+  }).onDelete("restrict"),
+  scoreHorizonIdx: index("reconstructed_outcome_score_horizon_idx").on(t.reconstructedScoreId, t.horizonTradingDays),
+  statusIdx: index("reconstructed_outcome_status_idx").on(t.outcomeStatus),
+}));
+export type ReconstructedHistoricalOutcome = typeof reconstructedHistoricalOutcomes.$inferSelect;
+
+export const reconstructedHistoricalValidationRuns = mysqlTable("reconstructedHistoricalValidationRuns", {
+  id:                     int("id").autoincrement().primaryKey(),
+  runKey:                 varchar("runKey", { length: 160 }).notNull().unique(),
+  formulaVersionId:       int("formulaVersionId").notNull(),
+  policyVersion:          varchar("policyVersion", { length: 128 }).notNull(),
+  datasetChecksum:        varchar("datasetChecksum", { length: 128 }).notNull(),
+  coverageJson:           text("coverageJson").notNull(),
+  limitationJson:         text("limitationJson").notNull(),
+  status:                 mysqlEnum("status", ["IN_PROGRESS", "COMPLETE", "BLOCKED"]).notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  formulaFk: foreignKey({
+    columns: [t.formulaVersionId],
+    foreignColumns: [reconstructedHistoricalFormulaVersions.id],
+    name: "reconstructed_run_formula_fk",
+  }).onDelete("restrict"),
+  statusIdx: index("reconstructed_run_status_idx").on(t.status),
+}));
+export type ReconstructedHistoricalValidationRun = typeof reconstructedHistoricalValidationRuns.$inferSelect;
+
 // ── Feature Flags / Kill Switches ────────────────────────────
 /**
  * Admin-controlled feature flags for disabling risky or broken features

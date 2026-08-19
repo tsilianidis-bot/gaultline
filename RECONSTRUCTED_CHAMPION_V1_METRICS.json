@@ -1,0 +1,1391 @@
+{
+  "generatedAt": "2026-08-19T15:42:53.142Z",
+  "protocol": "RECONSTRUCTED_CHAMPION_V1_EVALUATION_PROTOCOL.md",
+  "datasetTier": "RECONSTRUCTED_HISTORICAL_RESEARCH_HISTORY",
+  "scoreDistribution": {
+    "count": 318,
+    "mean": 31.71698113207547,
+    "standardDeviation": 8.714636207730152,
+    "minimum": 16,
+    "p25": 25,
+    "median": 31,
+    "p75": 38,
+    "maximum": 56
+  },
+  "regimeDistribution": {
+    "LOW RISK": 74,
+    "MODERATE RISK": 221,
+    "ELEVATED RISK": 23,
+    "HIGH STRESS": 0,
+    "SYSTEMIC CRISIS": 0
+  },
+  "stressVsCalm": {
+    "stressScoreCount": 16,
+    "calmScoreCount": 295,
+    "stressMean": 49.6875,
+    "calmMean": 30.28135593220339,
+    "difference": 19.40614406779661
+  },
+  "events": {
+    "detectedDailyEvents": 26,
+    "evaluatedEvents": 26,
+    "warnedEvents": 10,
+    "missedEvents": [
+      {
+        "startDate": "2002-03-08",
+        "troughDate": "2002-06-03",
+        "drawdownPct": -10.618306006231059
+      },
+      {
+        "startDate": "2002-08-14",
+        "troughDate": "2002-10-09",
+        "drawdownPct": -15.534675856341929
+      },
+      {
+        "startDate": "2002-11-21",
+        "troughDate": "2003-02-13",
+        "drawdownPct": -12.46466045142065
+      },
+      {
+        "startDate": "2007-10-09",
+        "troughDate": "2007-11-26",
+        "drawdownPct": -10.090409944571356
+      },
+      {
+        "startDate": "2007-12-06",
+        "troughDate": "2008-01-22",
+        "drawdownPct": -13.058763801382378
+      },
+      {
+        "startDate": "2010-03-23",
+        "troughDate": "2010-06-07",
+        "drawdownPct": -10.535107234259232
+      },
+      {
+        "startDate": "2011-06-30",
+        "troughDate": "2011-08-08",
+        "drawdownPct": -15.233527038365025
+      },
+      {
+        "startDate": "2015-06-23",
+        "troughDate": "2015-08-25",
+        "drawdownPct": -12.07936972594117
+      },
+      {
+        "startDate": "2015-10-23",
+        "troughDate": "2016-01-20",
+        "drawdownPct": -10.400209934005611
+      },
+      {
+        "startDate": "2018-01-26",
+        "troughDate": "2018-02-08",
+        "drawdownPct": -10.159530548956274
+      },
+      {
+        "startDate": "2018-09-20",
+        "troughDate": "2018-12-17",
+        "drawdownPct": -13.130088154695896
+      },
+      {
+        "startDate": "2019-12-12",
+        "troughDate": "2020-03-11",
+        "drawdownPct": -13.48211263537138
+      },
+      {
+        "startDate": "2021-12-10",
+        "troughDate": "2022-03-08",
+        "drawdownPct": -11.48806291091693
+      },
+      {
+        "startDate": "2022-03-18",
+        "troughDate": "2022-06-14",
+        "drawdownPct": -16.303395777241214
+      },
+      {
+        "startDate": "2022-07-21",
+        "troughDate": "2022-10-12",
+        "drawdownPct": -10.550767752203505
+      },
+      {
+        "startDate": "2025-01-21",
+        "troughDate": "2025-04-08",
+        "drawdownPct": -17.629820829126597
+      }
+    ],
+    "falseAlarmCount": 3,
+    "warnings": [
+      {
+        "startDate": "2000-03-23",
+        "troughDate": "2000-04-14",
+        "drawdownPct": -11.182107553749576,
+        "warningScores": [
+          {
+            "month": "2000-02",
+            "score": 46
+          }
+        ]
+      },
+      {
+        "startDate": "2000-08-17",
+        "troughDate": "2000-10-12",
+        "drawdownPct": -11.115116469297615,
+        "warningScores": [
+          {
+            "month": "2000-06",
+            "score": 52
+          },
+          {
+            "month": "2000-07",
+            "score": 53
+          }
+        ]
+      },
+      {
+        "startDate": "2000-11-06",
+        "troughDate": "2000-12-20",
+        "drawdownPct": -11.69188152567654,
+        "warningScores": [
+          {
+            "month": "2000-09",
+            "score": 54
+          },
+          {
+            "month": "2000-10",
+            "score": 56
+          }
+        ]
+      },
+      {
+        "startDate": "2001-01-18",
+        "troughDate": "2001-04-04",
+        "drawdownPct": -18.154704928291153,
+        "warningScores": [
+          {
+            "month": "2000-11",
+            "score": 56
+          },
+          {
+            "month": "2000-12",
+            "score": 53
+          }
+        ]
+      },
+      {
+        "startDate": "2001-05-21",
+        "troughDate": "2001-07-24",
+        "drawdownPct": -10.753862751951404,
+        "warningScores": [
+          {
+            "month": "2001-03",
+            "score": 50
+          },
+          {
+            "month": "2001-04",
+            "score": 49
+          }
+        ]
+      },
+      {
+        "startDate": "2001-08-02",
+        "troughDate": "2001-09-21",
+        "drawdownPct": -20.884703027403752,
+        "warningScores": [
+          {
+            "month": "2001-06",
+            "score": 48
+          },
+          {
+            "month": "2001-07",
+            "score": 46
+          }
+        ]
+      },
+      {
+        "startDate": "2002-03-08",
+        "troughDate": "2002-06-03",
+        "drawdownPct": -10.618306006231059,
+        "warningScores": []
+      },
+      {
+        "startDate": "2002-08-14",
+        "troughDate": "2002-10-09",
+        "drawdownPct": -15.534675856341929,
+        "warningScores": []
+      },
+      {
+        "startDate": "2002-11-21",
+        "troughDate": "2003-02-13",
+        "drawdownPct": -12.46466045142065,
+        "warningScores": []
+      },
+      {
+        "startDate": "2007-10-09",
+        "troughDate": "2007-11-26",
+        "drawdownPct": -10.090409944571356,
+        "warningScores": []
+      },
+      {
+        "startDate": "2007-12-06",
+        "troughDate": "2008-01-22",
+        "drawdownPct": -13.058763801382378,
+        "warningScores": []
+      },
+      {
+        "startDate": "2008-04-18",
+        "troughDate": "2008-07-15",
+        "drawdownPct": -12.617143226402582,
+        "warningScores": [
+          {
+            "month": "2008-02",
+            "score": 45
+          }
+        ]
+      },
+      {
+        "startDate": "2008-08-05",
+        "troughDate": "2008-10-27",
+        "drawdownPct": -33.93001839206129,
+        "warningScores": [
+          {
+            "month": "2008-07",
+            "score": 46
+          }
+        ]
+      },
+      {
+        "startDate": "2008-11-04",
+        "troughDate": "2008-11-20",
+        "drawdownPct": -25.186179225313822,
+        "warningScores": [
+          {
+            "month": "2008-09",
+            "score": 47
+          },
+          {
+            "month": "2008-10",
+            "score": 47
+          }
+        ]
+      },
+      {
+        "startDate": "2008-12-16",
+        "troughDate": "2009-03-09",
+        "drawdownPct": -25.914930821631277,
+        "warningScores": [
+          {
+            "month": "2008-10",
+            "score": 47
+          }
+        ]
+      },
+      {
+        "startDate": "2010-03-23",
+        "troughDate": "2010-06-07",
+        "drawdownPct": -10.535107234259232,
+        "warningScores": []
+      },
+      {
+        "startDate": "2011-06-30",
+        "troughDate": "2011-08-08",
+        "drawdownPct": -15.233527038365025,
+        "warningScores": []
+      },
+      {
+        "startDate": "2015-06-23",
+        "troughDate": "2015-08-25",
+        "drawdownPct": -12.07936972594117,
+        "warningScores": []
+      },
+      {
+        "startDate": "2015-10-23",
+        "troughDate": "2016-01-20",
+        "drawdownPct": -10.400209934005611,
+        "warningScores": []
+      },
+      {
+        "startDate": "2018-01-26",
+        "troughDate": "2018-02-08",
+        "drawdownPct": -10.159530548956274,
+        "warningScores": []
+      },
+      {
+        "startDate": "2018-09-20",
+        "troughDate": "2018-12-17",
+        "drawdownPct": -13.130088154695896,
+        "warningScores": []
+      },
+      {
+        "startDate": "2019-12-12",
+        "troughDate": "2020-03-11",
+        "drawdownPct": -13.48211263537138,
+        "warningScores": []
+      },
+      {
+        "startDate": "2021-12-10",
+        "troughDate": "2022-03-08",
+        "drawdownPct": -11.48806291091693,
+        "warningScores": []
+      },
+      {
+        "startDate": "2022-03-18",
+        "troughDate": "2022-06-14",
+        "drawdownPct": -16.303395777241214,
+        "warningScores": []
+      },
+      {
+        "startDate": "2022-07-21",
+        "troughDate": "2022-10-12",
+        "drawdownPct": -10.550767752203505,
+        "warningScores": []
+      },
+      {
+        "startDate": "2025-01-21",
+        "troughDate": "2025-04-08",
+        "drawdownPct": -17.629820829126597,
+        "warningScores": []
+      }
+    ]
+  },
+  "forwardOutcomesByBucket": {
+    "0-24": {
+      "scoreCount": 74,
+      "outcomes": {
+        "1": {
+          "count": 74,
+          "meanForwardReturnPct": 0.22648895421455367,
+          "meanMaximumDrawdownPct": -0.22847472518940629,
+          "meanRealizedVolatilityPct": 0
+        },
+        "5": {
+          "count": 74,
+          "meanForwardReturnPct": 0.5731959995680261,
+          "meanMaximumDrawdownPct": -1.1028650103645423,
+          "meanRealizedVolatilityPct": 11.575027995974542
+        },
+        "20": {
+          "count": 74,
+          "meanForwardReturnPct": 0.8429224674760192,
+          "meanMaximumDrawdownPct": -3.2140744482923926,
+          "meanRealizedVolatilityPct": 12.811626387860331
+        },
+        "60": {
+          "count": 74,
+          "meanForwardReturnPct": 2.0929350245796248,
+          "meanMaximumDrawdownPct": -6.492609525285578,
+          "meanRealizedVolatilityPct": 14.361786447223352
+        },
+        "120": {
+          "count": 74,
+          "meanForwardReturnPct": 3.649762008846166,
+          "meanMaximumDrawdownPct": -9.92261389467812,
+          "meanRealizedVolatilityPct": 15.767684497019134
+        },
+        "252": {
+          "count": 74,
+          "meanForwardReturnPct": 7.0288241784922985,
+          "meanMaximumDrawdownPct": -16.242489241645217,
+          "meanRealizedVolatilityPct": 17.64968804190678
+        }
+      }
+    },
+    "25-44": {
+      "scoreCount": 221,
+      "outcomes": {
+        "1": {
+          "count": 221,
+          "meanForwardReturnPct": 0.15570044509588105,
+          "meanMaximumDrawdownPct": -0.42028927153788787,
+          "meanRealizedVolatilityPct": 0
+        },
+        "5": {
+          "count": 221,
+          "meanForwardReturnPct": 0.2673269751749787,
+          "meanMaximumDrawdownPct": -1.769427226173069,
+          "meanRealizedVolatilityPct": 16.64442725561054
+        },
+        "20": {
+          "count": 220,
+          "meanForwardReturnPct": 0.8397031117492005,
+          "meanMaximumDrawdownPct": -4.18166807753823,
+          "meanRealizedVolatilityPct": 16.34292162169396
+        },
+        "60": {
+          "count": 218,
+          "meanForwardReturnPct": 2.554242317306502,
+          "meanMaximumDrawdownPct": -7.337948356196785,
+          "meanRealizedVolatilityPct": 16.407400331980284
+        },
+        "120": {
+          "count": 215,
+          "meanForwardReturnPct": 5.047729117615905,
+          "meanMaximumDrawdownPct": -10.1603365969397,
+          "meanRealizedVolatilityPct": 16.59583851379753
+        },
+        "252": {
+          "count": 209,
+          "meanForwardReturnPct": 10.92992930851298,
+          "meanMaximumDrawdownPct": -13.92108737588076,
+          "meanRealizedVolatilityPct": 16.7085263057403
+        }
+      }
+    },
+    "45-64": {
+      "scoreCount": 23,
+      "outcomes": {
+        "1": {
+          "count": 23,
+          "meanForwardReturnPct": 0.16486141427996273,
+          "meanMaximumDrawdownPct": -0.2745890297507096,
+          "meanRealizedVolatilityPct": 0
+        },
+        "5": {
+          "count": 23,
+          "meanForwardReturnPct": -0.9013271910226515,
+          "meanMaximumDrawdownPct": -3.1017383031353014,
+          "meanRealizedVolatilityPct": 23.81943586102709
+        },
+        "20": {
+          "count": 23,
+          "meanForwardReturnPct": -2.74205756161832,
+          "meanMaximumDrawdownPct": -8.018549804792524,
+          "meanRealizedVolatilityPct": 27.927404420441384
+        },
+        "60": {
+          "count": 23,
+          "meanForwardReturnPct": -7.63321864463351,
+          "meanMaximumDrawdownPct": -15.718409708405174,
+          "meanRealizedVolatilityPct": 28.59876200264953
+        },
+        "120": {
+          "count": 23,
+          "meanForwardReturnPct": -11.998774904933589,
+          "meanMaximumDrawdownPct": -22.189433999075305,
+          "meanRealizedVolatilityPct": 27.091738750895846
+        },
+        "252": {
+          "count": 23,
+          "meanForwardReturnPct": -16.89976099435966,
+          "meanMaximumDrawdownPct": -31.323190297164214,
+          "meanRealizedVolatilityPct": 25.85154771031001
+        }
+      }
+    },
+    "65-79": {
+      "scoreCount": 0,
+      "outcomes": {
+        "1": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "5": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "20": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "60": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "120": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "252": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        }
+      }
+    },
+    "80-100": {
+      "scoreCount": 0,
+      "outcomes": {
+        "1": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "5": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "20": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "60": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "120": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        },
+        "252": {
+          "count": 0,
+          "meanForwardReturnPct": null,
+          "meanMaximumDrawdownPct": null,
+          "meanRealizedVolatilityPct": null
+        }
+      }
+    }
+  },
+  "temporalStability": {
+    "method": "mean of 60-month rolling one-month-lag score correlations",
+    "windows": 258,
+    "meanCorrelation": 0.8986894157078931,
+    "minimumCorrelation": 0.7882182599871568
+  },
+  "vectorCorrelations": {
+    "liquidityStress": {
+      "liquidityStress": 1,
+      "creditContagion": 0.8659547993246177,
+      "volatilityRegime": 0.09897268811922003,
+      "macroSensitivity": 0.04453502924344206,
+      "marketBreadth": 0.31364787926863,
+      "aiBubble": 0.6689979552766662
+    },
+    "creditContagion": {
+      "liquidityStress": 0.8659547993246177,
+      "creditContagion": 1,
+      "volatilityRegime": -0.22724019457087435,
+      "macroSensitivity": -0.23942414088587669,
+      "marketBreadth": 0.6828047600742879,
+      "aiBubble": 0.5361119501920348
+    },
+    "volatilityRegime": {
+      "liquidityStress": 0.09897268811922003,
+      "creditContagion": -0.22724019457087435,
+      "volatilityRegime": 1,
+      "macroSensitivity": 0.7121010564434072,
+      "marketBreadth": -0.3339452429153229,
+      "aiBubble": 0.5472093015771106
+    },
+    "macroSensitivity": {
+      "liquidityStress": 0.04453502924344206,
+      "creditContagion": -0.23942414088587669,
+      "volatilityRegime": 0.7121010564434072,
+      "macroSensitivity": 1,
+      "marketBreadth": -0.3359706009996387,
+      "aiBubble": 0.4298559079741438
+    },
+    "marketBreadth": {
+      "liquidityStress": 0.31364787926863,
+      "creditContagion": 0.6828047600742879,
+      "volatilityRegime": -0.3339452429153229,
+      "macroSensitivity": -0.3359706009996387,
+      "marketBreadth": 1,
+      "aiBubble": 0.2728057121305273
+    },
+    "aiBubble": {
+      "liquidityStress": 0.6689979552766662,
+      "creditContagion": 0.5361119501920348,
+      "volatilityRegime": 0.5472093015771106,
+      "macroSensitivity": 0.4298559079741438,
+      "marketBreadth": 0.2728057121305273,
+      "aiBubble": 1
+    }
+  },
+  "ablation": {
+    "liquidityStress": {
+      "meanDifference": -1.389937106918239,
+      "meanAbsoluteDifference": 2.4716981132075473,
+      "maximumAbsoluteDifference": 8
+    },
+    "creditContagion": {
+      "meanDifference": -0.7295597484276729,
+      "meanAbsoluteDifference": 2.389937106918239,
+      "maximumAbsoluteDifference": 5
+    },
+    "volatilityRegime": {
+      "meanDifference": 1.3396226415094339,
+      "meanAbsoluteDifference": 2.119496855345912,
+      "maximumAbsoluteDifference": 6
+    },
+    "macroSensitivity": {
+      "meanDifference": 2.5377358490566038,
+      "meanAbsoluteDifference": 3.757861635220126,
+      "maximumAbsoluteDifference": 10
+    },
+    "marketBreadth": {
+      "meanDifference": -0.03459119496855346,
+      "meanAbsoluteDifference": 1.3930817610062893,
+      "maximumAbsoluteDifference": 4
+    },
+    "aiBubble": {
+      "meanDifference": -1.60062893081761,
+      "meanAbsoluteDifference": 1.6823899371069182,
+      "maximumAbsoluteDifference": 4
+    }
+  },
+  "partitions": {
+    "development": {
+      "count": 144,
+      "mean": 38.3125,
+      "standardDeviation": 6.951851139497613,
+      "minimum": 26,
+      "p25": 33,
+      "median": 38,
+      "p75": 42,
+      "maximum": 56
+    },
+    "validation": {
+      "count": 95,
+      "mean": 23.768421052631577,
+      "standardDeviation": 4.655019326190993,
+      "minimum": 16,
+      "p25": 21,
+      "median": 23,
+      "p75": 27,
+      "maximum": 36
+    },
+    "holdout": {
+      "count": 79,
+      "mean": 29.253164556962027,
+      "standardDeviation": 5.524928017701138,
+      "minimum": 19,
+      "p25": 25.5,
+      "median": 28,
+      "p75": 33,
+      "maximum": 42
+    }
+  },
+  "legacyComparison": {
+    "overlappingMonths": 316,
+    "scoreCorrelation": -0.01416271472669474,
+    "meanDifferenceReconstructedMinusLegacy": -22.443037974683545,
+    "maxAbsoluteDifference": 46,
+    "interpretation": "Descriptive only; legacy history is not a calibration target."
+  },
+  "majorEventScores": {
+    "dot-com": {
+      "months": [
+        {
+          "month": "2000-01",
+          "score": 43,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2000-02",
+          "score": 46,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-03",
+          "score": 51,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-04",
+          "score": 51,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-05",
+          "score": 51,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-06",
+          "score": 52,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-07",
+          "score": 53,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-08",
+          "score": 53,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-09",
+          "score": 54,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-10",
+          "score": 56,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-11",
+          "score": 56,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2000-12",
+          "score": 53,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2001-01",
+          "score": 51,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2001-02",
+          "score": 52,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2001-03",
+          "score": 50,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2001-04",
+          "score": 49,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2001-05",
+          "score": 49,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2001-06",
+          "score": 48,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2001-07",
+          "score": 46,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2001-08",
+          "score": 44,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2001-09",
+          "score": 44,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2001-10",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2001-11",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2001-12",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-01",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-02",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-03",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-04",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-05",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-06",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-07",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-08",
+          "score": 40,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-09",
+          "score": 38,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-10",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-11",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2002-12",
+          "score": 40,
+          "regime": "MODERATE RISK"
+        }
+      ],
+      "maximumScore": 56,
+      "minimumScore": 38
+    },
+    "gfc-lead": {
+      "months": [
+        {
+          "month": "2007-01",
+          "score": 32,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-02",
+          "score": 31,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-03",
+          "score": 31,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-04",
+          "score": 31,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-05",
+          "score": 33,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-06",
+          "score": 32,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-07",
+          "score": 38,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-08",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-09",
+          "score": 33,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-10",
+          "score": 35,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-11",
+          "score": 40,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2007-12",
+          "score": 40,
+          "regime": "MODERATE RISK"
+        }
+      ],
+      "maximumScore": 40,
+      "minimumScore": 31
+    },
+    "gfc": {
+      "months": [
+        {
+          "month": "2008-01",
+          "score": 43,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2008-02",
+          "score": 45,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2008-03",
+          "score": 44,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2008-04",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2008-05",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2008-06",
+          "score": 43,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2008-07",
+          "score": 46,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2008-08",
+          "score": 47,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2008-09",
+          "score": 47,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2008-10",
+          "score": 47,
+          "regime": "ELEVATED RISK"
+        },
+        {
+          "month": "2008-11",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2008-12",
+          "score": 36,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2009-01",
+          "score": 38,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2009-02",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2009-03",
+          "score": 38,
+          "regime": "MODERATE RISK"
+        }
+      ],
+      "maximumScore": 47,
+      "minimumScore": 36
+    },
+    "euro-2011": {
+      "months": [
+        {
+          "month": "2011-01",
+          "score": 32,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-02",
+          "score": 31,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-03",
+          "score": 32,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-04",
+          "score": 33,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-05",
+          "score": 34,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-06",
+          "score": 36,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-07",
+          "score": 36,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-08",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-09",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-10",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-11",
+          "score": 41,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2011-12",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        }
+      ],
+      "maximumScore": 42,
+      "minimumScore": 31
+    },
+    "oil-2015-16": {
+      "months": [
+        {
+          "month": "2015-01",
+          "score": 24,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2015-02",
+          "score": 21,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2015-03",
+          "score": 22,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2015-04",
+          "score": 21,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2015-05",
+          "score": 21,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2015-06",
+          "score": 24,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2015-07",
+          "score": 24,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2015-08",
+          "score": 26,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2015-09",
+          "score": 29,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2015-10",
+          "score": 26,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2015-11",
+          "score": 28,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2015-12",
+          "score": 30,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2016-01",
+          "score": 32,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2016-02",
+          "score": 31,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2016-03",
+          "score": 30,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2016-04",
+          "score": 27,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2016-05",
+          "score": 26,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2016-06",
+          "score": 26,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2016-07",
+          "score": 25,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2016-08",
+          "score": 22,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2016-09",
+          "score": 22,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2016-10",
+          "score": 22,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2016-11",
+          "score": 21,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2016-12",
+          "score": 19,
+          "regime": "LOW RISK"
+        }
+      ],
+      "maximumScore": 32,
+      "minimumScore": 19
+    },
+    "q4-2018": {
+      "months": [
+        {
+          "month": "2018-10",
+          "score": 23,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2018-11",
+          "score": 25,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2018-12",
+          "score": 28,
+          "regime": "MODERATE RISK"
+        }
+      ],
+      "maximumScore": 28,
+      "minimumScore": 23
+    },
+    "covid": {
+      "months": [
+        {
+          "month": "2020-02",
+          "score": 23,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2020-03",
+          "score": 32,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2020-04",
+          "score": 32,
+          "regime": "MODERATE RISK"
+        }
+      ],
+      "maximumScore": 32,
+      "minimumScore": 23
+    },
+    "rates-2022": {
+      "months": [
+        {
+          "month": "2022-01",
+          "score": 23,
+          "regime": "LOW RISK"
+        },
+        {
+          "month": "2022-02",
+          "score": 26,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-03",
+          "score": 25,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-04",
+          "score": 28,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-05",
+          "score": 29,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-06",
+          "score": 35,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-07",
+          "score": 33,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-08",
+          "score": 35,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-09",
+          "score": 40,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-10",
+          "score": 38,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-11",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2022-12",
+          "score": 42,
+          "regime": "MODERATE RISK"
+        }
+      ],
+      "maximumScore": 42,
+      "minimumScore": 23
+    },
+    "ai-2023": {
+      "months": [
+        {
+          "month": "2023-01",
+          "score": 38,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-02",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-03",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-04",
+          "score": 36,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-05",
+          "score": 38,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-06",
+          "score": 36,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-07",
+          "score": 34,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-08",
+          "score": 34,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-09",
+          "score": 36,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-10",
+          "score": 39,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-11",
+          "score": 35,
+          "regime": "MODERATE RISK"
+        },
+        {
+          "month": "2023-12",
+          "score": 31,
+          "regime": "MODERATE RISK"
+        }
+      ],
+      "maximumScore": 39,
+      "minimumScore": 31
+    }
+  },
+  "limitations": [
+    "All extended scores are reconstructed and aggregate revised historical/proxy inputs.",
+    "The exact high-yield spread uses an archived FRED capture subject to ICE/FRED restrictions, not ALFRED vintages.",
+    "Pre-2018 SOFR uses the explicitly disclosed official primary-dealer repo proxy; 2018-03 remains incomplete.",
+    "Outcomes use S&P 500 price returns only and only daily-cadence-confirmed observations.",
+    "No result establishes a real-time historical FAULTLINE warning claim."
+  ]
+}

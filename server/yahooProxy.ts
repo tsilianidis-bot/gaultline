@@ -56,7 +56,7 @@ const dailyBarCache = new LRUCache<string, YahooDailyBar[]>(200, 60 * 60_000);
  * market ticker. This avoids consuming Polygon free-tier requests for each
  * discovery candidate while preserving a source-backed technical history.
  */
-export async function getDailyBars(ticker: string, range: "3mo" | "6mo" = "3mo"): Promise<YahooDailyBar[]> {
+export async function getDailyBars(ticker: string, range: "3mo" | "6mo" | "5y" | "10y" | "max" = "3mo"): Promise<YahooDailyBar[]> {
   const cacheKey = `${ticker.toUpperCase()}_${range}`;
   const cached = dailyBarCache.get(cacheKey);
   if (cached) return cached;
@@ -79,6 +79,40 @@ export async function getDailyBars(ticker: string, range: "3mo" | "6mo" = "3mo")
     return bars;
   } catch (error) {
     log.warn(`[Yahoo Proxy] Daily bars unavailable for ${ticker}: ${error instanceof Error ? error.message : String(error)}`);
+    return [];
+  }
+}
+
+/**
+ * Fetches an explicitly period-bounded daily series. Historical research must
+ * use this path rather than a provider range alias, which may downsample very
+ * long ranges into monthly bars.
+ */
+export async function getDailyBarsForPeriod(ticker: string, startDate: string, endDate: string): Promise<YahooDailyBar[]> {
+  const cacheKey = `${ticker.toUpperCase()}_daily_${startDate}_${endDate}`;
+  const cached = dailyBarCache.get(cacheKey);
+  if (cached) return cached;
+  try {
+    const period1 = Math.floor(Date.parse(`${startDate}T00:00:00.000Z`) / 1000);
+    const period2 = Math.floor((Date.parse(`${endDate}T00:00:00.000Z`) + 86_400_000) / 1000);
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&period1=${period1}&period2=${period2}&includePrePost=false`, {
+      headers: { "User-Agent": "Mozilla/5.0", "Accept": "application/json", "Referer": "https://finance.yahoo.com/" },
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!response.ok) throw new Error(`Yahoo period daily bars HTTP ${response.status}`);
+    const payload = await response.json() as { chart?: { result?: Array<{ timestamp?: number[]; indicators?: { quote?: Array<{ close?: Array<number | null>; open?: Array<number | null>; high?: Array<number | null>; low?: Array<number | null>; volume?: Array<number | null> }> } }> } };
+    const result = payload.chart?.result?.[0];
+    const quote = result?.indicators?.quote?.[0];
+    const timestamps = result?.timestamp ?? [];
+    if (!quote || timestamps.length === 0) return [];
+    const bars = timestamps.map((timestamp, index) => ({
+      close: quote.close?.[index] ?? null, open: quote.open?.[index] ?? null, high: quote.high?.[index] ?? null,
+      low: quote.low?.[index] ?? null, volume: quote.volume?.[index] ?? null, timestamp: timestamp * 1000,
+    })).filter((bar): bar is YahooDailyBar => [bar.close, bar.open, bar.high, bar.low, bar.volume].every(value => typeof value === "number" && Number.isFinite(value)));
+    dailyBarCache.set(cacheKey, bars);
+    return bars;
+  } catch (error) {
+    log.warn(`[Yahoo Proxy] Period-bounded daily bars unavailable for ${ticker}: ${error instanceof Error ? error.message : String(error)}`);
     return [];
   }
 }

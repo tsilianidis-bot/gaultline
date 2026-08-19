@@ -5013,3 +5013,13 @@
 - [x] Calculate gated Champion validation metrics, then issue an evidence-only INCONCLUSIVE verdict without running or promoting V3-H
 - [x] Complete full regression testing and immutable research documentation; checkpoint remains pending
 - [x] Retain V3-H as shadow-only and do not run a Challenger comparison because the Champion evidence gate is inconclusive
+
+## FAULTLINE Verified Historical Validation V1 — Phase 1B Coverage Extension
+- [x] Audit all eight frozen Champion input sources for historical availability, vintage support, release timing, revisions, units, transformations, and limitations
+- [x] Search official, archived, workspace, and institutional candidate sources for a defensible high-yield credit-spread extension without substituting on correlation alone
+- [x] Investigate a defensible SOFR predecessor only under a separately versioned reconstructed-data policy; do not automatically substitute Fed Funds
+- [x] Lock source-selection, predecessor, release-lag, missing-data, timestamp, normalization, and revised-versus-vintage policies before scoring any extended history
+- [x] Create strictly separate VERIFIED_POINT_IN_TIME_HISTORY and RECONSTRUCTED_HISTORICAL_RESEARCH_HISTORY datasets where the evidence supports them
+- [x] Run the unchanged frozen Champion V1 over any locked extended dataset and independently extend S&P 500 outcome observations
+- [x] Measure score-range compression, stress-versus-calm discrimination, regime calibration, event performance, temporal stability, and descriptive legacy-series differences without optimization
+- [x] Publish a source-cited Phase 1B extension report, retain V3-H shadow-only, run regression tests, and checkpoint the research-only work
