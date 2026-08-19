@@ -4978,3 +4978,11 @@
 - [x] Assess ablation, stability, false-alarm, warning-lead, calibration, and out-of-sample comparison eligibility; all valid comparisons are blocked until reproducible point-in-time outcomes exist
 - [x] Keep all redesigned candidates blocked from shadow or production promotion until independent validation improves outcomes without degrading explainability, stability, or production reliability
 - [x] Publish the redesign program specification, validation gates, and no-production-change recommendation without changing live score behavior prematurely
+
+## Historical Pressure Index Formula Recovery Audit
+- [x] Search current source, Git history, deleted or renamed files, reachable checkpoint artifacts, scripts, seeds, migrations, tests, documents, datasets, reflogs, and unreachable Git objects for every distinct historical pressure-scoring implementation
+- [x] Build a formula-version inventory covering vectors, weights, transforms, caps/floors, thresholds, amplifier/conditional logic, rounding, sources, dates, and recovery status
+- [x] Identify the unrecovered historical batch as the only plausible source of the 317 stored monthly scores and the October/November 2008 approximately-82 CRITICAL readings; no generator or formula sequence was recovered from all available artifacts
+- [x] Recalculate all 317 months under every recovered formula: current V1 yields 14 exact matches, 0 raw-input-defensible months, and a 30-point maximum error; no undocumented historical formula was inferred or fabricated
+- [x] Explain material differences through recovered formula-version evidence, missing provenance, bucket/cap patterns, raw-input divergence, and documented-but-unrecovered crisis-amplifier evidence without assuming corruption
+- [x] Publish the Historical Pressure Index Provenance and Formula Recovery Audit with no production scoring, probability, threshold, history, or Challenger changes
