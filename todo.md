@@ -4993,3 +4993,23 @@
 - [x] Classify the documentary crisis-amplifier statement as confirmed evidence and the unrecovered implementation details as unavailable; no original generator artifact was found to preserve
 - [x] Do not run 2008, 2020, or 317-row generator reconciliation because no genuine historical generator was recovered
 - [x] Publish a strict source-availability matrix and forensic recovery report with no production-code, data, model, or historical-record modification
+
+## FAULTLINE Verified Historical Validation V1
+- [x] Freeze the exact current Champion in `CHAMPION_V1_FROZEN_SPECIFICATION.md` without changing live scoring or the legacy historical research series
+- [x] Create separate versioned formula, dataset, release-aware input, verified-score, and independent-outcome registries with checksum and append-only protections
+- [x] Implement an ALFRED/release-aware historical ingestion layer with explicit POINT_IN_TIME_CONFIRMED, POINT_IN_TIME_APPROXIMATED, REVISED_HISTORICAL, and UNAVAILABLE classifications
+- [x] Define a documented monthly score timestamp, research missing-data policy, and broadest defensible common validation period without live fallback constants
+- [x] Generate `VERIFIED_CHAMPION_V1_HISTORY` only from the frozen Champion and separate it permanently from `LEGACY HISTORICAL RESEARCH SERIES`
+- [x] Build independent 1d/5d/20d/60d outcome ledgers and pre-register objective drawdown, volatility, credit, systemic-stress, and macro event definitions; leave VIX explicitly not evaluated pending an independent source
+- [x] Run locked Champion distribution, warning, false-alarm, miss, lead-time, stability, regime, calibration, and walk-forward evaluation only where data-quality gates permit
+- [ ] Compare a shadow Challenger only against the same locked verified dataset after Champion validation gates pass
+- [x] Publish `VERIFIED_HISTORICAL_DATASET_MANIFEST.md`, validation reports, limitations, confidence bands, and evidence-gated deployment recommendations without modifying production behavior
+- [x] Add research-only verified historical formula, source-observation, score, outcome, and validation-run tables through additive migration `0059_futuristic_daredevil.sql`; do not alter `pressureHistory` or the live pressure engine
+- [x] Implement and regression-test the exact frozen Champion V1 calculator, no-fallback completeness gate, quality worst-case propagation, ALFRED/FRED source ingestion, and research-only build command
+- [x] Empirically establish that the current FRED BAMLH0A0HYM2 endpoint retains no pre-2023-08-21 observation and offers no ALFRED vintage history; preserve this as a coverage limitation rather than backfilling or substituting data
+- [x] Persist the current defensible common coverage boundary and build verified monthly scores only for officially retrievable source dates, with BAML classified `REVISED_HISTORICAL` and all quality states retained
+- [x] Build independent S&P 500 daily outcome observations at 1d, 5d, 20d, and 60d without feeding outcomes into Champion scoring
+- [x] Pre-register event definitions and locked development, validation, and holdout partitions before calculating any performance metrics
+- [x] Calculate gated Champion validation metrics, then issue an evidence-only INCONCLUSIVE verdict without running or promoting V3-H
+- [x] Complete full regression testing and immutable research documentation; checkpoint remains pending
+- [x] Retain V3-H as shadow-only and do not run a Challenger comparison because the Champion evidence gate is inconclusive

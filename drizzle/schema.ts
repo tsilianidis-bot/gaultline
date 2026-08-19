@@ -525,6 +525,137 @@ export const algorithmOutcomeObservations = mysqlTable("algorithmOutcomeObservat
 export type AlgorithmOutcomeObservation = typeof algorithmOutcomeObservations.$inferSelect;
 export type InsertAlgorithmOutcomeObservation = typeof algorithmOutcomeObservations.$inferInsert;
 
+// ── Verified Historical Validation V1 (research-only) ──────────
+/**
+ * Separate versioned formula ledger for reproducible historical research.
+ * This table never changes the live pressure engine or the legacy Track Record.
+ */
+export const verifiedHistoricalFormulaVersions = mysqlTable("verifiedHistoricalFormulaVersions", {
+  id:                      int("id").autoincrement().primaryKey(),
+  modelVersion:            varchar("modelVersion", { length: 96 }).notNull().unique(),
+  formulaHash:             varchar("formulaHash", { length: 128 }).notNull(),
+  engineSourceHash:        varchar("engineSourceHash", { length: 128 }).notNull(),
+  sourceCommit:            varchar("sourceCommit", { length: 96 }).notNull(),
+  formulaJson:             text("formulaJson").notNull(),
+  frozenSpecificationPath: varchar("frozenSpecificationPath", { length: 255 }).notNull(),
+  status:                  mysqlEnum("status", ["frozen", "deprecated"]).default("frozen").notNull(),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+});
+export type VerifiedHistoricalFormulaVersion = typeof verifiedHistoricalFormulaVersions.$inferSelect;
+
+/**
+ * Immutable source observations for historical research. Every row records
+ * vintage and availability quality explicitly; no live runtime fallback is stored here.
+ */
+export const verifiedHistoricalSourceObservations = mysqlTable("verifiedHistoricalSourceObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  sourceKey:                varchar("sourceKey", { length: 255 }).notNull().unique(),
+  seriesId:                 varchar("seriesId", { length: 64 }).notNull(),
+  observationDate:          varchar("observationDate", { length: 10 }).notNull(),
+  realtimeStart:            varchar("realtimeStart", { length: 10 }),
+  realtimeEnd:              varchar("realtimeEnd", { length: 10 }),
+  valueText:                varchar("valueText", { length: 128 }),
+  valueNumeric:             double("valueNumeric"),
+  publicationAvailableAt:   timestamp("publicationAvailableAt"),
+  availabilityTimestamp:    timestamp("availabilityTimestamp"),
+  qualityClassification:    mysqlEnum("qualityClassification", ["POINT_IN_TIME_CONFIRMED", "POINT_IN_TIME_APPROXIMATED", "REVISED_HISTORICAL", "UNAVAILABLE"]).notNull(),
+  sourceUrl:                text("sourceUrl").notNull(),
+  transformation:           text("transformation").notNull(),
+  sourceMetadataJson:       text("sourceMetadataJson").notNull(),
+  retrievedAt:              timestamp("retrievedAt").defaultNow().notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  seriesObservationIdx: index("verifiedHist_source_series_date_idx").on(t.seriesId, t.observationDate),
+  qualityIdx: index("verifiedHist_source_quality_idx").on(t.qualityClassification),
+}));
+export type VerifiedHistoricalSourceObservation = typeof verifiedHistoricalSourceObservations.$inferSelect;
+
+/**
+ * Separate V1 historical score series. Incomplete months are persisted with
+ * explicit missing flags rather than manufactured scores.
+ */
+export const verifiedHistoricalScores = mysqlTable("verifiedHistoricalScores", {
+  id:                      int("id").autoincrement().primaryKey(),
+  scoreKey:                varchar("scoreKey", { length: 255 }).notNull().unique(),
+  formulaVersionId:        int("formulaVersionId").notNull(),
+  scoreMonth:              varchar("scoreMonth", { length: 7 }).notNull(),
+  scoreTimestamp:          timestamp("scoreTimestamp").notNull(),
+  scoreStatus:             mysqlEnum("scoreStatus", ["COMPLETE", "INCOMPLETE", "EXCLUDED"]).notNull(),
+  overallPressure:         int("overallPressure"),
+  regime:                  varchar("regime", { length: 80 }),
+  vectorScoresJson:        text("vectorScoresJson").notNull(),
+  rawInputsJson:           text("rawInputsJson").notNull(),
+  sourceObservationKeysJson: text("sourceObservationKeysJson").notNull(),
+  qualitySummary:          mysqlEnum("qualitySummary", ["POINT_IN_TIME_CONFIRMED", "POINT_IN_TIME_APPROXIMATED", "REVISED_HISTORICAL", "UNAVAILABLE"]).notNull(),
+  missingFlagsJson:        text("missingFlagsJson").notNull(),
+  datasetChecksum:         varchar("datasetChecksum", { length: 128 }).notNull(),
+  calculatedAt:            timestamp("calculatedAt").defaultNow().notNull(),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  formulaFk: foreignKey({
+    columns: [t.formulaVersionId],
+    foreignColumns: [verifiedHistoricalFormulaVersions.id],
+    name: "verified_hist_score_formula_fk",
+  }).onDelete("restrict"),
+  formulaMonthIdx: uniqueIndex("verifiedHist_score_formula_month_idx").on(t.formulaVersionId, t.scoreMonth),
+  timestampIdx: index("verifiedHist_score_timestamp_idx").on(t.scoreTimestamp),
+  statusIdx: index("verifiedHist_score_status_idx").on(t.scoreStatus),
+}));
+export type VerifiedHistoricalScore = typeof verifiedHistoricalScores.$inferSelect;
+
+/**
+ * Independent market outcomes for verified research scores. Outcomes remain
+ * separate from score observations and never form a synthetic success score.
+ */
+export const verifiedHistoricalOutcomes = mysqlTable("verifiedHistoricalOutcomes", {
+  id:                     int("id").autoincrement().primaryKey(),
+  outcomeKey:             varchar("outcomeKey", { length: 255 }).notNull().unique(),
+  verifiedScoreId:        int("verifiedScoreId").notNull(),
+  horizonTradingDays:     int("horizonTradingDays").notNull(),
+  startDate:              varchar("startDate", { length: 10 }).notNull(),
+  endDate:                varchar("endDate", { length: 10 }),
+  forwardReturnPct:       double("forwardReturnPct"),
+  maximumDrawdownPct:     double("maximumDrawdownPct"),
+  maximumAdverseExcursionPct: double("maximumAdverseExcursionPct"),
+  realizedVolatilityPct:  double("realizedVolatilityPct"),
+  outcomeStatus:          mysqlEnum("outcomeStatus", ["COMPLETE", "PENDING", "UNAVAILABLE"]).notNull(),
+  outcomeJson:            text("outcomeJson").notNull(),
+  sourceMetadataJson:     text("sourceMetadataJson").notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  verifiedScoreFk: foreignKey({
+    columns: [t.verifiedScoreId],
+    foreignColumns: [verifiedHistoricalScores.id],
+    name: "verified_hist_outcome_score_fk",
+  }).onDelete("restrict"),
+  scoreHorizonIdx: index("verifiedHist_outcome_score_horizon_idx").on(t.verifiedScoreId, t.horizonTradingDays),
+  statusIdx: index("verifiedHist_outcome_status_idx").on(t.outcomeStatus),
+}));
+export type VerifiedHistoricalOutcome = typeof verifiedHistoricalOutcomes.$inferSelect;
+
+/** Append-only metadata for every reproducible research dataset build. */
+export const verifiedHistoricalValidationRuns = mysqlTable("verifiedHistoricalValidationRuns", {
+  id:                     int("id").autoincrement().primaryKey(),
+  runKey:                 varchar("runKey", { length: 160 }).notNull().unique(),
+  formulaVersionId:       int("formulaVersionId").notNull(),
+  scoringTimestampPolicy: text("scoringTimestampPolicy").notNull(),
+  missingDataPolicy:      text("missingDataPolicy").notNull(),
+  datasetChecksum:        varchar("datasetChecksum", { length: 128 }).notNull(),
+  coverageJson:           text("coverageJson").notNull(),
+  partitionJson:          text("partitionJson").notNull(),
+  status:                 mysqlEnum("status", ["IN_PROGRESS", "COMPLETE", "BLOCKED"]).notNull(),
+  limitationJson:         text("limitationJson").notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  validationFormulaFk: foreignKey({
+    columns: [t.formulaVersionId],
+    foreignColumns: [verifiedHistoricalFormulaVersions.id],
+    name: "verified_hist_run_formula_fk",
+  }).onDelete("restrict"),
+  statusIdx: index("verifiedHist_run_status_idx").on(t.status),
+}));
+export type VerifiedHistoricalValidationRun = typeof verifiedHistoricalValidationRuns.$inferSelect;
+
 // ── Feature Flags / Kill Switches ────────────────────────────
 /**
  * Admin-controlled feature flags for disabling risky or broken features
