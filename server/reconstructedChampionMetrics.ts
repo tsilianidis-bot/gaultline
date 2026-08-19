@@ -75,6 +75,12 @@ export function mechanicalAblation(score: CompleteScore, excludedVector: string)
   return { score: recalculated, differenceFromBaseline: recalculated - score.overallPressure };
 }
 
+export function tradingDayWindowEndDate(bars: YahooDailyBar[], decisionDate: string, horizonTradingDays: number) {
+  const decisionIndex = bars.reduce((latest, bar, index) => dateOf(bar) <= decisionDate ? index : latest, -1);
+  if (decisionIndex < 0) return null;
+  return dateOf(bars[Math.min(bars.length - 1, decisionIndex + horizonTradingDays)]!);
+}
+
 function twoMonthsBefore(date: string) {
   const value = new Date(`${date}T00:00:00.000Z`);
   value.setUTCMonth(value.getUTCMonth() - 2);
@@ -111,11 +117,13 @@ export async function runReconstructedChampionMetrics() {
   }) }));
   const evaluatedEvents = warnings.filter(event => event.startDate >= scores[0]!.scoreTimestamp.toISOString().slice(0, 10) && event.startDate <= scores.at(-1)!.scoreTimestamp.toISOString().slice(0, 10));
   const missedEvents = evaluatedEvents.filter(event => event.qualifyingScores.length === 0);
-  const falseAlarms = scores.filter(score => score.overallPressure >= 45 && !events.some(event => {
-    const decision = score.scoreTimestamp.getTime();
-    const start = new Date(`${event.startDate}T00:00:00.000Z`).getTime();
-    return start >= decision && start <= decision + 90 * 86_400_000;
-  }));
+  const falseAlarms = scores.filter(score => {
+    if (score.overallPressure < 45) return false;
+    const decisionDate = score.scoreTimestamp.toISOString().slice(0, 10);
+    const endDate = tradingDayWindowEndDate(dailyBars, decisionDate, 60);
+    if (!endDate) return false;
+    return !events.some(event => event.startDate >= decisionDate && event.startDate <= endDate);
+  });
   const eventScoreIds = new Set(warnings.flatMap(event => event.qualifyingScores.map(score => score.id)));
   const stressValues = warnings.flatMap(event => event.qualifyingScores.map(score => score.overallPressure));
   const calmValues = scores.filter(score => !eventScoreIds.has(score.id) && score.overallPressure < 45).map(score => score.overallPressure);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectEquityDrawdownEvents, mechanicalAblation, scoreBucket } from "./reconstructedChampionMetrics";
+import { detectEquityDrawdownEvents, mechanicalAblation, scoreBucket, tradingDayWindowEndDate } from "./reconstructedChampionMetrics";
 
 describe("Reconstructed Champion metrics", () => {
   it("uses the locked frozen score buckets", () => {
@@ -13,5 +13,9 @@ describe("Reconstructed Champion metrics", () => {
     const result = mechanicalAblation({ id: 1, scoreMonth: "2020-01", scoreTimestamp: new Date("2020-01-31T00:00:00Z"), overallPressure: 50, regime: "ELEVATED RISK", vectors: { liquidityStress: 50, creditContagion: 50, volatilityRegime: 50, macroSensitivity: 50, marketBreadth: 50, aiBubble: 50 } }, "aiBubble");
     expect(result.score).toBe(50);
     expect(result.differenceFromBaseline).toBe(0);
+  });
+  it("uses the requested number of trading observations rather than a calendar-day approximation", () => {
+    const bars = Array.from({ length: 61 }, (_, index) => ({ timestamp: Date.UTC(2020, 0, index + 1), open: 100, high: 100, low: 100, close: 100, volume: 1 }));
+    expect(tradingDayWindowEndDate(bars, "2020-01-01", 60)).toBe("2020-03-01");
   });
 });
