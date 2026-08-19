@@ -1,4 +1,4 @@
-import { bigint, boolean, decimal, double, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, decimal, double, foreignKey, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 
 /**
@@ -473,6 +473,57 @@ export const pressureRuns = mysqlTable("pressureRuns", {
 });
 export type PressureRun = typeof pressureRuns.$inferSelect;
 export type InsertPressureRun = typeof pressureRuns.$inferInsert;
+
+// ── Algorithm Provenance and Outcomes ─────────────────────────
+/**
+ * Append-only daily Champion provenance records. These begin with forward
+ * observations only; they do not backfill or reinterpret historical scores.
+ */
+export const algorithmScoreProvenance = mysqlTable("algorithmScoreProvenance", {
+  id:                 int("id").autoincrement().primaryKey(),
+  observationKey:     varchar("observationKey", { length: 160 }).notNull().unique(),
+  observedAt:         timestamp("observedAt").notNull(),
+  engineVersion:      varchar("engineVersion", { length: 64 }).notNull(),
+  formulaHash:        varchar("formulaHash", { length: 128 }).notNull(),
+  pressureIndex:      int("pressureIndex").notNull(),
+  regime:             varchar("regime", { length: 80 }).notNull(),
+  formulaJson:        text("formulaJson").notNull(),
+  inputManifestJson:  text("inputManifestJson").notNull(),
+  availabilityJson:   text("availabilityJson").notNull(),
+  provenanceStatus:   varchar("provenanceStatus", { length: 64 }).notNull(),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  observedAtIdx: index("algorithmScoreProvenance_observedAt_idx").on(t.observedAt),
+  regimeIdx: index("algorithmScoreProvenance_regime_idx").on(t.regime),
+}));
+export type AlgorithmScoreProvenance = typeof algorithmScoreProvenance.$inferSelect;
+export type InsertAlgorithmScoreProvenance = typeof algorithmScoreProvenance.$inferInsert;
+
+/**
+ * Append-only broad-market outcomes linked to forward live provenance records.
+ * Original score observations remain immutable and outcome data never becomes a
+ * synthetic success score.
+ */
+export const algorithmOutcomeObservations = mysqlTable("algorithmOutcomeObservations", {
+  id:                 int("id").autoincrement().primaryKey(),
+  outcomeKey:         varchar("outcomeKey", { length: 220 }).notNull().unique(),
+  provenanceId:       int("provenanceId").notNull(),
+  horizonTradingDays: int("horizonTradingDays").notNull(),
+  observedAt:         timestamp("observedAt").notNull(),
+  outcomeJson:        text("outcomeJson").notNull(),
+  provenanceJson:     text("provenanceJson").notNull(),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  provenanceFk: foreignKey({
+    columns: [t.provenanceId],
+    foreignColumns: [algorithmScoreProvenance.id],
+    name: "algo_outcome_prov_fk",
+  }).onDelete("cascade"),
+  provenanceHorizonIdx: index("algorithmOutcomeObservations_provenance_horizon_idx").on(t.provenanceId, t.horizonTradingDays),
+  observedAtIdx: index("algorithmOutcomeObservations_observedAt_idx").on(t.observedAt),
+}));
+export type AlgorithmOutcomeObservation = typeof algorithmOutcomeObservations.$inferSelect;
+export type InsertAlgorithmOutcomeObservation = typeof algorithmOutcomeObservations.$inferInsert;
 
 // ── Feature Flags / Kill Switches ────────────────────────────
 /**

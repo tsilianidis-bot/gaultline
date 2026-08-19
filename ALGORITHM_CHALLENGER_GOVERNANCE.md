@@ -29,3 +29,13 @@ V3-H remains a **shadow-only operational comparator**. Its observed reading hist
 ## Production Guardrail
 
 No production scoring change is recommended or authorized by the current audit. The next valid implementation is **data provenance and outcome-ledger remediation**, not a Challenger formula change.
+
+## Champion Redesign Candidate Status
+
+The independent-cluster redesign contract introduces no active Challenger score.
+Its credit/liquidity, treasury/growth, and market-internals/volatility interaction
+hypotheses are **BLOCKED PENDING DATA**. They may not receive weights, probability
+labels, shadow comparison output, or production exposure until Champion
+reproducibility, point-in-time source availability, independent outcome coverage,
+locked walk-forward evaluation, calibration, ablation, stability, and
+explainability gates all pass.

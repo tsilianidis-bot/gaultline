@@ -38,6 +38,7 @@ import type { FaultlinePressureOutput } from "./pressure/engine";
 import type { FMOSUniversalOutput } from "./fmos/types";
 import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
+import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from "./algorithmProvenance";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -152,6 +153,14 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
     },
   });
   await collectBroadInstitutionalEventOutcomes();
+  // Forward-only research evidence. Failures are non-blocking because they must
+  // never interrupt the canonical production Seismograph score.
+  const [provenanceResult, forwardOutcomeResult] = await Promise.allSettled([
+    recordForwardChampionProvenance(pressureOutput),
+    collectForwardChampionOutcomes(),
+  ]);
+  if (provenanceResult.status === "rejected") console.warn("[Seismograph] Champion provenance capture deferred:", provenanceResult.reason);
+  if (forwardOutcomeResult.status === "rejected") console.warn("[Seismograph] Champion outcome collection deferred:", forwardOutcomeResult.reason);
   invalidateCanonicalMarketStateCache();
   console.log("[Seismograph] Output persisted to Market Memory");
 

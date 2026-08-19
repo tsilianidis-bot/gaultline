@@ -4969,3 +4969,12 @@
 - [x] Measure Champion observational threshold behavior, stability, explainability, outcome coverage, and correlation/double-counting characteristics; calibration and warning-quality claims remain blocked by unreconciled formula and missing outcome data
 - [x] Define the required separate stress outcomes and document a Challenger no-go; no Challenger hypothesis is tested until Champion reproducibility, point-in-time integrity, and outcome coverage are established
 - [x] Publish an evidence-bound algorithm audit report; current recommendation is no production scoring change until Champion reproducibility and outcome gates are satisfied
+
+## FAULTLINE Champion Redesign Research Program
+- [x] Preserve the audited current Champion as an immutable baseline and complete the full redesigned requirements inventory
+- [x] Build versioned forward-only source provenance and separate append-only outcome foundations before algorithm changes; release/vintage metadata remains explicitly unavailable until an ALFRED ingestion layer is added
+- [x] Define empirically independent economic risk clusters, indicator level/direction/velocity/acceleration/persistence scoring, confidence limitations, and promotion gates in an offline research contract
+- [x] Pre-register confirmation breadth, interaction terms, regime-aware logic, smoothing, horizons, and probability calibration tests; current offline evaluation is explicitly blocked until reproducible point-in-time outcomes exist
+- [x] Assess ablation, stability, false-alarm, warning-lead, calibration, and out-of-sample comparison eligibility; all valid comparisons are blocked until reproducible point-in-time outcomes exist
+- [x] Keep all redesigned candidates blocked from shadow or production promotion until independent validation improves outcomes without degrading explainability, stability, or production reliability
+- [x] Publish the redesign program specification, validation gates, and no-production-change recommendation without changing live score behavior prematurely
