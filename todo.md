@@ -4986,3 +4986,10 @@
 - [x] Recalculate all 317 months under every recovered formula: current V1 yields 14 exact matches, 0 raw-input-defensible months, and a 30-point maximum error; no undocumented historical formula was inferred or fabricated
 - [x] Explain material differences through recovered formula-version evidence, missing provenance, bucket/cap patterns, raw-input divergence, and documented-but-unrecovered crisis-amplifier evidence without assuming corruption
 - [x] Publish the Historical Pressure Index Provenance and Formula Recovery Audit with no production scoring, probability, threshold, history, or Challenger changes
+
+## Manus Historical Task / Checkpoint Recovery Search
+- [x] Inventory actual availability of prior task conversations, execution logs, checkpoints, workspace snapshots, generated artifacts, transcripts, builds, exports, Git history, reflogs, unreachable objects, and attachments
+- [x] Search every accessible historical Manus artifact and project remnant for the original historical Pressure Index backfill generator and crisis-amplifier implementation using the user-provided terms; only documentary task statements were recovered, not an implementation
+- [x] Classify the documentary crisis-amplifier statement as confirmed evidence and the unrecovered implementation details as unavailable; no original generator artifact was found to preserve
+- [x] Do not run 2008, 2020, or 317-row generator reconciliation because no genuine historical generator was recovered
+- [x] Publish a strict source-availability matrix and forensic recovery report with no production-code, data, model, or historical-record modification
