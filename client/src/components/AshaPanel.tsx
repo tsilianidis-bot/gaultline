@@ -118,6 +118,10 @@ function generateMissionId(): string {
 
 export default function AshaPanel() {
   const { output } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   const { pageContext, threadHistory, appendThreadExchange } = useAshaContext();
   const [panelState, setPanelState] = useState<PanelState>("idle");
   const [currentQuestion, setCurrentQuestion] = useState("");
@@ -130,7 +134,9 @@ export default function AshaPanel() {
 
   // ── Derive regime state for orb ───────────────────────────
   const regimeState: AshaRegimeState = (() => {
-    const score = output?.overall?.score ?? 0;
+    const score = canonicalState?.pressureIndex !== null && canonicalState?.pressureIndex !== undefined
+      ? canonicalState.pressureIndex / 10
+      : output?.overall?.score ?? 0;
     if (score >= 7) return "critical";
     if (score >= 4.5) return "rising";
     return "calm";
@@ -139,15 +145,15 @@ export default function AshaPanel() {
   // ── Build full page context ───────────────────────────────
   const fullPageContext = {
     page: pageContext?.page ?? "dashboard",
-    pressureScore: pageContext?.pressureScore ?? (output?.overall?.score !== undefined ? output.overall.score * 10 : undefined),
-    regime: pageContext?.regime ?? output?.regime?.label,
+    pressureScore: pageContext?.pressureScore ?? canonicalState?.pressureIndex ?? (output?.overall?.score !== undefined ? output.overall.score * 10 : undefined),
+    regime: pageContext?.regime ?? canonicalState?.regime ?? output?.regime?.label,
     regimeConfidence: pageContext?.regimeConfidence,
     narrative: pageContext?.narrative ?? output?.narrative?.summary,
     trend: pageContext?.trend,
     keyDrivers: pageContext?.keyDrivers ?? output?.narrative?.keyRisks,
     historicalAnalog: pageContext?.historicalAnalog,
     transitionProbability: pageContext?.transitionProbability,
-    additionalContext: pageContext?.additionalContext,
+    additionalContext: [pageContext?.additionalContext, canonicalState ? `Canonical state ID: ${canonicalState.stateId}.` : null].filter(Boolean).join(" ") || undefined,
   };
 
   const suggestions = PAGE_SUGGESTIONS[fullPageContext.page] ?? PAGE_SUGGESTIONS.default;
