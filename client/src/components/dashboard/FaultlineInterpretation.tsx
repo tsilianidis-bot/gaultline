@@ -17,6 +17,7 @@
  */
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
 import { getRiskColor } from "@/components/RiskBadge";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -94,7 +95,12 @@ function TakeawayCard({
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export function FaultlineInterpretation() {
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   const { output, indicators } = useEngine();
+  if (!canonicalState) return null;
   const { overall, regime, probability, domains, analogs } = output;
 
   // Derive key signals dynamically
