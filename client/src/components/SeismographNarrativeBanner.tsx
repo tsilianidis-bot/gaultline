@@ -205,6 +205,8 @@ export default function SeismographNarrativeBanner({
     );
   }
 
+  if (!canonicalState) return null;
+
   const stressColor = getStressColor(output.stressLevel);
   const dirColor = getDirectionColor(output.direction);
 
