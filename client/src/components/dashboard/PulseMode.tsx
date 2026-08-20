@@ -30,8 +30,14 @@ function DeltaIcon({ delta }: { delta: number }) {
 // ── Pressure Index Hero ────────────────────────────────────────────────────────
 function PressureHero() {
   const { output, isLive, isLoading } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  if (!canonicalState) return null;
   const { overall, regime, probability, domains } = output;
-  const color = regime.color;
+  const canonicalRiskLevel = canonicalState.regime === "LOW RISK" ? "low" : canonicalState.regime === "MODERATE RISK" ? "moderate" : canonicalState.regime === "ELEVATED RISK" ? "elevated" : canonicalState.regime === "HIGH STRESS" ? "high" : "critical";
+  const color = getRiskColor(canonicalRiskLevel);
 
   const volatilityDomain = domains.find(d => d.id === "volatility-vix");
   const liquidityDomain = domains.find(d => d.id === "liquidity");
@@ -352,6 +358,11 @@ function CompactSignalFooter() {
 
 // ── PULSE MODE ROOT ────────────────────────────────────────────────────────────
 export default function PulseMode() {
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  if (!canonicalState) return null;
   return (
     <div className="flex flex-col gap-4 pb-8">
       <PressureHero />
