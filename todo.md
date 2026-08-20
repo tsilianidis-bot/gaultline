@@ -5089,3 +5089,11 @@
 - [ ] Explicitly tag non-current historical, archived, and reconstructed research contexts and keep them separate from live canonical state
 - [ ] Add and run Tests A–J plus WHY, WATCH, Market Context, ASHA/Oracle, Outlook, cache-alignment, and cross-surface canonical-identity invariants
 - [ ] Publish the complete 32-item Phase 2B closure report, migration inventory, fallback audit, real cross-surface example, exact gate decision, regression results, and checkpoint without starting Phase 3
+
+## Phase 2B — User-Requested Final Closure Verification
+- [ ] Create one final combined checkpoint containing all completed Phase 2B canonical-state migrations
+- [ ] Complete secondary-consumer inventory and canonical stateId propagation verification for every current-intelligence payload
+- [ ] Prove no core current-intelligence path silently falls back to legacy mixed/projected state
+- [ ] Run Phase 2 Tests A–J, WHY, WATCH, Market Context, ASHA/Oracle, Outlook, and cross-surface invariant tests
+- [ ] Run the complete regression suite and re-run all 32 Phase 2 acceptance-gate questions
+- [ ] Issue exactly one Phase 2 verdict and stop without beginning Phase 3
