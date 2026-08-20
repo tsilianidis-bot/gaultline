@@ -20,6 +20,7 @@ import { getQuote } from "../yahooProxy";
 import { getRisingStarVisualDetail } from "../risingStarsVisual";
 import { forecastHorizonPromptContract, insufficientHorizonMetadata } from "../../shared/forecastMetadata";
 import { recordForecastObservation } from "../forecastHorizon";
+import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
@@ -65,13 +66,17 @@ export const outlookRouter = router({
     }))
     .query(async ({ input }) => {
       try {
-        const result = await getFullOutlook(input.symbol, input.assetType, input.timeframe as OutlookTimeframe);
+        const [result, canonicalState] = await Promise.all([
+          getFullOutlook(input.symbol, input.assetType, input.timeframe as OutlookTimeframe),
+          getAuthoritativeCanonicalIntelligenceState(),
+        ]);
         const forecastMetadata = insufficientHorizonMetadata(`outlook:${input.symbol}`, new Date().toISOString());
         recordHorizonObservation("outlook", `${input.symbol}:${input.assetType}:${input.timeframe}`, forecastMetadata);
         return {
           ...(sanitizeNumbers(result) as typeof result),
           analysisTimeframe: input.timeframe,
           forecastMetadata,
+          canonicalState: canonicalState ? toPublicCanonicalIntelligenceState(canonicalState) : null,
         };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
@@ -95,12 +100,16 @@ export const outlookRouter = router({
     }))
     .query(async ({ input }) => {
       try {
-        const result = await getQuickOutlook(input.symbol, input.assetType);
+        const [result, canonicalState] = await Promise.all([
+          getQuickOutlook(input.symbol, input.assetType),
+          getAuthoritativeCanonicalIntelligenceState(),
+        ]);
         const forecastMetadata = insufficientHorizonMetadata(`quick-outlook:${input.symbol}`, new Date().toISOString());
         recordHorizonObservation("quick_outlook", `${input.symbol}:${input.assetType}`, forecastMetadata);
         return {
           ...(sanitizeNumbers(result) as typeof result),
           forecastMetadata,
+          canonicalState: canonicalState ? toPublicCanonicalIntelligenceState(canonicalState) : null,
         };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
