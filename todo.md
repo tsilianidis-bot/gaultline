@@ -5069,3 +5069,14 @@
 - [x] Suppress Oracle’s ungoverned numeric question-analysis probability presentation unless a future versioned claim record supplies an event, horizon, methodology, and provenance contract
 - [x] Capture one real reconstructed Champion research score and its independently recorded later outcome as append-only governed observation and resolution evidence without altering the underlying research score or outcome ledger
 - [x] Contain the residual public Crypto Hub “early warning signals” wording so it cannot imply activated Early Warning Intelligence before Phase 2
+
+## FAULTLINE Phase 2 — Canonical Intelligence Integrity
+- [x] Preserve checkpoint 464331b5, all Phase 1 governance, Forecast Horizon Standard, frozen Champion V1, V3-H shadow-only status, separate research history, and Phase 2 scope boundaries
+- [x] Audit every production current-state construction path and publish the surface-to-source-to-calculation-to-timestamp-to-cache-to-version dependency map
+- [x] Formalize one authoritative Canonical Market State contract, controlled vocabulary, time-coherence policy, freshness policy, quality propagation, fallback governance, conflict structure, failure behavior, and public/internal projections
+- [x] Implement the canonical state service/API, append-only canonical state history, deterministic state identity, state schema versioning, governed claim/analog attachments, and safe diagnostics visibility
+- [ ] Standardize engine records with separate level, classification, direction, acceleration, persistence, input identifiers, quality, freshness, fallback, version, and contribution fields without fabricating unavailable values
+- [ ] Migrate NOW, WHY, WATCH, ASHA, Oracle, Outlook, and primary intelligence surfaces to consume canonical current state or document their explicit compatible adapter/migration status
+- [ ] Add and pass Tests A–J for same-state cross-surface consistency, timestamp conflict, stale/optional/fallback input behavior, probability/analog categories, versioning, deterministic identity, and canonical failure
+- [ ] Publish the Phase 2 architecture, schema, example, consumer/migration inventory, time/freshness/quality/fallback/conflict/vocabulary rules, and 26-item acceptance gate report
+- [ ] Run full regression validation, checkpoint Phase 2, deliver exactly PHASE 2 PASSES or PHASE 2 REMAINS BLOCKED, and stop without starting Phase 3
