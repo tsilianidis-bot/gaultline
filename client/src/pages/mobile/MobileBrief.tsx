@@ -61,6 +61,10 @@ function BriefCard({ icon, label, title, body, accentColor }: BriefCardProps) {
 export default function MobileBrief() {
   const now = useMemo(() => new Date(), []);
 
+  const { data: canonicalState, isLoading: canonicalLoading } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+  });
+
   // Pressure data
   const { data: pressure, isLoading: pressureLoading } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
     staleTime: 60_000,
@@ -73,7 +77,7 @@ export default function MobileBrief() {
   });
 
   // Derive narrative from pressure data directly (no EngineContext dependency)
-  const regimeColor = useMemo(() => getRegimeColor(pressure?.regime ?? ""), [pressure?.regime]);
+  const regimeColor = useMemo(() => getRegimeColor(canonicalState?.regime ?? ""), [canonicalState?.regime]);
 
   // Top signal: highest pressure vector
   const topVector = useMemo(() => {
@@ -87,7 +91,9 @@ export default function MobileBrief() {
     return [...rotation.sectors].sort((a, b) => Math.abs(b.avgChange24h) - Math.abs(a.avgChange24h))[0];
   }, [rotation?.sectors]);
 
-  const isLoading = pressureLoading;
+  const isLoading = pressureLoading || canonicalLoading;
+
+  if (!canonicalState) return null;
 
   if (isLoading) {
     return (
@@ -103,7 +109,7 @@ export default function MobileBrief() {
     );
   }
 
-  const pressureScore = pressure?.overallPressure ?? 0;
+  const pressureScore = canonicalState.pressureIndex;
   const bullProb = Math.max(5, Math.round(100 - pressureScore * 0.9));
 
   return (
@@ -135,12 +141,10 @@ export default function MobileBrief() {
           </div>
         </div>
         <div className="text-base font-bold font-mono text-white mb-1">
-          {pressure?.regime ?? "LOADING..."}
+          {canonicalState.regime}
         </div>
         <p className="text-[11px] font-mono text-[#A8B8CC] leading-relaxed">
-          {pressure?.regime
-            ? `Market operating in ${pressure.regime} regime. Pressure Index at ${pressureScore.toFixed(0)}/100. ${pressureScore > 65 ? "Elevated systemic risk — reduce exposure." : pressureScore > 40 ? "Moderate risk conditions — maintain discipline." : "Low-stress environment — risk-on conditions favored."}`
-            : "Analyzing current macro conditions..."}
+          {`Market operating in ${canonicalState.regime} regime. Pressure Index at ${pressureScore.toFixed(0)}/100. ${pressureScore > 65 ? "Elevated systemic risk — reduce exposure." : pressureScore > 40 ? "Moderate risk conditions — maintain discipline." : "Low-stress environment — risk-on conditions favored."}`}
         </p>
         {/* Bull/crash probabilities */}
         <div className="flex gap-4 mt-3">
