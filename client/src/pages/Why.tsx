@@ -252,6 +252,9 @@ export default function Why() {
     refetchOnWindowFocus: false,
   });
 
+  if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WHY · Causal analysis" message="Loading authoritative canonical state…" />;
+  if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WHY withholds current-state interpretation until one authoritative state is available." />;
+
   const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? output.domains.map(domain => ({
     name: domain.label,
     signal: fallbackSignal(domain.score),
@@ -282,8 +285,6 @@ export default function Why() {
     () => [...evidenceFamilies].sort((a, b) => b.strength - a.strength),
     [evidenceFamilies],
   );
-
-  if (isLoading && !marketState) return <PageLoadingState eyebrow="WHY · Causal analysis" message="Loading canonical causal state…" />;
 
   return (
     <main className="min-h-screen bg-[#04070b] text-slate-200">

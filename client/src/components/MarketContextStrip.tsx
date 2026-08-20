@@ -68,6 +68,7 @@ export default function MarketContextStrip() {
   // Don't show on excluded pages
   if (EXCLUDED_PATHS.some(p => location === p || location.startsWith(p + "/"))) return null;
   if (isLoading) return null;
+  if (!canonicalState) return null;
 
   const { overall, regime, probability, narrative } = output;
   const canonicalPressure = canonicalState?.pressureIndex;

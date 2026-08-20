@@ -217,11 +217,12 @@ export default function Watch() {
     refetchOnWindowFocus: false,
   });
 
+  if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading authoritative canonical state…" />;
+  if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WATCH withholds current monitoring interpretation until one authoritative state is available." />;
+
   useEffect(() => {
     document.title = "WATCH — FAULTLINE";
   }, []);
-
-  if (isLoading && !marketState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading canonical monitoring state…" />;
 
   const isCanonical = marketMode === "canonical" && Boolean(marketState);
   const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? output.overall.score * 10;
