@@ -10,6 +10,7 @@ const homeStockIntelPath = new URL("../client/src/components/HomeStockIntelSecti
 const productExperiencePath = new URL("../client/src/components/ProductExperience.tsx", import.meta.url);
 const opportunityDiscoveryPath = new URL("../client/src/components/OpportunityDiscoveryPanel.tsx", import.meta.url);
 const marketContextPath = new URL("../client/src/components/MarketContextStrip.tsx", import.meta.url);
+const homeCryptoPath = new URL("../client/src/components/HomeCryptoSection.tsx", import.meta.url);
 const ashaPanelPath = new URL("../client/src/components/AshaPanel.tsx", import.meta.url);
 const oracleBriefingPath = new URL("../client/src/components/OracleBriefing.tsx", import.meta.url);
 const smartDiscoveryPath = new URL("./routers/smartDiscovery.ts", import.meta.url);
@@ -25,6 +26,7 @@ describe("critical public claim containment", () => {
   const productExperience = readFileSync(productExperiencePath, "utf8");
   const opportunityDiscovery = readFileSync(opportunityDiscoveryPath, "utf8");
   const marketContext = readFileSync(marketContextPath, "utf8");
+  const homeCrypto = readFileSync(homeCryptoPath, "utf8");
   const ashaPanel = readFileSync(ashaPanelPath, "utf8");
   const oracleBriefing = readFileSync(oracleBriefingPath, "utf8");
   const smartDiscovery = readFileSync(smartDiscoveryPath, "utf8");
@@ -79,6 +81,7 @@ describe("critical public claim containment", () => {
     expect(ashaPanel).not.toContain('response.expectedTimeframe || "2-4 weeks"');
     expect(ashaPanel).toContain("forecastMetadata: insufficientHorizonMetadata");
     expect(oracleBriefing).toContain("ForecastHorizonDisclosure");
+    expect(oracleBriefing).toContain("WITHHELD — NO GOVERNED CONTRACT");
     expect(marketContext).not.toContain(">MOST LIKELY<");
     expect(marketContext).toContain("DERIVED SCENARIO");
   });
@@ -88,5 +91,10 @@ describe("critical public claim containment", () => {
     expect(outlookRouter).toContain("Not established — no calibrated magnitude estimate");
     expect(outlookRouter).toContain("Do not invent a price target, expected reward, timing");
     expect(outlookRouter).toContain("recordHorizonObservation");
+  });
+
+  it("does not imply that Crypto Hub has activated Early Warning Intelligence", () => {
+    expect(homeCrypto).not.toContain("as early warning signals");
+    expect(homeCrypto).toContain("as evolving market-context signals");
   });
 });

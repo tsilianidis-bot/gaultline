@@ -5059,3 +5059,13 @@
 - [x] Remove the default fabricated “2-4 weeks” Oracle briefing timeframe and require explicit Forecast Horizon metadata for every Oracle forward-looking interpretation
 - [x] Contain the Market Context Strip’s ungoverned “most likely” scenario framing and show that its derived scenario values have no established forecast horizon
 - [x] Remove implied target-timeframe requirements from generated Daily Story and opportunity-analysis prompts unless a future structured forecast record supplies evidence-supported timing
+
+## FAULTLINE Phase 1B — Final Gate Closure / Proof of Completion
+- [x] Audit all probability-like, analog, historical-observation, live-input-quality, state-manifest, and model-version controls against the final closure brief while preserving the Forecast Horizon Standard
+- [x] Close only any material contract, provenance, versioning, or public-claim gap that prevents Phase 1 from being reproducible, honest, governed, versioned, auditable, and explicit about uncertainty
+- [x] Produce real governed probability, analog, original-observation/resolution, live-quality, and atomic-state examples from append-only records
+- [x] Complete the material public-facing prediction, historical-warning, early-warning, probability, lead-time, and analog-outcome claim inventory with classifications and narrow integrity corrections only where required
+- [x] Re-run the entire 21-item Phase 1 acceptance gate, full test suite, and produce one non-ambiguous Phase 1 decision without beginning Phase 2
+- [x] Suppress Oracle’s ungoverned numeric question-analysis probability presentation unless a future versioned claim record supplies an event, horizon, methodology, and provenance contract
+- [x] Capture one real reconstructed Champion research score and its independently recorded later outcome as append-only governed observation and resolution evidence without altering the underlying research score or outcome ledger
+- [x] Contain the residual public Crypto Hub “early warning signals” wording so it cannot imply activated Early Warning Intelligence before Phase 2

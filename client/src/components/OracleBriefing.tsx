@@ -369,7 +369,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
                 { label: "SCOPE", value: data.questionAnalysis.analysisScope.replaceAll("_", " "), color: "#E2E8F0" },
                 { label: "EVENT", value: data.questionAnalysis.eventDefinition, color: "#E2E8F0" },
                 { label: "HORIZON", value: data.questionAnalysis.timeHorizon ?? "CURRENT", color: "#E2E8F0" },
-                { label: "PROBABILITY", value: data.questionAnalysis.probability === null ? "NOT CALIBRATED" : `${data.questionAnalysis.probability}%`, color: data.questionAnalysis.probability === null ? "#FFAA00" : "#00E5FF" },
+                { label: "PREDICTIVE PROBABILITY", value: "WITHHELD — NO GOVERNED CONTRACT", color: "#FFAA00" },
               ].map(item => (
                 <div key={item.label}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.14em", color: "rgba(148,163,184,0.7)" }}>{item.label}</div>
