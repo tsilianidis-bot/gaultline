@@ -15,6 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
 import {
   CANONICAL_DESTINATION_BY_ID,
   EXPERT_WORKSPACE_BY_ID,
@@ -245,15 +246,20 @@ export default function Act() {
     dataError,
     refresh,
   } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     document.title = "ACT — FAULTLINE";
   }, []);
 
-  if (isLoading && !marketState) return <PageLoadingState eyebrow="ACT · Decision state" message="Loading canonical decision state…" />;
+  if (isLoading && !canonicalState) return <PageLoadingState eyebrow="ACT · Decision state" message="Loading authoritative canonical decision state…" />;
+  if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="ACT withholds current decision interpretation until one authoritative state is available." />;
 
   const isCanonical = marketMode === "canonical" && Boolean(marketState);
-  const pressure = marketState?.now.pressureScore ?? output.overall.score * 10;
+  const pressure = canonicalState.pressureIndex;
   const posture = marketState?.act.marketPosture ?? fallbackPosture(pressure);
   const postureView = postureConfig[posture];
   const confidence = marketState?.outlook.probabilities.confidence ?? 0;
