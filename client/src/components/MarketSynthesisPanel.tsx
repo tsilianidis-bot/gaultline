@@ -52,8 +52,8 @@ function getSynthesis(
         ? `Elevated systemic pressure detected — ${regime}`
         : `Market stress is contained — ${regime}`,
       body: isStressed
-        ? `The Pressure Index is signaling elevated systemic risk. ${pageInsight ? pageInsight + " " : ""}With ${crashProb}% crash probability and ${bullProb}% bull probability, the environment favors defensive positioning and smaller position sizes. Focus on quality and liquidity.`
-        : `Current pressure readings are within manageable bounds. ${pageInsight ? pageInsight + " " : ""}With ${bullProb}% bull probability, the environment supports selective risk-taking. Look for high-conviction setups with strong catalyst support.`,
+        ? `The Pressure Index is signaling elevated systemic context. ${pageInsight ? pageInsight + " " : ""}Derived scenario scores are bull ${bullProb}% and bear-stress ${crashProb}%; they are not calibrated forecasts. Review the contributing vectors and source-quality status.`
+        : `Current pressure readings are within the model's lower stress range. ${pageInsight ? pageInsight + " " : ""}The derived bull scenario score is ${bullProb}%; it is context rather than a return forecast. Review individual evidence before acting.`,
       nextLabel: "Find opportunities that fit this environment →",
       nextPath: "/app/opportunities",
     },
@@ -62,8 +62,8 @@ function getSynthesis(
         ? `Signals must be filtered through elevated market stress`
         : `Market conditions support signal follow-through`,
       body: isStressed
-        ? `Current regime: ${regime}. ${pageInsight ? pageInsight + " " : ""}In elevated stress environments, signals with strong institutional backing and clear catalysts have higher follow-through rates. Avoid signals that rely on broad market momentum.`
-        : `Current regime: ${regime}. ${pageInsight ? pageInsight + " " : ""}In this environment, momentum signals and breakout setups tend to perform well. Signals aligned with the dominant sector rotation have the highest probability of success.`,
+        ? `Current regime: ${regime}. ${pageInsight ? pageInsight + " " : ""}Evaluate each signal against its own evidence, liquidity, and risk controls; the market context does not establish follow-through rates.`
+        : `Current regime: ${regime}. ${pageInsight ? pageInsight + " " : ""}Use the current context to compare signals, not to infer a probability of success.`,
       nextLabel: "See the full signal outlook →",
       nextPath: "/app/signal-outlook",
     },
@@ -71,33 +71,33 @@ function getSynthesis(
       headline: `${regime} — here is what the signal landscape means`,
       body: isStressed
         ? `Signal quality degrades in high-stress regimes. ${pageInsight ? pageInsight + " " : ""}Prioritize signals with multiple confirming factors: institutional flow, catalyst support, and technical structure alignment. Avoid chasing momentum without confirmation.`
-        : `Signal quality is elevated in the current regime. ${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull probability environment supports trend-following signals. Look for sector leaders with clean technical structures and institutional accumulation.`,
+        : `Signal context is less stressed in the current regime. ${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is a derived context value, not a trend-following forecast.`,
       nextLabel: "Identify the best opportunities now →",
       nextPath: "/app/opportunities",
     },
     opportunities: {
       headline: `Opportunities must be evaluated in the context of ${regime}`,
       body: isStressed
-        ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, the highest-probability opportunities are in defensive sectors, volatility plays, and assets with strong institutional backing. Avoid high-beta momentum plays without strong catalyst support.`
-        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull probability environment supports growth and momentum opportunities. Focus on assets with strong earnings momentum, institutional accumulation, and clear technical breakout setups.`,
+        ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, compare opportunity-specific evidence and risk controls rather than assigning probability from the market context alone.`
+        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is uncalibrated context. Evaluate each asset on its own evidence, liquidity, and risk controls.`,
       nextLabel: "Ask ASHA about a specific opportunity →",
       nextPath: "/app/discover",
     },
     dashboard: {
       headline: `Today's market: ${regime}`,
-      body: `${pageInsight ? pageInsight + " " : ""}Bull probability: ${bullProb}%. Crash probability: ${crashProb}%. ${keyRisks.length > 0 ? `Primary risk: ${keyRisks[0]}.` : ""} ${isStressed ? "Maintain defensive positioning and monitor risk levels closely." : "Conditions support selective risk-taking with disciplined position sizing."}`,
+      body: `${pageInsight ? pageInsight + " " : ""}Bull scenario score: ${bullProb}%. Bear-stress scenario score: ${crashProb}%. These are derived context values, not calibrated probabilities. ${keyRisks.length > 0 ? `Primary risk: ${keyRisks[0]}.` : ""}`,
       nextLabel: "See today's opportunities →",
       nextPath: "/app/opportunities",
     },
     "daily-brief": {
       headline: `Today's briefing in context: ${regime}`,
-      body: `${pageInsight ? pageInsight + " " : ""}The current ${regime} environment shapes how today's news and events should be interpreted. ${isStressed ? "In elevated stress, negative catalysts have amplified impact. Stay defensive." : `With ${bullProb}% bull probability, positive catalysts are more likely to drive sustained moves.`}`,
+      body: `${pageInsight ? pageInsight + " " : ""}The current ${regime} environment provides context for today's news and events. ${isStressed ? "Review elevated-stress contributors and source quality." : `The ${bullProb}% bull scenario score is not evidence that positive catalysts will sustain moves.`}`,
       nextLabel: "Ask ASHA about today's market →",
       nextPath: "/app/discover",
     },
     diagnostic: {
       headline: `AI Diagnostic results in context: ${regime}`,
-      body: `${pageInsight ? pageInsight + " " : ""}The diagnostic output should be interpreted within the current ${regime} environment. ${isStressed ? `With ${crashProb}% crash probability, diagnostic warnings carry higher urgency. Act on critical signals.` : `The ${bullProb}% bull probability environment means diagnostic alerts are more likely to resolve positively.`}`,
+      body: `${pageInsight ? pageInsight + " " : ""}The diagnostic output should be interpreted within the current ${regime} environment. ${isStressed ? `Bear-stress scenario score: ${crashProb}%. This is not a calibrated urgency forecast.` : `Bull scenario score: ${bullProb}%. This does not establish that diagnostic alerts will resolve positively.`}`,
       nextLabel: "See the full pressure analysis →",
       nextPath: "/app/pressure",
     },
@@ -106,14 +106,14 @@ function getSynthesis(
         ? `Crypto faces elevated macro headwinds — ${regime}`
         : `Macro environment is supportive for crypto — ${regime}`,
       body: isStressed
-        ? `${pageInsight ? pageInsight + " " : ""}In ${regime} environments, crypto typically experiences amplified volatility and correlation with risk assets. Bitcoin dominance tends to rise as capital rotates to quality. Monitor BTC as the leading indicator.`
-        : `${pageInsight ? pageInsight + " " : ""}The current macro environment supports risk assets including crypto. ${bullProb}% bull probability suggests institutional appetite is present. Look for breakout setups in leading assets with strong on-chain fundamentals.`,
+        ? `${pageInsight ? pageInsight + " " : ""}Use the macro stress context as one input when evaluating crypto-specific evidence; it does not establish a typical crypto outcome or leading indicator.`
+        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is not evidence of institutional appetite or a crypto breakout forecast.`,
       nextLabel: "Ask ASHA about crypto opportunities →",
       nextPath: "/app/discover",
     },
     situation: {
       headline: `Situational awareness: ${regime}`,
-      body: `${pageInsight ? pageInsight + " " : ""}The market is currently in a ${regime} environment with ${bullProb}% bull and ${crashProb}% crash probability. ${keyRisks.length > 0 ? `Key risk: ${keyRisks[0]}.` : ""} Use this context to frame every decision you make today.`,
+      body: `${pageInsight ? pageInsight + " " : ""}The market is currently in a ${regime} environment with derived bull scenario score ${bullProb}% and bear-stress scenario score ${crashProb}%. These values are not calibrated probabilities. ${keyRisks.length > 0 ? `Key risk: ${keyRisks[0]}.` : ""}`,
       nextLabel: "Understand what this means →",
       nextPath: "/app/signal-outlook",
     },
@@ -122,8 +122,8 @@ function getSynthesis(
         ? `Portfolio risk elevated — ${regime} environment`
         : `Portfolio conditions favorable — ${regime} environment`,
       body: isStressed
-        ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, review position sizes and ensure adequate hedging. ${crashProb}% crash probability warrants defensive adjustments. Prioritize capital preservation.`
-        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull probability environment supports holding quality positions. Review your portfolio for alignment with the current sector rotation and consider adding to highest-conviction positions.`,
+        ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, review portfolio-specific risks and controls. The ${crashProb}% bear-stress scenario score is not a calibrated hedging instruction.`
+        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is current context, not a recommendation to hold or add positions.`,
       nextLabel: "Monitor your alerts →",
       nextPath: "/app/alerts",
     },
@@ -132,8 +132,8 @@ function getSynthesis(
         ? `Premarket setups face elevated macro headwinds — ${regime}`
         : `Macro environment supports premarket momentum — ${regime}`,
       body: isStressed
-        ? `${pageInsight ? pageInsight + " " : ""}In ${regime} conditions, premarket gaps have higher fade probability. Focus on setups with strong catalysts and institutional backing. Avoid chasing gap-ups without confirmation at the open.`
-        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull probability environment supports gap-and-go setups. Premarket movers with strong catalysts and high relative volume have elevated follow-through probability in this regime.`,
+        ? `${pageInsight ? pageInsight + " " : ""}In ${regime} conditions, assess each premarket setup with its own catalyst, liquidity, and confirmation rather than a market-context fade probability.`
+        : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score does not establish a gap-and-go or follow-through probability.`,
       nextLabel: "See today's opportunities →",
       nextPath: "/app/opportunities",
     },

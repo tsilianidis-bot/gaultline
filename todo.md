@@ -5035,3 +5035,24 @@
 - [x] Produce the complete Phase 1 audit report with severity-ranked issues, repair classification, intelligence-fitness scorecard, and explicit Phase 2 readiness gate; do not begin Phase 2
 - [x] Run full regressions, checkpoint the audit-only work, and provide the Phase 1 report for review
 - [x] Contain critical false public claims on the Market Crash Probability page: do not describe the six-vector Pressure Index as a calibrated crash probability, seven-vector/VIX system, continuous intraday feed, or historically observed FAULTLINE warning record
+
+## FAULTLINE Phase 1B — Gate Remediation and Acceptance Closure
+- [x] Preserve 33149d16 and f430a9ab baselines, maintain the INCONCLUSIVE evidence verdict, prohibit Phase 2, and keep Champion V1 and V3-H unchanged
+- [x] Inventory all probability-like outputs, analog systems, historical pattern outcomes, input consumers, current-state consumers, and remaining public predictive claims
+- [x] Define a governed probability/analog contract that distinguishes model probability, historical frequency, analog similarity, and evidence confidence without fabricating horizon or methodology
+- [x] Harden immutable original-observation versus later-resolution provenance for historical patterns and analog research while preserving reconstructed history and the explicit 2018-03 missing state
+- [x] Add per-input live-quality manifests with distinct freshness, availability, fallback, revision, quality, and contribution status
+- [x] Create a minimum atomic current-state/version manifest with model, configuration, source snapshot, engine values, composite, regime, governed claim references, quality, dataset versions, and state hash
+- [x] Narrowly contain clearly unsupported public probability, analog-outcome, historical-warning, early-warning, and Macro Sensitivity 4–8 week claims without marketing or UI redesign
+- [x] Demonstrate deterministic state-manifest reproducibility, preserve the 26-event / 10-met / 16-missed research record, and re-run the Phase 1 acceptance gate
+- [x] Publish the structured Phase 1B remediation report, run full regressions, checkpoint, and wait for review without beginning Phase 2
+- [x] Correct the reproduced scheduled Seismograph score/regime substitution so its canonical state preserves the frozen Champion V1 output rather than an incompatible FMOS-blended replacement
+- [x] Contain unsupported predictive and historical-outcome language in shared Score Explainer, Market Synthesis, Systemic Alerts, and Share Card consumers while preserving their current layouts and non-predictive context
+- [x] Contain residual static homepage and product-experience probability wording so no public surface presents mock or uncalibrated scenario values as market likelihood
+
+## FAULTLINE Forecast Horizon Standard — Queued After Phase 1B
+- [ ] Audit every forward-looking product output and define a shared evidence-bound forecast metadata contract with optional horizon, magnitude, timing-confidence, methodology, confirmation, invalidation, and expiry fields
+- [ ] Integrate the Forecast Horizon Standard across qualifying signals, targets, scenarios, alerts, ASHA, Oracle, dashboard analysis, scanner results, macro/asset analysis, and future Early Warning outputs without fabricating unsupported horizons
+- [ ] Add append-only forecast observation and resolution tracking so future magnitude and timing calibration can be measured from genuine recorded forecasts
+- [ ] Apply sitewide language and UI standards: show horizon when evidence supports it, otherwise show “Not yet established” or “Insufficient evidence for reliable estimate,” and separate observed, derived, historical, interpreted, and forecast content
+- [ ] Produce a coverage audit, regression tests, documentation, checkpoint, and acceptance report for the permanent Forecast Horizon Standard

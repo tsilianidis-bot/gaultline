@@ -112,20 +112,20 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
       return "Low Risk";
     },
     meaning: (v) => {
-      if (v >= 80) return "Systemic stress is at crisis levels. Multiple fault lines are active simultaneously, indicating a high probability of cascading market disruption.";
-      if (v >= 65) return "Market pressure is high and broad-based. Conditions historically associated with elevated drawdown risk and reduced risk appetite across asset classes.";
-      if (v >= 45) return "Market pressure is above normal and continues to build. Conditions currently favor increased volatility and higher downside risk.";
+      if (v >= 80) return "Systemic stress is at the model's highest classification. Multiple core vectors are elevated simultaneously.";
+      if (v >= 65) return "Market pressure is high and broad-based under the current six-vector methodology.";
+      if (v >= 45) return "Market pressure is above the model's normal range and warrants closer review of the contributing vectors.";
       if (v >= 25) return "Market conditions show moderate stress. Some fault lines are active but systemic risk remains contained. Normal risk management applies.";
       return "Market conditions are calm. Systemic pressure is low, liquidity is healthy, and no major fault lines are currently active.";
     },
-    measures: "The FAULTLINE Pressure Index is a composite score (0–100) that aggregates six independent risk vectors: Treasury market stress, liquidity conditions, credit spread behavior, volatility regime, macro regime pressure, and market breadth health. It is designed to detect systemic fault lines forming before they become visible crises.",
-    howCalculated: "Each of the six risk vectors is scored independently on a 0–100 scale using real-time and near-real-time market data. The composite score is a weighted average of all six vectors, with weights adjusted based on the current macro regime. Higher scores indicate more stress.",
-    whyItMatters: "Most market risk tools only measure what has already happened. The Pressure Index is designed to detect stress building beneath the surface — before it becomes a headline. A rising Pressure Index has historically preceded significant market dislocations by days to weeks.",
+    measures: "The FAULTLINE Pressure Index is a 0–100 systemic-pressure composite of six fixed vectors: liquidity, credit, volatility, macro, breadth, and AI/speculation. It is a current stress-context measure, not a calibrated crash forecast.",
+    howCalculated: "Each vector is scored on a 0–100 scale and combined with frozen Champion V1 weights. Data include daily and monthly FRED series; the AI/speculation vector includes a disclosed static baseline. Higher scores indicate more modeled stress.",
+    whyItMatters: "The index organizes the current model inputs into one stress context. Historical early-warning performance remains research-only and inconclusive; use the vector evidence rather than treating the index as a prediction.",
     ranges: [
       { label: "Low Risk", range: "0–24", description: "Calm conditions. No major fault lines active. Normal risk posture is appropriate." },
       { label: "Moderate Risk", range: "25–44", description: "Some stress present but systemic risk is contained. Monitor for escalation." },
-      { label: "Elevated Stress", range: "45–64", description: "Above-normal pressure. Increased volatility likely. Reduce outsized risk exposures." },
-      { label: "High Stress", range: "65–79", description: "Broad-based stress. Historically associated with meaningful drawdowns. Defensive posture warranted." },
+      { label: "Elevated Stress", range: "45–64", description: "Above-normal modeled pressure. Review the individual vector evidence and data-quality state." },
+      { label: "High Stress", range: "65–79", description: "Broad-based modeled stress. The label is not a calibrated drawdown forecast." },
       { label: "Systemic Crisis", range: "80–100", description: "Crisis-level conditions. Multiple fault lines active simultaneously. Maximum caution." },
     ],
     watchNext: (v, drivers) => {
@@ -133,14 +133,14 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
         ? `Watch ${drivers.slice(0, 3).join(", ")} for signs of improvement or further deterioration.`
         : "Watch Treasury yields, credit spreads, and liquidity conditions for directional signals.";
       if (v >= 65) return `${base} A sustained improvement across two or more vectors would be needed to meaningfully reduce the Pressure Index.`;
-      if (v >= 45) return `${base} A single vector improvement is unlikely to move the composite score significantly — watch for broad-based stabilization.`;
-      return `${base} Monitor for any uptick in credit spreads or volatility that could signal early stress building.`;
+      if (v >= 45) return `${base} Compare any change with the data-quality and static-input disclosures before drawing a conclusion.`;
+      return `${base} Monitor the cited inputs and their freshness for changes in the current stress context.`;
     },
     historicalContext: (pct, analog) => {
       if (pct === undefined && !analog) return null;
       const parts: string[] = [];
-      if (pct !== undefined) parts.push(`Higher than ${pct}% of all trading days since 2008.`);
-      if (analog) parts.push(`Conditions most closely resemble ${analog}.`);
+      if (pct !== undefined) parts.push(`Retrospective percentile: ${pct}, subject to the displayed history source and coverage.`);
+      if (analog) parts.push(`Feature-set reference: ${analog}; similarity is not an outcome forecast.`);
       return parts.join(" ");
     },
     color: (v) => {
@@ -164,11 +164,11 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
       return "Low Risk";
     },
     meaning: (v) => {
-      if (v >= 80) return "Market risk is at extreme levels. The probability of a significant near-term drawdown is historically high.";
-      if (v >= 65) return "Market risk is high. Current conditions have historically been followed by above-average volatility and drawdown potential.";
-      if (v >= 45) return "Market risk is elevated above normal. Investors should be aware of increased downside potential over the coming weeks.";
-      if (v >= 25) return "Market risk is moderate. Some caution is warranted but conditions do not suggest imminent broad-based stress.";
-      return "Market risk is low. Current conditions are historically associated with stable or rising markets.";
+      if (v >= 80) return "Market-risk context is at its highest display classification. Review constituent evidence and data quality.";
+      if (v >= 65) return "Market-risk context is high under this derived display layer.";
+      if (v >= 45) return "Market-risk context is elevated above its normal display range.";
+      if (v >= 25) return "Market-risk context is moderate. This is not a forecast of an imminent market outcome.";
+      return "Market-risk context is low under the current display calculation.";
     },
     measures: "The Market Risk Score aggregates equity market stress indicators including implied volatility, put/call ratios, market breadth deterioration, and macro regime signals into a single 0–100 risk reading.",
     howCalculated: "Derived from a combination of options market signals, breadth indicators, and the current FAULTLINE Pressure Index. Higher values indicate greater near-term downside risk.",
@@ -202,8 +202,8 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
   },
 
   bullProbability: {
-    label: "Bull Continuation Probability",
-    shortLabel: "Bull Probability",
+    label: "Bull Scenario Score",
+    shortLabel: "Bull Scenario",
     learnMorePath: "/learn/bull-and-bear-markets",
     statusLabel: (v) => {
       if (v >= 75) return "Strong Bull Signal";
@@ -213,21 +213,21 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
       return "Strong Bear Signal";
     },
     meaning: (v) => {
-      if (v >= 75) return "The probability of continued bullish market conditions is high. Historical setups with this profile have been followed by positive returns in the majority of cases.";
-      if (v >= 55) return "Conditions modestly favor continued upside. The macro and technical environment is more supportive than not, but risks remain.";
+      if (v >= 75) return "The derived scenario composition assigns a high bull-side score. It is not a calibrated return forecast.";
+      if (v >= 55) return "The derived scenario composition leans bull-side, while uncertainty and risks remain.";
       if (v >= 45) return "Conditions are mixed. Neither bulls nor bears have a clear edge. Caution and selectivity are warranted.";
-      if (v >= 25) return "Conditions favor a bearish or defensive outcome. The weight of evidence points toward continued pressure or further downside.";
-      return "The probability of continued bullish conditions is very low. Historical setups with this profile have been followed by meaningful drawdowns in the majority of cases.";
+      if (v >= 25) return "The derived scenario composition leans defensive. This is context, not a predicted market outcome.";
+      return "The derived scenario composition assigns a low bull-side score. It is not a historical base-rate estimate.";
     },
-    measures: "Bull Continuation Probability estimates the likelihood that current market conditions will be followed by positive returns over the next 30–90 days, based on the current macro regime, pressure environment, and historical analog matching.",
-    howCalculated: "Derived from the FAULTLINE regime classification, the Pressure Index, historical analog outcomes, and momentum signals. It is not a prediction — it is a probability estimate based on historical base rates.",
-    whyItMatters: "Understanding the probability distribution of outcomes helps investors make better-informed decisions about position sizing, hedging, and timing rather than relying on binary predictions.",
+    measures: "Bull Scenario Score is a derived presentation-layer composition of current regime and evidence inputs. It has no calibrated event definition, forecast horizon, or historical base-rate contract.",
+    howCalculated: "Derived from current FAULTLINE regime, pressure, and synthesis inputs. It is not a probability estimate, prediction, or validated historical frequency.",
+    whyItMatters: "It summarizes the model's current directional context. Review the contributing evidence and data-quality state rather than using it as a position-sizing forecast.",
     ranges: [
-      { label: "Strong Bear Signal", range: "0–24", description: "Historical base rate strongly favors downside. Maximum caution." },
+      { label: "Strong Bear Signal", range: "0–24", description: "Low bull-side scenario score; not a historical base-rate claim." },
       { label: "Bear Bias", range: "25–44", description: "Conditions favor bears. Reduce risk, consider hedges." },
       { label: "Neutral / Mixed", range: "45–54", description: "No clear edge. Selectivity and smaller sizing are appropriate." },
       { label: "Moderate Bull Bias", range: "55–74", description: "Conditions modestly favor upside. Normal risk posture is appropriate." },
-      { label: "Strong Bull Signal", range: "75–100", description: "Historical base rate strongly favors upside. Conditions support risk-on positioning." },
+      { label: "Strong Bull Signal", range: "75–100", description: "High bull-side scenario score; not a forecast or historical base-rate claim." },
     ],
     watchNext: (v) => {
       if (v >= 55) return "Watch for any deterioration in breadth, a spike in credit spreads, or a Fed policy shift that could reduce the bull probability.";
@@ -237,8 +237,8 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     historicalContext: (pct, analog) => {
       if (pct === undefined && !analog) return null;
       const parts: string[] = [];
-      if (pct !== undefined) parts.push(`This probability level has been observed in ${pct}% of trading environments since 2000.`);
-      if (analog) parts.push(`The current setup most closely resembles ${analog}.`);
+      if (pct !== undefined) parts.push(`A retrospective display percentile is ${pct}; it is not a scenario probability frequency.`);
+      if (analog) parts.push(`Feature-set reference: ${analog}; similarity is not an outcome forecast.`);
       return parts.join(" ");
     },
     color: (v) => {
@@ -251,8 +251,8 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
   },
 
   crashRisk: {
-    label: "Crash Risk Probability",
-    shortLabel: "Crash Risk",
+    label: "Bear-Stress Scenario Score",
+    shortLabel: "Bear-Stress Scenario",
     learnMorePath: "/learn/what-causes-market-crash",
     statusLabel: (v) => {
       if (v >= 70) return "Elevated Crash Risk";
@@ -261,29 +261,29 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
       return "Low Crash Risk";
     },
     meaning: (v) => {
-      if (v >= 70) return "The probability of a significant market dislocation (15%+ drawdown) over the next 90 days is elevated based on current conditions and historical analogs.";
-      if (v >= 50) return "Crash risk is moderate. Current conditions share characteristics with environments that have preceded meaningful drawdowns, but are not yet at crisis levels.";
-      if (v >= 30) return "Crash risk is below average. While no environment is risk-free, current conditions do not resemble typical pre-crash setups.";
-      return "Crash risk is low. Current conditions are historically associated with stable or gradually rising markets.";
+      if (v >= 70) return "Bear-stress scenario composition is elevated. It is not a calibrated 90-day drawdown probability.";
+      if (v >= 50) return "Bear-stress scenario composition is moderate. Similarity references do not establish a predicted outcome.";
+      if (v >= 30) return "Bear-stress scenario composition is below its higher display range.";
+      return "Bear-stress scenario composition is low under the current derived presentation.";
     },
-    measures: "Crash Risk Probability estimates the likelihood of a rapid, significant market decline (typically defined as 15% or more within 90 days) based on the current Pressure Index, credit conditions, liquidity environment, and historical analog matching.",
-    howCalculated: "Based on historical base rates of significant drawdowns following similar Pressure Index readings, credit spread levels, and macro regime conditions. Not a prediction — a probability estimate.",
-    whyItMatters: "Crash risk awareness helps investors decide when to hold more cash, buy protective options, or reduce leverage — before a dislocation occurs rather than after.",
+    measures: "Bear-Stress Scenario Score is a derived current-context value. It has no registered 15% drawdown event definition, 90-day horizon, or calibrated probability contract.",
+    howCalculated: "Derived from current synthesis inputs. It is not based on validated historical base rates and is not a prediction.",
+    whyItMatters: "It can prompt review of the current stress context and data-quality disclosures. It must not be treated as a trading or hedging forecast.",
     ranges: [
-      { label: "Low Crash Risk", range: "0–29", description: "Historically, setups like this have rarely been followed by rapid large declines." },
+      { label: "Low Bear-Stress Scenario", range: "0–29", description: "Low derived score; not a historical frequency claim." },
       { label: "Low-Moderate Risk", range: "30–49", description: "Some risk present but well below historical crash-precursor levels." },
       { label: "Moderate Crash Risk", range: "50–69", description: "Conditions share characteristics with pre-crash environments. Caution warranted." },
-      { label: "Elevated Crash Risk", range: "70–100", description: "Historically dangerous. These conditions have preceded significant dislocations." },
+      { label: "Elevated Bear-Stress Scenario", range: "70–100", description: "High derived score; not a calibrated dislocation forecast." },
     ],
     watchNext: (v) => {
-      if (v >= 50) return "Watch credit spreads for further widening, liquidity conditions for deterioration, and the VIX for a sustained spike above 25 — any of these would increase crash risk further.";
-      return "Monitor the Pressure Index for any rapid escalation, credit markets for early stress signals, and macro data for unexpected deterioration.";
+      if (v >= 50) return "Review credit, liquidity, and the disclosed source-quality state; no unvalidated variable should be interpreted as increasing a forecast probability.";
+      return "Monitor the disclosed Pressure vectors and source freshness for changes in the current context.";
     },
     historicalContext: (pct, analog) => {
       if (pct === undefined && !analog) return null;
       const parts: string[] = [];
-      if (pct !== undefined) parts.push(`This crash risk level has been exceeded in only ${100 - (pct ?? 50)}% of trading environments since 2000.`);
-      if (analog) parts.push(`Most comparable to conditions observed during ${analog}.`);
+      if (pct !== undefined) parts.push(`Retrospective display percentile: ${pct}; not a bear-event frequency.`);
+      if (analog) parts.push(`Feature-set reference: ${analog}; similarity is not a crash forecast.`);
       return parts.join(" ");
     },
     color: (v) => {

@@ -238,7 +238,7 @@ export interface SeismographOutput {
   // ── Core Market Assessment ────────────────────────────────
   pressureScore: number;
   regime: string;
-  stressLevel: "Low" | "Elevated" | "High" | "Crisis";
+  stressLevel: "Low" | "Moderate" | "Elevated" | "High" | "Crisis";
   direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating";
 
   // ── Probability Distribution ──────────────────────────────
@@ -663,14 +663,10 @@ export function assembleSeismographOutput(
   },
   packets: EvidencePacket[]
 ): SeismographOutput {
-  const synthesizedPressure = packets.length > 0
-    ? synthesizePressureScore(packets)
-    : state.pressureScore;
-
-  // Blend synthesized score with direct pressure score (60/40)
-  const blendedPressure = packets.length > 0
-    ? Math.round((synthesizedPressure * 0.4 + state.pressureScore * 0.6) * 10) / 10
-    : state.pressureScore;
+  // The frozen Champion score is the canonical market-pressure measure. Packet
+  // synthesis remains evidence context only; blending it into the canonical
+  // score would create a non-versioned second Pressure Index.
+  const canonicalPressure = state.pressureScore;
 
   const evidenceFamilies = groupIntoFamilies(packets);
   const evidenceConsensus = computeEvidenceConsensus(packets);
@@ -696,13 +692,7 @@ export function assembleSeismographOutput(
       ? Math.round(packets.reduce((s, p) => s + p.confidence, 0) / packets.length)
       : 70;
 
-  const stressLevel = blendedPressure >= 8
-    ? "Crisis"
-    : blendedPressure >= 6.5
-    ? "High"
-    : blendedPressure >= 4.5
-    ? "Elevated"
-    : "Low";
+  const stressLevel = state.stressLevel;
 
   const topAnalog = state.analogMatches[0] ?? null;
 
@@ -719,7 +709,7 @@ export function assembleSeismographOutput(
     version: "2.0",
     computedAt,
     dataFreshness,
-    pressureScore: blendedPressure,
+    pressureScore: canonicalPressure,
     regime: state.regime,
     stressLevel: stressLevel as SeismographOutput["stressLevel"],
     direction: state.direction as SeismographOutput["direction"],
@@ -752,7 +742,7 @@ export function assembleSeismographOutput(
 
   // Build distribution payloads
   output.forDashboard = {
-    pressureScore: blendedPressure,
+    pressureScore: canonicalPressure,
     regime: state.regime,
     stressLevel: stressLevel as DashboardPayload["stressLevel"],
     direction: state.direction,

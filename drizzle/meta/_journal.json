@@ -435,6 +435,13 @@
       "when": 1787153453700,
       "tag": "0061_mute_doomsday",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "5",
+      "when": 1787248506529,
+      "tag": "0062_empty_silver_sable",
+      "breakpoints": true
     }
   ]
 }

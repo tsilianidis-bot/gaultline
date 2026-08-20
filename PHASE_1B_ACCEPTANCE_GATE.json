@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-08-20T18:20:15.610Z",
+  "status": "ACCEPTED_WITH_PHASE2_BLOCK",
+  "checks": [
+    {
+      "id": "coherent-atomic-state",
+      "passed": true,
+      "detail": "At least one append-only coherent atomic state manifest exists."
+    },
+    {
+      "id": "governed-claims",
+      "passed": true,
+      "detail": "Probability-like values must be governed and have no predictive-eligible claim absent calibration evidence."
+    },
+    {
+      "id": "analog-qualification",
+      "passed": true,
+      "detail": "Analog similarity is preserved only with qualification, not as outcome probability."
+    },
+    {
+      "id": "immutable-observation-resolution-ledger",
+      "passed": true,
+      "detail": "Original observations and later resolutions have separate append-only ledgers."
+    },
+    {
+      "id": "historical-record-preserved",
+      "passed": true,
+      "detail": "The locked reconstructed research record remains 318 scores, one explicit missing month, and 26/10/16 event findings."
+    },
+    {
+      "id": "critical-claim-containment",
+      "passed": true,
+      "detail": "No critical unqualified probability, historical-warning, or analog-outcome claim remains in the audited shared surfaces."
+    },
+    {
+      "id": "frozen-core-preserved",
+      "passed": true,
+      "detail": "Champion V1 remains frozen and V3-H remains shadow-only."
+    }
+  ],
+  "immutableEvidence": {
+    "reconstructedScoreCount": 318,
+    "reconstructedMissingMonthCount": 1,
+    "registeredDrawdownEvents": 26,
+    "compositeConditionsMet": 10,
+    "compositeConditionsMissed": 16
+  },
+  "phase2Status": "BLOCKED"
+}

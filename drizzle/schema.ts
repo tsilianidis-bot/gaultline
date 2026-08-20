@@ -1421,6 +1421,115 @@ export const dailyBriefSnapshots = mysqlTable("dailyBriefSnapshots", {
 export type DailyBriefSnapshot = typeof dailyBriefSnapshots.$inferSelect;
 export type InsertDailyBriefSnapshot = typeof dailyBriefSnapshots.$inferInsert;
 
+// ── Phase 1B Intelligence Governance Ledgers ──────────────────
+/**
+ * One append-only, internally coherent intelligence snapshot. This ledger
+ * governs state identity only; it never replaces Pressure runs or mutates
+ * Champion scoring.
+ */
+export const intelligenceStateManifests = mysqlTable("intelligenceStateManifests", {
+  id:                   int("id").autoincrement().primaryKey(),
+  stateId:              varchar("stateId", { length: 96 }).notNull().unique(),
+  generatedAt:          timestamp("generatedAt").notNull(),
+  championVersion:      varchar("championVersion", { length: 96 }).notNull(),
+  modelVersion:         varchar("modelVersion", { length: 96 }).notNull(),
+  scoringVersion:       varchar("scoringVersion", { length: 96 }).notNull(),
+  configurationVersion: varchar("configurationVersion", { length: 96 }).notNull(),
+  inputSnapshotId:      varchar("inputSnapshotId", { length: 128 }).notNull(),
+  stateHash:            varchar("stateHash", { length: 128 }).notNull(),
+  coherenceStatus:      mysqlEnum("coherenceStatus", ["COHERENT", "EXPLICIT_MISMATCH", "UNAVAILABLE"]).notNull(),
+  manifestJson:         text("manifestJson").notNull(),
+  createdAt:            timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  generatedAtIdx: index("intelligenceStateManifests_generatedAt_idx").on(t.generatedAt),
+  coherenceIdx: index("intelligenceStateManifests_coherence_idx").on(t.coherenceStatus),
+}));
+export type IntelligenceStateManifest = typeof intelligenceStateManifests.$inferSelect;
+export type InsertIntelligenceStateManifest = typeof intelligenceStateManifests.$inferInsert;
+
+/**
+ * Claim observations are immutable, state-bound governance records. A numerical
+ * scenario, analog similarity, historical frequency, or evidence confidence
+ * cannot be displayed predictively unless its claim contract says it is eligible.
+ */
+export const governedIntelligenceClaims = mysqlTable("governedIntelligenceClaims", {
+  id:               int("id").autoincrement().primaryKey(),
+  claimObservationKey: varchar("claimObservationKey", { length: 220 }).notNull().unique(),
+  stateId:          varchar("stateId", { length: 96 }).notNull(),
+  claimId:          varchar("claimId", { length: 160 }).notNull(),
+  claimType:        mysqlEnum("claimType", ["MODEL_PROBABILITY", "HISTORICAL_FREQUENCY", "ANALOG_SIMILARITY", "EVIDENCE_CONFIDENCE", "DERIVED_SCENARIO_SCORE", "DERIVED_SCENARIO_COMPONENT", "UNSUPPORTED"]).notNull(),
+  eventDefinition:  text("eventDefinition"),
+  timeHorizon:      varchar("timeHorizon", { length: 128 }),
+  valueNumeric:     double("valueNumeric"),
+  unit:             varchar("unit", { length: 64 }).notNull(),
+  sourceModel:      varchar("sourceModel", { length: 128 }).notNull(),
+  modelVersion:     varchar("modelVersion", { length: 96 }).notNull(),
+  methodology:      text("methodology").notNull(),
+  sampleSize:       int("sampleSize"),
+  datasetSpan:      varchar("datasetSpan", { length: 128 }),
+  confidence:       varchar("confidence", { length: 64 }).notNull(),
+  generatedAt:      timestamp("generatedAt").notNull(),
+  evidenceStatus:   mysqlEnum("evidenceStatus", ["SUPPORTED", "SUPPORTED_WITH_QUALIFICATION", "UNSUPPORTED", "UNVERIFIED", "RESEARCH_ONLY"]).notNull(),
+  displayStatus:    mysqlEnum("displayStatus", ["PREDICTIVE_ELIGIBLE", "DISPLAY_WITH_QUALIFICATION", "SUPPRESS_PREDICTIVE_PRESENTATION", "INTERNAL_ONLY"]).notNull(),
+  metadataJson:     text("metadataJson").notNull(),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  stateIdx: index("governedIntelligenceClaims_state_idx").on(t.stateId),
+  claimIdx: index("governedIntelligenceClaims_claim_idx").on(t.claimId),
+  statusIdx: index("governedIntelligenceClaims_status_idx").on(t.evidenceStatus, t.displayStatus),
+}));
+export type GovernedIntelligenceClaim = typeof governedIntelligenceClaims.$inferSelect;
+export type InsertGovernedIntelligenceClaim = typeof governedIntelligenceClaims.$inferInsert;
+
+/**
+ * Immutable original research observation. It records what was known at the
+ * stated cutoff; later outcomes must be appended to the resolution ledger.
+ */
+export const governedResearchObservations = mysqlTable("governedResearchObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  observationKey:           varchar("observationKey", { length: 220 }).notNull().unique(),
+  observationVersion:       varchar("observationVersion", { length: 96 }).notNull(),
+  historyClass:             mysqlEnum("historyClass", ["live_verified", "reconstructed_research", "revised_data_reconstruction", "proxy_reconstruction"]).notNull(),
+  observationDate:          timestamp("observationDate").notNull(),
+  informationCutoff:        timestamp("informationCutoff").notNull(),
+  inputSnapshotId:          varchar("inputSnapshotId", { length: 128 }),
+  sourceModel:              varchar("sourceModel", { length: 128 }).notNull(),
+  modelVersion:             varchar("modelVersion", { length: 96 }).notNull(),
+  originalStateJson:        text("originalStateJson").notNull(),
+  originalInterpretation:   text("originalInterpretation"),
+  outcomeDefinition:        text("outcomeDefinition"),
+  outcomeWindow:            varchar("outcomeWindow", { length: 128 }),
+  sourceDataVersionsJson:   text("sourceDataVersionsJson").notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  observedAtIdx: index("governedResearchObservations_observed_idx").on(t.observationDate),
+  classIdx: index("governedResearchObservations_class_idx").on(t.historyClass),
+}));
+export type GovernedResearchObservation = typeof governedResearchObservations.$inferSelect;
+export type InsertGovernedResearchObservation = typeof governedResearchObservations.$inferInsert;
+
+/** Later resolution of an immutable research observation; never mutates it. */
+export const governedResearchResolutions = mysqlTable("governedResearchResolutions", {
+  id:                     int("id").autoincrement().primaryKey(),
+  resolutionKey:          varchar("resolutionKey", { length: 220 }).notNull().unique(),
+  observationId:          int("observationId").notNull(),
+  resolutionVersion:      varchar("resolutionVersion", { length: 96 }).notNull(),
+  outcomeValueJson:       text("outcomeValueJson").notNull(),
+  resolvedAt:             timestamp("resolvedAt").notNull(),
+  sourceDataVersionsJson: text("sourceDataVersionsJson").notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  observationFk: foreignKey({
+    columns: [t.observationId],
+    foreignColumns: [governedResearchObservations.id],
+    name: "governedResearchResolutions_observation_fk",
+  }).onDelete("restrict"),
+  observationIdx: index("governedResearchResolutions_observation_idx").on(t.observationId),
+  resolvedAtIdx: index("governedResearchResolutions_resolved_idx").on(t.resolvedAt),
+}));
+export type GovernedResearchResolution = typeof governedResearchResolutions.$inferSelect;
+export type InsertGovernedResearchResolution = typeof governedResearchResolutions.$inferInsert;
+
 // ── Signal Pages Cache ───────────────────────────────────────
 /**
  * Stores AI-generated signal page content for each tracked stock/crypto symbol.

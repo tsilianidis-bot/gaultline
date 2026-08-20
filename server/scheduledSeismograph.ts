@@ -39,6 +39,7 @@ import type { FMOSUniversalOutput } from "./fmos/types";
 import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from "./algorithmProvenance";
+import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -152,6 +153,20 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
       vectorScores: Object.fromEntries((pressureOutput.vectors ?? []).filter(vector => vector.id && typeof vector.score === "number").map(vector => [vector.id, vector.score])),
     },
   });
+  // Phase 1B governance capture is append-only and deliberately non-blocking.
+  // It records this exact run's source quality, governed claim references, and
+  // score/regime coherence without changing the canonical output.
+  try {
+    const governanceState = buildAtomicIntelligenceStateManifest({
+      pressure: pressureOutput,
+      seismograph: seismographOutput,
+      generatedAt: new Date().toISOString(),
+    });
+    const persisted = await persistAtomicIntelligenceStateManifest(governanceState);
+    console.log(`[Seismograph] Governance manifest ${persisted.created ? "recorded" : "already present"}: ${persisted.stateId} (${governanceState.manifest.coherenceStatus})`);
+  } catch (error) {
+    console.warn("[Seismograph] Governance manifest capture deferred:", error);
+  }
   await collectBroadInstitutionalEventOutcomes();
   // Forward-only research evidence. Failures are non-blocking because they must
   // never interrupt the canonical production Seismograph score.
@@ -193,7 +208,7 @@ export async function handleScheduledSeismograph(
 
 // ── Helper: Build state shape for assembleSeismographOutput ───
 
-function buildStateForAssembly(
+export function buildStateForAssembly(
   pressure: FaultlinePressureOutput,
   fmos: FMOSUniversalOutput | null,
   state: SeismographState | null
@@ -271,11 +286,11 @@ function buildStateForAssembly(
     ].slice(0, 6),
   };
 
-  // Pressure score — use FMOS-blended if available, else raw pressure
-  const pressureScore = fmos?.pressure?.overallPressure ?? pressure.overallPressure;
-
-  // Regime — prefer FMOS regime classification
-  const regime = fmos?.regime?.currentRegime ?? pressure.regime;
+  // Champion V1 is the frozen canonical score and regime. FMOS remains a
+  // contributor to evidence and descriptive context, but it must not silently
+  // substitute a different score or regime into the canonical user state.
+  const pressureScore = pressure.overallPressure;
+  const regime = pressure.regime;
 
   // Direction
   const direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating" =

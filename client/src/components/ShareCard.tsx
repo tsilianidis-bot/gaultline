@@ -26,16 +26,16 @@ export default function ShareCard({ onClose }: ShareCardProps) {
     `Systemic Risk: ${overall.score.toFixed(1)}/10 — ${regime.label}`,
     `${regime.sublabel}`,
     ``,
-    `Bull Probability: ${probability.bullProbability}%`,
-    `Crash/Bear Probability: ${probability.crashProbability}%`,
-    `Recession Risk: ${probability.recessionProbability}%`,
+    `Bull Scenario Score: ${probability.bullProbability}%`,
+    `Bear-Stress Scenario Score: ${probability.crashProbability}%`,
+    `Recession Scenario Score: ${probability.recessionProbability}%`,
     ``,
     `Closest Historical Analog: ${topAnalog.era} ${topAnalog.year} (${topAnalog.similarity}% match)`,
     ``,
     `${narrative.summary.slice(0, 200)}...`,
     ``,
-    `${isLive ? '📡 Powered by live FRED macroeconomic data' : '📊 Powered by calibrated macro baseline'}`,
-    `⚠️ Probabilistic risk intelligence. Not financial advice.`,
+    `${isLive ? '📡 Current source-status context' : '📊 Source-status qualification required'}`,
+    `⚠️ Derived scenario context, not a calibrated forecast. Not financial advice.`,
   ].join('\n');
 
   const handleShare = async () => {
@@ -150,8 +150,8 @@ export default function ShareCard({ onClose }: ShareCardProps) {
           {/* Probability bar */}
           <div style={{ marginBottom: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00FF88' }}>{probability.bullProbability}% BULL</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF2D55' }}>{probability.crashProbability}% CRASH</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00FF88' }}>{probability.bullProbability}% BULL SCENARIO</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF2D55' }}>{probability.crashProbability}% BEAR-STRESS</span>
             </div>
             <div style={{ height: '4px', borderRadius: '2px', overflow: 'hidden', display: 'flex', gap: '1px' }}>
               <div style={{ flex: probability.bullProbability, background: 'linear-gradient(90deg, #00FF88, #00CC6A)', boxShadow: '0 0 6px rgba(0,255,136,0.4)' }} />
@@ -162,9 +162,9 @@ export default function ShareCard({ onClose }: ShareCardProps) {
           {/* Key metrics row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
             {[
-              { label: 'Recession', value: `${probability.recessionProbability}%`, color: '#FF9500' },
-              { label: 'Stagflation', value: `${probability.stagflationProbability}%`, color: '#FFD700' },
-              { label: 'Soft Land', value: `${probability.softLandingProbability}%`, color: '#00D4FF' },
+              { label: 'Recession Scenario', value: `${probability.recessionProbability}%`, color: '#FF9500' },
+              { label: 'Stagflation Scenario', value: `${probability.stagflationProbability}%`, color: '#FFD700' },
+              { label: 'Soft Landing Scenario', value: `${probability.softLandingProbability}%`, color: '#00D4FF' },
             ].map(m => (
               <div key={m.label} style={{ textAlign: 'center', padding: '6px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: m.color }}>{m.value}</div>
@@ -185,7 +185,7 @@ export default function ShareCard({ onClose }: ShareCardProps) {
           {/* Footer */}
           <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', letterSpacing: '0.08em' }}>
-              PROBABILISTIC RISK INTELLIGENCE
+              DERIVED SCENARIO CONTEXT · NOT A FORECAST
             </span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#374151', letterSpacing: '0.08em' }}>
               NOT FINANCIAL ADVICE

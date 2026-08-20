@@ -309,14 +309,14 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
 
   const FEATURES = [
     { icon: '📡', title: 'Pressure Index™', description: 'A composite systemic stress score built from credit spreads, volatility, liquidity, and macro positioning. Not sentiment — measurement.', accent: CYAN },
-    { icon: '🎯', title: 'Bull vs. Crash Probability', description: 'Real-time probability distribution across five market regimes: Bull, Soft Landing, Stagflation, Recession, and Crash.', accent: GREEN },
+    { icon: '🎯', title: 'Scenario Context', description: 'Derived scenario context across macro states, clearly separated from calibrated probability or forecast claims.', accent: GREEN },
     { icon: '🔍', title: 'Market Regime Detection', description: 'Identifies the current macro regime and how long it has been developing — context that changes how every signal should be read.', accent: GOLD },
-    { icon: '📚', title: 'Historical Analog Engine', description: 'Matches current conditions against every comparable historical period to show what typically happened next.', accent: PURPLE },
+    { icon: '📚', title: 'Historical Analog Engine', description: 'Compares current features with documented historical references for context; similarity does not forecast what happens next.', accent: PURPLE },
     { icon: '🤖', title: 'AI Market Intelligence', description: 'ASHA synthesizes all platform data into a personalized Oracle Briefing — your institutional-grade market strategist, available 24/7.', accent: CYAN },
     { icon: '🔔', title: 'Signals & Alerts', description: 'Screener-grade signal detection across equities, crypto, and macro instruments with configurable alert thresholds.', accent: GREEN },
     { icon: '💼', title: 'Portfolio Intelligence', description: 'Analyze your portfolio against current macro conditions. Understand how your positions are exposed to each risk regime.', accent: GOLD },
     { icon: '📋', title: 'Daily Briefings', description: 'Structured daily intelligence reports covering market state, key drivers, and what to watch — delivered before markets open.', accent: PURPLE },
-    { icon: '🗺️', title: 'Scenario Analysis', description: 'Model multiple macro scenarios and understand the probability-weighted outcomes for your positions and watchlist.', accent: CYAN },
+    { icon: '🗺️', title: 'Scenario Analysis', description: 'Compare multiple macro scenarios and their evidence-bound context for your positions and watchlist.', accent: CYAN },
     { icon: '🏛️', title: 'Institutional Research Tools', description: 'Macro driver analysis, transmission mechanism mapping, positioning data, and evidence-based methodology — all in one platform.', accent: GREEN },
   ];
 
@@ -330,7 +330,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
         'Understand whether the macro backdrop supports or contradicts your setup',
         'See real-time pressure readings before entering positions',
         'Get AI-synthesized briefings that explain what is driving the market today',
-        'Access day trade intelligence calibrated to current regime conditions',
+        'Access day trade intelligence with current regime context and source-quality disclosures',
       ],
     },
     {
@@ -340,9 +340,9 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       accent: GOLD,
       bullets: [
         'Track systemic pressure across credit, volatility, and liquidity simultaneously',
-        'Identify regime transitions before they become consensus',
-        'Compare current conditions against historical analogs with matching outcomes',
-        'Model scenario probabilities for portfolio positioning decisions',
+        'Monitor regime changes as they are observed and documented',
+        'Compare current conditions against historical analog references with disclosed outcome limits',
+        'Use derived scenario context alongside portfolio-specific risk decisions',
       ],
     },
     {
