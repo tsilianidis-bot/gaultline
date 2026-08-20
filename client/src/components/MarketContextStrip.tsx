@@ -11,6 +11,8 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
 import { formatCanonicalScore } from "@shared/marketMetrics";
+import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
+import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
 
 // Pages that should NOT show the strip (landing, auth, public pages)
 const EXCLUDED_PATHS = [
@@ -69,7 +71,7 @@ export default function MarketContextStrip() {
   const pressureScore = formatCanonicalScore(overall.score * 10);
   const pressureColor = getRiskColor(overall.riskLevel);
 
-  // Pick the dominant probability for the "most likely outcome" pill
+  // Select the largest derived scenario value for context only; it is not a probability forecast.
   const probs = [
     { label: "BULL", value: probability.bullProbability, color: "#10B981" },
     { label: "SOFT LAND", value: probability.softLandingProbability, color: "#00E5FF" },
@@ -78,6 +80,7 @@ export default function MarketContextStrip() {
     { label: "CRASH", value: probability.crashProbability, color: "#DC2626" },
   ];
   const dominant = probs.reduce((a, b) => a.value > b.value ? a : b);
+  const scenarioHorizon = insufficientHorizonMetadata("market-context-derived-scenario", new Date().toISOString(), "Not yet established");
 
   // One-line synthesis from narrative
   const synthesis = narrative.summary
@@ -130,11 +133,12 @@ export default function MarketContextStrip() {
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: pressureColor, fontWeight: 600 }}>{verdictLabel}</span>
           </div>
 
-          {/* Dominant outcome */}
+          {/* Dominant derived scenario */}
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em" }}>MOST LIKELY</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em" }}>DERIVED SCENARIO</span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: dominant.color, fontWeight: 600 }}>{dominant.label} {dominant.value}%</span>
           </div>
+          <ForecastHorizonDisclosure metadata={scenarioHorizon} compact />
 
           {/* Expand button */}
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px", color: "rgba(100,116,139,0.5)" }}>

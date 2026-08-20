@@ -1530,6 +1530,46 @@ export const governedResearchResolutions = mysqlTable("governedResearchResolutio
 export type GovernedResearchResolution = typeof governedResearchResolutions.$inferSelect;
 export type InsertGovernedResearchResolution = typeof governedResearchResolutions.$inferInsert;
 
+/** Immutable original forecast record. It never upgrades an interpretation into a forecast. */
+export const forecastObservations = mysqlTable("forecastObservations", {
+  id:                  int("id").autoincrement().primaryKey(),
+  forecastKey:         varchar("forecastKey", { length: 220 }).notNull().unique(),
+  sourceType:          varchar("sourceType", { length: 96 }).notNull(),
+  sourceKey:           varchar("sourceKey", { length: 220 }).notNull(),
+  sourceModel:         varchar("sourceModel", { length: 128 }).notNull(),
+  modelVersion:        varchar("modelVersion", { length: 96 }).notNull(),
+  evidenceClass:       mysqlEnum("evidenceClass", ["OBSERVED", "DERIVED", "HISTORICAL", "INTERPRETED", "FORECAST"]).notNull(),
+  horizonStatus:       mysqlEnum("horizonStatus", ["SUPPORTED", "NOT_ESTABLISHED", "INSUFFICIENT_EVIDENCE"]).notNull(),
+  forecastGeneratedAt: timestamp("forecastGeneratedAt").notNull(),
+  forecastExpiresAt:   timestamp("forecastExpiresAt"),
+  originalForecastJson:text("originalForecastJson").notNull(),
+  sourceVersionsJson:  text("sourceVersionsJson").notNull(),
+  createdAt:           timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  sourceIdx: index("forecastObservations_source_idx").on(t.sourceType, t.sourceKey),
+  generatedIdx: index("forecastObservations_generated_idx").on(t.forecastGeneratedAt),
+}));
+export type ForecastObservation = typeof forecastObservations.$inferSelect;
+export type InsertForecastObservation = typeof forecastObservations.$inferInsert;
+
+/** Append-only later measurement of a forecast observation; never overwrites the original. */
+export const forecastResolutions = mysqlTable("forecastResolutions", {
+  id:                    int("id").autoincrement().primaryKey(),
+  resolutionKey:         varchar("resolutionKey", { length: 220 }).notNull().unique(),
+  forecastObservationId: int("forecastObservationId").notNull(),
+  resolutionStatus:      mysqlEnum("resolutionStatus", ["PENDING", "TARGET_REACHED", "INVALIDATED", "EXPIRED", "UNAVAILABLE"]).notNull(),
+  resolvedAt:            timestamp("resolvedAt").notNull(),
+  outcomeValueJson:      text("outcomeValueJson").notNull(),
+  sourceVersionsJson:    text("sourceVersionsJson").notNull(),
+  createdAt:             timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  observationFk: foreignKey({ columns: [t.forecastObservationId], foreignColumns: [forecastObservations.id], name: "forecastResolutions_observation_fk" }).onDelete("restrict"),
+  observationIdx: index("forecastResolutions_observation_idx").on(t.forecastObservationId),
+  resolvedIdx: index("forecastResolutions_resolved_idx").on(t.resolvedAt),
+}));
+export type ForecastResolution = typeof forecastResolutions.$inferSelect;
+export type InsertForecastResolution = typeof forecastResolutions.$inferInsert;
+
 // ── Signal Pages Cache ───────────────────────────────────────
 /**
  * Stores AI-generated signal page content for each tracked stock/crypto symbol.

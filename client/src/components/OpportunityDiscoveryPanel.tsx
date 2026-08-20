@@ -15,6 +15,8 @@ import {
   ArrowUpDown, BarChart, Rocket,
 } from "lucide-react";
 import React from "react";
+import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
+import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
 
 // Dynamic icon/accent lookup — covers all 26 categories
 // Falls back to a sensible default for any unknown category
@@ -152,6 +154,7 @@ function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBuck
   const accent = getCategoryAccent(bucket.category);
   const icon = getCategoryIcon(bucket.category);
   const topItem = bucket.items[0];
+  const pendingHorizon = (ticker: string) => insufficientHorizonMetadata(`opportunity:${ticker}`, new Date().toISOString(), "Not yet established");
 
   return (
     <div
@@ -210,7 +213,7 @@ function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBuck
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: RISK_COLORS[topItem.riskLevel] ?? "#94A3B8", background: `${RISK_COLORS[topItem.riskLevel] ?? "#94A3B8"}15`, padding: "1px 5px", borderRadius: "2px" }}>
               {topItem.riskLevel.toUpperCase()}
             </span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.5)" }}>{topItem.expectedTimeHorizon}</span>
+            <ForecastHorizonDisclosure metadata={pendingHorizon(topItem.ticker)} compact />
           </div>
           <ChevronRight size={12} style={{ color: accent, flexShrink: 0 }} />
         </div>
@@ -254,7 +257,7 @@ function BucketCard({ bucket, onNavigate, onWatchlist }: { bucket: DiscoveryBuck
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: RISK_COLORS[item.riskLevel] ?? "#94A3B8", background: `${RISK_COLORS[item.riskLevel] ?? "#94A3B8"}15`, padding: "1px 5px", borderRadius: "2px" }}>
                     {item.riskLevel.toUpperCase()}
                   </span>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.45)" }}>{item.expectedTimeHorizon}</span>
+                  <ForecastHorizonDisclosure metadata={pendingHorizon(item.ticker)} compact />
                 </div>
                 <ChevronRight size={11} style={{ color: `${accent}80`, flexShrink: 0 }} />
               </div>

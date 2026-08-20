@@ -16,6 +16,7 @@ import AshaSummon from "./AshaSummon";
 import IntelligenceSynthesis, { SynthesisStep } from "./IntelligenceSynthesis";
 import OracleBriefing, { OracleBriefingData } from "./OracleBriefing";
 import { useIsMobile } from "@/hooks/useMobile";
+import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
 
 // ── Context-aware suggestions per page ───────────────────────
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -274,7 +275,8 @@ export default function AshaPanel() {
         missionRecommendation: response.missionRecommendation || response.reply,
         missionRecommendationStructured: response.missionRecommendationStructured,
         finalVerdictAction: response.finalVerdictAction || "WATCH",
-        expectedTimeframe: response.expectedTimeframe || "2-4 weeks",
+        expectedTimeframe: undefined,
+        forecastMetadata: insufficientHorizonMetadata("oracle-briefing", new Date().toISOString()),
         questionAnalysis: response.questionAnalysis,
         sourceCitations: response.sourceCitations,
         limitations: response.limitations,

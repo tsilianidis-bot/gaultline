@@ -442,6 +442,13 @@
       "when": 1787248506529,
       "tag": "0062_empty_silver_sable",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "5",
+      "when": 1787250493487,
+      "tag": "0063_nervous_shockwave",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,8 @@ import { runFMOSPipelineFast } from "../fmos/pipeline";
 import { invokeLLM } from "../_core/llm";
 import { getQuote } from "../yahooProxy";
 import { getRisingStarVisualDetail } from "../risingStarsVisual";
+import { forecastHorizonPromptContract, insufficientHorizonMetadata } from "../../shared/forecastMetadata";
+import { recordForecastObservation } from "../forecastHorizon";
 
 const timeframeSchema = z.enum(["day", "short", "swing", "long"]).default("swing");
 const assetTypeSchema = z.enum(["stock", "crypto"]);
@@ -38,6 +40,17 @@ function sanitizeNumbers(v: unknown): unknown {
   return v;
 }
 
+function recordHorizonObservation(sourceType: string, sourceKey: string, metadata: ReturnType<typeof insufficientHorizonMetadata>) {
+  void recordForecastObservation({
+    sourceType,
+    sourceKey,
+    sourceModel: "FAULTLINE_OUTLOOK",
+    modelVersion: "FORECAST_HORIZON_STANDARD_V1",
+    metadata,
+    sourceVersions: { horizonStandard: "FORECAST_HORIZON_STANDARD_V1", evidenceClass: metadata.evidenceClass },
+  }).catch((err) => console.warn("[Forecast Horizon] Observation capture unavailable:", err));
+}
+
 export const outlookRouter = router({
   /**
    * Full outlook for a single symbol.
@@ -53,7 +66,13 @@ export const outlookRouter = router({
     .query(async ({ input }) => {
       try {
         const result = await getFullOutlook(input.symbol, input.assetType, input.timeframe as OutlookTimeframe);
-        return sanitizeNumbers(result) as typeof result;
+        const forecastMetadata = insufficientHorizonMetadata(`outlook:${input.symbol}`, new Date().toISOString());
+        recordHorizonObservation("outlook", `${input.symbol}:${input.assetType}:${input.timeframe}`, forecastMetadata);
+        return {
+          ...(sanitizeNumbers(result) as typeof result),
+          analysisTimeframe: input.timeframe,
+          forecastMetadata,
+        };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
         console.error("[outlook.getOutlook] Error for", input.symbol, err);
@@ -77,7 +96,12 @@ export const outlookRouter = router({
     .query(async ({ input }) => {
       try {
         const result = await getQuickOutlook(input.symbol, input.assetType);
-        return sanitizeNumbers(result) as typeof result;
+        const forecastMetadata = insufficientHorizonMetadata(`quick-outlook:${input.symbol}`, new Date().toISOString());
+        recordHorizonObservation("quick_outlook", `${input.symbol}:${input.assetType}`, forecastMetadata);
+        return {
+          ...(sanitizeNumbers(result) as typeof result),
+          forecastMetadata,
+        };
       } catch (err) {
         if (err instanceof TRPCError) throw err;
         console.error("[outlook.getQuickOutlook] Error for", input.symbol, err);
@@ -284,11 +308,12 @@ LIVE FAULTLINE DATA
 - Top Stock Opportunities: ${topStocks || "None identified"}
 - Top Crypto Opportunities: ${topCrypto || "None identified"}
 - Historical Analog: ${fmos?.topAnalog?.label ?? pressure.topAnalog.label} (${fmos?.topAnalog?.similarity ?? pressure.topAnalog.similarity}% similarity)
-- Bull Probability: ${fmos?.probability?.bull ?? 50}%
-- Bear Probability: ${fmos?.probability?.bear ?? 30}%
-- Transition Risk: ${fmos?.transition?.transitionProbability ?? 0}%
-- Top Opportunity: ${topOpportunityTicker} (${topOpportunityName}) — ${topOpportunityDir}, Score: ${topOpportunityScore}/100
-- Data Source: ${pressure.dataSource}
+	- Derived Bull Scenario Score: ${fmos?.probability?.bull ?? 50}% (not a calibrated forecast)
+	- Derived Bear Scenario Score: ${fmos?.probability?.bear ?? 30}% (not a calibrated forecast)
+	- Derived Transition Scenario Score: ${fmos?.transition?.transitionProbability ?? 0}% (not a calibrated forecast)
+	- Top Opportunity: ${topOpportunityTicker} (${topOpportunityName}) — ${topOpportunityDir}, Score: ${topOpportunityScore}/100
+	- Data Source: ${pressure.dataSource}
+	- ${forecastHorizonPromptContract()}
 
 ========================
 STORY INTELLIGENCE 2.0 — ALL 14 SECTIONS REQUIRED
@@ -304,9 +329,9 @@ Write exactly this JSON structure:
   "topOpportunityRating": "${topOpportunityDir}",
   "topOpportunityScore": ${topOpportunityScore},
   "topOpportunityConfidence": number (0-100),
-  "topOpportunityTimeHorizon": "e.g. '1-3 weeks' or '1-3 months'",
+  "topOpportunityTimeHorizon": "Not yet established — insufficient evidence for reliable estimate",
   "topOpportunityExpectedRisk": "e.g. 'Medium' or 'Low'",
-  "topOpportunityExpectedReward": "e.g. '+8-12%'",
+  "topOpportunityExpectedReward": "Not established — no calibrated magnitude estimate",
   "topOpportunityWhyFirst": "One sentence: why this asset ranked first.",
   "topOpportunityBullDrivers": ["2-4 specific bull driver strings"],
   "topOpportunityBearDrivers": ["2-3 specific bear driver strings"],
@@ -328,8 +353,8 @@ Write exactly this JSON structure:
 }`;
 
         const response = await invokeLLM({
-          messages: [
-            { role: "system", content: "You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist. You synthesize live market data, macro regime analysis, and proprietary signal scoring into clear, confident analysis. Be direct, specific, and institutional in tone. Every conclusion must be explainable. Every probability must be justified. Every recommendation must include supporting evidence. Every thesis must include an invalidation scenario. Respond only with valid JSON." },
+	          messages: [
+	            { role: "system", content: "You are FAULTLINE — an elite institutional market intelligence system operating as a Chief Investment Strategist. You synthesize current market evidence into clear analysis. Be direct, specific, and institutional. Derived scenario scores are not calibrated probabilities. Do not invent a price target, expected reward, timing, target date, probability, or historical success rate. Every statement must identify whether it is observed, derived, historical, interpreted, or forecast. Every thesis requires evidence and an invalidation condition. Respond only with valid JSON." },
             { role: "user", content: prompt },
           ],
           response_format: { type: "json_object" } as any,
@@ -343,7 +368,8 @@ Write exactly this JSON structure:
           content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
         }
         const story = JSON.parse(content);
-
+        const forecastMetadata = insufficientHorizonMetadata("daily-story-top-opportunity", new Date().toISOString());
+        recordHorizonObservation("daily_story", `daily-story:${new Date().toISOString().slice(0, 10)}`, forecastMetadata);
         return sanitizeNumbers({
           ...story,
           pressureIndex: pressure.overallPressure,
@@ -351,7 +377,8 @@ Write exactly this JSON structure:
           regimeLevel: pressure.level,
           topAnalog: pressure.topAnalog,
           dataSource: pressure.dataSource,
-          generatedAt: new Date().toISOString(),
+          forecastMetadata,
+	          generatedAt: new Date().toISOString(),
         }) as {
           headline: string;
           executiveSummary: string;

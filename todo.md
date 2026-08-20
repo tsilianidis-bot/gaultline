@@ -5051,8 +5051,11 @@
 - [x] Contain residual static homepage and product-experience probability wording so no public surface presents mock or uncalibrated scenario values as market likelihood
 
 ## FAULTLINE Forecast Horizon Standard — Queued After Phase 1B
-- [ ] Audit every forward-looking product output and define a shared evidence-bound forecast metadata contract with optional horizon, magnitude, timing-confidence, methodology, confirmation, invalidation, and expiry fields
-- [ ] Integrate the Forecast Horizon Standard across qualifying signals, targets, scenarios, alerts, ASHA, Oracle, dashboard analysis, scanner results, macro/asset analysis, and future Early Warning outputs without fabricating unsupported horizons
-- [ ] Add append-only forecast observation and resolution tracking so future magnitude and timing calibration can be measured from genuine recorded forecasts
-- [ ] Apply sitewide language and UI standards: show horizon when evidence supports it, otherwise show “Not yet established” or “Insufficient evidence for reliable estimate,” and separate observed, derived, historical, interpreted, and forecast content
-- [ ] Produce a coverage audit, regression tests, documentation, checkpoint, and acceptance report for the permanent Forecast Horizon Standard
+- [x] Audit every forward-looking product output and define a shared evidence-bound forecast metadata contract with optional horizon, magnitude, timing-confidence, methodology, confirmation, invalidation, and expiry fields
+- [x] Integrate the Forecast Horizon Standard across qualifying signals, targets, scenarios, alerts, ASHA, Oracle, dashboard analysis, scanner results, macro/asset analysis, and future Early Warning outputs without fabricating unsupported horizons
+- [x] Add append-only forecast observation and resolution tracking so future magnitude and timing calibration can be measured from genuine recorded forecasts
+- [x] Apply sitewide language and UI standards: show horizon when evidence supports it, otherwise show “Not yet established” or “Insufficient evidence for reliable estimate,” and separate observed, derived, historical, interpreted, and forecast content
+- [x] Produce a coverage audit, regression tests, documentation, checkpoint, and acceptance report for the permanent Forecast Horizon Standard
+- [x] Remove the default fabricated “2-4 weeks” Oracle briefing timeframe and require explicit Forecast Horizon metadata for every Oracle forward-looking interpretation
+- [x] Contain the Market Context Strip’s ungoverned “most likely” scenario framing and show that its derived scenario values have no established forecast horizon
+- [x] Remove implied target-timeframe requirements from generated Daily Story and opportunity-analysis prompts unless a future structured forecast record supplies evidence-supported timing

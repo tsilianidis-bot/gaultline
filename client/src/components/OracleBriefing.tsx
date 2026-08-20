@@ -6,6 +6,8 @@
    ============================================================ */
 import { useState, useEffect, useRef } from "react";
 import type { AshaQuestionAnalysis } from "@shared/ashaQuestionAnalysis";
+import type { ForecastMetadata } from "@shared/forecastMetadata";
+import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
 
 // ── Types ──────────────────────────────────────────────────
 export interface OracleBriefingData {
@@ -52,7 +54,8 @@ export interface OracleBriefingData {
     decisionPaths: Array<{ scenario: string; response: string }>;
   };
   finalVerdictAction: string;
-  expectedTimeframe: string;
+  expectedTimeframe?: string;
+  forecastMetadata: ForecastMetadata;
 
   // Source citations
   sourceCitations?: Array<{
@@ -179,7 +182,7 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     ``,
     `MISSION SNAPSHOT`,
     `Bias: ${data.marketBias} | Threat: ${data.threatLevel} | Confidence: ${data.confidence}%`,
-    `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex}/100 | Time Horizon: ${data.missionRecommendationStructured?.timeHorizon || data.expectedTimeframe}`,
+    `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex}/100 | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? data.forecastMetadata.horizonDisclosure}`,
     `Action: ${data.missionRecommendationStructured?.verdict || data.finalVerdictAction}`,
     ...(data.questionAnalysis ? [
       `Scope: ${data.questionAnalysis.analysisScope}`,
@@ -210,7 +213,7 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     `MISSION RECOMMENDATION`,
     data.missionRecommendationStructured?.rationale || data.missionRecommendation,
     ``,
-    `FINAL VERDICT: ${data.finalVerdictAction} | Time Horizon: ${data.expectedTimeframe}`,
+    `FINAL VERDICT: ${data.finalVerdictAction} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? data.forecastMetadata.horizonDisclosure}`,
   ].join("\n");
 
   return (
@@ -251,7 +254,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
   const tColor = threatColor(data.threatLevel);
   const vColor = verdictColor(data.finalVerdictAction);
   const missionAction = data.missionRecommendationStructured?.verdict || data.finalVerdictAction;
-  const missionTimeHorizon = data.missionRecommendationStructured?.timeHorizon || data.expectedTimeframe;
+  const missionTimeHorizon = data.forecastMetadata.expectedHorizon ?? data.forecastMetadata.horizonDisclosure;
   const confirmationConditions = data.confirmationConditions?.length
     ? data.confirmationConditions
     : ["No additional confirmation condition was returned by the currently available engines."];
@@ -432,6 +435,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               </div>
             ))}
           </div>
+          <ForecastHorizonDisclosure metadata={data.forecastMetadata} />
           {data.suggestedBias && (
             <div style={{
               marginTop: "10px",
