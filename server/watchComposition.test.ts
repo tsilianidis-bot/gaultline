@@ -58,7 +58,7 @@ describe("WATCH destination composition", () => {
     expect(watchSource).toContain("marketState?.why.evidenceFamilies");
     expect(watchSource).toContain('marketMode === "canonical" && Boolean(marketState)');
     expect(watchSource).toContain("Canonical refresh is degraded");
-    expect(watchSource).not.toContain("trpc.");
+    expect(watchSource).toContain("trpc.marketState.canonicalCurrent.useQuery");
     expect(watchSource).not.toContain("aiWatchItems");
   });
 

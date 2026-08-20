@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
 import {
   CANONICAL_DESTINATION_BY_ID,
   EXPERT_WORKSPACE_BY_ID,
@@ -211,6 +212,10 @@ export default function Watch() {
     dataError,
     refresh,
   } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     document.title = "WATCH — FAULTLINE";
@@ -219,7 +224,7 @@ export default function Watch() {
   if (isLoading && !marketState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading canonical monitoring state…" />;
 
   const isCanonical = marketMode === "canonical" && Boolean(marketState);
-  const pressure = marketState?.now.pressureScore ?? output.overall.score * 10;
+  const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? output.overall.score * 10;
   const whatChanged = marketState?.watch.whatChanged ?? [
     "Canonical change records are unavailable. Deterministic risk domains are shown below without claiming measured changes.",
   ];

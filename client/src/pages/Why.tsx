@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import {
   CANONICAL_DESTINATION_BY_ID,
@@ -246,6 +247,10 @@ export default function Why() {
     dataError,
     refresh,
   } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
   const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? output.domains.map(domain => ({
     name: domain.label,
@@ -264,7 +269,7 @@ export default function Why() {
   const positioningEvidence = evidenceFamilies.filter(family => /liquid|credit|concentration|volatil|breadth|fund/i.test(family.name));
   const positioningView = positioningEvidence.length ? positioningEvidence : evidenceFamilies.slice(0, 3);
   const invalidationConditions = marketState?.outlook.invalidationConditions ?? [];
-  const pressure = marketState?.now.pressureScore ?? normalizeCanonicalMetric(output.overall.score * 10);
+  const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? normalizeCanonicalMetric(output.overall.score * 10);
   const story = marketState?.why.story ?? output.narrative.summary;
   const whyThisRegime = marketState?.why.whyThisRegime ?? output.narrative.regimeAssessment;
   const whyThisScore = marketState?.why.whyThisScore ?? output.overall.description;

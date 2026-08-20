@@ -809,6 +809,10 @@ export default function Now() {
     output, marketState, marketMode, sourceHealth,
     isLoading, isLive, lastUpdated, dataError, refresh,
   } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
 
   // Fetch the server-side pressure reading to get the true prior pressure
   // (current vs previous DB run). Runs in parallel with EngineContext.
@@ -835,8 +839,8 @@ export default function Now() {
   );
 
   const evidenceFamilies = marketState?.why.evidenceFamilies ?? fallbackDomains;
-  const pressure = marketState?.now.pressureScore ?? output.overall.score * 10;
-  const regime = marketState?.now.regime ?? output.regime.label;
+  const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? output.overall.score * 10;
+  const regime = canonicalState?.regime ?? marketState?.now.regime ?? output.regime.label;
   const stressLevel = marketState?.now.stressLevel ?? output.overall.riskLevel;
   const direction = marketState?.now.direction
     ?? (output.overall.delta > 0.1 ? "Deteriorating" : output.overall.delta < -0.1 ? "Improving" : "Stable");
