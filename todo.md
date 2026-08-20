@@ -5023,3 +5023,15 @@
 - [x] Run the unchanged frozen Champion V1 over any locked extended dataset and independently extend S&P 500 outcome observations
 - [x] Measure score-range compression, stress-versus-calm discrimination, regime calibration, event performance, temporal stability, and descriptive legacy-series differences without optimization
 - [x] Publish a source-cited Phase 1B extension report, retain V3-H shadow-only, run regression tests, and checkpoint the research-only work
+
+## FAULTLINE Early Warning Intelligence Master Plan — Phase 1 Core Algorithm Validation & Intelligence Audit
+- [x] Preserve checkpoint f430a9ab as the research baseline, retain its INCONCLUSIVE verdict unless reproducible evidence justifies a change, and prohibit Phase 2/early-warning UI/model work
+- [x] Inventory the production intelligence dependency chain from raw observations through transformations, engines, domains, Pressure/Champion, regimes, analogs, probabilities, canonical state, Oracle, and ASHA
+- [x] Reconcile the legacy 317-row history, reconstructed 318-score history, source policies, timestamp differences, and the explicit 2018-03 missing score without merging or overwriting any record
+- [x] Audit all raw inputs, normalization, directionality, weights, frequency alignment, fallback/staleness behavior, data health, and potential duplicate exposure
+- [x] Reconstruct and test the deterministic current Pressure/Champion calculation, regime logic, trend/acceleration/persistence logic, percentile methodology, and reproducibility boundaries
+- [x] Audit analog models, scenario probabilities, calibration evidence, look-ahead risk, model versions, current-state synchronization, and public historical/predictive claims
+- [x] Expand evidence-bound evaluation of all 26 drawdown events, risk discrimination across the score distribution, out-of-sample partitions, engine lead usefulness, missed-event engine behavior, Macro Sensitivity 4–8-week claim, and cross-engine divergences
+- [x] Produce the complete Phase 1 audit report with severity-ranked issues, repair classification, intelligence-fitness scorecard, and explicit Phase 2 readiness gate; do not begin Phase 2
+- [x] Run full regressions, checkpoint the audit-only work, and provide the Phase 1 report for review
+- [x] Contain critical false public claims on the Market Crash Probability page: do not describe the six-vector Pressure Index as a calibrated crash probability, seven-vector/VIX system, continuous intraday feed, or historically observed FAULTLINE warning record

@@ -1,0 +1,687 @@
+{
+  "diagnosticVersion": "PHASE_1_EARLY_WARNING_DIAGNOSTIC_V1",
+  "datasetTier": "RECONSTRUCTED_HISTORICAL_RESEARCH_HISTORY",
+  "observedAt": "2026-08-20T16:55:51.927Z",
+  "policy": {
+    "compositeWarningThreshold": 45,
+    "preEventWindow": "two calendar months before registered event start through event start",
+    "vectorElevationThreshold": 45,
+    "eventDefinition": "local 20-trading-day high followed by >=10% close drawdown within 60 trading days",
+    "classification": "descriptive diagnostic only; not a candidate-warning or confirmation engine"
+  },
+  "events": [
+    {
+      "startDate": "2000-03-23",
+      "troughDate": "2000-04-14",
+      "drawdownPct": -11.182107553749576,
+      "peakIndex": 78,
+      "troughIndex": 94,
+      "warningStartDate": "2000-01-23",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2000-02",
+          "score": 46
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 53,
+        "creditContagion": 39,
+        "volatilityRegime": 56,
+        "macroSensitivity": 43,
+        "marketBreadth": 31,
+        "aiBubble": 49
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "volatilityRegime",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2000-08-17",
+      "troughDate": "2000-10-12",
+      "drawdownPct": -11.115116469297615,
+      "peakIndex": 180,
+      "troughIndex": 219,
+      "warningStartDate": "2000-06-17",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2000-06",
+          "score": 52
+        },
+        {
+          "month": "2000-07",
+          "score": 53
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 67,
+        "creditContagion": 49,
+        "volatilityRegime": 56,
+        "macroSensitivity": 55,
+        "marketBreadth": 31,
+        "aiBubble": 51
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "volatilityRegime",
+        "macroSensitivity",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2000-11-06",
+      "troughDate": "2000-12-20",
+      "drawdownPct": -11.69188152567654,
+      "peakIndex": 236,
+      "troughIndex": 267,
+      "warningStartDate": "2000-09-06",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2000-09",
+          "score": 54
+        },
+        {
+          "month": "2000-10",
+          "score": 56
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 84,
+        "creditContagion": 53,
+        "volatilityRegime": 55,
+        "macroSensitivity": 51,
+        "marketBreadth": 31,
+        "aiBubble": 50
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "volatilityRegime",
+        "macroSensitivity",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2001-01-18",
+      "troughDate": "2001-04-04",
+      "drawdownPct": -18.154704928291153,
+      "peakIndex": 285,
+      "troughIndex": 338,
+      "warningStartDate": "2000-11-18",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2000-11",
+          "score": 56
+        },
+        {
+          "month": "2000-12",
+          "score": 53
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 86,
+        "creditContagion": 53,
+        "volatilityRegime": 53,
+        "macroSensitivity": 52,
+        "marketBreadth": 26,
+        "aiBubble": 49
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "volatilityRegime",
+        "macroSensitivity",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2001-05-21",
+      "troughDate": "2001-07-24",
+      "drawdownPct": -10.753862751951404,
+      "peakIndex": 370,
+      "troughIndex": 414,
+      "warningStartDate": "2001-03-21",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2001-03",
+          "score": 50
+        },
+        {
+          "month": "2001-04",
+          "score": 49
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 82,
+        "creditContagion": 54,
+        "volatilityRegime": 28,
+        "macroSensitivity": 49,
+        "marketBreadth": 31,
+        "aiBubble": 49
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "macroSensitivity",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2001-08-02",
+      "troughDate": "2001-09-21",
+      "drawdownPct": -20.884703027403752,
+      "peakIndex": 421,
+      "troughIndex": 452,
+      "warningStartDate": "2001-06-02",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2001-06",
+          "score": 48
+        },
+        {
+          "month": "2001-07",
+          "score": 46
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 75,
+        "creditContagion": 54,
+        "volatilityRegime": 29,
+        "macroSensitivity": 38,
+        "marketBreadth": 32,
+        "aiBubble": 49
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2002-03-08",
+      "troughDate": "2002-06-03",
+      "drawdownPct": -10.618306006231059,
+      "peakIndex": 567,
+      "troughIndex": 626,
+      "warningStartDate": "2002-01-08",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 65,
+        "creditContagion": 59,
+        "volatilityRegime": 27,
+        "macroSensitivity": 6,
+        "marketBreadth": 49,
+        "aiBubble": 48
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "marketBreadth",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2002-08-14",
+      "troughDate": "2002-10-09",
+      "drawdownPct": -15.534675856341929,
+      "peakIndex": 677,
+      "troughIndex": 716,
+      "warningStartDate": "2002-06-14",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 65,
+        "creditContagion": 59,
+        "volatilityRegime": 25,
+        "macroSensitivity": 5,
+        "marketBreadth": 49,
+        "aiBubble": 47
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "marketBreadth",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2002-11-21",
+      "troughDate": "2003-02-13",
+      "drawdownPct": -12.46466045142065,
+      "peakIndex": 747,
+      "troughIndex": 803,
+      "warningStartDate": "2002-09-21",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 65,
+        "creditContagion": 55,
+        "volatilityRegime": 20,
+        "macroSensitivity": 6,
+        "marketBreadth": 42,
+        "aiBubble": 44
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion"
+      ]
+    },
+    {
+      "startDate": "2007-10-09",
+      "troughDate": "2007-11-26",
+      "drawdownPct": -10.090409944571356,
+      "peakIndex": 1974,
+      "troughIndex": 2007,
+      "warningStartDate": "2007-08-09",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 44,
+        "creditContagion": 33,
+        "volatilityRegime": 36,
+        "macroSensitivity": 40,
+        "marketBreadth": 32,
+        "aiBubble": 44
+      },
+      "elevatedVectors": []
+    },
+    {
+      "startDate": "2007-12-06",
+      "troughDate": "2008-01-22",
+      "drawdownPct": -13.058763801382378,
+      "peakIndex": 2015,
+      "troughIndex": 2045,
+      "warningStartDate": "2007-10-06",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 47,
+        "creditContagion": 41,
+        "volatilityRegime": 23,
+        "macroSensitivity": 48,
+        "marketBreadth": 31,
+        "aiBubble": 44
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "macroSensitivity"
+      ]
+    },
+    {
+      "startDate": "2008-04-18",
+      "troughDate": "2008-07-15",
+      "drawdownPct": -12.617143226402582,
+      "peakIndex": 2106,
+      "troughIndex": 2166,
+      "warningStartDate": "2008-02-18",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2008-02",
+          "score": 45
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 65,
+        "creditContagion": 51,
+        "volatilityRegime": 18,
+        "macroSensitivity": 51,
+        "marketBreadth": 30,
+        "aiBubble": 43
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "macroSensitivity"
+      ]
+    },
+    {
+      "startDate": "2008-08-05",
+      "troughDate": "2008-10-27",
+      "drawdownPct": -33.93001839206129,
+      "peakIndex": 2181,
+      "troughIndex": 2239,
+      "warningStartDate": "2008-06-05",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2008-07",
+          "score": 46
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 65,
+        "creditContagion": 55,
+        "volatilityRegime": 21,
+        "macroSensitivity": 41,
+        "marketBreadth": 41,
+        "aiBubble": 44
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion"
+      ]
+    },
+    {
+      "startDate": "2008-11-04",
+      "troughDate": "2008-11-20",
+      "drawdownPct": -25.186179225313822,
+      "peakIndex": 2245,
+      "troughIndex": 2257,
+      "warningStartDate": "2008-09-04",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2008-09",
+          "score": 47
+        },
+        {
+          "month": "2008-10",
+          "score": 47
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 65,
+        "creditContagion": 57,
+        "volatilityRegime": 21,
+        "macroSensitivity": 43,
+        "marketBreadth": 48,
+        "aiBubble": 45
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "marketBreadth",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2008-12-16",
+      "troughDate": "2009-03-09",
+      "drawdownPct": -25.914930821631277,
+      "peakIndex": 2274,
+      "troughIndex": 2329,
+      "warningStartDate": "2008-10-16",
+      "compositeQualifiedMonths": [
+        {
+          "month": "2008-10",
+          "score": 47
+        }
+      ],
+      "compositeWarned": true,
+      "peakVectorScores": {
+        "liquidityStress": 65,
+        "creditContagion": 57,
+        "volatilityRegime": 21,
+        "macroSensitivity": 40,
+        "marketBreadth": 48,
+        "aiBubble": 45
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "marketBreadth",
+        "aiBubble"
+      ]
+    },
+    {
+      "startDate": "2010-03-23",
+      "troughDate": "2010-06-07",
+      "drawdownPct": -10.535107234259232,
+      "peakIndex": 2591,
+      "troughIndex": 2643,
+      "warningStartDate": "2010-01-23",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 51,
+        "creditContagion": 58,
+        "volatilityRegime": 18,
+        "macroSensitivity": 17,
+        "marketBreadth": 58,
+        "aiBubble": 43
+      },
+      "elevatedVectors": [
+        "liquidityStress",
+        "creditContagion",
+        "marketBreadth"
+      ]
+    },
+    {
+      "startDate": "2011-06-30",
+      "troughDate": "2011-08-08",
+      "drawdownPct": -15.233527038365025,
+      "peakIndex": 2913,
+      "troughIndex": 2939,
+      "warningStartDate": "2011-04-30",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 37,
+        "creditContagion": 46,
+        "volatilityRegime": 16,
+        "macroSensitivity": 27,
+        "marketBreadth": 55,
+        "aiBubble": 41
+      },
+      "elevatedVectors": [
+        "creditContagion",
+        "marketBreadth"
+      ]
+    },
+    {
+      "startDate": "2015-06-23",
+      "troughDate": "2015-08-25",
+      "drawdownPct": -12.07936972594117,
+      "peakIndex": 3913,
+      "troughIndex": 3957,
+      "warningStartDate": "2015-04-23",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 28,
+        "creditContagion": 29,
+        "volatilityRegime": 12,
+        "macroSensitivity": 0,
+        "marketBreadth": 27,
+        "aiBubble": 37
+      },
+      "elevatedVectors": []
+    },
+    {
+      "startDate": "2015-10-23",
+      "troughDate": "2016-01-20",
+      "drawdownPct": -10.400209934005611,
+      "peakIndex": 3999,
+      "troughIndex": 4058,
+      "warningStartDate": "2015-08-23",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 50,
+        "creditContagion": 44,
+        "volatilityRegime": 12,
+        "macroSensitivity": 0,
+        "marketBreadth": 25,
+        "aiBubble": 39
+      },
+      "elevatedVectors": [
+        "liquidityStress"
+      ]
+    },
+    {
+      "startDate": "2018-01-26",
+      "troughDate": "2018-02-08",
+      "drawdownPct": -10.159530548956274,
+      "peakIndex": 4567,
+      "troughIndex": 4576,
+      "warningStartDate": "2017-11-26",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 18,
+        "creditContagion": 17,
+        "volatilityRegime": 12,
+        "macroSensitivity": 13,
+        "marketBreadth": 12,
+        "aiBubble": 36
+      },
+      "elevatedVectors": []
+    },
+    {
+      "startDate": "2018-09-20",
+      "troughDate": "2018-12-17",
+      "drawdownPct": -13.130088154695896,
+      "peakIndex": 4731,
+      "troughIndex": 4791,
+      "warningStartDate": "2018-07-20",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 16,
+        "creditContagion": 17,
+        "volatilityRegime": 27,
+        "macroSensitivity": 22,
+        "marketBreadth": 13,
+        "aiBubble": 38
+      },
+      "elevatedVectors": []
+    },
+    {
+      "startDate": "2019-12-12",
+      "troughDate": "2020-03-11",
+      "drawdownPct": -13.48211263537138,
+      "peakIndex": 5040,
+      "troughIndex": 5100,
+      "warningStartDate": "2019-10-12",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 23,
+        "creditContagion": 17,
+        "volatilityRegime": 24,
+        "macroSensitivity": 8,
+        "marketBreadth": 1,
+        "aiBubble": 36
+      },
+      "elevatedVectors": []
+    },
+    {
+      "startDate": "2021-12-10",
+      "troughDate": "2022-03-08",
+      "drawdownPct": -11.48806291091693,
+      "peakIndex": 5543,
+      "troughIndex": 5602,
+      "warningStartDate": "2021-10-10",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 18,
+        "creditContagion": 18,
+        "volatilityRegime": 12,
+        "macroSensitivity": 42,
+        "marketBreadth": 16,
+        "aiBubble": 35
+      },
+      "elevatedVectors": []
+    },
+    {
+      "startDate": "2022-03-18",
+      "troughDate": "2022-06-14",
+      "drawdownPct": -16.303395777241214,
+      "peakIndex": 5610,
+      "troughIndex": 5670,
+      "warningStartDate": "2022-01-18",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 19,
+        "creditContagion": 16,
+        "volatilityRegime": 24,
+        "macroSensitivity": 46,
+        "marketBreadth": 7,
+        "aiBubble": 35
+      },
+      "elevatedVectors": [
+        "macroSensitivity"
+      ]
+    },
+    {
+      "startDate": "2022-07-21",
+      "troughDate": "2022-10-12",
+      "drawdownPct": -10.550767752203505,
+      "peakIndex": 5695,
+      "troughIndex": 5753,
+      "warningStartDate": "2022-05-21",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 42,
+        "creditContagion": 34,
+        "volatilityRegime": 27,
+        "macroSensitivity": 46,
+        "marketBreadth": 8,
+        "aiBubble": 41
+      },
+      "elevatedVectors": [
+        "macroSensitivity"
+      ]
+    },
+    {
+      "startDate": "2025-01-21",
+      "troughDate": "2025-04-08",
+      "drawdownPct": -17.629820829126597,
+      "peakIndex": 6322,
+      "troughIndex": 6376,
+      "warningStartDate": "2024-11-21",
+      "compositeQualifiedMonths": [],
+      "compositeWarned": false,
+      "peakVectorScores": {
+        "liquidityStress": 23,
+        "creditContagion": 18,
+        "volatilityRegime": 36,
+        "macroSensitivity": 30,
+        "marketBreadth": 25,
+        "aiBubble": 42
+      },
+      "elevatedVectors": []
+    }
+  ],
+  "summary": {
+    "eventCount": 26,
+    "compositeWarnedCount": 10,
+    "compositeMissedCount": 16,
+    "compositeWarningRatePct": 38.46153846153847,
+    "vectorElevationsInMisses": {
+      "liquidityStress": 6,
+      "creditContagion": 5,
+      "volatilityRegime": 0,
+      "macroSensitivity": 3,
+      "marketBreadth": 4,
+      "aiBubble": 2
+    }
+  },
+  "leadIndicatorAssessment": {
+    "conclusion": "INCONCLUSIVE",
+    "reason": "Vector elevation before composite misses can identify descriptive divergence but does not establish independent predictive usefulness, lead time, calibration, or a deployable early-warning rule.",
+    "macroSensitivityFourToEightWeeks": {
+      "status": "NOT_SUBSTANTIATED",
+      "reason": "The reconstructed monthly score cadence and revised/proxy inputs cannot test an exact 4–8-week real-time lead claim. No registered macro event/horizon calibration is available."
+    }
+  },
+  "constraints": [
+    "No outcomes, legacy values, or event results enter reconstructed score calculation.",
+    "The score tier is reconstructed revised/proxy research, not point-in-time evidence.",
+    "This diagnostic cannot upgrade the protected INCONCLUSIVE validation verdict.",
+    "V3-H is excluded and remains shadow-only."
+  ]
+}
