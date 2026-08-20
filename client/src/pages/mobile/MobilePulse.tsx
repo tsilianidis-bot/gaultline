@@ -36,6 +36,10 @@ function getRegimeLabel(regime: string): string {
 
 // ── Main Component ────────────────────────────────────────────
 export default function MobilePulse() {
+  const { data: canonicalState, isLoading: canonicalLoading } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
   const { data: pressure, isLoading, refetch, isFetching } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
     refetchInterval: 60_000,
     staleTime: 30_000,
@@ -43,7 +47,7 @@ export default function MobilePulse() {
 
   const regimeColor = useMemo(() => getRegimeColor(pressure?.regime ?? ""), [pressure?.regime]);
 
-  if (isLoading) {
+  if (isLoading || canonicalLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 rounded-full border-2 border-[#00D4FF]/30 border-t-[#00D4FF] animate-spin" />
@@ -52,9 +56,11 @@ export default function MobilePulse() {
     );
   }
 
-  const score = pressure?.overallPressure ?? 0;
+  if (!canonicalState) return null;
+
+  const score = canonicalState.pressureIndex;
   const verdict = getVerdictFromScore(score);
-  const regimeLabel = getRegimeLabel(pressure?.regime ?? "");
+  const regimeLabel = getRegimeLabel(canonicalState.regime);
   const bullProb = Math.max(5, Math.round(100 - score * 0.9));
   const crashProb = Math.min(95, Math.round(score * 0.7));
 
