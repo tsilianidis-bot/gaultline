@@ -21,12 +21,15 @@ import type { FetchStatus } from '@/lib/useLiveData';
 import { selectBrowserMarketOutput, type BrowserMarketMode } from '@/lib/marketStateProjection';
 import { trpc } from '@/lib/trpc';
 import type { CanonicalMarketState, MarketStateSourceHealth } from '@shared/marketState';
+import type { PublicCanonicalIntelligenceState } from '@shared/canonicalIntelligenceState';
 
 export interface EngineContextValue {
   // Reactive engine output
   indicators: RawIndicators;
   output: EngineOutput;
   marketState: CanonicalMarketState | null;
+  /** Authoritative Phase 2 canonical state for every current-intelligence consumer. */
+  canonicalState: PublicCanonicalIntelligenceState | null;
   marketMode: BrowserMarketMode;
   sourceHealth: MarketStateSourceHealth[];
 
@@ -63,12 +66,36 @@ export interface EngineContextValue {
 const EngineContext = createContext<EngineContextValue | null>(null);
 
 export function EngineProvider({ children }: { children: ReactNode }) {
-  const marketStateQuery = trpc.marketState.current.useQuery(undefined, {
+  const canonicalStateQuery = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   });
-  const marketState = marketStateQuery.data ?? null;
-  const isLoading = marketStateQuery.isLoading;
+  const legacyProjectionQuery = trpc.marketState.current.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    enabled: Boolean(canonicalStateQuery.data),
+  });
+  const canonicalState = canonicalStateQuery.data ?? null;
+  const marketState = useMemo<CanonicalMarketState | null>(() => {
+    if (!canonicalState) return null;
+    const legacy = legacyProjectionQuery.data;
+    if (!legacy) return null;
+    const pressureScore = canonicalState.pressureIndex ?? legacy.now.pressureScore;
+    const regime = canonicalState.regime ?? legacy.now.regime;
+    return {
+      ...legacy,
+      generatedAt: canonicalState.generatedAt,
+      sourceUpdatedAt: canonicalState.effectiveAt,
+      now: {
+        ...legacy.now,
+        pressureScore,
+        regime,
+        direction: canonicalState.pressureDirection === 'Unknown' ? legacy.now.direction : canonicalState.pressureDirection,
+      },
+      warnings: [...new Set([...legacy.warnings, ...canonicalState.warnings])],
+    };
+  }, [canonicalState, legacyProjectionQuery.data]);
+  const isLoading = canonicalStateQuery.isLoading || legacyProjectionQuery.isLoading;
   const sourceHealth = marketState?.sourceHealth ?? [];
   const isLive = Boolean(
     marketState &&
@@ -76,7 +103,8 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     !sourceHealth.some(source => source.required && source.status === 'unavailable'),
   );
   const lastUpdated = marketState ? new Date(marketState.sourceUpdatedAt) : null;
-  const dataError = marketStateQuery.error?.message
+  const dataError = canonicalStateQuery.error?.message
+    ?? legacyProjectionQuery.error?.message
     ?? marketState?.cache.staleReason
     ?? marketState?.warnings[0]
     ?? null;
@@ -92,8 +120,9 @@ export function EngineProvider({ children }: { children: ReactNode }) {
   const successCount = sourceHealth.filter(source => source.status === 'healthy').length;
   const failCount = sourceHealth.filter(source => source.status === 'unavailable').length;
   const refresh = useCallback(() => {
-    void marketStateQuery.refetch();
-  }, [marketStateQuery.refetch]);
+    void canonicalStateQuery.refetch();
+    void legacyProjectionQuery.refetch();
+  }, [canonicalStateQuery.refetch, legacyProjectionQuery.refetch]);
 
   // Cinematic refresh transition: briefly true when new data arrives
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -166,6 +195,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
       indicators,
       output,
       marketState,
+      canonicalState,
       marketMode,
       sourceHealth,
       rawFred,

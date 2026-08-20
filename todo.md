@@ -5097,3 +5097,27 @@
 - [ ] Run Phase 2 Tests A–J, WHY, WATCH, Market Context, ASHA/Oracle, Outlook, and cross-surface invariant tests
 - [ ] Run the complete regression suite and re-run all 32 Phase 2 acceptance-gate questions
 - [ ] Issue exactly one Phase 2 verdict and stop without beginning Phase 3
+
+## Phase 2B — Newly Attached Requirements
+- [ ] Review the attached Phase 2B requirements against the current blocked closure status and implement only authorized missing controls without weakening existing governance or entering Phase 3
+
+## FAULTLINE Phase 2C — Repository-Wide Canonical Closure
+- [ ] Preserve cb330cad as the Phase 2C baseline and close only the five documented Phase 2 blockers without beginning Phase 3 or modifying existing governance/model/research controls
+- [ ] Produce the definitive repository-wide current-intelligence consumer inventory with all required metadata columns and no UNKNOWN classification
+- [ ] Audit every EngineContext consumer and make canonical state authoritative for any current-intelligence use while explicitly isolating historical, archived, reconstructed, diagnostic, and non-market uses
+- [ ] Propagate canonical stateId, timestamps, pressure, regime, engine values, quality/conflicts, governed claims/analogs, versions, and input snapshot through every CURRENT_CANONICAL payload
+- [ ] Produce a repository-wide no-silent-fallback report for legacy projections, cached state, frontend recomputation, mixed EngineContext projection, and independent current score/regime paths
+- [ ] Audit cached and stored current-intelligence payload identity so old narratives cannot be combined with unrelated current canonical numbers
+- [ ] Implement and execute Tests A–J as one acceptance artifact and add invariant tests for every listed CURRENT_CANONICAL surface
+- [ ] Re-run all 32 Phase 2 acceptance questions with PASS/FAIL evidence, run full regressions, publish the required final closure report, checkpoint, and stop without starting Phase 3
+
+## Phase 2C — Newly Attached Compatibility Requirements
+- [ ] Review the newly attached Phase 2C requirements and implement only the missing compatibility-path and provenance controls without weakening canonical-state governance or entering Phase 3
+
+## FAULTLINE Phase 2D — Canonical EngineContext and Phase 2 Closure
+- [ ] Audit EngineContext provider, hook, legacy projection dependency, cache, refresh, fallback, derived values, and all 44 consumers with complete classification and explicit migration action
+- [ ] Make phase2-canonical-state-v1 authoritative inside EngineContext and retain legacy-shaped compatibility values only as semantic projections of the same canonical stateId
+- [ ] Expose governed canonical state identity, timestamps, pressure, regime, engine values, quality/coherence/conflicts, claim/analog IDs, versions, input snapshot, and state hash through EngineContext without fabrication
+- [ ] Remove or isolate every legacy projected current-state, frontend reconstruction, independent current pressure/regime, mixed source, and silent fallback path from EngineContext current transport
+- [ ] Preserve explicitly labeled historical, archived, and reconstructed research contexts outside the current canonical contract
+- [ ] Add EngineContext invariants, Tests A–J, cross-surface proof, 44-consumer final dispositions, 32-question gate evidence, full regression validation, checkpoint, and exact Phase 2 verdict without starting Phase 3
