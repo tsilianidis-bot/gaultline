@@ -40,6 +40,7 @@ import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
 import SeismicWaveShared from "@/components/SeismicWave";
 import { Activity } from "lucide-react";
+import { PageDegradedBanner } from "@/components/PageStateViews";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -540,6 +541,10 @@ export default function Dashboard() {
   const ashaRegimeState: AshaRegimeState = overall.score >= 7 ? 'critical' : overall.score >= 4.5 ? 'rising' : 'calm';
   // 3-mode intelligence system
   const { data: meData } = trpc.auth.me.useQuery();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   const [dashMode, setDashMode] = useState<DashboardMode>("pulse");
   const setModeMutation = trpc.auth.setDashboardMode.useMutation();
   // Sync mode from user profile once loaded
@@ -994,9 +999,15 @@ export default function Dashboard() {
         <ViewModeSelector mode={dashMode} onChange={handleModeChange} />
 
         {/* ── Mode-conditional rendering ───────────────────────── */}
-        {dashMode === "pulse" && <PulseMode />}
-        {dashMode === "signals" && <SignalsMode />}
-        {dashMode === "intelligence" && <IntelligenceMode />}
+        {canonicalState ? (
+          <>
+            {dashMode === "pulse" && <PulseMode />}
+            {dashMode === "signals" && <SignalsMode />}
+            {dashMode === "intelligence" && <IntelligenceMode />}
+          </>
+        ) : (
+          <PageDegradedBanner message="Current canonical state is unavailable." detail="Dashboard intelligence modes withhold current interpretation until one authoritative state is available." />
+        )}
 
         {/* ── Quick Actions bar ──────────────────────────────────── */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 100ms both' }}>
