@@ -7,6 +7,7 @@
 import { useLocation } from "wouter";
 import { ArrowRight, Lightbulb, AlertTriangle, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
 import { getRiskColor } from "@/components/RiskBadge";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 
@@ -149,17 +150,22 @@ export default function MarketSynthesisPanel({
   nextStepPath,
 }: MarketSynthesisPanelProps) {
   const { output, isLoading } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   const [, navigate] = useLocation();
 
-  if (isLoading) return null;
+  if (isLoading || !canonicalState) return null;
 
   const { overall, regime, probability, narrative } = output;
-  const pressureColor = getRiskColor(overall.riskLevel);
+  const canonicalRiskLevel = canonicalState.regime === "LOW RISK" ? "low" : canonicalState.regime === "MODERATE RISK" ? "moderate" : canonicalState.regime === "ELEVATED RISK" ? "elevated" : canonicalState.regime === "HIGH STRESS" ? "high" : "critical";
+  const pressureColor = getRiskColor(canonicalRiskLevel);
 
   const synthesis = getSynthesis(
     context,
-    overall.riskLevel,
-    regime.label,
+    canonicalRiskLevel,
+    canonicalState.regime,
     probability.bullProbability,
     probability.crashProbability,
     narrative.keyRisks ?? [],
@@ -169,8 +175,8 @@ export default function MarketSynthesisPanel({
   const finalNextLabel = nextStepLabel ?? synthesis.nextLabel;
   const finalNextPath = nextStepPath ?? synthesis.nextPath;
 
-  const SentimentIcon = overall.riskLevel === "low" ? TrendingUp
-    : overall.riskLevel === "critical" || overall.riskLevel === "high" ? TrendingDown
+  const SentimentIcon = canonicalRiskLevel === "low" ? TrendingUp
+    : canonicalRiskLevel === "critical" || canonicalRiskLevel === "high" ? TrendingDown
     : Minus;
 
   return (
@@ -199,7 +205,7 @@ export default function MarketSynthesisPanel({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
           <SentimentIcon size={12} color={pressureColor} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{formatCanonicalScore(overall.score * 10)}</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{formatCanonicalScore(canonicalState.pressureIndex)}</span>
         </div>
       </div>
 
