@@ -5116,7 +5116,7 @@
 
 ## FAULTLINE Phase 2D — Canonical EngineContext and Phase 2 Closure
 - [ ] Audit EngineContext provider, hook, legacy projection dependency, cache, refresh, fallback, derived values, and all 44 consumers with complete classification and explicit migration action
-- [ ] Make phase2-canonical-state-v1 authoritative inside EngineContext and retain legacy-shaped compatibility values only as semantic projections of the same canonical stateId
+- [x] Make phase2-canonical-state-v1 authoritative inside EngineContext and retain legacy-shaped compatibility values only as semantic projections of the same canonical stateId
 - [ ] Expose governed canonical state identity, timestamps, pressure, regime, engine values, quality/coherence/conflicts, claim/analog IDs, versions, input snapshot, and state hash through EngineContext without fabrication
 - [ ] Remove or isolate every legacy projected current-state, frontend reconstruction, independent current pressure/regime, mixed source, and silent fallback path from EngineContext current transport
 - [ ] Preserve explicitly labeled historical, archived, and reconstructed research contexts outside the current canonical contract

@@ -12,6 +12,7 @@ describe("EngineContext Phase 2D canonical transport", () => {
     expect(source).toContain("trpc.marketState.canonicalCurrent.useQuery");
     expect(source).toContain("enabled: Boolean(canonicalStateQuery.data)");
     expect(source).toContain("if (!canonicalState) return null;");
+    expect(source).toContain("const canonicalState = canonicalStateQuery.data ?? null");
   });
 
   it("exposes canonical identity and projects core score/regime from that state", () => {
@@ -19,5 +20,12 @@ describe("EngineContext Phase 2D canonical transport", () => {
     expect(source).toContain("pressureScore = canonicalState.pressureIndex");
     expect(source).toContain("regime = canonicalState.regime");
     expect(source).toContain("canonicalState,");
+  });
+
+  it("does not silently return a legacy-shaped current state when canonical state is unavailable", () => {
+    const canonicalGuard = source.indexOf("if (!canonicalState) return null;");
+    const legacyProjectionRead = source.indexOf("const legacy = legacyProjectionQuery.data;");
+    expect(canonicalGuard).toBeGreaterThan(-1);
+    expect(legacyProjectionRead).toBeGreaterThan(canonicalGuard);
   });
 });
