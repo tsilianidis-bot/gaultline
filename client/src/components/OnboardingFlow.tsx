@@ -208,7 +208,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const savePreferences = trpc.dailyBrief.savePreferences.useMutation();
 
   // Live market data for Step 1
-  const pressureQuery = trpc.pressure.getCurrentPressure.useQuery(undefined, {
+  const canonicalStateQuery = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     retry: 1,
     staleTime: 5 * 60 * 1000,
   });
@@ -343,10 +343,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   // ── Live pressure data for Step 1 ─────────────────────────────
-  const pd = pressureQuery.data;
-  const pressureScore = pd?.overallPressure ?? null;
+  const pd = canonicalStateQuery.data;
+  const pressureScore = pd?.pressureIndex ?? null;
   const regime = pd?.regime ?? null;
-  const pressureTrend = pd?.vectors?.[0]?.trend ?? "stable";
+  const pressureTrend = pd?.quality.overallQuality === "LIVE" ? "stable" : "data-limited";
 
   // Derive bull/crash from pressure score (same formula used across the platform)
   const bullProb = pressureScore !== null ? Math.round(Math.max(5, 100 - pressureScore * 1.1)) : null;
@@ -487,11 +487,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 These four readings describe the current market environment. FAULTLINE interprets them together rather than relying on one number alone.
               </p>
 
-              {pressureQuery.isLoading ? (
+              {canonicalStateQuery.isLoading ? (
                 <div style={{ textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.3)", ...SANS, fontSize: "13px" }}>
                   Loading live market data…
                 </div>
-              ) : pressureQuery.isError || pressureScore === null ? (
+              ) : canonicalStateQuery.isError || pressureScore === null ? (
                 <div style={{
                   padding: "16px",
                   background: "rgba(255,255,255,0.03)",
