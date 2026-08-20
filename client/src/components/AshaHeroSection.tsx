@@ -150,10 +150,15 @@ function MacroTickerStrip() {
 // ── Intelligence panel (left column) — all data from EngineContext ──
 function AshaIntelPanel() {
   const { output } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  if (!canonicalState) return null;
 
   // All values from the single EngineOutput source of truth
-  const score       = output.overall.score;
-  const regime      = output.regime.label;
+  const score       = canonicalState.pressureIndex / 10;
+  const regime      = canonicalState.regime;
   const summary     = output.narrative.summary;
   const prob        = output.probability;
   const topAnalog   = output.analogs[0] ?? null;
