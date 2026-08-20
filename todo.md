@@ -5080,3 +5080,12 @@
 - [ ] Add and pass Tests A–J for same-state cross-surface consistency, timestamp conflict, stale/optional/fallback input behavior, probability/analog categories, versioning, deterministic identity, and canonical failure
 - [ ] Publish the Phase 2 architecture, schema, example, consumer/migration inventory, time/freshness/quality/fallback/conflict/vocabulary rules, and 26-item acceptance gate report
 - [ ] Run full regression validation, checkpoint Phase 2, deliver exactly PHASE 2 PASSES or PHASE 2 REMAINS BLOCKED, and stop without starting Phase 3
+
+## FAULTLINE Phase 2B — Canonical Migration Closure
+- [ ] Preserve 9ec50450 as the Phase 2B baseline and retain all Phase 1, Forecast Horizon, Champion V1, V3-H, historical/research, and no-Phase-3 guardrails
+- [ ] Inventory and classify every discovered current-intelligence consumer as CURRENT_CANONICAL, HISTORICAL_CONTEXT, RECONSTRUCTED_RESEARCH, ARCHIVED_CANONICAL, or NON_MARKET_STATE with no unknown category
+- [ ] Remove silent legacy/projected current-state fallback from core WHY, WATCH, Market Context, ASHA/Oracle, Outlook/Daily Story, and all discovered current-intelligence consumers
+- [ ] Require the same canonical stateId, score, regime, engine values, quality, effective timestamp, governed claim references, and version identity across core current-intelligence paths
+- [ ] Explicitly tag non-current historical, archived, and reconstructed research contexts and keep them separate from live canonical state
+- [ ] Add and run Tests A–J plus WHY, WATCH, Market Context, ASHA/Oracle, Outlook, cache-alignment, and cross-surface canonical-identity invariants
+- [ ] Publish the complete 32-item Phase 2B closure report, migration inventory, fallback audit, real cross-surface example, exact gate decision, regression results, and checkpoint without starting Phase 3
