@@ -25,6 +25,7 @@ import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { buildCanonicalEvidencePacket } from "./evidencePacket";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../shared/interpretationIntegrity";
+import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "./crossEngineSynthesis";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -210,6 +211,7 @@ export interface AshaResponse {
     transaction: InterpretationTransaction;
     validation: InterpretationValidationResult;
     generationAttempts: number;
+    synthesis: { synthesisId: string; originatingStateId: string } | null;
   };
 }
 
@@ -393,7 +395,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   const questionAnalysis = buildAshaQuestionAnalysis(req.userMessage, req.pageContext, initialGatewayContext.marketState);
   const gatewayContext = { ...initialGatewayContext, questionAnalysis };
   const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
-  const evidencePacket = authoritativeState ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState)) : null;
+  const publicCanonicalState = authoritativeState ? toPublicCanonicalIntelligenceState(authoritativeState) : null;
+  const evidencePacket = publicCanonicalState ? buildCanonicalEvidencePacket(publicCanonicalState) : null;
+  const governedCrossEngineSynthesis = publicCanonicalState && evidencePacket ? buildCrossEngineSynthesis(publicCanonicalState, evidencePacket) : null;
   const transaction = createInterpretationTransaction("ASHA", evidencePacket, null);
   const packetClaims = evidencePacket?.claims ?? [];
   const packetEngines = Array.from(new Set(packetClaims
@@ -416,10 +420,10 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     "2. executiveSummary: EXACTLY 2-4 sentences explaining what matters now, why it matters, what is not obvious from headline conditions, and whether it is current or developing. DO NOT copy missionRecommendation. DO NOT include disclaimers.",
     "3. coreThesis: ONE strong paragraph identifying the single most important underlying insight. Add interpretation; do not repeat executiveSummary word-for-word.",
     "4. keyFindings: EXACTLY 3-5 DISTINCT findings. Each must identify a material observation or divergence and why it matters. NO duplicates. NO disclaimers.",
-    "5. crossEngineSynthesis: EXACTLY 3-6 rows. Each row must contain engine, currentSignal, and relevance. Use only available engines, distinguish observed readings from analytical inference, and name meaningful divergence when present. Do not invent measurements.",
+    "5. crossEngineSynthesis: Use only rows supported by the supplied governed Cross-Engine Synthesis. When no structured relationship exists, return an empty array and state the limitation in limitations. Do not invent measurements, consensus, confirmation, divergence, or system-wide scope.",
     "6. riskFactors: EXACTLY 3-5 DISTINCT risks. Each must be a different risk vector. NO duplicates.",
-    "7. confirmationConditions: EXACTLY 2-4 DISTINCT measurable conditions that would strengthen the thesis, using only available FAULTLINE data. Do not invent thresholds or unavailable series.",
-    "8. invalidationConditions: EXACTLY 2-4 DISTINCT conditions that would weaken or invalidate the assessment. Each must be specific and measurable.",
+    "7. confirmationConditions: Include only governed structured conditions. If none exist, return an empty array; do not invent thresholds or unavailable series.",
+    "8. invalidationConditions: Include only governed structured conditions. If none exist, return an empty array; do not invent thresholds or unavailable series.",
     "9. missionRecommendation: A concise actionable guidance paragraph. DO NOT repeat executiveSummary. DO NOT include disclaimers.",
     "10. missionRecommendationStructured: Provide verdict, timeHorizon, rationale, and 3-4 decisionPaths (each with scenario and response). Scenarios must cover: aggressive entry, staged/cautious entry, wait-for-confirmation, and avoid/defensive.",
     "11. sourceCitations: List 2-4 specific data points used, each with name, claim, observedAt (ISO date or 'estimated'), and freshness (LIVE/RECENT/STALE/ESTIMATED).",
@@ -431,7 +435,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     "17. Historical analog similarity is not forecast probability. Explain weighting from the supplied evidence and never let one analog replace the combined current evidence.",
   ].join("\n");
 
-  const systemPrompt = ASHA_IDENTITY + "\n\n" + requestScopeBlock + responseStructureBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket);
+  const systemPrompt = ASHA_IDENTITY + "\n\n" + requestScopeBlock + responseStructureBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket) + "\n\n" + buildCrossEngineSynthesisPromptContract(governedCrossEngineSynthesis);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
@@ -753,6 +757,10 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
       transaction: { ...transaction, modelVersion: modelTrace.selectedModel },
       validation: integrityValidation,
       generationAttempts: modelTrace.attemptedModels.length,
+      synthesis: governedCrossEngineSynthesis ? {
+        synthesisId: governedCrossEngineSynthesis.synthesisId,
+        originatingStateId: governedCrossEngineSynthesis.originatingStateId,
+      } : null,
     },
   };
 }

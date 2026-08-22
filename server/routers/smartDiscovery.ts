@@ -33,6 +33,7 @@ import { evidenceNarrativePromptContract } from "../../shared/evidenceContract";
 import { buildCanonicalEvidencePacket } from "../evidencePacket";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../../shared/interpretationIntegrity";
+import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -219,6 +220,7 @@ export interface FaultlineAnswer {
     transaction: InterpretationTransaction;
     validation: InterpretationValidationResult;
     generationAttempts: number;
+    synthesis: { synthesisId: string; originatingStateId: string } | null;
   };
 }
 
@@ -308,7 +310,9 @@ async function orchestrateAnswer(
 ): Promise<FaultlineAnswer> {
   const t0 = Date.now();
   const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
-  const evidencePacket = authoritativeState ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState)) : null;
+  const publicCanonicalState = authoritativeState ? toPublicCanonicalIntelligenceState(authoritativeState) : null;
+  const evidencePacket = publicCanonicalState ? buildCanonicalEvidencePacket(publicCanonicalState) : null;
+  const crossEngineSynthesis = publicCanonicalState && evidencePacket ? buildCrossEngineSynthesis(publicCanonicalState, evidencePacket) : null;
   const transaction = createInterpretationTransaction("ORACLE", evidencePacket, null);
 
   // ── Stage 3: Context assembly ──────────────────────────────────
@@ -675,6 +679,7 @@ ${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalIntelli
 ${forecastHorizonPromptContract()}
 ${evidenceNarrativePromptContract()}
 ${buildInterpretationPromptContract(transaction, evidencePacket)}
+${buildCrossEngineSynthesisPromptContract(crossEngineSynthesis)}
 ${questionIntentInstruction}
 
 RESPONSE RULES:
@@ -682,7 +687,7 @@ RESPONSE RULES:
 - Response format: ${answerFormat}. For SIMPLE, return only the direct answer, one supporting evidence item, and one limitation; keep nonessential lists empty and unsupported fields null. For STRUCTURED, use concise distinct sections only where evidence supports them.
 - Use concise, distinct sections: executiveSummary, whyThisVerdict, keyFindings, supportingEvidence, limitations, and followUpChips.
 - A field being present in the response schema never authorizes a claim. Return null or empty arrays for unsupported structured fields.
-- Do not use LLM-generated scores, confidence percentages, price targets, entry/exit zones, stop levels, expected reward, time horizons, probabilities, confirmation thresholds, invalidation thresholds, or cross-engine synthesis.
+- Do not use LLM-generated scores, confidence percentages, price targets, entry/exit zones, stop levels, expected reward, time horizons, probabilities, confirmation thresholds, invalidation thresholds, or cross-engine synthesis. You may describe only the supplied governed Cross-Engine Synthesis relationships exactly as provided.
 - Historical context is not a current forecast. Guidance must be explicitly separate from evidence and interpretation.
 - If a requested fact is absent from the evidence packet, state the concise governed limitation rather than creating a substitute.`;
 
@@ -1002,6 +1007,10 @@ JSON schema:
       transaction,
       validation: integrityValidation,
       generationAttempts: 1,
+      synthesis: crossEngineSynthesis ? {
+        synthesisId: crossEngineSynthesis.synthesisId,
+        originatingStateId: crossEngineSynthesis.originatingStateId,
+      } : null,
     },
   }) as FaultlineAnswer;
 }

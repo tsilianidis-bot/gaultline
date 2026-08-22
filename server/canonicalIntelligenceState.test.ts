@@ -40,6 +40,11 @@ describe("Phase 2 canonical intelligence state", () => {
     expect(state.conflicts).toEqual(expect.arrayContaining([expect.objectContaining({ conflictType: "STALE_INPUT" })]));
   });
 
+  it("retains stale freshness on the affected engine rather than treating its observation as current", () => {
+    const state = buildCanonicalIntelligenceState({ ...base, staleInputs: ["hy"], dataQualitySummary: { ...base.dataQualitySummary, staleInputs: ["hy"] } });
+    expect(state.engines[0]).toMatchObject({ engineId: "liquidity-stress", freshnessStatus: "STALE", qualityStatus: "PARTIAL" });
+  });
+
   it("TEST D: preserves an optional unavailable input as unavailable without converting it to zero or healthy input", () => {
     const state = buildCanonicalIntelligenceState({
       ...base,

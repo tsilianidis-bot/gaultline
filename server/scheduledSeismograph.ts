@@ -40,6 +40,7 @@ import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
+import { getAuthoritativeCrossEngineSynthesis, persistCrossEngineSynthesis } from "./crossEngineSynthesis";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -164,6 +165,11 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
     });
     const persisted = await persistAtomicIntelligenceStateManifest(governanceState);
     console.log(`[Seismograph] Governance manifest ${persisted.created ? "recorded" : "already present"}: ${persisted.stateId} (${governanceState.manifest.coherenceStatus})`);
+    const synthesis = await getAuthoritativeCrossEngineSynthesis();
+    if (synthesis) {
+      const outcome = await persistCrossEngineSynthesis(synthesis);
+      console.log(`[Seismograph] Cross-engine synthesis ${synthesis.synthesisId} persisted; ${outcome.archivedMaterialEventCount} material archive events.`);
+    }
   } catch (error) {
     console.warn("[Seismograph] Governance manifest capture deferred:", error);
   }

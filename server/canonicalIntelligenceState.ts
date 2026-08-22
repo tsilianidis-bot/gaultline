@@ -81,15 +81,23 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest): Canon
       } as CanonicalStateConflict;
     }),
   ];
-  const engines: CanonicalEngineState[] = Object.entries(manifest.engineValues ?? {}).map(([engineId, value]) => ({
-    engineId, engineName: engineId, value: typeof value === "number" ? value : null, unit: "score_0_to_100",
-    classification: null, direction: direction(manifest.engineDirections?.[engineId]), acceleration: null, persistence: null,
-    observedAt: null, calculatedAt: manifest.generatedAt ?? null,
-    sourceInputIds: inputQuality.filter((input: any) => input.contributesTo?.includes(engineId)).map((input: any) => input.inputId),
-    qualityStatus: stateQuality, freshnessStatus: stateQuality === "HEALTHY" ? "CURRENT" : stateQuality,
-    fallbackStatus: fallbackInputs.length ? "ACTIVE" : "NONE", modelVersion: manifest.championVersion,
-    calculationVersion: manifest.scoringVersion, contributionToComposite: true,
-  }));
+  const engines: CanonicalEngineState[] = Object.entries(manifest.engineValues ?? {}).map(([engineId, value]) => {
+    const engineInputs = inputQuality.filter((input: any) => input.contributesTo?.includes(engineId));
+    const sourceInputIds = engineInputs.map((input: any) => input.inputId);
+    const engineUnavailable = engineInputs.some((input: any) => unavailableInputs.includes(input.inputId) || input.freshnessStatus === "UNAVAILABLE");
+    const engineStale = engineInputs.some((input: any) => staleInputs.includes(input.inputId) || delayedInputs.includes(input.inputId) || /STALE|DELAYED/i.test(String(input.freshnessStatus)));
+    const engineFallback = engineInputs.some((input: any) => fallbackInputs.includes(input.inputId) || input.freshnessStatus === "FALLBACK");
+    const engineQuality: CanonicalQualityStatus = engineUnavailable ? "UNAVAILABLE" : engineStale ? "PARTIAL" : engineFallback ? "DEGRADED" : stateQuality;
+    return {
+      engineId, engineName: engineId, value: typeof value === "number" ? value : null, unit: "score_0_to_100",
+      classification: null, direction: direction(manifest.engineDirections?.[engineId]), acceleration: null, persistence: null,
+      observedAt: null, calculatedAt: manifest.generatedAt ?? null,
+      sourceInputIds,
+      qualityStatus: engineQuality, freshnessStatus: engineUnavailable ? "UNAVAILABLE" : engineStale ? "STALE" : engineFallback ? "FALLBACK" : engineQuality === "HEALTHY" ? "CURRENT" : engineQuality,
+      fallbackStatus: engineFallback ? "ACTIVE" : "NONE", modelVersion: manifest.championVersion,
+      calculationVersion: manifest.scoringVersion, contributionToComposite: true,
+    };
+  });
   return {
     schemaVersion: CANONICAL_STATE_SCHEMA_VERSION, stateId: manifest.stateId, generatedAt: manifest.generatedAt,
     effectiveAt: manifest.generatedAt, calculationStartedAt: null, calculationCompletedAt: manifest.generatedAt,

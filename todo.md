@@ -5199,3 +5199,18 @@
 - [x] Repair response structure for direct answers, distinct section roles, concise insufficiency responses, repetition control, and evidence/interpretation/guidance separation without a product UI redesign
 - [x] Preserve Phase 2 and Phase 3 controls while applying the required Phase 4 canonical/evidence semantics across ASHA, Oracle, NOW, WHY, WATCH, Outlook, Daily Greeting, Market Context, mobile, and owner/debug paths
 - [x] Create permanent contracts, prompt/output audits, adversarial/repetition/cross-surface tests, 55-question acceptance gate, run full regression, checkpoint, and issue the Phase 4 verdict without starting Phase 5 or Early Warning work
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 4 — External Review Closure Package
+- [x] Assemble the checkpoint b121fd1c architecture, audits, adversarial results, cross-surface proof, provenance, all 55 gate responses, and exact regression evidence without changing application code
+- [x] Deliver the documentation-only external-review Phase 4 package and stop for review without starting Phase 5 or unrelated work
+
+## FAULTLINE Phase 5 — Structured Cross-Engine Synthesis
+- [x] Read the complete Phase 5 specification and map authoritative engine outputs, evidence dependencies, and prohibited Early Warning scope
+- [x] Define one typed governed cross-engine synthesis contract with canonical identity, engine availability, agreement/disagreement, dependence, persistence, sufficiency, limitations, and provenance
+- [x] Implement a deterministic canonical-state-bound synthesis service without warning scores, warning lifecycle states, or Early Warning Intelligence
+- [x] Expose governed synthesis through authorized current-intelligence boundaries and preserve Phase 2–4 semantics across narrative, dashboard, mobile, and audit paths
+- [x] Create permanent synthesis tests, audits, adversarial/cross-surface proof, acceptance gate, full regression, checkpoint, and Phase 5 verdict without beginning Early Warning work

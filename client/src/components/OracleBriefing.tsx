@@ -40,6 +40,10 @@ export interface OracleBriefingData {
     currentSignal: string;
     relevance: string;
   }>;
+  synthesisProvenance?: {
+    synthesisId: string;
+    originatingStateId: string;
+  };
   historicalAnalog?: string;
   riskFactors: string[];
   confirmationConditions?: string[];
@@ -504,7 +508,9 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               ))}
             </div>
           </div>
-          <div style={{ marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.08em", color: "rgba(148,163,184,0.58)", textTransform: "uppercase" }}>RELATIONSHIPS ARE SHOWN ONLY WHEN STRUCTURED EVIDENCE SUPPORTS THEM.</div>
+          <div style={{ marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.08em", color: "rgba(148,163,184,0.58)", textTransform: "uppercase" }}>
+            RELATIONSHIPS ARE SHOWN ONLY WHEN STRUCTURED EVIDENCE SUPPORTS THEM.{data.synthesisProvenance ? ` · GOVERNED SYNTHESIS ${data.synthesisProvenance.synthesisId} · STATE ${data.synthesisProvenance.originatingStateId}` : ""}
+          </div>
         </BriefingSection> : null}
 
         {/* ── Historical Analog ── */}

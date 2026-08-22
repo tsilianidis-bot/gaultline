@@ -19,6 +19,7 @@ import {
   getAllFeatureFlags, setFeatureFlag,
 } from "../db";
 import { sendEmail, buildApprovalEmail } from "../email";
+import { getAuthoritativeCrossEngineSynthesis, getLatestCrossEngineSynthesis } from "../crossEngineSynthesis";
 
 export const adminRouter = router({
   // List all registered users
@@ -258,5 +259,23 @@ export const adminRouter = router({
       if (!db) return { annotations: [] };
       const annotations = await db.select().from(ssa).orderBy(descOp(ssa.eventAt)).limit(100);
       return { annotations };
+    }),
+  getCrossEngineSynthesisDebug: adminProcedure
+    .query(async () => {
+      const [current, lastPersisted] = await Promise.all([
+        getAuthoritativeCrossEngineSynthesis(),
+        getLatestCrossEngineSynthesis(),
+      ]);
+      return {
+        current,
+        lastPersisted,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "originatingStateId", "engineObservations", "relationships", "confirmations", "divergences",
+            "independenceOfEvidence", "unavailableEngines", "staleEngines", "limitations", "supportingClaimIds",
+          ],
+        },
+      };
     }),
 });

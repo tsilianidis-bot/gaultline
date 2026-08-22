@@ -274,6 +274,7 @@ export default function AshaPanel() {
         keyFindings: response.keyFindings?.length ? response.keyFindings : [response.reply.slice(0, 180)],
         supportingEvidence: response.supportingEvidence?.length ? response.supportingEvidence : response.sources,
         crossEngineSynthesis: response.crossEngineSynthesis,
+        synthesisProvenance: response.integrity?.synthesis ?? undefined,
         historicalAnalog: response.historicalAnalog || fullPageContext.historicalAnalog,
         riskFactors: response.riskFactors?.length ? response.riskFactors : (response.invalidationTriggers || []),
         confirmationConditions: response.confirmationConditions,

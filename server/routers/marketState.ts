@@ -2,6 +2,7 @@ import { publicProcedure, router } from "../_core/trpc";
 import { getCanonicalMarketState } from "../marketStateService";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 import { buildCanonicalEvidencePacket } from "../evidencePacket";
+import { getAuthoritativeCrossEngineSynthesis } from "../crossEngineSynthesis";
 
 export const marketStateRouter = router({
   current: publicProcedure.query(() => getCanonicalMarketState()),
@@ -13,4 +14,5 @@ export const marketStateRouter = router({
     const state = await getAuthoritativeCanonicalIntelligenceState();
     return state ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(state)) : null;
   }),
+  synthesisCurrent: publicProcedure.query(() => getAuthoritativeCrossEngineSynthesis()),
 });
