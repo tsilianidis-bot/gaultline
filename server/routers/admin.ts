@@ -20,6 +20,7 @@ import {
 } from "../db";
 import { sendEmail, buildApprovalEmail } from "../email";
 import { getAuthoritativeCrossEngineSynthesis, getLatestCrossEngineSynthesis } from "../crossEngineSynthesis";
+import { getEarlyWarningTimeline, getPersistedEarlyWarnings } from "../earlyWarningIntelligence";
 
 export const adminRouter = router({
   // List all registered users
@@ -274,6 +275,28 @@ export const adminRouter = router({
           fields: [
             "originatingStateId", "engineObservations", "relationships", "confirmations", "divergences",
             "independenceOfEvidence", "unavailableEngines", "staleEngines", "limitations", "supportingClaimIds",
+          ],
+        },
+      };
+    }),
+  getEarlyWarningDebug: adminProcedure
+    .input(z.object({ warningId: z.string().min(1).max(96).optional() }).optional())
+    .query(async ({ input }) => {
+      const warnings = await getPersistedEarlyWarnings(false);
+      const selected = input?.warningId ? warnings.filter(item => item.warningId === input.warningId) : warnings;
+      const timelines = await Promise.all(selected.map(async warning => ({
+        warningId: warning.warningId,
+        observations: await getEarlyWarningTimeline(warning.warningId),
+      })));
+      return {
+        warnings: selected,
+        timelines,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "originalStateId", "originalSynthesisId", "originalPayloadJson", "currentStateId",
+            "currentSynthesisId", "currentLifecycleState", "currentQualificationState", "isActive",
+            "appendOnlyObservations", "outcomeEligibility",
           ],
         },
       };

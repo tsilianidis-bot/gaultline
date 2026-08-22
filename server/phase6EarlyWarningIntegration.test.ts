@@ -50,4 +50,12 @@ describe("Phase 6 Early Warning integration boundaries", () => {
     expect(oracle).toContain("buildEarlyWarningPromptContract(crossEngineSynthesis ? evaluateEarlyWarnings(crossEngineSynthesis) : null)");
     expect(oracle).toContain("or Early Warnings");
   });
+
+  it("keeps raw warning provenance and lifecycle inspection behind the existing admin procedure boundary", () => {
+    const admin = source("server/routers/admin.ts");
+    expect(admin).toContain("getEarlyWarningDebug: adminProcedure");
+    expect(admin).toContain("getPersistedEarlyWarnings(false)");
+    expect(admin).toContain("getEarlyWarningTimeline");
+    expect(admin).toContain("exposesToAdminOnly: true");
+  });
 });
