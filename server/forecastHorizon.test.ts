@@ -20,6 +20,10 @@ describe("Forecast Horizon Standard", () => {
       horizonBucket: "SWING",
       horizonMethodology: "Pre-registered historical time-to-target study",
       forecastGeneratedAt: "2026-08-20T00:00:00.000Z",
+      canonicalStateId: "state:forecast-test",
+      forecastContract: {
+        forecastContractId: "forecast-contract:test", forecastType: "validated-setup", eventDefinition: "Defined setup outcome", forecastHorizon: "30–90 days", modelId: "validated-model", modelVersion: "v1", methodology: "Pre-registered historical time-to-target study", calibrationBasis: "Out-of-sample validation", probabilityDefinition: "Defined model probability", evidenceBasis: "Validated sample", generatedAt: "2026-08-20T00:00:00.000Z",
+      },
     });
     expect(metadata.expectedHorizonStatus).toBe("SUPPORTED");
     expect(forecastHorizonPromptContract(metadata)).toContain("30–90 days");

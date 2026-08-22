@@ -1,0 +1,15 @@
+{
+  "controlledEvidence": {"stateId":"state:evidence-test","observedPressure":18,"derivedScenarioScore":42,"analogSimilarity":93,"forecastAuthorized":false},
+  "result":"PASS",
+  "surfaces":[
+    {"surface":"NOW","currentBinding":"state:evidence-test","scenarioSemantics":"DERIVED_SCENARIO_SCORE","analogSemantics":"HISTORICAL_SIMILARITY","unauthorizedForecast":"WITHHELD","result":"PASS"},
+    {"surface":"WHY","currentBinding":"state:evidence-test","scenarioSemantics":"DERIVED_SCENARIO_SCORE","analogSemantics":"HISTORICAL_SIMILARITY","unauthorizedForecast":"WITHHELD","result":"PASS"},
+    {"surface":"WATCH","currentBinding":"state:evidence-test","scenarioSemantics":"DERIVED_SCENARIO_SCORE","analogSemantics":"HISTORICAL_SIMILARITY","unauthorizedForecast":"WITHHELD","result":"PASS"},
+    {"surface":"ACT","currentBinding":"state:evidence-test","scenarioSemantics":"DERIVED_SCENARIO_SCORE","analogSemantics":"HISTORICAL_SIMILARITY","unauthorizedForecast":"WITHHELD","result":"PASS"},
+    {"surface":"Outlook","currentBinding":"state:evidence-test","scenarioSemantics":"DERIVED_SCENARIO_SCORE","analogSemantics":"HISTORICAL_SIMILARITY","unauthorizedForecast":"WITHHELD","result":"PASS"},
+    {"surface":"ASHA","currentBinding":"state:evidence-test","scenarioSemantics":"DERIVED_SCENARIO_SCORE","analogSemantics":"HISTORICAL_SIMILARITY","unauthorizedForecast":"WITHHELD","result":"PASS"},
+    {"surface":"Oracle","currentBinding":"state:evidence-test","scenarioSemantics":"DERIVED_SCENARIO_SCORE","analogSemantics":"HISTORICAL_SIMILARITY","unauthorizedForecast":"WITHHELD","result":"PASS"},
+    {"surface":"Market Context","currentBinding":"state:evidence-test","scenarioSemantics":"DERIVED_SCENARIO_SCORE","analogSemantics":"HISTORICAL_SIMILARITY","unauthorizedForecast":"WITHHELD","result":"PASS"}
+  ],
+  "testReferences":["server/evidenceContract.test.ts","server/evidencePacket.test.ts","server/evidencePromptBoundaries.test.ts","server/evidenceAdversarial.test.ts"]
+}

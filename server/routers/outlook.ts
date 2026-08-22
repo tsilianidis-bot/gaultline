@@ -19,6 +19,7 @@ import { invokeLLM } from "../_core/llm";
 import { getQuote } from "../yahooProxy";
 import { getRisingStarVisualDetail } from "../risingStarsVisual";
 import { forecastHorizonPromptContract, insufficientHorizonMetadata } from "../../shared/forecastMetadata";
+import { evidenceNarrativePromptContract } from "../../shared/evidenceContract";
 import { recordForecastObservation } from "../forecastHorizon";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 
@@ -321,8 +322,9 @@ LIVE FAULTLINE DATA
 	- Derived Bear Scenario Score: ${fmos?.probability?.bear ?? 30}% (not a calibrated forecast)
 	- Derived Transition Scenario Score: ${fmos?.transition?.transitionProbability ?? 0}% (not a calibrated forecast)
 	- Top Opportunity: ${topOpportunityTicker} (${topOpportunityName}) — ${topOpportunityDir}, Score: ${topOpportunityScore}/100
-	- Data Source: ${pressure.dataSource}
-	- ${forecastHorizonPromptContract()}
+		- Data Source: ${pressure.dataSource}
+		- ${forecastHorizonPromptContract()}
+		- ${evidenceNarrativePromptContract()}
 
 ========================
 STORY INTELLIGENCE 2.0 — ALL 14 SECTIONS REQUIRED

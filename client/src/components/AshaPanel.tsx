@@ -102,8 +102,8 @@ const SYNTHESIS_STEPS: Array<{ id: string; label: string; detail?: string }> = [
   { id: "credit",      label: "Scanning credit markets",           detail: "Spread analysis complete" },
   { id: "volatility",  label: "Measuring volatility structure",    detail: "Vol regime classified" },
   { id: "analog",      label: "Consulting historical analogs",     detail: "Closest periods identified" },
-  { id: "probability", label: "Computing probability distribution", detail: "Outcome weights calibrated" },
-  { id: "synthesis",   label: "Synthesizing 10-engine consensus",  detail: "Intelligence unified" },
+  { id: "probability", label: "Reviewing derived scenario context", detail: "Not a calibrated forecast" },
+  { id: "synthesis",   label: "Synthesizing available evidence",    detail: "Evidence bounded by source quality" },
 ];
 
 // ── Panel state ───────────────────────────────────────────────

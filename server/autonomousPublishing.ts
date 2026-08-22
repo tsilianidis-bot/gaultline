@@ -36,6 +36,7 @@ import { getDiagnosticReport, type DiagnosticReport } from "./diagnosticAI";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import { buildDailyBriefPromptContext, buildDailyBriefSnapshot, DAILY_BRIEF_PROMPT_VERSION, validateDailyBriefNarrative } from "./dailyBriefSnapshot";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -566,7 +567,9 @@ async function runPublishingPipeline(
 
   const linkSuggestions = INTERNAL_LINKS.slice(0, 6).map(l => `[${l.text}](${l.href})`).join(", ");
 
-  const systemPrompt = `You are the FAULTLINE Intelligence Engine — an institutional-grade market analysis system. Your content is grounded solely in the supplied brief snapshot. Never fabricate statistics, prices, yields, market direction, policy actions, or data that is not supplied. Treat missing data as unavailable: state "Current [category] data was not available in this intelligence snapshot" rather than inferring it from another metric. Clearly label FAULTLINE Pressure Index, regime, structural stress, probabilities, transition confidence, Market Memory, Evidence Consensus, and historical analog similarity as FAULTLINE proprietary outputs. A historical analog is feature-set similarity only; never infer current Fed policy, rate direction, liquidity, or a future market outcome from its name. Do not call a model score a confidence interval and do not use "statistically significant", "almost perfectly mirrors", "highly predictive", "near certainty", "guaranteed", "inevitable", or promotional opportunity language. Use measured institutional phrasing such as "may indicate", "suggests", "warrants monitoring", and "conditional on confirmation". Write in third person using markdown H2/H3 headings. Do not use placeholder text.`;
+  const systemPrompt = `You are the FAULTLINE Intelligence Engine — an institutional-grade market analysis system. Your content is grounded solely in the supplied brief snapshot. Never fabricate statistics, prices, yields, market direction, policy actions, or data that is not supplied. Treat missing data as unavailable: state "Current [category] data was not available in this intelligence snapshot" rather than inferring it from another metric. Clearly label FAULTLINE Pressure Index, regime, structural stress, probabilities, transition confidence, Market Memory, Evidence Consensus, and historical analog similarity as FAULTLINE proprietary outputs. A historical analog is feature-set similarity only; never infer current Fed policy, rate direction, liquidity, or a future market outcome from its name. Do not call a model score a confidence interval and do not use "statistically significant", "almost perfectly mirrors", "highly predictive", "near certainty", "guaranteed", "inevitable", or promotional opportunity language. Use measured institutional phrasing such as "may indicate", "suggests", "warrants monitoring", and "conditional on confirmation". Write in third person using markdown H2/H3 headings. Do not use placeholder text.
+
+${evidenceNarrativePromptContract()}`;
 
   const sectionList = config.sections.map((s, i) => `${i + 1}. ${s}`).join("\n");
 

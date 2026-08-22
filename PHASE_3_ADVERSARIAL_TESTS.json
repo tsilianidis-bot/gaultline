@@ -1,0 +1,16 @@
+{
+  "testFile": "server/evidenceAdversarial.test.ts",
+  "result": "PASS",
+  "cases": [
+    {"case":1,"result":"PASS","control":"Leading indicator and historical lead window are withheld without an authorized forecast contract."},
+    {"case":2,"result":"PASS","control":"93% analog similarity cannot become current probability."},
+    {"case":3,"result":"PASS","control":"62% historical continuation frequency cannot become current probability."},
+    {"case":4,"result":"PASS","control":"One engine cannot create system-wide confirmation."},
+    {"case":5,"result":"PASS","control":"Stale/unavailable evidence remains degraded."},
+    {"case":6,"result":"PASS","control":"No forecast model produces explicit forecast withholding."},
+    {"case":7,"result":"PASS","control":"Analyst/AI confirmation language lacks structured-machine confirmation status."},
+    {"case":8,"result":"PASS","control":"Evidence packet rejects State A / State B mixing."},
+    {"case":9,"result":"PASS","control":"Evidence strength remains separate from high data quality or model confidence."},
+    {"case":10,"result":"PASS","control":"Correlated observations do not establish independent confirmation."}
+  ]
+}

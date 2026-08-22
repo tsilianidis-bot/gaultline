@@ -21,6 +21,7 @@ import {
   restrictAshaPageContextForScope,
   type AshaQuestionAnalysis,
 } from "../shared/ashaQuestionAnalysis";
+import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -425,7 +426,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     "17. Historical analog similarity is not forecast probability. Explain weighting from the supplied evidence and never let one analog replace the combined current evidence.",
   ].join("\n");
 
-  const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext) + engineAvailabilityBlock;
+  const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext) + engineAvailabilityBlock + "\n\n" + evidenceNarrativePromptContract();
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
@@ -782,7 +783,7 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     {
       role: "system",
-      content: ASHA_IDENTITY + contextBlock,
+      content: ASHA_IDENTITY + contextBlock + "\n\n" + evidenceNarrativePromptContract(),
     },
     {
       role: "user",

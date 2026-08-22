@@ -5172,3 +5172,14 @@
 - [x] Extend permanent Phase 2 test scaffolds for envelope invariants, Tests A–J, narrative-origin integrity, and archive distinction
 - [x] Produce and execute cross-surface controlled-state proof and the exact 32-question Phase 2 acceptance gate
 - [x] Run focused suites and full regression, resolve ordinary Phase 2 failures, save the combined checkpoint, and issue the only supported Phase 2 verdict
+
+## FAULTLINE Phase 2I — Attachment Reconciliation
+- [ ] Reconcile the newly re-attached Phase 2I specification against checkpoint adaa144b and implement any remaining in-scope canonical integrity defect
+- [ ] Re-run the affected permanent evidence and full regression after any attachment-driven correction, then save a reconciled checkpoint and issue the Phase 2 verdict
+
+## FAULTLINE Phase 3 — Interpretation Integrity / Evidence Contract
+- [x] Define one shared EvidenceClaim contract, governed evidence classes, evidence strength, semantic-number distinctions, and class-specific validation without duplicating Phase 2 canonical-state controls
+- [x] Implement centralized forecast authorization, insufficient-evidence withholding, claim dependencies, canonical state binding, and state-mixing prevention
+- [x] Apply minimum evidence-integrity enforcement to current narrative and current-intelligence claim boundaries without starting Phase 4–11 work or redesigning surfaces
+- [x] Audit current material claim paths and LLM prompts, documenting governed classifications, unsupported-claim withholding, and Phase 3-only remediations
+- [x] Add permanent evidence-contract, adversarial, cross-surface, and acceptance-gate tests/artifacts; run full regression, checkpoint, and issue the Phase 3 verdict

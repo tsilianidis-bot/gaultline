@@ -16,6 +16,7 @@ import type {
 } from "../shared/ashaContext";
 import type { AshaQuestionAnalysis } from "../shared/ashaQuestionAnalysis";
 import type { CanonicalMarketState } from "../shared/marketState";
+import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { getCanonicalMarketState } from "./marketStateService";
 import {
   resolveAshaModelCandidates,
@@ -120,7 +121,7 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
       ? "QUESTION SCOPE IS TICKER. Use ticker-specific evidence only when it is present in the sanitized page supplement and relevant to the user’s question."
       : "QUESTION SCOPE IS MARKET_TICKER_RELATIONSHIP. Separate broad-market evidence from the ticker-specific transmission analysis.";
 
-  return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(boundedContext)}\n\nSCOPE RULE: ${scopeRule}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values. Historical analog similarity is evidence of regime resemblance, never forecast probability. Use questionAnalysis probability only when its availability is CALIBRATED; never convert a similarity score or generic bear scenario into an unsupported event probability.`;
+  return `\n\nCANONICAL FAULTLINE MARKETSTATE (SERVER-GENERATED):\n${JSON.stringify(boundedContext)}\n\nSCOPE RULE: ${scopeRule}\n\nPROVENANCE RULES: Treat this MarketState as the authoritative current context. Distinguish current observations, model estimates, inferences, and historical relationships. Never claim a source or engine is available when sourceHealth marks it unavailable. If freshness is stale, cache status is stale-if-error, or warnings are present, disclose that limitation in the answer. Do not invent missing values. Historical analog similarity is evidence of regime resemblance, never forecast probability. Use questionAnalysis probability only when its availability is CALIBRATED; never convert a similarity score or generic bear scenario into an unsupported event probability.\n\n${evidenceNarrativePromptContract()}`;
 }
 
 export async function invokeAshaGateway(

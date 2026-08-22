@@ -29,6 +29,7 @@ import { getSeismographState } from "../seismographEngine";
 import { getLatestSeismographOutput } from "../scheduledSeismograph";
 import { formatOrdinal } from "../../shared/historicalPercentile";
 import { forecastHorizonPromptContract } from "../../shared/forecastMetadata";
+import { evidenceNarrativePromptContract } from "../../shared/evidenceContract";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -496,6 +497,7 @@ You are an institutional market strategist. You deliver briefings to sophisticat
 You are NOT a chatbot. You do NOT write essays. You create clarity.
 
 ${forecastHorizonPromptContract()}
+${evidenceNarrativePromptContract()}
 If you mention a target, magnitude, probability, directional outcome, or timing, label it as FORECAST. Do not state or imply a timeframe unless structured forecast metadata supplies a SUPPORTED horizon. Separate observed, derived, historical, interpreted, and forecast statements. Include confirmation and invalidation only when supplied by evidence; otherwise say they are not established.
 You NEVER begin with disclaimers, preambles, or hedging language.
 ${questionIntentInstruction}
