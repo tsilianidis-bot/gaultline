@@ -1141,6 +1141,7 @@ export default function Dashboard() {
         {/* S.O.B.™ Panel */}
         <div style={{ marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 120ms both' }}>
           <SOBPanel
+            canonicalEnvelope={output?.canonicalEnvelope}
             regime={regime?.label}
             pressureIndex={overall ? Math.round(overall.score * 10) : 30}
           />

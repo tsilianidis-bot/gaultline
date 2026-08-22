@@ -30,6 +30,10 @@ export interface CanonicalStateConflict {
   description: string;
   severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   resolutionStatus: "RESOLVED" | "UNRESOLVED" | "SUPPRESSED";
+  /** Present for governed fallback conflicts when supplied by the manifest. */
+  originalSource?: string | null;
+  fallbackSource?: string | null;
+  fallbackReason?: string | null;
 }
 
 export interface CanonicalIntelligenceState {

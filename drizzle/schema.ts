@@ -1404,6 +1404,13 @@ export const dailyBriefSnapshots = mysqlTable("dailyBriefSnapshots", {
   articleId:           int("articleId"),
   promptVersion:       varchar("promptVersion", { length: 40 }).notNull(),
   modelVersion:        varchar("modelVersion", { length: 80 }),
+  /** Forward-only canonical origin. Legacy rows intentionally remain null. */
+  originatingStateId:  varchar("originatingStateId", { length: 96 }),
+  originatingEffectiveAt: timestamp("originatingEffectiveAt"),
+  originatingGeneratedAt: timestamp("originatingGeneratedAt"),
+  originatingModelVersion: varchar("originatingModelVersion", { length: 96 }),
+  originatingConfigurationVersion: varchar("originatingConfigurationVersion", { length: 96 }),
+  originatingInputSnapshotId: varchar("originatingInputSnapshotId", { length: 128 }),
   /** Full source-of-truth payload consumed by the prompt and UI. */
   snapshotJson:        text("snapshotJson").notNull(),
   /** Per-input provenance, expected cadence, as-of, and freshness. */
@@ -1417,6 +1424,7 @@ export const dailyBriefSnapshots = mysqlTable("dailyBriefSnapshots", {
   snapshotIdIdx: index("dailyBriefSnapshots_snapshotId_idx").on(t.snapshotId),
   briefDateIdx: index("dailyBriefSnapshots_briefDateEt_idx").on(t.briefDateEt),
   articleIdIdx: index("dailyBriefSnapshots_articleId_idx").on(t.articleId),
+  originatingStateIdIdx: index("dailyBriefSnapshots_originatingStateId_idx").on(t.originatingStateId),
 }));
 export type DailyBriefSnapshot = typeof dailyBriefSnapshots.$inferSelect;
 export type InsertDailyBriefSnapshot = typeof dailyBriefSnapshots.$inferInsert;

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { FaultlinePressureOutput } from "./pressure/engine";
 import type { SeismographOutput } from "./seismographCore";
+import type { PublicCanonicalIntelligenceState } from "../shared/canonicalIntelligenceState";
 
 export const DAILY_BRIEF_PROMPT_VERSION = "daily-brief-snapshot-v1";
 const DAILY_SNAPSHOT_MAX_AGE_MS = 30 * 60 * 60 * 1000;
@@ -27,6 +28,21 @@ export interface DailyBriefSnapshotPayload {
   briefDateEt: string;
   tradingDate: string;
   canonicalSource: "seismograph" | "pressure_engine";
+  /**
+   * An immutable link to the exact canonical state used at publication time.
+   * Legacy records and unverified source matches retain explicit unavailability;
+   * they are never retroactively assigned an invented current-state identity.
+   */
+  canonicalOrigin: {
+    status: "linked" | "unavailable";
+    reason: string | null;
+    originatingStateId: string | null;
+    originatingEffectiveAt: string | null;
+    originatingGeneratedAt: string | null;
+    originatingModelVersion: string | null;
+    originatingConfigurationVersion: string | null;
+    originatingInputSnapshotId: string | null;
+  };
   pressureIndex: number;
   regime: string;
   stressClassification: string;
@@ -61,10 +77,12 @@ function freshness(asOf: number | null, cadence: InputCadence, now: number): Fre
 export function buildDailyBriefSnapshot({
   pressure,
   seismograph,
+  canonicalState = null,
   now = Date.now(),
 }: {
   pressure: FaultlinePressureOutput | null;
   seismograph: SeismographOutput | null;
+  canonicalState?: PublicCanonicalIntelligenceState | null;
   now?: number;
 }): DailyBriefSnapshotPayload {
   const source = seismograph ? "seismograph" : "pressure_engine";
@@ -91,6 +109,31 @@ export function buildDailyBriefSnapshot({
   const pressureIndex = seismograph?.pressureScore ?? pressure?.overallPressure ?? 0;
   const regime = seismograph?.regime ?? pressure?.regime ?? "Unavailable";
   const stressClassification = seismograph?.stressLevel ?? pressure?.level ?? "Unavailable";
+  const canonicalOrigin = canonicalState
+    && canonicalState.pressureIndex === pressureIndex
+    && canonicalState.regime === regime
+    ? {
+        status: "linked" as const,
+        reason: null,
+        originatingStateId: canonicalState.stateId,
+        originatingEffectiveAt: canonicalState.effectiveAt ?? null,
+        originatingGeneratedAt: canonicalState.generatedAt ?? null,
+        originatingModelVersion: canonicalState.modelVersion ?? null,
+        originatingConfigurationVersion: canonicalState.configurationVersion ?? null,
+        originatingInputSnapshotId: canonicalState.inputSnapshotId ?? null,
+      }
+    : {
+        status: "unavailable" as const,
+        reason: canonicalState
+          ? "canonical-state-did-not-match-immutable-brief-snapshot"
+          : "canonical-state-unavailable-at-publication",
+        originatingStateId: null,
+        originatingEffectiveAt: null,
+        originatingGeneratedAt: null,
+        originatingModelVersion: null,
+        originatingConfigurationVersion: null,
+        originatingInputSnapshotId: null,
+      };
   const sourceMeta = {
     source: source === "seismograph" ? "Scheduled Seismograph Core" : "FAULTLINE Pressure Engine",
     category: "faultline_output",
@@ -126,6 +169,7 @@ export function buildDailyBriefSnapshot({
     briefDateEt: etDate(now),
     tradingDate: etDate(sourceAsOf),
     canonicalSource: source,
+    canonicalOrigin,
     pressureIndex,
     regime,
     stressClassification,
@@ -158,6 +202,9 @@ export function buildDailyBriefPromptContext(snapshot: DailyBriefSnapshotPayload
   return [
     `BRIEF SNAPSHOT ID: ${snapshot.briefSnapshotId}`,
     `READING USED FOR THIS BRIEF: ${new Date(snapshot.generatedAt).toISOString()} (trading date ${snapshot.tradingDate}; canonical source ${snapshot.canonicalSource})`,
+    snapshot.canonicalOrigin.status === "linked"
+      ? `CANONICAL ORIGIN: ${snapshot.canonicalOrigin.originatingStateId} (effective ${snapshot.canonicalOrigin.originatingEffectiveAt})`
+      : `CANONICAL ORIGIN: unavailable (${snapshot.canonicalOrigin.reason}); this is an archived generated snapshot, not a current market-state claim.`,
     "OBSERVED MARKET DATA (only these may be described as external facts):",
     observed,
     "FAULTLINE PROPRIETARY OUTPUTS (label as FAULTLINE outputs, not external observations):",

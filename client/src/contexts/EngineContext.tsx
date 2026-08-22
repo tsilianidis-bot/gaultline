@@ -162,7 +162,9 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     baselineIndicators: DEFAULT_INDICATORS,
     simulationOverrides: simulateOverrides,
   }), [marketState, simulateOverrides]);
-  const output = projected.output;
+  const output = useMemo<EngineOutput>(() => canonicalEnvelope
+    ? { ...projected.output, canonicalEnvelope }
+    : projected.output, [canonicalEnvelope, projected.output]);
   const marketMode = projected.mode;
 
   // Simulate Pressure controls

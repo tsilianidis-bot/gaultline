@@ -1,5 +1,6 @@
 import { desc } from "drizzle-orm";
 import { intelligenceStateManifests } from "../drizzle/schema";
+import { desc } from "drizzle-orm";
 import {
   CANONICAL_STATE_SCHEMA_VERSION,
   type CanonicalDirection,
@@ -23,8 +24,20 @@ function direction(value: unknown): CanonicalDirection {
 
 function quality(manifest: StoredManifest): CanonicalQualityStatus {
   const summary = manifest.dataQualitySummary ?? {};
-  if (manifest.coherenceStatus === "UNAVAILABLE" || (summary.unavailableInputs?.length ?? 0) > 0) return "UNAVAILABLE";
-  if ((summary.fallbackInputs?.length ?? 0) > 0 || manifest.coherenceStatus === "EXPLICIT_MISMATCH") return "DEGRADED";
+  const inputQuality = Array.isArray(manifest.inputQuality) ? manifest.inputQuality : [];
+  const unavailable = Array.isArray(manifest.unavailableInputs)
+    ? manifest.unavailableInputs
+    : Array.isArray(summary.unavailableInputs) ? summary.unavailableInputs : [];
+  const fallback = Array.isArray(manifest.fallbackInputs)
+    ? manifest.fallbackInputs
+    : Array.isArray(summary.fallbackInputs) ? summary.fallbackInputs : [];
+  const requiredUnavailable = unavailable.filter((inputId: string) => {
+    const input = inputQuality.find((candidate: any) => candidate.inputId === inputId);
+    return !input || input.required !== false;
+  });
+  if (manifest.coherenceStatus === "UNAVAILABLE" || requiredUnavailable.length > 0) return "UNAVAILABLE";
+  if (unavailable.length > 0) return "PARTIAL";
+  if (fallback.length > 0 || manifest.coherenceStatus === "EXPLICIT_MISMATCH") return "DEGRADED";
   if ((summary.staleInputs?.length ?? 0) > 0 || (summary.delayedInputs ?? 0) > 0 || (summary.staticInputs?.length ?? 0) > 0) return "PARTIAL";
   return "HEALTHY";
 }
@@ -43,6 +56,7 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest): Canon
   const fallbackInputs = Array.isArray(manifest.fallbackInputs) ? manifest.fallbackInputs : [];
   const delayedInputs = inputQuality.filter((input: any) => input.freshnessStatus === "DELAYED").map((input: any) => input.inputId);
   const notes = Array.isArray(manifest.coherenceNotes) ? manifest.coherenceNotes : [];
+  const inputById = new Map(inputQuality.map((input: any) => [input.inputId, input]));
   const conflicts: CanonicalStateConflict[] = [
     ...notes.map((note: string) => ({
       conflictType: note.startsWith("pressure-score") ? "PRESSURE_MISMATCH" : note.startsWith("regime-") ? "REGIME_MISMATCH" : "TEMPORAL_MISMATCH",
@@ -50,7 +64,22 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest): Canon
     } as CanonicalStateConflict)),
     ...staleInputs.map((inputId: string) => ({ conflictType: "STALE_INPUT", components: [inputId], description: `${inputId} is stale.`, severity: "MEDIUM", resolutionStatus: "UNRESOLVED" } as CanonicalStateConflict)),
     ...unavailableInputs.map((inputId: string) => ({ conflictType: "UNAVAILABLE_INPUT", components: [inputId], description: `${inputId} is unavailable.`, severity: "HIGH", resolutionStatus: "UNRESOLVED" } as CanonicalStateConflict)),
-    ...fallbackInputs.map((inputId: string) => ({ conflictType: "FALLBACK_INPUT", components: [inputId], description: `${inputId} used a governed fallback.`, severity: "MEDIUM", resolutionStatus: "UNRESOLVED" } as CanonicalStateConflict)),
+    ...fallbackInputs.map((inputId: string) => {
+      const input = inputById.get(inputId) as any;
+      const originalSource = input?.originalSource ?? input?.source ?? null;
+      const fallbackSource = input?.fallbackSource ?? null;
+      const fallbackReason = input?.fallbackReason ?? null;
+      return {
+        conflictType: "FALLBACK_INPUT",
+        components: [inputId],
+        description: `${inputId} used a governed fallback${fallbackReason ? `: ${fallbackReason}` : "."}`,
+        severity: "MEDIUM",
+        resolutionStatus: "UNRESOLVED",
+        originalSource,
+        fallbackSource,
+        fallbackReason,
+      } as CanonicalStateConflict;
+    }),
   ];
   const engines: CanonicalEngineState[] = Object.entries(manifest.engineValues ?? {}).map(([engineId, value]) => ({
     engineId, engineName: engineId, value: typeof value === "number" ? value : null, unit: "score_0_to_100",

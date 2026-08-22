@@ -72,6 +72,12 @@ export const organicContentRouter = router({
         generatedAt: dailyBriefSnapshots.generatedAt,
         tradingDate: dailyBriefSnapshots.tradingDate,
         status: dailyBriefSnapshots.status,
+        originatingStateId: dailyBriefSnapshots.originatingStateId,
+        originatingEffectiveAt: dailyBriefSnapshots.originatingEffectiveAt,
+        originatingGeneratedAt: dailyBriefSnapshots.originatingGeneratedAt,
+        originatingModelVersion: dailyBriefSnapshots.originatingModelVersion,
+        originatingConfigurationVersion: dailyBriefSnapshots.originatingConfigurationVersion,
+        originatingInputSnapshotId: dailyBriefSnapshots.originatingInputSnapshotId,
         inputFreshnessJson: dailyBriefSnapshots.inputFreshnessJson,
         validationJson: dailyBriefSnapshots.validationJson,
       }).from(dailyBriefSnapshots)
@@ -84,6 +90,8 @@ export const organicContentRouter = router({
           ...snapshot,
           inputFreshness: JSON.parse(snapshot.inputFreshnessJson),
           validation: JSON.parse(snapshot.validationJson),
+          archiveSemantics: "ARCHIVED_GENERATED_SNAPSHOT",
+          canonicalOriginStatus: snapshot.originatingStateId ? "linked" : "unavailable",
         } : null,
       };
     }),

@@ -1,0 +1,15 @@
+{
+  "suite": "Phase 2I formal Tests A–J",
+  "results": [
+    {"test":"A","status":"PASS","evidence":"Controlled state identity, pressure, regime, engine value, and hash retained by canonical envelope.","reference":"server/engineContextCanonical.test.ts"},
+    {"test":"B","status":"PASS","evidence":"Temporal mismatch becomes an unresolved TEMPORAL_MISMATCH conflict and DEGRADED coherence.","reference":"server/canonicalIntelligenceState.test.ts"},
+    {"test":"C","status":"PASS","evidence":"Required stale input remains explicit and changes canonical quality to PARTIAL.","reference":"server/canonicalIntelligenceState.test.ts"},
+    {"test":"D","status":"PASS","evidence":"Optional unavailable input is retained as UNAVAILABLE_INPUT and quality becomes PARTIAL rather than zero or healthy data.","reference":"server/canonicalIntelligenceState.test.ts"},
+    {"test":"E","status":"PASS","evidence":"Fallback conflict retains original source, fallback source, reason, audit conflict, and DEGRADED quality.","reference":"server/canonicalIntelligenceState.test.ts"},
+    {"test":"F","status":"PASS","evidence":"Probability remains governed claim identity; no calibrated-probability semantic conversion is introduced.","reference":"server/canonicalIntelligenceState.test.ts"},
+    {"test":"G","status":"PASS","evidence":"Analog remains governed similarity claim identity; no recurrence or outcome probability conversion is introduced.","reference":"server/canonicalIntelligenceState.test.ts"},
+    {"test":"H","status":"PASS","evidence":"Prior and subsequent canonical states retain independent Champion/model/scoring/configuration/input identities.","reference":"server/canonicalIntelligenceState.test.ts"},
+    {"test":"I","status":"PASS","evidence":"Identical stable manifest inputs/versions retain the same canonical stateId and stateHash.","reference":"server/canonicalIntelligenceState.test.ts"},
+    {"test":"J","status":"PASS","evidence":"Canonical absence withholds compatibility state; legacy projection query cannot start until canonical state exists.","reference":"server/engineContextCanonical.test.ts"}
+  ]
+}

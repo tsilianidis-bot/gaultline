@@ -1,0 +1,14 @@
+{
+  "scope": "client/src current-intelligence consumers plus approved canonical transport",
+  "unresolvedCurrentStateBypasses": 0,
+  "approvedTransport": ["client/src/contexts/EngineContext.tsx", "shared/canonicalConsumerEnvelope.ts", "shared/canonicalIntelligenceState.ts"],
+  "dispositions": [
+    {"path":"client/src/pages/Now.tsx","finding":"direct pressure.getCurrentPressure","disposition":"CANONICALIZED","resolution":"removed; canonical prior-state change is withheld when unavailable"},
+    {"path":"client/src/pages/Pressure.tsx","finding":"direct pressure.getCurrentPressure","disposition":"CANONICALIZED","resolution":"replaced by canonical state and canonical engine compatibility evidence"},
+    {"path":"client/src/components/FREDDebugConsole.tsx","finding":"direct pressure.getCurrentPressure","disposition":"REMOVED","resolution":"uses canonical engine diagnostics and canonical refresh"},
+    {"path":"server/autonomousPublishing.ts","finding":"Daily Brief snapshot publisher","disposition":"ARCHIVED_CANONICAL","resolution":"forward canonical origin persisted only on an immutable source match"},
+    {"path":"client/src/pages/Charts.tsx","finding":"historical chart context","disposition":"HISTORICAL_RESEARCH_ISOLATED","resolution":"not a current-state authority"},
+    {"path":"client/src/pages/ReadingHistory.tsx","finding":"historical reading context","disposition":"HISTORICAL_RESEARCH_ISOLATED","resolution":"not a current-state authority"},
+    {"path":"client/src/pages/SimulatePressure.tsx","finding":"explicit user simulation","disposition":"VERIFIED_NON_CURRENT","resolution":"cannot establish current market truth"}
+  ]
+}

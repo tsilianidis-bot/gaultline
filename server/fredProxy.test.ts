@@ -218,13 +218,14 @@ describe("Now.tsx — Pressure Index instrument strengthening", () => {
     expect(nowSource).toContain("↓");
   });
 
-  it("uses true prior reading from DB when available", () => {
-    expect(nowSource).toContain("serverPressure?.priorPressure");
-    expect(nowSource).toContain("serverPressure.overallPressure - serverPressure.priorPressure");
+  it("does not bypass canonical state through a direct prior-pressure query", () => {
+    expect(nowSource).not.toContain("serverPressure?.priorPressure");
+    expect(nowSource).not.toContain("trpc.pressure.getCurrentPressure");
   });
 
-  it("falls back to delta-vs-baseline when no DB prior exists", () => {
-    expect(nowSource).toContain("output.overall.delta * 10");
+  it("withholds change instead of presenting a baseline delta as a canonical prior-state change", () => {
+    expect(nowSource).toContain("scoreChange={null}");
+    expect(nowSource).not.toContain("output.overall.delta * 10");
   });
 
   it("includes sensor-pulse keyframe animation", () => {

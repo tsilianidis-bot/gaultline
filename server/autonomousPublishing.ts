@@ -35,6 +35,7 @@ import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pres
 import { getDiagnosticReport, type DiagnosticReport } from "./diagnosticAI";
 import { getLatestSeismographOutput } from "./scheduledSeismograph";
 import { buildDailyBriefPromptContext, buildDailyBriefSnapshot, DAILY_BRIEF_PROMPT_VERSION, validateDailyBriefNarrative } from "./dailyBriefSnapshot";
+import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -501,9 +502,17 @@ async function runPublishingPipeline(
   // Daily Briefs never mix direct engine values with an older Seismograph output.
   const seismographOutput = await getLatestSeismographOutput().catch(() => null);
   const briefCtx = seismographOutput?.forDailyBrief;
+  const canonicalState = publishType === "daily_brief"
+    ? await getAuthoritativeCanonicalIntelligenceState().catch(() => null)
+    : null;
 
   const dailySnapshot = publishType === "daily_brief"
-    ? buildDailyBriefSnapshot({ pressure: engineData.pressureOutput, seismograph: seismographOutput, now: now.getTime() })
+    ? buildDailyBriefSnapshot({
+        pressure: engineData.pressureOutput,
+        seismograph: seismographOutput,
+        canonicalState: canonicalState ? toPublicCanonicalIntelligenceState(canonicalState) : null,
+        now: now.getTime(),
+      })
     : null;
 
   if (dailySnapshot) {
@@ -516,6 +525,12 @@ async function runPublishingPipeline(
       seismographComputedAt: dailySnapshot.canonicalSource === "seismograph" ? new Date(seismographOutput!.computedAt) : null,
       status: dailySnapshot.validation.passed ? "generating" : "blocked",
       promptVersion: DAILY_BRIEF_PROMPT_VERSION,
+      originatingStateId: dailySnapshot.canonicalOrigin.originatingStateId,
+      originatingEffectiveAt: dailySnapshot.canonicalOrigin.originatingEffectiveAt ? new Date(dailySnapshot.canonicalOrigin.originatingEffectiveAt) : null,
+      originatingGeneratedAt: dailySnapshot.canonicalOrigin.originatingGeneratedAt ? new Date(dailySnapshot.canonicalOrigin.originatingGeneratedAt) : null,
+      originatingModelVersion: dailySnapshot.canonicalOrigin.originatingModelVersion,
+      originatingConfigurationVersion: dailySnapshot.canonicalOrigin.originatingConfigurationVersion,
+      originatingInputSnapshotId: dailySnapshot.canonicalOrigin.originatingInputSnapshotId,
       snapshotJson: JSON.stringify(dailySnapshot),
       inputFreshnessJson: JSON.stringify(dailySnapshot.sourceInputs),
       validationJson: JSON.stringify(dailySnapshot.validation),

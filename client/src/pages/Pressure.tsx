@@ -5,9 +5,8 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import SOBPanel from "@/components/SOBPanel";
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { trpc } from "@/lib/trpc";
 import { AlertTriangle, TrendingUp, TrendingDown, Minus, RefreshCw, Zap, BarChart2, Activity, Waves, Clock, GitBranch, BookOpen } from "lucide-react";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
@@ -81,6 +80,10 @@ interface HistoricalAnalog {
   label: string;
   similarity: number;
   description: string;
+}
+
+function isPressureLevel(value: string | null): value is PressureLevel {
+  return value === "Low" || value === "Moderate" || value === "Elevated" || value === "High" || value === "Critical";
 }
 
 // ── Color helpers ─────────────────────────────────────────────
@@ -963,10 +966,40 @@ export default function Pressure() {
     const requested = new URLSearchParams(window.location.search).get('tab');
     return STRESS_TABS.some(tab => tab.id === requested) ? requested as StressTabId : 'pressure';
   });
-  const { data, isLoading, error, refetch, isFetching } = trpc.pressure.getCurrentPressure.useQuery(
-    undefined,
-    { refetchInterval: 5 * 60 * 1000 } // auto-refresh every 5 minutes
-  );
+  const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh } = useEngine();
+  const data = useMemo(() => {
+    if (!canonicalState || canonicalState.pressureIndex === null || !isPressureLevel(canonicalState.pressureLevel)) return null;
+    const alerts: PressureAlert[] = [
+      ...canonicalState.conflicts.map(conflict => ({
+        severity: conflict.severity === "CRITICAL" ? "critical" : conflict.severity === "HIGH" ? "high" : "elevated",
+        title: conflict.conflictType,
+        detail: conflict.description,
+      })),
+      ...canonicalState.warnings.map(warning => ({ severity: "moderate" as const, title: "Canonical warning", detail: warning })),
+    ];
+    const vectors: RiskVector[] = canonicalState.engines.map(engine => ({
+      id: engine.engineId,
+      label: engine.engineName,
+      description: `Canonical engine ${engine.engineId}.`,
+      score: engine.value ?? 0,
+      level: canonicalState.pressureLevel,
+      driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
+      trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
+      weight: 0,
+      rawInputs: {},
+    }));
+    return {
+      overallPressure: canonicalState.pressureIndex,
+      regime: canonicalState.regime ?? "Unavailable",
+      level: canonicalState.pressureLevel,
+      vectors,
+      alerts,
+      topAnalog: null as HistoricalAnalog | null,
+      analogs: [] as HistoricalAnalog[],
+      timestamp: canonicalState.effectiveAt,
+      dataSource: "canonical" as const,
+    };
+  }, [canonicalState]);
 
   const handleTabSelect = (tab: StressTabId) => {
     setActiveTab(tab);
@@ -978,7 +1011,7 @@ export default function Pressure() {
 
   if (isLoading) return <PressureSkeleton />;
 
-  if (error || !data) {
+  if (!data) {
     return (
       <div style={{ padding: "48px 24px", textAlign: "center" }}>
         <AlertTriangle size={32} style={{ color: "#FF2D55", margin: "0 auto 16px" }} />
@@ -986,10 +1019,10 @@ export default function Pressure() {
           PRESSURE ENGINE OFFLINE
         </div>
         <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#6B7280", marginTop: "8px" }}>
-          {error?.message ?? "Failed to load pressure data"}
+          {dataError ?? "Authoritative canonical pressure state is unavailable"}
         </div>
         <button
-          onClick={() => refetch()}
+          onClick={() => refresh()}
           style={{ marginTop: "16px", padding: "8px 16px", background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.3)", borderRadius: "4px", color: "#00D4FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", cursor: "pointer" }}
         >
           RETRY
@@ -1030,8 +1063,8 @@ export default function Pressure() {
         <PageHeader
           title="Market Stress"
           subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
-          badge={data.dataSource === 'live' ? 'LIVE DATA' : 'SIMULATED'}
-          badgeColor={data.dataSource === 'live' ? 'green' : 'amber'}
+          badge="CANONICAL STATE"
+          badgeColor="green"
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
         <div style={{ padding: '0 16px' }}>
@@ -1062,12 +1095,12 @@ export default function Pressure() {
               </span>
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", letterSpacing: "0.12em" }}>
-              FAULTLINE SYSTEMIC RISK INDEX · {new Date(data.timestamp).toLocaleString()} · {data.dataSource.toUpperCase()}
+              FAULTLINE SYSTEMIC RISK INDEX · {new Date(data.timestamp).toLocaleString()} · PHASE2-CANONICAL-STATE-V1
             </div>
           </div>
           <button
-            onClick={() => refetch()}
-            disabled={isFetching}
+            onClick={() => refresh()}
+            disabled={isRefreshing}
             style={{
               display: "flex", alignItems: "center", gap: "6px",
               padding: "6px 12px",
@@ -1079,11 +1112,11 @@ export default function Pressure() {
               fontSize: "10px",
               letterSpacing: "0.08em",
               cursor: "pointer",
-              opacity: isFetching ? 0.5 : 1,
+              opacity: isRefreshing ? 0.5 : 1,
               transition: "opacity 0.15s ease",
             }}
           >
-            <RefreshCw size={10} style={{ animation: isFetching ? "fl-spin 1s linear infinite" : "none" }} />
+            <RefreshCw size={10} style={{ animation: isRefreshing ? "fl-spin 1s linear infinite" : "none" }} />
             REFRESH
           </button>
         </motion.div>
@@ -1203,7 +1236,9 @@ export default function Pressure() {
                 {data.regime}
               </div>
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#6B7280", marginTop: "6px", letterSpacing: "0.06em" }}>
-                Best analog: {data.topAnalog.year} {data.topAnalog.label} · {data.topAnalog.similarity}% match
+                {data.topAnalog
+                  ? `Best analog: ${data.topAnalog.year} ${data.topAnalog.label} · ${data.topAnalog.similarity}% match`
+                  : "Governed canonical analog detail unavailable for this current state."}
               </div>
             </motion.div>
 
@@ -1341,6 +1376,7 @@ export default function Pressure() {
         {/* S.O.B.™ Panel */}
         <div style={{ marginBottom: '24px' }}>
           <SOBPanel
+            canonicalEnvelope={canonicalEnvelope ?? undefined}
             regime={data.regime}
             pressureIndex={data.overallPressure}
           />
