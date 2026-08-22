@@ -41,7 +41,7 @@ import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } fro
 import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 import { getAuthoritativeCrossEngineSynthesis, persistCrossEngineSynthesis } from "./crossEngineSynthesis";
-import { evaluateAndPersistEarlyWarnings } from "./earlyWarningIntelligence";
+import { evaluateAndPersistCandidateDetections } from "./candidateDetection";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -170,8 +170,8 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
     if (synthesis) {
       const outcome = await persistCrossEngineSynthesis(synthesis);
       console.log(`[Seismograph] Cross-engine synthesis ${synthesis.synthesisId} persisted; ${outcome.archivedMaterialEventCount} material archive events.`);
-      const warnings = await evaluateAndPersistEarlyWarnings(synthesis);
-      console.log(`[Seismograph] Early Warning Intelligence evaluated ${warnings.evaluation.candidates.length} governed candidates; ${warnings.evaluation.qualifiedWarnings.length} material warnings, ${warnings.appendedObservationCount} append-only observations.`);
+      const candidates = await evaluateAndPersistCandidateDetections(synthesis);
+      console.log(`[Seismograph] Candidate detection evaluated ${candidates.evaluation.candidates.length} governed candidate observations; ${candidates.appendedObservationCount} append-only observations.`);
     }
   } catch (error) {
     console.warn("[Seismograph] Governance manifest capture deferred:", error);

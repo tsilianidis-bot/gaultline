@@ -34,7 +34,6 @@ import { buildCanonicalEvidencePacket } from "../evidencePacket";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
-import { buildEarlyWarningPromptContract, evaluateEarlyWarnings } from "../earlyWarningIntelligence";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -681,7 +680,6 @@ ${forecastHorizonPromptContract()}
 ${evidenceNarrativePromptContract()}
 ${buildInterpretationPromptContract(transaction, evidencePacket)}
 ${buildCrossEngineSynthesisPromptContract(crossEngineSynthesis)}
-${buildEarlyWarningPromptContract(crossEngineSynthesis ? evaluateEarlyWarnings(crossEngineSynthesis) : null)}
 ${questionIntentInstruction}
 
 RESPONSE RULES:

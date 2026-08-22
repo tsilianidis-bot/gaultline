@@ -5231,6 +5231,21 @@
 - [x] Add permanent integrity, adversarial, lifecycle, persistence, no-warning, UI, cross-surface, and acceptance-gate evidence; run full regression, checkpoint, and issue the Phase 6 verdict
 
 ## FAULTLINE Phase 6 — External Review Closure Package
-- [ ] Assemble the completed Phase 6 architecture, data-path, schema, score, lifecycle, immutable-history, AI/UI/archive/outcome, validation, and limitation evidence from checkpoint 7dd6b77f without application development
-- [ ] Deliver the complete Phase 6 external-review closure package and stop without beginning Phase 7 or unrelated work
+- [x] Assemble the completed Phase 6 architecture, data-path, schema, score, lifecycle, immutable-history, AI/UI/archive/outcome, validation, and limitation evidence from checkpoint 7dd6b77f without application development
+- [x] Deliver the complete Phase 6 external-review closure package and stop without beginning Phase 7 or unrelated work
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 6 — Candidate Detection Gate External Review
+- [x] Compare checkpoint 31d051a6 against the Phase 6 Candidate Detection boundary, including prohibited early Phase 7 and Early Warning features, without modifying implementation
+- [x] Deliver a documentation-only external-review package with the exact gate verdict and stop for review
+
+## FAULTLINE Phase 6 — Candidate Detection Boundary Remediation
+- [x] Read the attached remediation specification and record the exact authorized candidate-only correction scope
+- [x] Restore a candidate-only contract with explicit detector identity/version/configuration and no score, qualification, ranking, warning lifecycle, confirmation, invalidation, or publication semantics
+- [x] Replace warning-oriented persistence, scheduled evaluation, current-warning APIs, and owner diagnostics with internal candidate-observation storage/protected diagnostics only
+- [x] Remove the public Early Warning panel and current-warning public APIs, plus ASHA/Oracle warning presentation, without redesigning the dashboard or assistants
+- [x] Rebuild candidate-only artifacts, phase-leak audit, permanent boundary suite, 60-item acceptance gate, focused/full validation, checkpoint, and verdict without beginning Phase 7
 - [x] Repair closure-review defect: attach append-only 1d/5d/20d/60d broad outcomes only to original Phase 6 warning detections, then re-run full regression

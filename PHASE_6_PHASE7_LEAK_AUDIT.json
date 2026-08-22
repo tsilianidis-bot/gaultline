@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "counts": {
+    "REMOVED_FROM_PHASE6": 12,
+    "LEGITIMATE_LATER_PHASE_HISTORY_ONLY": 2,
+    "LEGITIMATE_UPSTREAM_EVIDENCE_SEMANTIC": 1,
+    "TEST_FIXTURE": 9,
+    "BLOCKING_PHASE_LEAK": 0
+  },
+  "removedFromPhase6": [
+    "compositeWarningScore",
+    "qualificationState",
+    "qualifiedWarnings",
+    "ranking/top-three selection",
+    "warning lifecycle",
+    "confirmation conditions",
+    "invalidation conditions",
+    "public current-warning APIs",
+    "EarlyWarningIntelligencePanel",
+    "ASHA warning prompt contract",
+    "Oracle warning prompt contract",
+    "warning-oriented scheduled persistence"
+  ],
+  "laterPhaseHistoryOnly": [
+    "earlyWarnings table schema retained as inactive prototype history",
+    "earlyWarningObservations table schema retained as inactive prototype history"
+  ],
+  "upstreamEvidenceSemantic": [
+    "Phase 5 structured confirmations remain upstream evidence and are not Phase 6 warning confirmation semantics"
+  ],
+  "notes": "Later-phase prototype work remains recoverable from checkpoint 31d051a6 but is intentionally absent from active Phase 6 paths."
+}

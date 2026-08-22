@@ -1,0 +1,17 @@
+{
+  "phase": "Phase 6 Candidate Detection",
+  "status": "PASS",
+  "detectors": [
+    {
+      "detectorId": "cross-engine-divergence",
+      "detectorVersion": "1.0.0",
+      "detectorConfigVersion": "phase6r-candidate-v1",
+      "candidateType": "CROSS_ENGINE_DIVERGENCE",
+      "module": "server/candidateDetection.ts",
+      "requiredInputs": ["Phase 5 divergence", "independent evidence", "fresh participating engines", "governed magnitude", "persistent relationship"],
+      "suppressionConditions": ["non-independent evidence", "stale engine", "insufficient evidence", "missing magnitude", "magnitude below 10", "new/non-persisting relationship"],
+      "output": "CandidateDetection",
+      "notImplemented": ["leading-engine divergence", "breadth divergence", "liquidity/risk-asset divergence", "volatility suppression/price divergence", "yields/equities divergence", "historical-sequence precursor", "propagation", "decoupling", "correlation breakdown"]
+    }
+  ]
+}

@@ -1322,6 +1322,51 @@ export const earlyWarningObservations = mysqlTable("earlyWarningObservations", {
 export type EarlyWarningObservation = typeof earlyWarningObservations.$inferSelect;
 export type InsertEarlyWarningObservation = typeof earlyWarningObservations.$inferInsert;
 
+/**
+ * Phase 6R candidate-detection ledger. These records are not qualified
+ * warnings: original detection evidence remains immutable and later candidate
+ * observations are append-only without lifecycle, confirmation, invalidation,
+ * ranking, or publication semantics.
+ */
+export const candidateDetections = mysqlTable("candidateDetections", {
+  id:                       int("id").autoincrement().primaryKey(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull().unique(),
+  candidateType:            varchar("candidateType", { length: 96 }).notNull(),
+  title:                    varchar("title", { length: 255 }).notNull(),
+  originalStateId:          varchar("originalStateId", { length: 128 }).notNull(),
+  originalSynthesisId:      varchar("originalSynthesisId", { length: 128 }).notNull(),
+  originalEffectiveAt:      timestamp("originalEffectiveAt").notNull(),
+  originalPayloadJson:      text("originalPayloadJson").notNull(),
+  detectorId:               varchar("detectorId", { length: 96 }).notNull(),
+  detectorVersion:          varchar("detectorVersion", { length: 32 }).notNull(),
+  detectorConfigVersion:    varchar("detectorConfigVersion", { length: 96 }).notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  stateIdx: index("candidateDetections_state_idx").on(t.originalStateId),
+  synthesisIdx: index("candidateDetections_synthesis_idx").on(t.originalSynthesisId),
+}));
+export type CandidateDetectionRow = typeof candidateDetections.$inferSelect;
+export type InsertCandidateDetectionRow = typeof candidateDetections.$inferInsert;
+
+/** Append-only Phase 6 candidate observation history; no warning lifecycle state is stored. */
+export const candidateDetectionObservations = mysqlTable("candidateDetectionObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  observationKey:           varchar("observationKey", { length: 220 }).notNull().unique(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull(),
+  originatingStateId:       varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId:   varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  observedAt:               timestamp("observedAt").notNull(),
+  observationType:          varchar("observationType", { length: 64 }).notNull(),
+  observationPayloadJson:   text("observationPayloadJson").notNull(),
+  provenanceJson:           text("provenanceJson").notNull(),
+  recordedAt:               timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  candidateObservedIdx: index("candidateDetectionObservations_candidateObserved_idx").on(t.candidateId, t.observedAt),
+  synthesisIdx: index("candidateDetectionObservations_synthesis_idx").on(t.originatingSynthesisId),
+}));
+export type CandidateDetectionObservation = typeof candidateDetectionObservations.$inferSelect;
+export type InsertCandidateDetectionObservation = typeof candidateDetectionObservations.$inferInsert;
+
 /** Operational health record for the project-owned institutional-memory jobs. */
 export const institutionalMemoryJobs = mysqlTable("institutionalMemoryJobs", {
   id:                 int("id").autoincrement().primaryKey(),

@@ -20,7 +20,7 @@ import {
 } from "../db";
 import { sendEmail, buildApprovalEmail } from "../email";
 import { getAuthoritativeCrossEngineSynthesis, getLatestCrossEngineSynthesis } from "../crossEngineSynthesis";
-import { getEarlyWarningTimeline, getPersistedEarlyWarnings } from "../earlyWarningIntelligence";
+import { getCandidateObservationTimeline, getPersistedCandidateDetections } from "../candidateDetection";
 
 export const adminRouter = router({
   // List all registered users
@@ -279,24 +279,23 @@ export const adminRouter = router({
         },
       };
     }),
-  getEarlyWarningDebug: adminProcedure
-    .input(z.object({ warningId: z.string().min(1).max(96).optional() }).optional())
+  getCandidateDetectionDebug: adminProcedure
+    .input(z.object({ candidateId: z.string().min(1).max(128).optional() }).optional())
     .query(async ({ input }) => {
-      const warnings = await getPersistedEarlyWarnings(false);
-      const selected = input?.warningId ? warnings.filter(item => item.warningId === input.warningId) : warnings;
-      const timelines = await Promise.all(selected.map(async warning => ({
-        warningId: warning.warningId,
-        observations: await getEarlyWarningTimeline(warning.warningId),
+      const candidates = await getPersistedCandidateDetections();
+      const selected = input?.candidateId ? candidates.filter(item => item.candidateId === input.candidateId) : candidates;
+      const timelines = await Promise.all(selected.map(async candidate => ({
+        candidateId: candidate.candidateId,
+        observations: await getCandidateObservationTimeline(candidate.candidateId),
       })));
       return {
-        warnings: selected,
+        candidates: selected,
         timelines,
         debugContract: {
           exposesToAdminOnly: true,
           fields: [
-            "originalStateId", "originalSynthesisId", "originalPayloadJson", "currentStateId",
-            "currentSynthesisId", "currentLifecycleState", "currentQualificationState", "isActive",
-            "appendOnlyObservations", "outcomeEligibility",
+            "originalStateId", "originalSynthesisId", "originalPayloadJson", "detectorId",
+            "detectorVersion", "detectorConfigVersion", "appendOnlyCandidateObservations",
           ],
         },
       };

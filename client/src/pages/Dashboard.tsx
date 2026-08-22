@@ -36,7 +36,6 @@ import ScoreExplainer from "@/components/ScoreExplainer";
 import AshaHeroSection from "@/components/AshaHeroSection";
 import AshaDailyGreeting from "@/components/AshaDailyGreeting";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
-import EarlyWarningIntelligencePanel from "@/components/EarlyWarningIntelligencePanel";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
 import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
 import SeismicWaveShared from "@/components/SeismicWave";
@@ -980,10 +979,6 @@ export default function Dashboard() {
         {/* ASHA Market Brief — 30-60 second synthesis from all 10 engines */}
         <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 80ms both' }}>
           <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="market-brief" /></SectionErrorBoundary>
-        </div>
-        {/* Phase 6: state-locked governed warning objects; its no-warning state is intentional. */}
-        <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 110ms both' }}>
-          <SectionErrorBoundary label="Early Warning Intelligence"><EarlyWarningIntelligencePanel /></SectionErrorBoundary>
         </div>
         {/* Inline upgrade prompt (free/core tier only) */}
         <DashboardUpgradePrompt />
