@@ -20,7 +20,7 @@ export interface OracleBriefingData {
   executiveSummary: string;
   coreThesis?: string;
   marketBias: "BULLISH" | "BEARISH" | "NEUTRAL";
-  confidence: number;
+  confidence?: number;
   marketRegime: string;
   threatLevel: "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
   pressureIndex: number;
@@ -28,8 +28,8 @@ export interface OracleBriefingData {
   suggestedBias?: string;
 
   // Probability
-  bullProbability: number;
-  bearProbability: number;
+  bullProbability?: number;
+  bearProbability?: number;
   questionAnalysis?: AshaQuestionAnalysis;
 
   // Intelligence sections
@@ -43,7 +43,7 @@ export interface OracleBriefingData {
   historicalAnalog?: string;
   riskFactors: string[];
   confirmationConditions?: string[];
-  invalidationConditions: string[];
+  invalidationConditions?: string[];
 
   // Verdict
   missionRecommendation: string;
@@ -181,8 +181,8 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     data.executiveSummary,
     ``,
     `MISSION SNAPSHOT`,
-    `Bias: ${data.marketBias} | Threat: ${data.threatLevel} | Confidence: ${data.confidence}%`,
-    `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex}/100 | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? data.forecastMetadata.horizonDisclosure}`,
+    `Bias: ${data.marketBias} | Threat: ${data.threatLevel}${data.confidence === undefined ? "" : ` | Response confidence: ${data.confidence}%`}`,
+    `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex}/100 | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
     `Action: ${data.missionRecommendationStructured?.verdict || data.finalVerdictAction}`,
     ...(data.questionAnalysis ? [
       `Scope: ${data.questionAnalysis.analysisScope}`,
@@ -201,19 +201,19 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     `CROSS-ENGINE SYNTHESIS`,
     ...(data.crossEngineSynthesis || []).map(row => `• ${row.engine}: ${row.currentSignal} — ${row.relevance}`),
     ``,
-    `RISK CONFIRMED IF`,
+    `GOVERNED CONFIRMATION CONDITIONS`,
     ...(data.confirmationConditions || []).map(condition => `• ${condition}`),
     ``,
     `RISK FACTORS`,
     ...data.riskFactors.map(r => `• ${r}`),
     ``,
     `INVALIDATION CONDITIONS`,
-    ...data.invalidationConditions.map(c => `• ${c}`),
+    ...(data.invalidationConditions || []).map(c => `• ${c}`),
     ``,
     `MISSION RECOMMENDATION`,
     data.missionRecommendationStructured?.rationale || data.missionRecommendation,
     ``,
-    `FINAL VERDICT: ${data.finalVerdictAction} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? data.forecastMetadata.horizonDisclosure}`,
+    `GUIDANCE: ${data.finalVerdictAction} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
   ].join("\n");
 
   return (
@@ -254,13 +254,13 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
   const tColor = threatColor(data.threatLevel);
   const vColor = verdictColor(data.finalVerdictAction);
   const missionAction = data.missionRecommendationStructured?.verdict || data.finalVerdictAction;
-  const missionTimeHorizon = data.forecastMetadata.expectedHorizon ?? data.forecastMetadata.horizonDisclosure;
+  const missionTimeHorizon = data.forecastMetadata.expectedHorizon ?? "NOT ESTABLISHED";
   const confirmationConditions = data.confirmationConditions?.length
     ? data.confirmationConditions
-    : ["No additional confirmation condition was returned by the currently available engines."];
-  const invalidationConditions = data.invalidationConditions.length
+    : ["No governed confirmation condition is currently defined."];
+  const invalidationConditions = data.invalidationConditions?.length
     ? data.invalidationConditions
-    : ["No explicit invalidation condition was returned by the currently available engines."];
+    : ["No governed invalidation condition is currently defined."];
 
   return (
     <div style={{
@@ -411,7 +411,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
             {[
               { label: "BIAS", value: data.marketBias, color: bColor },
               { label: "THREAT", value: data.threatLevel, color: tColor },
-              { label: "CONFIDENCE", value: `${data.confidence}%`, color: "#E2E8F0" },
+              { label: "RESPONSE CONFIDENCE", value: data.confidence === undefined ? "NOT ESTABLISHED" : `${data.confidence}%`, color: "#E2E8F0" },
               { label: "REGIME", value: data.marketRegime, color: "#E2E8F0" },
               { label: "PRESSURE INDEX", value: `${data.pressureIndex}/100`, color: "#E2E8F0" },
               { label: "TIME HORIZON", value: missionTimeHorizon, color: "#E2E8F0" },
@@ -488,15 +488,15 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
         )}
 
         {/* ── Cross-engine synthesis ── */}
-        <BriefingSection delay={420}>
-          <SectionHeader label="CROSS-ENGINE SYNTHESIS" />
+        {data.crossEngineSynthesis?.length ? <BriefingSection delay={420}>
+          <SectionHeader label="EVIDENCE RELATIONSHIPS" />
           <div style={{ overflowX: "auto", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px" }}>
             <div style={{ minWidth: "620px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(250px, 1.65fr)", padding: "10px 14px", background: "rgba(0,229,255,0.04)", borderBottom: "1px solid rgba(0,229,255,0.12)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.14em", color: "rgba(0,229,255,0.55)", textTransform: "uppercase" }}>
                 <span>Engine</span><span>Current signal</span><span>Relevance</span>
               </div>
-              {(data.crossEngineSynthesis?.length ? data.crossEngineSynthesis : [{ engine: "FAULTLINE engine synthesis", currentSignal: "Structured synthesis unavailable", relevance: "Review observed engine evidence and sources below; no additional relationship is inferred." }]).map((row, index) => (
-                <div key={`${row.engine}-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(250px, 1.65fr)", gap: "12px", padding: "12px 14px", borderBottom: index < (data.crossEngineSynthesis?.length || 1) - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", lineHeight: 1.45, color: "rgba(226,232,240,0.78)" }}>
+              {data.crossEngineSynthesis.map((row, index) => (
+                <div key={`${row.engine}-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(250px, 1.65fr)", gap: "12px", padding: "12px 14px", borderBottom: index < data.crossEngineSynthesis.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", lineHeight: 1.45, color: "rgba(226,232,240,0.78)" }}>
                   <span style={{ fontWeight: 700, color: "#E2E8F0" }}>{row.engine}</span>
                   <span>{row.currentSignal}</span>
                   <span>{row.relevance}</span>
@@ -504,8 +504,8 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               ))}
             </div>
           </div>
-          <div style={{ marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.08em", color: "rgba(148,163,184,0.58)", textTransform: "uppercase" }}>CURRENT SIGNALS ARE OBSERVED ENGINE OUTPUTS; RELEVANCE IS FAULTLINE’S CURRENT ASSESSMENT.</div>
-        </BriefingSection>
+          <div style={{ marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.08em", color: "rgba(148,163,184,0.58)", textTransform: "uppercase" }}>RELATIONSHIPS ARE SHOWN ONLY WHEN STRUCTURED EVIDENCE SUPPORTS THEM.</div>
+        </BriefingSection> : null}
 
         {/* ── Historical Analog ── */}
         {data.historicalAnalog && (

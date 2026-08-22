@@ -22,6 +22,9 @@ import {
   type AshaQuestionAnalysis,
 } from "../shared/ashaQuestionAnalysis";
 import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
+import { buildCanonicalEvidencePacket } from "./evidencePacket";
+import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../shared/interpretationIntegrity";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -31,7 +34,7 @@ const ASHA_IDENTITY = `You are ASHA, the Spirit of FAULTLINE.
 IDENTITY:
 Your name is ASHA. Your title is "The Spirit of FAULTLINE." You are the AI market intelligence guide and voice of the FAULTLINE platform. You are a symbolic digital intelligence powered by FAULTLINE's 10 proprietary intelligence engines. Your purpose is to reveal what is building beneath the market's surface and translate complex conditions into understandable intelligence.
 
-You are NOT a generic language model. You are NOT a chatbot. You are the intelligence layer that unifies FAULTLINE's available evidence systems. Every response you give must originate from the canonical FAULTLINE MarketState. Never answer investment or market questions without first evaluating every currently available engine reading and its source-health status.
+You are NOT a generic language model. You are NOT a chatbot. You are the interpretation layer for FAULTLINE's supplied evidence systems. Every current-market response must originate from the canonical FAULTLINE state and structured evidence packet. Never imply an engine, source, metric, probability, target, timing window, confirmation rule, or invalidation rule that is not supplied.
 
 You represent:
 - Truth over noise
@@ -66,8 +69,8 @@ PREFERRED PHRASING:
 - "The risk is rising, but the rupture has not occurred."
 - "History suggests caution, not certainty."
 
-MANDATORY AVAILABLE-EVIDENCE SYNTHESIS PROTOCOL:
-Before answering ANY market or investment question, you MUST internally evaluate the canonical MarketState and synthesize every available FAULTLINE engine reading. You are the unified intelligence layer — not a single-engine tool. If an engine or source is unavailable, do not simulate its output or imply that it was consulted; disclose the limitation when it materially affects the answer.
+MANDATORY AVAILABLE-EVIDENCE INTERPRETATION PROTOCOL:
+Before answering ANY market or investment question, use only the canonical MarketState and structured evidence supplied in the request. You are an interpretation layer — not an independent quantitative engine. If an engine or source is unavailable, do not simulate its output or imply that it was consulted; disclose the limitation when it materially affects the answer.
 
 The 10 engines you must consult and synthesize:
 
@@ -83,37 +86,21 @@ The 10 engines you must consult and synthesize:
 
 6. CREDIT ENGINE — What are high-yield spreads signaling? Is credit stress spreading? Are investment-grade and high-yield spreads diverging? What does credit market behavior imply about corporate health?
 
-7. HISTORICAL ANALOG ENGINE — What historical periods most closely resemble current conditions? What happened after those periods? What are the key similarities and differences? What does history suggest about the probable path forward?
+7. HISTORICAL ANALOG ENGINE — Use only a governed historical analog claim when supplied. State its source-model similarity and limits; do not turn it into a probable path or forecast.
 
-8. PROBABILITY ENGINE — What is the current probability distribution across outcomes? What is the bull/bear/soft-landing/stagflation/crash probability? What has shifted the probability distribution recently?
+8. PROBABILITY ENGINE — Use a probability only when a supplied authorized FORECAST claim defines its event, horizon, source model, and methodology. Otherwise state that no governed probability is available.
 
 9. CRYPTO INTELLIGENCE ENGINE — What is the crypto market doing relative to macro conditions? Is BTC acting as a risk-on or risk-off asset? What does crypto market behavior reveal about broader risk appetite?
 
-10. SIGNAL ENGINE — What are the highest-conviction signals right now? Which signals are confirming the regime? Are any signals diverging from the consensus? What do the available trading signals and directional patterns suggest about near-term positioning?
+10. SIGNAL ENGINE — Describe only supplied signals. Do not call them confirmation, divergence, or near-term positioning unless a structured claim establishes that meaning.
 
 SYNTHESIS REQUIREMENT:
-After evaluating every available engine, identify:
-- Which engines AGREE with each other (consensus)
-- Which engines DIVERGE (important — divergence often precedes regime change)
-- Which engines carry the most weight given the current question
-- What the synthesis of all 10 engines suggests as the most probable conclusion
-
-Cite only engines and sources that the canonical MarketState marks available. If engines disagree, explain the disagreement. Never give a confident answer when engines are diverging — acknowledge the uncertainty.
+Interpret only the claims in the supplied evidence packet. A list of engine readings does not establish consensus, confirmation, divergence, causality, or system-wide scope without structured support. Cite only supplied evidence and disclose meaningful conflicts, unavailable sources, or quality limits.
 
 BRIEFING STRUCTURE:
-When explaining the market, organize your response in this order:
-1. What is happening
-2. Why it is happening
-3. How long it has been developing
-4. What changed recently
-5. How current conditions compare with history
-6. What is most likely to happen next
-7. Bull case
-8. Bear case
-9. Invalidation conditions
-10. What deserves attention now
+Use only the sections that answer the question: EXECUTIVE ANSWER, KEY EVIDENCE, INTERPRETATION, WHAT IS NOT ESTABLISHED, and WATCH. Keep each section distinct and concise. Current observations, historical context, and authorized forecasts must remain separate.
 
-Every conclusion must include: supporting evidence, relevant engine outputs, confidence level, probability where available, time horizon, historical comparison where useful, and what would change the conclusion.
+Every conclusion must reference supplied evidence or explicitly identify the limitation. Probability, horizon, historical comparison, confirmation, and invalidation are optional only when their governed structured claim exists.
 
 Distinguish clearly between: confirmed facts, current observations, historical relationships, model estimates, inferences, and possible scenarios.
 
@@ -131,7 +118,7 @@ PLATFORM RELATIONSHIP:
   - The Signal Engine surfaces trading signals and directional patterns derived from available market data
 
 TRANSPARENCY:
-Always be willing to explain: data used, engines consulted, historical comparisons, confidence calculation, alternative interpretations, invalidation triggers, and last updated time. Say when information is incomplete, delayed, conflicting, or unavailable. Never hide uncertainty behind polished language.
+Always be willing to explain: supplied data, evidence classes, historical-context limits, alternative interpretations, and last updated time. Say when information is incomplete, delayed, conflicted, or unavailable. Never hide uncertainty behind polished language or arbitrary confidence.
 
 RESPONSE TO GRATITUDE:
 If a user thanks you, respond with one of:
@@ -219,6 +206,11 @@ export interface AshaResponse {
   questionAnalysis: AshaQuestionAnalysis;
   provenance: AshaContextProvenance;
   modelTrace: AshaModelTrace;
+  integrity: {
+    transaction: InterpretationTransaction;
+    validation: InterpretationValidationResult;
+    generationAttempts: number;
+  };
 }
 
 // ── Determine confidence from response ───────────────────────
@@ -258,6 +250,12 @@ function readBoundedScore(value: unknown, fallback: number): number {
   const safeFallback = Number.isFinite(fallback) ? fallback : 50;
   const candidate = typeof value === "number" && Number.isFinite(value) ? value : safeFallback;
   return Math.max(0, Math.min(100, candidate));
+}
+
+function readNullableBoundedScore(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.min(100, value))
+    : undefined;
 }
 
 // ── Extract only evidence actually available in canonical state ─────────────
@@ -394,18 +392,25 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   const initialGatewayContext = await createAshaGatewayContext(scopedPageContext);
   const questionAnalysis = buildAshaQuestionAnalysis(req.userMessage, req.pageContext, initialGatewayContext.marketState);
   const gatewayContext = { ...initialGatewayContext, questionAnalysis };
-  const engineCtx = buildEngineAvailabilityContext(gatewayContext);
+  const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
+  const evidencePacket = authoritativeState ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState)) : null;
+  const transaction = createInterpretationTransaction("ASHA", evidencePacket, null);
+  const packetClaims = evidencePacket?.claims ?? [];
+  const packetEngines = Array.from(new Set(packetClaims
+    .filter(claim => claim.sourceType === "ENGINE")
+    .map(claim => claim.statement.split(" is ")[0])));
+  const packetSources = Array.from(new Set(packetClaims.flatMap(claim => claim.sourceIds ?? [])));
+  const packetLimitations = Array.from(new Set(packetClaims.flatMap(claim => claim.limitations)));
+  const requestScopeBlock = [
+    "REQUEST CONTEXT (NOT MARKET EVIDENCE):",
+    `Page: ${req.pageContext.page}`,
+    `Question scope: ${questionAnalysis.analysisScope}`,
+    "Use only the structured evidence packet for current market facts. Page context and conversation history may clarify the user's question but may not establish a market claim.",
+  ].join("\n");
 
   // Build engine availability block to inject into system prompt
-  const engineAvailabilityBlock = [
-    `\n\n## ENGINE AVAILABILITY (AUTHORITATIVE — DO NOT CONTRADICT)`,
-    `Available engines (${engineCtx.availableEngines.length}): ${engineCtx.availableEngines.join(", ")}`,
-    engineCtx.unavailableEngines.length > 0
-      ? `Unavailable engines: ${engineCtx.unavailableEngines.join(", ")}. DO NOT claim these engines contributed to this briefing.`
-      : "All engines are available.",
-    engineCtx.cryptoAvailable
-      ? "Crypto Intelligence Engine: AVAILABLE — you may reference FAULTLINE crypto data."
-      : "Crypto Intelligence Engine: UNAVAILABLE — do NOT claim FAULTLINE-native crypto analysis. Acknowledge this limitation explicitly in the limitations field.",
+  const responseStructureBlock = [
+    `\n\n## RESPONSE STRUCTURE (AUTHORITATIVE — DO NOT CONTRADICT)`,
     `\n## ORACLE BRIEFING RULES (STRICT)`,
     "1. directAnswer: EXACTLY ONE decisive sentence answering the mission question immediately. It must state whether the risk or opportunity is current or developing. DO NOT include disclaimers.",
     "2. executiveSummary: EXACTLY 2-4 sentences explaining what matters now, why it matters, what is not obvious from headline conditions, and whether it is current or developing. DO NOT copy missionRecommendation. DO NOT include disclaimers.",
@@ -426,7 +431,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     "17. Historical analog similarity is not forecast probability. Explain weighting from the supplied evidence and never let one analog replace the combined current evidence.",
   ].join("\n");
 
-  const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext) + engineAvailabilityBlock + "\n\n" + evidenceNarrativePromptContract();
+  const systemPrompt = ASHA_IDENTITY + "\n\n" + requestScopeBlock + responseStructureBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
@@ -454,8 +459,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             pressureIndex: { type: "number", description: "Systemic pressure score 0-100." },
             riskLevel: { type: "string", description: "Risk level label (e.g. Moderate, Elevated, High)." },
             suggestedBias: { type: "string", description: "Specific positioning bias (e.g. Reduce equity exposure, Favor defensive sectors)." },
-            bullProbability: { type: "number", description: "Bull scenario probability 0-100." },
-            bearProbability: { type: "number", description: "Bear scenario probability 0-100." },
+            bullProbability: { type: ["number", "null"], description: "Authorized bull forecast probability only; otherwise null." },
+            bearProbability: { type: ["number", "null"], description: "Authorized bear forecast probability only; otherwise null." },
             keyFindings: { type: "array", items: { type: "string" }, description: "EXACTLY 3-5 DISTINCT key findings. Each must address a different aspect. NO duplicates. NO disclaimers." },
             supportingEvidence: { type: "array", items: { type: "string" }, description: "3-5 supporting evidence points from available engines." },
             crossEngineSynthesis: {
@@ -482,7 +487,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
               description: "Structured mission recommendation with decision paths.",
               properties: {
                 verdict: { type: "string", description: "One-sentence verdict statement." },
-                timeHorizon: { type: "string", description: "Time horizon for this recommendation (e.g. 2-4 weeks)." },
+                timeHorizon: { type: ["string", "null"], description: "Authorized forecast horizon only; otherwise null." },
                 rationale: { type: "string", description: "2-3 sentence rationale for the recommendation." },
                 decisionPaths: {
                   type: "array",
@@ -519,7 +524,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             limitations: { type: "array", items: { type: "string" }, description: "Engine unavailability or data quality issues. Empty array if all engines available." },
             disclaimer: { type: "string", description: "EXACTLY ONE disclaimer sentence. This is the ONLY place disclaimers appear. Example: 'This briefing is for informational purposes only and does not constitute financial advice.'" },
             finalVerdictAction: { type: "string", enum: ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"], description: "Single-word final verdict action." },
-            expectedTimeframe: { type: "string", description: "Expected timeframe for this assessment (e.g. 2-4 weeks, 3-6 months)." },
+            expectedTimeframe: { type: ["string", "null"], description: "Authorized forecast horizon only; otherwise null." },
             followUpChips: { type: "array", items: { type: "string" }, description: "3-4 follow-up question suggestions." },
           },
           required: ["reply", "directAnswer", "executiveSummary", "coreThesis", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "crossEngineSynthesis", "historicalAnalog", "riskFactors", "confirmationConditions", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
@@ -646,6 +651,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     console.warn("[ASHA Oracle] Non-critical validation issues:", validationIssues);
   }
 
+  const integrityValidation = validateInterpretationOutput(parsed, transaction);
+  parsed = integrityValidation.normalizedOutput;
+
   const reply = readString(parsed.reply) || "I was unable to generate a response. Please try again.";
   const directAnswer = readString(parsed.directAnswer) || readString(parsed.executiveSummary) || reply.split("\n")[0];
   const coreThesis = readString(parsed.coreThesis) || readString(parsed.executiveSummary) || reply;
@@ -677,7 +685,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     if (decisionPaths.length > 0) {
       missionRecommendationStructured = {
         verdict: readString(mrs.verdict) || "",
-        timeHorizon: readString(mrs.timeHorizon) || "2-4 weeks",
+        timeHorizon: readString(mrs.timeHorizon) || "Not established",
         rationale: readString(mrs.rationale) || "",
         decisionPaths,
       };
@@ -700,18 +708,16 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
 
   // Build limitations: combine LLM-reported + engine context
   const llmLimitations = readStringArray(parsed.limitations);
-  const allLimitations = Array.from(new Set([...engineCtx.limitations, ...llmLimitations]));
+  const allLimitations = Array.from(new Set([...packetLimitations, ...llmLimitations]));
 
   return {
     reply,
     confidence: inferConfidence(reply),
-    sources: gatewayContext.marketState.sourceHealth
-      .filter(source => source.status !== "unavailable")
-      .map(source => source.label),
-    enginesConsulted: extractEngines(gatewayContext),
-    enginesAvailableCount: engineCtx.availableEngines.length,
-    enginesAvailableList: engineCtx.availableEngines,
-    lastUpdated: gatewayContext.marketState.sourceUpdatedAt,
+    sources: packetSources,
+    enginesConsulted: packetEngines,
+    enginesAvailableCount: packetEngines.length,
+    enginesAvailableList: packetEngines,
+    lastUpdated: transaction.originatingGeneratedAt ?? transaction.createdAt,
     invalidationTriggers: invalidationConditions.length > 0 ? invalidationConditions : undefined,
     // Oracle Briefing structured fields
     directAnswer,
@@ -723,8 +729,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     pressureIndex: readBoundedScore(parsed.pressureIndex, gatewayContext.marketState.now.pressureScore),
     riskLevel: readString(parsed.riskLevel) || "Moderate",
     suggestedBias: readString(parsed.suggestedBias),
-    bullProbability: readBoundedScore(parsed.bullProbability, gatewayContext.marketState.outlook.probabilities.bull),
-    bearProbability: readBoundedScore(parsed.bearProbability, gatewayContext.marketState.outlook.probabilities.bear),
+    bullProbability: readNullableBoundedScore(parsed.bullProbability),
+    bearProbability: readNullableBoundedScore(parsed.bearProbability),
     keyFindings: readStringArray(parsed.keyFindings),
     supportingEvidence: readStringArray(parsed.supportingEvidence),
     crossEngineSynthesis: crossEngineSynthesis.length > 0 ? crossEngineSynthesis : undefined,
@@ -738,11 +744,16 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     limitations: allLimitations.length > 0 ? allLimitations : undefined,
     disclaimer: readString(parsed.disclaimer) || "This briefing is for informational purposes only and does not constitute financial advice.",
     finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const) || "WATCH",
-    expectedTimeframe: readString(parsed.expectedTimeframe) || "2-4 weeks",
+    expectedTimeframe: readString(parsed.expectedTimeframe) || "Not established",
     followUpChips: readStringArray(parsed.followUpChips),
     questionAnalysis,
     provenance: getAshaContextProvenance(gatewayContext),
     modelTrace,
+    integrity: {
+      transaction: { ...transaction, modelVersion: modelTrace.selectedModel },
+      validation: integrityValidation,
+      generationAttempts: modelTrace.attemptedModels.length,
+    },
   };
 }
 
@@ -779,11 +790,14 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
     },
   });
   const contextBlock = buildAshaCanonicalContextBlock(gatewayContext);
+  const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
+  const evidencePacket = authoritativeState ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState)) : null;
+  const transaction = createInterpretationTransaction("DAILY_GREETING", evidencePacket, null);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     {
       role: "system",
-      content: ASHA_IDENTITY + contextBlock + "\n\n" + evidenceNarrativePromptContract(),
+      content: ASHA_IDENTITY + contextBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket),
     },
     {
       role: "user",
@@ -793,8 +807,9 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
   ];
 
   const { response: llmResponse } = await invokeAshaGateway({ messages });
-  return readString(llmResponse.choices?.[0]?.message?.content)
-    ?? "Welcome back. I have reviewed the market. Here is what is building beneath the surface.";
+  const candidate = readString(llmResponse.choices?.[0]?.message?.content)
+    ?? "Canonical state unavailable. Insufficient evidence for a current market greeting.";
+  return String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
 }
 
 // ── First-login introduction (static, from brand brief) ───────

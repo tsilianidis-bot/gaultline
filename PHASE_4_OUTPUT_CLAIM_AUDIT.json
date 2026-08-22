@@ -1,0 +1,24 @@
+{
+  "phase": "Phase 4 — Output Claim Integrity",
+  "status": "PASS",
+  "validator": "shared/interpretationIntegrity.ts:validateInterpretationOutput",
+  "transaction": "shared/interpretationIntegrity.ts:createInterpretationTransaction",
+  "claimDisposition": [
+    {"claimType":"current observation","allowedWhen":"supplied canonical EvidencePacket claim","validation":"canonical transaction identity and prompt claim list","result":"PASS"},
+    {"claimType":"derived scenario score","allowedWhen":"supplied DERIVED EvidenceClaim with methodology and dependencies","validation":"Phase 3 EvidenceClaim validator","result":"PASS"},
+    {"claimType":"historical frequency","allowedWhen":"supplied HISTORICAL claim with dataset/methodology/period/event","validation":"cannot carry model probability","result":"PASS"},
+    {"claimType":"analog similarity","allowedWhen":"supplied governed historical context","validation":"cannot become recurrence probability or forecast confidence","result":"PASS"},
+    {"claimType":"forecast probability, target, or timing","allowedWhen":"authorized FORECAST claim with complete Phase 3 contract","validation":"NO_FORECAST_FIELDS are nulled otherwise","result":"PASS"},
+    {"claimType":"confirmation or invalidation condition","allowedWhen":"structured rule provenance exists","validation":"fields replaced with explicit no-governed-rule state otherwise","result":"PASS"},
+    {"claimType":"system-wide, multi-engine, or causal escalation","allowedWhen":"structured claim establishes scope/causality","validation":"unsafe text is withheld","result":"PASS"},
+    {"claimType":"LLM confidence","allowedWhen":"never as market probability without authorized evidence","validation":"numeric confidence fields withheld","result":"PASS"}
+  ],
+  "safeHandlingOrder": ["deterministic correction", "one ASHA structural retry where existing validation detects critical schema failure", "withhold unsupported output", "canonical-unavailable concise safe failure"],
+  "responseAuditRecord": {
+    "store":"conversationMessages additive provenance columns",
+    "fields":["responseId","originatingStateId","originatingEffectiveAt","evidenceClaimIds","forecastClaimIds","historicalClaimIds","evidenceStrength","dataQuality","promptVersion","modelIdentity","generationAttempts","validationStatus","validationIssues","withheldClaimReasons"],
+    "writer":"server/conversationLogger.ts",
+    "oracleIntegration":"server/routers/smartDiscovery.ts"
+  },
+  "testEvidence": ["server/interpretationIntegrity.test.ts", "server/phase4Adversarial.test.ts", "server/phase4AshaOracleIntegration.test.ts"]
+}

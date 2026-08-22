@@ -5183,3 +5183,19 @@
 - [x] Apply minimum evidence-integrity enforcement to current narrative and current-intelligence claim boundaries without starting Phase 4–11 work or redesigning surfaces
 - [x] Audit current material claim paths and LLM prompts, documenting governed classifications, unsupported-claim withholding, and Phase 3-only remediations
 - [x] Add permanent evidence-contract, adversarial, cross-surface, and acceptance-gate tests/artifacts; run full regression, checkpoint, and issue the Phase 3 verdict
+
+## FAULTLINE Phase 3 — External Review Package
+- [x] Assemble the completed Phase 3 closure artifacts, exact checkpoint evidence, test results, and acceptance gate into one external-review package without application development
+- [x] Deliver the final Phase 3 closure package and stop for external review without starting Phase 4 or unrelated backlog work
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 4 — ASHA / Oracle Intelligence Repair
+- [x] Map ASHA and Oracle entry points, prompts, context builders, parsers, output schemas, caching, persistence, retries, and current-surface reuse into a permanent pipeline audit
+- [x] Build one shared canonical-state/evidence-bound interpretation transaction with response identity, bounded retry, state consistency, output validation, and owner/debug provenance
+- [x] Apply strict pre-generation and post-generation controls to ASHA and Oracle: no invented facts, probability, targets, timing, confirmation, invalidation, cross-engine confirmation, causal escalation, or generic filler
+- [x] Repair response structure for direct answers, distinct section roles, concise insufficiency responses, repetition control, and evidence/interpretation/guidance separation without a product UI redesign
+- [x] Preserve Phase 2 and Phase 3 controls while applying the required Phase 4 canonical/evidence semantics across ASHA, Oracle, NOW, WHY, WATCH, Outlook, Daily Greeting, Market Context, mobile, and owner/debug paths
+- [x] Create permanent contracts, prompt/output audits, adversarial/repetition/cross-surface tests, 55-question acceptance gate, run full regression, checkpoint, and issue the Phase 4 verdict without starting Phase 5 or Early Warning work

@@ -25,6 +25,22 @@ export interface LogMessageParams {
   content: string;
   responseTimeMs?: number;
   confidenceScore?: number;
+  integrity?: {
+    responseId: string;
+    originatingStateId: string | null;
+    originatingEffectiveAt: string | null;
+    evidenceClaimIds: string[];
+    forecastClaimIds: string[];
+    historicalClaimIds: string[];
+    evidenceStrength: string[];
+    dataQuality: string[];
+    promptVersion: string;
+    modelIdentity: string | null;
+    generationAttempts: number;
+    validationStatus: string;
+    validationIssues: string[];
+    withheldClaimReasons: string[];
+  };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -118,6 +134,20 @@ export async function logMessage(params: LogMessageParams): Promise<void> {
       responseTimeMs: params.responseTimeMs ?? null,
       confidenceScore: params.confidenceScore ?? null,
       symbolsMentioned: symbols.length > 0 ? symbols.join(",") : null,
+      responseId: params.integrity?.responseId ?? null,
+      originatingStateId: params.integrity?.originatingStateId ?? null,
+      originatingEffectiveAt: params.integrity?.originatingEffectiveAt ? new Date(params.integrity.originatingEffectiveAt) : null,
+      evidenceClaimIds: params.integrity ? JSON.stringify(params.integrity.evidenceClaimIds) : null,
+      forecastClaimIds: params.integrity ? JSON.stringify(params.integrity.forecastClaimIds) : null,
+      historicalClaimIds: params.integrity ? JSON.stringify(params.integrity.historicalClaimIds) : null,
+      evidenceStrength: params.integrity ? JSON.stringify(params.integrity.evidenceStrength) : null,
+      dataQuality: params.integrity ? JSON.stringify(params.integrity.dataQuality) : null,
+      promptVersion: params.integrity?.promptVersion ?? null,
+      modelIdentity: params.integrity?.modelIdentity ?? null,
+      generationAttempts: params.integrity?.generationAttempts ?? null,
+      validationStatus: params.integrity?.validationStatus ?? null,
+      validationIssues: params.integrity ? JSON.stringify(params.integrity.validationIssues) : null,
+      withheldClaimReasons: params.integrity ? JSON.stringify(params.integrity.withheldClaimReasons) : null,
     });
 
     // Update conversation message count

@@ -8,59 +8,30 @@ const rendererSource = briefingSource.slice(briefingSource.indexOf("export defau
 const panelSource = readFileSync(resolve(projectRoot, "client/src/components/AshaPanel.tsx"), "utf8");
 const engineSource = readFileSync(resolve(projectRoot, "server/ashaEngine.ts"), "utf8");
 
-describe("ORACLE Briefing presentation hierarchy", () => {
-  it("renders the required answer-first intelligence sequence", () => {
-    const requiredSections = [
-      "DIRECT ANSWER",
-      "MISSION SNAPSHOT",
-      "CORE THESIS",
-      "KEY FINDINGS · CURRENT ASSESSMENT",
-      "CROSS-ENGINE SYNTHESIS",
-      "WHAT COULD CONFIRM THE RISK",
-      "RISK DISMISSED OR REDUCED IF",
-      "MISSION RECOMMENDATION",
-    ];
-
+describe("ORACLE Briefing Phase 4 presentation hierarchy", () => {
+  it("renders the required answer-first evidence-bound sequence", () => {
+    const requiredSections = ["DIRECT ANSWER", "MISSION SNAPSHOT", "CORE THESIS", "KEY FINDINGS · CURRENT ASSESSMENT", "EVIDENCE RELATIONSHIPS", "MISSION RECOMMENDATION"];
     const positions = requiredSections.map(section => rendererSource.indexOf(section));
     expect(positions.every(position => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
   });
 
-  it("keeps direct answer, thesis, synthesis, confirmation, and invalidation as typed briefing fields", () => {
-    [
-      "directAnswer?: string;",
-      "coreThesis?: string;",
-      "crossEngineSynthesis?: Array<",
-      "confirmationConditions?: string[];",
-      "invalidationConditions: string[];",
-    ].forEach(contract => expect(briefingSource).toContain(contract));
+  it("keeps direct answer, thesis, evidence relationships, and governed conditions as typed fields", () => {
+    ["directAnswer?: string;", "coreThesis?: string;", "crossEngineSynthesis?: Array<", "confirmationConditions?: string[];", "invalidationConditions?: string[];"].forEach(contract => expect(briefingSource).toContain(contract));
   });
 
-  it("keeps unavailable confirmation and invalidation states explicit instead of fabricating conditions", () => {
-    expect(briefingSource).toContain("No additional confirmation condition was returned by the currently available engines.");
-    expect(briefingSource).toContain("No explicit invalidation condition was returned by the currently available engines.");
+  it("renders missing confirmation and invalidation as explicit no-governed-rule states without pseudo-engine language", () => {
+    expect(briefingSource).toContain("No governed confirmation condition is currently defined.");
+    expect(briefingSource).toContain("No governed invalidation condition is currently defined.");
+    expect(briefingSource).not.toContain("No additional confirmation condition was returned by the currently available engines.");
+    expect(briefingSource).not.toContain("Structured synthesis unavailable");
   });
 
-  it("maps the extended ORACLE fields from ASHA without replacing established conclusion fields", () => {
-    [
-      "directAnswer: response.directAnswer",
-      "coreThesis: response.coreThesis",
-      "crossEngineSynthesis: response.crossEngineSynthesis",
-      "confirmationConditions: response.confirmationConditions",
-      "missionRecommendation: response.missionRecommendation",
-      "finalVerdictAction: response.finalVerdictAction",
-    ].forEach(mapping => expect(panelSource).toContain(mapping));
+  it("retains established ASHA panel field mapping without making guidance into evidence", () => {
+    ["directAnswer: response.directAnswer", "coreThesis: response.coreThesis", "crossEngineSynthesis: response.crossEngineSynthesis", "confirmationConditions: response.confirmationConditions", "missionRecommendation: response.missionRecommendation", "finalVerdictAction: response.finalVerdictAction"].forEach(mapping => expect(panelSource).toContain(mapping));
   });
 
-  it("requires hierarchy fields from the ORACLE model while retaining source and limitation safeguards", () => {
-    [
-      "directAnswer: EXACTLY ONE decisive sentence",
-      "coreThesis: ONE strong paragraph",
-      "crossEngineSynthesis: EXACTLY 3-6 rows",
-      "confirmationConditions: EXACTLY 2-4 DISTINCT measurable conditions",
-      "limited historical sample caveat",
-      "DO NOT claim these engines contributed to this briefing",
-      "missionRecommendation: A concise actionable guidance paragraph",
-    ].forEach(rule => expect(engineSource).toContain(rule));
+  it("requires Phase 4 evidence limits rather than forced probability, threshold, and all-engine claims", () => {
+    ["buildInterpretationPromptContract(transaction, evidencePacket)", "Historical analog similarity is not forecast probability"].forEach(rule => expect(engineSource).toContain(rule));
   });
 });

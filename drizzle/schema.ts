@@ -2234,6 +2234,21 @@ export const conversationMessages = mysqlTable("conversationMessages", {
   qualityFlag:      mysqlEnum("qualityFlag", ["hallucination", "low_confidence", "error", "unanswered", "off_topic"]),
   /** User feedback rating 1–5 (if user rated this response) */
   userRating:       tinyint("userRating"),
+  /** Phase 4 response identity for canonical/evidence auditability (assistant messages only) */
+  responseId:       varchar("responseId", { length: 255 }),
+  originatingStateId: varchar("originatingStateId", { length: 255 }),
+  originatingEffectiveAt: timestamp("originatingEffectiveAt"),
+  evidenceClaimIds: text("evidenceClaimIds"),
+  forecastClaimIds: text("forecastClaimIds"),
+  historicalClaimIds: text("historicalClaimIds"),
+  evidenceStrength: text("evidenceStrength"),
+  dataQuality: text("dataQuality"),
+  promptVersion:    varchar("promptVersion", { length: 128 }),
+  modelIdentity:    varchar("modelIdentity", { length: 255 }),
+  generationAttempts: int("generationAttempts"),
+  validationStatus: varchar("validationStatus", { length: 64 }),
+  validationIssues: text("validationIssues"),
+  withheldClaimReasons: text("withheldClaimReasons"),
   timestamp:        timestamp("timestamp").defaultNow().notNull(),
 }, (t) => ({
   convIdx:   index("cm_conv_idx").on(t.conversationId),
