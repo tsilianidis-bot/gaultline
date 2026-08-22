@@ -44,6 +44,7 @@ import { getAuthoritativeCrossEngineSynthesis, persistCrossEngineSynthesis } fro
 import { evaluateAndPersistCandidateDetections } from "./candidateDetection";
 import { evaluateAndPersistImportanceQualification } from "./importanceQualification";
 import { evaluateAndPersistLifecycle } from "./earlyWarningLifecycle";
+import { evaluateAndPersistPhase9ForCurrentStream } from "./confirmationInvalidation";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -178,6 +179,8 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
       console.log(`[Seismograph] Importance qualification evaluated ${qualification.evaluation.scoredCandidates.length} candidates; ${qualification.evaluation.qualifiedCandidates.length} internal qualified candidates, ${qualification.appendedEvaluationCount} append-only evaluations.`);
       const lifecycle = await evaluateAndPersistLifecycle(qualification.evaluation);
       console.log(`[Seismograph] Lifecycle evaluated ${qualification.evaluation.scoredCandidates.length} candidates; ${lifecycle.appendedObservationCount} append-only lifecycle observations, ${lifecycle.ignoredCount} governed duplicate/out-of-order/no-lifecycle results.`);
+      const phase9 = await evaluateAndPersistPhase9ForCurrentStream(synthesis, candidates.evaluation.candidates, qualification.evaluation, lifecycle.observations);
+      console.log(`[Seismograph] Phase 9 evaluated ${phase9.evaluatedCount} governed lifecycle theses; ${phase9.authorityEventCount} typed authority events.`);
     }
   } catch (error) {
     console.warn("[Seismograph] Governance manifest capture deferred:", error);

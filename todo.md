@@ -5279,3 +5279,15 @@
 - [x] Add append-only lifecycle instance and observation persistence plus derived current projection, idempotency, out-of-order/concurrency safeguards, and history query without mutating candidate or qualification records
 - [x] Integrate one global lifecycle evaluation after the Phase 7 global qualification stream and expose only protected owner diagnostics; do not activate public UI/API/WATCH/ASHA/Oracle/social/outcome behavior
 - [x] Create permanent adversarial, state-machine, temporal, Phase 9/10 leak, provenance, 80-item acceptance, full-regression evidence, checkpoint, and Phase 8 verdict without beginning Phase 9
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 9 — Confirmation & Invalidation Engine
+- [x] Map governed Phase 2–8 inputs, current CROSS_ENGINE_DIVERGENCE candidate semantics, Phase 8 transition extension, global scheduler, and all locked Phase 10+ exclusions
+- [x] Define a versioned structural warning thesis, immutable plan/rule-template contract, small machine-readable condition primitive set, data/strength/independence gates, plan-level conflict precedence, and no-probability/no-forecast semantics
+- [x] Add append-only thesis, plan, condition-evaluation, authority-event, and current-projection persistence with deterministic plan/evaluation/event identity, immutable versions, idempotency, out-of-order, and concurrency safeguards
+- [x] Implement only current governed CROSS_ENGINE_DIVERGENCE confirmation/invalidation templates and produce typed events; retain NO_GOVERNED_CONFIRMATION_PLAN where no legitimate template exists
+- [x] Extend Phase 8 lifecycle transitions only through valid typed Phase 9 authority events and provide protected plan/condition/event diagnostics without public UI/API/WATCH/ASHA/Oracle activation
+- [x] Create permanent 24-case adversarial, lifecycle extension, cross-phase, Phase 10+ leak, provenance, acceptance, full-regression evidence, checkpoint, and Phase 9 verdict without beginning Phase 10

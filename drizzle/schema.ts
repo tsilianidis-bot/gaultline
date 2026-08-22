@@ -1467,6 +1467,127 @@ export const earlyWarningLifecycleObservations = mysqlTable("earlyWarningLifecyc
 export type EarlyWarningLifecycleObservation = typeof earlyWarningLifecycleObservations.$inferSelect;
 export type InsertEarlyWarningLifecycleObservation = typeof earlyWarningLifecycleObservations.$inferInsert;
 
+/** Phase 9 structural thesis identity, derived only from governed Phase 5–8 objects. */
+export const phase9WarningTheses = mysqlTable("phase9WarningTheses", {
+  id: int("id").autoincrement().primaryKey(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull().unique(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull().unique(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  candidateType: varchar("candidateType", { length: 64 }).notNull(),
+  originatingStateId: varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId: varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  thesisType: varchar("thesisType", { length: 96 }).notNull(),
+  thesisStatementCode: varchar("thesisStatementCode", { length: 160 }).notNull(),
+  thesisPayloadJson: text("thesisPayloadJson").notNull(),
+  thesisModelId: varchar("thesisModelId", { length: 96 }).notNull(),
+  thesisModelVersion: varchar("thesisModelVersion", { length: 32 }).notNull(),
+  thesisConfigVersion: varchar("thesisConfigVersion", { length: 96 }).notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ candidateIdx: index("phase9WarningTheses_candidate_idx").on(t.candidateId), stateIdx: index("phase9WarningTheses_state_idx").on(t.originatingStateId) }));
+export type Phase9WarningThesis = typeof phase9WarningTheses.$inferSelect;
+
+/** Immutable effective rule plan. A rule version change creates a new row, never rewrites this plan. */
+export const phase9ConfirmationPlans = mysqlTable("phase9ConfirmationPlans", {
+  id: int("id").autoincrement().primaryKey(),
+  planId: varchar("planId", { length: 128 }).notNull().unique(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  candidateType: varchar("candidateType", { length: 64 }).notNull(),
+  planPayloadJson: text("planPayloadJson").notNull(),
+  ruleModelVersion: varchar("ruleModelVersion", { length: 32 }).notNull(),
+  ruleConfigVersion: varchar("ruleConfigVersion", { length: 96 }).notNull(),
+  ruleSetVersion: varchar("ruleSetVersion", { length: 96 }).notNull(),
+  effectiveAt: timestamp("effectiveAt").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ lifecycleRuleIdx: index("phase9ConfirmationPlans_lifecycle_rule_idx").on(t.lifecycleId, t.ruleSetVersion, t.ruleConfigVersion), thesisIdx: index("phase9ConfirmationPlans_thesis_idx").on(t.thesisId) }));
+export type Phase9ConfirmationPlan = typeof phase9ConfirmationPlans.$inferSelect;
+
+/** Append-only per-condition Phase 9 evidence evaluation. */
+export const phase9ConditionEvaluations = mysqlTable("phase9ConditionEvaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  evaluationId: varchar("evaluationId", { length: 160 }).notNull().unique(),
+  planId: varchar("planId", { length: 128 }).notNull(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  conditionId: varchar("conditionId", { length: 128 }).notNull(),
+  originatingStateId: varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId: varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  effectiveAt: timestamp("effectiveAt").notNull(),
+  status: varchar("status", { length: 40 }).notNull(),
+  observedValueJson: text("observedValueJson").notNull(),
+  requiredRuleJson: text("requiredRuleJson").notNull(),
+  dataQuality: varchar("dataQuality", { length: 32 }).notNull(),
+  evidenceStrength: varchar("evidenceStrength", { length: 32 }).notNull(),
+  evidenceClaimIdsJson: text("evidenceClaimIdsJson").notNull(),
+  evidenceIndependence: varchar("evidenceIndependence", { length: 48 }).notNull(),
+  ruleSetVersion: varchar("ruleSetVersion", { length: 96 }).notNull(),
+  ruleConfigVersion: varchar("ruleConfigVersion", { length: 96 }).notNull(),
+  limitationsJson: text("limitationsJson").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ planStateIdx: index("phase9ConditionEvaluations_plan_state_idx").on(t.planId, t.effectiveAt), lifecycleIdx: index("phase9ConditionEvaluations_lifecycle_idx").on(t.lifecycleId, t.effectiveAt) }));
+export type Phase9ConditionEvaluationRow = typeof phase9ConditionEvaluations.$inferSelect;
+
+/** Append-only plan-level result, used as the only source for derived current projection and typed events. */
+export const phase9PlanEvaluations = mysqlTable("phase9PlanEvaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  planEvaluationId: varchar("planEvaluationId", { length: 160 }).notNull().unique(),
+  planId: varchar("planId", { length: 128 }).notNull(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  originatingStateId: varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId: varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  effectiveAt: timestamp("effectiveAt").notNull(),
+  lifecycleState: varchar("lifecycleState", { length: 32 }).notNull(),
+  confirmationStatus: varchar("confirmationStatus", { length: 40 }).notNull(),
+  invalidationStatus: varchar("invalidationStatus", { length: 40 }).notNull(),
+  result: varchar("result", { length: 64 }).notNull(),
+  conditionEvaluationIdsJson: text("conditionEvaluationIdsJson").notNull(),
+  evidenceClaimIdsJson: text("evidenceClaimIdsJson").notNull(),
+  limitationsJson: text("limitationsJson").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ planEffectiveIdx: index("phase9PlanEvaluations_plan_effective_idx").on(t.planId, t.effectiveAt), lifecycleEffectiveIdx: index("phase9PlanEvaluations_lifecycle_effective_idx").on(t.lifecycleId, t.effectiveAt) }));
+export type Phase9PlanEvaluationRow = typeof phase9PlanEvaluations.$inferSelect;
+
+/** The only Phase 9 authority that Phase 8 may consume to unlock dormant confirmation/invalidation states. */
+export const phase9AuthorityEvents = mysqlTable("phase9AuthorityEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  phase9EventId: varchar("phase9EventId", { length: 160 }).notNull().unique(),
+  planId: varchar("planId", { length: 128 }).notNull(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  eventType: varchar("eventType", { length: 48 }).notNull(),
+  originatingStateId: varchar("originatingStateId", { length: 128 }).notNull(),
+  effectiveAt: timestamp("effectiveAt").notNull(),
+  conditionEvaluationIdsJson: text("conditionEvaluationIdsJson").notNull(),
+  evidenceClaimIdsJson: text("evidenceClaimIdsJson").notNull(),
+  ruleSetVersion: varchar("ruleSetVersion", { length: 96 }).notNull(),
+  ruleConfigVersion: varchar("ruleConfigVersion", { length: 96 }).notNull(),
+  limitationsJson: text("limitationsJson").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ lifecycleEventIdx: index("phase9AuthorityEvents_lifecycle_event_idx").on(t.lifecycleId, t.effectiveAt), planEventIdx: index("phase9AuthorityEvents_plan_event_idx").on(t.planId, t.effectiveAt) }));
+export type Phase9AuthorityEventRow = typeof phase9AuthorityEvents.$inferSelect;
+
+/** Read optimization only; append-only Phase 9 plan evaluations/events remain historical truth. */
+export const phase9CurrentProjections = mysqlTable("phase9CurrentProjections", {
+  id: int("id").autoincrement().primaryKey(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull().unique(),
+  planId: varchar("planId", { length: 128 }).notNull(),
+  latestPlanEvaluationId: varchar("latestPlanEvaluationId", { length: 160 }).notNull(),
+  latestAuthorityEventId: varchar("latestAuthorityEventId", { length: 160 }),
+  latestResult: varchar("latestResult", { length: 64 }).notNull(),
+  latestEffectiveAt: timestamp("latestEffectiveAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({ planIdx: index("phase9CurrentProjections_plan_idx").on(t.planId, t.latestEffectiveAt) }));
+export type Phase9CurrentProjection = typeof phase9CurrentProjections.$inferSelect;
+
 /** Operational health record for the project-owned institutional-memory jobs. */
 export const institutionalMemoryJobs = mysqlTable("institutionalMemoryJobs", {
   id:                 int("id").autoincrement().primaryKey(),

@@ -11,10 +11,13 @@ import {
   LIFECYCLE_MODEL_ID,
   LIFECYCLE_MODEL_VERSION,
   type ActivePhase8LifecycleState,
+  type LifecycleState,
   type LifecycleObservationInput,
   type LifecycleObservationRecord,
   type LifecycleProjection,
   type LifecycleTransitionDecision,
+  type Phase9LifecycleAuthorityInput,
+  decidePhase9LifecycleAuthorityTransition,
 } from "../shared/earlyWarningLifecycle";
 import type { ImportanceQualificationEvaluation, ImportanceQualificationRecord } from "../shared/importanceQualification";
 import { getDb } from "./db";
@@ -37,6 +40,9 @@ export function decideLifecycleTransition(input: LifecycleObservationInput): Lif
   const qualified = evaluation.qualificationStatus === "QUALIFIED";
   const degraded = isDegradedOrUnavailable(evaluation);
   const conflicted = hasConflict(evaluation);
+  if (prior?.currentLifecycleState === "INVALIDATED") {
+    return { lifecycleId: prior.lifecycleId, previousLifecycleState: "INVALIDATED", newLifecycleState: "INVALIDATED", transitionReasonCode: "TERMINAL_STATE_HELD", qualifyingObservationCount: prior.qualifyingObservationCount, nonQualifyingObservationCount: prior.nonQualifyingObservationCount, appendObservation: false, updateProjection: false, limitations: ["INVALIDATED is terminal for this lifecycle episode; ordinary qualification cannot reactivate it."] };
+  }
   if (!prior) {
     if (!qualified) {
       return { lifecycleId: null, previousLifecycleState: null, newLifecycleState: null, transitionReasonCode: "DUPLICATE_EVALUATION_IGNORED", qualifyingObservationCount: 0, nonQualifyingObservationCount: 0, appendObservation: false, updateProjection: false, limitations: ["No qualified Phase 7 evaluation exists; Phase 8 does not create a lifecycle."] };
@@ -51,8 +57,10 @@ export function decideLifecycleTransition(input: LifecycleObservationInput): Lif
   }
   if (qualified) {
     const qualifyingObservationCount = prior.currentLifecycleState === "FADING" ? 1 : prior.qualifyingObservationCount + 1;
-    const newLifecycleState: ActivePhase8LifecycleState = prior.currentLifecycleState === "FADING"
-      ? "EMERGING"
+    const newLifecycleState: LifecycleState = prior.currentLifecycleState === "CONFIRMING"
+      ? "CONFIRMING"
+      : prior.currentLifecycleState === "FADING"
+        ? "EMERGING"
       : qualifyingObservationCount >= LIFECYCLE_GOVERNANCE.persistence.qualifyingObservationsToDevelop
         ? "DEVELOPING"
         : "EMERGING";
@@ -111,7 +119,7 @@ function rowProjection(row: typeof earlyWarningLifecycles.$inferSelect): Lifecyc
   return {
     lifecycleId: row.lifecycleId,
     candidateId: row.candidateId,
-    currentLifecycleState: row.currentLifecycleState as ActivePhase8LifecycleState,
+    currentLifecycleState: row.currentLifecycleState as LifecycleState,
     openedAt: row.openedAt.toISOString(),
     latestObservationAt: row.latestObservationAt.toISOString(),
     latestQualificationEvaluationId: row.latestQualificationEvaluationId,
@@ -207,4 +215,70 @@ export async function getLifecycleHistory(candidateId?: string) {
   return candidateId
     ? query.where(eq(earlyWarningLifecycleObservations.candidateId, candidateId)).orderBy(desc(earlyWarningLifecycleObservations.effectiveAt))
     : query.orderBy(desc(earlyWarningLifecycleObservations.effectiveAt));
+}
+
+/**
+ * Phase 8 remains lifecycle authority. Phase 9 may submit a typed authority
+ * event only through this writer; it cannot otherwise mutate lifecycle state.
+ */
+export async function consumePhase9LifecycleAuthority(input: Phase9LifecycleAuthorityInput & {
+  originatingStateId: string;
+  originatingSynthesisId: string;
+  effectiveAt: string;
+  qualificationEvaluationId: string;
+  candidateId: string;
+  importanceScore: number;
+  evidenceStrength: string;
+  dataQuality: string;
+  evidenceClaimIds: string[];
+}) {
+  const db = await getDb();
+  if (!db) return { consumed: false, unavailable: true };
+  const lifecycle = (await db.select().from(earlyWarningLifecycles).where(eq(earlyWarningLifecycles.lifecycleId, input.lifecycleId)).limit(1))[0];
+  if (!lifecycle) return { consumed: false, unavailable: false, reason: "LIFECYCLE_NOT_FOUND" };
+  const transition = decidePhase9LifecycleAuthorityTransition({
+    lifecycleId: input.lifecycleId,
+    currentLifecycleState: lifecycle.currentLifecycleState as LifecycleState,
+    authorityEventId: input.authorityEventId,
+    authorityEventType: input.authorityEventType,
+  });
+  if (!transition.appendObservation || !transition.newLifecycleState) return { consumed: false, unavailable: false, reason: transition.transitionReasonCode };
+  const lifecycleObservationId = `p9lco:${stableId([input.lifecycleId, input.authorityEventId])}`;
+  const recorded = await db.select({ id: earlyWarningLifecycleObservations.id }).from(earlyWarningLifecycleObservations)
+    .where(eq(earlyWarningLifecycleObservations.lifecycleObservationId, lifecycleObservationId)).limit(1);
+  if (recorded[0]) return { consumed: false, unavailable: false, reason: "DUPLICATE_AUTHORITY_EVENT" };
+  try {
+    await db.insert(earlyWarningLifecycleObservations).values({
+      lifecycleObservationId,
+      lifecycleId: input.lifecycleId,
+      candidateId: input.candidateId,
+      qualificationEvaluationId: input.qualificationEvaluationId,
+      originatingStateId: input.originatingStateId,
+      originatingSynthesisId: input.originatingSynthesisId,
+      effectiveAt: new Date(input.effectiveAt),
+      observedAt: new Date(input.effectiveAt),
+      previousLifecycleState: transition.previousLifecycleState,
+      newLifecycleState: transition.newLifecycleState,
+      importanceScore: input.importanceScore,
+      qualificationStatus: "QUALIFIED",
+      evidenceStrength: input.evidenceStrength,
+      dataQuality: input.dataQuality,
+      persistenceCount: lifecycle.qualifyingObservationCount,
+      nonQualifyingCount: lifecycle.nonQualifyingObservationCount,
+      transitionReasonCode: transition.transitionReasonCode,
+      transitionInputsJson: JSON.stringify({ authorityEventId: input.authorityEventId, authorityEventType: input.authorityEventType, evidenceClaimIds: input.evidenceClaimIds }),
+      limitationsJson: JSON.stringify(transition.limitations),
+      lifecycleModelId: lifecycle.lifecycleModelId,
+      lifecycleModelVersion: lifecycle.lifecycleModelVersion,
+      lifecycleConfigVersion: lifecycle.lifecycleConfigVersion,
+    });
+  } catch {
+    return { consumed: false, unavailable: false, reason: "DUPLICATE_AUTHORITY_EVENT" };
+  }
+  await db.update(earlyWarningLifecycles).set({
+    currentLifecycleState: transition.newLifecycleState,
+    latestObservationAt: new Date(input.effectiveAt),
+    latestQualificationEvaluationId: input.qualificationEvaluationId,
+  }).where(and(eq(earlyWarningLifecycles.lifecycleId, input.lifecycleId), lt(earlyWarningLifecycles.latestObservationAt, new Date(input.effectiveAt))));
+  return { consumed: true, unavailable: false, lifecycleObservationId, newLifecycleState: transition.newLifecycleState };
 }

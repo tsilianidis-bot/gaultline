@@ -28,7 +28,10 @@ export type LifecycleTransitionReasonCode =
   | "EVIDENCE_CONFLICT"
   | "REENTRY_AFTER_FADE"
   | "OUT_OF_ORDER_IGNORED"
-  | "DUPLICATE_EVALUATION_IGNORED";
+  | "DUPLICATE_EVALUATION_IGNORED"
+  | "TERMINAL_STATE_HELD"
+  | "PHASE9_CONFIRMATION_AUTHORIZED"
+  | "PHASE9_INVALIDATION_AUTHORIZED";
 
 export interface LifecycleGovernanceConfiguration {
   contractVersion: typeof LIFECYCLE_CONTRACT_VERSION;
@@ -69,7 +72,7 @@ export const LIFECYCLE_GOVERNANCE: LifecycleGovernanceConfiguration = {
 export interface LifecycleProjection {
   lifecycleId: string;
   candidateId: string;
-  currentLifecycleState: ActivePhase8LifecycleState;
+  currentLifecycleState: LifecycleState;
   openedAt: string;
   latestObservationAt: string;
   latestQualificationEvaluationId: string;
@@ -87,8 +90,8 @@ export interface LifecycleObservationInput {
 
 export interface LifecycleTransitionDecision {
   lifecycleId: string | null;
-  previousLifecycleState: ActivePhase8LifecycleState | null;
-  newLifecycleState: ActivePhase8LifecycleState | null;
+  previousLifecycleState: LifecycleState | null;
+  newLifecycleState: LifecycleState | null;
   transitionReasonCode: LifecycleTransitionReasonCode;
   qualifyingObservationCount: number;
   nonQualifyingObservationCount: number;
@@ -107,8 +110,8 @@ export interface LifecycleObservationRecord {
   originatingSynthesisId: string;
   effectiveAt: string;
   observedAt: string;
-  previousLifecycleState: ActivePhase8LifecycleState | null;
-  newLifecycleState: ActivePhase8LifecycleState;
+  previousLifecycleState: LifecycleState | null;
+  newLifecycleState: LifecycleState;
   importanceScore: number;
   qualificationStatus: QualificationStatus;
   evidenceStrength: ImportanceQualificationRecord["evidenceStrength"];
@@ -132,4 +135,22 @@ export const ACTIVE_PHASE8_TRANSITIONS: Record<"NO_ACTIVE" | ActivePhase8Lifecyc
 
 export function lifecycleCanAutonomouslyEnter(state: LifecycleState): state is ActivePhase8LifecycleState {
   return (LIFECYCLE_GOVERNANCE.activeStates as readonly string[]).includes(state);
+}
+
+/** The only typed extension Phase 9 may ask Phase 8 to consume. */
+export interface Phase9LifecycleAuthorityInput {
+  lifecycleId: string;
+  currentLifecycleState: LifecycleState;
+  authorityEventId: string;
+  authorityEventType: "CONFIRMATION_AUTHORIZED" | "INVALIDATION_AUTHORIZED";
+}
+
+export function decidePhase9LifecycleAuthorityTransition(input: Phase9LifecycleAuthorityInput): Pick<LifecycleTransitionDecision, "previousLifecycleState" | "newLifecycleState" | "transitionReasonCode" | "appendObservation" | "updateProjection" | "limitations"> {
+  if (input.authorityEventType === "CONFIRMATION_AUTHORIZED" && input.currentLifecycleState === "DEVELOPING") {
+    return { previousLifecycleState: "DEVELOPING", newLifecycleState: "CONFIRMING", transitionReasonCode: "PHASE9_CONFIRMATION_AUTHORIZED", appendObservation: true, updateProjection: true, limitations: ["CONFIRMING reflects a valid typed Phase 9 thesis-support event, not probability, forecast, target, outcome, or resolution."] };
+  }
+  if (input.authorityEventType === "INVALIDATION_AUTHORIZED" && ["DEVELOPING", "FADING", "CONFIRMING"].includes(input.currentLifecycleState)) {
+    return { previousLifecycleState: input.currentLifecycleState, newLifecycleState: "INVALIDATED", transitionReasonCode: "PHASE9_INVALIDATION_AUTHORIZED", appendObservation: true, updateProjection: true, limitations: ["INVALIDATED reflects a valid typed Phase 9 thesis-contradiction event, not outcome failure or opposite forecast authority."] };
+  }
+  return { previousLifecycleState: input.currentLifecycleState, newLifecycleState: input.currentLifecycleState, transitionReasonCode: "TERMINAL_STATE_HELD", appendObservation: false, updateProjection: false, limitations: ["Typed Phase 9 authority did not meet the governed lifecycle transition matrix and therefore did not alter lifecycle state."] };
 }

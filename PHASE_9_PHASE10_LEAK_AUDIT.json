@@ -1,0 +1,9 @@
+{
+  "result": "PASS",
+  "TEST_FIXTURE": 2,
+  "INACTIVE_PROTOTYPE_HISTORY": 7,
+  "INTERNAL_DIAGNOSTIC": 1,
+  "BLOCKING_PHASE10_LEAK": 0,
+  "checked": ["EarlyWarningIntelligencePanel", "public warning panel", "HOME warning presentation", "WATCH warning presentation", "public current-warning endpoint", "ASHA warning injection", "Oracle warning injection", "social warning post", "Track Record presentation"],
+  "activePhase9Boundaries": ["server/confirmationInvalidation.ts", "server/scheduledSeismograph.ts", "server/routers/admin.ts", "server/earlyWarningLifecycle.ts"]
+}

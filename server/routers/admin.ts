@@ -336,4 +336,38 @@ export const adminRouter = router({
         },
       };
     }),
+  getPhase9ConfirmationInvalidationDebug: adminProcedure
+    .input(z.object({ lifecycleId: z.string().min(1).max(128).optional() }).optional())
+    .query(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const {
+        phase9AuthorityEvents,
+        phase9ConditionEvaluations,
+        phase9ConfirmationPlans,
+        phase9CurrentProjections,
+        phase9PlanEvaluations,
+        phase9WarningTheses,
+      } = await import("../../drizzle/schema");
+      const { desc: descOp, eq: eqOp } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return { theses: [], plans: [], conditionEvaluations: [], planEvaluations: [], authorityEvents: [], projections: [] };
+      const filter = input?.lifecycleId ? eqOp(phase9WarningTheses.lifecycleId, input.lifecycleId) : undefined;
+      const theses = filter ? await db.select().from(phase9WarningTheses).where(filter) : await db.select().from(phase9WarningTheses).orderBy(descOp(phase9WarningTheses.recordedAt));
+      const lifecycleIds = theses.map(item => item.lifecycleId);
+      const [plans, conditionEvaluations, planEvaluations, authorityEvents, projections] = await Promise.all([
+        input?.lifecycleId ? db.select().from(phase9ConfirmationPlans).where(eqOp(phase9ConfirmationPlans.lifecycleId, input.lifecycleId)) : db.select().from(phase9ConfirmationPlans).orderBy(descOp(phase9ConfirmationPlans.recordedAt)),
+        input?.lifecycleId ? db.select().from(phase9ConditionEvaluations).where(eqOp(phase9ConditionEvaluations.lifecycleId, input.lifecycleId)) : db.select().from(phase9ConditionEvaluations).orderBy(descOp(phase9ConditionEvaluations.recordedAt)),
+        input?.lifecycleId ? db.select().from(phase9PlanEvaluations).where(eqOp(phase9PlanEvaluations.lifecycleId, input.lifecycleId)) : db.select().from(phase9PlanEvaluations).orderBy(descOp(phase9PlanEvaluations.recordedAt)),
+        input?.lifecycleId ? db.select().from(phase9AuthorityEvents).where(eqOp(phase9AuthorityEvents.lifecycleId, input.lifecycleId)) : db.select().from(phase9AuthorityEvents).orderBy(descOp(phase9AuthorityEvents.recordedAt)),
+        input?.lifecycleId ? db.select().from(phase9CurrentProjections).where(eqOp(phase9CurrentProjections.lifecycleId, input.lifecycleId)) : db.select().from(phase9CurrentProjections).orderBy(descOp(phase9CurrentProjections.updatedAt)),
+      ]);
+      return {
+        theses, plans, conditionEvaluations, planEvaluations, authorityEvents, projections,
+        debugContract: {
+          exposesToAdminOnly: true,
+          inactiveLifecycleIds: lifecycleIds,
+          fields: ["thesisPayloadJson", "planPayloadJson", "requiredRuleJson", "conditionEvaluationIdsJson", "phase9EventId", "ruleSetVersion", "ruleConfigVersion", "originatingStateId", "latestResult"],
+        },
+      };
+    }),
 });
