@@ -5260,3 +5260,22 @@
 - [x] Build separate candidate scoring and qualification contracts with factor trace, explicit status, deterministic primary/secondary selection, no-material result, duplicate handling, tie-breaking, and no probability/forecast/lifecycle semantics
 - [x] Add append-only qualification evaluations tied to immutable Phase 6 candidates and explicit state/synthesis provenance, plus protected owner/debug scoring inspection only
 - [x] Add permanent adversarial, monotonicity, malformed-value, phase-leak, provenance, cross-surface, and 74-item acceptance evidence; run full regression, checkpoint, and issue Phase 7 verdict without beginning Phase 8
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [ ] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [ ] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 7 — External Review Closure Package
+- [x] Assemble the checkpoint c162aa83 Phase 7 architecture, eight-factor transform math, missing-value behavior, gates, provenance, audit, all 74 results, regression, defects, and Phase 8 eligibility without application development
+- [x] Deliver the complete documentation-only Phase 7 closure package and stop for external review without beginning Phase 8 or unrelated work
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 8 — Early Warning Lifecycle Engine
+- [x] Map immutable Phase 6 candidates, immutable Phase 7 evaluations, scheduler integration, existing archive/diagnostic conventions, and all locked Phase 9–10 exclusions
+- [x] Define one versioned deterministic lifecycle contract with active EMERGING/DEVELOPING/FADING states, dormant later-authority states, allowed transition matrix, temporal persistence/hysteresis, reason codes, identity, and no probability/forecast semantics
+- [x] Add append-only lifecycle instance and observation persistence plus derived current projection, idempotency, out-of-order/concurrency safeguards, and history query without mutating candidate or qualification records
+- [x] Integrate one global lifecycle evaluation after the Phase 7 global qualification stream and expose only protected owner diagnostics; do not activate public UI/API/WATCH/ASHA/Oracle/social/outcome behavior
+- [x] Create permanent adversarial, state-machine, temporal, Phase 9/10 leak, provenance, 80-item acceptance, full-regression evidence, checkpoint, and Phase 8 verdict without beginning Phase 9

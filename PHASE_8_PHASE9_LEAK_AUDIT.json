@@ -1,0 +1,12 @@
+{
+  "result": "PASS",
+  "blockingPhase9LeakCount": 0,
+  "classification": {
+    "DORMANT_SCHEMA": ["CONFIRMING", "INVALIDATED", "RESOLVED", "ELEVATED"],
+    "TEST_FIXTURE": ["Phase 8 state-machine assertions only"],
+    "INACTIVE_PROTOTYPE_HISTORY": ["checkpoint 31d051a6 only"],
+    "BLOCKING_PHASE9_LEAK": []
+  },
+  "prohibitedActiveProducers": ["confirmationConditions", "invalidationConditions", "confirmationThreshold", "invalidationThreshold", "confirmedBy", "invalidatedBecause", "confirmationScore"],
+  "references": ["shared/earlyWarningLifecycle.ts", "server/earlyWarningLifecycle.ts", "server/phase8LifecycleIntegration.test.ts"]
+}

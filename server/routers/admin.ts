@@ -22,6 +22,7 @@ import { sendEmail, buildApprovalEmail } from "../email";
 import { getAuthoritativeCrossEngineSynthesis, getLatestCrossEngineSynthesis } from "../crossEngineSynthesis";
 import { getCandidateObservationTimeline, getPersistedCandidateDetections } from "../candidateDetection";
 import { getImportanceQualificationEvaluations } from "../importanceQualification";
+import { getLifecycleHistory } from "../earlyWarningLifecycle";
 
 export const adminRouter = router({
   // List all registered users
@@ -314,6 +315,23 @@ export const adminRouter = router({
             "importanceScore", "qualificationStatus", "qualificationRank", "isPrimary",
             "qualificationReasonsJson", "suppressionReasonsJson", "scoringModelId",
             "scoringModelVersion", "scoringConfigVersion",
+          ],
+        },
+      };
+    }),
+  getLifecycleDebug: adminProcedure
+    .input(z.object({ candidateId: z.string().min(1).max(128).optional() }).optional())
+    .query(async ({ input }) => {
+      const observations = await getLifecycleHistory(input?.candidateId);
+      return {
+        observations,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "lifecycleId", "candidateId", "qualificationEvaluationId", "previousLifecycleState",
+            "newLifecycleState", "transitionReasonCode", "persistenceCount", "importanceScore",
+            "evidenceStrength", "dataQuality", "originatingStateId", "lifecycleModelId",
+            "lifecycleModelVersion", "lifecycleConfigVersion", "transitionInputsJson",
           ],
         },
       };

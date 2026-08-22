@@ -1401,6 +1401,72 @@ export const importanceQualificationEvaluations = mysqlTable("importanceQualific
 export type ImportanceQualificationEvaluationRow = typeof importanceQualificationEvaluations.$inferSelect;
 export type InsertImportanceQualificationEvaluationRow = typeof importanceQualificationEvaluations.$inferInsert;
 
+/**
+ * Phase 8 lifecycle identity and current projection. The projection is only a
+ * read optimization; append-only lifecycle observations remain historical truth.
+ */
+export const earlyWarningLifecycles = mysqlTable("earlyWarningLifecycles", {
+  id:                       int("id").autoincrement().primaryKey(),
+  lifecycleId:              varchar("lifecycleId", { length: 128 }).notNull().unique(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull().unique(),
+  originatingStateId:       varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId:   varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  openedAt:                 timestamp("openedAt").notNull(),
+  currentLifecycleState:    varchar("currentLifecycleState", { length: 32 }).notNull(),
+  latestObservationAt:      timestamp("latestObservationAt").notNull(),
+  latestQualificationEvaluationId: varchar("latestQualificationEvaluationId", { length: 128 }).notNull(),
+  qualifyingObservationCount: int("qualifyingObservationCount").notNull().default(0),
+  nonQualifyingObservationCount: int("nonQualifyingObservationCount").notNull().default(0),
+  lifecycleModelId:         varchar("lifecycleModelId", { length: 96 }).notNull(),
+  lifecycleModelVersion:    varchar("lifecycleModelVersion", { length: 32 }).notNull(),
+  lifecycleConfigVersion:   varchar("lifecycleConfigVersion", { length: 96 }).notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:                timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  currentStateIdx: index("earlyWarningLifecycles_state_idx").on(t.currentLifecycleState, t.latestObservationAt),
+  stateIdx: index("earlyWarningLifecycles_origin_state_idx").on(t.originatingStateId),
+}));
+export type EarlyWarningLifecycle = typeof earlyWarningLifecycles.$inferSelect;
+export type InsertEarlyWarningLifecycle = typeof earlyWarningLifecycles.$inferInsert;
+
+/**
+ * Phase 8 append-only lifecycle evidence. It never overwrites the Phase 6
+ * candidate or the Phase 7 qualification evaluation that caused the transition.
+ */
+export const earlyWarningLifecycleObservations = mysqlTable("earlyWarningLifecycleObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  lifecycleObservationId:   varchar("lifecycleObservationId", { length: 160 }).notNull().unique(),
+  lifecycleId:              varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull(),
+  qualificationEvaluationId:varchar("qualificationEvaluationId", { length: 128 }).notNull(),
+  originatingStateId:       varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId:   varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  effectiveAt:              timestamp("effectiveAt").notNull(),
+  observedAt:               timestamp("observedAt").notNull(),
+  previousLifecycleState:   varchar("previousLifecycleState", { length: 32 }),
+  newLifecycleState:        varchar("newLifecycleState", { length: 32 }).notNull(),
+  importanceScore:          int("importanceScore").notNull(),
+  qualificationStatus:      varchar("qualificationStatus", { length: 32 }).notNull(),
+  evidenceStrength:         varchar("evidenceStrength", { length: 32 }).notNull(),
+  dataQuality:              varchar("dataQuality", { length: 32 }).notNull(),
+  persistenceCount:         int("persistenceCount").notNull().default(0),
+  nonQualifyingCount:       int("nonQualifyingCount").notNull().default(0),
+  transitionReasonCode:     varchar("transitionReasonCode", { length: 64 }).notNull(),
+  transitionInputsJson:     text("transitionInputsJson").notNull(),
+  limitationsJson:          text("limitationsJson").notNull(),
+  lifecycleModelId:         varchar("lifecycleModelId", { length: 96 }).notNull(),
+  lifecycleModelVersion:    varchar("lifecycleModelVersion", { length: 32 }).notNull(),
+  lifecycleConfigVersion:   varchar("lifecycleConfigVersion", { length: 96 }).notNull(),
+  recordedAt:               timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  lifecycleObservedIdx: index("earlyWarningLifecycleObservations_lifecycle_idx").on(t.lifecycleId, t.effectiveAt),
+  candidateObservedIdx: index("earlyWarningLifecycleObservations_candidate_idx").on(t.candidateId, t.effectiveAt),
+  evaluationIdx: index("earlyWarningLifecycleObservations_evaluation_idx").on(t.qualificationEvaluationId),
+  stateIdx: index("earlyWarningLifecycleObservations_state_idx").on(t.originatingStateId),
+}));
+export type EarlyWarningLifecycleObservation = typeof earlyWarningLifecycleObservations.$inferSelect;
+export type InsertEarlyWarningLifecycleObservation = typeof earlyWarningLifecycleObservations.$inferInsert;
+
 /** Operational health record for the project-owned institutional-memory jobs. */
 export const institutionalMemoryJobs = mysqlTable("institutionalMemoryJobs", {
   id:                 int("id").autoincrement().primaryKey(),

@@ -1,0 +1,17 @@
+{
+  "result": "PASS",
+  "authoritativeInput": "Phase 7 ImportanceQualificationEvaluation only",
+  "identity": {
+    "lifecycleId": "stable hash of candidateId",
+    "observationId": "stable hash of lifecycleId and qualificationEvaluationId",
+    "stateLock": ["candidateId", "qualificationEvaluationId", "originatingStateId", "originatingSynthesisId"]
+  },
+  "persistence": {
+    "immutableSources": ["candidateDetections", "importanceQualificationEvaluations"],
+    "appendOnlyHistory": "earlyWarningLifecycleObservations",
+    "derivedProjection": "earlyWarningLifecycles",
+    "idempotency": "unique lifecycleObservationId",
+    "outOfOrderProtection": "older/equal effective evaluation is ignored; projection updates only with a strictly later observation"
+  },
+  "references": ["shared/earlyWarningLifecycle.ts", "server/earlyWarningLifecycle.ts", "drizzle/schema.ts", "server/earlyWarningLifecycle.test.ts"]
+}
