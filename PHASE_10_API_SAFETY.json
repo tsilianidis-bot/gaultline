@@ -1,0 +1,11 @@
+{
+  "contractVersion":"phase10-api-safety-v1",
+  "result":"PASS",
+  "publicEndpoints":[
+    {"name":"marketState.earlyWarningPresentationCurrent","behavior":"returns only immutable governed presentation or no-material state"},
+    {"name":"marketState.earlyWarningPresentationTimeline","behavior":"returns read-only append-only lifecycle observation projection"}
+  ],
+  "ownerOnlyEndpoint":{"name":"admin.getEarlyWarningPresentationDebug","behavior":"returns full presentation traceability only to admin"},
+  "forbiddenPublicBehavior":["candidate evaluation","importance scoring","qualification","lifecycle transition","confirmation authorization","invalidation authorization","warning mutation","historical reconstruction","forecast/probability creation"],
+  "resultingSafety":"No public endpoint owns a second warning engine."
+}

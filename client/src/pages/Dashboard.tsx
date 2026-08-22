@@ -41,6 +41,7 @@ import AshaOrb, { AshaRegimeState } from "@/components/AshaOrb";
 import SeismicWaveShared from "@/components/SeismicWave";
 import { Activity } from "lucide-react";
 import { PageDegradedBanner } from "@/components/PageStateViews";
+import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 type DashboardMode = "pulse" | "signals" | "intelligence";
 
 // ── Inline upgrade prompt (free-tier only) ────────────────────
@@ -989,6 +990,7 @@ export default function Dashboard() {
 
             {/* ── 3. Supporting intelligence panels ───────────────────────── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
+        <EarlyWarningPresentationPanel mode="home" />
         {/* ── Seismograph Narrative Banner: what is happening, why, how long, what to watch ── */}
         <SeismographNarrativeBanner context="dashboard" defaultExpanded={false} />
         {/* ── Homepage Briefing: Market Story, Why Today Is Different, History Says ── */}

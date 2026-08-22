@@ -34,6 +34,7 @@ import { buildCanonicalEvidencePacket } from "../evidencePacket";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
+import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -314,6 +315,7 @@ async function orchestrateAnswer(
   const evidencePacket = publicCanonicalState ? buildCanonicalEvidencePacket(publicCanonicalState) : null;
   const crossEngineSynthesis = publicCanonicalState && evidencePacket ? buildCrossEngineSynthesis(publicCanonicalState, evidencePacket) : null;
   const transaction = createInterpretationTransaction("ORACLE", evidencePacket, null);
+  const governedEarlyWarningPresentation = await getCurrentGovernedEarlyWarningPresentation();
 
   // ── Stage 3: Context assembly ──────────────────────────────────
   // 1. Resolve intent using the robust IntentResolver
@@ -680,6 +682,8 @@ ${forecastHorizonPromptContract()}
 ${evidenceNarrativePromptContract()}
 ${buildInterpretationPromptContract(transaction, evidencePacket)}
 ${buildCrossEngineSynthesisPromptContract(crossEngineSynthesis)}
+
+${buildEarlyWarningPresentationPromptContract(governedEarlyWarningPresentation)}
 ${questionIntentInstruction}
 
 RESPONSE RULES:

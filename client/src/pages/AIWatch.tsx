@@ -9,6 +9,7 @@ import { Brain, TrendingUp, TrendingDown, AlertTriangle, Minus } from "lucide-re
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 
 const sentimentConfig = {
   bullish: { color: '#00FF88', label: 'BULLISH', icon: TrendingUp },
@@ -152,10 +153,11 @@ export default function AIWatch() {
         badge="AI-GENERATED"
         badgeColor="blue"
         rightSlot={<PreflightTrigger currentPage="ai-watch" actionKey="viewed_ai_watch" />}
-      />
-      <div style={{ padding: '20px 16px 24px' }}>
+	  />
+	  <div style={{ padding: '20px 16px 24px' }}>
+	    <EarlyWarningPresentationPanel mode="watch" />
 
-      {/* AI Bubble metrics */}
+	  {/* AI Bubble metrics */}
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px',
         marginBottom: '16px',

@@ -34,6 +34,7 @@ import Why from "./pages/Why";
 import Outlook from "./pages/Outlook";
 import Watch from "./pages/Watch";
 import Act from "./pages/Act";
+const EarlyWarningDetail = lazy(() => import("./pages/EarlyWarningDetail"));
 
 const Pressure        = lazy(() => import("./pages/Pressure"));
 const Alerts          = lazy(() => import("./pages/Alerts"));
@@ -744,8 +745,9 @@ function Router() {
 		                  {() => <Redirect to={preserveRouteContext(target, window.location.search, window.location.hash)} />}
 		                </Route>
 		              ))}
-	              <Route path="/app/pressure" component={Pressure} />
-	              <Route path="/app/pressure-history" component={PressureHistory} />
+			              <Route path="/app/pressure" component={Pressure} />
+			              <Route path="/app/early-warning" component={EarlyWarningDetail} />
+			              <Route path="/app/pressure-history" component={PressureHistory} />
 		              <Route path="/app/discover" component={SmartDiscovery} />
 		              <Route path="/app/alerts" component={Alerts} />
 		              <Route path="/app/historical-analogs" component={HistoricalAnalogs} />

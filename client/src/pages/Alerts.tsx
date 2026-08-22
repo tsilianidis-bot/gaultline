@@ -17,6 +17,7 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import SystemicAlertsPanel from "@/components/SystemicAlerts";
 import { trpc } from "@/lib/trpc";
+import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 
 type ArchivedEvent = {
   id: number;
@@ -438,10 +439,11 @@ function AlertsInner() {
             </div>
           ) : undefined
         }
-      />
-      <div style={{ padding: '16px' }}>
+	  />
+	  <div style={{ padding: '16px' }}>
+	    <EarlyWarningPresentationPanel mode="compact" />
 
-      {/* Regime status banner */}
+	  {/* Regime status banner */}
       <div style={{
         background: `linear-gradient(135deg, ${regime.color}12, rgba(10,12,16,0.95))`,
         border: `1px solid ${regime.color}30`,

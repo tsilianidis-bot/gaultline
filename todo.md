@@ -5291,3 +5291,14 @@
 - [x] Implement only current governed CROSS_ENGINE_DIVERGENCE confirmation/invalidation templates and produce typed events; retain NO_GOVERNED_CONFIRMATION_PLAN where no legitimate template exists
 - [x] Extend Phase 8 lifecycle transitions only through valid typed Phase 9 authority events and provide protected plan/condition/event diagnostics without public UI/API/WATCH/ASHA/Oracle activation
 - [x] Create permanent 24-case adversarial, lifecycle extension, cross-phase, Phase 10+ leak, provenance, acceptance, full-regression evidence, checkpoint, and Phase 9 verdict without beginning Phase 10
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 10 — Governed Early Warning Presentation & Distribution
+- [x] Map the current Phase 5–9 identities and claims, canonical HOME/WATCH/detail/archive/ASHA/Oracle/Track Record paths, social foundation, owner diagnostics, and existing visual/chart components
+- [x] Define one immutable, machine-readable presentation contract/service that references governed upstream truth and fails closed without computing, scoring, qualifying, transitioning, authorizing, or reinterpreting warnings
+- [x] Activate a single governed presentation API, no-material state, provenance trace, public semantics, and protected full-chain diagnostics without alternate calculation paths
+- [x] Implement responsive high-signal HOME, WATCH, detail/timeline, Alerts Archive, Track Record, ASHA, Oracle, and social-ready consumer projections that retain the same authoritative identity, lifecycle, score, authority, freshness, and limitations
+- [x] Add permanent cross-surface identity, API safety, adversarial, immutability, historical-label, visual desktop/mobile, Phase 2–9 preservation, acceptance, full-regression, checkpoint, and external-review package evidence; stop before Phase 11

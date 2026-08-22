@@ -19,15 +19,18 @@ describe("Phase 8 lifecycle integration boundaries", () => {
     expect(admin).toContain("transitionReasonCode");
   });
 
-  it("does not reactivate public lifecycle cards, public lifecycle API, or ASHA/Oracle warning presentation", () => {
+	it("does not reactivate legacy lifecycle cards or independent assistant evaluation while allowing Phase 10 governed presentation", () => {
     expect(existsSync(resolve(root, "client/src/components/EarlyWarningIntelligencePanel.tsx"))).toBe(false);
     const dashboard = read("client/src/pages/Dashboard.tsx");
     const marketState = read("server/routers/marketState.ts");
     const asha = read("server/ashaEngine.ts");
     const oracle = read("server/routers/smartDiscovery.ts");
     expect(dashboard).not.toContain("EarlyWarningIntelligencePanel");
-    expect(marketState).not.toMatch(/earlyWarning|lifecycleHistory/i);
-    expect(asha).not.toMatch(/governed early warning|warning evaluation/i);
-    expect(oracle).not.toMatch(/governed early warning|warning evaluation/i);
-  });
+	    expect(marketState).not.toContain("getLifecycleHistory");
+	    expect(marketState).toContain("earlyWarningPresentationCurrent");
+	    expect(asha).toContain("buildEarlyWarningPresentationPromptContract");
+	    expect(oracle).toContain("buildEarlyWarningPresentationPromptContract");
+	    expect(asha).not.toContain("evaluateAndPersistLifecycle(");
+	    expect(oracle).not.toContain("evaluateAndPersistLifecycle(");
+	  });
 });

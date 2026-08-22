@@ -1,0 +1,19 @@
+{
+  "contractVersion": "phase10-cross-surface-proof-v1",
+  "result": "PASS",
+  "authority": "marketState.earlyWarningPresentationCurrent",
+  "identityFields": ["presentationId", "warningId", "stateId", "synthesisId", "qualificationId", "lifecycleEpisodeId", "confirmationAuthorityEventId", "invalidationAuthorityEventId"],
+  "surfaces": [
+    {"surface":"HOME", "module":"client/src/pages/Dashboard.tsx", "consumer":"EarlyWarningPresentationPanel", "status":"PASS"},
+    {"surface":"WATCH canonical deep route", "module":"client/src/pages/AIWatch.tsx", "consumer":"EarlyWarningPresentationPanel", "status":"PASS"},
+    {"surface":"WATCH legacy analytical page", "module":"client/src/pages/Watch.tsx", "consumer":"EarlyWarningPresentationPanel", "status":"PASS"},
+    {"surface":"warning detail", "module":"client/src/pages/EarlyWarningDetail.tsx", "consumer":"EarlyWarningPresentationPanel detail mode + governed timeline", "status":"PASS"},
+    {"surface":"Alerts Archive current projection", "module":"client/src/pages/Alerts.tsx", "consumer":"EarlyWarningPresentationPanel", "status":"PASS"},
+    {"surface":"ASHA", "module":"server/ashaEngine.ts", "consumer":"read-only presentation prompt contract", "status":"PASS"},
+    {"surface":"Oracle", "module":"server/routers/smartDiscovery.ts", "consumer":"read-only presentation prompt contract", "status":"PASS"},
+    {"surface":"social foundation", "module":"server/earlyWarningPresentation.ts", "consumer":"createSocialReadyWarningPost", "status":"PASS"},
+    {"surface":"owner diagnostics", "module":"server/routers/admin.ts", "consumer":"admin.getEarlyWarningPresentationDebug", "status":"PASS"},
+    {"surface":"Track Record", "module":"client/src/pages/TrackRecord.tsx", "consumer":"explicitly isolated retrospective/historical context; not a current-warning producer", "status":"PASS"}
+  ],
+  "currentControlledState": {"kind":"NO_MATERIAL_EARLY_WARNING", "interpretation":"No current governed qualification meets material-warning requirements; no warning is fabricated."}
+}

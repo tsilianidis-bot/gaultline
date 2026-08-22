@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
+import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 
 // ── Regime color helpers ─────────────────────────────────────────────────────
 const REGIME_COLORS: Record<string, { bg: string; border: string; text: string; bar: string }> = {
@@ -295,9 +296,14 @@ export default function TrackRecord() {
         subtitle="25 years of FAULTLINE stress scores applied to historical FRED data — a retrospective audit of the methodology."
         badge="HISTORICAL DATA"
         badgeColor="amber"
-      />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        {/* Hero */}
+	  />
+	  <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+	    <section className="mb-10">
+	      <div className="text-xs font-mono tracking-[0.18em] text-cyan-400 uppercase mb-3">Live Verified Early Warning Intelligence</div>
+	      <EarlyWarningPresentationPanel mode="compact" />
+	      <p className="mt-3 text-xs text-zinc-500 leading-relaxed">The governed live presentation above is separate from the retrospective historical analysis below. Historical reconstruction is not a live verified warning record.</p>
+	    </section>
+	    {/* Hero */}
         <div className="mb-10">
           <div className="inline-flex items-center gap-2 text-sm text-red-400 border border-red-900/50 bg-red-950/20 px-3 py-1 rounded-full mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />

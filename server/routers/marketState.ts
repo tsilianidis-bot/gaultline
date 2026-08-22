@@ -3,6 +3,7 @@ import { getCanonicalMarketState } from "../marketStateService";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 import { buildCanonicalEvidencePacket } from "../evidencePacket";
 import { getAuthoritativeCrossEngineSynthesis } from "../crossEngineSynthesis";
+import { getCurrentGovernedEarlyWarningPresentation, getCurrentGovernedEarlyWarningTimeline } from "../earlyWarningPresentation";
 
 export const marketStateRouter = router({
   current: publicProcedure.query(() => getCanonicalMarketState()),
@@ -15,4 +16,6 @@ export const marketStateRouter = router({
     return state ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(state)) : null;
   }),
   synthesisCurrent: publicProcedure.query(() => getAuthoritativeCrossEngineSynthesis()),
+  earlyWarningPresentationCurrent: publicProcedure.query(() => getCurrentGovernedEarlyWarningPresentation()),
+  earlyWarningPresentationTimeline: publicProcedure.query(() => getCurrentGovernedEarlyWarningTimeline()),
 });

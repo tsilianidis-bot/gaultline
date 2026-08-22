@@ -370,4 +370,20 @@ export const adminRouter = router({
         },
       };
     }),
+  getEarlyWarningPresentationDebug: adminProcedure
+    .query(async () => {
+      const { getCurrentGovernedEarlyWarningPresentation } = await import("../earlyWarningPresentation");
+      const presentation = await getCurrentGovernedEarlyWarningPresentation();
+      return {
+        presentation,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "presentationId", "warningId", "stateId", "synthesisId", "qualificationEvaluationId",
+            "lifecycleObservationId", "authorityEventId", "sourceChain", "freshness", "limitations",
+          ],
+          invariant: "Presentation is read-only and must not calculate or reinterpret Phase 2–9 authority.",
+        },
+      };
+    }),
 });
