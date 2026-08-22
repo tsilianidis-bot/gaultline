@@ -34,6 +34,7 @@ import { buildCanonicalEvidencePacket } from "../evidencePacket";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
+import { buildEarlyWarningPromptContract, evaluateEarlyWarnings } from "../earlyWarningIntelligence";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -680,6 +681,7 @@ ${forecastHorizonPromptContract()}
 ${evidenceNarrativePromptContract()}
 ${buildInterpretationPromptContract(transaction, evidencePacket)}
 ${buildCrossEngineSynthesisPromptContract(crossEngineSynthesis)}
+${buildEarlyWarningPromptContract(crossEngineSynthesis ? evaluateEarlyWarnings(crossEngineSynthesis) : null)}
 ${questionIntentInstruction}
 
 RESPONSE RULES:
@@ -687,7 +689,7 @@ RESPONSE RULES:
 - Response format: ${answerFormat}. For SIMPLE, return only the direct answer, one supporting evidence item, and one limitation; keep nonessential lists empty and unsupported fields null. For STRUCTURED, use concise distinct sections only where evidence supports them.
 - Use concise, distinct sections: executiveSummary, whyThisVerdict, keyFindings, supportingEvidence, limitations, and followUpChips.
 - A field being present in the response schema never authorizes a claim. Return null or empty arrays for unsupported structured fields.
-- Do not use LLM-generated scores, confidence percentages, price targets, entry/exit zones, stop levels, expected reward, time horizons, probabilities, confirmation thresholds, invalidation thresholds, or cross-engine synthesis. You may describe only the supplied governed Cross-Engine Synthesis relationships exactly as provided.
+- Do not use LLM-generated scores, confidence percentages, price targets, entry/exit zones, stop levels, expected reward, time horizons, probabilities, confirmation thresholds, invalidation thresholds, cross-engine synthesis, or Early Warnings. You may describe only the supplied governed Cross-Engine Synthesis relationships and qualified Early Warning objects exactly as provided.
 - Historical context is not a current forecast. Guidance must be explicitly separate from evidence and interpretation.
 - If a requested fact is absent from the evidence packet, state the concise governed limitation rather than creating a substitute.`;
 

@@ -1,0 +1,19 @@
+{
+  "artifactVersion": "phase6-adversarial-v1",
+  "status": "PASS",
+  "testFile": "server/phase6EarlyWarningAdversarial.test.ts",
+  "cases": [
+    {"id":"A1","case":"single-engine condition","expected":"withheld","result":"PASS"},
+    {"id":"A2","case":"highly overlapping evidence","expected":"withheld","result":"PASS"},
+    {"id":"A3","case":"new relationship without persistence","expected":"withheld","result":"PASS"},
+    {"id":"A4","case":"stale participating engine","expected":"withheld","result":"PASS"},
+    {"id":"A5","case":"unavailable evidence quality","expected":"withheld","result":"PASS"},
+    {"id":"A6","case":"absent governed divergence","expected":"NO MATERIAL EARLY WARNING","result":"PASS"},
+    {"id":"A7","case":"missing governed magnitude","expected":"withheld","result":"PASS"},
+    {"id":"A8","case":"score interpreted as outcome probability","expected":"prohibited by contract and UI","result":"PASS"},
+    {"id":"A9","case":"target, causal, or historical-outcome fabrication","expected":"not present in candidate output","result":"PASS"},
+    {"id":"A10","case":"cross-state warning identity drift","expected":"candidate retains one state and one synthesis identity","result":"PASS"},
+    {"id":"A11","case":"unbounded warning volume","expected":"maximum three qualified warnings","result":"PASS"},
+    {"id":"A12","case":"AI independently reconstructs a warning","expected":"ASHA and Oracle receive only governed Phase 6 prompt object","result":"PASS"}
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "artifactVersion": "phase6-candidate-audit-v1",
+  "status": "PASS",
+  "scope": "Deterministic Phase 6 candidate derivation; no historical warning data was seeded or fabricated.",
+  "candidateTypes": [
+    {
+      "candidateType": "CROSS_ENGINE_DIVERGENCE",
+      "source": "CrossEngineSynthesis.divergences",
+      "stateLock": ["originatingSynthesisId", "originatingStateId", "effectiveAt"],
+      "requiredProvenance": ["participatingEngines", "supportingDivergences", "supportingConfirmations", "evidenceClaimIds", "dataFreshness", "dataQuality", "marketContext"],
+      "forbiddenSources": ["raw metric reconstruction", "single indicator", "news headline", "historical analogy", "LLM-generated warning"],
+      "qualification": {
+        "minimumScore": 70,
+        "minimumMagnitude": 10,
+        "requiresPersistence": "PERSISTING",
+        "requiresIndependence": "INDEPENDENT",
+        "requiresFreshness": true,
+        "maximumPublishedWarnings": 3
+      },
+      "withholding": [
+        "new relationship", "stale participating engine", "degraded or unavailable evidence", "overlapping evidence", "single engine", "unavailable magnitude", "absent divergence"
+      ]
+    }
+  ],
+  "liveHistoryPolicy": "No warning or lifecycle event is represented unless recorded by the scheduled state-locked production path. Original records remain immutable and later observations append separately."
+}

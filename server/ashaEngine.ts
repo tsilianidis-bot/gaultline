@@ -26,6 +26,7 @@ import { buildCanonicalEvidencePacket } from "./evidencePacket";
 import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "./crossEngineSynthesis";
+import { buildEarlyWarningPromptContract, evaluateEarlyWarnings } from "./earlyWarningIntelligence";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -398,6 +399,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   const publicCanonicalState = authoritativeState ? toPublicCanonicalIntelligenceState(authoritativeState) : null;
   const evidencePacket = publicCanonicalState ? buildCanonicalEvidencePacket(publicCanonicalState) : null;
   const governedCrossEngineSynthesis = publicCanonicalState && evidencePacket ? buildCrossEngineSynthesis(publicCanonicalState, evidencePacket) : null;
+  const governedEarlyWarnings = governedCrossEngineSynthesis ? evaluateEarlyWarnings(governedCrossEngineSynthesis) : null;
   const transaction = createInterpretationTransaction("ASHA", evidencePacket, null);
   const packetClaims = evidencePacket?.claims ?? [];
   const packetEngines = Array.from(new Set(packetClaims
@@ -435,7 +437,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     "17. Historical analog similarity is not forecast probability. Explain weighting from the supplied evidence and never let one analog replace the combined current evidence.",
   ].join("\n");
 
-  const systemPrompt = ASHA_IDENTITY + "\n\n" + requestScopeBlock + responseStructureBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket) + "\n\n" + buildCrossEngineSynthesisPromptContract(governedCrossEngineSynthesis);
+  const systemPrompt = ASHA_IDENTITY + "\n\n" + requestScopeBlock + responseStructureBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket) + "\n\n" + buildCrossEngineSynthesisPromptContract(governedCrossEngineSynthesis) + "\n\n" + buildEarlyWarningPromptContract(governedEarlyWarnings);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },

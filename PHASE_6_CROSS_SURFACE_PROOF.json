@@ -1,0 +1,20 @@
+{
+  "artifactVersion": "phase6-cross-surface-proof-v1",
+  "status": "PASS",
+  "controlledIdentity": {
+    "canonicalState": "originatingStateId",
+    "phase5Synthesis": "originatingSynthesisId",
+    "phase6Candidate": "candidateId + warningId"
+  },
+  "surfaces": [
+    {"surface":"Scheduled Seismograph pipeline","result":"PASS","evidence":"evaluateAndPersistEarlyWarnings(synthesis) runs after persistCrossEngineSynthesis(synthesis)"},
+    {"surface":"Canonical market-state API","result":"PASS","evidence":"marketState.earlyWarningsCurrent evaluates only getAuthoritativeCrossEngineSynthesis and same-state canonical context"},
+    {"surface":"Warning history API","result":"PASS","evidence":"marketState.earlyWarningHistory returns persistent warning identity plus append-only observations"},
+    {"surface":"Institutional archive","result":"PASS","evidence":"original and later events use state/synthesis-keyed immutable event keys"},
+    {"surface":"ASHA","result":"PASS","evidence":"buildEarlyWarningPromptContract(evaluateEarlyWarnings(governedCrossEngineSynthesis))"},
+    {"surface":"Oracle","result":"PASS","evidence":"buildEarlyWarningPromptContract(evaluateEarlyWarnings(crossEngineSynthesis))"},
+    {"surface":"Canonical HOME dashboard","result":"PASS","evidence":"EarlyWarningIntelligencePanel calls only marketState.earlyWarningsCurrent and history"},
+    {"surface":"No-warning state","result":"PASS","evidence":"HOME renders NO MATERIAL EARLY WARNING rather than a placeholder warning"}
+  ],
+  "prohibited": ["raw current-state bypass", "independent ASHA/Oracle warning reconstruction", "warning score probability conversion", "historical warning fabrication", "state A candidate with state B context"]
+}

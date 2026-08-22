@@ -1268,6 +1268,60 @@ export const institutionalEventOutcomes = mysqlTable("institutionalEventOutcomes
 export type InstitutionalEventOutcome = typeof institutionalEventOutcomes.$inferSelect;
 export type InsertInstitutionalEventOutcome = typeof institutionalEventOutcomes.$inferInsert;
 
+/**
+ * Phase 6 Early Warning Intelligence identity ledger. Original evidence is
+ * immutable; mutable fields are a convenience pointer to the latest governed
+ * lifecycle observation and never replace original provenance.
+ */
+export const earlyWarnings = mysqlTable("earlyWarnings", {
+  id:                       int("id").autoincrement().primaryKey(),
+  warningId:                varchar("warningId", { length: 96 }).notNull().unique(),
+  candidateType:            varchar("candidateType", { length: 96 }).notNull(),
+  title:                    varchar("title", { length: 255 }).notNull(),
+  originalStateId:          varchar("originalStateId", { length: 128 }).notNull(),
+  originalSynthesisId:      varchar("originalSynthesisId", { length: 128 }).notNull(),
+  originalEffectiveAt:      timestamp("originalEffectiveAt").notNull(),
+  originalScore:            int("originalScore").notNull(),
+  originalLifecycleState:   varchar("originalLifecycleState", { length: 32 }).notNull(),
+  originalPayloadJson:      text("originalPayloadJson").notNull(),
+  currentStateId:           varchar("currentStateId", { length: 128 }).notNull(),
+  currentSynthesisId:       varchar("currentSynthesisId", { length: 128 }).notNull(),
+  currentScore:             int("currentScore").notNull(),
+  currentLifecycleState:    varchar("currentLifecycleState", { length: 32 }).notNull(),
+  currentQualificationState:varchar("currentQualificationState", { length: 32 }).notNull(),
+  isActive:                 boolean("isActive").notNull().default(true),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:                timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  activeIdx: index("earlyWarnings_active_idx").on(t.isActive, t.currentScore),
+  stateIdx: index("earlyWarnings_currentState_idx").on(t.currentStateId),
+  synthesisIdx: index("earlyWarnings_currentSynthesis_idx").on(t.currentSynthesisId),
+}));
+export type EarlyWarning = typeof earlyWarnings.$inferSelect;
+export type InsertEarlyWarning = typeof earlyWarnings.$inferInsert;
+
+/** Append-only governed warning observations; never rewrites original history. */
+export const earlyWarningObservations = mysqlTable("earlyWarningObservations", {
+  id:                  int("id").autoincrement().primaryKey(),
+  observationKey:      varchar("observationKey", { length: 220 }).notNull().unique(),
+  warningId:           varchar("warningId", { length: 96 }).notNull(),
+  originatingStateId:  varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId: varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  observedAt:          timestamp("observedAt").notNull(),
+  observationType:     varchar("observationType", { length: 64 }).notNull(),
+  lifecycleState:      varchar("lifecycleState", { length: 32 }).notNull(),
+  qualificationState:  varchar("qualificationState", { length: 32 }).notNull(),
+  warningScore:        int("warningScore").notNull(),
+  observationPayloadJson: text("observationPayloadJson").notNull(),
+  provenanceJson:      text("provenanceJson").notNull(),
+  recordedAt:          timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  warningObservedIdx: index("earlyWarningObservations_warningObserved_idx").on(t.warningId, t.observedAt),
+  synthesisIdx: index("earlyWarningObservations_synthesis_idx").on(t.originatingSynthesisId),
+}));
+export type EarlyWarningObservation = typeof earlyWarningObservations.$inferSelect;
+export type InsertEarlyWarningObservation = typeof earlyWarningObservations.$inferInsert;
+
 /** Operational health record for the project-owned institutional-memory jobs. */
 export const institutionalMemoryJobs = mysqlTable("institutionalMemoryJobs", {
   id:                 int("id").autoincrement().primaryKey(),

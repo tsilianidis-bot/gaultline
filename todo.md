@@ -5214,3 +5214,18 @@
 - [x] Implement a deterministic canonical-state-bound synthesis service without warning scores, warning lifecycle states, or Early Warning Intelligence
 - [x] Expose governed synthesis through authorized current-intelligence boundaries and preserve Phase 2–4 semantics across narrative, dashboard, mobile, and audit paths
 - [x] Create permanent synthesis tests, audits, adversarial/cross-surface proof, acceptance gate, full regression, checkpoint, and Phase 5 verdict without beginning Early Warning work
+
+## FAULTLINE Phase 5 — External Review Closure Package
+- [ ] Assemble one self-contained Phase 5 external-review package from checkpoint 642a34bc without application development or Early Warning work
+- [ ] Deliver the Phase 5 closure package and stop for external review
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 6 — Early Warning Intelligence
+- [x] Complete the Phase 6 specification review and map the existing canonical synthesis, immutable archive, scheduled state, chart, and HOME dashboard integration boundaries
+- [x] Define one state-locked EarlyWarningCandidate contract with deterministic warning score components, qualification, lifecycle, explicit confirmation/invalidation, provenance, and no probability conversion
+- [x] Implement governed candidate generation solely from Phase 5 structured synthesis, deterministic 0–3 qualification, persistent warning identity, append-only observations/events, and immutable original warning history
+- [x] Expose Early Warning Intelligence via authorized API and a flagship canonical HOME dashboard surface with concise warning cards, full warning view, real timeline/history, and no fabricated results
+- [x] Add permanent integrity, adversarial, lifecycle, persistence, no-warning, UI, cross-surface, and acceptance-gate evidence; run full regression, checkpoint, and issue the Phase 6 verdict
