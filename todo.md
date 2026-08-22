@@ -5114,6 +5114,31 @@
 ## Phase 2C — Newly Attached Compatibility Requirements
 - [ ] Review the newly attached Phase 2C requirements and implement only the missing compatibility-path and provenance controls without weakening canonical-state governance or entering Phase 3
 
+## Phase 2D — Newly Attached Requirements
+- [ ] Review the newly attached Phase 2D requirements and implement only authorized missing controls while preserving canonical EngineContext transport and all prior guardrails
+
+## Phase 2 — Newly Attached Evidence Requirements
+- [ ] Review the newly attached Phase 2 evidence requirements and implement only authorized acceptance-artifact or compatibility controls without weakening canonical-state governance or entering Phase 3
+
+## Phase 2 — Newly Attached Consumer Requirements
+- [ ] Review the newly attached Phase 2 consumer requirements and implement only authorized canonical consumer or evidence controls without weakening governance or entering Phase 3
+
+## FAULTLINE Phase 2F — Canonical Consumer Boundary and Final Closure
+- [ ] Implement one reusable canonical consumer envelope that preserves canonical identity, timing, quality/conflict, claim/analog, version, input snapshot, state hash, and canonical-derived compatibility data
+- [ ] Make the envelope mandatory at every CURRENT_CANONICAL consumer boundary while explicitly isolating historical, archived, reconstructed research, and non-market consumers
+- [ ] Propagate originating canonical identity through current ASHA, Oracle, Outlook, Daily Story, Market Context, Market Synthesis, mobile, dashboard, and other generated/narrative payloads where applicable
+- [ ] Add repository-level no-bypass protection against prohibited legacy current-state sources outside the approved canonical compatibility layer
+- [ ] Produce complete 44-consumer classification, state-ID propagation, no-bypass, Tests A–J, EngineContext invariant, cross-surface, and 32-question acceptance artifacts
+- [ ] Run full regression validation, checkpoint Phase 2F, issue exactly one Phase 2 verdict, and stop before Phase 3
+
+## Phase 2D — Formal Verification and Acceptance Evidence
+- [ ] Produce a repository-backed 44-consumer EngineContext classification with every required field, exact count reconciliation, and zero unclassified consumers
+- [ ] Create executable state-ID propagation proof from canonical producer through provider, compatibility projection, consumer, selectors/hooks, and rendered or returned result
+- [ ] Complete and document Tests A–J individually with purpose, behavior, files, test evidence, expected/actual result, and PASS/FAIL status
+- [ ] Retrieve and answer all 32 established Phase 2 acceptance questions individually; stop with a blocking evidence failure if the original artifact cannot be located
+- [ ] Complete repository-wide legacy-bypass search and classify every hit as VALID, TEST-ONLY, DEAD CODE, MIGRATION REMNANT, or BLOCKING LEGACY PATH
+- [ ] Run full validation, publish formal closure evidence, checkpoint, report exact final counts, and stop before Phase 3
+
 ## FAULTLINE Phase 2D — Canonical EngineContext and Phase 2 Closure
 - [ ] Audit EngineContext provider, hook, legacy projection dependency, cache, refresh, fallback, derived values, and all 44 consumers with complete classification and explicit migration action
 - [x] Make phase2-canonical-state-v1 authoritative inside EngineContext and retain legacy-shaped compatibility values only as semantic projections of the same canonical stateId

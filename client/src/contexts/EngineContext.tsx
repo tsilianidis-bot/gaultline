@@ -22,6 +22,10 @@ import { selectBrowserMarketOutput, type BrowserMarketMode } from '@/lib/marketS
 import { trpc } from '@/lib/trpc';
 import type { CanonicalMarketState, MarketStateSourceHealth } from '@shared/marketState';
 import type { PublicCanonicalIntelligenceState } from '@shared/canonicalIntelligenceState';
+import {
+  createCanonicalConsumerEnvelope,
+  type CanonicalConsumerEnvelope,
+} from '@shared/canonicalConsumerEnvelope';
 
 export interface EngineContextValue {
   // Reactive engine output
@@ -30,6 +34,8 @@ export interface EngineContextValue {
   marketState: CanonicalMarketState | null;
   /** Authoritative Phase 2 canonical state for every current-intelligence consumer. */
   canonicalState: PublicCanonicalIntelligenceState | null;
+  /** Canonical provenance boundary for legacy-shaped current market compatibility data. */
+  canonicalEnvelope: CanonicalConsumerEnvelope<CanonicalMarketState> | null;
   marketMode: BrowserMarketMode;
   sourceHealth: MarketStateSourceHealth[];
 
@@ -95,6 +101,10 @@ export function EngineProvider({ children }: { children: ReactNode }) {
       warnings: [...new Set([...legacy.warnings, ...canonicalState.warnings])],
     };
   }, [canonicalState, legacyProjectionQuery.data]);
+  const canonicalEnvelope = useMemo<CanonicalConsumerEnvelope<CanonicalMarketState> | null>(() => {
+    if (!canonicalState || !marketState) return null;
+    return createCanonicalConsumerEnvelope(canonicalState, marketState);
+  }, [canonicalState, marketState]);
   const isLoading = canonicalStateQuery.isLoading || legacyProjectionQuery.isLoading;
   const sourceHealth = marketState?.sourceHealth ?? [];
   const isLive = Boolean(
@@ -196,6 +206,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
       output,
       marketState,
       canonicalState,
+      canonicalEnvelope,
       marketMode,
       sourceHealth,
       rawFred,

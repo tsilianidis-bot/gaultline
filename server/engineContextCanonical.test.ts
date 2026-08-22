@@ -22,6 +22,13 @@ describe("EngineContext Phase 2D canonical transport", () => {
     expect(source).toContain("canonicalState,");
   });
 
+  it("exposes a reusable canonical consumer envelope around compatibility data", () => {
+    expect(source).toContain("createCanonicalConsumerEnvelope");
+    expect(source).toContain("canonicalEnvelope: CanonicalConsumerEnvelope<CanonicalMarketState> | null");
+    expect(source).toContain("if (!canonicalState || !marketState) return null;");
+    expect(source).toContain("canonicalEnvelope,");
+  });
+
   it("does not silently return a legacy-shaped current state when canonical state is unavailable", () => {
     const canonicalGuard = source.indexOf("if (!canonicalState) return null;");
     const legacyProjectionRead = source.indexOf("const legacy = legacyProjectionQuery.data;");
