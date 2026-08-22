@@ -45,4 +45,4 @@
 | 41 | Previous Phase 4 narrative integrity remains preserved | PASS | Shared prompt contract layering |
 | 42 | Previous Phase 5 independence rules remain preserved | PASS | Phase 5 divergence/confirmation inputs |
 
-**Gate result: PASS.** Final full regression: **149 test files passed; 1 skipped; 1,804 tests passed; 22 skipped; 0 failed.**
+**Gate result: PASS.** Closure review identified that original Phase 6 warning detections were not yet eligible for the existing broad follow-through collector. The collector was corrected to include only `market_warning` events of type `warning_detected`, preserving later lifecycle events as non-outcome observations. Final full regression: **149 test files passed; 1 skipped; 1,805 tests passed; 22 skipped; 0 failed.**

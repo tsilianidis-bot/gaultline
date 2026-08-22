@@ -5229,3 +5229,8 @@
 - [x] Implement governed candidate generation solely from Phase 5 structured synthesis, deterministic 0–3 qualification, persistent warning identity, append-only observations/events, and immutable original warning history
 - [x] Expose Early Warning Intelligence via authorized API and a flagship canonical HOME dashboard surface with concise warning cards, full warning view, real timeline/history, and no fabricated results
 - [x] Add permanent integrity, adversarial, lifecycle, persistence, no-warning, UI, cross-surface, and acceptance-gate evidence; run full regression, checkpoint, and issue the Phase 6 verdict
+
+## FAULTLINE Phase 6 — External Review Closure Package
+- [ ] Assemble the completed Phase 6 architecture, data-path, schema, score, lifecycle, immutable-history, AI/UI/archive/outcome, validation, and limitation evidence from checkpoint 7dd6b77f without application development
+- [ ] Deliver the complete Phase 6 external-review closure package and stop without beginning Phase 7 or unrelated work
+- [x] Repair closure-review defect: attach append-only 1d/5d/20d/60d broad outcomes only to original Phase 6 warning detections, then re-run full regression

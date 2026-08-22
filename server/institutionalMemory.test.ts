@@ -23,4 +23,14 @@ describe("institutional memory transition rules", () => {
     expect(source).toContain("previousState: previous.state");
     expect(source).toContain("newState: baseState");
   });
+
+  it("attaches completed broad outcomes to original warning detection without treating later lifecycle observations as new outcomes", () => {
+    expect(source).toContain('eq(institutionalEvents.entityType, "market_warning")');
+    expect(source).toContain('eq(institutionalEvents.eventType, "warning_detected")');
+    expect(source).toContain('horizonTradingDays');
+    expect(source).toContain('spy: { baseClose');
+    expect(source).toContain('tenYearTreasury:');
+    expect(source).toContain('pressureIndex:');
+    expect(source).toContain('regime:');
+  });
 });

@@ -1,4 +1,4 @@
-import { desc, eq, lte } from "drizzle-orm";
+import { and, desc, eq, lte, or } from "drizzle-orm";
 import { institutionalEventOutcomes, institutionalEvents } from "../drizzle/schema";
 import { getDb } from "./db";
 import { fetchFredSeries } from "./fredClient";
@@ -323,7 +323,10 @@ export async function collectBroadInstitutionalEventOutcomes() {
   const [events, spyBars, dgs10] = await Promise.all([
     db.select({ id: institutionalEvents.id, eventAt: institutionalEvents.eventAt, pressureIndex: institutionalEvents.pressureIndex, marketRegime: institutionalEvents.marketRegime })
       .from(institutionalEvents)
-      .where(eq(institutionalEvents.entityType, "market"))
+      .where(or(
+        eq(institutionalEvents.entityType, "market"),
+        and(eq(institutionalEvents.entityType, "market_warning"), eq(institutionalEvents.eventType, "warning_detected")),
+      ))
       .orderBy(desc(institutionalEvents.eventAt))
       .limit(250),
     getDailyBars("SPY", "6mo"),
