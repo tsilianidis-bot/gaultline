@@ -1,0 +1,13 @@
+{
+  "contractVersion": "phase7-importance-qualification-v1",
+  "scoringModelId": "faultline-candidate-materiality",
+  "scoringModelVersion": "1.0.0",
+  "scoringConfigVersion": "phase7-governance-v1",
+  "scoreRange": {"minimum": 0, "maximum": 100, "meaning": "IMPORTANCE_MATERIALITY_NOT_PROBABILITY"},
+  "weights": {"magnitude":20,"acceleration":10,"persistence":10,"historicalLeadStrength":10,"crossEngineConfirmation":15,"systemicImportance":15,"novelty":10,"dataConfidence":10},
+  "thresholds": {"qualificationScore":72,"minimumEvidenceStrength":"MODERATE","dataQualityCeilingForDegraded":69,"maximumSecondaryQualifiedCandidates":2},
+  "missingValuePolicy": "EXPLICIT_UNAVAILABLE_NO_IMPUTATION",
+  "suppressionPolicy": "STALE_UNAVAILABLE_LOW_CONFIDENCE_PRELIMINARY_OR_CONFLICTED",
+  "tieBreakOrder": ["importanceScore","dataConfidence","systemicImportance","persistence","candidateId"],
+  "thresholdRationale": "Engineering and governance thresholds only; they are not represented as statistically optimized or predictive calibration."
+}

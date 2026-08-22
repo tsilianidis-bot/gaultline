@@ -37,6 +37,7 @@ export interface CandidateDetection {
   dataFreshness: CandidateDataFreshness;
   dataQuality: CanonicalQualityStatus;
   evidenceStrength: EvidenceStrength;
+  hasBlockingConflict: boolean;
   limitations: string[];
   detectorId: typeof CANDIDATE_DETECTOR_ID;
   detectorVersion: typeof CANDIDATE_DETECTOR_VERSION;

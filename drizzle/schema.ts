@@ -1367,6 +1367,40 @@ export const candidateDetectionObservations = mysqlTable("candidateDetectionObse
 export type CandidateDetectionObservation = typeof candidateDetectionObservations.$inferSelect;
 export type InsertCandidateDetectionObservation = typeof candidateDetectionObservations.$inferInsert;
 
+/**
+ * Phase 7 append-only scoring and qualification evaluations. A row represents
+ * one deterministic evaluation transaction and never mutates the Phase 6
+ * candidate or any earlier evaluation.
+ */
+export const importanceQualificationEvaluations = mysqlTable("importanceQualificationEvaluations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  evaluationId:             varchar("evaluationId", { length: 128 }).notNull().unique(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull(),
+  originatingStateId:       varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId:   varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  evaluatedAt:              timestamp("evaluatedAt").notNull(),
+  importanceScore:          int("importanceScore").notNull(),
+  qualificationStatus:      varchar("qualificationStatus", { length: 32 }).notNull(),
+  qualificationRank:        int("qualificationRank"),
+  isPrimary:                boolean("isPrimary").notNull().default(false),
+  factorTraceJson:          text("factorTraceJson").notNull(),
+  qualificationReasonsJson: text("qualificationReasonsJson").notNull(),
+  suppressionReasonsJson:   text("suppressionReasonsJson").notNull(),
+  evidenceClaimIdsJson:     text("evidenceClaimIdsJson").notNull(),
+  relationshipIdsJson:      text("relationshipIdsJson").notNull(),
+  limitationsJson:          text("limitationsJson").notNull(),
+  scoringModelId:           varchar("scoringModelId", { length: 96 }).notNull(),
+  scoringModelVersion:      varchar("scoringModelVersion", { length: 32 }).notNull(),
+  scoringConfigVersion:     varchar("scoringConfigVersion", { length: 96 }).notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  candidateIdx: index("importanceQualificationEvaluations_candidate_idx").on(t.candidateId, t.evaluatedAt),
+  stateIdx: index("importanceQualificationEvaluations_state_idx").on(t.originatingStateId),
+  statusIdx: index("importanceQualificationEvaluations_status_idx").on(t.qualificationStatus, t.importanceScore),
+}));
+export type ImportanceQualificationEvaluationRow = typeof importanceQualificationEvaluations.$inferSelect;
+export type InsertImportanceQualificationEvaluationRow = typeof importanceQualificationEvaluations.$inferInsert;
+
 /** Operational health record for the project-owned institutional-memory jobs. */
 export const institutionalMemoryJobs = mysqlTable("institutionalMemoryJobs", {
   id:                 int("id").autoincrement().primaryKey(),

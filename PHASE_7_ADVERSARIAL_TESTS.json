@@ -1,0 +1,21 @@
+{
+  "status":"PASS",
+  "suite":"server/importanceQualification.test.ts",
+  "cases":[
+    {"id":1,"case":"Huge magnitude with stale data","result":"SUPPRESSED"},
+    {"id":2,"case":"Fresh high-quality tiny magnitude","result":"NOT_QUALIFIED"},
+    {"id":3,"case":"Unavailable historical support","result":"EXPLICIT_UNAVAILABLE_NO_IMPUTATION"},
+    {"id":4,"case":"No authorized predictive model","result":"NO_PROBABILITY_CREATED"},
+    {"id":5,"case":"Massive isolated engine relationship","result":"STRUCTURAL_SUPPORT_LIMITED"},
+    {"id":6,"case":"Strong magnitude, acceleration, persistence, independent support","result":"QUALIFIED_WHEN_GATES_PASS"},
+    {"id":7,"case":"Duplicate relationship family","result":"ONE_ELIGIBLE_SELECTION_SLOT"},
+    {"id":8,"case":"Blocking structured conflict","result":"SUPPRESSED"},
+    {"id":9,"case":"Missing/insufficient candidate source confidence","result":"INSUFFICIENT_EVIDENCE"},
+    {"id":10,"case":"All candidates below threshold","result":"NO_MATERIAL_EARLY_WARNING"},
+    {"id":11,"case":"Identical score","result":"DETERMINISTIC_CANDIDATE_ID_TIEBREAK"},
+    {"id":12,"case":"Score equals 82","result":"IMPORTANCE_NOT_PROBABILITY"},
+    {"id":13,"case":"No historicalLeadStrength","result":"NO_FABRICATED_HISTORICAL_FACTOR"},
+    {"id":14,"case":"Repeated unchanged candidate","result":"NOVELTY_DECLINES"},
+    {"id":15,"case":"NaN/Infinity factor input","result":"SAFE_NON_TOP_QUALIFICATION"}
+  ]
+}

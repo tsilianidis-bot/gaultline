@@ -21,6 +21,7 @@ import {
 import { sendEmail, buildApprovalEmail } from "../email";
 import { getAuthoritativeCrossEngineSynthesis, getLatestCrossEngineSynthesis } from "../crossEngineSynthesis";
 import { getCandidateObservationTimeline, getPersistedCandidateDetections } from "../candidateDetection";
+import { getImportanceQualificationEvaluations } from "../importanceQualification";
 
 export const adminRouter = router({
   // List all registered users
@@ -296,6 +297,23 @@ export const adminRouter = router({
           fields: [
             "originalStateId", "originalSynthesisId", "originalPayloadJson", "detectorId",
             "detectorVersion", "detectorConfigVersion", "appendOnlyCandidateObservations",
+          ],
+        },
+      };
+    }),
+  getImportanceQualificationDebug: adminProcedure
+    .input(z.object({ candidateId: z.string().min(1).max(128).optional() }).optional())
+    .query(async ({ input }) => {
+      const evaluations = await getImportanceQualificationEvaluations(input?.candidateId);
+      return {
+        evaluations,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "candidateId", "originatingStateId", "originatingSynthesisId", "factorTraceJson",
+            "importanceScore", "qualificationStatus", "qualificationRank", "isPrimary",
+            "qualificationReasonsJson", "suppressionReasonsJson", "scoringModelId",
+            "scoringModelVersion", "scoringConfigVersion",
           ],
         },
       };

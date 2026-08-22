@@ -5249,3 +5249,14 @@
 - [x] Remove the public Early Warning panel and current-warning public APIs, plus ASHA/Oracle warning presentation, without redesigning the dashboard or assistants
 - [x] Rebuild candidate-only artifacts, phase-leak audit, permanent boundary suite, 60-item acceptance gate, focused/full validation, checkpoint, and verdict without beginning Phase 7
 - [x] Repair closure-review defect: attach append-only 1d/5d/20d/60d broad outcomes only to original Phase 6 warning detections, then re-run full regression
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 7 — Importance Scoring & Qualification
+- [x] Map candidate-only Phase 6 inputs, eligible Phase 5 support, immutable persistence, scheduled compute-once integration, and prohibited Phase 8–10 behavior
+- [x] Define one deterministic, versioned scoring configuration with eight required factor semantics, transforms, weights, missing-value rules, data-quality floor, suppression rules, and centralized qualification gates
+- [x] Build separate candidate scoring and qualification contracts with factor trace, explicit status, deterministic primary/secondary selection, no-material result, duplicate handling, tie-breaking, and no probability/forecast/lifecycle semantics
+- [x] Add append-only qualification evaluations tied to immutable Phase 6 candidates and explicit state/synthesis provenance, plus protected owner/debug scoring inspection only
+- [x] Add permanent adversarial, monotonicity, malformed-value, phase-leak, provenance, cross-surface, and 74-item acceptance evidence; run full regression, checkpoint, and issue Phase 7 verdict without beginning Phase 8

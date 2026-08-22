@@ -77,6 +77,7 @@ function candidateFor(synthesis: CrossEngineSynthesis, divergence: CrossEngineDi
     dataFreshness: freshnessFor(synthesis, divergence),
     dataQuality: synthesis.dataQuality,
     evidenceStrength: synthesis.evidenceStrength,
+    hasBlockingConflict: (synthesis.conflicts?.length ?? 0) > 0,
     limitations: [
       ...divergence.limitations,
       "Candidate detection is not importance scoring, qualification, publication, lifecycle, confirmation, invalidation, probability, target, or forecast authority.",

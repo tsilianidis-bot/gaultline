@@ -42,6 +42,7 @@ import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from 
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
 import { getAuthoritativeCrossEngineSynthesis, persistCrossEngineSynthesis } from "./crossEngineSynthesis";
 import { evaluateAndPersistCandidateDetections } from "./candidateDetection";
+import { evaluateAndPersistImportanceQualification } from "./importanceQualification";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -172,6 +173,8 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
       console.log(`[Seismograph] Cross-engine synthesis ${synthesis.synthesisId} persisted; ${outcome.archivedMaterialEventCount} material archive events.`);
       const candidates = await evaluateAndPersistCandidateDetections(synthesis);
       console.log(`[Seismograph] Candidate detection evaluated ${candidates.evaluation.candidates.length} governed candidate observations; ${candidates.appendedObservationCount} append-only observations.`);
+      const qualification = await evaluateAndPersistImportanceQualification(candidates.evaluation.candidates);
+      console.log(`[Seismograph] Importance qualification evaluated ${qualification.evaluation.scoredCandidates.length} candidates; ${qualification.evaluation.qualifiedCandidates.length} internal qualified candidates, ${qualification.appendedEvaluationCount} append-only evaluations.`);
     }
   } catch (error) {
     console.warn("[Seismograph] Governance manifest capture deferred:", error);

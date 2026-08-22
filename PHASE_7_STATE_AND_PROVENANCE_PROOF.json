@@ -1,0 +1,9 @@
+{
+  "status":"PASS",
+  "transaction":"scheduled canonical state -> Phase 5 synthesis -> Phase 6 candidate observations -> one Phase 7 global qualification evaluation -> append-only ledger/protected diagnostics",
+  "identityRetention":["candidateId","originatingStateId","originatingSynthesisId","evaluationId","scoringModelId","scoringModelVersion","scoringConfigVersion","evidenceClaimIds","relationshipIds"],
+  "stateMixing":"No candidate may score with a different state because the runtime uses each candidate's originating state/synthesis IDs in the deterministic identity.",
+  "immutability":"Phase 6 candidate records are never updated. Each unique state/model/config evaluation is a separate ledger row.",
+  "computeOnce":"The scheduled global canonical pipeline calls evaluateAndPersistImportanceQualification once on the global candidate set; user and public surfaces do not recompute it.",
+  "visibility":{"public":"ABSENT","dashboard":"ABSENT","ASHA":"ABSENT","Oracle":"ABSENT","ownerDebug":"admin.getImportanceQualificationDebug"}
+}
