@@ -4732,3 +4732,17 @@
 - [x] Add concise “Why FAULTLINE Is Seeing It Early” explanations and data-confidence/limitation surfaces per Rising Star asset
 - [x] Add scoring and UI tests; validate missing/degraded data does not penalize assets or create false precision
 - [ ] Save the Rising Stars expansion checkpoint and deliver implementation results
+
+## FAULTLINE Marketing Page Rebuild — Pentagonal Thesis (Session 2026-08-25)
+- [x] Replace consecutive duplicate heroes with one canonical market-intelligence hero and a single primary/secondary CTA pair
+- [x] Remove or accurately label all static data that currently appears live, current, real-time, or continuously updated
+- [x] Add a concise FAULTLINE Methodology™ section explaining the repeatable intelligence process and limitations
+- [x] Add FAULTLINE Pentagonal Thesis™ as a connected five-question market-intelligence system
+- [x] Add carefully scoped Early Warning Intelligence™ and flagship Pressure Index™ sections without overstating current implementation
+- [x] Consolidate repetitive feature catalogues into one logically grouped Intelligence System section while retaining ASHA and not introducing PLATO as an implemented product
+- [x] Replace historical proof blocks with one reconciled Historical Intelligence section using neutral retrospective-reconstruction language and no unverified score claims
+- [x] Remove unsupported institutional-equivalence, data-cadence, engine-count, and source-count claims; add calibrated trust/data-source disclosures
+- [x] Simplify pricing and access into a coherent $299 Founding Lifetime commercial path without fake scarcity or conflicting approval language
+- [x] Standardize CTA labels and destinations, repair the Access navigation anchor, and streamline footer/roadmap content
+- [x] Add/update unit tests and validate desktop/mobile rendering, public links, marketing claims, and full regression suite
+- [ ] Save the marketing-page rebuild checkpoint and deliver the implementation result
