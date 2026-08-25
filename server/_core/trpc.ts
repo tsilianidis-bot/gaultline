@@ -18,6 +18,10 @@ const requireUser = t.middleware(async opts => {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
+  if (ctx.user.isQaSession && opts.type !== "query") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Owner QA access is read-only" });
+  }
+
   return next({
     ctx: {
       ...ctx,
@@ -36,6 +40,11 @@ const requireCore = t.middleware(async opts => {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
+  if (ctx.user.isQaSession) {
+    if (opts.type !== "query") throw new TRPCError({ code: "FORBIDDEN", message: "Owner QA access is read-only" });
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }
+
   const tier = await getUserTier(ctx.user.id);
   if (tier !== 'core' && tier !== 'premium' && tier !== 'founding') {
     throw new TRPCError({ code: "FORBIDDEN", message: CORE_REQUIRED_ERR_MSG });
@@ -52,6 +61,11 @@ const requirePremium = t.middleware(async opts => {
 
   if (!ctx.user) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+  }
+
+  if (ctx.user.isQaSession) {
+    if (opts.type !== "query") throw new TRPCError({ code: "FORBIDDEN", message: "Owner QA access is read-only" });
+    return next({ ctx: { ...ctx, user: ctx.user } });
   }
 
   const tier = await getUserTier(ctx.user.id);

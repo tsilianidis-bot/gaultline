@@ -1,0 +1,21 @@
+{
+  "result": "PASS",
+  "path": [
+    "phase2-canonical-state-v1",
+    "phase3 evidence packet",
+    "phase5 CrossEngineSynthesis",
+    "phase6 CandidateDetection",
+    "phase7 ImportanceQualificationRecord",
+    "phase8 LifecycleProjection",
+    "phase9 WarningThesis",
+    "phase9 ConfirmationInvalidationPlan",
+    "phase9 ConditionEvaluation",
+    "phase9 PlanEvaluation",
+    "phase9 Phase9AuthorityEvent",
+    "phase8 typed authority consumption"
+  ],
+  "requiredIds": ["originatingStateId", "originatingSynthesisId", "candidateId", "qualificationId", "lifecycleId", "thesisId", "planId", "evaluationId", "phase9EventId"],
+  "persistence": "immutable thesis and plan; append-only condition/plan evaluations and authority events; guarded derived current projections",
+  "publicSurface": "none",
+  "aiSurface": "none"
+}

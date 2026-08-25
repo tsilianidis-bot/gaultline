@@ -19,6 +19,7 @@ import {
   pressureHistory,
 } from "../drizzle/schema";
 import { eq, desc, and, lt } from "drizzle-orm";
+import { formatOrdinal } from "../shared/historicalPercentile";
 
 // ─── DB helper ───────────────────────────────────────────────────────────────
 
@@ -948,7 +949,7 @@ export async function buildSeismographPromptBlock(): Promise<string> {
   return `
 ──SEISMOGRAPH INTELLIGENCE ENGINE──
 Observations recorded: ${marketMemorySummary.observationCount} days
-Current reading: ${today.pressureScore} (${today.stressLevel}) — ${today.historicalPercentile}th historical percentile
+Current reading: ${today.pressureScore} (${today.stressLevel}) — ${formatOrdinal(today.historicalPercentile)} historical percentile
 Direction: ${today.direction} | Streak: ${today.streakDays} days | Delta: ${
     today.deltaFromPrior > 0 ? "+" : ""
   }${today.deltaFromPrior} pts

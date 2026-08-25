@@ -5,6 +5,9 @@
    no typing animation, no chatbot feel.
    ============================================================ */
 import { useState, useEffect, useRef } from "react";
+import type { AshaQuestionAnalysis } from "@shared/ashaQuestionAnalysis";
+import type { ForecastMetadata } from "@shared/forecastMetadata";
+import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
 
 // ── Types ──────────────────────────────────────────────────
 export interface OracleBriefingData {
@@ -13,9 +16,11 @@ export interface OracleBriefingData {
   timestamp: string;
 
   // Core assessment
+  directAnswer?: string;
   executiveSummary: string;
+  coreThesis?: string;
   marketBias: "BULLISH" | "BEARISH" | "NEUTRAL";
-  confidence: number;
+  confidence?: number;
   marketRegime: string;
   threatLevel: "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
   pressureIndex: number;
@@ -23,15 +28,26 @@ export interface OracleBriefingData {
   suggestedBias?: string;
 
   // Probability
-  bullProbability: number;
-  bearProbability: number;
+  bullProbability?: number;
+  bearProbability?: number;
+  questionAnalysis?: AshaQuestionAnalysis;
 
   // Intelligence sections
   keyFindings: string[];
   supportingEvidence: string[];
+  crossEngineSynthesis?: Array<{
+    engine: string;
+    currentSignal: string;
+    relevance: string;
+  }>;
+  synthesisProvenance?: {
+    synthesisId: string;
+    originatingStateId: string;
+  };
   historicalAnalog?: string;
   riskFactors: string[];
-  invalidationConditions: string[];
+  confirmationConditions?: string[];
+  invalidationConditions?: string[];
 
   // Verdict
   missionRecommendation: string;
@@ -42,7 +58,8 @@ export interface OracleBriefingData {
     decisionPaths: Array<{ scenario: string; response: string }>;
   };
   finalVerdictAction: string;
-  expectedTimeframe: string;
+  expectedTimeframe?: string;
+  forecastMetadata: ForecastMetadata;
 
   // Source citations
   sourceCitations?: Array<{
@@ -161,26 +178,46 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     `ORACLE BRIEFING — MISSION ${data.missionId}`,
     `QUESTION: ${data.question}`,
     ``,
+    `DIRECT ANSWER`,
+    data.directAnswer || data.executiveSummary,
+    ``,
     `EXECUTIVE SUMMARY`,
     data.executiveSummary,
     ``,
-    `ASSESSMENT`,
-    `Bias: ${data.marketBias} | Confidence: ${data.confidence}% | Regime: ${data.marketRegime}`,
-    `Threat: ${data.threatLevel} | Pressure Index: ${data.pressureIndex}/100`,
+    `MISSION SNAPSHOT`,
+    `Bias: ${data.marketBias} | Threat: ${data.threatLevel}${data.confidence === undefined ? "" : ` | Response confidence: ${data.confidence}%`}`,
+    `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex}/100 | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
+    `Action: ${data.missionRecommendationStructured?.verdict || data.finalVerdictAction}`,
+    ...(data.questionAnalysis ? [
+      `Scope: ${data.questionAnalysis.analysisScope}`,
+      `Event: ${data.questionAnalysis.eventDefinition}`,
+      `Horizon: ${data.questionAnalysis.timeHorizon ?? "Current assessment"}`,
+      `Probability: ${data.questionAnalysis.probability === null ? "Not calibrated for this exact event" : `${data.questionAnalysis.probability}%`}`,
+      `Probability provenance: ${data.questionAnalysis.probabilityProvenance.explanation}`,
+    ] : []),
+    ``,
+    `CORE THESIS`,
+    data.coreThesis || data.executiveSummary,
     ``,
     `KEY FINDINGS`,
     ...data.keyFindings.map(f => `• ${f}`),
+    ``,
+    `CROSS-ENGINE SYNTHESIS`,
+    ...(data.crossEngineSynthesis || []).map(row => `• ${row.engine}: ${row.currentSignal} — ${row.relevance}`),
+    ``,
+    `GOVERNED CONFIRMATION CONDITIONS`,
+    ...(data.confirmationConditions || []).map(condition => `• ${condition}`),
     ``,
     `RISK FACTORS`,
     ...data.riskFactors.map(r => `• ${r}`),
     ``,
     `INVALIDATION CONDITIONS`,
-    ...data.invalidationConditions.map(c => `• ${c}`),
+    ...(data.invalidationConditions || []).map(c => `• ${c}`),
     ``,
     `MISSION RECOMMENDATION`,
-    data.missionRecommendation,
+    data.missionRecommendationStructured?.rationale || data.missionRecommendation,
     ``,
-    `FINAL VERDICT: ${data.finalVerdictAction} | Time Horizon: ${data.expectedTimeframe}`,
+    `GUIDANCE: ${data.finalVerdictAction} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
   ].join("\n");
 
   return (
@@ -220,6 +257,14 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
   const bColor = biasColor(data.marketBias);
   const tColor = threatColor(data.threatLevel);
   const vColor = verdictColor(data.finalVerdictAction);
+  const missionAction = data.missionRecommendationStructured?.verdict || data.finalVerdictAction;
+  const missionTimeHorizon = data.forecastMetadata.expectedHorizon ?? "NOT ESTABLISHED";
+  const confirmationConditions = data.confirmationConditions?.length
+    ? data.confirmationConditions
+    : ["No governed confirmation condition is currently defined."];
+  const invalidationConditions = data.invalidationConditions?.length
+    ? data.invalidationConditions
+    : ["No governed invalidation condition is currently defined."];
 
   return (
     <div style={{
@@ -291,7 +336,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
         scrollbarColor: "rgba(0,229,255,0.15) transparent",
       }}>
 
-        {/* ── Question ── */}
+        {/* ── Direct answer and mission question ── */}
         <BriefingSection delay={0}>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -300,17 +345,45 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
             color: "rgba(0,229,255,0.45)",
             textTransform: "uppercase",
             marginBottom: "6px",
-          }}>INTELLIGENCE REQUEST</div>
+          }}>DIRECT ANSWER</div>
           <div style={{
             fontFamily: "'Rajdhani', sans-serif",
-            fontWeight: 700,
-            fontSize: "clamp(18px, 3vw, 26px)",
-            color: "#E2E8F0",
-            lineHeight: 1.3,
+            fontWeight: 800,
+            fontSize: "clamp(22px, 3.5vw, 30px)",
+            color: "#F1F5F9",
+            lineHeight: 1.18,
+            padding: "16px 18px",
+            background: "rgba(0,229,255,0.05)",
+            border: "1px solid rgba(0,229,255,0.22)",
+            borderLeft: "3px solid #00E5FF",
+            borderRadius: "0 5px 5px 0",
           }}>
-            {data.question}
+            {data.directAnswer || data.executiveSummary}
+          </div>
+          <div style={{ marginTop: "12px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.12em", color: "rgba(148,163,184,0.68)", lineHeight: 1.6, textTransform: "uppercase" }}>
+            MISSION QUESTION · {data.question}
           </div>
         </BriefingSection>
+
+        {data.questionAnalysis && (
+          <BriefingSection delay={40}>
+            <SectionHeader label="QUESTION ANALYSIS" />
+            <div style={{ padding: "14px 16px", background: "rgba(0,229,255,0.035)", border: "1px solid rgba(0,229,255,0.14)", borderRadius: "4px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px" }}>
+              {[
+                { label: "SCOPE", value: data.questionAnalysis.analysisScope.replaceAll("_", " "), color: "#E2E8F0" },
+                { label: "EVENT", value: data.questionAnalysis.eventDefinition, color: "#E2E8F0" },
+                { label: "HORIZON", value: data.questionAnalysis.timeHorizon ?? "CURRENT", color: "#E2E8F0" },
+                { label: "PREDICTIVE PROBABILITY", value: "WITHHELD — NO GOVERNED CONTRACT", color: "#FFAA00" },
+              ].map(item => (
+                <div key={item.label}>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.14em", color: "rgba(148,163,184,0.7)" }}>{item.label}</div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "15px", lineHeight: 1.25, fontWeight: 700, color: item.color }}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: "8px", fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", lineHeight: 1.55, color: "rgba(226,232,240,0.72)" }}>{data.questionAnalysis.probabilityProvenance.explanation}</div>
+          </BriefingSection>
+        )}
 
         {/* ── Executive Summary ── */}
         <BriefingSection delay={80}>
@@ -333,21 +406,20 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
 
         {/* ── Assessment grid ── */}
         <BriefingSection delay={160}>
-          <SectionHeader label="MARKET ASSESSMENT" />
+          <SectionHeader label="MISSION SNAPSHOT" />
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
             gap: "10px",
           }}>
             {[
-              { label: "MARKET BIAS", value: data.marketBias, color: bColor },
-              { label: "CONFIDENCE", value: `${data.confidence}%`, color: "#E2E8F0" },
-              { label: "BULL PROBABILITY", value: `${data.bullProbability}%`, color: "#00FF88" },
-              { label: "BEAR PROBABILITY", value: `${data.bearProbability}%`, color: "#FF4444" },
-              { label: "MARKET REGIME", value: data.marketRegime, color: "#E2E8F0" },
-              { label: "THREAT LEVEL", value: data.threatLevel, color: tColor },
+              { label: "BIAS", value: data.marketBias, color: bColor },
+              { label: "THREAT", value: data.threatLevel, color: tColor },
+              { label: "RESPONSE CONFIDENCE", value: data.confidence === undefined ? "NOT ESTABLISHED" : `${data.confidence}%`, color: "#E2E8F0" },
+              { label: "REGIME", value: data.marketRegime, color: "#E2E8F0" },
               { label: "PRESSURE INDEX", value: `${data.pressureIndex}/100`, color: "#E2E8F0" },
-              { label: "RISK LEVEL", value: data.riskLevel, color: "#E2E8F0" },
+              { label: "TIME HORIZON", value: missionTimeHorizon, color: "#E2E8F0" },
+              { label: "ACTION", value: missionAction, color: vColor },
             ].map(item => (
               <div key={item.label} style={{
                 padding: "12px 14px",
@@ -367,6 +439,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               </div>
             ))}
           </div>
+          <ForecastHorizonDisclosure metadata={data.forecastMetadata} />
           {data.suggestedBias && (
             <div style={{
               marginTop: "10px",
@@ -384,21 +457,61 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
           )}
         </BriefingSection>
 
+        {/* ── Core thesis ── */}
+        <BriefingSection delay={200}>
+          <SectionHeader label="CORE THESIS" />
+          <div style={{
+            padding: "14px 16px",
+            background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "4px",
+            fontFamily: "'Rajdhani', sans-serif",
+            fontSize: "15px",
+            lineHeight: 1.65,
+            color: "rgba(226,232,240,0.9)",
+            fontWeight: 500,
+          }}>
+            {data.coreThesis || data.executiveSummary}
+          </div>
+        </BriefingSection>
+
         {/* ── Key Findings ── */}
         {data.keyFindings.length > 0 && (
-          <BriefingSection delay={240}>
-            <SectionHeader label="KEY INTELLIGENCE" />
+          <BriefingSection delay={280}>
+            <SectionHeader label="KEY FINDINGS · CURRENT ASSESSMENT" />
             <BulletList items={data.keyFindings} />
           </BriefingSection>
         )}
 
         {/* ── Supporting Evidence ── */}
         {data.supportingEvidence.length > 0 && (
-          <BriefingSection delay={320}>
-            <SectionHeader label="SUPPORTING EVIDENCE" />
+          <BriefingSection delay={360}>
+            <SectionHeader label="OBSERVED ENGINE EVIDENCE" />
             <BulletList items={data.supportingEvidence} color="rgba(226,232,240,0.7)" />
           </BriefingSection>
         )}
+
+        {/* ── Cross-engine synthesis ── */}
+        {data.crossEngineSynthesis?.length ? <BriefingSection delay={420}>
+          <SectionHeader label="EVIDENCE RELATIONSHIPS" />
+          <div style={{ overflowX: "auto", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px" }}>
+            <div style={{ minWidth: "620px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(250px, 1.65fr)", padding: "10px 14px", background: "rgba(0,229,255,0.04)", borderBottom: "1px solid rgba(0,229,255,0.12)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.14em", color: "rgba(0,229,255,0.55)", textTransform: "uppercase" }}>
+                <span>Engine</span><span>Current signal</span><span>Relevance</span>
+              </div>
+              {data.crossEngineSynthesis.map((row, index) => (
+                <div key={`${row.engine}-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(250px, 1.65fr)", gap: "12px", padding: "12px 14px", borderBottom: index < data.crossEngineSynthesis.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", lineHeight: 1.45, color: "rgba(226,232,240,0.78)" }}>
+                  <span style={{ fontWeight: 700, color: "#E2E8F0" }}>{row.engine}</span>
+                  <span>{row.currentSignal}</span>
+                  <span>{row.relevance}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.08em", color: "rgba(148,163,184,0.58)", textTransform: "uppercase" }}>
+            RELATIONSHIPS ARE SHOWN ONLY WHEN STRUCTURED EVIDENCE SUPPORTS THEM.{data.synthesisProvenance ? ` · GOVERNED SYNTHESIS ${data.synthesisProvenance.synthesisId} · STATE ${data.synthesisProvenance.originatingStateId}` : ""}
+          </div>
+        </BriefingSection> : null}
 
         {/* ── Historical Analog ── */}
         {data.historicalAnalog && (
@@ -423,40 +536,29 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
 
         {/* ── Risk Factors ── */}
         {data.riskFactors.length > 0 && (
-          <BriefingSection delay={480}>
+          <BriefingSection delay={500}>
             <SectionHeader label="RISK FACTORS" />
             <BulletList items={data.riskFactors} color="rgba(255,100,100,0.85)" />
           </BriefingSection>
         )}
 
-        {/* ── Invalidation ── */}
-        {data.invalidationConditions.length > 0 && (
-          <BriefingSection delay={560}>
-            <SectionHeader label="INVALIDATION CONDITIONS" />
-            <BulletList items={data.invalidationConditions} color="rgba(255,170,0,0.85)" />
-          </BriefingSection>
-        )}
+        {/* ── Confirmation conditions ── */}
+        <BriefingSection delay={560}>
+          <SectionHeader label="WHAT COULD CONFIRM THE RISK" />
+          <BulletList items={confirmationConditions} color="rgba(0,255,136,0.82)" />
+        </BriefingSection>
 
-        {/* ── Mission Recommendation ── */}
-        <BriefingSection delay={640}>
-          <SectionHeader label="MISSION RECOMMENDATION" />
-          <div style={{
-            padding: "16px 18px",
-            background: "rgba(0,229,255,0.05)",
-            border: "1px solid rgba(0,229,255,0.2)",
-            borderRadius: "4px",
-            fontFamily: "'Rajdhani', sans-serif",
-            fontSize: "clamp(14px, 1.8vw, 16px)",
-            color: "#E2E8F0",
-            lineHeight: 1.65,
-            fontWeight: 500,
-          }}>
-            {data.missionRecommendation}
-          </div>
-          {/* Decision paths */}
-          {data.missionRecommendationStructured?.decisionPaths && data.missionRecommendationStructured.decisionPaths.length > 0 && (
+        {/* ── Invalidation ── */}
+        <BriefingSection delay={620}>
+          <SectionHeader label="RISK DISMISSED OR REDUCED IF" />
+          <BulletList items={invalidationConditions} color="rgba(255,170,0,0.85)" />
+        </BriefingSection>
+
+        {/* ── Conditional decision paths ── */}
+        {data.missionRecommendationStructured?.decisionPaths && data.missionRecommendationStructured.decisionPaths.length > 0 && (
+          <BriefingSection delay={680}>
+            <SectionHeader label="CONDITIONAL DECISION PATHS" />
             <div style={{ marginTop: "14px", display: "flex", flexDirection: "column", gap: "8px" }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.18em", color: "rgba(0,229,255,0.45)", textTransform: "uppercase", marginBottom: "4px" }}>DECISION PATHS</div>
               {data.missionRecommendationStructured.decisionPaths.map((path, i) => (
                 <div key={i} style={{
                   display: "flex",
@@ -471,12 +573,12 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
                 </div>
               ))}
             </div>
-          )}
-        </BriefingSection>
+          </BriefingSection>
+        )}
 
         {/* ── Source Citations ── */}
         {data.sourceCitations && data.sourceCitations.length > 0 && (
-          <BriefingSection delay={680}>
+          <BriefingSection delay={740}>
             <SectionHeader label="INTELLIGENCE SOURCES" />
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
               {data.sourceCitations.map((src, i) => {
@@ -505,14 +607,14 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
 
         {/* ── Limitations ── */}
         {data.limitations && data.limitations.length > 0 && (
-          <BriefingSection delay={700}>
+          <BriefingSection delay={760}>
             <SectionHeader label="ENGINE LIMITATIONS" />
             <BulletList items={data.limitations} color="rgba(255,170,0,0.7)" />
           </BriefingSection>
         )}
 
-        {/* ── Final Verdict ── */}
-        <BriefingSection delay={720}>
+        {/* ── Mission recommendation (closing action) ── */}
+        <BriefingSection delay={800}>
           <div style={{
             padding: "20px 22px",
             background: `rgba(${vColor === "#00FF88" ? "0,255,136" : vColor === "#FF4444" ? "255,68,68" : vColor === "#FFD700" ? "255,215,0" : "0,229,255"},0.06)`,
@@ -524,7 +626,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
             gap: "12px",
           }}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.22em", color: "rgba(100,116,139,0.6)", textTransform: "uppercase" }}>
-              FINAL VERDICT
+              MISSION RECOMMENDATION
             </div>
             <div style={{
               fontFamily: "'Rajdhani', sans-serif",
@@ -534,7 +636,10 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               letterSpacing: "0.08em",
               lineHeight: 1,
             }}>
-              {data.finalVerdictAction}
+              {missionAction}
+            </div>
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "15px", color: "rgba(226,232,240,0.88)", lineHeight: 1.6, fontWeight: 500, maxWidth: "760px" }}>
+              {data.missionRecommendationStructured?.rationale || data.missionRecommendation}
             </div>
             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
               <div>
@@ -543,7 +648,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               </div>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", marginBottom: "3px" }}>TIME HORIZON</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#E2E8F0" }}>{data.expectedTimeframe}</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#E2E8F0" }}>{missionTimeHorizon}</div>
               </div>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", marginBottom: "3px" }}>RISK LEVEL</div>

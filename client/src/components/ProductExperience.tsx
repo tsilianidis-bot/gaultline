@@ -12,48 +12,16 @@
    6.  Platform Flow — how the 5 questions work
    7.  Who It's For — 3 investor personas
    8.  Founder's Statement — personal credibility section
-   9.  $299 Founding Lifetime Pricing — with spots remaining
+   9.  Founding, Trader, and Power monthly pricing
    10. Final CTA — "Enter FAULTLINE"
    ============================================================ */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getLoginUrl } from '../const';
-import { useAuth } from '../_core/hooks/useAuth';
-import { trpc } from '../lib/trpc';
 import { trackGa4Event } from '../lib/ga4';
 
 /** localStorage key for preserving checkout intent across the OAuth login redirect */
 export const CHECKOUT_INTENT_KEY = 'fl_checkout_intent_v1';
-
-// ── Canonical Lifetime Offer Configuration ──────────────────────────────────
-// Single source of truth for all lifetime offer copy and display logic.
-// Do NOT hardcode lifetime offer rules in individual components — read from here.
-export const LIFETIME_OFFER = {
-  price: '$299',
-  priceCents: 29900,
-  billingType: 'one-time' as const,
-  stripePlanId: 'lifetime' as const,
-  // Official public launch date — set this when the launch date is confirmed.
-  // Until then, display copy uses the availability-window language below.
-  launchDate: null as string | null, // ISO date string e.g. '2026-09-01'
-  // Availability window: 6 months from official public launch date.
-  availabilityWindowMonths: 6,
-  // Maximum founding cohort size (separate from the 6-month time window).
-  foundingCohortLimit: 100,
-  // Display copy — used consistently across all components.
-  displayCopy: {
-    badge: 'FOUNDING LIFETIME ACCESS',
-    headline: 'One payment. Lifetime access.',
-    subheadline: 'Limited founding lifetime access — available for six months after official launch.',
-    availabilityNote: 'The founding cohort is limited to 100 members. This offer is also time-limited: it closes six months after the official public launch date. Once either limit is reached, the lifetime offer closes permanently.',
-    priceNote: '$299 one-time · No monthly charges · No renewals',
-    secureNote: 'SECURE CHECKOUT · STRIPE · NO RECURRING CHARGES',
-    soldOutLabel: 'Founding Cohort Closed',
-    ctaLabel: 'Get Lifetime Access →',
-    ctaLoadingLabel: 'Opening Checkout…',
-    tryFreeLabel: 'Try Free First',
-  },
-} as const;
 
 // ── Assets ────────────────────────────────────────────────────
 const ASSETS = {
@@ -71,6 +39,37 @@ const PURPLE = '#A78BFA';
 const RED    = '#FF3B30';
 const MONO   = "'IBM Plex Mono', 'Courier New', monospace";
 const SANS   = "'IBM Plex Sans', system-ui, sans-serif";
+
+// ── Public Pricing Configuration ───────────────────────────────────────────
+// Public presentation only. Checkout stays unavailable until its matching
+// Stripe Price ID has been independently verified server-side.
+const PUBLIC_PRICING = [
+  {
+    id: 'founding', name: 'FOUNDING MEMBER', price: '$49', period: '/ month', color: GOLD,
+    badge: 'FOUNDING RATE — LOCKED', cta: 'LOCK IN FOUNDER RATE',
+    tagline: 'Join FAULTLINE during the founding period and keep your $49 monthly rate locked as long as your membership remains active.',
+    features: ['Founding-member access to the FAULTLINE platform', 'Locked $49 monthly rate while membership remains active', 'Founding member recognition'],
+  },
+  {
+    id: 'trader', name: 'TRADER', price: '$59', period: '/ month', color: CYAN,
+    badge: 'PRIMARY EXPERIENCE', cta: 'GET TRADER',
+    tagline: 'For serious investors who want FAULTLINE’s core market intelligence, monitoring, signals, watch tools, interpretation, and decision support.',
+    features: ['Core market intelligence and monitoring', 'Signals, watch tools, and market interpretation', 'Decision support for active investors'],
+  },
+  {
+    id: 'power', name: 'POWER', price: '$99', period: '/ month', color: PURPLE,
+    badge: 'FULL PROFESSIONAL TOOLSET', cta: 'GET POWER',
+    tagline: 'For users who want the deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.',
+    features: ['Everything in Trader', 'Advanced analysis and expanded research', 'Full professional intelligence toolset'],
+  },
+] as const;
+
+const FOUNDER_LIFETIME_OPTION = {
+  label: 'LIMITED TIME LIFETIME ACCESS',
+  price: '$299',
+  description: 'One-time payment • Lifetime access • No recurring monthly charge',
+  cta: 'GET LIFETIME ACCESS — $299',
+} as const;
 
 // ── Analytics helper ──────────────────────────────────────────
 function track(eventName: string, params?: Record<string, string | number>) {
@@ -259,27 +258,12 @@ interface ProductExperienceProps {
 }
 
 export default function ProductExperience({ onEnter }: ProductExperienceProps) {
-  const { isAuthenticated } = useAuth();
   const [scrollY, setScrollY] = useState(0);
   const [heroVisible, setHeroVisible] = useState(false);
+  const [pricingNotice, setPricingNotice] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const validationRef = useRef<HTMLElement>(null);
   const pricingRef = useRef<HTMLElement>(null);
-
-  // Real-time lifetime spots remaining
-  const { data: lifetimeStatus } = trpc.billing.getLifetimeStatus.useQuery(undefined, {
-    refetchInterval: 60_000,
-  });
-
-  // Checkout mutation
-  const checkoutMutation = trpc.billing.createCheckout.useMutation({
-    onSuccess: (data) => {
-      if (data?.url) {
-        window.open(data.url, '_blank');
-        track('lifetime_checkout_opened', { source: 'product_experience' });
-      }
-    },
-  });
 
   useEffect(() => {
     const t = setTimeout(() => setHeroVisible(true), 100);
@@ -318,32 +302,21 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
     window.location.href = getLoginUrl();
   }, []);
 
-  // Lifetime checkout — preserves intent across OAuth login redirect for unauthenticated users
-  const handleLifetimeCheckout = useCallback(() => {
-    track('lifetime_cta_click', { source: 'pricing_section' });
-    if (!isAuthenticated) {
-      // Store intent so App.tsx can auto-trigger checkout after login completes
-      localStorage.setItem(CHECKOUT_INTENT_KEY, 'lifetime');
-      track('lifetime_checkout_intent_stored', { source: 'product_experience' });
-      window.location.href = getLoginUrl();
-      return;
-    }
-    checkoutMutation.mutate({ planId: 'lifetime', origin: window.location.origin });
-  }, [checkoutMutation, isAuthenticated]);
-
-  const spotsRemaining = lifetimeStatus?.remaining ?? null;
-  const isSoldOut = lifetimeStatus?.isSoldOut === true;
+  const handlePricingInterest = useCallback((planName: string) => {
+    track('pricing_configuration_required', { source: 'product_experience', plan: planName });
+    setPricingNotice(`${planName} checkout is not yet available because its Stripe price configuration has not been verified.`);
+  }, []);
 
   const FEATURES = [
     { icon: '📡', title: 'Pressure Index™', description: 'A composite systemic stress score built from credit spreads, volatility, liquidity, and macro positioning. Not sentiment — measurement.', accent: CYAN },
-    { icon: '🎯', title: 'Bull vs. Crash Probability', description: 'Real-time probability distribution across five market regimes: Bull, Soft Landing, Stagflation, Recession, and Crash.', accent: GREEN },
+    { icon: '🎯', title: 'Scenario Context', description: 'Derived scenario context across macro states, clearly separated from calibrated probability or forecast claims.', accent: GREEN },
     { icon: '🔍', title: 'Market Regime Detection', description: 'Identifies the current macro regime and how long it has been developing — context that changes how every signal should be read.', accent: GOLD },
-    { icon: '📚', title: 'Historical Analog Engine', description: 'Matches current conditions against every comparable historical period to show what typically happened next.', accent: PURPLE },
+    { icon: '📚', title: 'Historical Analog Engine', description: 'Compares current features with documented historical references for context; similarity does not forecast what happens next.', accent: PURPLE },
     { icon: '🤖', title: 'AI Market Intelligence', description: 'ASHA synthesizes all platform data into a personalized Oracle Briefing — your institutional-grade market strategist, available 24/7.', accent: CYAN },
     { icon: '🔔', title: 'Signals & Alerts', description: 'Screener-grade signal detection across equities, crypto, and macro instruments with configurable alert thresholds.', accent: GREEN },
     { icon: '💼', title: 'Portfolio Intelligence', description: 'Analyze your portfolio against current macro conditions. Understand how your positions are exposed to each risk regime.', accent: GOLD },
     { icon: '📋', title: 'Daily Briefings', description: 'Structured daily intelligence reports covering market state, key drivers, and what to watch — delivered before markets open.', accent: PURPLE },
-    { icon: '🗺️', title: 'Scenario Analysis', description: 'Model multiple macro scenarios and understand the probability-weighted outcomes for your positions and watchlist.', accent: CYAN },
+    { icon: '🗺️', title: 'Scenario Analysis', description: 'Compare multiple macro scenarios and their evidence-bound context for your positions and watchlist.', accent: CYAN },
     { icon: '🏛️', title: 'Institutional Research Tools', description: 'Macro driver analysis, transmission mechanism mapping, positioning data, and evidence-based methodology — all in one platform.', accent: GREEN },
   ];
 
@@ -357,7 +330,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
         'Understand whether the macro backdrop supports or contradicts your setup',
         'See real-time pressure readings before entering positions',
         'Get AI-synthesized briefings that explain what is driving the market today',
-        'Access day trade intelligence calibrated to current regime conditions',
+        'Access day trade intelligence with current regime context and source-quality disclosures',
       ],
     },
     {
@@ -367,9 +340,9 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       accent: GOLD,
       bullets: [
         'Track systemic pressure across credit, volatility, and liquidity simultaneously',
-        'Identify regime transitions before they become consensus',
-        'Compare current conditions against historical analogs with matching outcomes',
-        'Model scenario probabilities for portfolio positioning decisions',
+        'Monitor regime changes as they are observed and documented',
+        'Compare current conditions against historical analog references with disclosed outcome limits',
+        'Use derived scenario context alongside portfolio-specific risk decisions',
       ],
     },
     {
@@ -443,17 +416,6 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
     },
   ];
 
-  const LIFETIME_INCLUDES = [
-    'Full Pro access — every engine, every signal, fully unlocked',
-    'ASHA Oracle Briefings — AI-powered daily macro intelligence',
-    'Historical Analog Engine — pattern matching across 25 years',
-    'Scenario Analysis — probability-weighted outcome modeling',
-    'Daily Briefings Archive — complete intelligence history',
-    'All future features — included at no additional charge',
-    'Founding Member status — recognized in the platform',
-    'Priority support — direct access to the founding team',
-  ];
-
   return (
     <div
       ref={containerRef}
@@ -490,8 +452,8 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
               cursor: 'pointer', padding: '8px 14px', borderRadius: '6px',
               transition: 'all 0.15s ease-out',
             }}
-            aria-label="View $299 lifetime pricing"
-          >$299 Lifetime</button>
+            aria-label="View FAULTLINE pricing"
+          >View Pricing</button>
           <button
             onClick={handleLogin}
             style={{
@@ -566,8 +528,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             borderRadius: '8px', padding: '10px 20px', marginBottom: '40px',
           }}>
             <span style={{ fontFamily: MONO, fontSize: '10px', color: GOLD, letterSpacing: '0.15em' }}>
-              ◆ FOUNDING LIFETIME ACCESS · $299 ONE-TIME
-              {spotsRemaining !== null && ` · ${spotsRemaining} SPOTS REMAINING`}
+              ◆ FOUNDING MEMBER · $49 / MONTH · RATE LOCKED
             </span>
           </div>
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -845,7 +806,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             const { ref, visible } = useFadeIn(0.1);
             return (
               <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(30px)', transition: 'all 0.7s ease' }}>
-                <SectionLabel text="From the Founder" color={CYAN} />
+                <SectionLabel text="Why I Built FAULTLINE" color={CYAN} />
                 <blockquote style={{
                   fontFamily: SANS, fontSize: 'clamp(16px,2vw,20px)',
                   color: 'rgba(255,255,255,0.8)', lineHeight: 1.75,
@@ -853,7 +814,21 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   paddingLeft: '28px', margin: '0 0 32px',
                   fontStyle: 'normal',
                 }}>
-                  "I built FAULTLINE because I kept watching the same pattern repeat: the signals were always there before the crash — in credit spreads, in liquidity, in volatility regimes — but they were scattered across Bloomberg terminals, Fed data releases, and institutional research that most investors never see. I wanted one platform that synthesized all of it into something clear, actionable, and honest about what it knows and what it doesn't. That's what FAULTLINE is."
+                  <p style={{ margin: '0 0 22px', color: '#F0F4FF', fontFamily: MONO, fontSize: 'clamp(19px,2.4vw,25px)', lineHeight: 1.35, fontWeight: 700 }}>
+                    <span style={{ display: 'block' }}>Finding the right assets isn’t always the hardest part of investing.</span>
+                    <span style={{ display: 'block', color: CYAN, marginTop: '5px' }}>Knowing what to do after you’ve found them can be.</span>
+                  </p>
+                  <p style={{ margin: '0 0 18px' }}>I built FAULTLINE because I wish I had a tool like this the first time I made life-changing gains.</p>
+                  <p style={{ margin: '0 0 18px' }}>I had found the right assets. What I didn’t have was a system that could clearly show me what was happening around them — when market conditions were changing, when risk was building, when momentum was weakening, or when it might be time to protect what I had made.</p>
+                  <p style={{ margin: '0 0 18px' }}>That experience stayed with me.</p>
+                  <p style={{ margin: '0 0 18px' }}>Because making money in the market is only part of the challenge. <strong style={{ color: '#F0F4FF' }}>Knowing what to do once you’ve made it can be even harder.</strong></p>
+                  <p style={{ margin: '0 0 18px' }}>Markets give us endless charts, headlines, indicators, opinions, and predictions. More information does not automatically create better decisions.</p>
+                  <p style={{ margin: '0 0 18px', color: '#F0F4FF', fontWeight: 600 }}>What investors need is clarity.</p>
+                  <p style={{ margin: '0 0 18px' }}>Those five questions became the foundation of FAULTLINE.</p>
+                  <p style={{ margin: '0 0 18px' }}>I wanted to build the tool I wish had been sitting in front of me during those moments — something that could cut through the noise, explain the environment around my investments, and help me recognize when the odds were beginning to change.</p>
+                  <p style={{ margin: '0 0 18px' }}>FAULTLINE isn’t about predicting every market move.</p>
+                  <p style={{ margin: '0 0 22px' }}>It’s about seeing the market more clearly when the decisions matter most.</p>
+                  <p style={{ margin: 0, color: '#F0F4FF', fontWeight: 700, fontSize: 'clamp(18px,2.2vw,23px)', lineHeight: 1.45 }}>Finding the opportunity can change your portfolio. <span style={{ color: CYAN }}>Knowing when to move can change your life.</span></p>
                 </blockquote>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{
@@ -865,14 +840,16 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   }}>JT</div>
                   <div>
                     <div style={{ fontFamily: MONO, fontSize: '13px', color: '#F0F4FF', letterSpacing: '0.05em' }}>JT</div>
-                    <div style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Founder, FAULTLINE</div>
+                    <div style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '2px' }}>Founder & CEO, FAULTLINE</div>
                   </div>
                 </div>
                 <div style={{ marginTop: '32px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
                   {[
-                    { label: 'Transparent Methodology', desc: 'Every signal is documented and explainable' },
-                    { label: 'No Black Boxes', desc: 'You see the data, the drivers, and the logic' },
-                    { label: 'Built for Clarity', desc: 'Institutional rigor, accessible to any investor' },
+                    { label: 'What’s happening?', desc: 'Observe the market environment' },
+                    { label: 'Why is it happening?', desc: 'Understand the drivers' },
+                    { label: 'What’s likely to happen next?', desc: 'Assess the evidence' },
+                    { label: 'What should I be watching?', desc: 'Track what could change' },
+                    { label: 'What should I do?', desc: 'Act with greater clarity' },
                   ].map((item) => (
                     <div key={item.label} style={{ flex: '1 1 180px' }}>
                       <div style={{ fontFamily: MONO, fontSize: '10px', color: CYAN, letterSpacing: '0.15em', marginBottom: '4px' }}>{item.label}</div>
@@ -886,146 +863,57 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
         </div>
       </section>
 
-      {/* ── Section 9: $299 Founding Lifetime Pricing ──────── */}
+      {/* ── Section 9: Public Pricing ───────────────────────── */}
       <section
         ref={pricingRef}
         id="pricing"
-        aria-label="Founding lifetime access pricing"
-        style={{ padding: 'clamp(60px,8vw,120px) clamp(20px,5vw,80px)', background: `${GOLD}08`, borderTop: `1px solid ${GOLD}20`, borderBottom: `1px solid ${GOLD}20` }}
+        aria-label="FAULTLINE pricing"
+        style={{ padding: 'clamp(60px,8vw,120px) clamp(20px,5vw,80px)', background: 'rgba(0,229,255,0.015)', borderTop: '1px solid rgba(0,229,255,0.12)', borderBottom: '1px solid rgba(0,229,255,0.12)' }}
       >
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          {(() => {
-            const { ref, visible } = useFadeIn(0.1);
-            return (
-              <div ref={ref} style={{ opacity: visible ? 1 : 0, transform: visible ? 'none' : 'translateY(30px)', transition: 'all 0.7s ease' }}>
-                <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-                  <SectionLabel text="Founding Lifetime Access" color={GOLD} />
-                  <h2 style={{ fontFamily: MONO, fontSize: 'clamp(24px,4vw,44px)', color: '#F0F4FF', lineHeight: 1.2, marginBottom: '16px' }}>
-                    One payment.<br /><span style={{ color: GOLD }}>Lifetime access.</span>
-                  </h2>
-                  <p style={{ fontFamily: SANS, fontSize: 'clamp(14px,1.8vw,17px)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '560px', margin: '0 auto' }}>
-                    The founding cohort is limited to 100 members. Once it's gone, the lifetime offer closes permanently. This is not a marketing tactic — it is a structural decision to keep the founding group small.
-                  </p>
-                </div>
+        <div style={{ maxWidth: '1120px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '48px' }}>
+            <SectionLabel text="Membership" color={CYAN} />
+            <h2 style={{ fontFamily: MONO, fontSize: 'clamp(24px,4vw,44px)', color: '#F0F4FF', lineHeight: 1.2, margin: '0 0 16px' }}>
+              Choose the level of intelligence you need.
+            </h2>
+            <p style={{ fontFamily: SANS, fontSize: 'clamp(14px,1.8vw,17px)', color: 'rgba(255,255,255,0.5)', lineHeight: 1.7, maxWidth: '620px', margin: '0 auto' }}>
+              Three monthly memberships. Clear capabilities. No annual pricing or unverified discounts.
+            </p>
+          </div>
 
-                {/* Pricing card */}
-                <div style={{
-                  background: `linear-gradient(135deg, rgba(255,170,0,0.06), rgba(255,170,0,0.02))`,
-                  border: `1px solid ${GOLD}50`,
-                  borderRadius: '20px',
-                  padding: 'clamp(32px,5vw,56px)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}>
-                  {/* Glow accent */}
-                  <div style={{ position: 'absolute', top: '-60px', right: '-60px', width: '200px', height: '200px', borderRadius: '50%', background: `${GOLD}10`, filter: 'blur(40px)', pointerEvents: 'none' }} aria-hidden="true" />
-
-                  {/* Badge */}
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    background: `${GOLD}20`, border: `1px solid ${GOLD}40`,
-                    borderRadius: '20px', padding: '6px 16px', marginBottom: '24px',
-                  }}>
-                    <span style={{ fontFamily: MONO, fontSize: '10px', color: GOLD, letterSpacing: '0.2em' }}>
-                      FOUNDING COHORT
-                      {spotsRemaining !== null
-                        ? ` · ${spotsRemaining} OF 100 SPOTS REMAINING`
-                        : isSoldOut ? ' · SOLD OUT' : ''}
-                    </span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '18px', alignItems: 'stretch' }}>
+            {PUBLIC_PRICING.map((plan) => {
+              const isFounding = plan.id === 'founding';
+              return (
+                <div key={plan.id} style={{ display: 'flex', flexDirection: 'column', padding: '30px 26px', background: isFounding ? 'linear-gradient(145deg, rgba(255,170,0,0.11), rgba(255,170,0,0.025))' : 'rgba(255,255,255,0.025)', border: `1px solid ${isFounding ? 'rgba(255,170,0,0.45)' : `${plan.color}32`}`, borderRadius: '16px', boxShadow: isFounding ? '0 0 46px rgba(255,170,0,0.09)' : 'none' }}>
+                  <div style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', color: plan.color, marginBottom: '14px' }}>{plan.badge}</div>
+                  <div style={{ fontFamily: MONO, fontSize: '12px', letterSpacing: '0.18em', color: '#F0F4FF', marginBottom: '14px' }}>{plan.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '12px' }}>
+                    <span style={{ fontFamily: MONO, fontSize: 'clamp(42px,6vw,56px)', color: plan.color, fontWeight: 700, lineHeight: 1 }}>{plan.price}</span>
+                    <span style={{ fontFamily: SANS, fontSize: '14px', color: 'rgba(255,255,255,0.45)' }}>{plan.period}</span>
                   </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '40px', alignItems: 'start' }}>
-                    {/* Price + CTA */}
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '8px' }}>
-                        <span style={{ fontFamily: MONO, fontSize: 'clamp(48px,7vw,72px)', color: GOLD, fontWeight: 700, lineHeight: 1 }}>$299</span>
-                        <span style={{ fontFamily: SANS, fontSize: '16px', color: 'rgba(255,255,255,0.4)' }}>one-time</span>
-                      </div>
-                      <div style={{ fontFamily: SANS, fontSize: '14px', color: 'rgba(255,255,255,0.35)', marginBottom: '8px', textDecoration: 'line-through' }}>
-                        vs. $59/month Pro subscription
-                      </div>
-                      <div style={{ fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginBottom: '32px', lineHeight: 1.5 }}>
-                        Limited founding lifetime access — available for six months after official launch.
-                      </div>
-
-                      {isSoldOut ? (
-                        <div style={{
-                          width: '100%', padding: '18px',
-                          background: 'rgba(255,255,255,0.05)',
-                          border: '1px solid rgba(255,255,255,0.1)',
-                          borderRadius: '10px',
-                          fontFamily: MONO, fontSize: '13px', letterSpacing: '0.1em',
-                          color: 'rgba(255,255,255,0.3)', textAlign: 'center',
-                          textTransform: 'uppercase',
-                        }}>Founding Cohort Closed</div>
-                      ) : (
-                        <button
-                          onClick={handleLifetimeCheckout}
-                          disabled={checkoutMutation.isPending}
-                          style={{
-                            width: '100%', padding: '18px',
-                            background: checkoutMutation.isPending ? `${GOLD}60` : GOLD,
-                            border: 'none', borderRadius: '10px',
-                            color: '#000', fontFamily: MONO, fontSize: '14px',
-                            letterSpacing: '0.12em', textTransform: 'uppercase',
-                            cursor: checkoutMutation.isPending ? 'wait' : 'pointer',
-                            fontWeight: 700,
-                            boxShadow: `0 0 32px ${GOLD}40`,
-                            transition: 'all 0.15s ease-out',
-                            marginBottom: '12px',
-                          }}
-                          aria-label="Get founding lifetime access for $299"
-                        >
-                          {checkoutMutation.isPending ? 'Opening Checkout…' : 'Get Lifetime Access →'}
-                        </button>
-                      )}
-
-                      {!isSoldOut && (
-                        <button
-                          onClick={handleEnter}
-                          style={{
-                            width: '100%', padding: '14px',
-                            background: 'transparent',
-                            border: '1px solid rgba(255,255,255,0.15)',
-                            borderRadius: '10px',
-                            color: 'rgba(255,255,255,0.5)', fontFamily: MONO, fontSize: '12px',
-                            letterSpacing: '0.1em', textTransform: 'uppercase',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease-out',
-                          }}
-                          aria-label="Try FAULTLINE free first"
-                        >Try Free First</button>
-                      )}
-
-                      <div style={{ marginTop: '16px', fontFamily: MONO, fontSize: '10px', color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', textAlign: 'center' }}>
-                        SECURE CHECKOUT · STRIPE · NO RECURRING CHARGES
-                      </div>
-                    </div>
-
-                    {/* What's included */}
-                    <div>
-                      <div style={{ fontFamily: MONO, fontSize: '11px', color: GOLD, letterSpacing: '0.2em', marginBottom: '20px' }}>WHAT'S INCLUDED</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {LIFETIME_INCLUDES.map((item, i) => (
-                          <div key={i} style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-                            <span style={{ color: GOLD, flexShrink: 0, marginTop: '2px' }}>✓</span>
-                            <span style={{ fontFamily: SANS, fontSize: '14px', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                  <p style={{ fontFamily: SANS, fontSize: '14px', color: 'rgba(255,255,255,0.58)', lineHeight: 1.6, margin: '0 0 22px' }}>{plan.tagline}</p>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '26px' }}>
+                    {plan.features.map((feature) => <div key={feature} style={{ display: 'flex', gap: '9px', fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45 }}><span style={{ color: plan.color }}>✓</span><span>{feature}</span></div>)}
                   </div>
+                  <button onClick={() => handlePricingInterest(plan.name)} style={{ width: '100%', padding: '14px', background: isFounding ? 'rgba(255,170,0,0.16)' : 'transparent', border: `1px solid ${plan.color}70`, borderRadius: '8px', color: plan.color, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', fontWeight: 700, cursor: 'pointer' }}>{plan.cta}</button>
+                  {isFounding && (
+                    <div style={{ marginTop: '16px', paddingTop: '18px', borderTop: `1px solid ${GOLD}35` }}>
+                      <div style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', color: GOLD, marginBottom: '9px' }}>{FOUNDER_LIFETIME_OPTION.label}</div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginBottom: '7px' }}>
+                        <span style={{ fontFamily: MONO, fontSize: '30px', color: GOLD, fontWeight: 700, lineHeight: 1 }}>{FOUNDER_LIFETIME_OPTION.price}</span>
+                        <span style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>one time</span>
+                      </div>
+                      <p style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.55, margin: '0 0 14px' }}>{FOUNDER_LIFETIME_OPTION.description}</p>
+                      <button onClick={() => handlePricingInterest('Lifetime Access — $299')} style={{ width: '100%', padding: '12px', background: 'rgba(255,170,0,0.1)', border: `1px solid ${GOLD}80`, borderRadius: '8px', color: GOLD, fontFamily: MONO, fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700, cursor: 'pointer' }}>{FOUNDER_LIFETIME_OPTION.cta}</button>
+                    </div>
+                  )}
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Free tier note */}
-                <div style={{ marginTop: '32px', textAlign: 'center' }}>
-                  <p style={{ fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.3)', lineHeight: 1.6 }}>
-                    Not ready to commit? <button onClick={handleEnter} style={{ background: 'none', border: 'none', color: CYAN, fontFamily: SANS, fontSize: '13px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>Start free</button> — no credit card required. The Pressure Index and Market Seismograph are always free.
-                  </p>
-                </div>
-              </div>
-            );
-          })()}
+          {pricingNotice && <p role="status" style={{ margin: '24px auto 0', maxWidth: '760px', textAlign: 'center', fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.48)', lineHeight: 1.6 }}>{pricingNotice}</p>}
         </div>
       </section>
 
@@ -1066,20 +954,16 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   }}
                   aria-label="Enter FAULTLINE platform"
                 >Enter FAULTLINE →</button>
-                {!isSoldOut && (
-                  <button
-                    onClick={handleLifetimeCheckout}
-                    disabled={checkoutMutation.isPending}
-                    style={{
-                      fontFamily: MONO, fontSize: '14px', letterSpacing: '0.12em', textTransform: 'uppercase',
-                      color: '#000', background: GOLD, border: 'none', cursor: 'pointer',
-                      padding: '18px 48px', borderRadius: '8px', fontWeight: 700,
-                      boxShadow: `0 0 32px ${GOLD}50`,
-                      transition: 'all 0.15s ease-out',
-                    }}
-                    aria-label="Get lifetime access for $299"
-                  >Get Lifetime Access · $299 →</button>
-                )}
+                <button
+                  onClick={handleSeePricing}
+                  style={{
+                    fontFamily: MONO, fontSize: '14px', letterSpacing: '0.12em', textTransform: 'uppercase',
+                    color: GOLD, background: 'rgba(255,170,0,0.12)', border: `1px solid ${GOLD}60`, cursor: 'pointer',
+                    padding: '18px 48px', borderRadius: '8px', fontWeight: 700,
+                    boxShadow: `0 0 32px ${GOLD}28`, transition: 'all 0.15s ease-out',
+                  }}
+                  aria-label="View Founding Member, Trader, and Power pricing"
+                >View Memberships →</button>
               </div>
               <div style={{ marginTop: '32px', fontFamily: MONO, fontSize: '10px', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.15em' }}>
                 FREE TO START · NO CREDIT CARD REQUIRED · NOT FINANCIAL ADVICE

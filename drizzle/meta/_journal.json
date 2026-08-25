@@ -372,6 +372,132 @@
       "when": 1786298572418,
       "tag": "0052_daffy_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "5",
+      "when": 1786768218129,
+      "tag": "0053_vengeful_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "5",
+      "when": 1786896950981,
+      "tag": "0054_nappy_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "5",
+      "when": 1786906148362,
+      "tag": "0055_bumpy_rocket_racer",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "5",
+      "when": 1787002968194,
+      "tag": "0056_wandering_menace",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "5",
+      "when": 1787100409030,
+      "tag": "0057_flawless_nuke",
+      "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "5",
+      "when": 1787100498958,
+      "tag": "0058_lovely_skin",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "5",
+      "when": 1787149020108,
+      "tag": "0059_futuristic_daredevil",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "5",
+      "when": 1787150697918,
+      "tag": "0060_overrated_golden_guardian",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "5",
+      "when": 1787153453700,
+      "tag": "0061_mute_doomsday",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "5",
+      "when": 1787248506529,
+      "tag": "0062_empty_silver_sable",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "5",
+      "when": 1787250493487,
+      "tag": "0063_nervous_shockwave",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "5",
+      "when": 1787410392018,
+      "tag": "0064_misty_lockheed",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "5",
+      "when": 1787416103300,
+      "tag": "0065_ordinary_baron_strucker",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "5",
+      "when": 1787420620516,
+      "tag": "0066_rapid_shotgun",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "5",
+      "when": 1787424456340,
+      "tag": "0067_smiling_dagger",
+      "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "5",
+      "when": 1787425379218,
+      "tag": "0068_many_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "5",
+      "when": 1787432229052,
+      "tag": "0069_light_harry_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "5",
+      "when": 1787433267376,
+      "tag": "0070_brief_slipstream",
+      "breakpoints": true
     }
   ]
 }

@@ -56,7 +56,7 @@ describe("WHY destination composition", () => {
     expect(whySource).toContain("marketState?.why.whyThisRegime ?? output.narrative.regimeAssessment");
     expect(whySource).toContain('marketMode === "canonical" ? "Canonical state" : "Deterministic fallback"');
     expect(whySource).toContain("Canonical refresh is degraded");
-    expect(whySource).not.toContain("trpc.");
+    expect(whySource).toContain("trpc.marketState.canonicalCurrent.useQuery");
   });
 
   it("keeps confidence, source health, freshness, warnings, history, and invalidation attached", () => {

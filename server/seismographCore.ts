@@ -32,6 +32,7 @@ import type {
   EvidenceType,
   SeismographProviderProvenance,
 } from "./seismographCore.contract";
+import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
 
 export type {
   EvidenceContributor,
@@ -237,7 +238,7 @@ export interface SeismographOutput {
   // ── Core Market Assessment ────────────────────────────────
   pressureScore: number;
   regime: string;
-  stressLevel: "Low" | "Elevated" | "High" | "Crisis";
+  stressLevel: "Low" | "Moderate" | "Elevated" | "High" | "Crisis";
   direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating";
 
   // ── Probability Distribution ──────────────────────────────
@@ -447,7 +448,7 @@ export function buildASHAContextBlock(output: SeismographOutput): ASHAContextBlo
 - Confidence: ${probabilities.confidence}%
 
 **Historical Context:**
-- Percentile: ${output.historicalPercentile}th (${output.historicalPercentile > 75 ? "historically elevated" : output.historicalPercentile > 50 ? "above average" : "below average"})
+- Percentile: ${formatOrdinal(output.historicalPercentile)} (${describeHistoricalPercentile(output.historicalPercentile)})
 - Closest Analog: ${topAnalog ? `${topAnalog.label} (${topAnalog.similarity}% similarity)` : "No close analog"}
 - Market Streak: ${marketMemory.streakDays} days ${marketMemory.streakDirection}
 
@@ -551,7 +552,7 @@ export function buildMacroContextBlock(output: SeismographOutput): MacroContextB
 
   const historicalContext = output.topAnalog
     ? `Current conditions most closely resemble ${output.topAnalog.label} (${output.topAnalog.similarity}% similarity). ${output.topAnalog.description}`
-    : `At the ${output.historicalPercentile}th historical percentile, current conditions are ${output.historicalPercentile > 75 ? "historically elevated" : "within normal range"}.`;
+    : `At the ${formatOrdinal(output.historicalPercentile)} historical percentile, current conditions are ${describeHistoricalPercentile(output.historicalPercentile)}.`;
 
   return {
     pressureScore: output.pressureScore,
@@ -662,14 +663,10 @@ export function assembleSeismographOutput(
   },
   packets: EvidencePacket[]
 ): SeismographOutput {
-  const synthesizedPressure = packets.length > 0
-    ? synthesizePressureScore(packets)
-    : state.pressureScore;
-
-  // Blend synthesized score with direct pressure score (60/40)
-  const blendedPressure = packets.length > 0
-    ? Math.round((synthesizedPressure * 0.4 + state.pressureScore * 0.6) * 10) / 10
-    : state.pressureScore;
+  // The frozen Champion score is the canonical market-pressure measure. Packet
+  // synthesis remains evidence context only; blending it into the canonical
+  // score would create a non-versioned second Pressure Index.
+  const canonicalPressure = state.pressureScore;
 
   const evidenceFamilies = groupIntoFamilies(packets);
   const evidenceConsensus = computeEvidenceConsensus(packets);
@@ -695,13 +692,7 @@ export function assembleSeismographOutput(
       ? Math.round(packets.reduce((s, p) => s + p.confidence, 0) / packets.length)
       : 70;
 
-  const stressLevel = blendedPressure >= 8
-    ? "Crisis"
-    : blendedPressure >= 6.5
-    ? "High"
-    : blendedPressure >= 4.5
-    ? "Elevated"
-    : "Low";
+  const stressLevel = state.stressLevel;
 
   const topAnalog = state.analogMatches[0] ?? null;
 
@@ -718,7 +709,7 @@ export function assembleSeismographOutput(
     version: "2.0",
     computedAt,
     dataFreshness,
-    pressureScore: blendedPressure,
+    pressureScore: canonicalPressure,
     regime: state.regime,
     stressLevel: stressLevel as SeismographOutput["stressLevel"],
     direction: state.direction as SeismographOutput["direction"],
@@ -751,7 +742,7 @@ export function assembleSeismographOutput(
 
   // Build distribution payloads
   output.forDashboard = {
-    pressureScore: blendedPressure,
+    pressureScore: canonicalPressure,
     regime: state.regime,
     stressLevel: stressLevel as DashboardPayload["stressLevel"],
     direction: state.direction,

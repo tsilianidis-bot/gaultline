@@ -1,0 +1,25 @@
+{
+  "ruleSetVersion": "cross-engine-divergence-rules-v1",
+  "candidateTypes": [
+    {
+      "candidateType": "CROSS_ENGINE_DIVERGENCE",
+      "confirmationRuleSetId": "CROSS_ENGINE_DIVERGENCE_CONFIRM_V1",
+      "invalidationRuleSetId": "CROSS_ENGINE_DIVERGENCE_INVALIDATE_V1",
+      "confirmation": {
+        "all": [
+          { "metric": "DIVERGENCE_MAGNITUDE", "operator": "GTE", "threshold": 15, "thresholdProvenance": "NEW_ENGINEERING_GOVERNANCE_THRESHOLD_NOT_STATISTICALLY_CALIBRATED" },
+          { "metric": "DIVERGENCE_PERSISTENCE", "operator": "EQ", "threshold": "PERSISTING" }
+        ],
+        "minimumLifecycleState": "DEVELOPING"
+      },
+      "invalidation": {
+        "all": [
+          { "metric": "DIVERGENCE_MAGNITUDE", "operator": "LTE", "threshold": 5, "thresholdProvenance": "NEW_ENGINEERING_GOVERNANCE_THRESHOLD_NOT_STATISTICALLY_CALIBRATED" },
+          { "metric": "DIVERGENCE_PERSISTENCE", "operator": "EQ", "threshold": "PERSISTING" }
+        ],
+        "eligibleLifecycleStates": ["DEVELOPING", "FADING", "CONFIRMING"]
+      }
+    }
+  ],
+  "unsupportedCandidatePolicy": "NO_GOVERNED_CONFIRMATION_PLAN"
+}

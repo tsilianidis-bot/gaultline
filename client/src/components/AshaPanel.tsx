@@ -16,6 +16,7 @@ import AshaSummon from "./AshaSummon";
 import IntelligenceSynthesis, { SynthesisStep } from "./IntelligenceSynthesis";
 import OracleBriefing, { OracleBriefingData } from "./OracleBriefing";
 import { useIsMobile } from "@/hooks/useMobile";
+import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
 
 // ── Context-aware suggestions per page ───────────────────────
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -101,8 +102,8 @@ const SYNTHESIS_STEPS: Array<{ id: string; label: string; detail?: string }> = [
   { id: "credit",      label: "Scanning credit markets",           detail: "Spread analysis complete" },
   { id: "volatility",  label: "Measuring volatility structure",    detail: "Vol regime classified" },
   { id: "analog",      label: "Consulting historical analogs",     detail: "Closest periods identified" },
-  { id: "probability", label: "Computing probability distribution", detail: "Outcome weights calibrated" },
-  { id: "synthesis",   label: "Synthesizing 10-engine consensus",  detail: "Intelligence unified" },
+  { id: "probability", label: "Reviewing derived scenario context", detail: "Not a calibrated forecast" },
+  { id: "synthesis",   label: "Synthesizing available evidence",    detail: "Evidence bounded by source quality" },
 ];
 
 // ── Panel state ───────────────────────────────────────────────
@@ -117,6 +118,10 @@ function generateMissionId(): string {
 
 export default function AshaPanel() {
   const { output } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   const { pageContext, threadHistory, appendThreadExchange } = useAshaContext();
   const [panelState, setPanelState] = useState<PanelState>("idle");
   const [currentQuestion, setCurrentQuestion] = useState("");
@@ -129,7 +134,9 @@ export default function AshaPanel() {
 
   // ── Derive regime state for orb ───────────────────────────
   const regimeState: AshaRegimeState = (() => {
-    const score = output?.overall?.score ?? 0;
+    const score = canonicalState?.pressureIndex !== null && canonicalState?.pressureIndex !== undefined
+      ? canonicalState.pressureIndex / 10
+      : output?.overall?.score ?? 0;
     if (score >= 7) return "critical";
     if (score >= 4.5) return "rising";
     return "calm";
@@ -138,15 +145,15 @@ export default function AshaPanel() {
   // ── Build full page context ───────────────────────────────
   const fullPageContext = {
     page: pageContext?.page ?? "dashboard",
-    pressureScore: pageContext?.pressureScore ?? (output?.overall?.score !== undefined ? output.overall.score * 10 : undefined),
-    regime: pageContext?.regime ?? output?.regime?.label,
+    pressureScore: pageContext?.pressureScore ?? canonicalState?.pressureIndex ?? (output?.overall?.score !== undefined ? output.overall.score * 10 : undefined),
+    regime: pageContext?.regime ?? canonicalState?.regime ?? output?.regime?.label,
     regimeConfidence: pageContext?.regimeConfidence,
     narrative: pageContext?.narrative ?? output?.narrative?.summary,
     trend: pageContext?.trend,
     keyDrivers: pageContext?.keyDrivers ?? output?.narrative?.keyRisks,
     historicalAnalog: pageContext?.historicalAnalog,
     transitionProbability: pageContext?.transitionProbability,
-    additionalContext: pageContext?.additionalContext,
+    additionalContext: [pageContext?.additionalContext, canonicalState ? `Canonical state ID: ${canonicalState.stateId}.` : null].filter(Boolean).join(" ") || undefined,
   };
 
   const suggestions = PAGE_SUGGESTIONS[fullPageContext.page] ?? PAGE_SUGGESTIONS.default;
@@ -252,7 +259,9 @@ export default function AshaPanel() {
         question,
         missionId: generateMissionId(),
         timestamp: new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        directAnswer: response.directAnswer || response.executiveSummary || response.reply.split("\n")[0] || response.reply.slice(0, 200),
         executiveSummary: response.executiveSummary || response.reply.split("\n")[0] || response.reply.slice(0, 200),
+        coreThesis: response.coreThesis || response.executiveSummary || response.reply.split("\n")[0],
         marketBias: response.marketBias || "NEUTRAL",
         confidence: confidenceNum,
         marketRegime: response.marketRegime || fullPageContext.regime || "Unknown",
@@ -264,13 +273,18 @@ export default function AshaPanel() {
         bearProbability: response.bearProbability ?? 50,
         keyFindings: response.keyFindings?.length ? response.keyFindings : [response.reply.slice(0, 180)],
         supportingEvidence: response.supportingEvidence?.length ? response.supportingEvidence : response.sources,
+        crossEngineSynthesis: response.crossEngineSynthesis,
+        synthesisProvenance: response.integrity?.synthesis ?? undefined,
         historicalAnalog: response.historicalAnalog || fullPageContext.historicalAnalog,
         riskFactors: response.riskFactors?.length ? response.riskFactors : (response.invalidationTriggers || []),
+        confirmationConditions: response.confirmationConditions,
         invalidationConditions: response.invalidationConditions?.length ? response.invalidationConditions : [],
         missionRecommendation: response.missionRecommendation || response.reply,
         missionRecommendationStructured: response.missionRecommendationStructured,
         finalVerdictAction: response.finalVerdictAction || "WATCH",
-        expectedTimeframe: response.expectedTimeframe || "2-4 weeks",
+        expectedTimeframe: undefined,
+        forecastMetadata: insufficientHorizonMetadata("oracle-briefing", new Date().toISOString()),
+        questionAnalysis: response.questionAnalysis,
         sourceCitations: response.sourceCitations,
         limitations: response.limitations,
         disclaimer: response.disclaimer || "This briefing is for informational purposes only and does not constitute financial advice.",

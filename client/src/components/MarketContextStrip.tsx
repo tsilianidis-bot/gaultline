@@ -11,6 +11,8 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
 import { formatCanonicalScore } from "@shared/marketMetrics";
+import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
+import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
 
 // Pages that should NOT show the strip (landing, auth, public pages)
 const EXCLUDED_PATHS = [
@@ -44,6 +46,10 @@ function ProbBar({ value, color, label }: { value: number; color: string; label:
 export default function MarketContextStrip() {
   const [location] = useLocation();
   const { output, isLoading } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   // Seismograph assembled output — enriches the strip with analog + transition data
   const { data: seismographOutput } = trpc.seismograph.getAssembledOutput.useQuery(undefined, {
     staleTime: 10 * 60 * 1000,
@@ -62,14 +68,17 @@ export default function MarketContextStrip() {
   // Don't show on excluded pages
   if (EXCLUDED_PATHS.some(p => location === p || location.startsWith(p + "/"))) return null;
   if (isLoading) return null;
+  if (!canonicalState) return null;
 
   const { overall, regime, probability, narrative } = output;
+  const canonicalPressure = canonicalState?.pressureIndex;
+  const canonicalRegime = canonicalState?.regime;
   const verdictLabel = getVerdictLabel(overall.riskLevel);
   const regimeColor = regime.color;
-  const pressureScore = formatCanonicalScore(overall.score * 10);
+  const pressureScore = formatCanonicalScore(canonicalPressure ?? overall.score * 10);
   const pressureColor = getRiskColor(overall.riskLevel);
 
-  // Pick the dominant probability for the "most likely outcome" pill
+  // Select the largest derived scenario value for context only; it is not a probability forecast.
   const probs = [
     { label: "BULL", value: probability.bullProbability, color: "#10B981" },
     { label: "SOFT LAND", value: probability.softLandingProbability, color: "#00E5FF" },
@@ -78,6 +87,7 @@ export default function MarketContextStrip() {
     { label: "CRASH", value: probability.crashProbability, color: "#DC2626" },
   ];
   const dominant = probs.reduce((a, b) => a.value > b.value ? a : b);
+  const scenarioHorizon = insufficientHorizonMetadata("market-context-derived-scenario", new Date().toISOString(), "Not yet established");
 
   // One-line synthesis from narrative
   const synthesis = narrative.summary
@@ -115,7 +125,7 @@ export default function MarketContextStrip() {
             background: `${regimeColor}15`, border: `1px solid ${regimeColor}30`,
           }}>
             <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: regimeColor, boxShadow: `0 0 6px ${regimeColor}` }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{regime.label.toUpperCase()}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{(canonicalRegime ?? regime.label).toUpperCase()}</span>
           </div>
 
           {/* Pressure score */}
@@ -130,11 +140,12 @@ export default function MarketContextStrip() {
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: pressureColor, fontWeight: 600 }}>{verdictLabel}</span>
           </div>
 
-          {/* Dominant outcome */}
+          {/* Dominant derived scenario */}
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em" }}>MOST LIKELY</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.7)", letterSpacing: "0.1em" }}>DERIVED SCENARIO</span>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: dominant.color, fontWeight: 600 }}>{dominant.label} {dominant.value}%</span>
           </div>
+          <ForecastHorizonDisclosure metadata={scenarioHorizon} compact />
 
           {/* Expand button */}
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "4px", color: "rgba(100,116,139,0.5)" }}>
@@ -160,7 +171,7 @@ export default function MarketContextStrip() {
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = `${regimeColor}15`; }}
             >
               <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: regimeColor, boxShadow: `0 0 8px ${regimeColor}` }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{regime.label.toUpperCase()}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.15em", color: regimeColor, fontWeight: 600 }}>{(canonicalRegime ?? regime.label).toUpperCase()}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(148,163,184,0.4)", letterSpacing: "0.08em" }}>{regime.sublabel}</span>
             </button>
 
@@ -205,6 +216,11 @@ export default function MarketContextStrip() {
 
           {/* Row 2: AI synthesis + key risks + next step */}
           <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
+            {canonicalState && (
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.55)", letterSpacing: "0.08em" }}>
+                CANONICAL {canonicalState.stateId} · {canonicalState.quality}
+              </span>
+            )}
             {/* Synthesis */}
             <div style={{ flex: "1 1 300px", display: "flex", alignItems: "flex-start", gap: "6px" }}>
               <div style={{ width: "2px", height: "100%", minHeight: "28px", background: `${regimeColor}50`, borderRadius: "1px", flexShrink: 0, marginTop: "2px" }} />

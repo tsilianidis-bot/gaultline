@@ -19,6 +19,10 @@ import {
   getAllFeatureFlags, setFeatureFlag,
 } from "../db";
 import { sendEmail, buildApprovalEmail } from "../email";
+import { getAuthoritativeCrossEngineSynthesis, getLatestCrossEngineSynthesis } from "../crossEngineSynthesis";
+import { getCandidateObservationTimeline, getPersistedCandidateDetections } from "../candidateDetection";
+import { getImportanceQualificationEvaluations } from "../importanceQualification";
+import { getLifecycleHistory } from "../earlyWarningLifecycle";
 
 export const adminRouter = router({
   // List all registered users
@@ -258,5 +262,128 @@ export const adminRouter = router({
       if (!db) return { annotations: [] };
       const annotations = await db.select().from(ssa).orderBy(descOp(ssa.eventAt)).limit(100);
       return { annotations };
+    }),
+  getCrossEngineSynthesisDebug: adminProcedure
+    .query(async () => {
+      const [current, lastPersisted] = await Promise.all([
+        getAuthoritativeCrossEngineSynthesis(),
+        getLatestCrossEngineSynthesis(),
+      ]);
+      return {
+        current,
+        lastPersisted,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "originatingStateId", "engineObservations", "relationships", "confirmations", "divergences",
+            "independenceOfEvidence", "unavailableEngines", "staleEngines", "limitations", "supportingClaimIds",
+          ],
+        },
+      };
+    }),
+  getCandidateDetectionDebug: adminProcedure
+    .input(z.object({ candidateId: z.string().min(1).max(128).optional() }).optional())
+    .query(async ({ input }) => {
+      const candidates = await getPersistedCandidateDetections();
+      const selected = input?.candidateId ? candidates.filter(item => item.candidateId === input.candidateId) : candidates;
+      const timelines = await Promise.all(selected.map(async candidate => ({
+        candidateId: candidate.candidateId,
+        observations: await getCandidateObservationTimeline(candidate.candidateId),
+      })));
+      return {
+        candidates: selected,
+        timelines,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "originalStateId", "originalSynthesisId", "originalPayloadJson", "detectorId",
+            "detectorVersion", "detectorConfigVersion", "appendOnlyCandidateObservations",
+          ],
+        },
+      };
+    }),
+  getImportanceQualificationDebug: adminProcedure
+    .input(z.object({ candidateId: z.string().min(1).max(128).optional() }).optional())
+    .query(async ({ input }) => {
+      const evaluations = await getImportanceQualificationEvaluations(input?.candidateId);
+      return {
+        evaluations,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "candidateId", "originatingStateId", "originatingSynthesisId", "factorTraceJson",
+            "importanceScore", "qualificationStatus", "qualificationRank", "isPrimary",
+            "qualificationReasonsJson", "suppressionReasonsJson", "scoringModelId",
+            "scoringModelVersion", "scoringConfigVersion",
+          ],
+        },
+      };
+    }),
+  getLifecycleDebug: adminProcedure
+    .input(z.object({ candidateId: z.string().min(1).max(128).optional() }).optional())
+    .query(async ({ input }) => {
+      const observations = await getLifecycleHistory(input?.candidateId);
+      return {
+        observations,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "lifecycleId", "candidateId", "qualificationEvaluationId", "previousLifecycleState",
+            "newLifecycleState", "transitionReasonCode", "persistenceCount", "importanceScore",
+            "evidenceStrength", "dataQuality", "originatingStateId", "lifecycleModelId",
+            "lifecycleModelVersion", "lifecycleConfigVersion", "transitionInputsJson",
+          ],
+        },
+      };
+    }),
+  getPhase9ConfirmationInvalidationDebug: adminProcedure
+    .input(z.object({ lifecycleId: z.string().min(1).max(128).optional() }).optional())
+    .query(async ({ input }) => {
+      const { getDb } = await import("../db");
+      const {
+        phase9AuthorityEvents,
+        phase9ConditionEvaluations,
+        phase9ConfirmationPlans,
+        phase9CurrentProjections,
+        phase9PlanEvaluations,
+        phase9WarningTheses,
+      } = await import("../../drizzle/schema");
+      const { desc: descOp, eq: eqOp } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) return { theses: [], plans: [], conditionEvaluations: [], planEvaluations: [], authorityEvents: [], projections: [] };
+      const filter = input?.lifecycleId ? eqOp(phase9WarningTheses.lifecycleId, input.lifecycleId) : undefined;
+      const theses = filter ? await db.select().from(phase9WarningTheses).where(filter) : await db.select().from(phase9WarningTheses).orderBy(descOp(phase9WarningTheses.recordedAt));
+      const lifecycleIds = theses.map(item => item.lifecycleId);
+      const [plans, conditionEvaluations, planEvaluations, authorityEvents, projections] = await Promise.all([
+        input?.lifecycleId ? db.select().from(phase9ConfirmationPlans).where(eqOp(phase9ConfirmationPlans.lifecycleId, input.lifecycleId)) : db.select().from(phase9ConfirmationPlans).orderBy(descOp(phase9ConfirmationPlans.recordedAt)),
+        input?.lifecycleId ? db.select().from(phase9ConditionEvaluations).where(eqOp(phase9ConditionEvaluations.lifecycleId, input.lifecycleId)) : db.select().from(phase9ConditionEvaluations).orderBy(descOp(phase9ConditionEvaluations.recordedAt)),
+        input?.lifecycleId ? db.select().from(phase9PlanEvaluations).where(eqOp(phase9PlanEvaluations.lifecycleId, input.lifecycleId)) : db.select().from(phase9PlanEvaluations).orderBy(descOp(phase9PlanEvaluations.recordedAt)),
+        input?.lifecycleId ? db.select().from(phase9AuthorityEvents).where(eqOp(phase9AuthorityEvents.lifecycleId, input.lifecycleId)) : db.select().from(phase9AuthorityEvents).orderBy(descOp(phase9AuthorityEvents.recordedAt)),
+        input?.lifecycleId ? db.select().from(phase9CurrentProjections).where(eqOp(phase9CurrentProjections.lifecycleId, input.lifecycleId)) : db.select().from(phase9CurrentProjections).orderBy(descOp(phase9CurrentProjections.updatedAt)),
+      ]);
+      return {
+        theses, plans, conditionEvaluations, planEvaluations, authorityEvents, projections,
+        debugContract: {
+          exposesToAdminOnly: true,
+          inactiveLifecycleIds: lifecycleIds,
+          fields: ["thesisPayloadJson", "planPayloadJson", "requiredRuleJson", "conditionEvaluationIdsJson", "phase9EventId", "ruleSetVersion", "ruleConfigVersion", "originatingStateId", "latestResult"],
+        },
+      };
+    }),
+  getEarlyWarningPresentationDebug: adminProcedure
+    .query(async () => {
+      const { getCurrentGovernedEarlyWarningPresentation } = await import("../earlyWarningPresentation");
+      const presentation = await getCurrentGovernedEarlyWarningPresentation();
+      return {
+        presentation,
+        debugContract: {
+          exposesToAdminOnly: true,
+          fields: [
+            "presentationId", "warningId", "stateId", "synthesisId", "qualificationEvaluationId",
+            "lifecycleObservationId", "authorityEventId", "sourceChain", "freshness", "limitations",
+          ],
+          invariant: "Presentation is read-only and must not calculate or reinterpret Phase 2–9 authority.",
+        },
+      };
     }),
 });

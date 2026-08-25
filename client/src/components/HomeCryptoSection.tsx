@@ -69,7 +69,7 @@ const FEATURE_BLOCKS = [
   { icon: "◆", label: "Bitcoin Macro Correlation", desc: "Connect BTC price action to Fed policy, DXY strength, and Treasury yield regimes." },
   { icon: "◇", label: "AI Token Speculation Monitoring", desc: "Identify elevated speculative intensity in AI-narrative tokens before conditions shift." },
   { icon: "◎", label: "Crypto Volatility Regimes", desc: "Classify current volatility as Low / Normal / Elevated / Extreme for risk-sizing." },
-  { icon: "◐", label: "Exchange Liquidity & Flow Analysis", desc: "Monitor exchange inflows, outflows, and order-book depth as early warning signals." },
+  { icon: "◐", label: "Exchange Liquidity & Flow Analysis", desc: "Monitor exchange inflows, outflows, and order-book depth as evolving market-context signals." },
   { icon: "◑", label: "Digital Asset Momentum Signals", desc: "Identify momentum breakouts, decelerations, and reversals across the asset class." },
   { icon: "◒", label: "Risk-On / Risk-Off Conditions", desc: "Determine whether macro conditions favor or disfavor risk-asset exposure." },
 ];

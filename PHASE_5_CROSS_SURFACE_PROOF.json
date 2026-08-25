@@ -1,0 +1,22 @@
+{
+  "phase": "phase5-cross-engine-synthesis-v1",
+  "status": "PASS",
+  "canonicalTransport": "phase2-canonical-state-v1 -> phase3-evidence-contract-v1 -> phase5-cross-engine-synthesis-v1",
+  "surfaces": [
+    {"surface":"Canonical API","path":"marketState.synthesisCurrent","stateId":"preserved","synthesisId":"preserved","semantics":"machine-readable governed synthesis"},
+    {"surface":"ASHA","path":"server/ashaEngine.ts","stateId":"integrity.synthesis.originatingStateId","synthesisId":"integrity.synthesis.synthesisId","semantics":"prompt consumes only supplied relationships"},
+    {"surface":"Oracle","path":"server/routers/smartDiscovery.ts","stateId":"integrity.synthesis.originatingStateId","synthesisId":"integrity.synthesis.synthesisId","semantics":"prompt consumes only supplied relationships"},
+    {"surface":"NOW / WHY / WATCH / Outlook / Market Context","path":"existing canonical EngineContext/evidence transport","stateId":"preserved","synthesisId":"available via canonical synthesis endpoint","semantics":"no local relationship reconstruction"},
+    {"surface":"Mobile current intelligence","path":"existing canonical EngineContext/evidence transport","stateId":"preserved","synthesisId":"available via canonical synthesis endpoint","semantics":"no local relationship reconstruction"},
+    {"surface":"Alerts Archive","path":"server/crossEngineSynthesis.ts persistCrossEngineSynthesis","stateId":"stored in newState/supportingState","synthesisId":"stored","semantics":"material deterministic change only; no warning lifecycle"},
+    {"surface":"Owner/debug","path":"admin.getCrossEngineSynthesisDebug","stateId":"preserved","synthesisId":"preserved","semantics":"raw engine/source/relationship audit is admin-only"}
+  ],
+  "semanticGuards": {
+    "historicalFrequencyRemainsHistorical": true,
+    "analogSimilarityRemainsSimilarity": true,
+    "synthesisCreatesProbability": false,
+    "staleOutputMasqueradesAsLatest": false,
+    "confidenceSemanticsChanged": false,
+    "earlyWarningImplemented": false
+  }
+}

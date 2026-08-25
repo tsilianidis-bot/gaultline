@@ -15,6 +15,18 @@ import {
   getAshaContextProvenance,
   invokeAshaGateway,
 } from "./ashaGateway";
+import {
+  buildAshaQuestionAnalysis,
+  classifyAshaQuestionScope,
+  restrictAshaPageContextForScope,
+  type AshaQuestionAnalysis,
+} from "../shared/ashaQuestionAnalysis";
+import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
+import { buildCanonicalEvidencePacket } from "./evidencePacket";
+import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../shared/interpretationIntegrity";
+import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "./crossEngineSynthesis";
+import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "./earlyWarningPresentation";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -24,7 +36,7 @@ const ASHA_IDENTITY = `You are ASHA, the Spirit of FAULTLINE.
 IDENTITY:
 Your name is ASHA. Your title is "The Spirit of FAULTLINE." You are the AI market intelligence guide and voice of the FAULTLINE platform. You are a symbolic digital intelligence powered by FAULTLINE's 10 proprietary intelligence engines. Your purpose is to reveal what is building beneath the market's surface and translate complex conditions into understandable intelligence.
 
-You are NOT a generic language model. You are NOT a chatbot. You are the intelligence layer that unifies FAULTLINE's available evidence systems. Every response you give must originate from the canonical FAULTLINE MarketState. Never answer investment or market questions without first evaluating every currently available engine reading and its source-health status.
+You are NOT a generic language model. You are NOT a chatbot. You are the interpretation layer for FAULTLINE's supplied evidence systems. Every current-market response must originate from the canonical FAULTLINE state and structured evidence packet. Never imply an engine, source, metric, probability, target, timing window, confirmation rule, or invalidation rule that is not supplied.
 
 You represent:
 - Truth over noise
@@ -59,8 +71,8 @@ PREFERRED PHRASING:
 - "The risk is rising, but the rupture has not occurred."
 - "History suggests caution, not certainty."
 
-MANDATORY AVAILABLE-EVIDENCE SYNTHESIS PROTOCOL:
-Before answering ANY market or investment question, you MUST internally evaluate the canonical MarketState and synthesize every available FAULTLINE engine reading. You are the unified intelligence layer — not a single-engine tool. If an engine or source is unavailable, do not simulate its output or imply that it was consulted; disclose the limitation when it materially affects the answer.
+MANDATORY AVAILABLE-EVIDENCE INTERPRETATION PROTOCOL:
+Before answering ANY market or investment question, use only the canonical MarketState and structured evidence supplied in the request. You are an interpretation layer — not an independent quantitative engine. If an engine or source is unavailable, do not simulate its output or imply that it was consulted; disclose the limitation when it materially affects the answer.
 
 The 10 engines you must consult and synthesize:
 
@@ -76,37 +88,21 @@ The 10 engines you must consult and synthesize:
 
 6. CREDIT ENGINE — What are high-yield spreads signaling? Is credit stress spreading? Are investment-grade and high-yield spreads diverging? What does credit market behavior imply about corporate health?
 
-7. HISTORICAL ANALOG ENGINE — What historical periods most closely resemble current conditions? What happened after those periods? What are the key similarities and differences? What does history suggest about the probable path forward?
+7. HISTORICAL ANALOG ENGINE — Use only a governed historical analog claim when supplied. State its source-model similarity and limits; do not turn it into a probable path or forecast.
 
-8. PROBABILITY ENGINE — What is the current probability distribution across outcomes? What is the bull/bear/soft-landing/stagflation/crash probability? What has shifted the probability distribution recently?
+8. PROBABILITY ENGINE — Use a probability only when a supplied authorized FORECAST claim defines its event, horizon, source model, and methodology. Otherwise state that no governed probability is available.
 
 9. CRYPTO INTELLIGENCE ENGINE — What is the crypto market doing relative to macro conditions? Is BTC acting as a risk-on or risk-off asset? What does crypto market behavior reveal about broader risk appetite?
 
-10. SIGNAL ENGINE — What are the highest-conviction signals right now? Which signals are confirming the regime? Are any signals diverging from the consensus? What do the available trading signals and directional patterns suggest about near-term positioning?
+10. SIGNAL ENGINE — Describe only supplied signals. Do not call them confirmation, divergence, or near-term positioning unless a structured claim establishes that meaning.
 
 SYNTHESIS REQUIREMENT:
-After evaluating every available engine, identify:
-- Which engines AGREE with each other (consensus)
-- Which engines DIVERGE (important — divergence often precedes regime change)
-- Which engines carry the most weight given the current question
-- What the synthesis of all 10 engines suggests as the most probable conclusion
-
-Cite only engines and sources that the canonical MarketState marks available. If engines disagree, explain the disagreement. Never give a confident answer when engines are diverging — acknowledge the uncertainty.
+Interpret only the claims in the supplied evidence packet. A list of engine readings does not establish consensus, confirmation, divergence, causality, or system-wide scope without structured support. Cite only supplied evidence and disclose meaningful conflicts, unavailable sources, or quality limits.
 
 BRIEFING STRUCTURE:
-When explaining the market, organize your response in this order:
-1. What is happening
-2. Why it is happening
-3. How long it has been developing
-4. What changed recently
-5. How current conditions compare with history
-6. What is most likely to happen next
-7. Bull case
-8. Bear case
-9. Invalidation conditions
-10. What deserves attention now
+Use only the sections that answer the question: EXECUTIVE ANSWER, KEY EVIDENCE, INTERPRETATION, WHAT IS NOT ESTABLISHED, and WATCH. Keep each section distinct and concise. Current observations, historical context, and authorized forecasts must remain separate.
 
-Every conclusion must include: supporting evidence, relevant engine outputs, confidence level, probability where available, time horizon, historical comparison where useful, and what would change the conclusion.
+Every conclusion must reference supplied evidence or explicitly identify the limitation. Probability, horizon, historical comparison, confirmation, and invalidation are optional only when their governed structured claim exists.
 
 Distinguish clearly between: confirmed facts, current observations, historical relationships, model estimates, inferences, and possible scenarios.
 
@@ -124,7 +120,7 @@ PLATFORM RELATIONSHIP:
   - The Signal Engine surfaces trading signals and directional patterns derived from available market data
 
 TRANSPARENCY:
-Always be willing to explain: data used, engines consulted, historical comparisons, confidence calculation, alternative interpretations, invalidation triggers, and last updated time. Say when information is incomplete, delayed, conflicting, or unavailable. Never hide uncertainty behind polished language.
+Always be willing to explain: supplied data, evidence classes, historical-context limits, alternative interpretations, and last updated time. Say when information is incomplete, delayed, conflicted, or unavailable. Never hide uncertainty behind polished language or arbitrary confidence.
 
 RESPONSE TO GRATITUDE:
 If a user thanks you, respond with one of:
@@ -163,7 +159,9 @@ export interface AshaResponse {
   invalidationTriggers?: string[];
 
   // Oracle Briefing structured fields
+  directAnswer?: string;
   executiveSummary?: string;
+  coreThesis?: string;
   marketBias?: "BULLISH" | "BEARISH" | "NEUTRAL";
   marketRegime?: string;
   threatLevel?: "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
@@ -174,8 +172,14 @@ export interface AshaResponse {
   bearProbability?: number;
   keyFindings?: string[];
   supportingEvidence?: string[];
+  crossEngineSynthesis?: Array<{
+    engine: string;
+    currentSignal: string;
+    relevance: string;
+  }>;
   historicalAnalog?: string;
   riskFactors?: string[];
+  confirmationConditions?: string[];
   invalidationConditions?: string[];
   missionRecommendation?: string;
   // Structured mission recommendation with decision paths
@@ -201,8 +205,15 @@ export interface AshaResponse {
   finalVerdictAction?: string;
   expectedTimeframe?: string;
   followUpChips?: string[];
+  questionAnalysis: AshaQuestionAnalysis;
   provenance: AshaContextProvenance;
   modelTrace: AshaModelTrace;
+  integrity: {
+    transaction: InterpretationTransaction;
+    validation: InterpretationValidationResult;
+    generationAttempts: number;
+    synthesis: { synthesisId: string; originatingStateId: string } | null;
+  };
 }
 
 // ── Determine confidence from response ───────────────────────
@@ -242,6 +253,12 @@ function readBoundedScore(value: unknown, fallback: number): number {
   const safeFallback = Number.isFinite(fallback) ? fallback : 50;
   const candidate = typeof value === "number" && Number.isFinite(value) ? value : safeFallback;
   return Math.max(0, Math.min(100, candidate));
+}
+
+function readNullableBoundedScore(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.max(0, Math.min(100, value))
+    : undefined;
 }
 
 // ── Extract only evidence actually available in canonical state ─────────────
@@ -328,10 +345,22 @@ function validateOracleBriefing(parsed: Record<string, unknown>): string[] {
   const invalidationConditions = Array.isArray(parsed.invalidationConditions)
     ? (parsed.invalidationConditions as unknown[]).filter((f): f is string => typeof f === 'string')
     : [];
+  const confirmationConditions = Array.isArray(parsed.confirmationConditions)
+    ? (parsed.confirmationConditions as unknown[]).filter((f): f is string => typeof f === 'string')
+    : [];
+  const crossEngineSynthesis = Array.isArray(parsed.crossEngineSynthesis)
+    ? parsed.crossEngineSynthesis.filter(item => item && typeof item === "object")
+    : [];
+  const directAnswer = typeof parsed.directAnswer === "string" ? parsed.directAnswer.trim() : "";
+  const coreThesis = typeof parsed.coreThesis === "string" ? parsed.coreThesis.trim() : "";
 
+  if (!directAnswer) issues.push("directAnswer is missing");
+  if (!coreThesis) issues.push("coreThesis is missing");
   if (keyFindings.length < 3) issues.push(`keyFindings has only ${keyFindings.length} items (minimum 3 required)`);
   if (riskFactors.length < 3) issues.push(`riskFactors has only ${riskFactors.length} items (minimum 3 required)`);
+  if (confirmationConditions.length < 2) issues.push(`confirmationConditions has only ${confirmationConditions.length} items (minimum 2 required)`);
   if (invalidationConditions.length < 2) issues.push(`invalidationConditions has only ${invalidationConditions.length} items (minimum 2 required)`);
+  if (crossEngineSynthesis.length < 3) issues.push(`crossEngineSynthesis has only ${crossEngineSynthesis.length} items (minimum 3 required)`);
 
   const execSummary = typeof parsed.executiveSummary === "string" ? parsed.executiveSummary.trim() : "";
   const missionRec = typeof parsed.missionRecommendation === "string" ? parsed.missionRecommendation.trim() : "";
@@ -361,33 +390,54 @@ function validateOracleBriefing(parsed: Record<string, unknown>): string[] {
 
 // ── Main ASHA ask function ────────────────────────────────────
 export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
-  const gatewayContext = await createAshaGatewayContext(req.pageContext);
-  const engineCtx = buildEngineAvailabilityContext(gatewayContext);
-
-  // Build engine availability block to inject into system prompt
-  const engineAvailabilityBlock = [
-    `\n\n## ENGINE AVAILABILITY (AUTHORITATIVE — DO NOT CONTRADICT)`,
-    `Available engines (${engineCtx.availableEngines.length}): ${engineCtx.availableEngines.join(", ")}`,
-    engineCtx.unavailableEngines.length > 0
-      ? `Unavailable engines: ${engineCtx.unavailableEngines.join(", ")}. DO NOT claim these engines contributed to this briefing.`
-      : "All engines are available.",
-    engineCtx.cryptoAvailable
-      ? "Crypto Intelligence Engine: AVAILABLE — you may reference FAULTLINE crypto data."
-      : "Crypto Intelligence Engine: UNAVAILABLE — do NOT claim FAULTLINE-native crypto analysis. Acknowledge this limitation explicitly in the limitations field.",
-    `\n## ORACLE BRIEFING RULES (STRICT)`,
-    "1. executiveSummary: EXACTLY 2-4 sentences summarizing the core finding. DO NOT copy missionRecommendation into this field. DO NOT include disclaimers here.",
-    "2. keyFindings: EXACTLY 3-5 DISTINCT findings. Each must address a different aspect (price, macro, technical, on-chain, sentiment). NO duplicates. NO disclaimers.",
-    "3. riskFactors: EXACTLY 3-5 DISTINCT risks. Each must be a different risk vector. NO duplicates.",
-    "4. invalidationConditions: EXACTLY 2-4 DISTINCT conditions. Each must be a specific, measurable event.",
-    "5. missionRecommendation: Actionable guidance paragraph. DO NOT repeat executiveSummary. DO NOT include disclaimers here.",
-    "6. missionRecommendationStructured: Provide verdict, timeHorizon, rationale, and 3-4 decisionPaths (each with scenario and response). Scenarios must cover: aggressive entry, staged/cautious entry, wait-for-confirmation, and avoid/defensive.",
-    "7. sourceCitations: List 2-4 specific data points used, each with name, claim, observedAt (ISO date or 'estimated'), and freshness (LIVE/RECENT/STALE/ESTIMATED).",
-    "8. disclaimer: EXACTLY ONE disclaimer sentence. Place it ONLY in this field. Do not repeat it anywhere else.",
-    "9. limitations: List any engine unavailability or data quality issues. If all engines are available, return an empty array.",
-    "10. reply: Full narrative. 3-6 paragraphs. No bullet points. No disclaimers in this field.",
+  const provisionalScope = classifyAshaQuestionScope(req.userMessage, req.pageContext);
+  const scopedPageContext = restrictAshaPageContextForScope(req.pageContext, provisionalScope);
+  const initialGatewayContext = await createAshaGatewayContext(scopedPageContext);
+  const questionAnalysis = buildAshaQuestionAnalysis(req.userMessage, req.pageContext, initialGatewayContext.marketState);
+  const gatewayContext = { ...initialGatewayContext, questionAnalysis };
+  const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
+  const publicCanonicalState = authoritativeState ? toPublicCanonicalIntelligenceState(authoritativeState) : null;
+  const evidencePacket = publicCanonicalState ? buildCanonicalEvidencePacket(publicCanonicalState) : null;
+  const governedCrossEngineSynthesis = publicCanonicalState && evidencePacket ? buildCrossEngineSynthesis(publicCanonicalState, evidencePacket) : null;
+  const transaction = createInterpretationTransaction("ASHA", evidencePacket, null);
+  const governedEarlyWarningPresentation = await getCurrentGovernedEarlyWarningPresentation();
+  const packetClaims = evidencePacket?.claims ?? [];
+  const packetEngines = Array.from(new Set(packetClaims
+    .filter(claim => claim.sourceType === "ENGINE")
+    .map(claim => claim.statement.split(" is ")[0])));
+  const packetSources = Array.from(new Set(packetClaims.flatMap(claim => claim.sourceIds ?? [])));
+  const packetLimitations = Array.from(new Set(packetClaims.flatMap(claim => claim.limitations)));
+  const requestScopeBlock = [
+    "REQUEST CONTEXT (NOT MARKET EVIDENCE):",
+    `Page: ${req.pageContext.page}`,
+    `Question scope: ${questionAnalysis.analysisScope}`,
+    "Use only the structured evidence packet for current market facts. Page context and conversation history may clarify the user's question but may not establish a market claim.",
   ].join("\n");
 
-  const systemPrompt = ASHA_IDENTITY + buildAshaCanonicalContextBlock(gatewayContext) + engineAvailabilityBlock;
+  // Build engine availability block to inject into system prompt
+  const responseStructureBlock = [
+    `\n\n## RESPONSE STRUCTURE (AUTHORITATIVE — DO NOT CONTRADICT)`,
+    `\n## ORACLE BRIEFING RULES (STRICT)`,
+    "1. directAnswer: EXACTLY ONE decisive sentence answering the mission question immediately. It must state whether the risk or opportunity is current or developing. DO NOT include disclaimers.",
+    "2. executiveSummary: EXACTLY 2-4 sentences explaining what matters now, why it matters, what is not obvious from headline conditions, and whether it is current or developing. DO NOT copy missionRecommendation. DO NOT include disclaimers.",
+    "3. coreThesis: ONE strong paragraph identifying the single most important underlying insight. Add interpretation; do not repeat executiveSummary word-for-word.",
+    "4. keyFindings: EXACTLY 3-5 DISTINCT findings. Each must identify a material observation or divergence and why it matters. NO duplicates. NO disclaimers.",
+    "5. crossEngineSynthesis: Use only rows supported by the supplied governed Cross-Engine Synthesis. When no structured relationship exists, return an empty array and state the limitation in limitations. Do not invent measurements, consensus, confirmation, divergence, or system-wide scope.",
+    "6. riskFactors: EXACTLY 3-5 DISTINCT risks. Each must be a different risk vector. NO duplicates.",
+    "7. confirmationConditions: Include only governed structured conditions. If none exist, return an empty array; do not invent thresholds or unavailable series.",
+    "8. invalidationConditions: Include only governed structured conditions. If none exist, return an empty array; do not invent thresholds or unavailable series.",
+    "9. missionRecommendation: A concise actionable guidance paragraph. DO NOT repeat executiveSummary. DO NOT include disclaimers.",
+    "10. missionRecommendationStructured: Provide verdict, timeHorizon, rationale, and 3-4 decisionPaths (each with scenario and response). Scenarios must cover: aggressive entry, staged/cautious entry, wait-for-confirmation, and avoid/defensive.",
+    "11. sourceCitations: List 2-4 specific data points used, each with name, claim, observedAt (ISO date or 'estimated'), and freshness (LIVE/RECENT/STALE/ESTIMATED).",
+    "12. disclaimer: EXACTLY ONE disclaimer sentence. Place it ONLY in this field. Do not repeat it anywhere else.",
+    "13. limitations: List any engine unavailability, data-quality issue, or limited historical sample caveat. If all engines are available and no limitation applies, return an empty array.",
+    "14. reply: Full narrative. 3-6 paragraphs. No bullet points. No disclaimers in this field.",
+    "15. Question scope is authoritative. For MARKET scope, do not include selected ticker/company evidence in any field. For MARKET_TICKER_RELATIONSHIP, clearly separate market evidence from ticker transmission evidence.",
+    "16. For an exact event whose questionAnalysis.probabilityProvenance.availability is NOT_CALIBRATED, state that no calibrated precise probability is published; never manufacture a percentage. When CALIBRATED, reuse questionAnalysis.probability, eventDefinition, and timeHorizon exactly across directAnswer, thesis, conditions, and follow-up chips.",
+    "17. Historical analog similarity is not forecast probability. Explain weighting from the supplied evidence and never let one analog replace the combined current evidence.",
+  ].join("\n");
+
+  const systemPrompt = ASHA_IDENTITY + "\n\n" + requestScopeBlock + responseStructureBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket) + "\n\n" + buildCrossEngineSynthesisPromptContract(governedCrossEngineSynthesis) + "\n\n" + buildEarlyWarningPresentationPromptContract(governedEarlyWarningPresentation);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },
@@ -406,19 +456,36 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
           type: "object",
           properties: {
             reply: { type: "string", description: "Full narrative intelligence response. 3-6 paragraphs. No bullet points. No disclaimers in this field." },
+            directAnswer: { type: "string", description: "EXACTLY ONE clear sentence that answers the mission question immediately and states whether the thesis is current or developing. No disclaimer." },
             executiveSummary: { type: "string", description: "EXACTLY 2-4 sentences summarizing the core finding. MUST be different from missionRecommendation. MUST NOT contain disclaimers." },
+            coreThesis: { type: "string", description: "One strong paragraph naming the single most important underlying insight without repeating executiveSummary word-for-word." },
             marketBias: { type: "string", enum: ["BULLISH", "BEARISH", "NEUTRAL"], description: "Overall market directional bias." },
             marketRegime: { type: "string", description: "Current market regime label (e.g. Late Cycle, Stagflation, Expansion)." },
             threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"], description: "Systemic threat level." },
             pressureIndex: { type: "number", description: "Systemic pressure score 0-100." },
             riskLevel: { type: "string", description: "Risk level label (e.g. Moderate, Elevated, High)." },
             suggestedBias: { type: "string", description: "Specific positioning bias (e.g. Reduce equity exposure, Favor defensive sectors)." },
-            bullProbability: { type: "number", description: "Bull scenario probability 0-100." },
-            bearProbability: { type: "number", description: "Bear scenario probability 0-100." },
+            bullProbability: { type: ["number", "null"], description: "Authorized bull forecast probability only; otherwise null." },
+            bearProbability: { type: ["number", "null"], description: "Authorized bear forecast probability only; otherwise null." },
             keyFindings: { type: "array", items: { type: "string" }, description: "EXACTLY 3-5 DISTINCT key findings. Each must address a different aspect. NO duplicates. NO disclaimers." },
             supportingEvidence: { type: "array", items: { type: "string" }, description: "3-5 supporting evidence points from available engines." },
+            crossEngineSynthesis: {
+              type: "array",
+              description: "EXACTLY 3-6 source-backed engine synthesis rows. Name only available engines and distinguish observation from inference.",
+              items: {
+                type: "object",
+                properties: {
+                  engine: { type: "string" },
+                  currentSignal: { type: "string" },
+                  relevance: { type: "string" },
+                },
+                required: ["engine", "currentSignal", "relevance"],
+                additionalProperties: false,
+              },
+            },
             historicalAnalog: { type: "string", description: "Most relevant historical period comparison with key similarities and differences." },
             riskFactors: { type: "array", items: { type: "string" }, description: "EXACTLY 3-5 DISTINCT risk factors. Each must be a different risk vector. NO duplicates." },
+            confirmationConditions: { type: "array", items: { type: "string" }, description: "EXACTLY 2-4 measurable conditions supported by available FAULTLINE data that would strengthen the thesis." },
             invalidationConditions: { type: "array", items: { type: "string" }, description: "EXACTLY 2-4 DISTINCT invalidation conditions. Each must be a specific measurable event." },
             missionRecommendation: { type: "string", description: "Actionable recommendation paragraph. MUST be different from executiveSummary. NO disclaimers." },
             missionRecommendationStructured: {
@@ -426,7 +493,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
               description: "Structured mission recommendation with decision paths.",
               properties: {
                 verdict: { type: "string", description: "One-sentence verdict statement." },
-                timeHorizon: { type: "string", description: "Time horizon for this recommendation (e.g. 2-4 weeks)." },
+                timeHorizon: { type: ["string", "null"], description: "Authorized forecast horizon only; otherwise null." },
                 rationale: { type: "string", description: "2-3 sentence rationale for the recommendation." },
                 decisionPaths: {
                   type: "array",
@@ -463,10 +530,10 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             limitations: { type: "array", items: { type: "string" }, description: "Engine unavailability or data quality issues. Empty array if all engines available." },
             disclaimer: { type: "string", description: "EXACTLY ONE disclaimer sentence. This is the ONLY place disclaimers appear. Example: 'This briefing is for informational purposes only and does not constitute financial advice.'" },
             finalVerdictAction: { type: "string", enum: ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"], description: "Single-word final verdict action." },
-            expectedTimeframe: { type: "string", description: "Expected timeframe for this assessment (e.g. 2-4 weeks, 3-6 months)." },
+            expectedTimeframe: { type: ["string", "null"], description: "Authorized forecast horizon only; otherwise null." },
             followUpChips: { type: "array", items: { type: "string" }, description: "3-4 follow-up question suggestions." },
           },
-          required: ["reply", "executiveSummary", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "historicalAnalog", "riskFactors", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
+          required: ["reply", "directAnswer", "executiveSummary", "coreThesis", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "crossEngineSynthesis", "historicalAnalog", "riskFactors", "confirmationConditions", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
           additionalProperties: false,
         },
       },
@@ -490,10 +557,12 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     issue.includes("keyFindings has only 0") ||
     issue.includes("riskFactors has only 0") ||
     issue.includes("invalidationConditions has only 0") ||
-    issue.includes("keyFindings has only 1") ||
-    issue.includes("riskFactors has only 1") ||
-    issue.includes("riskFactors has only 2") ||
-    issue.includes("executiveSummary is too long")
+          issue.includes("keyFindings has only 1") ||
+          issue.includes("riskFactors has only 1") ||
+          issue.includes("riskFactors has only 2") ||
+          issue.includes("directAnswer is missing") ||
+          issue.includes("coreThesis is missing") ||
+          issue.includes("executiveSummary is too long")
   );
 
   if (criticalFailures.length > 0) {
@@ -509,6 +578,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
           "",
           "Please regenerate the complete Oracle briefing JSON, fixing all of the above issues.",
           "Remember: keyFindings, riskFactors, and invalidationConditions MUST be populated with distinct items.",
+          "directAnswer MUST be one decisive sentence and coreThesis MUST be one strong paragraph.",
+          "confirmationConditions and crossEngineSynthesis MUST use only currently available FAULTLINE evidence.",
           "The executiveSummary MUST be 2-4 sentences only — not the full narrative.",
           "Do not repeat disclaimer text in executiveSummary or keyFindings.",
         ].join("\n"),
@@ -526,7 +597,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
               type: "object",
               properties: {
                 reply: { type: "string" },
+                directAnswer: { type: "string" },
                 executiveSummary: { type: "string" },
+                coreThesis: { type: "string" },
                 marketBias: { type: "string", enum: ["BULLISH", "BEARISH", "NEUTRAL"] },
                 marketRegime: { type: "string" },
                 threatLevel: { type: "string", enum: ["LOW", "ELEVATED", "HIGH", "CRITICAL"] },
@@ -537,8 +610,10 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
                 bearProbability: { type: "number" },
                 keyFindings: { type: "array", items: { type: "string" } },
                 supportingEvidence: { type: "array", items: { type: "string" } },
+                crossEngineSynthesis: { type: "array", items: { type: "object", properties: { engine: { type: "string" }, currentSignal: { type: "string" }, relevance: { type: "string" } }, required: ["engine", "currentSignal", "relevance"], additionalProperties: false } },
                 historicalAnalog: { type: "string" },
                 riskFactors: { type: "array", items: { type: "string" } },
+                confirmationConditions: { type: "array", items: { type: "string" } },
                 invalidationConditions: { type: "array", items: { type: "string" } },
                 missionRecommendation: { type: "string" },
                 missionRecommendationStructured: {
@@ -559,7 +634,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
                 expectedTimeframe: { type: "string" },
                 followUpChips: { type: "array", items: { type: "string" } },
               },
-              required: ["reply", "executiveSummary", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "historicalAnalog", "riskFactors", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
+              required: ["reply", "directAnswer", "executiveSummary", "coreThesis", "marketBias", "marketRegime", "threatLevel", "pressureIndex", "riskLevel", "suggestedBias", "bullProbability", "bearProbability", "keyFindings", "supportingEvidence", "crossEngineSynthesis", "historicalAnalog", "riskFactors", "confirmationConditions", "invalidationConditions", "missionRecommendation", "missionRecommendationStructured", "sourceCitations", "limitations", "disclaimer", "finalVerdictAction", "expectedTimeframe", "followUpChips"],
               additionalProperties: false,
             },
           },
@@ -582,8 +657,24 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     console.warn("[ASHA Oracle] Non-critical validation issues:", validationIssues);
   }
 
+  const integrityValidation = validateInterpretationOutput(parsed, transaction);
+  parsed = integrityValidation.normalizedOutput;
+
   const reply = readString(parsed.reply) || "I was unable to generate a response. Please try again.";
+  const directAnswer = readString(parsed.directAnswer) || readString(parsed.executiveSummary) || reply.split("\n")[0];
+  const coreThesis = readString(parsed.coreThesis) || readString(parsed.executiveSummary) || reply;
+  const confirmationConditions = readStringArray(parsed.confirmationConditions);
   const invalidationConditions = readStringArray(parsed.invalidationConditions);
+
+  const crossEngineSynthesis = Array.isArray(parsed.crossEngineSynthesis)
+    ? (parsed.crossEngineSynthesis as Array<Record<string, unknown>>)
+        .map(row => ({
+          engine: readString(row.engine) || "",
+          currentSignal: readString(row.currentSignal) || "",
+          relevance: readString(row.relevance) || "",
+        }))
+        .filter(row => row.engine && row.currentSignal && row.relevance)
+    : [];
 
   // Parse structured mission recommendation
   let missionRecommendationStructured: AshaResponse["missionRecommendationStructured"] | undefined;
@@ -600,7 +691,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     if (decisionPaths.length > 0) {
       missionRecommendationStructured = {
         verdict: readString(mrs.verdict) || "",
-        timeHorizon: readString(mrs.timeHorizon) || "2-4 weeks",
+        timeHorizon: readString(mrs.timeHorizon) || "Not established",
         rationale: readString(mrs.rationale) || "",
         decisionPaths,
       };
@@ -623,33 +714,35 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
 
   // Build limitations: combine LLM-reported + engine context
   const llmLimitations = readStringArray(parsed.limitations);
-  const allLimitations = Array.from(new Set([...engineCtx.limitations, ...llmLimitations]));
+  const allLimitations = Array.from(new Set([...packetLimitations, ...llmLimitations]));
 
   return {
     reply,
     confidence: inferConfidence(reply),
-    sources: gatewayContext.marketState.sourceHealth
-      .filter(source => source.status !== "unavailable")
-      .map(source => source.label),
-    enginesConsulted: extractEngines(gatewayContext),
-    enginesAvailableCount: engineCtx.availableEngines.length,
-    enginesAvailableList: engineCtx.availableEngines,
-    lastUpdated: gatewayContext.marketState.sourceUpdatedAt,
+    sources: packetSources,
+    enginesConsulted: packetEngines,
+    enginesAvailableCount: packetEngines.length,
+    enginesAvailableList: packetEngines,
+    lastUpdated: transaction.originatingGeneratedAt ?? transaction.createdAt,
     invalidationTriggers: invalidationConditions.length > 0 ? invalidationConditions : undefined,
     // Oracle Briefing structured fields
+    directAnswer,
     executiveSummary: readString(parsed.executiveSummary) || reply.split("\n")[0],
+    coreThesis,
     marketBias: readEnum(parsed.marketBias, ["BULLISH", "BEARISH", "NEUTRAL"] as const) || "NEUTRAL",
     marketRegime: readString(parsed.marketRegime) || gatewayContext.marketState.now.regime,
     threatLevel: readEnum(parsed.threatLevel, ["LOW", "ELEVATED", "HIGH", "CRITICAL"] as const) || "ELEVATED",
     pressureIndex: readBoundedScore(parsed.pressureIndex, gatewayContext.marketState.now.pressureScore),
     riskLevel: readString(parsed.riskLevel) || "Moderate",
     suggestedBias: readString(parsed.suggestedBias),
-    bullProbability: readBoundedScore(parsed.bullProbability, gatewayContext.marketState.outlook.probabilities.bull),
-    bearProbability: readBoundedScore(parsed.bearProbability, gatewayContext.marketState.outlook.probabilities.bear),
+    bullProbability: readNullableBoundedScore(parsed.bullProbability),
+    bearProbability: readNullableBoundedScore(parsed.bearProbability),
     keyFindings: readStringArray(parsed.keyFindings),
     supportingEvidence: readStringArray(parsed.supportingEvidence),
+    crossEngineSynthesis: crossEngineSynthesis.length > 0 ? crossEngineSynthesis : undefined,
     historicalAnalog: readString(parsed.historicalAnalog),
     riskFactors: readStringArray(parsed.riskFactors),
+    confirmationConditions: confirmationConditions.length > 0 ? confirmationConditions : undefined,
     invalidationConditions,
     missionRecommendation: readString(parsed.missionRecommendation) || "",
     missionRecommendationStructured,
@@ -657,10 +750,20 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     limitations: allLimitations.length > 0 ? allLimitations : undefined,
     disclaimer: readString(parsed.disclaimer) || "This briefing is for informational purposes only and does not constitute financial advice.",
     finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const) || "WATCH",
-    expectedTimeframe: readString(parsed.expectedTimeframe) || "2-4 weeks",
+    expectedTimeframe: readString(parsed.expectedTimeframe) || "Not established",
     followUpChips: readStringArray(parsed.followUpChips),
+    questionAnalysis,
     provenance: getAshaContextProvenance(gatewayContext),
     modelTrace,
+    integrity: {
+      transaction: { ...transaction, modelVersion: modelTrace.selectedModel },
+      validation: integrityValidation,
+      generationAttempts: modelTrace.attemptedModels.length,
+      synthesis: governedCrossEngineSynthesis ? {
+        synthesisId: governedCrossEngineSynthesis.synthesisId,
+        originatingStateId: governedCrossEngineSynthesis.originatingStateId,
+      } : null,
+    },
   };
 }
 
@@ -697,11 +800,14 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
     },
   });
   const contextBlock = buildAshaCanonicalContextBlock(gatewayContext);
+  const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
+  const evidencePacket = authoritativeState ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState)) : null;
+  const transaction = createInterpretationTransaction("DAILY_GREETING", evidencePacket, null);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     {
       role: "system",
-      content: ASHA_IDENTITY + contextBlock,
+      content: ASHA_IDENTITY + contextBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket),
     },
     {
       role: "user",
@@ -711,8 +817,9 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
   ];
 
   const { response: llmResponse } = await invokeAshaGateway({ messages });
-  return readString(llmResponse.choices?.[0]?.message?.content)
-    ?? "Welcome back. I have reviewed the market. Here is what is building beneath the surface.";
+  const candidate = readString(llmResponse.choices?.[0]?.message?.content)
+    ?? "Canonical state unavailable. Insufficient evidence for a current market greeting.";
+  return String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
 }
 
 // ── First-login introduction (static, from brand brief) ───────

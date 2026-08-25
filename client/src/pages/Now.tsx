@@ -17,13 +17,13 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
-import { trpc } from "@/lib/trpc";
 import {
   CANONICAL_DESTINATION_BY_ID,
   EXPERT_WORKSPACE_BY_ID,
   PERSISTENT_UTILITY_BY_ID,
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
+import { formatOrdinal } from "@shared/historicalPercentile";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
@@ -454,7 +454,7 @@ function PressureInstrument({
         <div className="rounded border border-white/10 bg-white/[0.03] p-2.5 text-center">
           <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Percentile</p>
           <p className="mt-1 font-mono text-[10px] font-semibold text-white">
-            {historicalPercentile !== null ? `${Math.round(historicalPercentile)}th` : "—"}
+            {historicalPercentile !== null ? formatOrdinal(historicalPercentile) : "—"}
           </p>
         </div>
         {confidence !== undefined && (
@@ -807,15 +807,8 @@ export default function Now() {
   const {
     output, marketState, marketMode, sourceHealth,
     isLoading, isLive, lastUpdated, dataError, refresh,
+    canonicalState,
   } = useEngine();
-
-  // Fetch the server-side pressure reading to get the true prior pressure
-  // (current vs previous DB run). Runs in parallel with EngineContext.
-  const { data: serverPressure } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
-    staleTime: 5 * 60_000,
-    refetchOnWindowFocus: false,
-    retry: 1,
-  });
 
   // Staged cinematic entry: phases 1–7 over ~5s
   const phase = useStagedLoad([0, 400, 900, 1500, 2200, 3000, 4000], [isLoading]);
@@ -834,8 +827,8 @@ export default function Now() {
   );
 
   const evidenceFamilies = marketState?.why.evidenceFamilies ?? fallbackDomains;
-  const pressure = marketState?.now.pressureScore ?? output.overall.score * 10;
-  const regime = marketState?.now.regime ?? output.regime.label;
+  const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? output.overall.score * 10;
+  const regime = canonicalState?.regime ?? marketState?.now.regime ?? output.regime.label;
   const stressLevel = marketState?.now.stressLevel ?? output.overall.riskLevel;
   const direction = marketState?.now.direction
     ?? (output.overall.delta > 0.1 ? "Deteriorating" : output.overall.delta < -0.1 ? "Improving" : "Stable");
@@ -984,9 +977,22 @@ export default function Now() {
                   <span className="rounded border border-white/10 bg-white/[0.03] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-300">{stressLevel} pressure</span>
                   {historicalPercentile !== null && (
                     <span className="rounded border border-violet-300/20 bg-violet-300/[0.06] px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-violet-300">
-                      {Math.round(historicalPercentile)}th percentile
+                      {formatOrdinal(historicalPercentile)} percentile
                     </span>
                   )}
+                </div>
+
+                <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                  <div className="rounded border border-rose-300/20 bg-rose-300/[0.045] p-3">
+                    <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-rose-200/65">Top threat</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100">{topDrivers[0] ?? "No dominant verified threat"}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">Current highest-contribution pressure channel.</p>
+                  </div>
+                  <div className="rounded border border-violet-300/20 bg-violet-300/[0.045] p-3">
+                    <p className="font-mono text-[8px] uppercase tracking-[0.15em] text-violet-200/65">Closest historical analog</p>
+                    <p className="mt-1 text-sm font-medium text-slate-100">{topAnalog ? `${topAnalog.label} · ${topAnalog.period}` : "No verified analog available"}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-400">{topAnalog ? `${formatCanonicalPercent(topAnalog.similarity)} similarity · context, not a forecast.` : "Historical comparison remains unavailable."}</p>
+                  </div>
                 </div>
 
                 {/* CTA */}
@@ -1010,14 +1016,10 @@ export default function Now() {
                   historicalPercentile={historicalPercentile}
                   lastUpdated={lastUpdated}
                   phase={phase}
-                  scoreChange={(() => {
-                    // Use true prior reading from DB if available, otherwise fall back to delta-vs-baseline
-                    if (serverPressure?.priorPressure != null && serverPressure.overallPressure != null) {
-                      const change = serverPressure.overallPressure - serverPressure.priorPressure;
-                      return parseFloat(change.toFixed(1));
-                    }
-                    return output.overall.delta !== undefined ? parseFloat((output.overall.delta * 10).toFixed(1)) : null;
-                  })()}
+                  // Do not substitute a legacy run delta or a baseline delta for
+                  // a governed canonical prior-state reading. The instrument
+                  // withholds change until canonical history provides one.
+                  scoreChange={null}
                 />
               </div>
 

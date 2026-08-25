@@ -495,6 +495,10 @@ export function MarketPreflightModal({
     { enabled: !!user && open && activeTab === "timeframe", staleTime: 60_000 }
   );
   const [completingPreflight, setCompletingPreflight] = useState(false);
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    enabled: !!user && open,
+    staleTime: 60_000,
+  });
   const { output } = useEngine();
   const { data: scoreData, isLoading, refetch } = trpc.awareness.getScore.useQuery(undefined, {
     enabled: !!user && open,
@@ -505,6 +509,8 @@ export function MarketPreflightModal({
     onSuccess: () => refetch(),
   });
   const completeSession = trpc.awareness.completePreflightSession.useMutation();
+
+  if (open && !canonicalState) return null;
 
   const handleComplete = useCallback(async () => {
     setCompletingPreflight(true);

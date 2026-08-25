@@ -14,7 +14,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { AshaAmbientEngine } from "@/lib/AshaAmbientEngine";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { useTickerStore } from "@/contexts/TickerStore";
@@ -2619,44 +2618,8 @@ export default function SmartDiscovery() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const stepIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const ambientEngineRef = useRef<AshaAmbientEngine | null>(null);
-
-  // ASHA ambient sound bed — starts on mount, stops on unmount
-  useEffect(() => {
-    const engine = new AshaAmbientEngine();
-    ambientEngineRef.current = engine;
-
-    // Start on first user interaction (browser autoplay policy)
-    let started = false;
-    const tryStart = () => {
-      if (started) return;
-      started = true;
-      engine.start(0.42);
-    };
-
-    // Attempt immediate start (works if user has already interacted)
-    setTimeout(tryStart, 300);
-
-    // Fallback: start on next interaction
-    const onInteract = () => {
-      tryStart();
-      window.removeEventListener("click", onInteract);
-      window.removeEventListener("keydown", onInteract);
-      window.removeEventListener("touchstart", onInteract);
-    };
-    window.addEventListener("click", onInteract);
-    window.addEventListener("keydown", onInteract);
-    window.addEventListener("touchstart", onInteract);
-
-    return () => {
-      window.removeEventListener("click", onInteract);
-      window.removeEventListener("keydown", onInteract);
-      window.removeEventListener("touchstart", onInteract);
-      engine.stop(1.2);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const askMutation = trpc.smartDiscovery.ask.useMutation();
   const logMutation = trpc.smartDiscovery.logRecommendation.useMutation();
@@ -2927,7 +2890,6 @@ export default function SmartDiscovery() {
         }
       }
       setError(errorMsg);
-      setConversation(prev => prev.slice(0, -1));
     } finally {
       setIsExecuting(false);
     }
@@ -2943,6 +2905,26 @@ export default function SmartDiscovery() {
     setTicker(ticker, name, assetType);
     navigate("/app/symbol-intelligence");
   }, [navigate, setTicker]);
+
+  // Smart Discovery is an in-place workspace, not a form. This shared guard
+  // prevents accidental native submission if a nested component ever adds one.
+  const preventUnexpectedSubmission = useCallback((event: React.FormEvent) => {
+    event.preventDefault();
+  }, []);
+
+  const handlePromptAction = useCallback((event: React.MouseEvent<HTMLButtonElement>, prompt: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    void handleSubmit(prompt);
+  }, [handleSubmit]);
+
+  // All buttons in this workspace are in-place controls. Apply the explicit
+  // non-submit type centrally to static cards and dynamically rendered answers.
+  useEffect(() => {
+    workspaceRef.current?.querySelectorAll<HTMLButtonElement>("button:not([type])").forEach((button) => {
+      button.type = "button";
+    });
+  });
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -2973,7 +2955,7 @@ export default function SmartDiscovery() {
         .fl-answer { animation: fl-fade-in 0.4s ease; }
       `}</style>
 
-      <div style={{
+      <div ref={workspaceRef} onSubmitCapture={preventUnexpectedSubmission} style={{
         display: "flex",
         flexDirection: "column",
         minHeight: "calc(100vh - 56px)",
@@ -3034,7 +3016,8 @@ export default function SmartDiscovery() {
                   {QUICK_ACTIONS.map((action, i) => (
                     <button
                       key={i}
-                      onClick={() => void handleSubmit(action.prompt)}
+                      type="button"
+                      onClick={(event) => handlePromptAction(event, action.prompt)}
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -3079,7 +3062,8 @@ export default function SmartDiscovery() {
                 {SUGGESTED_QUESTIONS.map((q, i) => (
                   <button
                     key={i}
-                    onClick={() => void handleSubmit(q)}
+                    type="button"
+                    onClick={(event) => handlePromptAction(event, q)}
                     style={{
                       padding: "10px 14px",
                       background: "rgba(255,255,255,0.03)",
@@ -3219,6 +3203,7 @@ export default function SmartDiscovery() {
                 }}>
                   <span style={{ ...MONO_SM, color: ACCENT, fontWeight: 700 }}>{contextTicker.ticker}</span>
                   <button
+                    type="button"
                     onClick={clearTicker}
                     title="Clear context — switch to global mode"
                     style={{
@@ -3256,7 +3241,8 @@ export default function SmartDiscovery() {
                 }}
               />
               <button
-                onClick={() => void handleSubmit()}
+                type="button"
+                onClick={(event) => handlePromptAction(event, query)}
                 disabled={!query.trim() || isExecuting}
                 style={{
                   display: "flex",
@@ -3288,6 +3274,7 @@ export default function SmartDiscovery() {
                 </span>
               )}
               <button
+                type="button"
                 onClick={() => { setConversation([]); setError(null); }}
                 style={{
                   background: "none",

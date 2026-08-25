@@ -15,6 +15,10 @@ const SESSION_KEY = "faultline_asha_greeting_dismissed_v2";
 
 export default function AshaDailyGreeting() {
   const { output, isLoading } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
   const { user } = useAuth();
   const [dismissed, setDismissed] = useState(false);
   const [greeting, setGreeting] = useState<string | null>(null);
@@ -28,8 +32,8 @@ export default function AshaDailyGreeting() {
   }, []);
 
   useEffect(() => {
-    if (dismissed || fetched || isLoading || !output?.overall || !user) return;
-    const score = output.overall.score;
+    if (dismissed || fetched || isLoading || !canonicalState || !user) return;
+    const score = canonicalState.pressureIndex / 10;
     if (score === undefined || isNaN(score)) return;
 
     setFetched(true);
@@ -37,9 +41,9 @@ export default function AshaDailyGreeting() {
       userName: user?.name ?? undefined,
       engineContext: {
         pressureScore: score * 10,
-        regime: output.regime?.label ?? "Unknown",
+        regime: canonicalState.regime,
         regimeConfidence: 0.75,
-        narrative: output.narrative?.summary ?? "",
+        narrative: `Canonical state ${canonicalState.stateId} · ${canonicalState.quality}`,
         trend: output.regime?.sublabel ?? "",
         keyDrivers: output.narrative?.keyRisks ?? [],
       },
@@ -49,7 +53,7 @@ export default function AshaDailyGreeting() {
       setGreeting("Good morning. Current market pressure is elevated. I am monitoring conditions across all active engines. Here is what is building beneath the surface.");
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [output, isLoading, dismissed, fetched]);
+  }, [canonicalState, isLoading, dismissed, fetched]);
 
   const handleDismiss = () => {
     sessionStorage.setItem(SESSION_KEY, Date.now().toString());
@@ -58,11 +62,11 @@ export default function AshaDailyGreeting() {
 
   if (dismissed || (!greeting && !greetingMutation.isPending)) return null;
 
-  const pressureScore = (output?.overall?.score ?? 0) * 10;
+  const pressureScore = canonicalState?.pressureIndex ?? 0;
   const regimeState: "calm" | "rising" | "critical" =
     pressureScore >= 70 ? "critical" : pressureScore >= 45 ? "rising" : "calm";
 
-  const regimeLabel = output?.regime?.label ?? "Unknown";
+  const regimeLabel = canonicalState?.regime ?? "Canonical state unavailable";
   const pressureLabel =
     pressureScore >= 70 ? "CRITICAL" :
     pressureScore >= 55 ? "ELEVATED" :

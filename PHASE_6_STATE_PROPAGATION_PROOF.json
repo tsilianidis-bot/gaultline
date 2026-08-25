@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "path": [
+    "phase2-canonical-state-v1",
+    "Phase 3 evidence packet",
+    "Phase 5 CrossEngineSynthesis",
+    "evaluateCandidateDetections(synthesis)",
+    "CandidateDetection.originatingStateId + originatingSynthesisId",
+    "candidateDetections original payload",
+    "candidateDetectionObservations append-only later observations",
+    "admin.getCandidateDetectionDebug"
+  ],
+  "invariants": [
+    "Candidate observations are derived from one supplied Phase 5 synthesis transaction.",
+    "Original state/synthesis evidence is immutable in candidateDetections.",
+    "Later observations retain their own state/synthesis provenance and do not overwrite originals.",
+    "No public Phase 6 candidate publication endpoint exists."
+  ]
+}

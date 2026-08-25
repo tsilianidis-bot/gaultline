@@ -1,0 +1,21 @@
+{
+  "controlledCanonicalState": {"stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelVersion":"model-controlled","configurationVersion":"config-controlled"},
+  "result":"PASS",
+  "surfaces": [
+    {"surface":"Canonical API","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"EngineContext","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"NOW","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"WHY","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"WATCH","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"ACT","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"Market Context","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"Outlook","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"ASHA","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"Oracle","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"Day Trade Intelligence","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"Dashboard","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"Mobile Brief","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"},
+    {"surface":"Pressure","stateId":"state:controlled","effectiveAt":"2026-08-22T15:00:00.000Z","pressureIndex":27,"regime":"MODERATE RISK","majorEngineValues":{"liquidity-stress":16},"quality":"HEALTHY","modelConfig":"model-controlled/config-controlled","status":"PASS"}
+  ],
+  "testReference":"server/engineContextCanonical.test.ts; server/phase2iCanonicalClosure.test.ts"
+}

@@ -13,8 +13,12 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle } from "lucide-react";
 import FaultlineTerm from "./FaultlineTerm";
+import type { CanonicalConsumerEnvelope } from "@shared/canonicalConsumerEnvelope";
+import type { CanonicalMarketState } from "@shared/marketState";
 
 interface SOBPanelProps {
+  /** Current state provenance travels with compatibility inputs but is not sent to the legacy S.O.B. procedure. */
+  canonicalEnvelope?: CanonicalConsumerEnvelope<CanonicalMarketState>;
   regime?: string;
   pressureIndex?: number;
   yieldSpread?: number | null;
@@ -33,6 +37,7 @@ const TREND_ICONS = {
 const SEVERITY_COLORS = { low: "#4B5563", medium: "#F59E0B", high: "#FF2D55" };
 
 export default function SOBPanel({
+  canonicalEnvelope,
   regime,
   pressureIndex = 30,
   yieldSpread,
@@ -42,6 +47,7 @@ export default function SOBPanel({
   compact = false,
 }: SOBPanelProps) {
   const [expanded, setExpanded] = useState(false);
+  const canonicalStateId = canonicalEnvelope?.stateId ?? null;
 
   const { data: sob, isLoading } = trpc.sob.getSOB.useQuery(
     { regime, pressureIndex, yieldSpread, fedFundsRate, vix, creditSpread },
@@ -85,7 +91,7 @@ export default function SOBPanel({
         onClick={() => setExpanded(e => !e)}
       >
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", textTransform: "uppercase", letterSpacing: "0.1em", flexShrink: 0 }}>
-          S.O.B.™
+          S.O.B.™{canonicalStateId ? ` · ${canonicalStateId}` : ""}
         </div>
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", fontWeight: 700, color: sob.color }}>
           {sob.label}

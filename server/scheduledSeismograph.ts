@@ -37,6 +37,14 @@ import {
 import type { FaultlinePressureOutput } from "./pressure/engine";
 import type { FMOSUniversalOutput } from "./fmos/types";
 import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
+import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
+import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from "./algorithmProvenance";
+import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
+import { getAuthoritativeCrossEngineSynthesis, persistCrossEngineSynthesis } from "./crossEngineSynthesis";
+import { evaluateAndPersistCandidateDetections } from "./candidateDetection";
+import { evaluateAndPersistImportanceQualification } from "./importanceQualification";
+import { evaluateAndPersistLifecycle } from "./earlyWarningLifecycle";
+import { evaluateAndPersistPhase9ForCurrentStream } from "./confirmationInvalidation";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -134,6 +142,58 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
 
   // Step 8: Persist to Market Memory
   await memorySetJson(SEISMOGRAPH_OUTPUT_KEY, seismographOutput);
+  await recordDailyMarketEvidence({
+    observedAt: new Date(),
+    pressureIndex: seismographOutput.pressureScore,
+    regime: seismographOutput.regime,
+    stressLevel: seismographOutput.stressLevel,
+    direction: seismographOutput.direction,
+    dataFreshness: seismographOutput.dataFreshness ?? "unknown",
+    probabilities: seismographOutput.regimeProbabilities,
+    sourceState: {
+      activeContributors: seismographOutput.activeContributors,
+      evidenceConsensus: seismographOutput.evidenceConsensus,
+      analogCount: seismographOutput.analogMatches.length,
+      activePatternCount: seismographOutput.activePatterns.length,
+      vectorScores: Object.fromEntries((pressureOutput.vectors ?? []).filter(vector => vector.id && typeof vector.score === "number").map(vector => [vector.id, vector.score])),
+    },
+  });
+  // Phase 1B governance capture is append-only and deliberately non-blocking.
+  // It records this exact run's source quality, governed claim references, and
+  // score/regime coherence without changing the canonical output.
+  try {
+    const governanceState = buildAtomicIntelligenceStateManifest({
+      pressure: pressureOutput,
+      seismograph: seismographOutput,
+      generatedAt: new Date().toISOString(),
+    });
+    const persisted = await persistAtomicIntelligenceStateManifest(governanceState);
+    console.log(`[Seismograph] Governance manifest ${persisted.created ? "recorded" : "already present"}: ${persisted.stateId} (${governanceState.manifest.coherenceStatus})`);
+    const synthesis = await getAuthoritativeCrossEngineSynthesis();
+    if (synthesis) {
+      const outcome = await persistCrossEngineSynthesis(synthesis);
+      console.log(`[Seismograph] Cross-engine synthesis ${synthesis.synthesisId} persisted; ${outcome.archivedMaterialEventCount} material archive events.`);
+      const candidates = await evaluateAndPersistCandidateDetections(synthesis);
+      console.log(`[Seismograph] Candidate detection evaluated ${candidates.evaluation.candidates.length} governed candidate observations; ${candidates.appendedObservationCount} append-only observations.`);
+      const qualification = await evaluateAndPersistImportanceQualification(candidates.evaluation.candidates);
+      console.log(`[Seismograph] Importance qualification evaluated ${qualification.evaluation.scoredCandidates.length} candidates; ${qualification.evaluation.qualifiedCandidates.length} internal qualified candidates, ${qualification.appendedEvaluationCount} append-only evaluations.`);
+      const lifecycle = await evaluateAndPersistLifecycle(qualification.evaluation);
+      console.log(`[Seismograph] Lifecycle evaluated ${qualification.evaluation.scoredCandidates.length} candidates; ${lifecycle.appendedObservationCount} append-only lifecycle observations, ${lifecycle.ignoredCount} governed duplicate/out-of-order/no-lifecycle results.`);
+      const phase9 = await evaluateAndPersistPhase9ForCurrentStream(synthesis, candidates.evaluation.candidates, qualification.evaluation, lifecycle.observations);
+      console.log(`[Seismograph] Phase 9 evaluated ${phase9.evaluatedCount} governed lifecycle theses; ${phase9.authorityEventCount} typed authority events.`);
+    }
+  } catch (error) {
+    console.warn("[Seismograph] Governance manifest capture deferred:", error);
+  }
+  await collectBroadInstitutionalEventOutcomes();
+  // Forward-only research evidence. Failures are non-blocking because they must
+  // never interrupt the canonical production Seismograph score.
+  const [provenanceResult, forwardOutcomeResult] = await Promise.allSettled([
+    recordForwardChampionProvenance(pressureOutput),
+    collectForwardChampionOutcomes(),
+  ]);
+  if (provenanceResult.status === "rejected") console.warn("[Seismograph] Champion provenance capture deferred:", provenanceResult.reason);
+  if (forwardOutcomeResult.status === "rejected") console.warn("[Seismograph] Champion outcome collection deferred:", forwardOutcomeResult.reason);
   invalidateCanonicalMarketStateCache();
   console.log("[Seismograph] Output persisted to Market Memory");
 
@@ -166,7 +226,7 @@ export async function handleScheduledSeismograph(
 
 // ── Helper: Build state shape for assembleSeismographOutput ───
 
-function buildStateForAssembly(
+export function buildStateForAssembly(
   pressure: FaultlinePressureOutput,
   fmos: FMOSUniversalOutput | null,
   state: SeismographState | null
@@ -244,11 +304,11 @@ function buildStateForAssembly(
     ].slice(0, 6),
   };
 
-  // Pressure score — use FMOS-blended if available, else raw pressure
-  const pressureScore = fmos?.pressure?.overallPressure ?? pressure.overallPressure;
-
-  // Regime — prefer FMOS regime classification
-  const regime = fmos?.regime?.currentRegime ?? pressure.regime;
+  // Champion V1 is the frozen canonical score and regime. FMOS remains a
+  // contributor to evidence and descriptive context, but it must not silently
+  // substitute a different score or regime into the canonical user state.
+  const pressureScore = pressure.overallPressure;
+  const regime = pressure.regime;
 
   // Direction
   const direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating" =

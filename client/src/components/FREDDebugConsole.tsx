@@ -7,7 +7,6 @@
 // ============================================================
 import { useState } from 'react';
 import { useEngine } from '@/contexts/EngineContext';
-import { trpc } from '@/lib/trpc';
 
 const STATUS_COLOR: Record<string, string> = {
   healthy:     '#00FF88',
@@ -33,12 +32,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 export default function FREDDebugConsole() {
   const [open, setOpen] = useState(false);
-  const { sourceHealth, isLoading, lastUpdated } = useEngine();
-  const pressureQuery = trpc.pressure.getCurrentPressure.useQuery(undefined, {
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-  });
-  const pressure = pressureQuery.data;
+  const { sourceHealth, isLoading, lastUpdated, canonicalState, refresh } = useEngine();
+  const canonicalEngines = canonicalState?.engines ?? [];
 
   const fredSource = sourceHealth.find(s => s.id === 'fred');
   const requiredSources = sourceHealth.filter(s => s.required);
@@ -112,7 +107,7 @@ export default function FREDDebugConsole() {
             </span>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
               <button
-                onClick={() => { pressureQuery.refetch(); }}
+                onClick={() => { refresh(); }}
                 style={{ background: 'transparent', border: '1px solid rgba(0,212,255,0.3)', borderRadius: '3px', padding: '2px 6px', color: '#00D4FF', cursor: 'pointer', fontSize: '9px', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}
               >
                 REFRESH
@@ -167,18 +162,18 @@ export default function FREDDebugConsole() {
             </div>
           )}
 
-          {/* Pressure vectors — per-vector FRED status */}
-          {pressure?.vectors && pressure.vectors.length > 0 && (
+          {/* Canonical engines — per-engine source and quality evidence */}
+          {canonicalEngines.length > 0 && (
             <div style={{ padding: '4px 0' }}>
               <div style={{ padding: '4px 12px 2px', color: '#4B5563', fontSize: '8px', letterSpacing: '0.1em' }}>
-                PRESSURE VECTORS · {pressure.dataSource?.toUpperCase() ?? '—'}
+                CANONICAL ENGINES · {canonicalState?.stateId ?? 'UNAVAILABLE'}
               </div>
-              {pressure.vectors.map(v => {
-                const ds = v.dataStatus ?? 'unknown';
+              {canonicalEngines.map(engine => {
+                const ds = engine.freshnessStatus?.toLowerCase() ?? 'unknown';
                 const dotColor = STATUS_COLOR[ds] ?? '#6B7280';
                 return (
                   <div
-                    key={v.id}
+                    key={engine.engineId}
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '6px 1fr auto',
@@ -191,14 +186,14 @@ export default function FREDDebugConsole() {
                     <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: dotColor, marginTop: '3px', flexShrink: 0 }} />
                     <div style={{ minWidth: 0 }}>
                       <div style={{ color: '#E2E8F0', fontSize: '9px', letterSpacing: '0.06em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {v.label ?? v.id}
+                        {engine.engineName ?? engine.engineId}
                       </div>
                       <div style={{ color: '#374151', fontSize: '8px', wordBreak: 'break-word', lineHeight: '1.4', marginTop: '1px' }}>
-                        {v.source ?? v.id}
+                        {engine.engineId}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ color: '#00D4FF', fontWeight: 700, fontSize: '10px' }}>{v.score}</div>
+                      <div style={{ color: '#00D4FF', fontWeight: 700, fontSize: '10px' }}>{engine.value ?? '—'}</div>
                       <div style={{ color: dotColor, fontSize: '8px', letterSpacing: '0.06em' }}>
                         {STATUS_LABEL[ds] ?? ds.toUpperCase()}
                       </div>

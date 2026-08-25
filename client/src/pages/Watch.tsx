@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
 import {
   CANONICAL_DESTINATION_BY_ID,
   EXPERT_WORKSPACE_BY_ID,
@@ -28,6 +29,7 @@ import {
 } from "@shared/marketMetrics";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
 
 const WATCH_DEEP_PATH = "/app/watch/deep";
 
@@ -211,15 +213,20 @@ export default function Watch() {
     dataError,
     refresh,
   } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading authoritative canonical state…" />;
+  if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WATCH withholds current monitoring interpretation until one authoritative state is available." />;
 
   useEffect(() => {
     document.title = "WATCH — FAULTLINE";
   }, []);
 
-  if (isLoading && !marketState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading canonical monitoring state…" />;
-
   const isCanonical = marketMode === "canonical" && Boolean(marketState);
-  const pressure = marketState?.now.pressureScore ?? output.overall.score * 10;
+  const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? output.overall.score * 10;
   const whatChanged = marketState?.watch.whatChanged ?? [
     "Canonical change records are unavailable. Deterministic risk domains are shown below without claiming measured changes.",
   ];
@@ -258,9 +265,10 @@ export default function Watch() {
   return (
     <main className="min-h-screen bg-[#05070a] text-slate-200" data-watch-destination="canonical">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_76%_5%,rgba(249,115,22,0.09),transparent_27%),radial-gradient(circle_at_12%_28%,rgba(0,229,255,0.045),transparent_24%)]" />
-      <div className="relative mx-auto max-w-7xl px-5 pb-16 pt-8 md:px-10 md:pt-12">
+	      <div className="relative mx-auto max-w-7xl px-5 pb-16 pt-8 md:px-10 md:pt-12">
+	        <EarlyWarningPresentationPanel mode="watch" />
 
-        {/* ── HERO ─────────────────────────────────────────────────────── */}
+	        {/* ── HERO ─────────────────────────────────────────────────────── */}
         <section data-watch-section="what-changed" className="relative overflow-hidden rounded-sm border border-orange-300/20 bg-[#090c11] p-6 md:p-9">
           <div className="pointer-events-none absolute inset-0 opacity-60" style={{ background: "radial-gradient(circle at 80% 10%, rgba(249,115,22,0.14), transparent 35%)" }} />
           <div className="pointer-events-none absolute bottom-0 left-0 h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(249,115,22,0.3), transparent)" }} />

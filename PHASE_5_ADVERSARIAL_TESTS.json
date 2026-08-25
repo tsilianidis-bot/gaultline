@@ -1,0 +1,25 @@
+{
+  "phase": "phase5-cross-engine-synthesis-v1",
+  "status": "PASS",
+  "testFile": "server/phase5Adversarial.test.ts",
+  "cases": [
+    {"id":"A","case":"Two metrics from one source cannot become two-engine confirmation","result":"PASS"},
+    {"id":"B","case":"Three downstream metrics sharing a dominant source cannot become three independent confirmations","result":"PASS"},
+    {"id":"C","case":"One deteriorating engine cannot become system-wide deterioration","result":"PASS"},
+    {"id":"D","case":"State A observations cannot combine with State B observations","result":"PASS"},
+    {"id":"E","case":"Historical analog similarity cannot become current probability","result":"PASS"},
+    {"id":"F","case":"Historical frequency cannot become current probability","result":"PASS"},
+    {"id":"G","case":"Conflicting engines remain explicitly conflicted","result":"PASS"},
+    {"id":"H","case":"Unavailable engines are not treated as neutral","result":"PASS"},
+    {"id":"I","case":"Stale engines cannot silently contribute as current","result":"PASS"},
+    {"id":"J","case":"One engine magnitude cannot automatically outweigh others","result":"PASS"},
+    {"id":"K","case":"Correlation cannot automatically become causation","result":"PASS"},
+    {"id":"L","case":"Missing evidence produces insufficiency rather than fabricated synthesis","result":"PASS"},
+    {"id":"M","case":"Confirmation requires a defined structured relationship","result":"PASS"},
+    {"id":"N","case":"Divergence preserves participating-engine provenance","result":"PASS"},
+    {"id":"O","case":"Shared underlying data cannot be double-counted as independent confirmation","result":"PASS"},
+    {"id":"P","case":"Narrative cannot introduce a relationship absent from structured synthesis","result":"PASS"},
+    {"id":"Q","case":"ASHA and Oracle consume deterministic identical synthesis identity for the same canonical state","result":"PASS"},
+    {"id":"R","case":"A changed state cannot reuse the prior synthesis identity","result":"PASS"}
+  ]
+}

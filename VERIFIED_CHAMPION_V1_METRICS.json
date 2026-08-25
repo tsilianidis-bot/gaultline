@@ -1,0 +1,287 @@
+{
+  "protocolVersion": "VERIFIED_CHAMPION_V1_PROTOCOL_20260819_R2",
+  "verdictEligibility": "INELIGIBLE_FOR_STRONG_OR_MODERATE_VERDICT",
+  "limitations": [
+    "Only 36 verified monthly score observations are available, from 2023-08 through 2026-07.",
+    "Every score carries REVISED_HISTORICAL quality because required BAMLH0A0HYM2 data lacks acceptable ALFRED vintage evidence.",
+    "The verified window does not include the requested 2000-2002, 2007-2008, 2011, 2015-2016, 2018 Q4, 2020, or 2022 events; no score is reported for those periods.",
+    "VIX event evaluation is pre-registered but not evaluated because no independent VIX source has been persisted.",
+    "No weight, threshold, transform, or live-model change is authorized by this report."
+  ],
+  "coverage": {
+    "firstScoreMonth": "2023-08",
+    "lastScoreMonth": "2026-07",
+    "scoreCount": 36,
+    "outcomeRecordsLatest": 144,
+    "sp500DailyBars": 1255,
+    "excludedEventsOutsideScoreCoverage": [
+      {
+        "peakDate": "2022-01-03",
+        "onsetDate": "2022-02-22",
+        "troughDate": "2022-10-12",
+        "recoveryDate": "2024-01-19",
+        "peakClose": 4796.56005859375,
+        "troughClose": 3577.030029296875,
+        "drawdownPct": -25.42509661923039
+      }
+    ]
+  },
+  "scoreSummary": {
+    "count": 36,
+    "minimum": 25,
+    "maximum": 39,
+    "mean": 29.5,
+    "scoreDistribution": {
+      "LOW_RISK": 0,
+      "MODERATE_RISK": 36,
+      "ELEVATED_RISK": 0,
+      "HIGH_STRESS": 0,
+      "SYSTEMIC_CRISIS": 0
+    },
+    "regimeDistribution": {
+      "MODERATE RISK": 36
+    }
+  },
+  "registeredDrawdownEvents": [
+    {
+      "peakDate": "2025-02-19",
+      "onsetDate": "2025-03-13",
+      "troughDate": "2025-04-08",
+      "recoveryDate": "2025-06-27",
+      "peakClose": 6144.14990234375,
+      "troughClose": 4982.77001953125,
+      "drawdownPct": -18.902206184284008
+    }
+  ],
+  "stressVsCalm": {
+    "eventWindowCount": 7,
+    "calmCount": 29,
+    "eventWindowMeanScore": 27.857142857142858,
+    "calmMeanScore": 29.896551724137932
+  },
+  "outcomesByPressureBucket": {
+    "1": {
+      "LOW_RISK": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "MODERATE_RISK": {
+        "count": 36,
+        "averageForwardReturnPct": 0.15729709505401687,
+        "averageMaximumDrawdownPct": -0.2755164541196617
+      },
+      "ELEVATED_RISK": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "HIGH_STRESS": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "SYSTEMIC_CRISIS": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      }
+    },
+    "5": {
+      "LOW_RISK": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "MODERATE_RISK": {
+        "count": 36,
+        "averageForwardReturnPct": 0.07337389444104604,
+        "averageMaximumDrawdownPct": -1.6156391682800664
+      },
+      "ELEVATED_RISK": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "HIGH_STRESS": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "SYSTEMIC_CRISIS": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      }
+    },
+    "20": {
+      "LOW_RISK": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "MODERATE_RISK": {
+        "count": 35,
+        "averageForwardReturnPct": 1.6970250451519657,
+        "averageMaximumDrawdownPct": -3.248472156051386
+      },
+      "ELEVATED_RISK": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "HIGH_STRESS": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "SYSTEMIC_CRISIS": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      }
+    },
+    "60": {
+      "LOW_RISK": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "MODERATE_RISK": {
+        "count": 33,
+        "averageForwardReturnPct": 4.852885956930588,
+        "averageMaximumDrawdownPct": -6.121409207578953
+      },
+      "ELEVATED_RISK": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "HIGH_STRESS": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      },
+      "SYSTEMIC_CRISIS": {
+        "count": 0,
+        "averageForwardReturnPct": null,
+        "averageMaximumDrawdownPct": null
+      }
+    }
+  },
+  "warning": {
+    "qualifyingScoreCount": 0,
+    "leads": [],
+    "falseAlarms": [],
+    "missedEvents": [
+      {
+        "onsetDate": "2025-03-13",
+        "peakDate": "2025-02-19",
+        "drawdownPct": -18.902206184284008
+      }
+    ]
+  },
+  "temporalStability": {
+    "lag1PearsonAutocorrelation": 0.8949937267903774,
+    "observationPairs": 35
+  },
+  "vectorCorrelations": {
+    "liquidityStress": {
+      "liquidityStress": 1,
+      "creditContagion": 0.74972953556058,
+      "volatilityRegime": 0.7029930518376064,
+      "macroSensitivity": 0.11076265139350427,
+      "marketBreadth": -0.7348528470349431,
+      "aiBubble": 0.5959696677909001
+    },
+    "creditContagion": {
+      "liquidityStress": 0.74972953556058,
+      "creditContagion": 1,
+      "volatilityRegime": 0.3152169018565691,
+      "macroSensitivity": 0.06717006000476257,
+      "marketBreadth": -0.18715343651743602,
+      "aiBubble": 0.7903094875601258
+    },
+    "volatilityRegime": {
+      "liquidityStress": 0.7029930518376064,
+      "creditContagion": 0.3152169018565691,
+      "volatilityRegime": 1,
+      "macroSensitivity": 0.5015813485694792,
+      "marketBreadth": -0.711057040642338,
+      "aiBubble": 0.5309938694753301
+    },
+    "macroSensitivity": {
+      "liquidityStress": 0.11076265139350427,
+      "creditContagion": 0.06717006000476257,
+      "volatilityRegime": 0.5015813485694792,
+      "macroSensitivity": 1,
+      "marketBreadth": -0.09886015605991107,
+      "aiBubble": 0.250171667215674
+    },
+    "marketBreadth": {
+      "liquidityStress": -0.7348528470349431,
+      "creditContagion": -0.18715343651743602,
+      "volatilityRegime": -0.711057040642338,
+      "macroSensitivity": -0.09886015605991107,
+      "marketBreadth": 1.0000000000000002,
+      "aiBubble": -0.1415850014995693
+    },
+    "aiBubble": {
+      "liquidityStress": 0.5959696677909001,
+      "creditContagion": 0.7903094875601258,
+      "volatilityRegime": 0.5309938694753301,
+      "macroSensitivity": 0.250171667215674,
+      "marketBreadth": -0.1415850014995693,
+      "aiBubble": 1
+    }
+  },
+  "ablation": {
+    "liquidityStress": {
+      "correlationToBaseline": 0.9321458083952595,
+      "meanAbsoluteDifference": 1.1388888888888888
+    },
+    "creditContagion": {
+      "correlationToBaseline": 0.9822712256679049,
+      "meanAbsoluteDifference": 2.5
+    },
+    "volatilityRegime": {
+      "correlationToBaseline": 0.9241187274031522,
+      "meanAbsoluteDifference": 1.4722222222222223
+    },
+    "macroSensitivity": {
+      "correlationToBaseline": 0.9583350521118705,
+      "meanAbsoluteDifference": 1.3333333333333333
+    },
+    "marketBreadth": {
+      "correlationToBaseline": 0.9943151188246767,
+      "meanAbsoluteDifference": 0.7222222222222222
+    },
+    "aiBubble": {
+      "correlationToBaseline": 0.9946972865956425,
+      "meanAbsoluteDifference": 2.1944444444444446
+    }
+  },
+  "walkForward": {
+    "development": {
+      "scoreCount": 12,
+      "meanScore": 33.666666666666664,
+      "completed60DayOutcomes": 12,
+      "average60DayForwardReturnPct": 6.9653220530349715,
+      "average60DayMaximumDrawdownPct": -5.4055458508136836
+    },
+    "validation": {
+      "scoreCount": 12,
+      "meanScore": 27.916666666666668,
+      "completed60DayOutcomes": 12,
+      "average60DayForwardReturnPct": 3.641805247684984,
+      "average60DayMaximumDrawdownPct": -7.062556944179419
+    },
+    "holdout": {
+      "scoreCount": 12,
+      "meanScore": 26.916666666666668,
+      "completed60DayOutcomes": 9,
+      "average60DayForwardReturnPct": 3.6510787744522144,
+      "average60DayMaximumDrawdownPct": -5.82103003446536
+    }
+  }
+}

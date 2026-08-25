@@ -76,12 +76,12 @@ const REGIME_ALIGN_COLORS = {
 
 // ── Macro Environment Panel data ──────────────────────────────
 const MACRO_METRICS = [
-  { label: 'Bull Probability',   value: 62,  unit: '%', color: '#00FF88', bar: true },
-  { label: 'Crash Probability',  value: 28,  unit: '%', color: '#FF2D55', bar: true },
-  { label: 'Treasury Stress',    value: 'ELEVATED', unit: '', color: '#FF9500', bar: false },
-  { label: 'Volatility Regime',  value: 'SUPPRESSED', unit: '', color: '#FFD700', bar: false },
-  { label: 'Liquidity Conditions', value: 'TIGHTENING', unit: '', color: '#FF9500', bar: false },
-  { label: 'AI Concentration',   value: 74,  unit: '%', color: '#00D4FF', bar: true },
+  { label: 'Scenario Context', value: 'DERIVED', unit: '', color: '#00D4FF', bar: false },
+  { label: 'Forecast Horizon', value: 'NOT SET', unit: '', color: '#94A3B8', bar: false },
+  { label: 'Source Quality', value: 'DISCLOSED', unit: '', color: '#00FF88', bar: false },
+  { label: 'Historical Evidence', value: 'RESEARCH', unit: '', color: '#FFD700', bar: false },
+  { label: 'Static Inputs', value: 'QUALIFIED', unit: '', color: '#FF9500', bar: false },
+  { label: 'Analog Use', value: 'CONTEXT ONLY', unit: '', color: '#00D4FF', bar: false },
 ];
 
 // ── Animated confidence bar ───────────────────────────────────

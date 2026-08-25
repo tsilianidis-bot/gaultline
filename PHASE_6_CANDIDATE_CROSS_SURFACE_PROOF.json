@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "surfaces": [
+    {"surface":"Canonical state","state":"UPSTREAM_ONLY","result":"PASS","evidence":"Phase 2 canonical state remains the authoritative state identity."},
+    {"surface":"Phase 3 evidence packet","state":"UPSTREAM_ONLY","result":"PASS","evidence":"No Phase 6 creates a competing evidence contract."},
+    {"surface":"Phase 5 synthesis","state":"UPSTREAM_ONLY","result":"PASS","evidence":"Candidate detector accepts only supplied CrossEngineSynthesis."},
+    {"surface":"Scheduled Seismograph","state":"INTERNAL","result":"PASS","evidence":"One global invocation persists candidate observations after synthesis persistence."},
+    {"surface":"Candidate ledger","state":"INTERNAL","result":"PASS","evidence":"Immutable original candidate payload plus append-only candidate observations."},
+    {"surface":"Admin debug","state":"PROTECTED","result":"PASS","evidence":"admin.getCandidateDetectionDebug exposes candidate provenance only to admin."},
+    {"surface":"Public market-state router","state":"ABSENT","result":"PASS","evidence":"No current-warning or candidate-publication endpoint remains."},
+    {"surface":"HOME dashboard","state":"ABSENT","result":"PASS","evidence":"No Early Warning panel remains on HOME."},
+    {"surface":"WATCH","state":"ABSENT","result":"PASS","evidence":"No candidate-publication or warning lifecycle consumer exists."},
+    {"surface":"Alerts Archive","state":"ABSENT","result":"PASS","evidence":"Phase 6 does not write public alerts or warning lifecycle events."},
+    {"surface":"ASHA","state":"ABSENT","result":"PASS","evidence":"No Phase 6 candidate/warning prompt contract is supplied."},
+    {"surface":"Oracle","state":"ABSENT","result":"PASS","evidence":"No Phase 6 candidate/warning prompt contract is supplied."}
+  ]
+}

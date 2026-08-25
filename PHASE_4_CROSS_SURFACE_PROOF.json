@@ -1,0 +1,15 @@
+{
+  "phase": "Phase 4 — Cross-Surface Evidence Semantics",
+  "status": "PASS",
+  "controlledCanonicalTransaction": "phase4-interpretation-integrity-v1: originatingStateId/effectiveAt plus EvidencePacket claim IDs",
+  "surfaces": [
+    {"surface":"ASHA Panel","path":"server/ashaEngine.ts:askAsha","stateIdentity":"transaction.integrity","evidenceSemantics":"canonical packet only","forecast":"withheld absent authorization","status":"PASS"},
+    {"surface":"Oracle Briefing","path":"server/routers/smartDiscovery.ts:orchestrateAnswer → client/src/components/OracleBriefing.tsx","stateIdentity":"response integrity + conversation audit","evidenceSemantics":"canonical packet only; pseudo-synthesis removed","forecast":"withheld absent authorization","status":"PASS"},
+    {"surface":"Daily Greeting","path":"server/ashaEngine.ts:generateAshaDailyGreeting","stateIdentity":"daily greeting transaction","evidenceSemantics":"canonical packet only","forecast":"withheld absent authorization","status":"PASS"},
+    {"surface":"NOW / WHY / WATCH / ACT / Market Context","path":"Phase 2 canonical consumer transport","stateIdentity":"phase2-canonical-state-v1 and consumer envelope","evidenceSemantics":"Phase 3 evidence prompt boundaries; no ASHA/Oracle state substitution","forecast":"Phase 3 authorization retained","status":"PASS"},
+    {"surface":"Outlook","path":"server/routers/outlook.ts","stateIdentity":"canonical current narrative boundary","evidenceSemantics":"Phase 3 shared evidence prompt","forecast":"Forecast Horizon authorization retained","status":"PASS"},
+    {"surface":"Mobile","path":"mobile current-intelligence consumers","stateIdentity":"Phase 2 canonical consumer envelope","evidenceSemantics":"inherits canonical/evidence semantics without ASHA/Oracle transformation","forecast":"withheld absent authorization","status":"PASS"},
+    {"surface":"Daily Brief archive","path":"server/autonomousPublishing.ts / server/routers/organicContent.ts","stateIdentity":"archived snapshot with forward canonical origin only","evidenceSemantics":"explicit archive distinction","forecast":"not latest current state","status":"PASS"}
+  ],
+  "regressionEvidence": ["server/phase4AshaOracleIntegration.test.ts", "server/interpretationIntegrity.test.ts", "server/engineContextCanonical.test.ts", "server/canonicalIntelligenceState.test.ts"]
+}

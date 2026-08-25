@@ -1,0 +1,27 @@
+{
+  "phase": "Phase 4 — ASHA / Oracle Intelligence Repair",
+  "status": "PASS",
+  "auditedAt": "2026-08-22",
+  "sharedContract": {
+    "module": "shared/interpretationIntegrity.ts",
+    "contractVersion": "phase4-interpretation-integrity-v1",
+    "promptVersion": "phase4-prompt-v1",
+    "controls": ["canonical state binding", "structured evidence claim list", "forecast authorization", "semantic distinction", "quality/strength language", "unsupported-claim withholding", "state-mixing prevention"]
+  },
+  "boundaries": [
+    {"id":"ASHA_PRIMARY","module":"server/ashaEngine.ts","entry":"askAsha","canonicalPacket":"buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState))","preGeneration":"buildInterpretationPromptContract","postGeneration":"validateInterpretationOutput","status":"PASS"},
+    {"id":"ASHA_DAILY_GREETING","module":"server/ashaEngine.ts","entry":"generateAshaDailyGreeting","canonicalPacket":"buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState))","preGeneration":"buildInterpretationPromptContract","postGeneration":"validateInterpretationOutput","status":"PASS"},
+    {"id":"ORACLE_ASK","module":"server/routers/smartDiscovery.ts","entry":"orchestrateAnswer","canonicalPacket":"buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState))","preGeneration":"buildInterpretationPromptContract","postGeneration":"validateInterpretationOutput","status":"PASS"},
+    {"id":"OUTLOOK","module":"server/routers/outlook.ts","entry":"current narrative","preGeneration":"shared Phase 3 evidenceNarrativePromptContract","phase4Disposition":"not an ASHA/Oracle primary transaction; semantics inherited from Phase 3","status":"PASS"},
+    {"id":"DAILY_BRIEF","module":"server/autonomousPublishing.ts","entry":"archived publishing snapshot","preGeneration":"shared Phase 3 evidenceNarrativePromptContract","phase4Disposition":"archive-only; forward canonical origin retained under Phase 2I","status":"PASS"}
+  ],
+  "confidenceSemanticAudit": [
+    {"field":"EvidenceClaim.evidenceStrength","meaning":"governed evidence-strength vocabulary","permitted":"qualifies language only; never probability","status":"VALID"},
+    {"field":"ForecastAuthorization probability","meaning":"authorized model forecast only","permitted":"requires event, horizon, model, methodology, and calibration basis","status":"VALID"},
+    {"field":"ASHA confidence","meaning":"response-label compatibility field","phase4Control":"numeric values are withheld without authorized forecast evidence","status":"RECLASSIFIED"},
+    {"field":"Oracle confidence/finalVerdictConfidence","meaning":"legacy generated response fields","phase4Control":"deterministically nulled without authorized forecast evidence","status":"WITHHELD"},
+    {"field":"historical frequency / analog similarity","meaning":"historical context only","phase4Control":"Phase 3 evidence semantic guard and Phase 4 adversarial tests prevent probability conversion","status":"VALID"}
+  ],
+  "legacyPromptDisposition": "Legacy prompt text remains in source as inactive compatibility context only; active ASHA and Oracle system prompts are the Phase 4 evidence-bound prompt contracts. Regression guard: server/phase4AshaOracleIntegration.test.ts.",
+  "testEvidence": ["server/phase4AshaOracleIntegration.test.ts", "server/interpretationIntegrity.test.ts", "server/phase4Adversarial.test.ts"]
+}

@@ -12,6 +12,8 @@
 // Live API integration: replace RawIndicators with fetched values
 // from FRED, Polygon.io, Alpha Vantage, etc.
 // ============================================================
+import type { CanonicalConsumerEnvelope } from "@shared/canonicalConsumerEnvelope";
+import type { CanonicalMarketState } from "@shared/marketState";
 
 // ── Raw indicator inputs (replace with live API values) ──────
 export interface RawIndicators {
@@ -128,6 +130,8 @@ export interface EngineOutput {
   narrative: NarrativeOutput;
   tickerValues: { label: string; value: string; direction: 'up' | 'down' | 'flat' }[];
   alertPressure: { treasury: number; credit: number; aiRisk: number; liquidity: number };
+  /** Phase 2 current-state provenance for canonical-derived compatibility output. */
+  canonicalEnvelope?: CanonicalConsumerEnvelope<CanonicalMarketState>;
 }
 
 // ── Scoring helpers ───────────────────────────────────────────

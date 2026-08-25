@@ -34,6 +34,7 @@ import Why from "./pages/Why";
 import Outlook from "./pages/Outlook";
 import Watch from "./pages/Watch";
 import Act from "./pages/Act";
+const EarlyWarningDetail = lazy(() => import("./pages/EarlyWarningDetail"));
 
 const Pressure        = lazy(() => import("./pages/Pressure"));
 const Alerts          = lazy(() => import("./pages/Alerts"));
@@ -41,6 +42,10 @@ const HistoricalAnalogs = lazy(() => import("./pages/HistoricalAnalogs"));
 const SimulatePressure = lazy(() => import("./pages/SimulatePressure"));
 const Watchlist       = lazy(() => import("./pages/Watchlist"));
 const Signals         = lazy(() => import("./pages/Signals"));
+const SignalDetail    = lazy(() => import("./pages/SignalDetail"));
+const RisingStars     = lazy(() => import("./pages/RisingStars"));
+const RisingStarDetail = lazy(() => import("./pages/RisingStarDetail"));
+const Markets         = lazy(() => import("./pages/Markets"));
 const Portfolio       = lazy(() => import("./pages/Portfolio"));
 const CryptoSearch    = lazy(() => import("./pages/CryptoSearch"));
 const CryptoWatchlist = lazy(() => import("./pages/CryptoWatchlist"));
@@ -65,17 +70,20 @@ const XPostQueue       = lazy(() => import("./pages/XPostQueue"));
 const TrackRecord      = lazy(() => import("./pages/TrackRecord"));
 const TimeMachine      = lazy(() => import("./pages/TimeMachine"));
 const DayTradeIntelligence = lazy(() => import("./pages/DayTradeIntelligence"));
+const DayTradeDetail       = lazy(() => import("./pages/DayTradeDetail"));
 const MarketMovers         = lazy(() => import("./pages/MarketMovers"));
 const SeoOptimizer = lazy(() => import("./pages/SeoOptimizer"));
 const ContactUs = lazy(() => import("./pages/ContactUs"));
 const AnalyticsDashboard = lazy(() => import("./pages/AnalyticsDashboard"));
 const ReadingHistory   = lazy(() => import("./pages/ReadingHistory"));
 const PressureIndex    = lazy(() => import("./pages/PressureIndex"));
+const PressureHistory  = lazy(() => import("./pages/PressureHistory"));
 const Methodology      = lazy(() => import("./pages/Methodology"));
 const OwnerSimulation  = lazy(() => import("./pages/OwnerSimulation"));
 const PublicSharedReport = lazy(() => import("./pages/PublicSharedReport"));
 const SignalOutlookCenter = lazy(() => import("./pages/SignalOutlookCenter"));
 const CheckoutSuccess = lazy(() => import("./pages/CheckoutSuccess"));
+const QaAccess = lazy(() => import("./pages/QaAccess"));
 
 // ── Public SEO landing pages (no auth required, crawlable) ────────
 const PublicSignals        = lazy(() => import("./pages/PublicSignals"));
@@ -689,6 +697,13 @@ function Router() {
           </Suspense>
         </ErrorBoundary>
       </Route>
+      <Route path="/qa-access">
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <QaAccess />
+          </Suspense>
+        </ErrorBoundary>
+      </Route>
       {/* Admin promo dashboard — admin only, no AppLayout */}
       <Route path="/admin/promo">
         <ErrorBoundary>
@@ -730,13 +745,19 @@ function Router() {
 		                  {() => <Redirect to={preserveRouteContext(target, window.location.search, window.location.hash)} />}
 		                </Route>
 		              ))}
-	              <Route path="/app/pressure" component={Pressure} />
+			              <Route path="/app/pressure" component={Pressure} />
+			              <Route path="/app/early-warning" component={EarlyWarningDetail} />
+			              <Route path="/app/pressure-history" component={PressureHistory} />
 		              <Route path="/app/discover" component={SmartDiscovery} />
 		              <Route path="/app/alerts" component={Alerts} />
 		              <Route path="/app/historical-analogs" component={HistoricalAnalogs} />
 		              <Route path="/app/simulate-pressure" component={SimulatePressure} />
-		              <Route path="/app/watchlist" component={Watchlist} />
-		              <Route path="/app/signals" component={Signals} />
+	              <Route path="/app/watchlist" component={Watchlist} />
+	              <Route path="/app/rising-stars/:ticker" component={RisingStarDetail} />
+	              <Route path="/app/rising-stars" component={RisingStars} />
+	              <Route path="/app/signals/:symbol" component={SignalDetail} />
+	              <Route path="/app/signals" component={Signals} />
+	              <Route path="/app/markets" component={Markets} />
 		              <Route path="/app/portfolio" component={Portfolio} />
 		              <Route path="/app/crypto" component={CryptoHub} />
 		              <Route path="/app/crypto-search" component={CryptoSearch} />
@@ -775,6 +796,7 @@ function Router() {
               <Route path="/app/x-post-queue" component={XPostQueue} />
 	              <Route path="/app/decision-engine" component={DecisionEngine} />
 	              <Route path="/app/signal-outlook" component={SignalOutlookCenter} />
+	              <Route path="/app/day-trade-intelligence/:symbol" component={DayTradeDetail} />
 	              <Route path="/app/day-trade-intelligence" component={DayTradeIntelligence} />
 	              <Route path="/app/market-movers" component={MarketMovers} />
 	              <Route path="/app/symbol-intelligence" component={UniversalSymbolIntelligence} />
@@ -850,12 +872,6 @@ function App() {
   const isDemo = isDemoPath();
   const { user, loading: authLoading } = useAuth();
   const [, navigate] = useLocation();
-
-  // Fetch user's preferred startup page (defaults to 'now')
-  const { data: startupPageData } = trpc.dailyBrief.getStartupPage.useQuery(
-    undefined,
-    { enabled: !!user, staleTime: 5 * 60 * 1000 }
-  );
 
   // ── ARCHITECTURAL RULE ─────────────────────────────────────────────────────
   // CinematicIntro is the ABSOLUTE ROOT render for first-time users.
@@ -940,19 +956,10 @@ function App() {
       sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
     } catch {}
     setAshaBriefingDone(true);
-    // Navigate to user's preferred startup page (default: NOW/Seismograph)
-    const startupPref = startupPageData?.startupPage ?? 'now';
-    const startupPathMap: Record<string, string> = {
-      now:     CANONICAL_DESTINATION_BY_ID.now.path,
-      why:     CANONICAL_DESTINATION_BY_ID.why.path,
-      outlook: CANONICAL_DESTINATION_BY_ID.outlook.path,
-      watch:   CANONICAL_DESTINATION_BY_ID.watch.path,
-      act:     CANONICAL_DESTINATION_BY_ID.act.path,
-      last:    window.location.pathname, // stay on current page
-    };
-    const targetPath = startupPathMap[startupPref] ?? CANONICAL_DESTINATION_BY_ID.now.path;
-    navigate(targetPath);
-  }, [user, startupPageData, navigate]);
+    // ASHA is the front door; Home is the command center. Post-welcome
+    // continuation must never inherit a prior drill-down or user preference.
+    navigate(CANONICAL_HOME);
+  }, [user, navigate]);
 
   // Auth gate — shown after cinematic when user is not authenticated.
   // ASHA must never greet by name before identity is confirmed.
@@ -1157,5 +1164,3 @@ function App() {
 }
 
 export default App;
-const Markets                = lazy(() => import("./pages/Markets"));
-              <Route path="/app/markets" component={Markets} />

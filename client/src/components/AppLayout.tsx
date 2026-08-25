@@ -32,6 +32,7 @@ import RightActionDrawer from "@/components/RightActionDrawer";
 import { CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID } from "@shared/routeRegistry";
 import { getRouteIcon } from "@/lib/routeIcons";
 import AppMarketHeader, { type MarketTickerItem } from "@/components/AppMarketHeader";
+import GlobalMarketTicker from "@/components/GlobalMarketTicker";
 
 // ── Navigation structure ──────────────────────────────────────
 // Groups define the cognitive flow: command → markets → intelligence → analysis → account
@@ -238,6 +239,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <DrawerProvider>
     <div className="min-h-screen flex flex-col" style={{ background: '#080A0F', fontFamily: "'IBM Plex Sans', sans-serif" }}>
+      {(authUser as { isQaSession?: boolean } | null)?.isQaSession && (
+        <div role="status" style={{ position: "fixed", right: 12, bottom: 74, zIndex: 80, border: "1px solid rgba(0,212,255,0.45)", background: "rgba(0,20,28,0.96)", color: "#00D4FF", borderRadius: 4, padding: "7px 10px", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.12em", boxShadow: "0 0 16px rgba(0,212,255,0.12)" }}>
+          OWNER QA · READ ONLY
+        </div>
+      )}
 
       {/* ── Edge navigation drawers ── */}
       <LeftNavDrawer breachCount={breachCount} />
@@ -253,6 +259,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         zIndex: 50,
       }}>
         <AppMarketHeader items={liveTickerItems} intelligence={miData} isMobile={isMobile} />
+        <GlobalMarketTicker />
 
         {/* Logo row + status */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 16px', borderBottom: '1px solid rgba(255,255,255,0.14)' }}>
@@ -821,5 +828,3 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </DrawerProvider>
   );
 }
-import GlobalMarketTicker from "@/components/GlobalMarketTicker";
-        <GlobalMarketTicker />

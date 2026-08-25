@@ -247,7 +247,7 @@ export default function MobileSignals() {
     retry: false,
   });
 
-  const { data: pressureData } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
   });
 
@@ -273,9 +273,9 @@ export default function MobileSignals() {
   }, [quotes]);
 
   const regime = useMemo(() => ({
-    label: pressureData?.regime ?? "MODERATE RISK",
-    score: pressureData?.overallPressure ?? 40,
-  }), [pressureData]);
+    label: canonicalState?.regime ?? "CANONICAL STATE UNAVAILABLE",
+    score: canonicalState?.pressureIndex ?? 0,
+  }), [canonicalState]);
 
   const tradingSignalsQuery = trpc.signals.getTradingSignals.useMutation();
 
@@ -399,7 +399,7 @@ export default function MobileSignals() {
                 const name = id === "bitcoin" ? "Bitcoin" : "Ethereum";
                 const btcDom = globalStats?.btcDominance;
                 // Simple signal based on pressure
-                const score = pressureData?.overallPressure ?? 40;
+                const score = canonicalState?.pressureIndex ?? 0;
                 const signal = score >= 65 ? "AVOID" : score >= 45 ? "HOLD" : "WATCH";
                 return (
                   <CryptoSignalCard
@@ -407,7 +407,7 @@ export default function MobileSignals() {
                     id={id}
                     name={name}
                     signal={signal}
-                    loading={!globalStats && !pressureData}
+                    loading={!globalStats && !canonicalState}
                   />
                 );
               })}

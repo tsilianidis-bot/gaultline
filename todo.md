@@ -4731,7 +4731,577 @@
 - [x] Add options interpretation safeguards that distinguish ambiguity, hedging, closing activity, covered calls, and directional conviction where data permits
 - [x] Add concise “Why FAULTLINE Is Seeing It Early” explanations and data-confidence/limitation surfaces per Rising Star asset
 - [x] Add scoring and UI tests; validate missing/degraded data does not penalize assets or create false precision
-- [ ] Save the Rising Stars expansion checkpoint and deliver implementation results
+- [x] Save the Rising Stars expansion checkpoint and deliver implementation results
+
+## Daily Intelligence Brief Integrity and Signals Rising Stars Repair (Session 2026-08-13)
+- [x] Audit Daily Brief header/body Pressure Index mismatch across routes, cache layers, snapshot records, and generation-time data
+- [x] Trace existing Daily Brief generation, database, API, frontend rendering, and scheduled publication paths
+- [x] Define and implement an authoritative brief snapshot contract with consistent values and explicit live-versus-brief labeling where mixed timeframes are intentional
+- [x] Add source, as-of timestamp, successful-update time, expected cadence, and freshness state to snapshot inputs and disclosures
+- [x] Add pre-publication freshness, trading-date, probability-sum, and cross-component consistency validation with safe suppression on failure
+- [x] Add narrative grounding controls for missing data, observed facts, proprietary outputs, interpretation, analogs, statistical terminology, and structural-stress language
+- [x] Audit Signals Rising Stars route, data source, API contract, eligibility filters, and rendering path to identify the root cause of missing output
+- [x] Repair Signals Rising Stars source-to-frontend rendering without hardcoded fallback data
+- [x] Add unit and integration tests for snapshot consistency, validation controls, and Rising Stars rendering/data availability
+- [ ] Verify production-representative Daily Brief and Signals views, then save and deliver the repair checkpoint
+- [x] Synchronize the Signals Rising Stars URL query with the mounted view state so sub-navigation reliably opens the panel
+
+## Standalone Rising Stars and Canonical Global Markets Ticker (Session 2026-08-15)
+- [x] Audit the existing Rising Stars route/components, GlobalMarketTicker/Markets contracts, and canonical market-data provider coverage
+- [x] Define normalized instruments, freshness states, market-session emphasis, category filtering, useful ticker destinations, and safe unavailable-data behavior
+- [x] Add standalone authenticated `/app/rising-stars` route that reuses existing Rising Stars data, scoring, components, and analysis destinations without forked logic
+- [x] Add Global Markets ticker coverage for supported US, Europe, Asia, rates, FX, commodities, and crypto instruments using batched normalized data only
+- [x] Add canonical observedAt, fetchedAt, provider, freshness, delayed/stale status, and market-session treatment to ticker data
+- [x] Add responsive ticker category filters, mobile horizontal interaction, and direct useful destinations without exposing provider/debug internals
+- [x] Reuse the canonical ticker in appropriate established intelligence surfaces without adding duplicate data requests or changing dashboard architecture
+- [x] Add tests for Rising Stars direct routing, ticker normalization/categories/freshness/session states, mappings, fallback behavior, and ticker destinations
+- [x] Validate desktop/mobile behavior, endpoint performance, no stale-as-live values, production routing, and full regression suite
+- [x] Save and deliver the standalone Rising Stars and canonical ticker checkpoint
+
+## Rising Stars Public-Market Discovery Engine Upgrade (Session 2026-08-15)
+- [x] Audit the remainder of the Rising Stars discovery requirements and current source-backed coverage for listing date, exchange, market cap, sector, themes, catalysts, risks, and company descriptions
+- [x] Define canonical public-market eligibility, listing-age, market-cap, Magnificent Seven, sector, theme, and opportunity-characteristic taxonomy with explicit unavailable-data behavior
+- [x] Extend the shared Rising Stars contract with verified company metadata and current-market-data freshness without creating a second ranking engine or including private, pre-IPO, OTC, or pink-sheet companies
+- [x] Implement simple top-level filtering, combined advanced filtering, active-filter summaries, result counts, clear-filters behavior, and no-duplicate result logic
+- [x] Enhance every Rising Star card with company identity, exchange, price freshness, market cap, listing context, public-market classification, plain-English description, thesis, catalyst, risk, and direct full-analysis action where source-backed
+- [x] Add expandable canonical score methodology and concise data-coverage disclosures without fabricating missing classifications
+- [x] Add tests for eligibility, listing-age and market-cap classification, Mag 7 filtering, AND filtering, unavailable-data behavior, price freshness, and direct-analysis destinations
+- [ ] Validate desktop/mobile discovery flows and full regression suite, then publish the discovery-engine checkpoint
+
+## Critical Deep Action Navigation and ASHA Interaction Repair (Session 2026-08-15)
+- [x] Reproduce the `/app/act/deep` reload behavior on production and inspect current pathname, handlers, hrefs, router state, event propagation, forms, and overlays
+- [x] Create a source-backed route/action map for every visible Deep Action card, quick action, suggested ASHA question, and bottom-navigation control
+- [x] Identify and repair the shared root cause without individually hardcoding unrelated controls or redesigning the page
+- [x] Ensure every non-submit button within Deep Action is explicitly safe from accidental form submission
+- [x] Verify canonical Home, Why, Outlook, Watch, and Act bottom-navigation destinations and active-tab behavior
+- [x] Verify suggested ASHA questions inject the intended query and open the intended ASHA experience without page refresh
+- [x] Add regression tests for major Deep Action destinations, ASHA actions, current-route preservation, and no accidental full-page reload
+- [x] Validate desktop/mobile behavior, full regression suite, deployed production build, and live route behavior before publishing the repair
+
+## Deferred — ASHA Post-Welcome Canonical Home Routing (Start after Deep Action repair)
+- [x] Audit successful login, ASHA welcome completion, Enter Market Intelligence, Home button, logo, bottom Home navigation, and Continue to Dashboard routes
+- [x] Make canonical Deep Dashboard Home (`/app/now`) the only default post-welcome and post-login continuation target unless an explicit user preference overrides it
+- [x] Ensure ACT remains a deliberate decision-support destination and never opens automatically after ASHA welcome
+- [ ] Add routing regression tests and live desktop/mobile verification for all default continuation paths
+
+## Rising Stars Visual Chart Analysis Experience (Session 2026-08-16)
+- [x] Audit the remaining chart-analysis requirements and current source-backed contracts for OHLC, volume, detection history, score evolution, technical levels, decision context, and chart rendering
+- [x] Define chart ranges, interaction behavior, detection/event provenance, source timestamps, and explicit unavailable-history states without fabricating events or levels
+- [x] Reuse canonical market-data and Rising Stars services to provide chart-ready OHLC, volume, verified stored observations, factor contributions, and current market context
+- [x] Add a detail route from Rising Stars that opens with a dominant institutional chart, compact executive signal strip, and source-backed score/volume/momentum visuals
+- [x] Add detection, evolution, timeline, support/resistance, and decision-zone overlays only where immutable stored or calculated inputs exist; otherwise show clear verified-history boundaries
+- [x] Add concise Why FAULTLINE Flagged It, What Changed Since Detection, ASHA chart questions, and supporting research ordered after the visual analysis
+- [x] Add tests for chart range mapping, no-fabrication detection history, source timestamps, card-to-detail routing, and unavailable-data behavior
+
+## Rising Stars Daily Verified History and Event Ledger (Option B)
+- [x] Define immutable Rising Stars detection, observation, and state-change event records with source and provenance fields
+- [x] Store append-only daily continuity snapshots for every eligible source-backed Rising Star
+- [ ] Capture genuine observed first qualification, score threshold, strengthening, weakening, confirmation, risk/invalidation, and removal events without retrospective reconstruction
+- [x] Preserve immutable detection price/time, canonical score/evidence, relevant technical state, pressure, regime, sector/macro context, and source timestamps for reconstruction
+- [x] Expose stored history only as LIVE VERIFIED HISTORY and keep unrecorded/backtest history explicitly separate
+- [x] Schedule daily continuity capture using the established application background-job architecture with safe idempotency
+- [x] Add tests for immutable writes, duplicate suppression, event transitions, provenance, and non-fabrication safeguards
+
+## Unified Signals and Day Trade Chart Intelligence Framework (Session 2026-08-16)
+- [ ] Audit existing Signals, Day Trade Intelligence, Alerts Archive, ASHA, canonical market-data, and verified-history contracts
+- [ ] Define a reusable chart framework interface for daily and supported intraday bars, line/candle modes, volume, range, markers, levels, freshness, and safe unavailable-data behavior
+- [ ] Refactor the approved Rising Stars chart primitives into one reusable source-backed component without changing its existing behavior
+- [ ] Add chart-first Signals detail routes using real engine score, confidence, status, detected time/price, confirmation, invalidation, and verified state events only
+- [ ] Add chart-first Day Trade detail routes using existing tactical setup, trigger, confirmation, invalidation, session, and supported intraday data only
+- [ ] Add immutable daily continuity and genuine observed event capture for Signals and Day Trade Intelligence without retrospective markers
+- [ ] Integrate meaningful source-backed Signal and Day Trade events into Alerts Archive with direct chart-history links
+- [ ] Add module-grounded ASHA chart questions and canonical data-consistency/freshness disclosures across all three chart experiences
+- [ ] Add tests for source routing, real-data availability, history provenance, shared chart behavior, alert links, and no fabricated events
+- [ ] Validate one Rising Star, Signal, and Day Trade candidate on desktop/mobile, then publish the unified-chart checkpoint
+
+## Shared Chart Crosshair and Exact Price Inspection (Session 2026-08-16)
+- [ ] Audit shared chart consumers and exact plotted OHLC, line-price, volume, timestamp, event, and current-price fields
+- [ ] Add a source-exact desktop crosshair with price-axis label, time-axis label, and non-obstructive FAULTLINE tooltip
+- [ ] Add candle/line inspection that shows only the fields genuinely available for the selected plotted point
+- [ ] Add combined verified-event detail to the inspection tooltip without replacing the OHLC/price readout
+- [ ] Add touch-and-drag crosshair behavior and persistent current-price marker without interpolation or estimated values
+- [ ] Reuse the interactive system across every current UnifiedIntelligenceChart consumer and document unavailable consumer boundaries
+- [ ] Add interaction and data-integrity tests for exact bar selection, marker data, line-only mode, and touch behavior
+- [ ] Validate Rising Stars, Signals, and Day Trade chart behavior before publishing
+
+## FAULTLINE Visual Intelligence Operating System Overhaul (Session 2026-08-16)
+- [ ] Audit existing Deep Dashboard, Five Questions, Global Markets, sector, history, analog, alerts, proof, ASHA, and design-system surfaces without replacing working engines
+- [ ] Establish reusable visual-intelligence components, branded loading/empty states, tooltips, micro-interactions, and responsive design rules
+- [ ] Upgrade Deep Dashboard hierarchy with canonical pressure, regime, posture, probabilities, top threat, analog, ASHA summary, pressure history, engine contributions, and daily change strip
+- [ ] Upgrade WHY with a clean causal transmission map and source-backed contribution/driver explanations
+- [ ] Upgrade OUTLOOK with comparative scenario board, probability changes, evidence, confirmation/invalidation, and analog context
+- [ ] Upgrade ACT with a concise decision matrix and WATCH with a source-backed intelligence heatmap linking to relevant analysis
+- [ ] Expand Global Markets command center, sector rotation, analog visuals, alerts timeline, and proof center using real recorded data only
+- [ ] Upgrade ASHA visual answer cards, system-wide chart interactions, and evidence/freshness disclosures
+- [ ] Conduct platform visual-consistency, mobile, performance, provenance, and regression validation before staged publication
+
+## FAULTLINE Institutional Memory — Immutable Events and Alerts Archive (Session 2026-08-16)
+- [x] Audit existing Rising Stars history, market snapshots, alerts, outcomes, engine transitions, and server persistence paths
+- [x] Define append-only immutable event, daily state snapshot, and appended outcome records with complete provenance and explicit LIVE VERIFIED versus reconstruction classification
+- [ ] Capture genuine verified market regime, pressure threshold/variance, liquidity, credit, volatility, macro sensitivity, sector rotation, Rising Stars, signal, Day Trade, analog, probability, and posture transitions where source engines actually expose a change
+- [ ] Preserve original event payloads without overwrites and append 1d/5d/20d/60d outcome observations separately where eligible
+- [x] Schedule idempotent daily continuity snapshots and outcome collection with health monitoring for failed writes
+- [ ] Build a searchable, mobile-safe Alerts Archive with date, engine, regime, severity, direction, and asset-class filters plus stable event deep links
+- [ ] Add evidence-first event cards covering what changed, why, conditional relevance, confirmation, reversal, freshness, and source-observation time
+- [ ] Integrate real archive retrieval into ASHA and shared event references across WHY, OUTLOOK, WATCH, Rising Stars, Signals, Day Trade, Track Record, and historical replay
+- [ ] Add immutability, duplicate, transition, outcome, archive-filter, deep-link, and non-fabrication tests; validate production build
+
+## Broad Institutional Event Outcomes — SPY, 10Y, Pressure, and Regime (Option B)
+- [x] Define trading-day 1d/5d/20d/60d horizons and append-only outcome keys for broad institutional events
+- [x] Collect and preserve separate observed SPY returns, 10-year Treasury yield changes in basis points, Pressure Index changes, and regime state at each eligible horizon
+- [ ] Preserve instrument-specific own-price outcomes for Rising Stars, Signals, and future symbol events without combining them with broad benchmarks
+- [x] Prevent any synthetic combined performance/success score or overwrite of original events and previously collected outcomes
+- [x] Add idempotent scheduled outcome collection using only completed daily source observations and archive display of separate outcome fields
+- [ ] Add tests for trading-day eligibility, source provenance, append-only behavior, separate equity/rates/pressure/regime fields, and unavailable-data handling
+
+## Canonical Pressure Index History + Verified Event Timeline (Option 1)
+- [x] Audit canonical Pressure history, regime records, immutable institutional events/outcomes, existing history routes, and shared chart payloads
+- [x] Define a single source-backed history payload with actual observation timestamps, marker provenance, original-state fields, separate outcomes, and visible pending horizons
+- [x] Build the chart-first Pressure Index History route with shared crosshair, line/area pressure history, regime transitions, and immutable LIVE VERIFIED markers
+- [x] Add expandable event detail showing the exact original event, original Pressure/regime, evidence/provenance, and separately appended 1D/5D/20D/60D outcomes
+- [x] Keep incomplete follow-through as explicit PENDING states; prohibit interpolation, backfill, marker repositioning, and synthetic success scores
+- [x] Add responsive mobile interaction with readable markers, horizontal range controls, touch crosshair, and expandable event details
+- [x] Add tests for canonical history consistency, marker timestamps, outcome separation, pending horizons, and no-fabrication behavior
+- [x] Validate desktop/mobile interaction, full regressions, and production route behavior; publish and stop before Historical Analogs
+
+## Signals Visual Analysis Migration
+- [x] Audit Signals overview actions, canonical signal report outputs, source-backed chart data, calculated levels, and genuine stored signal history
+- [x] Reuse UnifiedIntelligenceChart and define the Signal Visual Analysis payload with real price bars, levels, current signal evidence, and explicit no-history boundaries
+- [x] Add dedicated `/app/signals/:symbol` analysis routing while preserving the Signals discovery/scanner overview
+- [x] Add current signal levels, real support/resistance, entry/risk/target/invalidation levels, technical evidence, current market context, and source-based WHY/WHAT CHANGED sections without historical signal markers
+- [x] Add ASHA Explain This Chart handoff with structured current signal and explicit no-history context only
+- [x] Add direct supported-ticker actions from Signals cards and preserve return navigation to the scanner
+- [x] Add tests for route behavior, shared-chart reuse, canonical level/evidence mapping, immutable signal-history boundaries, precision formatting, and unavailable data
+- [x] Validate direct-route access behavior and full regressions; authenticated desktop/mobile interaction inspection deferred at user direction
+- [x] Stabilize external-dependent regression tests through deterministic test boundaries without altering live market intelligence behavior
+- [x] Build and validate the canonical server-side Signals visual-detail adapter before the client route consumes it
+- [x] Implement `signals.getSignalVisualDetail` from observed Yahoo quote, completed daily bars, current Seismograph context, and the existing `computeTradingSignal` engine without synthetic history
+- [x] Build `/app/signals/:symbol` with the shared chart, explicit source status, and scanner-card handoff while preserving the Signals overview
+
+## ORACLE Briefing Presentation Hierarchy
+- [x] Audit ORACLE generation, structured briefing data, and rendering paths without changing analytical conclusions
+- [x] Reorder ORACLE output around direct answer, mission snapshot, core thesis, key findings, cross-engine synthesis, confirmation, invalidation, and concise recommendation
+- [x] Preserve all underlying engine calculations, thesis, risk assessment, and recommendations unless correcting an objective contradiction or formatting error
+- [x] Add regression coverage for mandatory non-empty hierarchy sections, fact-versus-inference labeling, and small-sample caveats
+- [x] Validate responsive layout safeguards and run the full regression suite before publishing
+
+## Approved Execution Roadmap — Completion Pass
+- [x] Establish reliable production validation or document the external deployment dependency and exact live-build limitation
+- [x] Repair the V3-H shadow-reading schema drift and verify a persisted source-backed shadow reading plus append-only 1d/5d/20d future outcomes
+- [x] Build the canonical source-backed Historical Analogs experience with explicit retrospective and provenance boundaries
+- [x] Ensure the Historical Analogs canonical query returns deterministic source-backed context without waiting indefinitely for external narrative generation
+- [x] Correct Historical Analogs ordinal wording and distinguish no completed regime-history observations from a numeric zero
+- [x] Complete canonical source-backed observed-event coverage and the evidence-first searchable Alerts Archive with stable deep links; unsupported source domains remain unavailable rather than synthesized
+- [x] Capture only genuinely observed daily vector and regime-probability material changes as additional append-only institutional events
+- [x] Add evidence-first Alerts Archive search, source/type filters, and stable selected-event deep links without altering immutable records
+- [x] Add append-only instrument-specific outcomes through a generic ledger for Rising Stars and future eligible symbol events; Signals and Day Trade remain pending until genuine immutable source events exist, with no retrospective reconstruction
+- [x] Build Day Trade Visual Analysis using only source-backed supported tactical/intraday data and no retrospective signal markers
+- [x] Add a generic append-only symbol-event outcome ledger that attaches observed own-instrument follow-through to existing eligible recorded events
+- [x] Add `/app/day-trade-intelligence/:symbol` using the canonical Day Trade report, observed completed daily bars where available, calculated levels, and explicit intraday-history limitations
+- [x] Prevent Day Trade Visual Analysis from waiting indefinitely when an upstream canonical report provider is unavailable; surface explicit source status instead
+- [ ] Run consolidated authenticated desktop/mobile acceptance, production-domain checks when infrastructure permits, and full regressions
+- [x] Correct the remaining live Historical Analogs generated-context ordinal and no-history wording found during production-domain validation
+- [ ] Repair production deep-link recognition for `/app/day-trade-intelligence/:symbol` after live acceptance exposed a server-side 404
+
+## Permanent Owner QA Access
+- [x] Define and document permanent owner-controlled QA access with server-side verification, audit visibility, and explicit non-production-entitlement semantics
+- [x] Implement a permanent read-only QA principal that can render protected intelligence pages but cannot mutate data, accounts, payments, schedules, or application settings
+- [x] Add a persistent owner-controlled QA entry route with visible QA status and no secret exposure in URLs or client bundles
+- [x] Add security regression coverage for QA access boundaries and validate protected visual routes through the QA principal
+
+## ASHA Intelligence Scope, Consistency & Emergency Audio Fix
+- [x] Audit complete ASHA scope classification, evidence retrieval, probability output, historical-analog treatment, and current audio trigger paths
+- [x] Classify ASHA questions as MARKET, TICKER, or MARKET_TICKER_RELATIONSHIP before evidence retrieval and prevent active-ticker leakage into MARKET answers
+- [x] Introduce a canonical probability-analysis object for direct market-event questions and use it across ASHA/Oracle answer, verdict, evidence, and follow-up context without inventing unsupported event precision
+- [x] Standardize `>10% broad-market correction` and preserve the user-requested 6–8 week horizon whenever the exact event is discussed; explicitly show NOT CALIBRATED when no exact model window exists
+- [x] Separate analog similarity from forecast probability and expose evidence-weighted bullish/bearish explanation, provenance, confirmation, invalidation, and escalation conditions without inventing standalone analog weights
+- [x] Correct active historical percentile ordinal and qualitative-label inconsistencies through one shared formatter, while preserving explicit unavailable states instead of numeric zero
+- [x] Restrict the emergency whistle to explicit EMERGENCY severity through a bounded single-cue controller, prevent loops/retriggers/overlap, and keep normal ASHA state silent
+- [x] Add regression coverage for scope isolation, probability consistency/provenance, analog separation, historical labels, and emergency-audio safety
+
+## Founder Statement Copy Refresh
+- [x] Locate the existing Founder Statement in the live marketing surface and preserve its current surrounding layout contract
+- [x] Preserve the existing visual system while emphasizing the opening, five questions, and closing statement in place
+- [x] Add regression coverage that confirms the old Founder Statement is absent and supplied key copy is present
+- [ ] Validate desktop/mobile line wrapping and current production rendering after publication
+
+## Surgical FAULTLINE Brand & Pricing Repair
+- [x] Identify active public marketing, About/Founder, pricing, billing, title/metadata, and checkout source paths that power the current FAULTLINE deployment
+- [x] Audit public-facing AlphaPulse branding, legacy plan labels, $9.99 Core references, annual pricing behavior, and current entitlement/display mappings; configured Stripe IDs are currently not verifiable against the configured Stripe account
+- [x] Replace active Product Experience, About, and public marketing founder copy with the supplied personal `WHY I BUILT FAULTLINE` narrative and retain the Five Questions architecture
+- [x] Remove stale public-facing AlphaPulse branding from active client paths; no AlphaPulse string remains in public pages, components, or tier-display source
+- [x] Implement the public pricing presentation: Founding Member $49/month locked while active, Trader $59/month, and Power $99/month
+- [x] Remove public annual pricing display and annual-discount calculations; legacy annual plans remain unavailable for new checkout
+- [x] Audit Stripe price mappings and add a server-side exact name/amount/currency/interval verification guard; no checkout occurs for missing or mismatched Founding Member, Trader, or Power prices
+- [x] Preserve existing subscriptions, customer records, internal entitlement IDs, billing portal management, dashboards, ASHA, Five Questions, and unrelated product behavior
+- [x] Add regression coverage for pricing, branding, retired lifetime/annual offers, Founder copy, chatbot pricing, and verified checkout mapping boundaries
+- [ ] Validate affected desktop/mobile surfaces and production URLs after publication
+
+## Live Site Loading Incident
+- [x] Capture the live custom-domain loading failure, client-console state, and current bundle response evidence
+- [x] Identify and repair the confirmed Product Experience color-constant temporal-dead-zone fault without changing product behavior
+- [ ] Verify preview and live custom-domain loading on desktop/mobile and run focused plus full regressions
+- [x] Fix the confirmed Product Experience `GOLD` temporal-dead-zone initialization crash that prevents the public app module from loading
+
+## Additive Founder Member Lifetime Option
+- [x] Audit the current Founder Member card, active Richard Roper attribution, and current Lifetime Stripe mapping while preserving the existing $49/month offer exactly
+- [x] Add a gold-integrated limited-time $299 lifetime section and separate CTA inside the Founder Member card without removing or changing any current option
+- [x] Change only active Founder Statement attribution from Richard Roper to JT
+- [x] Keep lifetime checkout behind the existing exact Stripe verification boundary; the added button uses the same safe configuration-required action until a matching price is independently verified
+- [x] Add regression coverage for additive Founder monthly-plus-lifetime presentation, attribution scope, pricing safety, and responsive card-grid behavior
+
+## Additive Founder Member Lifetime Option
+- [x] Audit the current Founder Member card and current Lifetime Stripe mapping while preserving the existing $49/month offer exactly
+- [x] Add a gold-integrated limited-time $299 lifetime section and separate CTA inside the Founder Member card without removing or changing any current option
+- [x] Keep lifetime checkout behind the existing exact Stripe verification boundary until a matching Stripe price is independently verified
+- [x] Add regression coverage for additive Founder monthly-plus-lifetime presentation and responsive card-grid behavior
+
+## Live Founder Lifetime Surface Alignment
+- [x] Add the same strictly additive $299 lifetime option to the active public Marketing Site Founder card after live validation confirmed it is the production root surface
+- [x] Preserve the active Marketing Site $49/month Founder option, benefits, and monthly CTA while changing only the founder attribution to JT where present
+- [ ] Reconfirm the custom domain serves checkpoint `fb7a563a` or later after live text validation did not yet expose the additive lifetime option or JT attribution
+
+## FAULTLINE Champion Algorithm Audit
+- [x] Inventory the production Champion score, indicators, transformations, weights, thresholds, data sources, API paths, historical record, database tables, and scheduled dependencies
+- [x] Create an immutable Champion Baseline specification and deterministic stored-vector reproducibility harness without altering production score behavior or historical records
+- [x] Reconcile current-weight Champion recreation against stored historical scores and document the formula-version mismatch before any Challenger analysis
+- [x] Assess point-in-time availability, data revisions, release-date alignment, normalization leakage, and historical limitations; historical records are not yet validated as point-in-time backtests
+- [x] Measure Champion observational threshold behavior, stability, explainability, outcome coverage, and correlation/double-counting characteristics; calibration and warning-quality claims remain blocked by unreconciled formula and missing outcome data
+- [x] Define the required separate stress outcomes and document a Challenger no-go; no Challenger hypothesis is tested until Champion reproducibility, point-in-time integrity, and outcome coverage are established
+- [x] Publish an evidence-bound algorithm audit report; current recommendation is no production scoring change until Champion reproducibility and outcome gates are satisfied
+
+## FAULTLINE Champion Redesign Research Program
+- [x] Preserve the audited current Champion as an immutable baseline and complete the full redesigned requirements inventory
+- [x] Build versioned forward-only source provenance and separate append-only outcome foundations before algorithm changes; release/vintage metadata remains explicitly unavailable until an ALFRED ingestion layer is added
+- [x] Define empirically independent economic risk clusters, indicator level/direction/velocity/acceleration/persistence scoring, confidence limitations, and promotion gates in an offline research contract
+- [x] Pre-register confirmation breadth, interaction terms, regime-aware logic, smoothing, horizons, and probability calibration tests; current offline evaluation is explicitly blocked until reproducible point-in-time outcomes exist
+- [x] Assess ablation, stability, false-alarm, warning-lead, calibration, and out-of-sample comparison eligibility; all valid comparisons are blocked until reproducible point-in-time outcomes exist
+- [x] Keep all redesigned candidates blocked from shadow or production promotion until independent validation improves outcomes without degrading explainability, stability, or production reliability
+- [x] Publish the redesign program specification, validation gates, and no-production-change recommendation without changing live score behavior prematurely
+
+## Historical Pressure Index Formula Recovery Audit
+- [x] Search current source, Git history, deleted or renamed files, reachable checkpoint artifacts, scripts, seeds, migrations, tests, documents, datasets, reflogs, and unreachable Git objects for every distinct historical pressure-scoring implementation
+- [x] Build a formula-version inventory covering vectors, weights, transforms, caps/floors, thresholds, amplifier/conditional logic, rounding, sources, dates, and recovery status
+- [x] Identify the unrecovered historical batch as the only plausible source of the 317 stored monthly scores and the October/November 2008 approximately-82 CRITICAL readings; no generator or formula sequence was recovered from all available artifacts
+- [x] Recalculate all 317 months under every recovered formula: current V1 yields 14 exact matches, 0 raw-input-defensible months, and a 30-point maximum error; no undocumented historical formula was inferred or fabricated
+- [x] Explain material differences through recovered formula-version evidence, missing provenance, bucket/cap patterns, raw-input divergence, and documented-but-unrecovered crisis-amplifier evidence without assuming corruption
+- [x] Publish the Historical Pressure Index Provenance and Formula Recovery Audit with no production scoring, probability, threshold, history, or Challenger changes
+
+## Manus Historical Task / Checkpoint Recovery Search
+- [x] Inventory actual availability of prior task conversations, execution logs, checkpoints, workspace snapshots, generated artifacts, transcripts, builds, exports, Git history, reflogs, unreachable objects, and attachments
+- [x] Search every accessible historical Manus artifact and project remnant for the original historical Pressure Index backfill generator and crisis-amplifier implementation using the user-provided terms; only documentary task statements were recovered, not an implementation
+- [x] Classify the documentary crisis-amplifier statement as confirmed evidence and the unrecovered implementation details as unavailable; no original generator artifact was found to preserve
+- [x] Do not run 2008, 2020, or 317-row generator reconciliation because no genuine historical generator was recovered
+- [x] Publish a strict source-availability matrix and forensic recovery report with no production-code, data, model, or historical-record modification
+
+## FAULTLINE Verified Historical Validation V1
+- [x] Freeze the exact current Champion in `CHAMPION_V1_FROZEN_SPECIFICATION.md` without changing live scoring or the legacy historical research series
+- [x] Create separate versioned formula, dataset, release-aware input, verified-score, and independent-outcome registries with checksum and append-only protections
+- [x] Implement an ALFRED/release-aware historical ingestion layer with explicit POINT_IN_TIME_CONFIRMED, POINT_IN_TIME_APPROXIMATED, REVISED_HISTORICAL, and UNAVAILABLE classifications
+- [x] Define a documented monthly score timestamp, research missing-data policy, and broadest defensible common validation period without live fallback constants
+- [x] Generate `VERIFIED_CHAMPION_V1_HISTORY` only from the frozen Champion and separate it permanently from `LEGACY HISTORICAL RESEARCH SERIES`
+- [x] Build independent 1d/5d/20d/60d outcome ledgers and pre-register objective drawdown, volatility, credit, systemic-stress, and macro event definitions; leave VIX explicitly not evaluated pending an independent source
+- [x] Run locked Champion distribution, warning, false-alarm, miss, lead-time, stability, regime, calibration, and walk-forward evaluation only where data-quality gates permit
+- [ ] Compare a shadow Challenger only against the same locked verified dataset after Champion validation gates pass
+- [x] Publish `VERIFIED_HISTORICAL_DATASET_MANIFEST.md`, validation reports, limitations, confidence bands, and evidence-gated deployment recommendations without modifying production behavior
+- [x] Add research-only verified historical formula, source-observation, score, outcome, and validation-run tables through additive migration `0059_futuristic_daredevil.sql`; do not alter `pressureHistory` or the live pressure engine
+- [x] Implement and regression-test the exact frozen Champion V1 calculator, no-fallback completeness gate, quality worst-case propagation, ALFRED/FRED source ingestion, and research-only build command
+- [x] Empirically establish that the current FRED BAMLH0A0HYM2 endpoint retains no pre-2023-08-21 observation and offers no ALFRED vintage history; preserve this as a coverage limitation rather than backfilling or substituting data
+- [x] Persist the current defensible common coverage boundary and build verified monthly scores only for officially retrievable source dates, with BAML classified `REVISED_HISTORICAL` and all quality states retained
+- [x] Build independent S&P 500 daily outcome observations at 1d, 5d, 20d, and 60d without feeding outcomes into Champion scoring
+- [x] Pre-register event definitions and locked development, validation, and holdout partitions before calculating any performance metrics
+- [x] Calculate gated Champion validation metrics, then issue an evidence-only INCONCLUSIVE verdict without running or promoting V3-H
+- [x] Complete full regression testing and immutable research documentation; checkpoint remains pending
+- [x] Retain V3-H as shadow-only and do not run a Challenger comparison because the Champion evidence gate is inconclusive
+
+## FAULTLINE Verified Historical Validation V1 — Phase 1B Coverage Extension
+- [x] Audit all eight frozen Champion input sources for historical availability, vintage support, release timing, revisions, units, transformations, and limitations
+- [x] Search official, archived, workspace, and institutional candidate sources for a defensible high-yield credit-spread extension without substituting on correlation alone
+- [x] Investigate a defensible SOFR predecessor only under a separately versioned reconstructed-data policy; do not automatically substitute Fed Funds
+- [x] Lock source-selection, predecessor, release-lag, missing-data, timestamp, normalization, and revised-versus-vintage policies before scoring any extended history
+- [x] Create strictly separate VERIFIED_POINT_IN_TIME_HISTORY and RECONSTRUCTED_HISTORICAL_RESEARCH_HISTORY datasets where the evidence supports them
+- [x] Run the unchanged frozen Champion V1 over any locked extended dataset and independently extend S&P 500 outcome observations
+- [x] Measure score-range compression, stress-versus-calm discrimination, regime calibration, event performance, temporal stability, and descriptive legacy-series differences without optimization
+- [x] Publish a source-cited Phase 1B extension report, retain V3-H shadow-only, run regression tests, and checkpoint the research-only work
+
+## FAULTLINE Early Warning Intelligence Master Plan — Phase 1 Core Algorithm Validation & Intelligence Audit
+- [x] Preserve checkpoint f430a9ab as the research baseline, retain its INCONCLUSIVE verdict unless reproducible evidence justifies a change, and prohibit Phase 2/early-warning UI/model work
+- [x] Inventory the production intelligence dependency chain from raw observations through transformations, engines, domains, Pressure/Champion, regimes, analogs, probabilities, canonical state, Oracle, and ASHA
+- [x] Reconcile the legacy 317-row history, reconstructed 318-score history, source policies, timestamp differences, and the explicit 2018-03 missing score without merging or overwriting any record
+- [x] Audit all raw inputs, normalization, directionality, weights, frequency alignment, fallback/staleness behavior, data health, and potential duplicate exposure
+- [x] Reconstruct and test the deterministic current Pressure/Champion calculation, regime logic, trend/acceleration/persistence logic, percentile methodology, and reproducibility boundaries
+- [x] Audit analog models, scenario probabilities, calibration evidence, look-ahead risk, model versions, current-state synchronization, and public historical/predictive claims
+- [x] Expand evidence-bound evaluation of all 26 drawdown events, risk discrimination across the score distribution, out-of-sample partitions, engine lead usefulness, missed-event engine behavior, Macro Sensitivity 4–8-week claim, and cross-engine divergences
+- [x] Produce the complete Phase 1 audit report with severity-ranked issues, repair classification, intelligence-fitness scorecard, and explicit Phase 2 readiness gate; do not begin Phase 2
+- [x] Run full regressions, checkpoint the audit-only work, and provide the Phase 1 report for review
+- [x] Contain critical false public claims on the Market Crash Probability page: do not describe the six-vector Pressure Index as a calibrated crash probability, seven-vector/VIX system, continuous intraday feed, or historically observed FAULTLINE warning record
+
+## FAULTLINE Phase 1B — Gate Remediation and Acceptance Closure
+- [x] Preserve 33149d16 and f430a9ab baselines, maintain the INCONCLUSIVE evidence verdict, prohibit Phase 2, and keep Champion V1 and V3-H unchanged
+- [x] Inventory all probability-like outputs, analog systems, historical pattern outcomes, input consumers, current-state consumers, and remaining public predictive claims
+- [x] Define a governed probability/analog contract that distinguishes model probability, historical frequency, analog similarity, and evidence confidence without fabricating horizon or methodology
+- [x] Harden immutable original-observation versus later-resolution provenance for historical patterns and analog research while preserving reconstructed history and the explicit 2018-03 missing state
+- [x] Add per-input live-quality manifests with distinct freshness, availability, fallback, revision, quality, and contribution status
+- [x] Create a minimum atomic current-state/version manifest with model, configuration, source snapshot, engine values, composite, regime, governed claim references, quality, dataset versions, and state hash
+- [x] Narrowly contain clearly unsupported public probability, analog-outcome, historical-warning, early-warning, and Macro Sensitivity 4–8 week claims without marketing or UI redesign
+- [x] Demonstrate deterministic state-manifest reproducibility, preserve the 26-event / 10-met / 16-missed research record, and re-run the Phase 1 acceptance gate
+- [x] Publish the structured Phase 1B remediation report, run full regressions, checkpoint, and wait for review without beginning Phase 2
+- [x] Correct the reproduced scheduled Seismograph score/regime substitution so its canonical state preserves the frozen Champion V1 output rather than an incompatible FMOS-blended replacement
+- [x] Contain unsupported predictive and historical-outcome language in shared Score Explainer, Market Synthesis, Systemic Alerts, and Share Card consumers while preserving their current layouts and non-predictive context
+- [x] Contain residual static homepage and product-experience probability wording so no public surface presents mock or uncalibrated scenario values as market likelihood
+
+## FAULTLINE Forecast Horizon Standard — Queued After Phase 1B
+- [x] Audit every forward-looking product output and define a shared evidence-bound forecast metadata contract with optional horizon, magnitude, timing-confidence, methodology, confirmation, invalidation, and expiry fields
+- [x] Integrate the Forecast Horizon Standard across qualifying signals, targets, scenarios, alerts, ASHA, Oracle, dashboard analysis, scanner results, macro/asset analysis, and future Early Warning outputs without fabricating unsupported horizons
+- [x] Add append-only forecast observation and resolution tracking so future magnitude and timing calibration can be measured from genuine recorded forecasts
+- [x] Apply sitewide language and UI standards: show horizon when evidence supports it, otherwise show “Not yet established” or “Insufficient evidence for reliable estimate,” and separate observed, derived, historical, interpreted, and forecast content
+- [x] Produce a coverage audit, regression tests, documentation, checkpoint, and acceptance report for the permanent Forecast Horizon Standard
+- [x] Remove the default fabricated “2-4 weeks” Oracle briefing timeframe and require explicit Forecast Horizon metadata for every Oracle forward-looking interpretation
+- [x] Contain the Market Context Strip’s ungoverned “most likely” scenario framing and show that its derived scenario values have no established forecast horizon
+- [x] Remove implied target-timeframe requirements from generated Daily Story and opportunity-analysis prompts unless a future structured forecast record supplies evidence-supported timing
+
+## FAULTLINE Phase 1B — Final Gate Closure / Proof of Completion
+- [x] Audit all probability-like, analog, historical-observation, live-input-quality, state-manifest, and model-version controls against the final closure brief while preserving the Forecast Horizon Standard
+- [x] Close only any material contract, provenance, versioning, or public-claim gap that prevents Phase 1 from being reproducible, honest, governed, versioned, auditable, and explicit about uncertainty
+- [x] Produce real governed probability, analog, original-observation/resolution, live-quality, and atomic-state examples from append-only records
+- [x] Complete the material public-facing prediction, historical-warning, early-warning, probability, lead-time, and analog-outcome claim inventory with classifications and narrow integrity corrections only where required
+- [x] Re-run the entire 21-item Phase 1 acceptance gate, full test suite, and produce one non-ambiguous Phase 1 decision without beginning Phase 2
+- [x] Suppress Oracle’s ungoverned numeric question-analysis probability presentation unless a future versioned claim record supplies an event, horizon, methodology, and provenance contract
+- [x] Capture one real reconstructed Champion research score and its independently recorded later outcome as append-only governed observation and resolution evidence without altering the underlying research score or outcome ledger
+- [x] Contain the residual public Crypto Hub “early warning signals” wording so it cannot imply activated Early Warning Intelligence before Phase 2
+
+## FAULTLINE Phase 2 — Canonical Intelligence Integrity
+- [x] Preserve checkpoint 464331b5, all Phase 1 governance, Forecast Horizon Standard, frozen Champion V1, V3-H shadow-only status, separate research history, and Phase 2 scope boundaries
+- [x] Audit every production current-state construction path and publish the surface-to-source-to-calculation-to-timestamp-to-cache-to-version dependency map
+- [x] Formalize one authoritative Canonical Market State contract, controlled vocabulary, time-coherence policy, freshness policy, quality propagation, fallback governance, conflict structure, failure behavior, and public/internal projections
+- [x] Implement the canonical state service/API, append-only canonical state history, deterministic state identity, state schema versioning, governed claim/analog attachments, and safe diagnostics visibility
+- [ ] Standardize engine records with separate level, classification, direction, acceleration, persistence, input identifiers, quality, freshness, fallback, version, and contribution fields without fabricating unavailable values
+- [ ] Migrate NOW, WHY, WATCH, ASHA, Oracle, Outlook, and primary intelligence surfaces to consume canonical current state or document their explicit compatible adapter/migration status
+- [ ] Add and pass Tests A–J for same-state cross-surface consistency, timestamp conflict, stale/optional/fallback input behavior, probability/analog categories, versioning, deterministic identity, and canonical failure
+- [ ] Publish the Phase 2 architecture, schema, example, consumer/migration inventory, time/freshness/quality/fallback/conflict/vocabulary rules, and 26-item acceptance gate report
+- [ ] Run full regression validation, checkpoint Phase 2, deliver exactly PHASE 2 PASSES or PHASE 2 REMAINS BLOCKED, and stop without starting Phase 3
+
+## FAULTLINE Phase 2B — Canonical Migration Closure
+- [ ] Preserve 9ec50450 as the Phase 2B baseline and retain all Phase 1, Forecast Horizon, Champion V1, V3-H, historical/research, and no-Phase-3 guardrails
+- [ ] Inventory and classify every discovered current-intelligence consumer as CURRENT_CANONICAL, HISTORICAL_CONTEXT, RECONSTRUCTED_RESEARCH, ARCHIVED_CANONICAL, or NON_MARKET_STATE with no unknown category
+- [ ] Remove silent legacy/projected current-state fallback from core WHY, WATCH, Market Context, ASHA/Oracle, Outlook/Daily Story, and all discovered current-intelligence consumers
+- [ ] Require the same canonical stateId, score, regime, engine values, quality, effective timestamp, governed claim references, and version identity across core current-intelligence paths
+- [ ] Explicitly tag non-current historical, archived, and reconstructed research contexts and keep them separate from live canonical state
+- [ ] Add and run Tests A–J plus WHY, WATCH, Market Context, ASHA/Oracle, Outlook, cache-alignment, and cross-surface canonical-identity invariants
+- [ ] Publish the complete 32-item Phase 2B closure report, migration inventory, fallback audit, real cross-surface example, exact gate decision, regression results, and checkpoint without starting Phase 3
+
+## Phase 2B — User-Requested Final Closure Verification
+- [ ] Create one final combined checkpoint containing all completed Phase 2B canonical-state migrations
+- [ ] Complete secondary-consumer inventory and canonical stateId propagation verification for every current-intelligence payload
+- [ ] Prove no core current-intelligence path silently falls back to legacy mixed/projected state
+- [ ] Run Phase 2 Tests A–J, WHY, WATCH, Market Context, ASHA/Oracle, Outlook, and cross-surface invariant tests
+- [ ] Run the complete regression suite and re-run all 32 Phase 2 acceptance-gate questions
+- [ ] Issue exactly one Phase 2 verdict and stop without beginning Phase 3
+
+## Phase 2B — Newly Attached Requirements
+- [ ] Review the attached Phase 2B requirements against the current blocked closure status and implement only authorized missing controls without weakening existing governance or entering Phase 3
+
+## FAULTLINE Phase 2C — Repository-Wide Canonical Closure
+- [ ] Preserve cb330cad as the Phase 2C baseline and close only the five documented Phase 2 blockers without beginning Phase 3 or modifying existing governance/model/research controls
+- [ ] Produce the definitive repository-wide current-intelligence consumer inventory with all required metadata columns and no UNKNOWN classification
+- [ ] Audit every EngineContext consumer and make canonical state authoritative for any current-intelligence use while explicitly isolating historical, archived, reconstructed, diagnostic, and non-market uses
+- [ ] Propagate canonical stateId, timestamps, pressure, regime, engine values, quality/conflicts, governed claims/analogs, versions, and input snapshot through every CURRENT_CANONICAL payload
+- [ ] Produce a repository-wide no-silent-fallback report for legacy projections, cached state, frontend recomputation, mixed EngineContext projection, and independent current score/regime paths
+- [ ] Audit cached and stored current-intelligence payload identity so old narratives cannot be combined with unrelated current canonical numbers
+- [ ] Implement and execute Tests A–J as one acceptance artifact and add invariant tests for every listed CURRENT_CANONICAL surface
+- [ ] Re-run all 32 Phase 2 acceptance questions with PASS/FAIL evidence, run full regressions, publish the required final closure report, checkpoint, and stop without starting Phase 3
+
+## Phase 2C — Newly Attached Compatibility Requirements
+- [ ] Review the newly attached Phase 2C requirements and implement only the missing compatibility-path and provenance controls without weakening canonical-state governance or entering Phase 3
+
+## Phase 2D — Newly Attached Requirements
+- [ ] Review the newly attached Phase 2D requirements and implement only authorized missing controls while preserving canonical EngineContext transport and all prior guardrails
+
+## Phase 2 — Newly Attached Evidence Requirements
+- [ ] Review the newly attached Phase 2 evidence requirements and implement only authorized acceptance-artifact or compatibility controls without weakening canonical-state governance or entering Phase 3
+
+## Phase 2 — Newly Attached Consumer Requirements
+- [ ] Review the newly attached Phase 2 consumer requirements and implement only authorized canonical consumer or evidence controls without weakening governance or entering Phase 3
+
+## Phase 2 — Newly Attached Closure Requirements
+- [ ] Review the newly attached Phase 2 closure requirements and implement only authorized remaining canonical-boundary or evidence controls without weakening governance or entering Phase 3
+
+## Phase 2 — Newly Attached Final Closure Requirements
+- [ ] Review the newly attached Phase 2 final closure requirements and implement only authorized remaining canonical consumer or acceptance controls without weakening governance or entering Phase 3
+
+## FAULTLINE Phase 2F — Canonical Consumer Boundary and Final Closure
+- [x] Implement one reusable canonical consumer envelope that preserves canonical identity, timing, quality/conflict, claim/analog, version, input snapshot, state hash, and canonical-derived compatibility data
+- [x] Make the envelope mandatory at every CURRENT_CANONICAL consumer boundary while explicitly isolating historical, archived, reconstructed research, and non-market consumers
+- [x] Propagate originating canonical identity through current ASHA, Oracle, Outlook, Daily Story, Market Context, Market Synthesis, mobile, dashboard, and other generated/narrative payloads where applicable
+- [x] Add repository-level no-bypass protection against prohibited legacy current-state sources outside the approved canonical compatibility layer
+- [x] Produce complete 44-consumer classification, state-ID propagation, no-bypass, Tests A–J, EngineContext invariant, cross-surface, and 32-question acceptance artifacts
+- [x] Run full regression validation, checkpoint Phase 2F, issue exactly one Phase 2 verdict, and stop before Phase 3
+
+## FAULTLINE Phase 2G — Final Consumer Envelope Propagation and Closure
+- [x] Propagate the existing canonical consumer envelope or equivalent typed provenance through every CURRENT_CANONICAL consumer and generated current-intelligence derivative
+- [x] Classify Daily Brief by its true historical/archive snapshot semantics and preserve originating canonical identity where available without forcing it into current state
+- [x] Complete the 44-consumer disposition, repository-wide state-ID propagation, no-bypass, EngineContext invariant, Tests A–J, cross-surface, and 32-question acceptance artifacts
+- [x] Run full regression validation, checkpoint Phase 2G, issue exactly one Phase 2 verdict, and stop before Phase 3
+
+## FAULTLINE Phase 2H — Execution Closure
+- [x] Physically propagate the existing canonical consumer envelope through every remaining CURRENT_CANONICAL boundary and generated current-intelligence payload
+- [x] Classify Daily Brief as archived or historical snapshot semantics with originating canonical identity, distinct from latest current state
+- [x] Complete all 44 consumer dispositions, state-ID proof, zero-bypass proof, envelope invariants, Tests A–J, cross-surface proof, exact 32-question gate, full regression, checkpoint, and final Phase 2 verdict
+
+## Phase 2D — Formal Verification and Acceptance Evidence
+- [x] Produce a repository-backed 44-consumer EngineContext classification with every required field, exact count reconciliation, and zero unclassified consumers
+- [x] Create executable state-ID propagation proof from canonical producer through provider, compatibility projection, consumer, selectors/hooks, and rendered or returned result
+- [x] Complete and document Tests A–J individually with purpose, behavior, files, test evidence, expected/actual result, and PASS/FAIL status
+- [x] Retrieve and answer all 32 established Phase 2 acceptance questions individually; stop with a blocking evidence failure if the original artifact cannot be located
+- [x] Complete repository-wide legacy-bypass search and classify every hit as VALID, TEST-ONLY, DEAD CODE, MIGRATION REMNANT, or BLOCKING LEGACY PATH
+- [x] Run full validation, publish formal closure evidence, checkpoint, report exact final counts, and stop before Phase 3
+
+## FAULTLINE Phase 2D — Canonical EngineContext and Phase 2 Closure
+- [x] Audit EngineContext provider, hook, legacy projection dependency, cache, refresh, fallback, derived values, and all 44 consumers with complete classification and explicit migration action
+- [x] Make phase2-canonical-state-v1 authoritative inside EngineContext and retain legacy-shaped compatibility values only as semantic projections of the same canonical stateId
+- [x] Expose governed canonical state identity, timestamps, pressure, regime, engine values, quality/coherence/conflicts, claim/analog IDs, versions, input snapshot, and state hash through EngineContext without fabrication
+- [x] Remove or isolate every legacy projected current-state, frontend reconstruction, independent current pressure/regime, mixed source, and silent fallback path from EngineContext current transport
+- [x] Preserve explicitly labeled historical, archived, and reconstructed research contexts outside the current canonical contract
+- [x] Add EngineContext invariants, Tests A–J, cross-surface proof, 44-consumer final dispositions, 32-question gate evidence, full regression validation, checkpoint, and exact Phase 2 verdict without starting Phase 3
+
+## FAULTLINE Phase 2I — Required Execution Closure
+- [x] Complete every remaining CURRENT_CANONICAL consumer boundary with the existing canonical consumer envelope or equivalent canonical provenance retention
+- [x] Add forward-only Daily Brief canonical-origin persistence without fabricating provenance for legacy archive rows
+- [x] Create the exact 44-consumer final classification, propagation, and disposition artifact with zero unclassified rows
+- [x] Implement and execute zero-bypass enforcement with a permanent artifact showing zero unresolved current-state bypasses
+- [x] Extend permanent Phase 2 test scaffolds for envelope invariants, Tests A–J, narrative-origin integrity, and archive distinction
+- [x] Produce and execute cross-surface controlled-state proof and the exact 32-question Phase 2 acceptance gate
+- [x] Run focused suites and full regression, resolve ordinary Phase 2 failures, save the combined checkpoint, and issue the only supported Phase 2 verdict
+
+## FAULTLINE Phase 2I — Attachment Reconciliation
+- [ ] Reconcile the newly re-attached Phase 2I specification against checkpoint adaa144b and implement any remaining in-scope canonical integrity defect
+- [ ] Re-run the affected permanent evidence and full regression after any attachment-driven correction, then save a reconciled checkpoint and issue the Phase 2 verdict
+
+## FAULTLINE Phase 3 — Interpretation Integrity / Evidence Contract
+- [x] Define one shared EvidenceClaim contract, governed evidence classes, evidence strength, semantic-number distinctions, and class-specific validation without duplicating Phase 2 canonical-state controls
+- [x] Implement centralized forecast authorization, insufficient-evidence withholding, claim dependencies, canonical state binding, and state-mixing prevention
+- [x] Apply minimum evidence-integrity enforcement to current narrative and current-intelligence claim boundaries without starting Phase 4–11 work or redesigning surfaces
+- [x] Audit current material claim paths and LLM prompts, documenting governed classifications, unsupported-claim withholding, and Phase 3-only remediations
+- [x] Add permanent evidence-contract, adversarial, cross-surface, and acceptance-gate tests/artifacts; run full regression, checkpoint, and issue the Phase 3 verdict
+
+## FAULTLINE Phase 3 — External Review Package
+- [x] Assemble the completed Phase 3 closure artifacts, exact checkpoint evidence, test results, and acceptance gate into one external-review package without application development
+- [x] Deliver the final Phase 3 closure package and stop for external review without starting Phase 4 or unrelated backlog work
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 4 — ASHA / Oracle Intelligence Repair
+- [x] Map ASHA and Oracle entry points, prompts, context builders, parsers, output schemas, caching, persistence, retries, and current-surface reuse into a permanent pipeline audit
+- [x] Build one shared canonical-state/evidence-bound interpretation transaction with response identity, bounded retry, state consistency, output validation, and owner/debug provenance
+- [x] Apply strict pre-generation and post-generation controls to ASHA and Oracle: no invented facts, probability, targets, timing, confirmation, invalidation, cross-engine confirmation, causal escalation, or generic filler
+- [x] Repair response structure for direct answers, distinct section roles, concise insufficiency responses, repetition control, and evidence/interpretation/guidance separation without a product UI redesign
+- [x] Preserve Phase 2 and Phase 3 controls while applying the required Phase 4 canonical/evidence semantics across ASHA, Oracle, NOW, WHY, WATCH, Outlook, Daily Greeting, Market Context, mobile, and owner/debug paths
+- [x] Create permanent contracts, prompt/output audits, adversarial/repetition/cross-surface tests, 55-question acceptance gate, run full regression, checkpoint, and issue the Phase 4 verdict without starting Phase 5 or Early Warning work
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 4 — External Review Closure Package
+- [x] Assemble the checkpoint b121fd1c architecture, audits, adversarial results, cross-surface proof, provenance, all 55 gate responses, and exact regression evidence without changing application code
+- [x] Deliver the documentation-only external-review Phase 4 package and stop for review without starting Phase 5 or unrelated work
+
+## FAULTLINE Phase 5 — Structured Cross-Engine Synthesis
+- [x] Read the complete Phase 5 specification and map authoritative engine outputs, evidence dependencies, and prohibited Early Warning scope
+- [x] Define one typed governed cross-engine synthesis contract with canonical identity, engine availability, agreement/disagreement, dependence, persistence, sufficiency, limitations, and provenance
+- [x] Implement a deterministic canonical-state-bound synthesis service without warning scores, warning lifecycle states, or Early Warning Intelligence
+- [x] Expose governed synthesis through authorized current-intelligence boundaries and preserve Phase 2–4 semantics across narrative, dashboard, mobile, and audit paths
+- [x] Create permanent synthesis tests, audits, adversarial/cross-surface proof, acceptance gate, full regression, checkpoint, and Phase 5 verdict without beginning Early Warning work
+
+## FAULTLINE Phase 5 — External Review Closure Package
+- [ ] Assemble one self-contained Phase 5 external-review package from checkpoint 642a34bc without application development or Early Warning work
+- [ ] Deliver the Phase 5 closure package and stop for external review
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 6 — Early Warning Intelligence
+- [x] Complete the Phase 6 specification review and map the existing canonical synthesis, immutable archive, scheduled state, chart, and HOME dashboard integration boundaries
+- [x] Define one state-locked EarlyWarningCandidate contract with deterministic warning score components, qualification, lifecycle, explicit confirmation/invalidation, provenance, and no probability conversion
+- [x] Implement governed candidate generation solely from Phase 5 structured synthesis, deterministic 0–3 qualification, persistent warning identity, append-only observations/events, and immutable original warning history
+- [x] Expose Early Warning Intelligence via authorized API and a flagship canonical HOME dashboard surface with concise warning cards, full warning view, real timeline/history, and no fabricated results
+- [x] Add permanent integrity, adversarial, lifecycle, persistence, no-warning, UI, cross-surface, and acceptance-gate evidence; run full regression, checkpoint, and issue the Phase 6 verdict
+
+## FAULTLINE Phase 6 — External Review Closure Package
+- [x] Assemble the completed Phase 6 architecture, data-path, schema, score, lifecycle, immutable-history, AI/UI/archive/outcome, validation, and limitation evidence from checkpoint 7dd6b77f without application development
+- [x] Deliver the complete Phase 6 external-review closure package and stop without beginning Phase 7 or unrelated work
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 6 — Candidate Detection Gate External Review
+- [x] Compare checkpoint 31d051a6 against the Phase 6 Candidate Detection boundary, including prohibited early Phase 7 and Early Warning features, without modifying implementation
+- [x] Deliver a documentation-only external-review package with the exact gate verdict and stop for review
+
+## FAULTLINE Phase 6 — Candidate Detection Boundary Remediation
+- [x] Read the attached remediation specification and record the exact authorized candidate-only correction scope
+- [x] Restore a candidate-only contract with explicit detector identity/version/configuration and no score, qualification, ranking, warning lifecycle, confirmation, invalidation, or publication semantics
+- [x] Replace warning-oriented persistence, scheduled evaluation, current-warning APIs, and owner diagnostics with internal candidate-observation storage/protected diagnostics only
+- [x] Remove the public Early Warning panel and current-warning public APIs, plus ASHA/Oracle warning presentation, without redesigning the dashboard or assistants
+- [x] Rebuild candidate-only artifacts, phase-leak audit, permanent boundary suite, 60-item acceptance gate, focused/full validation, checkpoint, and verdict without beginning Phase 7
+- [x] Repair closure-review defect: attach append-only 1d/5d/20d/60d broad outcomes only to original Phase 6 warning detections, then re-run full regression
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 7 — Importance Scoring & Qualification
+- [x] Map candidate-only Phase 6 inputs, eligible Phase 5 support, immutable persistence, scheduled compute-once integration, and prohibited Phase 8–10 behavior
+- [x] Define one deterministic, versioned scoring configuration with eight required factor semantics, transforms, weights, missing-value rules, data-quality floor, suppression rules, and centralized qualification gates
+- [x] Build separate candidate scoring and qualification contracts with factor trace, explicit status, deterministic primary/secondary selection, no-material result, duplicate handling, tie-breaking, and no probability/forecast/lifecycle semantics
+- [x] Add append-only qualification evaluations tied to immutable Phase 6 candidates and explicit state/synthesis provenance, plus protected owner/debug scoring inspection only
+- [x] Add permanent adversarial, monotonicity, malformed-value, phase-leak, provenance, cross-surface, and 74-item acceptance evidence; run full regression, checkpoint, and issue Phase 7 verdict without beginning Phase 8
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [ ] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [ ] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 7 — External Review Closure Package
+- [x] Assemble the checkpoint c162aa83 Phase 7 architecture, eight-factor transform math, missing-value behavior, gates, provenance, audit, all 74 results, regression, defects, and Phase 8 eligibility without application development
+- [x] Deliver the complete documentation-only Phase 7 closure package and stop for external review without beginning Phase 8 or unrelated work
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 8 — Early Warning Lifecycle Engine
+- [x] Map immutable Phase 6 candidates, immutable Phase 7 evaluations, scheduler integration, existing archive/diagnostic conventions, and all locked Phase 9–10 exclusions
+- [x] Define one versioned deterministic lifecycle contract with active EMERGING/DEVELOPING/FADING states, dormant later-authority states, allowed transition matrix, temporal persistence/hysteresis, reason codes, identity, and no probability/forecast semantics
+- [x] Add append-only lifecycle instance and observation persistence plus derived current projection, idempotency, out-of-order/concurrency safeguards, and history query without mutating candidate or qualification records
+- [x] Integrate one global lifecycle evaluation after the Phase 7 global qualification stream and expose only protected owner diagnostics; do not activate public UI/API/WATCH/ASHA/Oracle/social/outcome behavior
+- [x] Create permanent adversarial, state-machine, temporal, Phase 9/10 leak, provenance, 80-item acceptance, full-regression evidence, checkpoint, and Phase 8 verdict without beginning Phase 9
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 9 — Confirmation & Invalidation Engine
+- [x] Map governed Phase 2–8 inputs, current CROSS_ENGINE_DIVERGENCE candidate semantics, Phase 8 transition extension, global scheduler, and all locked Phase 10+ exclusions
+- [x] Define a versioned structural warning thesis, immutable plan/rule-template contract, small machine-readable condition primitive set, data/strength/independence gates, plan-level conflict precedence, and no-probability/no-forecast semantics
+- [x] Add append-only thesis, plan, condition-evaluation, authority-event, and current-projection persistence with deterministic plan/evaluation/event identity, immutable versions, idempotency, out-of-order, and concurrency safeguards
+- [x] Implement only current governed CROSS_ENGINE_DIVERGENCE confirmation/invalidation templates and produce typed events; retain NO_GOVERNED_CONFIRMATION_PLAN where no legitimate template exists
+- [x] Extend Phase 8 lifecycle transitions only through valid typed Phase 9 authority events and provide protected plan/condition/event diagnostics without public UI/API/WATCH/ASHA/Oracle activation
+- [x] Create permanent 24-case adversarial, lifecycle extension, cross-phase, Phase 10+ leak, provenance, acceptance, full-regression evidence, checkpoint, and Phase 9 verdict without beginning Phase 10
+
+## FAULTLINE Next Authorized Phase — Attachment-Driven Implementation
+- [x] Read the newly attached specification, identify the next authorized phase, and record its exact in-scope requirements without reopening completed phases
+- [x] Implement, validate, checkpoint, and report only the newly authorized phase requirements
+
+## FAULTLINE Phase 10 — Governed Early Warning Presentation & Distribution
+- [x] Map the current Phase 5–9 identities and claims, canonical HOME/WATCH/detail/archive/ASHA/Oracle/Track Record paths, social foundation, owner diagnostics, and existing visual/chart components
+- [x] Define one immutable, machine-readable presentation contract/service that references governed upstream truth and fails closed without computing, scoring, qualifying, transitioning, authorizing, or reinterpreting warnings
+- [x] Activate a single governed presentation API, no-material state, provenance trace, public semantics, and protected full-chain diagnostics without alternate calculation paths
+- [x] Implement responsive high-signal HOME, WATCH, detail/timeline, Alerts Archive, Track Record, ASHA, Oracle, and social-ready consumer projections that retain the same authoritative identity, lifecycle, score, authority, freshness, and limitations
+- [x] Add permanent cross-surface identity, API safety, adversarial, immutability, historical-label, visual desktop/mobile, Phase 2–9 preservation, acceptance, full-regression, checkpoint, and external-review package evidence; stop before Phase 11
 
 ## FAULTLINE Marketing Page Rebuild — Pentagonal Thesis (Session 2026-08-25)
 - [x] Replace consecutive duplicate heroes with one canonical market-intelligence hero and a single primary/secondary CTA pair
@@ -4745,4 +5315,5 @@
 - [x] Simplify pricing and access into a coherent $299 Founding Lifetime commercial path without fake scarcity or conflicting approval language
 - [x] Standardize CTA labels and destinations, repair the Access navigation anchor, and streamline footer/roadmap content
 - [x] Add/update unit tests and validate desktop/mobile rendering, public links, marketing claims, and full regression suite
+- [ ] Resolve the compatible Phase 10 shared-branch merge while preserving this approved marketing architecture and both task histories
 - [ ] Save the marketing-page rebuild checkpoint and deliver the implementation result

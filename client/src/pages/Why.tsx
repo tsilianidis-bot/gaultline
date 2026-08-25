@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { trpc } from "@/lib/trpc";
 import { useSEO } from "@/hooks/useSEO";
 import {
   CANONICAL_DESTINATION_BY_ID,
@@ -246,6 +247,13 @@ export default function Why() {
     dataError,
     refresh,
   } = useEngine();
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+
+  if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WHY · Causal analysis" message="Loading authoritative canonical state…" />;
+  if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WHY withholds current-state interpretation until one authoritative state is available." />;
 
   const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? output.domains.map(domain => ({
     name: domain.label,
@@ -264,7 +272,7 @@ export default function Why() {
   const positioningEvidence = evidenceFamilies.filter(family => /liquid|credit|concentration|volatil|breadth|fund/i.test(family.name));
   const positioningView = positioningEvidence.length ? positioningEvidence : evidenceFamilies.slice(0, 3);
   const invalidationConditions = marketState?.outlook.invalidationConditions ?? [];
-  const pressure = marketState?.now.pressureScore ?? normalizeCanonicalMetric(output.overall.score * 10);
+  const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? normalizeCanonicalMetric(output.overall.score * 10);
   const story = marketState?.why.story ?? output.narrative.summary;
   const whyThisRegime = marketState?.why.whyThisRegime ?? output.narrative.regimeAssessment;
   const whyThisScore = marketState?.why.whyThisScore ?? output.overall.description;
@@ -277,8 +285,6 @@ export default function Why() {
     () => [...evidenceFamilies].sort((a, b) => b.strength - a.strength),
     [evidenceFamilies],
   );
-
-  if (isLoading && !marketState) return <PageLoadingState eyebrow="WHY · Causal analysis" message="Loading canonical causal state…" />;
 
   return (
     <main className="min-h-screen bg-[#04070b] text-slate-200">

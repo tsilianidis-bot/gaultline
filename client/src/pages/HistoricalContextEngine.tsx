@@ -19,6 +19,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { formatOrdinal } from "@shared/historicalPercentile";
 import {
   RefreshCw, BookOpen, TrendingUp, TrendingDown, Minus,
   Clock, AlertTriangle, BarChart2, Activity, ChevronDown, ChevronUp,
@@ -261,7 +262,7 @@ export default function HistoricalContextEngine() {
         <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
           <StatPill label="Pressure Index" value={d.currentPressure} color={levelColor(d.currentLevel)} />
           <StatPill label="Regime" value={d.currentRegime} color={C.cyan} />
-          <StatPill label="Percentile" value={`${d.rarityContext.percentile}th`} color={levelColor(d.currentLevel)} />
+          <StatPill label="Percentile" value={formatOrdinal(d.rarityContext.percentile)} color={levelColor(d.currentLevel)} />
           <StatPill label="Months in Regime" value={d.timeline.monthsInCurrentRegime} color={C.textMid} />
           <StatPill label="Trend" value={d.trendAssessment.label} color={trendColor(d.trendAssessment.label)} />
         </div>
@@ -606,7 +607,7 @@ export default function HistoricalContextEngine() {
         ) : d ? (
           <div>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginBottom: "14px" }}>
-              <StatPill label="Percentile" value={`${d.rarityContext.percentile}th`} color={levelColor(d.currentLevel)} />
+              <StatPill label="Percentile" value={formatOrdinal(d.rarityContext.percentile)} color={levelColor(d.currentLevel)} />
               <StatPill label="Months at Level" value={d.rarityContext.monthsAtOrAbove} color={C.textMid} />
               <StatPill label="Frequency" value={`${d.rarityContext.frequencyPct}%`} color={C.textMid} />
               <StatPill label="Sample Size" value={`${d.rarityContext.sampleSize}mo`} color={C.textDim} />
@@ -620,7 +621,7 @@ export default function HistoricalContextEngine() {
                 {d.rarityContext.rarityLabel}
               </div>
               <div style={{ fontFamily: C.sans, fontSize: "12px", color: C.textMid, lineHeight: 1.5 }}>
-                The current reading of {d.currentPressure} is at the {d.rarityContext.percentile}th percentile of all {d.rarityContext.sampleSize} monthly readings from {d.rarityContext.dataStartMonth} to {d.rarityContext.dataEndMonth}. Readings at this level or higher have occurred in {d.rarityContext.frequencyPct}% of all historical months ({d.rarityContext.monthsAtOrAbove} of {d.rarityContext.sampleSize} months).
+                The current reading of {d.currentPressure} is at the {formatOrdinal(d.rarityContext.percentile)} percentile of all {d.rarityContext.sampleSize} monthly readings from {d.rarityContext.dataStartMonth} to {d.rarityContext.dataEndMonth}. Readings at this level or higher have occurred in {d.rarityContext.frequencyPct}% of all historical months ({d.rarityContext.monthsAtOrAbove} of {d.rarityContext.sampleSize} months).
               </div>
             </div>
 

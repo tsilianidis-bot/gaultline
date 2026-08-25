@@ -16,6 +16,7 @@
  */
 
 import React, { useState } from "react";
+import { formatOrdinal } from "@shared/historicalPercentile";
 import {
   Clock,
   TrendingUp,
@@ -492,7 +493,7 @@ export function HistoricalContextPanel({ data, defaultExpanded = false }: Histor
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span className={`font-medium ${getPressureColor(data.currentPressure)}`}>
-              {data.historicalPercentile}th percentile
+              {formatOrdinal(data.historicalPercentile)} percentile
             </span>
             <span>·</span>
             <span>{data.frequency.label}</span>

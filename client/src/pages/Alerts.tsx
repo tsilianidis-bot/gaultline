@@ -4,7 +4,7 @@
    regime transition events, alert history, and pressure gauges.
    ============================================================ */
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { AlertTriangle, Bell, BellOff, Shield, TrendingUp, TrendingDown, X, CheckCheck, Trash2, Activity } from 'lucide-react';
+import { AlertTriangle, Bell, BellOff, Shield, TrendingUp, TrendingDown, X, CheckCheck, Trash2, Activity, Copy, Search } from 'lucide-react';
 import { useEngine } from '@/contexts/EngineContext';
 import { getRiskColor } from '@/components/RiskBadge';
 import {
@@ -16,6 +16,68 @@ import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import SystemicAlertsPanel from "@/components/SystemicAlerts";
+import { trpc } from "@/lib/trpc";
+import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
+
+type ArchivedEvent = {
+  id: number;
+  eventType: string;
+  sourceEngine: string;
+  severity: "info" | "low" | "moderate" | "high" | "critical";
+  direction: "improving" | "deteriorating" | "stable" | "neutral";
+  eventAt: Date | string;
+  sourceObservedAt: Date | string | null;
+  dataFreshness: string;
+  pressureIndex: number | null;
+  marketRegime: string | null;
+  magnitude: string | null;
+  headline: string;
+  explanation: string;
+  previousStateJson: string | null;
+  newStateJson: string;
+  supportingStateJson: string;
+  outcomes?: Array<{ horizonTradingDays: number; outcomeJson: string; observedAt: Date | string }>;
+};
+
+function archivedSeverityColor(severity: ArchivedEvent["severity"]) {
+  return severity === "critical" ? "#FF2D55" : severity === "high" ? "#FF9500" : severity === "moderate" ? "#FFD700" : "#00D4FF";
+}
+
+function InstitutionalEventCard({ event, index, selectedEventId, onSelect }: { event: ArchivedEvent; index: number; selectedEventId: number | null; onSelect: (id: number | null) => void }) {
+  const expanded = selectedEventId === event.id;
+  const color = archivedSeverityColor(event.severity);
+  const eventAt = new Date(event.eventAt);
+  const outcomes = (event.outcomes ?? []).flatMap((outcome) => {
+    try { return [{ horizon: outcome.horizonTradingDays, data: JSON.parse(outcome.outcomeJson) as any }]; } catch { return []; }
+  });
+  return (
+    <article onClick={() => onSelect(expanded ? null : event.id)} style={{ background: expanded ? `${color}0c` : "rgba(10,12,16,0.92)", border: `1px solid ${expanded ? color : `${color}30`}`, borderLeft: `3px solid ${color}`, borderRadius: "6px", padding: "12px", cursor: "pointer", animation: `fade-slide-up 0.35s cubic-bezier(0.23, 1, 0.32, 1) ${index * 35}ms both` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start" }}>
+        <div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color, letterSpacing: "0.12em", marginBottom: "4px" }}>
+            LIVE VERIFIED EVENT · {event.sourceEngine.replace(/_/g, " ").toUpperCase()}
+          </div>
+          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#F0F4FF" }}>{event.headline}</div>
+        </div>
+        <div style={{ textAlign: "right", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#6B7280", whiteSpace: "nowrap" }}>
+          {eventAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}<br />{eventAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "9px" }}>
+        {[event.severity, event.direction, event.marketRegime, event.pressureIndex != null ? `PRESSURE ${event.pressureIndex}` : null, event.dataFreshness].filter(Boolean).map((label) => (
+          <span key={label} style={{ padding: "3px 6px", borderRadius: "3px", background: "rgba(255,255,255,0.05)", color: "#9CA3AF", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.06em", textTransform: "uppercase" }}>{label}</span>
+        ))}
+      </div>
+      {expanded && (
+        <div style={{ marginTop: "11px", borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: "10px", display: "grid", gap: "9px" }}>
+          <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color, letterSpacing: "0.1em" }}>WHY IT CHANGED</div><div style={{ color: "#B8C2D4", fontSize: "12px", lineHeight: 1.6, marginTop: "3px" }}>{event.explanation}</div></div>
+          <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#6B7280", letterSpacing: "0.1em" }}>EVIDENCE BOUNDARY</div><div style={{ color: "#8792A5", fontSize: "11px", lineHeight: 1.5, marginTop: "3px" }}>Original observation preserved at source time. Later outcomes, if collected, are appended separately and never modify this event.</div></div>
+          {outcomes.length > 0 && <div><div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#00D4FF", letterSpacing: "0.1em" }}>APPENDED BROAD-MARKET OUTCOMES · LIVE VERIFIED</div><div style={{ display: "grid", gap: "6px", marginTop: "5px" }}>{outcomes.map(({ horizon, data }) => <div key={horizon} style={{ display: "grid", gridTemplateColumns: "42px repeat(4, minmax(0, 1fr))", gap: "6px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#AAB6C8" }}><span style={{ color: "#00D4FF" }}>{horizon}TD</span><span>SPY {typeof data.spy?.returnPercent === "number" ? `${data.spy.returnPercent >= 0 ? "+" : ""}${data.spy.returnPercent.toFixed(2)}%` : "—"}</span><span>10Y {typeof data.tenYearTreasury?.changeBasisPoints === "number" ? `${data.tenYearTreasury.changeBasisPoints >= 0 ? "+" : ""}${data.tenYearTreasury.changeBasisPoints.toFixed(1)}bp` : "—"}</span><span>PI {typeof data.pressureIndex?.change === "number" ? `${data.pressureIndex.change >= 0 ? "+" : ""}${data.pressureIndex.change.toFixed(1)}` : "—"}</span><span>{data.regime?.target ?? "—"}</span></div>)}</div></div>}
+        </div>
+      )}
+    </article>
+  );
+}
 
 // ── Pressure gauge ─────────────────────────────────────────────
 function PressureGauge({ label, value, color }: { label: string; value: number; color: string }) {
@@ -242,6 +304,36 @@ function AlertsInner() {
   useSEO(PAGE_SEO.alerts);
   const { output, indicators, isLive } = useEngine();
   const { overall, domains, regime, alertPressure } = output;
+  const [archiveSeverity, setArchiveSeverity] = useState<"all" | ArchivedEvent["severity"]>("all");
+  const [archiveDirection, setArchiveDirection] = useState<"all" | ArchivedEvent["direction"]>("all");
+  const [archiveSearch, setArchiveSearch] = useState("");
+  const [archiveSource, setArchiveSource] = useState("all");
+  const [archiveType, setArchiveType] = useState("all");
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(() => {
+    const raw = new URLSearchParams(window.location.search).get("event");
+    const id = raw ? Number(raw) : NaN;
+    return Number.isInteger(id) && id > 0 ? id : null;
+  });
+  const archiveQuery = trpc.institutionalMemory.listEvents.useQuery({
+    limit: 100,
+    severity: archiveSeverity === "all" ? undefined : archiveSeverity,
+    direction: archiveDirection === "all" ? undefined : archiveDirection,
+    sourceEngine: archiveSource === "all" ? undefined : archiveSource,
+    eventType: archiveType === "all" ? undefined : archiveType,
+  });
+  const archiveEvents = (archiveQuery.data?.events ?? []) as ArchivedEvent[];
+  const archiveSources = useMemo(() => [...new Set(archiveEvents.map(event => event.sourceEngine))].sort(), [archiveEvents]);
+  const archiveTypes = useMemo(() => [...new Set(archiveEvents.map(event => event.eventType))].sort(), [archiveEvents]);
+  const filteredArchiveEvents = archiveEvents.filter(event =>
+    (!archiveSearch.trim() || `${event.headline} ${event.explanation} ${event.eventType} ${event.sourceEngine}`.toLowerCase().includes(archiveSearch.trim().toLowerCase()))
+  );
+  const selectArchiveEvent = (id: number | null) => {
+    setSelectedEventId(id);
+    const params = new URLSearchParams(window.location.search);
+    if (id == null) params.delete("event"); else params.set("event", String(id));
+    const query = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
+  };
 
   // Alert history state
   const [alertHistory, setAlertHistory] = useState<RegimeAlert[]>([]);
@@ -347,10 +439,11 @@ function AlertsInner() {
             </div>
           ) : undefined
         }
-      />
-      <div style={{ padding: '16px' }}>
+	  />
+	  <div style={{ padding: '16px' }}>
+	    <EarlyWarningPresentationPanel mode="compact" />
 
-      {/* Regime status banner */}
+	  {/* Regime status banner */}
       <div style={{
         background: `linear-gradient(135deg, ${regime.color}12, rgba(10,12,16,0.95))`,
         border: `1px solid ${regime.color}30`,
@@ -427,6 +520,27 @@ function AlertsInner() {
 
       {/* Alert history */}
       <div>
+        <div style={{ marginBottom: "20px", padding: "14px", border: "1px solid rgba(0,212,255,0.18)", borderRadius: "8px", background: "linear-gradient(135deg, rgba(0,212,255,0.06), rgba(10,12,16,0.92))" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
+            <div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#00D4FF", letterSpacing: "0.14em" }}>INSTITUTIONAL MEMORY · IMMUTABLE ARCHIVE</div>
+              <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", marginTop: "3px" }}>Recorded server events only. No retrospective event reconstruction.</div>
+            </div>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280" }}>{archiveQuery.data?.total ?? 0} VERIFIED EVENTS</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "5px", marginBottom: "10px" }}>
+            {(["all", "critical", "high", "moderate", "low", "info"] as const).map(value => <button type="button" key={value} onClick={() => setArchiveSeverity(value)} style={{ border: "none", borderRadius: "3px", padding: "4px 7px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: archiveSeverity === value ? "#050608" : "#94A3B8", background: archiveSeverity === value ? "#00D4FF" : "rgba(255,255,255,0.06)" }}>{value.toUpperCase()}</button>)}
+            {(["all", "deteriorating", "improving", "stable", "neutral"] as const).map(value => <button type="button" key={value} onClick={() => setArchiveDirection(value)} style={{ border: "none", borderRadius: "3px", padding: "4px 7px", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: archiveDirection === value ? "#050608" : "#94A3B8", background: archiveDirection === value ? "#00D4FF" : "rgba(255,255,255,0.06)" }}>{value.toUpperCase()}</button>)}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(180px,1fr) repeat(2,minmax(120px,.5fr)) auto", gap: "6px", marginBottom: "10px" }}>
+            <label style={{ position: "relative" }}><Search size={12} style={{ position: "absolute", left: 8, top: 8, color: "#6B7280" }} /><input aria-label="Search immutable archive" value={archiveSearch} onChange={event => setArchiveSearch(event.target.value)} placeholder="Search verified evidence…" style={{ width: "100%", boxSizing: "border-box", padding: "7px 8px 7px 28px", borderRadius: 4, border: "1px solid rgba(255,255,255,.1)", background: "rgba(0,0,0,.24)", color: "#E2E8F0", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9 }} /></label>
+            <select aria-label="Filter immutable archive by source" value={archiveSource} onChange={event => setArchiveSource(event.target.value)} style={{ borderRadius: 4, border: "1px solid rgba(255,255,255,.1)", background: "#0A0C10", color: "#94A3B8", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "6px" }}><option value="all">ALL SOURCES</option>{archiveSources.map(source => <option key={source} value={source}>{source.replace(/_/g, " ").toUpperCase()}</option>)}</select>
+            <select aria-label="Filter immutable archive by event type" value={archiveType} onChange={event => setArchiveType(event.target.value)} style={{ borderRadius: 4, border: "1px solid rgba(255,255,255,.1)", background: "#0A0C10", color: "#94A3B8", fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, padding: "6px" }}><option value="all">ALL TYPES</option>{archiveTypes.map(type => <option key={type} value={type}>{type.replace(/_/g, " ").toUpperCase()}</option>)}</select>
+            <button type="button" disabled={selectedEventId == null} onClick={() => navigator.clipboard.writeText(window.location.href)} title="Copy selected-event link" style={{ border: "1px solid rgba(0,212,255,.25)", borderRadius: 4, color: selectedEventId == null ? "#4B5563" : "#00D4FF", background: "transparent", cursor: selectedEventId == null ? "not-allowed" : "pointer", padding: "6px 8px" }}><Copy size={12} /></button>
+          </div>
+          {archiveQuery.isLoading ? <div style={{ color: "#6B7280", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", padding: "14px 0" }}>LOADING VERIFIED EVENT ARCHIVE…</div> : filteredArchiveEvents.length ? <div style={{ display: "grid", gap: "6px" }}>{filteredArchiveEvents.map((event, index) => <InstitutionalEventCard key={event.id} event={event} index={index} selectedEventId={selectedEventId} onSelect={selectArchiveEvent} />)}</div> : <div style={{ color: "#6B7280", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", padding: "14px 0" }}>NO VERIFIED SERVER EVENTS MATCH THESE FILTERS. DAILY CONTINUITY BEGINS WITH THE NEXT CANONICAL PIPELINE CAPTURE.</div>}
+        </div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#4B5563", letterSpacing: "0.12em", marginBottom: "9px" }}>SESSION-LOCAL THRESHOLD MONITOR · NOT A PROOF ARCHIVE</div>
         {/* Filter bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>

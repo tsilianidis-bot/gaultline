@@ -1,0 +1,14 @@
+{
+  "contractVersion":"phase10-adversarial-tests-v1",
+  "result":"PASS",
+  "cases":[
+    {"case":"No qualified warning","expected":"NO_MATERIAL_EARLY_WARNING; no safety claim","evidence":"earlyWarningPresentation.test.ts"},
+    {"case":"Stale quality","expected":"STALE freshness retained; no silent live upgrade","evidence":"earlyWarningPresentation.ts freshnessFor"},
+    {"case":"Unavailable required records","expected":"UNAVAILABLE no-material response","evidence":"earlyWarningPresentation.ts guarded assembly"},
+    {"case":"Conflicted plan conditions","expected":"CONFLICTED_CONDITIONS preserved","evidence":"statusFor and invalidationFor"},
+    {"case":"Invalidated latest episode with another active episode","expected":"current active episode remains eligible","evidence":"active lifecycle query excludes INVALIDATED"},
+    {"case":"Assistant attempts independent warning interpretation","expected":"prompt contract prohibits calculation, scoring, transition, authority, and forecast","evidence":"phase10PresentationIntegration.test.ts"},
+    {"case":"Social copy claims probability","expected":"score is labeled prioritization, not probability","evidence":"createSocialReadyWarningPost test"},
+    {"case":"Historical reconstruction presented as live warning","expected":"Track Record isolated; presentation consumes ledger only","evidence":"PHASE_10_PRESENTATION_CONTRACT.md"}
+  ]
+}

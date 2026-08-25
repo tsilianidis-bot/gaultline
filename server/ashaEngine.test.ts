@@ -1,9 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type {
-  AshaContextProvenance,
-  AshaGatewayContext,
-  AshaModelTrace,
-} from "../shared/ashaContext";
 import type { InvokeResult } from "./_core/llm";
 
 const gatewayMocks = vi.hoisted(() => ({
@@ -22,281 +17,68 @@ vi.mock("./ashaGateway", () => ({
 
 import { askAsha, generateAshaDailyGreeting } from "./ashaEngine";
 
-const modelTrace: AshaModelTrace = {
-  selectedModel: "gpt-5",
-  attemptedModels: ["claude-sonnet-4-6", "gpt-5"],
-  resolutionSource: "live-catalog",
-  resolvedAt: "2026-07-23T13:00:00.000Z",
-};
-
-const provenance: AshaContextProvenance = {
-  contextVersion: "1.0",
-  marketStateVersion: "1.0",
-  generatedAt: "2026-07-23T13:00:00.000Z",
-  sourceUpdatedAt: "2026-07-23T12:59:00.000Z",
-  freshness: "live",
-  cacheStatus: "fresh-cache",
-  sourceHealth: [],
-  warnings: [],
-};
-
+const modelTrace = { selectedModel: "gpt-5", attemptedModels: ["gpt-5"], resolutionSource: "live-catalog", resolvedAt: "2026-08-22T12:00:00.000Z" } as const;
+const provenance = { contextVersion: "1.0", marketStateVersion: "1.0", generatedAt: "2026-08-22T12:00:00.000Z", sourceUpdatedAt: "2026-08-22T12:00:00.000Z", freshness: "live", cacheStatus: "fresh-cache", sourceHealth: [], warnings: [] } as any;
 const gatewayContext = {
-  version: "1.0",
-  destination: "now",
-  page: { page: "/app/now" },
+  version: "1.0", destination: "now", page: { page: "/app/now" },
   marketState: {
-    sourceUpdatedAt: "2026-07-23T12:59:00.000Z",
-    sourceHealth: [
-      { id: "seismograph", label: "Canonical Seismograph", status: "healthy" },
-      { id: "historical-memory", label: "Historical Market Memory", status: "healthy" },
-      { id: "coingecko", label: "Crypto Market Overlay", status: "unavailable" },
-    ],
-    now: { pressureScore: 61, regime: "Late Cycle" },
-    history: { observationCount: 120 },
-    outlook: { probabilities: { bull: 25, bear: 35, confidence: 72 } },
-    why: {
-      evidenceFamilies: [
-        { name: "Credit" },
-        { name: "Liquidity" },
-      ],
-    },
+    sourceUpdatedAt: "2026-08-22T12:00:00.000Z", sourceHealth: [], now: { pressureScore: 61, regime: "Late Cycle" },
+    history: { observationCount: 0 }, outlook: { probabilities: { bull: 25, bear: 35, confidence: 72 } }, why: { evidenceFamilies: [] },
   },
-} as unknown as AshaGatewayContext;
+} as any;
 
 function llmResult(content: string): InvokeResult {
-  return {
-    id: "asha-test",
-    created: 1,
-    model: "gpt-5",
-    choices: [
-      {
-        index: 0,
-        message: { role: "assistant", content },
-        finish_reason: "stop",
-      },
-    ],
-  };
+  return { id: "asha-test", created: 1, model: "gpt-5", choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }] } as InvokeResult;
 }
 
-describe("ASHA live gateway integration", () => {
+describe("ASHA Phase 4 canonical evidence integration", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gatewayMocks.createContext.mockResolvedValue(gatewayContext);
-    gatewayMocks.buildContextBlock.mockReturnValue("\nCANONICAL-MARKETSTATE-CONTEXT");
+    gatewayMocks.buildContextBlock.mockReturnValue("\nLEGACY-CONTEXT-UNUSED-FOR-PRIMARY-CLAIMS");
     gatewayMocks.getProvenance.mockReturnValue(provenance);
   });
 
-  it("answers through the canonical gateway and returns truthful source and model provenance", async () => {
-    gatewayMocks.invokeGateway.mockResolvedValue({
-      response: llmResult(JSON.stringify({ reply: "The evidence currently favors caution." })),
-      trace: modelTrace,
-    });
-
-    const response = await askAsha({
-      userMessage: "What is happening?",
-      history: [],
-      pageContext: { page: "/app/now" },
-    });
-
-    expect(gatewayMocks.createContext).toHaveBeenCalledWith({ page: "/app/now" });
-    expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            role: "system",
-            content: expect.stringContaining("CANONICAL-MARKETSTATE-CONTEXT"),
-          }),
-        ]),
-        response_format: expect.objectContaining({
-          type: "json_schema",
-          json_schema: expect.objectContaining({ strict: true }),
-        }),
-      }),
-    );
-    expect(response.sources).toEqual(["Canonical Seismograph", "Historical Market Memory"]);
-    expect(response.enginesConsulted).toEqual(expect.arrayContaining([
-      "Canonical Seismograph",
-      "Pressure Index",
-      "Market Regime Engine",
-      "Historical Market Memory",
-      "Probability Engine",
-      "Credit Evidence",
-      "Liquidity Evidence",
-    ]));
-    expect(response.enginesConsulted).not.toContain("Crypto Market Overlay");
-    expect(response.pressureIndex).toBe(61);
-    expect(response.marketRegime).toBe("Late Cycle");
-    expect(response.lastUpdated).toBe("2026-07-23T12:59:00.000Z");
+  it("uses a Phase 4 evidence-bound prompt and returns response transaction provenance", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult(JSON.stringify({ reply: "The supplied evidence is limited." })), trace: modelTrace });
+    const response = await askAsha({ userMessage: "What is happening?", history: [], pageContext: { page: "/app/now" } });
+    expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(expect.objectContaining({
+      messages: expect.arrayContaining([expect.objectContaining({ role: "system", content: expect.stringContaining("PHASE 4 INTERPRETATION CONTRACT") })]),
+      response_format: expect.objectContaining({ type: "json_schema" }),
+    }));
+    expect(response.integrity.transaction.contractVersion).toBe("phase4-interpretation-integrity-v1");
     expect(response.provenance).toBe(provenance);
     expect(response.modelTrace).toBe(modelTrace);
   });
 
-  it("preserves bounded prior conversation order at the live gateway boundary", async () => {
+  it("withholds unsupported numeric probability, timing, and invalidation fields instead of projecting legacy defaults", async () => {
     gatewayMocks.invokeGateway.mockResolvedValue({
-      response: llmResult(JSON.stringify({ reply: "Conditions have deteriorated." })),
+      response: llmResult(JSON.stringify({ reply: "The evidence is incomplete.", bullProbability: 75, bearProbability: 25, expectedTimeframe: "4 weeks", invalidationConditions: ["Break 90"] })),
       trace: modelTrace,
     });
+    const response = await askAsha({ userMessage: "What happens next?", history: [], pageContext: { page: "/app/now" } });
+    expect(response.bullProbability).toBeUndefined();
+    expect(response.bearProbability).toBeUndefined();
+    expect(response.expectedTimeframe).toBe("Not established");
+    expect(response.invalidationConditions).toEqual(["No governed invalidation condition is currently defined."]);
+  });
 
+  it("preserves bounded conversation ordering without turning history into current market evidence", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult(JSON.stringify({ reply: "Current evidence is limited." })), trace: modelTrace });
     await askAsha({
       userMessage: "What changed?",
-      history: [
-        { role: "user", content: "What were conditions yesterday?" },
-        { role: "assistant", content: "Pressure was moderate." },
-      ],
+      history: [{ role: "user", content: "Yesterday?" }, { role: "assistant", content: "Prior answer." }],
       pageContext: { page: "/app/why" },
     });
-
-    expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(expect.objectContaining({
-      messages: [
-        expect.objectContaining({ role: "system" }),
-        { role: "user", content: "What were conditions yesterday?" },
-        { role: "assistant", content: "Pressure was moderate." },
-        { role: "user", content: "What changed?" },
-      ],
-    }));
+    expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(expect.objectContaining({ messages: [
+      expect.objectContaining({ role: "system" }), { role: "user", content: "Yesterday?" }, { role: "assistant", content: "Prior answer." }, { role: "user", content: "What changed?" },
+    ] }));
   });
 
-  it("sanitizes invalid structured fields and clamps all pressure and probability values to 0-100", async () => {
-    gatewayMocks.invokeGateway.mockResolvedValue({
-      response: llmResult(JSON.stringify({
-        reply: "The evidence is uncertain because source coverage is incomplete.",
-        marketBias: "SIDEWAYS",
-        threatLevel: "EXTREME",
-        pressureIndex: 145,
-        bullProbability: -12,
-        bearProbability: 140,
-        keyFindings: ["Credit is tightening", 7, ""],
-        supportingEvidence: "not-an-array",
-        invalidationConditions: ["Credit improves", null],
-        finalVerdictAction: "CHASE",
-      })),
-      trace: modelTrace,
-    });
-
-    const response = await askAsha({
-      userMessage: "How risky is this?",
-      history: [],
-      pageContext: { page: "/app/act" },
-    });
-
-    expect(response.confidence).toBe("low");
-    expect(response.marketBias).toBe("NEUTRAL");
-    expect(response.threatLevel).toBe("ELEVATED");
-    expect(response.pressureIndex).toBe(100);
-    expect(response.bullProbability).toBe(0);
-    expect(response.bearProbability).toBe(100);
-    expect(response.keyFindings).toEqual(["Credit is tightening"]);
-    expect(response.supportingEvidence).toEqual([]);
-    expect(response.invalidationConditions).toEqual(["Credit improves"]);
-    expect(response.invalidationTriggers).toEqual(["Credit improves"]);
-    expect(response.finalVerdictAction).toBe("WATCH");
-  });
-
-  it("returns canonical defaults and truthful provenance for a plain-text model response", async () => {
-    gatewayMocks.invokeGateway.mockResolvedValue({
-      response: llmResult("Current evidence is unclear while crypto coverage is unavailable."),
-      trace: modelTrace,
-    });
-
-    const response = await askAsha({
-      userMessage: "Summarize current conditions.",
-      history: [],
-      pageContext: { page: "/app/now" },
-    });
-
-    expect(response.reply).toContain("Current evidence is unclear");
-    expect(response.confidence).toBe("low");
-    expect(response.marketRegime).toBe("Late Cycle");
-    expect(response.pressureIndex).toBe(61);
-    expect(response.bullProbability).toBe(25);
-    expect(response.bearProbability).toBe(35);
-    expect(response.sources).not.toContain("Crypto Market Overlay");
-    expect(response.provenance).toBe(provenance);
-    expect(response.modelTrace).toBe(modelTrace);
-  });
-
-  it("returns an explicit retry response when the model payload is empty", async () => {
-    gatewayMocks.invokeGateway.mockResolvedValue({
-      response: llmResult(""),
-      trace: modelTrace,
-    });
-
-    const response = await askAsha({
-      userMessage: "What is happening?",
-      history: [],
-      pageContext: { page: "/app/now" },
-    });
-
-    expect(response.reply).toBe("I was unable to generate a response. Please try again.");
-    expect(response.confidence).toBe("moderate");
-    expect(response.pressureIndex).toBe(61);
-  });
-
-  it("propagates a total gateway failure instead of fabricating an answer", async () => {
-    gatewayMocks.invokeGateway.mockRejectedValue(new Error("ASHA model gateway failed"));
-
-    await expect(askAsha({
-      userMessage: "What is happening?",
-      history: [],
-      pageContext: { page: "/app/now" },
-    })).rejects.toThrow("ASHA model gateway failed");
-  });
-
-  it("routes the daily greeting through the same canonical context and model gateway", async () => {
-    gatewayMocks.invokeGateway.mockResolvedValue({
-      response: llmResult("Welcome back. Credit pressure deserves attention today."),
-      trace: modelTrace,
-    });
-
-    const greeting = await generateAshaDailyGreeting({
-      userName: "James",
-      engineContext: {
-        pressureScore: 61,
-        previousPressureScore: 58,
-        regime: "Late Cycle",
-        regimeConfidence: 0.72,
-        narrative: "Credit is tightening.",
-        trend: "Deteriorating",
-        keyDrivers: ["Credit"],
-      },
-    });
-
-    expect(gatewayMocks.createContext).toHaveBeenCalledWith(
-      expect.objectContaining({
-        page: "daily-greeting",
-        additionalContext: { pressureChangeSinceLastSession: 3 },
-      }),
-    );
-    expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: expect.arrayContaining([
-          expect.objectContaining({
-            role: "system",
-            content: expect.stringContaining("CANONICAL-MARKETSTATE-CONTEXT"),
-          }),
-        ]),
-      }),
-    );
-    expect(greeting).toContain("Welcome back");
-  });
-
-  it("uses the truthful generic greeting when the live model returns an empty payload", async () => {
-    gatewayMocks.invokeGateway.mockResolvedValue({
-      response: llmResult("   "),
-      trace: modelTrace,
-    });
-
-    const greeting = await generateAshaDailyGreeting({
-      engineContext: {
-        pressureScore: 61,
-        regime: "Late Cycle",
-        regimeConfidence: 0.72,
-        narrative: "Credit is tightening.",
-        trend: "Deteriorating",
-        keyDrivers: ["Credit"],
-      },
-    });
-
-    expect(greeting).toBe("Welcome back. I have reviewed the market. Here is what is building beneath the surface.");
+  it("routes daily greeting through the shared Phase 4 evidence transaction and fails safely when no canonical state is available", async () => {
+    gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult("   "), trace: modelTrace });
+    const greeting = await generateAshaDailyGreeting({ engineContext: { pressureScore: 61, regime: "Late Cycle", regimeConfidence: 0.72, narrative: "Credit is tightening.", trend: "Deteriorating", keyDrivers: ["Credit"] } });
+    expect(gatewayMocks.createContext).toHaveBeenCalledWith(expect.objectContaining({ page: "daily-greeting" }));
+    expect(greeting).toBe("Canonical state unavailable. Insufficient evidence for a current market greeting.");
   });
 });

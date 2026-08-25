@@ -7,33 +7,26 @@ import { detectIntent, aggregateLeadScore, validatePricing, CANONICAL_PRICING } 
 
 // ── CANONICAL_PRICING tests ───────────────────────────────────────────────────
 describe("CANONICAL_PRICING (single source of truth)", () => {
-  it("Free plan is $0", () => {
-    expect(CANONICAL_PRICING.free.priceLabel).toBe("Free");
-    expect(CANONICAL_PRICING.free.price).toBe("$0");
-  });
-
-  it("Mobile (Core) plan is $9.99/month", () => {
-    expect(CANONICAL_PRICING.core.priceLabel).toBe("$9.99/mo");
-    expect(CANONICAL_PRICING.core.price).toBe("$9.99");
+  it("Trader plan is $59/month", () => {
+    expect(CANONICAL_PRICING.core.priceLabel).toBe("$59/mo");
+    expect(CANONICAL_PRICING.core.price).toBe("$59.00");
     expect(CANONICAL_PRICING.core.interval).toBe("month");
   });
 
-  it("Trader (Pro) plan is $59/month", () => {
-    expect(CANONICAL_PRICING.premium.priceLabel).toBe("$59/mo");
-    expect(CANONICAL_PRICING.premium.price).toBe("$59.00");
+  it("Power plan is $99/month", () => {
+    expect(CANONICAL_PRICING.premium.priceLabel).toBe("$99/mo");
+    expect(CANONICAL_PRICING.premium.price).toBe("$99.00");
     expect(CANONICAL_PRICING.premium.interval).toBe("month");
   });
 
-  it("Founding Member plan is $49/month locked for life", () => {
-    expect(CANONICAL_PRICING.founding.priceLabel).toBe("$49/mo (locked for life)");
+  it("Founding Member plan is $49/month while membership remains active", () => {
+    expect(CANONICAL_PRICING.founding.priceLabel).toBe("$49/mo (locked while active)");
     expect(CANONICAL_PRICING.founding.price).toBe("$49.00");
     expect(CANONICAL_PRICING.founding.interval).toBe("month");
   });
 
-  it("Lifetime plan is $299 one-time", () => {
-    expect(CANONICAL_PRICING.lifetime.priceLabel).toBe("$299 one-time");
-    expect(CANONICAL_PRICING.lifetime.price).toBe("$299.00");
-    expect(CANONICAL_PRICING.lifetime.interval).toBe("one_time");
+  it("Public chatbot pricing exposes exactly Founding Member, Trader, and Power", () => {
+    expect(Object.keys(CANONICAL_PRICING).sort()).toEqual(["core", "founding", "premium"]);
   });
 
   it("No plan costs $29.99 (legacy price must not exist)", () => {
@@ -54,20 +47,20 @@ describe("CANONICAL_PRICING (single source of truth)", () => {
 
 // ── validatePricing tests ─────────────────────────────────────────────────────
 describe("validatePricing", () => {
-  it("accepts a response with correct Mobile price $9.99", () => {
-    expect(validatePricing("The Mobile plan is $9.99/mo.")).toBe(true);
-  });
-
   it("accepts a response with correct Trader price $59", () => {
     expect(validatePricing("The Trader plan is $59/mo.")).toBe(true);
   });
 
-  it("accepts a response with correct Founding price $49", () => {
-    expect(validatePricing("Founding Member is $49/mo locked for life.")).toBe(true);
+  it("accepts a response with correct Power price $99", () => {
+    expect(validatePricing("The Power plan is $99/mo.")).toBe(true);
   });
 
-  it("accepts a response with correct Lifetime price $299", () => {
-    expect(validatePricing("Lifetime access is $299 one-time.")).toBe(true);
+  it("accepts a response with correct Founding price $49", () => {
+    expect(validatePricing("Founding Member is $49/mo locked while active.")).toBe(true);
+  });
+
+  it("rejects a response containing retired public lifetime pricing", () => {
+    expect(validatePricing("Lifetime access is $299 one-time.")).toBe(false);
   });
 
   it("accepts a response with no prices at all", () => {
@@ -103,11 +96,9 @@ describe("validatePricing", () => {
 
   it("accepts a full plan comparison with correct prices", () => {
     const response = `Here are the FAULTLINE plans:
-• Free — $0: Basic access
-• Mobile — $9.99/mo: Signals, Pressure Index
-• Trader — $59/mo: Full platform
-• Founding Member — $49/mo locked for life: All features forever
-• Lifetime — $299 one-time: One payment, all features`;
+• Founding Member — $49/mo locked while active: Founding rate
+• Trader — $59/mo: Primary investor experience
+• Power — $99/mo: Full professional toolset`;
     expect(validatePricing(response)).toBe(true);
   });
 });
@@ -126,8 +117,8 @@ describe("detectIntent", () => {
     expect(result.intent).toBe("pricing");
   });
 
-  it("detects pricing intent from 'How much is Mobile?'", () => {
-    const result = detectIntent("How much is Mobile?");
+  it("detects pricing intent from 'How much is Power?'", () => {
+    const result = detectIntent("How much is Power?");
     expect(result.pricingIntent).toBe(true);
     expect(result.intent).toBe("pricing");
   });
@@ -144,8 +135,8 @@ describe("detectIntent", () => {
     expect(result.intent).toBe("pricing");
   });
 
-  it("detects pricing intent from 'Is there a Lifetime plan?'", () => {
-    const result = detectIntent("Is there a Lifetime plan?");
+  it("detects pricing intent from 'Is there a Power plan?'", () => {
+    const result = detectIntent("Is there a Power plan?");
     expect(result.pricingIntent).toBe(true);
     expect(result.intent).toBe("pricing");
   });
@@ -195,14 +186,14 @@ describe("detectIntent", () => {
     expect(result.planInterest).toBe("core");
   });
 
-  it("detects plan interest for mobile (maps to core)", () => {
+  it("does not map retired mobile plan terminology to a public tier", () => {
     const result = detectIntent("Tell me about the mobile plan");
-    expect(result.planInterest).toBe("core");
+    expect(result.planInterest).toBeNull();
   });
 
-  it("detects plan interest for trader (maps to premium)", () => {
+  it("detects plan interest for trader (maps to core)", () => {
     const result = detectIntent("Tell me about the trader plan");
-    expect(result.planInterest).toBe("premium");
+    expect(result.planInterest).toBe("core");
   });
 
   it("detects plan interest for founding", () => {
@@ -210,9 +201,9 @@ describe("detectIntent", () => {
     expect(result.planInterest).toBe("founding");
   });
 
-  it("detects plan interest for lifetime", () => {
+  it("does not map retired lifetime terminology to a public tier", () => {
     const result = detectIntent("Is there a lifetime option?");
-    expect(result.planInterest).toBe("lifetime");
+    expect(result.planInterest).toBeNull();
   });
 
   it("returns no pricing or signup intent for a pure greeting", () => {

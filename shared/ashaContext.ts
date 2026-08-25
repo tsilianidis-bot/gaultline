@@ -1,5 +1,6 @@
 import type { CanonicalMarketState } from "./marketState";
 import type { CanonicalDestinationId } from "./routeRegistry";
+import type { AshaQuestionAnalysis } from "./ashaQuestionAnalysis";
 
 export interface AshaPageContext {
   page: string;
@@ -15,10 +16,11 @@ export interface AshaPageContext {
 }
 
 export interface AshaGatewayContext {
-  version: "1.0";
+  version: "1.1";
   destination: CanonicalDestinationId | null;
   page: AshaPageContext;
   marketState: CanonicalMarketState;
+  questionAnalysis?: AshaQuestionAnalysis;
 }
 
 export interface AshaModelTrace {

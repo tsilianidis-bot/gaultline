@@ -96,6 +96,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: "day-trade",            label: "Day Trade Intelligence",     icon: Target,        path: "/app/day-trade-intelligence" },
       { id: "decision-engine",      label: "Decision Engine",            icon: Crosshair,     path: "/app/decision-engine" },
       { id: "smart-discovery",      label: "Smart Discovery",            icon: Sparkles,      path: "/app/discover" },
+      { id: "rising-stars",         label: "Rising Stars",               icon: TrendingUp,    path: "/app/rising-stars" },
       { id: "signals",              label: "Signals",                    icon: Radio,         path: "/app/signals" },
       { id: "crypto-signals",       label: "Crypto Signals",             icon: Bitcoin,       path: "/app/crypto-signals" },
       { id: "pressure-engine",      label: "Pressure Engine",            icon: Gauge,         path: "/app/pressure" },

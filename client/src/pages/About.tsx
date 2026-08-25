@@ -552,7 +552,7 @@ export default function About() {
               marginBottom: "16px",
             }}
           >
-            ◆ Why I Built FAULTLINE
+            ◆ WHY I BUILT FAULTLINE
           </div>
           <h2
             style={{
@@ -568,20 +568,35 @@ export default function About() {
             Why I Built FAULTLINE
           </h2>
 
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "clamp(22px, 3vw, 30px)", color: "#F0F4FF", lineHeight: 1.25, margin: "0 0 24px", fontWeight: 700 }}>
+            Finding the right assets isn’t always the hardest part of investing.<br />
+            <span style={{ color: "#00D4FF" }}>Knowing what to do after you’ve found them can be.</span>
+          </p>
           <p style={{ fontSize: "15px", color: "#CBD5E1", lineHeight: 1.85, margin: "0 0 20px" }}>
-            I built the tool I wished I had while making some of the biggest investment decisions of my life.
+            I built FAULTLINE because I wish I had a tool like this the first time I made life-changing gains.
           </p>
           <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>
-            Finding great investments was not the hardest part. Recognizing when the environment had changed enough that protecting capital deserved more attention than pursuing additional returns — that was.
+            I had found the right assets. What I didn’t have was a system that could clearly show me what was happening around them — when market conditions were changing, when risk was building, when momentum was weakening, or when it might be time to protect what I had made.
+          </p>
+          <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>That experience stayed with me.</p>
+          <p style={{ fontSize: "15px", color: "#CBD5E1", lineHeight: 1.85, margin: "0 0 20px", fontWeight: 500 }}>
+            Because making money in the market is only part of the challenge.<br />Knowing what to do once you’ve made it can be even harder.
           </p>
           <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>
-            Every major dislocation — 2008, 2020, 2022 — had a pressure signature building in the data long before it showed up in headlines. Credit spreads widened. The yield curve signaled. Liquidity tightened. The evidence was there. It was not synthesized into something accessible.
+            Markets give us endless charts, headlines, indicators, opinions, and predictions. More information does not automatically create better decisions.
           </p>
+          <p style={{ fontSize: "15px", color: "#CBD5E1", lineHeight: 1.85, margin: "0 0 20px", fontWeight: 600 }}>What investors need is clarity.</p>
+          <div style={{ margin: "0 0 24px", padding: "18px 0 18px 18px", borderLeft: "2px solid rgba(0,212,255,0.65)", display: "grid", gap: "7px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "13px", color: "#D8E5F0", lineHeight: 1.5 }}>
+            <span>What’s happening?</span><span>Why is it happening?</span><span>What’s likely to happen next?</span><span>What should I be watching?</span><span>What should I do?</span>
+          </div>
+          <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>Those five questions became the foundation of FAULTLINE.</p>
           <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>
-            FAULTLINE is my answer to that problem. Not a trading system. Not a prediction engine. A market awareness platform — one that gives investors a clear, honest read on what the current environment is, why it is changing, how long the shift has been developing, and how today's conditions compare with history.
+            I wanted to build the tool I wish had been sitting in front of me during those moments — something that could cut through the noise, explain the environment around my investments, and help me recognize when the odds were beginning to change.
           </p>
-          <p style={{ fontSize: "15px", color: "#CBD5E1", lineHeight: 1.85, margin: "0 0 32px", fontWeight: 500 }}>
-            I did not build this to tell you what to buy or sell. I built it to help investors better understand when the market environment has changed enough that protecting capital deserves as much attention as pursuing opportunity.
+          <p style={{ fontSize: "15px", color: "#94A3B8", lineHeight: 1.85, margin: "0 0 20px" }}>FAULTLINE isn’t about predicting every market move.</p>
+          <p style={{ fontSize: "15px", color: "#CBD5E1", lineHeight: 1.85, margin: "0 0 20px", fontWeight: 500 }}>It’s about seeing the market more clearly when the decisions matter most.</p>
+          <p style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "clamp(20px, 2.7vw, 28px)", fontWeight: 700, color: "#F0F4FF", lineHeight: 1.35, margin: "0 0 32px" }}>
+            Finding the opportunity can change your portfolio. <span style={{ color: "#00D4FF" }}>Knowing when to move can change your life.</span>
           </p>
 
           <div

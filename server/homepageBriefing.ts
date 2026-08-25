@@ -15,6 +15,7 @@ import { computeHistoricalContext } from "./historicalContextEngine";
 import { getPressureHistory, getRecentPressureRuns } from "./db";
 import { invokeLLM } from "./_core/llm";
 import type { FaultlinePressureOutput } from "./pressure/engine";
+import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -311,8 +312,8 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     const confidence: "high" | "medium" | "low" = N >= 60 ? "high" : N >= 24 ? "medium" : "low";
 
     const plainEnglishSummary = analogMatches.length > 0
-      ? `Today's pressure reading of ${currentOverall}/100 ranks at the ${percentile}th percentile of all ${N} historical months analyzed. The closest historical analog is ${analogMatches[0].label} (${analogMatches[0].similarity}% similarity). Current conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`
-      : `Today's pressure reading of ${currentOverall}/100 ranks at the ${percentile}th percentile of all ${N} historical months analyzed. Current ${latestRegime} conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`;
+      ? `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)}) of all ${N} historical months analyzed. The closest historical analog is ${analogMatches[0].label} (${analogMatches[0].similarity}% similarity). Current conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`
+      : `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)}) of all ${N} historical months analyzed. Current ${latestRegime} conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`;
 
     historySays = {
       historicalPercentile: percentile,
@@ -432,7 +433,7 @@ Current data:
 - Pressure Index: ${currentOverall}/100 (${pressure.level} — ${pressure.regime})
 - Primary driver: ${topVector?.label ?? "Macro Sensitivity"} at ${topVector?.score?.toFixed(1) ?? "N/A"}/10
 - Bull probability: ${Math.round(bullProb)}% | Bear probability: ${Math.round(bearProb)}%
-- Historical percentile: ${percentileForMetric}th (N=${histRows.length} months)
+- Historical percentile: ${formatOrdinal(percentileForMetric)} (${describeHistoricalPercentile(percentileForMetric)}) (N=${histRows.length} months)
 - Closest historical analog: ${analogLabel} (${analogSim}% similarity)
 - Pressure trend: ${streakDir} for ${streak} consecutive readings
 ${whyTodayIsDifferent.biggestDeteriorating ? `- Biggest deteriorating factor: ${whyTodayIsDifferent.biggestDeteriorating.label}` : ""}
@@ -461,7 +462,7 @@ Write a 3-4 sentence institutional briefing covering: what is happening, why it 
     marketStoryHeadline = (headlineResult.choices?.[0]?.message?.content as string ?? marketStoryHeadline).trim();
   } catch {
     // Fallback: use the historical context engine's market story if available
-    marketStory = histContext?.marketStory ?? `The FAULTLINE Pressure Index currently reads ${currentOverall}/100, indicating ${pressure.level.toLowerCase()} systemic pressure in a ${pressure.regime} regime. ${topVector ? `${topVector.label} is the primary driver at ${topVector.score.toFixed(1)}/10.` : ""} Current conditions rank at the ${percentileForMetric}th percentile of all historical readings analyzed.`;
+    marketStory = histContext?.marketStory ?? `The FAULTLINE Pressure Index currently reads ${currentOverall}/100, indicating ${pressure.level.toLowerCase()} systemic pressure in a ${pressure.regime} regime. ${topVector ? `${topVector.label} is the primary driver at ${topVector.score.toFixed(1)}/10.` : ""} Current conditions rank at the ${formatOrdinal(percentileForMetric)} percentile (${describeHistoricalPercentile(percentileForMetric)}) of all historical readings analyzed.`;
   }
 
   return {

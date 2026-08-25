@@ -13,7 +13,6 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
-import AppLayout from "@/components/AppLayout";
 import type { MarketQuoteItem, GlobalMarketSnapshot } from "../../../server/routers/markets";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -48,12 +47,12 @@ function fmtPct(v: number | null): string {
   if (v === null) return "—";
   return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
 }
-function fmtPrice(v: number | null, symbol?: string): string {
+function fmtPrice(v: number | null, item?: Pick<MarketQuoteItem, "symbol" | "unit">): string {
   if (v === null) return "—";
-  // Rates are in tenths of a percent from Yahoo (^TNX = 44.6 = 4.46%)
-  if (symbol && ["^TNX","^FVX","^IRX","^TYX"].includes(symbol)) {
-    return `${(v / 10).toFixed(2)}%`;
-  }
+  if (item?.unit === "percent") return `${v.toFixed(2)}%`;
+  if (item?.unit === "bps") return `${v >= 0 ? "+" : ""}${v.toFixed(0)}bp`;
+  if (item?.unit === "percent_of_market") return `${v.toFixed(1)}%`;
+  if (item?.unit === "usd_trillions") return `$${v.toFixed(2)}T`;
   if (v >= 10000) return v.toLocaleString("en-US", { maximumFractionDigits: 0 });
   if (v >= 1000) return v.toLocaleString("en-US", { maximumFractionDigits: 2 });
   if (v >= 100) return v.toFixed(2);
@@ -86,7 +85,15 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 // ── Market card ───────────────────────────────────────────────────────────────
 function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => void }) {
   const [hovered, setHovered] = useState(false);
-  const status = marketStatusLabel(item.marketState);
+  const status = item.freshnessState === "UNAVAILABLE"
+    ? { label: "UNAVAILABLE", color: AMBER }
+    : item.freshnessState === "STALE"
+      ? { label: "STALE", color: AMBER }
+      : item.freshnessState === "DELAYED"
+        ? { label: `${item.sessionStatus} · DELAYED`, color: AMBER }
+        : item.freshnessState === "LATEST_VERIFIED"
+          ? { label: "LATEST VERIFIED", color: MUTED }
+          : marketStatusLabel(item.marketState);
   const pct = item.changePercent;
   const color = pctColor(pct);
   return (
@@ -121,7 +128,7 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
       </div>
       {/* Price */}
       <div style={{ fontFamily: MONO, fontSize: "16px", color: TEXT, fontWeight: 600, letterSpacing: "0.02em" }}>
-        {fmtPrice(item.price, item.symbol)}
+        {fmtPrice(item.price, item)}
       </div>
       {/* Change */}
       <div style={{ display: "flex", gap: "8px", marginTop: "4px", alignItems: "center" }}>
@@ -139,19 +146,19 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
         <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
           {item.high !== null && (
             <span style={{ fontFamily: MONO, fontSize: "9px", color: MUTED }}>
-              H {fmtPrice(item.high, item.symbol)}
+              H {fmtPrice(item.high, item)}
             </span>
           )}
           {item.low !== null && (
             <span style={{ fontFamily: MONO, fontSize: "9px", color: MUTED }}>
-              L {fmtPrice(item.low, item.symbol)}
+              L {fmtPrice(item.low, item)}
             </span>
           )}
         </div>
       )}
-      {item.isDelayed && (
+      {item.freshnessState === "DELAYED" && (
         <div style={{ fontFamily: MONO, fontSize: "8px", color: MUTED, marginTop: "4px", opacity: 0.6 }}>
-          15-min delayed
+          Delayed quote — not live
         </div>
       )}
     </div>
@@ -231,14 +238,14 @@ function MarketRead({ snapshot }: { snapshot: GlobalMarketSnapshot | undefined }
     const items = snapshot.items;
     const spx = items.find(i => i.symbol === "^GSPC");
     const vix = items.find(i => i.symbol === "^VIX");
-    const t10 = items.find(i => i.symbol === "^TNX");
+    const t10 = items.find(i => i.symbol === "FRED:DGS10");
     const dxy = items.find(i => i.symbol === "DX-Y.NYB");
     const btc = items.find(i => i.symbol === "BTC-USD");
 
     const parts: string[] = [];
     if (spx?.changePercent !== null) parts.push(`S&P 500 ${fmtPct(spx?.changePercent ?? null)}`);
     if (vix?.price !== null) parts.push(`VIX ${vix?.price?.toFixed(1)}`);
-    if (t10?.price !== null) parts.push(`10Y ${fmtPrice(t10?.price ?? null, "^TNX")}`);
+    if (t10?.price !== null) parts.push(`10Y ${fmtPrice(t10?.price ?? null, t10)}`);
     if (dxy?.changePercent !== null) parts.push(`DXY ${fmtPct(dxy?.changePercent ?? null)}`);
     if (btc?.changePercent !== null) parts.push(`BTC ${fmtPct(btc?.changePercent ?? null)}`);
 
@@ -348,7 +355,7 @@ export default function Markets() {
   const euItems     = byCategory("europe");
   const asiaItems   = byCategory("asia");
   const ratesItems  = byCategory("rates");
-  const dollarItems = byCategory("dollar");
+  const dollarItems = byCategory("fx");
   const commItems   = byCategory("commodity");
   const cryptoItems = byCategory("crypto");
 
@@ -367,8 +374,7 @@ export default function Markets() {
     : null;
 
   return (
-    <AppLayout>
-      <div style={{ minHeight: "100vh", background: BG, fontFamily: SANS, paddingBottom: "60px" }}>
+    <div style={{ minHeight: "100vh", background: BG, fontFamily: SANS, paddingBottom: "60px" }}>
         {/* ── Page header ── */}
         <div style={{
           borderBottom: `1px solid ${BORDER}`,
@@ -614,10 +620,9 @@ export default function Markets() {
 
           {/* Data attribution */}
           <div style={{ fontFamily: MONO, fontSize: "8px", color: MUTED, opacity: 0.5, textAlign: "center", paddingTop: "8px" }}>
-            Market data via Yahoo Finance (15-min delayed) · Polygon.io fallback · Crypto via Yahoo Finance
+            Data states are shown per instrument. Delayed, latest-verified, stale, and unavailable observations are not represented as live.
           </div>
         </div>
       </div>
-    </AppLayout>
   );
 }

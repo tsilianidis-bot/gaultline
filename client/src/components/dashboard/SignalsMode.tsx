@@ -349,6 +349,11 @@ function RotationTracker() {
 
 // ── SIGNALS MODE ROOT ──────────────────────────────────────────────────────────
 export default function SignalsMode() {
+  const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+  });
+  if (!canonicalState) return null;
   const [activeTab, setActiveTab] = useState<FilterTab>("crypto");
   const { user } = useAuth();
 

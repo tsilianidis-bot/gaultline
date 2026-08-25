@@ -1,0 +1,7 @@
+{
+  "status":"PASS",
+  "scope":"Active Phase 7 contract, scorer, scheduler, public router/dashboard, ASHA, and Oracle boundaries",
+  "counts":{"LEGITIMATE_HISTORICAL_REFERENCE":0,"TEST_FIXTURE":0,"INACTIVE_GIT_HISTORY":0,"BLOCKING_PHASE8_LEAK":0},
+  "prohibitedTerms":["EMERGING","DEVELOPING","CONFIRMING","ELEVATED","FADING","INVALIDATED","RESOLVED","lifecycleState","confirmationConditions","invalidationConditions","public flagship warning panel","warning social generation","track-record resolution"],
+  "evidence":"server/phase7QualificationBoundary.test.ts"
+}

@@ -28,6 +28,8 @@ export const PRESERVED_UNIQUE_APP_PATHS = [
   "/app/simulate-pressure",
   "/app/watchlist",
   "/app/signals",
+  "/app/signals/:symbol",
+  "/app/rising-stars",
   "/app/portfolio",
   "/app/crypto",
   "/app/crypto-search",
@@ -65,6 +67,7 @@ export const PRESERVED_UNIQUE_APP_PATHS = [
   "/app/social-intelligence",
   "/app/insider-intelligence",
   "/app/markets",
+  "/app/day-trade-intelligence/:symbol",
 ] as const;
 
 const canonicalPaths = new Set(CANONICAL_DESTINATIONS.map(route => route.path));

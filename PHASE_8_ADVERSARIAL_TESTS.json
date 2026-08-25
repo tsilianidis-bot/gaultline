@@ -1,0 +1,26 @@
+{
+  "result": "PASS",
+  "testFile": "server/earlyWarningLifecycle.test.ts",
+  "cases": [
+    {"id": 1, "scenario": "first legitimate qualification", "expected": "EMERGING", "result": "PASS"},
+    {"id": 2, "scenario": "one qualified observation then non-qualification", "expected": "not DEVELOPING from a single observation", "result": "PASS"},
+    {"id": 3, "scenario": "two governed qualifications", "expected": "DEVELOPING", "result": "PASS"},
+    {"id": 4, "scenario": "threshold oscillation", "expected": "one grace non-qualification prevents flapping", "result": "PASS"},
+    {"id": 5, "scenario": "persistent non-qualification", "expected": "FADING, never INVALIDATED", "result": "PASS"},
+    {"id": 6, "scenario": "degraded data", "expected": "hold state and no false escalation", "result": "PASS"},
+    {"id": 7, "scenario": "missing/unavailable evaluation", "expected": "no automatic fading", "result": "PASS"},
+    {"id": 8, "scenario": "primary to secondary", "expected": "same lifecycle identity", "result": "PASS"},
+    {"id": 9, "scenario": "secondary to primary", "expected": "same lifecycle identity", "result": "PASS"},
+    {"id": 10, "scenario": "qualified reentry after fading", "expected": "EMERGING with deterministic reentry", "result": "PASS"},
+    {"id": 11, "scenario": "same qualification processed twice", "expected": "unique observation idempotency", "result": "PASS"},
+    {"id": 12, "scenario": "older evaluation after newer", "expected": "ignored without projection rewrite", "result": "PASS"},
+    {"id": 13, "scenario": "concurrent duplicate write", "expected": "database unique observation identity", "result": "PASS"},
+    {"id": 14, "scenario": "LLM says confirmed", "expected": "cannot enter CONFIRMING", "result": "PASS"},
+    {"id": 15, "scenario": "AI invents invalidation", "expected": "cannot enter INVALIDATED", "result": "PASS"},
+    {"id": 16, "scenario": "importance score 90", "expected": "no probability or forecast", "result": "PASS"},
+    {"id": 17, "scenario": "historical analog 93%", "expected": "no lifecycle probability conversion", "result": "PASS"},
+    {"id": 18, "scenario": "no material early warning", "expected": "no new lifecycle", "result": "PASS"},
+    {"id": 19, "scenario": "existing lifecycle no longer qualifies", "expected": "governed fading, not invalidation", "result": "PASS"},
+    {"id": 20, "scenario": "conflicted evaluation", "expected": "hold and append bounded evidence-quality observation", "result": "PASS"}
+  ]
+}

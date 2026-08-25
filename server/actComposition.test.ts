@@ -56,7 +56,7 @@ describe("ACT destination composition", () => {
     expect(actSource).toContain("marketState?.act.whatWouldInvalidate");
     expect(actSource).toContain('marketMode === "canonical" && Boolean(marketState)');
     expect(actSource).toContain("Canonical refresh is degraded");
-    expect(actSource).not.toContain("trpc.");
+    expect(actSource).toContain("trpc.marketState.canonicalCurrent.useQuery");
   });
 
   it("keeps evidence, advice, scenario, and fallback boundaries explicit", () => {

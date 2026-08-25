@@ -1,0 +1,26 @@
+{
+  "contractVersion": "phase8-lifecycle-v1",
+  "lifecycleModelId": "faultline-qualified-candidate-lifecycle",
+  "lifecycleModelVersion": "1.0.0",
+  "lifecycleConfigVersion": "phase8-governance-v1",
+  "activeStates": ["EMERGING", "DEVELOPING", "FADING"],
+  "dormantLaterAuthorityStates": ["ELEVATED", "CONFIRMING", "INVALIDATED", "RESOLVED"],
+  "allowedTransitions": {
+    "NO_ACTIVE": ["EMERGING"],
+    "EMERGING": ["EMERGING", "DEVELOPING", "FADING"],
+    "DEVELOPING": ["DEVELOPING", "FADING"],
+    "FADING": ["FADING", "EMERGING"]
+  },
+  "prohibitedAutonomousTransitions": [
+    "NO_ACTIVE->INVALIDATED", "EMERGING->CONFIRMING", "DEVELOPING->INVALIDATED",
+    "FADING->RESOLVED", "ANY->ELEVATED", "ANY->CONFIRMING", "ANY->INVALIDATED", "ANY->RESOLVED"
+  ],
+  "persistence": {
+    "qualifyingObservationsToDevelop": 2,
+    "consecutiveNonQualifyingObservationsToFade": 2,
+    "reentryQualifiedObservations": 2
+  },
+  "outOfOrderPolicy": "IGNORE_WITHOUT_CHANGING_CURRENT_PROJECTION",
+  "elevatedDecision": "DORMANT_UNTIL_LATER_AUTHORITY",
+  "semantics": "TEMPORAL_QUALIFICATION_STATE_NOT_PROBABILITY_OR_FORECAST"
+}

@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "suite": "server/candidateDetection.test.ts + server/phase6CandidateBoundary.test.ts",
+  "cases": [
+    {"id":"A1","scenario":"single-engine signal","result":"PASS","evidence":"No CrossEngineDivergence candidate is emitted without the governed Phase 5 relationship."},
+    {"id":"A2","scenario":"overlapping/dependent evidence","result":"PASS","evidence":"NON-INDEPENDENT divergence is suppressed."},
+    {"id":"A3","scenario":"stale participating engine","result":"PASS","evidence":"STALE participating-engine input is suppressed."},
+    {"id":"A4","scenario":"unavailable/unknown evidence","result":"PASS","evidence":"INSUFFICIENT confidence is suppressed."},
+    {"id":"A5","scenario":"missing magnitude","result":"PASS","evidence":"Missing governed magnitude is suppressed, not converted to zero or neutral."},
+    {"id":"A6","scenario":"below-minimum magnitude","result":"PASS","evidence":"Magnitude below 10 is suppressed."},
+    {"id":"A7","scenario":"new/non-persisting relationship","result":"PASS","evidence":"NEW relationship is suppressed."},
+    {"id":"A8","scenario":"no candidates","result":"PASS","evidence":"noCandidates=true with an empty candidate array is a valid state."},
+    {"id":"A9","scenario":"unsupported candidate type","result":"PASS","evidence":"Only CROSS_ENGINE_DIVERGENCE is implemented; unimplemented detector categories have no emitted candidate."},
+    {"id":"A10","scenario":"importance-score injection","result":"PASS","evidence":"Candidate schema has no score, ranking, qualification, or priority fields."},
+    {"id":"A11","scenario":"lifecycle injection","result":"PASS","evidence":"Candidate schema has no lifecycle, confirmation, or invalidation fields."},
+    {"id":"A12","scenario":"public/AI publication injection","result":"PASS","evidence":"Public warning endpoints, dashboard panel, and ASHA/Oracle warning prompt contracts are absent."}
+  ]
+}

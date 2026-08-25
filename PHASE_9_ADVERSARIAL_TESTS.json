@@ -1,0 +1,33 @@
+{
+  "suite": "server/confirmationInvalidation.test.ts and server/phase9LifecycleExtension.test.ts",
+  "result": "PASS",
+  "cases": [
+    "deterministic thesis and versioned plan",
+    "confirmation requires developing state plus expanded persisted evidence",
+    "lifecycle persistence alone cannot confirm",
+    "importance score alone cannot confirm",
+    "invalidation requires normalized persisted evidence",
+    "fading alone cannot invalidate",
+    "unavailable magnitude blocks authority",
+    "degraded data blocks authority",
+    "non-independent evidence blocks authority",
+    "emerging cannot enter confirming",
+    "deterministic evaluation and event identities",
+    "governance thresholds remain non-calibrated",
+    "no output probability/forecast/target/outcome fields",
+    "typed confirmation enters confirming only from developing",
+    "typed invalidation permits developing/fading/confirming only",
+    "invalidated remains terminal",
+    "elevated and resolved remain dormant"
+  ],
+  "additionalGovernedCases": [
+    "both condition sets met yields conflict and no authority event",
+    "processing order cannot override conflict precedence",
+    "duplicate condition evaluation identity is idempotent",
+    "duplicate authority event identity is idempotent",
+    "out-of-order evaluation cannot replace current projection",
+    "plan rule-version changes produce a new immutable plan",
+    "missing template returns NO_GOVERNED_CONFIRMATION_PLAN",
+    "Phase 10 public and AI integrations are absent"
+  ]
+}

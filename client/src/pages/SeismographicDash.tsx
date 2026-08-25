@@ -1123,7 +1123,7 @@ export default function SeismographicDash() {
 
         {/* SOB Panel */}
         <SectionErrorBoundary label="SOB Panel">
-          <SOBPanel regime={regime.label} pressureIndex={overall.score * 10} />
+          <SOBPanel canonicalEnvelope={output.canonicalEnvelope} regime={regime.label} pressureIndex={overall.score * 10} />
         </SectionErrorBoundary>
 
         {/* Narrative Panel */}

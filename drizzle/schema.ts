@@ -1,4 +1,4 @@
-import { bigint, boolean, decimal, double, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, decimal, double, foreignKey, index, int, mysqlEnum, mysqlTable, text, timestamp, tinyint, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 
 /**
@@ -474,6 +474,302 @@ export const pressureRuns = mysqlTable("pressureRuns", {
 export type PressureRun = typeof pressureRuns.$inferSelect;
 export type InsertPressureRun = typeof pressureRuns.$inferInsert;
 
+// ── Algorithm Provenance and Outcomes ─────────────────────────
+/**
+ * Append-only daily Champion provenance records. These begin with forward
+ * observations only; they do not backfill or reinterpret historical scores.
+ */
+export const algorithmScoreProvenance = mysqlTable("algorithmScoreProvenance", {
+  id:                 int("id").autoincrement().primaryKey(),
+  observationKey:     varchar("observationKey", { length: 160 }).notNull().unique(),
+  observedAt:         timestamp("observedAt").notNull(),
+  engineVersion:      varchar("engineVersion", { length: 64 }).notNull(),
+  formulaHash:        varchar("formulaHash", { length: 128 }).notNull(),
+  pressureIndex:      int("pressureIndex").notNull(),
+  regime:             varchar("regime", { length: 80 }).notNull(),
+  formulaJson:        text("formulaJson").notNull(),
+  inputManifestJson:  text("inputManifestJson").notNull(),
+  availabilityJson:   text("availabilityJson").notNull(),
+  provenanceStatus:   varchar("provenanceStatus", { length: 64 }).notNull(),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  observedAtIdx: index("algorithmScoreProvenance_observedAt_idx").on(t.observedAt),
+  regimeIdx: index("algorithmScoreProvenance_regime_idx").on(t.regime),
+}));
+export type AlgorithmScoreProvenance = typeof algorithmScoreProvenance.$inferSelect;
+export type InsertAlgorithmScoreProvenance = typeof algorithmScoreProvenance.$inferInsert;
+
+/**
+ * Append-only broad-market outcomes linked to forward live provenance records.
+ * Original score observations remain immutable and outcome data never becomes a
+ * synthetic success score.
+ */
+export const algorithmOutcomeObservations = mysqlTable("algorithmOutcomeObservations", {
+  id:                 int("id").autoincrement().primaryKey(),
+  outcomeKey:         varchar("outcomeKey", { length: 220 }).notNull().unique(),
+  provenanceId:       int("provenanceId").notNull(),
+  horizonTradingDays: int("horizonTradingDays").notNull(),
+  observedAt:         timestamp("observedAt").notNull(),
+  outcomeJson:        text("outcomeJson").notNull(),
+  provenanceJson:     text("provenanceJson").notNull(),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  provenanceFk: foreignKey({
+    columns: [t.provenanceId],
+    foreignColumns: [algorithmScoreProvenance.id],
+    name: "algo_outcome_prov_fk",
+  }).onDelete("cascade"),
+  provenanceHorizonIdx: index("algorithmOutcomeObservations_provenance_horizon_idx").on(t.provenanceId, t.horizonTradingDays),
+  observedAtIdx: index("algorithmOutcomeObservations_observedAt_idx").on(t.observedAt),
+}));
+export type AlgorithmOutcomeObservation = typeof algorithmOutcomeObservations.$inferSelect;
+export type InsertAlgorithmOutcomeObservation = typeof algorithmOutcomeObservations.$inferInsert;
+
+// ── Verified Historical Validation V1 (research-only) ──────────
+/**
+ * Separate versioned formula ledger for reproducible historical research.
+ * This table never changes the live pressure engine or the legacy Track Record.
+ */
+export const verifiedHistoricalFormulaVersions = mysqlTable("verifiedHistoricalFormulaVersions", {
+  id:                      int("id").autoincrement().primaryKey(),
+  modelVersion:            varchar("modelVersion", { length: 96 }).notNull().unique(),
+  formulaHash:             varchar("formulaHash", { length: 128 }).notNull(),
+  engineSourceHash:        varchar("engineSourceHash", { length: 128 }).notNull(),
+  sourceCommit:            varchar("sourceCommit", { length: 96 }).notNull(),
+  formulaJson:             text("formulaJson").notNull(),
+  frozenSpecificationPath: varchar("frozenSpecificationPath", { length: 255 }).notNull(),
+  status:                  mysqlEnum("status", ["frozen", "deprecated"]).default("frozen").notNull(),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+});
+export type VerifiedHistoricalFormulaVersion = typeof verifiedHistoricalFormulaVersions.$inferSelect;
+
+/**
+ * Immutable source observations for historical research. Every row records
+ * vintage and availability quality explicitly; no live runtime fallback is stored here.
+ */
+export const verifiedHistoricalSourceObservations = mysqlTable("verifiedHistoricalSourceObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  sourceKey:                varchar("sourceKey", { length: 255 }).notNull().unique(),
+  seriesId:                 varchar("seriesId", { length: 64 }).notNull(),
+  observationDate:          varchar("observationDate", { length: 10 }).notNull(),
+  realtimeStart:            varchar("realtimeStart", { length: 10 }),
+  realtimeEnd:              varchar("realtimeEnd", { length: 10 }),
+  valueText:                varchar("valueText", { length: 128 }),
+  valueNumeric:             double("valueNumeric"),
+  publicationAvailableAt:   timestamp("publicationAvailableAt"),
+  availabilityTimestamp:    timestamp("availabilityTimestamp"),
+  qualityClassification:    mysqlEnum("qualityClassification", ["POINT_IN_TIME_CONFIRMED", "POINT_IN_TIME_APPROXIMATED", "REVISED_HISTORICAL", "UNAVAILABLE"]).notNull(),
+  sourceUrl:                text("sourceUrl").notNull(),
+  transformation:           text("transformation").notNull(),
+  sourceMetadataJson:       text("sourceMetadataJson").notNull(),
+  retrievedAt:              timestamp("retrievedAt").defaultNow().notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  seriesObservationIdx: index("verifiedHist_source_series_date_idx").on(t.seriesId, t.observationDate),
+  qualityIdx: index("verifiedHist_source_quality_idx").on(t.qualityClassification),
+}));
+export type VerifiedHistoricalSourceObservation = typeof verifiedHistoricalSourceObservations.$inferSelect;
+
+/**
+ * Separate V1 historical score series. Incomplete months are persisted with
+ * explicit missing flags rather than manufactured scores.
+ */
+export const verifiedHistoricalScores = mysqlTable("verifiedHistoricalScores", {
+  id:                      int("id").autoincrement().primaryKey(),
+  scoreKey:                varchar("scoreKey", { length: 255 }).notNull().unique(),
+  formulaVersionId:        int("formulaVersionId").notNull(),
+  scoreMonth:              varchar("scoreMonth", { length: 7 }).notNull(),
+  scoreTimestamp:          timestamp("scoreTimestamp").notNull(),
+  scoreStatus:             mysqlEnum("scoreStatus", ["COMPLETE", "INCOMPLETE", "EXCLUDED"]).notNull(),
+  overallPressure:         int("overallPressure"),
+  regime:                  varchar("regime", { length: 80 }),
+  vectorScoresJson:        text("vectorScoresJson").notNull(),
+  rawInputsJson:           text("rawInputsJson").notNull(),
+  sourceObservationKeysJson: text("sourceObservationKeysJson").notNull(),
+  qualitySummary:          mysqlEnum("qualitySummary", ["POINT_IN_TIME_CONFIRMED", "POINT_IN_TIME_APPROXIMATED", "REVISED_HISTORICAL", "UNAVAILABLE"]).notNull(),
+  missingFlagsJson:        text("missingFlagsJson").notNull(),
+  datasetChecksum:         varchar("datasetChecksum", { length: 128 }).notNull(),
+  calculatedAt:            timestamp("calculatedAt").defaultNow().notNull(),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  formulaFk: foreignKey({
+    columns: [t.formulaVersionId],
+    foreignColumns: [verifiedHistoricalFormulaVersions.id],
+    name: "verified_hist_score_formula_fk",
+  }).onDelete("restrict"),
+  formulaMonthIdx: uniqueIndex("verifiedHist_score_formula_month_idx").on(t.formulaVersionId, t.scoreMonth),
+  timestampIdx: index("verifiedHist_score_timestamp_idx").on(t.scoreTimestamp),
+  statusIdx: index("verifiedHist_score_status_idx").on(t.scoreStatus),
+}));
+export type VerifiedHistoricalScore = typeof verifiedHistoricalScores.$inferSelect;
+
+/**
+ * Independent market outcomes for verified research scores. Outcomes remain
+ * separate from score observations and never form a synthetic success score.
+ */
+export const verifiedHistoricalOutcomes = mysqlTable("verifiedHistoricalOutcomes", {
+  id:                     int("id").autoincrement().primaryKey(),
+  outcomeKey:             varchar("outcomeKey", { length: 255 }).notNull().unique(),
+  verifiedScoreId:        int("verifiedScoreId").notNull(),
+  horizonTradingDays:     int("horizonTradingDays").notNull(),
+  startDate:              varchar("startDate", { length: 10 }).notNull(),
+  endDate:                varchar("endDate", { length: 10 }),
+  forwardReturnPct:       double("forwardReturnPct"),
+  maximumDrawdownPct:     double("maximumDrawdownPct"),
+  maximumAdverseExcursionPct: double("maximumAdverseExcursionPct"),
+  realizedVolatilityPct:  double("realizedVolatilityPct"),
+  outcomeStatus:          mysqlEnum("outcomeStatus", ["COMPLETE", "PENDING", "UNAVAILABLE"]).notNull(),
+  outcomeJson:            text("outcomeJson").notNull(),
+  sourceMetadataJson:     text("sourceMetadataJson").notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  verifiedScoreFk: foreignKey({
+    columns: [t.verifiedScoreId],
+    foreignColumns: [verifiedHistoricalScores.id],
+    name: "verified_hist_outcome_score_fk",
+  }).onDelete("restrict"),
+  scoreHorizonIdx: index("verifiedHist_outcome_score_horizon_idx").on(t.verifiedScoreId, t.horizonTradingDays),
+  statusIdx: index("verifiedHist_outcome_status_idx").on(t.outcomeStatus),
+}));
+export type VerifiedHistoricalOutcome = typeof verifiedHistoricalOutcomes.$inferSelect;
+
+/** Append-only metadata for every reproducible research dataset build. */
+export const verifiedHistoricalValidationRuns = mysqlTable("verifiedHistoricalValidationRuns", {
+  id:                     int("id").autoincrement().primaryKey(),
+  runKey:                 varchar("runKey", { length: 160 }).notNull().unique(),
+  formulaVersionId:       int("formulaVersionId").notNull(),
+  scoringTimestampPolicy: text("scoringTimestampPolicy").notNull(),
+  missingDataPolicy:      text("missingDataPolicy").notNull(),
+  datasetChecksum:        varchar("datasetChecksum", { length: 128 }).notNull(),
+  coverageJson:           text("coverageJson").notNull(),
+  partitionJson:          text("partitionJson").notNull(),
+  status:                 mysqlEnum("status", ["IN_PROGRESS", "COMPLETE", "BLOCKED"]).notNull(),
+  limitationJson:         text("limitationJson").notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  validationFormulaFk: foreignKey({
+    columns: [t.formulaVersionId],
+    foreignColumns: [verifiedHistoricalFormulaVersions.id],
+    name: "verified_hist_run_formula_fk",
+  }).onDelete("restrict"),
+  statusIdx: index("verifiedHist_run_status_idx").on(t.status),
+}));
+export type VerifiedHistoricalValidationRun = typeof verifiedHistoricalValidationRuns.$inferSelect;
+
+// ── Reconstructed Historical Research (Phase 1B; separate from verified history) ──
+/**
+ * Explicitly reconstructed historical research only. These tables must never be
+ * joined into verified point-in-time history, production pressure history, or
+ * public performance claims without an independently approved disclosure.
+ */
+export const reconstructedHistoricalFormulaVersions = mysqlTable("reconstructedHistoricalFormulaVersions", {
+  id:                      int("id").autoincrement().primaryKey(),
+  modelVersion:            varchar("modelVersion", { length: 128 }).notNull().unique(),
+  formulaHash:             varchar("formulaHash", { length: 128 }).notNull(),
+  sourceCommit:            varchar("sourceCommit", { length: 96 }).notNull(),
+  policyVersion:           varchar("policyVersion", { length: 128 }).notNull(),
+  policyPath:              varchar("policyPath", { length: 255 }).notNull(),
+  formulaJson:             text("formulaJson").notNull(),
+  status:                  mysqlEnum("status", ["frozen", "deprecated"]).default("frozen").notNull(),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+});
+export type ReconstructedHistoricalFormulaVersion = typeof reconstructedHistoricalFormulaVersions.$inferSelect;
+
+export const reconstructedHistoricalSourceObservations = mysqlTable("reconstructedHistoricalSourceObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  sourceKey:                varchar("sourceKey", { length: 255 }).notNull().unique(),
+  seriesId:                 varchar("seriesId", { length: 96 }).notNull(),
+  sourceClass:              mysqlEnum("sourceClass", ["ARCHIVED_OFFICIAL_REVISED", "CURRENT_OFFICIAL_REVISED", "OFFICIAL_PROXY_RECONSTRUCTED", "UNAVAILABLE"]).notNull(),
+  observationDate:          varchar("observationDate", { length: 10 }).notNull(),
+  valueText:                varchar("valueText", { length: 128 }),
+  valueNumeric:             double("valueNumeric"),
+  publicationAvailableAt:   timestamp("publicationAvailableAt"),
+  sourceUrl:                text("sourceUrl").notNull(),
+  transformation:           text("transformation").notNull(),
+  sourceMetadataJson:       text("sourceMetadataJson").notNull(),
+  retrievedAt:              timestamp("retrievedAt").defaultNow().notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  seriesDateIdx: index("reconstructed_source_series_date_idx").on(t.seriesId, t.observationDate),
+  sourceClassIdx: index("reconstructed_source_class_idx").on(t.sourceClass),
+}));
+export type ReconstructedHistoricalSourceObservation = typeof reconstructedHistoricalSourceObservations.$inferSelect;
+
+export const reconstructedHistoricalScores = mysqlTable("reconstructedHistoricalScores", {
+  id:                      int("id").autoincrement().primaryKey(),
+  scoreKey:                varchar("scoreKey", { length: 255 }).notNull().unique(),
+  formulaVersionId:        int("formulaVersionId").notNull(),
+  scoreMonth:              varchar("scoreMonth", { length: 7 }).notNull(),
+  scoreTimestamp:          timestamp("scoreTimestamp").notNull(),
+  scoreStatus:             mysqlEnum("scoreStatus", ["COMPLETE", "INCOMPLETE", "EXCLUDED"]).notNull(),
+  overallPressure:         int("overallPressure"),
+  regime:                  varchar("regime", { length: 80 }),
+  vectorScoresJson:        text("vectorScoresJson").notNull(),
+  rawInputsJson:           text("rawInputsJson").notNull(),
+  sourceObservationKeysJson: text("sourceObservationKeysJson").notNull(),
+  qualitySummary:          mysqlEnum("qualitySummary", ["RECONSTRUCTED_HISTORICAL", "UNAVAILABLE"]).notNull(),
+  missingFlagsJson:        text("missingFlagsJson").notNull(),
+  datasetChecksum:         varchar("datasetChecksum", { length: 128 }).notNull(),
+  calculatedAt:            timestamp("calculatedAt").defaultNow().notNull(),
+  createdAt:               timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  formulaFk: foreignKey({
+    columns: [t.formulaVersionId],
+    foreignColumns: [reconstructedHistoricalFormulaVersions.id],
+    name: "reconstructed_score_formula_fk",
+  }).onDelete("restrict"),
+  formulaMonthIdx: uniqueIndex("reconstructed_score_formula_month_idx").on(t.formulaVersionId, t.scoreMonth),
+  timestampIdx: index("reconstructed_score_timestamp_idx").on(t.scoreTimestamp),
+  statusIdx: index("reconstructed_score_status_idx").on(t.scoreStatus),
+}));
+export type ReconstructedHistoricalScore = typeof reconstructedHistoricalScores.$inferSelect;
+
+export const reconstructedHistoricalOutcomes = mysqlTable("reconstructedHistoricalOutcomes", {
+  id:                     int("id").autoincrement().primaryKey(),
+  outcomeKey:             varchar("outcomeKey", { length: 255 }).notNull().unique(),
+  reconstructedScoreId:   int("reconstructedScoreId").notNull(),
+  horizonTradingDays:     int("horizonTradingDays").notNull(),
+  startDate:              varchar("startDate", { length: 10 }).notNull(),
+  endDate:                varchar("endDate", { length: 10 }),
+  forwardReturnPct:       double("forwardReturnPct"),
+  maximumDrawdownPct:     double("maximumDrawdownPct"),
+  maximumAdverseExcursionPct: double("maximumAdverseExcursionPct"),
+  realizedVolatilityPct:  double("realizedVolatilityPct"),
+  outcomeStatus:          mysqlEnum("outcomeStatus", ["COMPLETE", "PENDING", "UNAVAILABLE"]).notNull(),
+  outcomeJson:            text("outcomeJson").notNull(),
+  sourceMetadataJson:     text("sourceMetadataJson").notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  reconstructedScoreFk: foreignKey({
+    columns: [t.reconstructedScoreId],
+    foreignColumns: [reconstructedHistoricalScores.id],
+    name: "reconstructed_outcome_score_fk",
+  }).onDelete("restrict"),
+  scoreHorizonIdx: index("reconstructed_outcome_score_horizon_idx").on(t.reconstructedScoreId, t.horizonTradingDays),
+  statusIdx: index("reconstructed_outcome_status_idx").on(t.outcomeStatus),
+}));
+export type ReconstructedHistoricalOutcome = typeof reconstructedHistoricalOutcomes.$inferSelect;
+
+export const reconstructedHistoricalValidationRuns = mysqlTable("reconstructedHistoricalValidationRuns", {
+  id:                     int("id").autoincrement().primaryKey(),
+  runKey:                 varchar("runKey", { length: 160 }).notNull().unique(),
+  formulaVersionId:       int("formulaVersionId").notNull(),
+  policyVersion:          varchar("policyVersion", { length: 128 }).notNull(),
+  datasetChecksum:        varchar("datasetChecksum", { length: 128 }).notNull(),
+  coverageJson:           text("coverageJson").notNull(),
+  limitationJson:         text("limitationJson").notNull(),
+  status:                 mysqlEnum("status", ["IN_PROGRESS", "COMPLETE", "BLOCKED"]).notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  formulaFk: foreignKey({
+    columns: [t.formulaVersionId],
+    foreignColumns: [reconstructedHistoricalFormulaVersions.id],
+    name: "reconstructed_run_formula_fk",
+  }).onDelete("restrict"),
+  statusIdx: index("reconstructed_run_status_idx").on(t.status),
+}));
+export type ReconstructedHistoricalValidationRun = typeof reconstructedHistoricalValidationRuns.$inferSelect;
+
 // ── Feature Flags / Kill Switches ────────────────────────────
 /**
  * Admin-controlled feature flags for disabling risky or broken features
@@ -805,6 +1101,509 @@ export const outlookHistory = mysqlTable("outlookHistory", {
 export type OutlookHistory = typeof outlookHistory.$inferSelect;
 export type InsertOutlookHistory = typeof outlookHistory.$inferInsert;
 
+// ── Rising Stars Verified History ──────────────────────────────
+/**
+ * Immutable observations captured from the live Rising Stars engine.  These
+ * rows are append-only evidence records; they are never recalculated or
+ * overwritten when the model, market data, or enrichment changes later.
+ */
+export const risingStarSnapshots = mysqlTable("risingStarSnapshots", {
+  id:                 int("id").autoincrement().primaryKey(),
+  /** Stable idempotency key: daily continuity uses TICKER:daily:YYYY-MM-DD; engine observations use an input fingerprint. */
+  snapshotKey:        varchar("snapshotKey", { length: 180 }).notNull().unique(),
+  ticker:             varchar("ticker", { length: 30 }).notNull(),
+  assetType:          mysqlEnum("assetType", ["stock"]).notNull().default("stock"),
+  observationType:    mysqlEnum("observationType", ["daily", "engine"]).notNull(),
+  /** UTC trading-date continuity key.  Intraday engine observations retain their exact observedAt timestamp. */
+  observationDate:    varchar("observationDate", { length: 10 }).notNull(),
+  observedAt:         timestamp("observedAt").notNull(),
+  marketDataAsOf:     timestamp("marketDataAsOf"),
+  sourceFetchedAt:    timestamp("sourceFetchedAt"),
+  qualification:      mysqlEnum("qualification", ["qualified", "watchlist"]).notNull(),
+  risingStarScore:    int("risingStarScore").notNull(),
+  baseScore:          int("baseScore").notNull(),
+  crowdingPenalty:    int("crowdingPenalty").notNull().default(0),
+  crossSignalConfidence: varchar("crossSignalConfidence", { length: 20 }).notNull(),
+  informationLead:    varchar("informationLead", { length: 20 }).notNull(),
+  crowdingRisk:       varchar("crowdingRisk", { length: 20 }).notNull(),
+  price:              decimal("price", { precision: 18, scale: 6 }),
+  dailyChangePercent: decimal("dailyChangePercent", { precision: 10, scale: 4 }),
+  momentumScore:      int("momentumScore").notNull(),
+  relativeStrengthScore: int("relativeStrengthScore").notNull(),
+  volumeParticipationScore: int("volumeParticipationScore").notNull(),
+  riskLevel:          varchar("riskLevel", { length: 24 }).notNull(),
+  pressureIndex:      int("pressureIndex").notNull(),
+  marketRegime:       varchar("marketRegime", { length: 64 }).notNull(),
+  sector:             varchar("sector", { length: 128 }),
+  industry:           varchar("industry", { length: 160 }),
+  macroContext:       text("macroContext"),
+  /** Complete score evidence, technical state, company data, and provider provenance captured exactly at observation time. */
+  evidenceJson:       text("evidenceJson").notNull(),
+  technicalJson:      text("technicalJson").notNull(),
+  provenanceJson:     text("provenanceJson").notNull(),
+  historyClass:       mysqlEnum("historyClass", ["live_verified"]).notNull().default("live_verified"),
+  recordedAt:         timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  tickerObservedIdx:  index("risingStarSnapshots_ticker_observed_idx").on(t.ticker, t.observedAt),
+  typeDateIdx:        index("risingStarSnapshots_type_date_idx").on(t.observationType, t.observationDate),
+}));
+export type RisingStarSnapshot = typeof risingStarSnapshots.$inferSelect;
+export type InsertRisingStarSnapshot = typeof risingStarSnapshots.$inferInsert;
+
+/**
+ * Append-only ledger of material live-engine state changes.  An event exists
+ * only when it was observed by a recorded engine or daily snapshot; it is not
+ * inferred from later historical price data.
+ */
+export const risingStarEvents = mysqlTable("risingStarEvents", {
+  id:                 int("id").autoincrement().primaryKey(),
+  eventKey:           varchar("eventKey", { length: 220 }).notNull().unique(),
+  ticker:             varchar("ticker", { length: 30 }).notNull(),
+  snapshotId:         int("snapshotId").notNull(),
+  eventType:          mysqlEnum("eventType", ["first_qualification", "score_strengthened", "score_weakened", "confirmation", "risk_threshold", "invalidation", "removed"]).notNull(),
+  eventAt:            timestamp("eventAt").notNull(),
+  headline:           varchar("headline", { length: 255 }).notNull(),
+  detailsJson:        text("detailsJson").notNull(),
+  historyClass:       mysqlEnum("historyClass", ["live_verified"]).notNull().default("live_verified"),
+  recordedAt:         timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  tickerEventIdx:     index("risingStarEvents_ticker_event_idx").on(t.ticker, t.eventAt),
+  snapshotIdx:        index("risingStarEvents_snapshot_idx").on(t.snapshotId),
+}));
+export type RisingStarEvent = typeof risingStarEvents.$inferSelect;
+export type InsertRisingStarEvent = typeof risingStarEvents.$inferInsert;
+
+/**
+ * Append-only own-instrument follow-through for symbol events actually
+ * recorded by FAULTLINE. The origin record is never updated or replaced.
+ * Signals and Day Trade may use this table only after they create genuine
+ * live event records; no historical records are reconstructed for them.
+ */
+export const symbolEventOutcomes = mysqlTable("symbolEventOutcomes", {
+  id:                 int("id").autoincrement().primaryKey(),
+  outcomeKey:         varchar("outcomeKey", { length: 240 }).notNull().unique(),
+  sourceEventType:    varchar("sourceEventType", { length: 64 }).notNull(),
+  sourceEventKey:     varchar("sourceEventKey", { length: 220 }).notNull(),
+  symbol:             varchar("symbol", { length: 30 }).notNull(),
+  assetClass:         varchar("assetClass", { length: 48 }).notNull(),
+  horizonTradingDays: int("horizonTradingDays").notNull(),
+  observedAt:         timestamp("observedAt").notNull(),
+  outcomeJson:        text("outcomeJson").notNull(),
+  provenanceJson:     text("provenanceJson").notNull(),
+  recordedAt:         timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  sourceEventIdx:     index("symbolEventOutcomes_source_event_idx").on(t.sourceEventType, t.sourceEventKey),
+  symbolHorizonIdx:   index("symbolEventOutcomes_symbol_horizon_idx").on(t.symbol, t.horizonTradingDays),
+}));
+export type SymbolEventOutcome = typeof symbolEventOutcomes.$inferSelect;
+export type InsertSymbolEventOutcome = typeof symbolEventOutcomes.$inferInsert;
+
+/** Project-owned schedule metadata for the daily immutable continuity capture. */
+export const risingStarHistoryJobs = mysqlTable("risingStarHistoryJobs", {
+  id:                 int("id").autoincrement().primaryKey(),
+  jobKey:             varchar("jobKey", { length: 64 }).notNull().unique(),
+  scheduleCronTaskUid: varchar("scheduleCronTaskUid", { length: 65 }),
+  cronExpression:     varchar("cronExpression", { length: 64 }).notNull(),
+  lastRunAt:          timestamp("lastRunAt"),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:          timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RisingStarHistoryJob = typeof risingStarHistoryJobs.$inferSelect;
+export type InsertRisingStarHistoryJob = typeof risingStarHistoryJobs.$inferInsert;
+
+// ── Institutional Memory — Immutable Verified Events ─────────────────────────
+/**
+ * Cross-engine append-only ledger of observations FAULTLINE actually recorded.
+ * Event payloads are never updated: later market effects belong in
+ * institutionalEventOutcomes, not in the original observation.
+ */
+export const institutionalEvents = mysqlTable("institutionalEvents", {
+  id:                  int("id").autoincrement().primaryKey(),
+  eventKey:            varchar("eventKey", { length: 220 }).notNull().unique(),
+  eventType:           varchar("eventType", { length: 96 }).notNull(),
+  sourceEngine:        varchar("sourceEngine", { length: 96 }).notNull(),
+  entityType:          varchar("entityType", { length: 64 }).notNull().default("market"),
+  entityId:            varchar("entityId", { length: 96 }),
+  assetClass:          varchar("assetClass", { length: 48 }),
+  severity:            mysqlEnum("severity", ["info", "low", "moderate", "high", "critical"]).notNull().default("info"),
+  direction:           mysqlEnum("direction", ["improving", "deteriorating", "stable", "neutral"]).notNull().default("neutral"),
+  eventAt:             timestamp("eventAt").notNull(),
+  sourceObservedAt:    timestamp("sourceObservedAt"),
+  dataFreshness:       varchar("dataFreshness", { length: 32 }).notNull(),
+  pressureIndex:       int("pressureIndex"),
+  marketRegime:        varchar("marketRegime", { length: 96 }),
+  magnitude:           decimal("magnitude", { precision: 18, scale: 6 }),
+  relevantValue:       decimal("relevantValue", { precision: 18, scale: 6 }),
+  headline:            varchar("headline", { length: 255 }).notNull(),
+  explanation:         text("explanation").notNull(),
+  previousStateJson:   text("previousStateJson"),
+  newStateJson:        text("newStateJson").notNull(),
+  supportingStateJson: text("supportingStateJson").notNull(),
+  historyClass:        mysqlEnum("historyClass", ["live_verified"]).notNull().default("live_verified"),
+  recordedAt:          timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  eventAtIdx:       index("institutionalEvents_eventAt_idx").on(t.eventAt),
+  sourceTypeIdx:    index("institutionalEvents_sourceType_idx").on(t.sourceEngine, t.eventType),
+  regimeIdx:        index("institutionalEvents_regime_idx").on(t.marketRegime),
+  severityIdx:      index("institutionalEvents_severity_idx").on(t.severity),
+  entityIdx:        index("institutionalEvents_entity_idx").on(t.entityType, t.entityId),
+}));
+export type InstitutionalEvent = typeof institutionalEvents.$inferSelect;
+export type InsertInstitutionalEvent = typeof institutionalEvents.$inferInsert;
+
+/** Append-only subsequent market effects; never modifies the original event. */
+export const institutionalEventOutcomes = mysqlTable("institutionalEventOutcomes", {
+  id:                 int("id").autoincrement().primaryKey(),
+  outcomeKey:         varchar("outcomeKey", { length: 240 }).notNull().unique(),
+  eventId:            int("eventId").notNull(),
+  horizonTradingDays: int("horizonTradingDays").notNull(),
+  observedAt:         timestamp("observedAt").notNull(),
+  outcomeJson:        text("outcomeJson").notNull(),
+  provenanceJson:     text("provenanceJson").notNull(),
+  recordedAt:         timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  eventIdx:           index("institutionalEventOutcomes_event_idx").on(t.eventId),
+  horizonIdx:         index("institutionalEventOutcomes_horizon_idx").on(t.horizonTradingDays),
+}));
+export type InstitutionalEventOutcome = typeof institutionalEventOutcomes.$inferSelect;
+export type InsertInstitutionalEventOutcome = typeof institutionalEventOutcomes.$inferInsert;
+
+/**
+ * Phase 6 Early Warning Intelligence identity ledger. Original evidence is
+ * immutable; mutable fields are a convenience pointer to the latest governed
+ * lifecycle observation and never replace original provenance.
+ */
+export const earlyWarnings = mysqlTable("earlyWarnings", {
+  id:                       int("id").autoincrement().primaryKey(),
+  warningId:                varchar("warningId", { length: 96 }).notNull().unique(),
+  candidateType:            varchar("candidateType", { length: 96 }).notNull(),
+  title:                    varchar("title", { length: 255 }).notNull(),
+  originalStateId:          varchar("originalStateId", { length: 128 }).notNull(),
+  originalSynthesisId:      varchar("originalSynthesisId", { length: 128 }).notNull(),
+  originalEffectiveAt:      timestamp("originalEffectiveAt").notNull(),
+  originalScore:            int("originalScore").notNull(),
+  originalLifecycleState:   varchar("originalLifecycleState", { length: 32 }).notNull(),
+  originalPayloadJson:      text("originalPayloadJson").notNull(),
+  currentStateId:           varchar("currentStateId", { length: 128 }).notNull(),
+  currentSynthesisId:       varchar("currentSynthesisId", { length: 128 }).notNull(),
+  currentScore:             int("currentScore").notNull(),
+  currentLifecycleState:    varchar("currentLifecycleState", { length: 32 }).notNull(),
+  currentQualificationState:varchar("currentQualificationState", { length: 32 }).notNull(),
+  isActive:                 boolean("isActive").notNull().default(true),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:                timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  activeIdx: index("earlyWarnings_active_idx").on(t.isActive, t.currentScore),
+  stateIdx: index("earlyWarnings_currentState_idx").on(t.currentStateId),
+  synthesisIdx: index("earlyWarnings_currentSynthesis_idx").on(t.currentSynthesisId),
+}));
+export type EarlyWarning = typeof earlyWarnings.$inferSelect;
+export type InsertEarlyWarning = typeof earlyWarnings.$inferInsert;
+
+/** Append-only governed warning observations; never rewrites original history. */
+export const earlyWarningObservations = mysqlTable("earlyWarningObservations", {
+  id:                  int("id").autoincrement().primaryKey(),
+  observationKey:      varchar("observationKey", { length: 220 }).notNull().unique(),
+  warningId:           varchar("warningId", { length: 96 }).notNull(),
+  originatingStateId:  varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId: varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  observedAt:          timestamp("observedAt").notNull(),
+  observationType:     varchar("observationType", { length: 64 }).notNull(),
+  lifecycleState:      varchar("lifecycleState", { length: 32 }).notNull(),
+  qualificationState:  varchar("qualificationState", { length: 32 }).notNull(),
+  warningScore:        int("warningScore").notNull(),
+  observationPayloadJson: text("observationPayloadJson").notNull(),
+  provenanceJson:      text("provenanceJson").notNull(),
+  recordedAt:          timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  warningObservedIdx: index("earlyWarningObservations_warningObserved_idx").on(t.warningId, t.observedAt),
+  synthesisIdx: index("earlyWarningObservations_synthesis_idx").on(t.originatingSynthesisId),
+}));
+export type EarlyWarningObservation = typeof earlyWarningObservations.$inferSelect;
+export type InsertEarlyWarningObservation = typeof earlyWarningObservations.$inferInsert;
+
+/**
+ * Phase 6R candidate-detection ledger. These records are not qualified
+ * warnings: original detection evidence remains immutable and later candidate
+ * observations are append-only without lifecycle, confirmation, invalidation,
+ * ranking, or publication semantics.
+ */
+export const candidateDetections = mysqlTable("candidateDetections", {
+  id:                       int("id").autoincrement().primaryKey(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull().unique(),
+  candidateType:            varchar("candidateType", { length: 96 }).notNull(),
+  title:                    varchar("title", { length: 255 }).notNull(),
+  originalStateId:          varchar("originalStateId", { length: 128 }).notNull(),
+  originalSynthesisId:      varchar("originalSynthesisId", { length: 128 }).notNull(),
+  originalEffectiveAt:      timestamp("originalEffectiveAt").notNull(),
+  originalPayloadJson:      text("originalPayloadJson").notNull(),
+  detectorId:               varchar("detectorId", { length: 96 }).notNull(),
+  detectorVersion:          varchar("detectorVersion", { length: 32 }).notNull(),
+  detectorConfigVersion:    varchar("detectorConfigVersion", { length: 96 }).notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  stateIdx: index("candidateDetections_state_idx").on(t.originalStateId),
+  synthesisIdx: index("candidateDetections_synthesis_idx").on(t.originalSynthesisId),
+}));
+export type CandidateDetectionRow = typeof candidateDetections.$inferSelect;
+export type InsertCandidateDetectionRow = typeof candidateDetections.$inferInsert;
+
+/** Append-only Phase 6 candidate observation history; no warning lifecycle state is stored. */
+export const candidateDetectionObservations = mysqlTable("candidateDetectionObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  observationKey:           varchar("observationKey", { length: 220 }).notNull().unique(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull(),
+  originatingStateId:       varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId:   varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  observedAt:               timestamp("observedAt").notNull(),
+  observationType:          varchar("observationType", { length: 64 }).notNull(),
+  observationPayloadJson:   text("observationPayloadJson").notNull(),
+  provenanceJson:           text("provenanceJson").notNull(),
+  recordedAt:               timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  candidateObservedIdx: index("candidateDetectionObservations_candidateObserved_idx").on(t.candidateId, t.observedAt),
+  synthesisIdx: index("candidateDetectionObservations_synthesis_idx").on(t.originatingSynthesisId),
+}));
+export type CandidateDetectionObservation = typeof candidateDetectionObservations.$inferSelect;
+export type InsertCandidateDetectionObservation = typeof candidateDetectionObservations.$inferInsert;
+
+/**
+ * Phase 7 append-only scoring and qualification evaluations. A row represents
+ * one deterministic evaluation transaction and never mutates the Phase 6
+ * candidate or any earlier evaluation.
+ */
+export const importanceQualificationEvaluations = mysqlTable("importanceQualificationEvaluations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  evaluationId:             varchar("evaluationId", { length: 128 }).notNull().unique(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull(),
+  originatingStateId:       varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId:   varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  evaluatedAt:              timestamp("evaluatedAt").notNull(),
+  importanceScore:          int("importanceScore").notNull(),
+  qualificationStatus:      varchar("qualificationStatus", { length: 32 }).notNull(),
+  qualificationRank:        int("qualificationRank"),
+  isPrimary:                boolean("isPrimary").notNull().default(false),
+  factorTraceJson:          text("factorTraceJson").notNull(),
+  qualificationReasonsJson: text("qualificationReasonsJson").notNull(),
+  suppressionReasonsJson:   text("suppressionReasonsJson").notNull(),
+  evidenceClaimIdsJson:     text("evidenceClaimIdsJson").notNull(),
+  relationshipIdsJson:      text("relationshipIdsJson").notNull(),
+  limitationsJson:          text("limitationsJson").notNull(),
+  scoringModelId:           varchar("scoringModelId", { length: 96 }).notNull(),
+  scoringModelVersion:      varchar("scoringModelVersion", { length: 32 }).notNull(),
+  scoringConfigVersion:     varchar("scoringConfigVersion", { length: 96 }).notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  candidateIdx: index("importanceQualificationEvaluations_candidate_idx").on(t.candidateId, t.evaluatedAt),
+  stateIdx: index("importanceQualificationEvaluations_state_idx").on(t.originatingStateId),
+  statusIdx: index("importanceQualificationEvaluations_status_idx").on(t.qualificationStatus, t.importanceScore),
+}));
+export type ImportanceQualificationEvaluationRow = typeof importanceQualificationEvaluations.$inferSelect;
+export type InsertImportanceQualificationEvaluationRow = typeof importanceQualificationEvaluations.$inferInsert;
+
+/**
+ * Phase 8 lifecycle identity and current projection. The projection is only a
+ * read optimization; append-only lifecycle observations remain historical truth.
+ */
+export const earlyWarningLifecycles = mysqlTable("earlyWarningLifecycles", {
+  id:                       int("id").autoincrement().primaryKey(),
+  lifecycleId:              varchar("lifecycleId", { length: 128 }).notNull().unique(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull().unique(),
+  originatingStateId:       varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId:   varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  openedAt:                 timestamp("openedAt").notNull(),
+  currentLifecycleState:    varchar("currentLifecycleState", { length: 32 }).notNull(),
+  latestObservationAt:      timestamp("latestObservationAt").notNull(),
+  latestQualificationEvaluationId: varchar("latestQualificationEvaluationId", { length: 128 }).notNull(),
+  qualifyingObservationCount: int("qualifyingObservationCount").notNull().default(0),
+  nonQualifyingObservationCount: int("nonQualifyingObservationCount").notNull().default(0),
+  lifecycleModelId:         varchar("lifecycleModelId", { length: 96 }).notNull(),
+  lifecycleModelVersion:    varchar("lifecycleModelVersion", { length: 32 }).notNull(),
+  lifecycleConfigVersion:   varchar("lifecycleConfigVersion", { length: 96 }).notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:                timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  currentStateIdx: index("earlyWarningLifecycles_state_idx").on(t.currentLifecycleState, t.latestObservationAt),
+  stateIdx: index("earlyWarningLifecycles_origin_state_idx").on(t.originatingStateId),
+}));
+export type EarlyWarningLifecycle = typeof earlyWarningLifecycles.$inferSelect;
+export type InsertEarlyWarningLifecycle = typeof earlyWarningLifecycles.$inferInsert;
+
+/**
+ * Phase 8 append-only lifecycle evidence. It never overwrites the Phase 6
+ * candidate or the Phase 7 qualification evaluation that caused the transition.
+ */
+export const earlyWarningLifecycleObservations = mysqlTable("earlyWarningLifecycleObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  lifecycleObservationId:   varchar("lifecycleObservationId", { length: 160 }).notNull().unique(),
+  lifecycleId:              varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId:              varchar("candidateId", { length: 128 }).notNull(),
+  qualificationEvaluationId:varchar("qualificationEvaluationId", { length: 128 }).notNull(),
+  originatingStateId:       varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId:   varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  effectiveAt:              timestamp("effectiveAt").notNull(),
+  observedAt:               timestamp("observedAt").notNull(),
+  previousLifecycleState:   varchar("previousLifecycleState", { length: 32 }),
+  newLifecycleState:        varchar("newLifecycleState", { length: 32 }).notNull(),
+  importanceScore:          int("importanceScore").notNull(),
+  qualificationStatus:      varchar("qualificationStatus", { length: 32 }).notNull(),
+  evidenceStrength:         varchar("evidenceStrength", { length: 32 }).notNull(),
+  dataQuality:              varchar("dataQuality", { length: 32 }).notNull(),
+  persistenceCount:         int("persistenceCount").notNull().default(0),
+  nonQualifyingCount:       int("nonQualifyingCount").notNull().default(0),
+  transitionReasonCode:     varchar("transitionReasonCode", { length: 64 }).notNull(),
+  transitionInputsJson:     text("transitionInputsJson").notNull(),
+  limitationsJson:          text("limitationsJson").notNull(),
+  lifecycleModelId:         varchar("lifecycleModelId", { length: 96 }).notNull(),
+  lifecycleModelVersion:    varchar("lifecycleModelVersion", { length: 32 }).notNull(),
+  lifecycleConfigVersion:   varchar("lifecycleConfigVersion", { length: 96 }).notNull(),
+  recordedAt:               timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({
+  lifecycleObservedIdx: index("earlyWarningLifecycleObservations_lifecycle_idx").on(t.lifecycleId, t.effectiveAt),
+  candidateObservedIdx: index("earlyWarningLifecycleObservations_candidate_idx").on(t.candidateId, t.effectiveAt),
+  evaluationIdx: index("earlyWarningLifecycleObservations_evaluation_idx").on(t.qualificationEvaluationId),
+  stateIdx: index("earlyWarningLifecycleObservations_state_idx").on(t.originatingStateId),
+}));
+export type EarlyWarningLifecycleObservation = typeof earlyWarningLifecycleObservations.$inferSelect;
+export type InsertEarlyWarningLifecycleObservation = typeof earlyWarningLifecycleObservations.$inferInsert;
+
+/** Phase 9 structural thesis identity, derived only from governed Phase 5–8 objects. */
+export const phase9WarningTheses = mysqlTable("phase9WarningTheses", {
+  id: int("id").autoincrement().primaryKey(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull().unique(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull().unique(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  candidateType: varchar("candidateType", { length: 64 }).notNull(),
+  originatingStateId: varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId: varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  thesisType: varchar("thesisType", { length: 96 }).notNull(),
+  thesisStatementCode: varchar("thesisStatementCode", { length: 160 }).notNull(),
+  thesisPayloadJson: text("thesisPayloadJson").notNull(),
+  thesisModelId: varchar("thesisModelId", { length: 96 }).notNull(),
+  thesisModelVersion: varchar("thesisModelVersion", { length: 32 }).notNull(),
+  thesisConfigVersion: varchar("thesisConfigVersion", { length: 96 }).notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ candidateIdx: index("phase9WarningTheses_candidate_idx").on(t.candidateId), stateIdx: index("phase9WarningTheses_state_idx").on(t.originatingStateId) }));
+export type Phase9WarningThesis = typeof phase9WarningTheses.$inferSelect;
+
+/** Immutable effective rule plan. A rule version change creates a new row, never rewrites this plan. */
+export const phase9ConfirmationPlans = mysqlTable("phase9ConfirmationPlans", {
+  id: int("id").autoincrement().primaryKey(),
+  planId: varchar("planId", { length: 128 }).notNull().unique(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  candidateType: varchar("candidateType", { length: 64 }).notNull(),
+  planPayloadJson: text("planPayloadJson").notNull(),
+  ruleModelVersion: varchar("ruleModelVersion", { length: 32 }).notNull(),
+  ruleConfigVersion: varchar("ruleConfigVersion", { length: 96 }).notNull(),
+  ruleSetVersion: varchar("ruleSetVersion", { length: 96 }).notNull(),
+  effectiveAt: timestamp("effectiveAt").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ lifecycleRuleIdx: index("phase9ConfirmationPlans_lifecycle_rule_idx").on(t.lifecycleId, t.ruleSetVersion, t.ruleConfigVersion), thesisIdx: index("phase9ConfirmationPlans_thesis_idx").on(t.thesisId) }));
+export type Phase9ConfirmationPlan = typeof phase9ConfirmationPlans.$inferSelect;
+
+/** Append-only per-condition Phase 9 evidence evaluation. */
+export const phase9ConditionEvaluations = mysqlTable("phase9ConditionEvaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  evaluationId: varchar("evaluationId", { length: 160 }).notNull().unique(),
+  planId: varchar("planId", { length: 128 }).notNull(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  conditionId: varchar("conditionId", { length: 128 }).notNull(),
+  originatingStateId: varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId: varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  effectiveAt: timestamp("effectiveAt").notNull(),
+  status: varchar("status", { length: 40 }).notNull(),
+  observedValueJson: text("observedValueJson").notNull(),
+  requiredRuleJson: text("requiredRuleJson").notNull(),
+  dataQuality: varchar("dataQuality", { length: 32 }).notNull(),
+  evidenceStrength: varchar("evidenceStrength", { length: 32 }).notNull(),
+  evidenceClaimIdsJson: text("evidenceClaimIdsJson").notNull(),
+  evidenceIndependence: varchar("evidenceIndependence", { length: 48 }).notNull(),
+  ruleSetVersion: varchar("ruleSetVersion", { length: 96 }).notNull(),
+  ruleConfigVersion: varchar("ruleConfigVersion", { length: 96 }).notNull(),
+  limitationsJson: text("limitationsJson").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ planStateIdx: index("phase9ConditionEvaluations_plan_state_idx").on(t.planId, t.effectiveAt), lifecycleIdx: index("phase9ConditionEvaluations_lifecycle_idx").on(t.lifecycleId, t.effectiveAt) }));
+export type Phase9ConditionEvaluationRow = typeof phase9ConditionEvaluations.$inferSelect;
+
+/** Append-only plan-level result, used as the only source for derived current projection and typed events. */
+export const phase9PlanEvaluations = mysqlTable("phase9PlanEvaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  planEvaluationId: varchar("planEvaluationId", { length: 160 }).notNull().unique(),
+  planId: varchar("planId", { length: 128 }).notNull(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  originatingStateId: varchar("originatingStateId", { length: 128 }).notNull(),
+  originatingSynthesisId: varchar("originatingSynthesisId", { length: 128 }).notNull(),
+  effectiveAt: timestamp("effectiveAt").notNull(),
+  lifecycleState: varchar("lifecycleState", { length: 32 }).notNull(),
+  confirmationStatus: varchar("confirmationStatus", { length: 40 }).notNull(),
+  invalidationStatus: varchar("invalidationStatus", { length: 40 }).notNull(),
+  result: varchar("result", { length: 64 }).notNull(),
+  conditionEvaluationIdsJson: text("conditionEvaluationIdsJson").notNull(),
+  evidenceClaimIdsJson: text("evidenceClaimIdsJson").notNull(),
+  limitationsJson: text("limitationsJson").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ planEffectiveIdx: index("phase9PlanEvaluations_plan_effective_idx").on(t.planId, t.effectiveAt), lifecycleEffectiveIdx: index("phase9PlanEvaluations_lifecycle_effective_idx").on(t.lifecycleId, t.effectiveAt) }));
+export type Phase9PlanEvaluationRow = typeof phase9PlanEvaluations.$inferSelect;
+
+/** The only Phase 9 authority that Phase 8 may consume to unlock dormant confirmation/invalidation states. */
+export const phase9AuthorityEvents = mysqlTable("phase9AuthorityEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  phase9EventId: varchar("phase9EventId", { length: 160 }).notNull().unique(),
+  planId: varchar("planId", { length: 128 }).notNull(),
+  thesisId: varchar("thesisId", { length: 128 }).notNull(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull(),
+  candidateId: varchar("candidateId", { length: 128 }).notNull(),
+  eventType: varchar("eventType", { length: 48 }).notNull(),
+  originatingStateId: varchar("originatingStateId", { length: 128 }).notNull(),
+  effectiveAt: timestamp("effectiveAt").notNull(),
+  conditionEvaluationIdsJson: text("conditionEvaluationIdsJson").notNull(),
+  evidenceClaimIdsJson: text("evidenceClaimIdsJson").notNull(),
+  ruleSetVersion: varchar("ruleSetVersion", { length: 96 }).notNull(),
+  ruleConfigVersion: varchar("ruleConfigVersion", { length: 96 }).notNull(),
+  limitationsJson: text("limitationsJson").notNull(),
+  createdAt: timestamp("createdAt").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+}, (t) => ({ lifecycleEventIdx: index("phase9AuthorityEvents_lifecycle_event_idx").on(t.lifecycleId, t.effectiveAt), planEventIdx: index("phase9AuthorityEvents_plan_event_idx").on(t.planId, t.effectiveAt) }));
+export type Phase9AuthorityEventRow = typeof phase9AuthorityEvents.$inferSelect;
+
+/** Read optimization only; append-only Phase 9 plan evaluations/events remain historical truth. */
+export const phase9CurrentProjections = mysqlTable("phase9CurrentProjections", {
+  id: int("id").autoincrement().primaryKey(),
+  lifecycleId: varchar("lifecycleId", { length: 128 }).notNull().unique(),
+  planId: varchar("planId", { length: 128 }).notNull(),
+  latestPlanEvaluationId: varchar("latestPlanEvaluationId", { length: 160 }).notNull(),
+  latestAuthorityEventId: varchar("latestAuthorityEventId", { length: 160 }),
+  latestResult: varchar("latestResult", { length: 64 }).notNull(),
+  latestEffectiveAt: timestamp("latestEffectiveAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({ planIdx: index("phase9CurrentProjections_plan_idx").on(t.planId, t.latestEffectiveAt) }));
+export type Phase9CurrentProjection = typeof phase9CurrentProjections.$inferSelect;
+
+/** Operational health record for the project-owned institutional-memory jobs. */
+export const institutionalMemoryJobs = mysqlTable("institutionalMemoryJobs", {
+  id:                 int("id").autoincrement().primaryKey(),
+  jobKey:             varchar("jobKey", { length: 96 }).notNull().unique(),
+  scheduleCronTaskUid:varchar("scheduleCronTaskUid", { length: 65 }),
+  cronExpression:     varchar("cronExpression", { length: 64 }).notNull(),
+  lastRunAt:          timestamp("lastRunAt"),
+  lastSuccessAt:      timestamp("lastSuccessAt"),
+  lastFailureAt:      timestamp("lastFailureAt"),
+  lastFailureMessage: text("lastFailureMessage"),
+  createdAt:          timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:          timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type InstitutionalMemoryJob = typeof institutionalMemoryJobs.$inferSelect;
+export type InsertInstitutionalMemoryJob = typeof institutionalMemoryJobs.$inferInsert;
+
 // ── Visitor Profiles ─────────────────────────────────────────────────────────
 /**
  * One row per anonymous visitor (identified by a stable localStorage UUID).
@@ -892,6 +1691,8 @@ export const organicContent = mysqlTable("organicContent", {
   pressureScore:        int("pressureScore"),
   /** Market regime label at time of generation */
   regime:               varchar("regime", { length: 80 }),
+  /** Authoritative Daily Brief snapshot used for this article, when applicable */
+  briefSnapshotId:      varchar("briefSnapshotId", { length: 64 }),
   publishedAt:          timestamp("publishedAt"),
   createdAt:            timestamp("createdAt").defaultNow().notNull(),
   updatedAt:            timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -899,9 +1700,203 @@ export const organicContent = mysqlTable("organicContent", {
   slugIdx:        index("organicContent_slug_idx").on(t.slug),
   typeStatusIdx:  index("organicContent_type_status_idx").on(t.contentType, t.status),
   publishedAtIdx: index("organicContent_publishedAt_idx").on(t.publishedAt),
+  briefSnapshotIdx: index("organicContent_briefSnapshotId_idx").on(t.briefSnapshotId),
 }));
 export type OrganicContent = typeof organicContent.$inferSelect;
 export type InsertOrganicContent = typeof organicContent.$inferInsert;
+
+// ── Daily Brief Snapshot Ledger ───────────────────────────────
+/**
+ * Immutable generation-time intelligence snapshot for a Daily Brief. It stores
+ * the exact proprietary outputs, input provenance/freshness, validation result,
+ * and prompt version that the published article must represent.
+ */
+export const dailyBriefSnapshots = mysqlTable("dailyBriefSnapshots", {
+  id:                  int("id").autoincrement().primaryKey(),
+  snapshotId:          varchar("snapshotId", { length: 64 }).notNull().unique(),
+  briefDateEt:         varchar("briefDateEt", { length: 10 }).notNull(),
+  tradingDate:         varchar("tradingDate", { length: 10 }),
+  generatedAt:         timestamp("generatedAt").notNull(),
+  engineComputedAt:    timestamp("engineComputedAt"),
+  seismographComputedAt: timestamp("seismographComputedAt"),
+  /** generating | blocked | published | draft */
+  status:              mysqlEnum("status", ["generating", "blocked", "published", "draft"]).default("generating").notNull(),
+  articleId:           int("articleId"),
+  promptVersion:       varchar("promptVersion", { length: 40 }).notNull(),
+  modelVersion:        varchar("modelVersion", { length: 80 }),
+  /** Forward-only canonical origin. Legacy rows intentionally remain null. */
+  originatingStateId:  varchar("originatingStateId", { length: 96 }),
+  originatingEffectiveAt: timestamp("originatingEffectiveAt"),
+  originatingGeneratedAt: timestamp("originatingGeneratedAt"),
+  originatingModelVersion: varchar("originatingModelVersion", { length: 96 }),
+  originatingConfigurationVersion: varchar("originatingConfigurationVersion", { length: 96 }),
+  originatingInputSnapshotId: varchar("originatingInputSnapshotId", { length: 128 }),
+  /** Full source-of-truth payload consumed by the prompt and UI. */
+  snapshotJson:        text("snapshotJson").notNull(),
+  /** Per-input provenance, expected cadence, as-of, and freshness. */
+  inputFreshnessJson:  text("inputFreshnessJson").notNull(),
+  /** Pre-publication consistency and narrative validation outcomes. */
+  validationJson:      text("validationJson").notNull(),
+  warningsJson:        text("warningsJson"),
+  createdAt:           timestamp("createdAt").defaultNow().notNull(),
+  updatedAt:           timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (t) => ({
+  snapshotIdIdx: index("dailyBriefSnapshots_snapshotId_idx").on(t.snapshotId),
+  briefDateIdx: index("dailyBriefSnapshots_briefDateEt_idx").on(t.briefDateEt),
+  articleIdIdx: index("dailyBriefSnapshots_articleId_idx").on(t.articleId),
+  originatingStateIdIdx: index("dailyBriefSnapshots_originatingStateId_idx").on(t.originatingStateId),
+}));
+export type DailyBriefSnapshot = typeof dailyBriefSnapshots.$inferSelect;
+export type InsertDailyBriefSnapshot = typeof dailyBriefSnapshots.$inferInsert;
+
+// ── Phase 1B Intelligence Governance Ledgers ──────────────────
+/**
+ * One append-only, internally coherent intelligence snapshot. This ledger
+ * governs state identity only; it never replaces Pressure runs or mutates
+ * Champion scoring.
+ */
+export const intelligenceStateManifests = mysqlTable("intelligenceStateManifests", {
+  id:                   int("id").autoincrement().primaryKey(),
+  stateId:              varchar("stateId", { length: 96 }).notNull().unique(),
+  generatedAt:          timestamp("generatedAt").notNull(),
+  championVersion:      varchar("championVersion", { length: 96 }).notNull(),
+  modelVersion:         varchar("modelVersion", { length: 96 }).notNull(),
+  scoringVersion:       varchar("scoringVersion", { length: 96 }).notNull(),
+  configurationVersion: varchar("configurationVersion", { length: 96 }).notNull(),
+  inputSnapshotId:      varchar("inputSnapshotId", { length: 128 }).notNull(),
+  stateHash:            varchar("stateHash", { length: 128 }).notNull(),
+  coherenceStatus:      mysqlEnum("coherenceStatus", ["COHERENT", "EXPLICIT_MISMATCH", "UNAVAILABLE"]).notNull(),
+  manifestJson:         text("manifestJson").notNull(),
+  createdAt:            timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  generatedAtIdx: index("intelligenceStateManifests_generatedAt_idx").on(t.generatedAt),
+  coherenceIdx: index("intelligenceStateManifests_coherence_idx").on(t.coherenceStatus),
+}));
+export type IntelligenceStateManifest = typeof intelligenceStateManifests.$inferSelect;
+export type InsertIntelligenceStateManifest = typeof intelligenceStateManifests.$inferInsert;
+
+/**
+ * Claim observations are immutable, state-bound governance records. A numerical
+ * scenario, analog similarity, historical frequency, or evidence confidence
+ * cannot be displayed predictively unless its claim contract says it is eligible.
+ */
+export const governedIntelligenceClaims = mysqlTable("governedIntelligenceClaims", {
+  id:               int("id").autoincrement().primaryKey(),
+  claimObservationKey: varchar("claimObservationKey", { length: 220 }).notNull().unique(),
+  stateId:          varchar("stateId", { length: 96 }).notNull(),
+  claimId:          varchar("claimId", { length: 160 }).notNull(),
+  claimType:        mysqlEnum("claimType", ["MODEL_PROBABILITY", "HISTORICAL_FREQUENCY", "ANALOG_SIMILARITY", "EVIDENCE_CONFIDENCE", "DERIVED_SCENARIO_SCORE", "DERIVED_SCENARIO_COMPONENT", "UNSUPPORTED"]).notNull(),
+  eventDefinition:  text("eventDefinition"),
+  timeHorizon:      varchar("timeHorizon", { length: 128 }),
+  valueNumeric:     double("valueNumeric"),
+  unit:             varchar("unit", { length: 64 }).notNull(),
+  sourceModel:      varchar("sourceModel", { length: 128 }).notNull(),
+  modelVersion:     varchar("modelVersion", { length: 96 }).notNull(),
+  methodology:      text("methodology").notNull(),
+  sampleSize:       int("sampleSize"),
+  datasetSpan:      varchar("datasetSpan", { length: 128 }),
+  confidence:       varchar("confidence", { length: 64 }).notNull(),
+  generatedAt:      timestamp("generatedAt").notNull(),
+  evidenceStatus:   mysqlEnum("evidenceStatus", ["SUPPORTED", "SUPPORTED_WITH_QUALIFICATION", "UNSUPPORTED", "UNVERIFIED", "RESEARCH_ONLY"]).notNull(),
+  displayStatus:    mysqlEnum("displayStatus", ["PREDICTIVE_ELIGIBLE", "DISPLAY_WITH_QUALIFICATION", "SUPPRESS_PREDICTIVE_PRESENTATION", "INTERNAL_ONLY"]).notNull(),
+  metadataJson:     text("metadataJson").notNull(),
+  createdAt:        timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  stateIdx: index("governedIntelligenceClaims_state_idx").on(t.stateId),
+  claimIdx: index("governedIntelligenceClaims_claim_idx").on(t.claimId),
+  statusIdx: index("governedIntelligenceClaims_status_idx").on(t.evidenceStatus, t.displayStatus),
+}));
+export type GovernedIntelligenceClaim = typeof governedIntelligenceClaims.$inferSelect;
+export type InsertGovernedIntelligenceClaim = typeof governedIntelligenceClaims.$inferInsert;
+
+/**
+ * Immutable original research observation. It records what was known at the
+ * stated cutoff; later outcomes must be appended to the resolution ledger.
+ */
+export const governedResearchObservations = mysqlTable("governedResearchObservations", {
+  id:                       int("id").autoincrement().primaryKey(),
+  observationKey:           varchar("observationKey", { length: 220 }).notNull().unique(),
+  observationVersion:       varchar("observationVersion", { length: 96 }).notNull(),
+  historyClass:             mysqlEnum("historyClass", ["live_verified", "reconstructed_research", "revised_data_reconstruction", "proxy_reconstruction"]).notNull(),
+  observationDate:          timestamp("observationDate").notNull(),
+  informationCutoff:        timestamp("informationCutoff").notNull(),
+  inputSnapshotId:          varchar("inputSnapshotId", { length: 128 }),
+  sourceModel:              varchar("sourceModel", { length: 128 }).notNull(),
+  modelVersion:             varchar("modelVersion", { length: 96 }).notNull(),
+  originalStateJson:        text("originalStateJson").notNull(),
+  originalInterpretation:   text("originalInterpretation"),
+  outcomeDefinition:        text("outcomeDefinition"),
+  outcomeWindow:            varchar("outcomeWindow", { length: 128 }),
+  sourceDataVersionsJson:   text("sourceDataVersionsJson").notNull(),
+  createdAt:                timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  observedAtIdx: index("governedResearchObservations_observed_idx").on(t.observationDate),
+  classIdx: index("governedResearchObservations_class_idx").on(t.historyClass),
+}));
+export type GovernedResearchObservation = typeof governedResearchObservations.$inferSelect;
+export type InsertGovernedResearchObservation = typeof governedResearchObservations.$inferInsert;
+
+/** Later resolution of an immutable research observation; never mutates it. */
+export const governedResearchResolutions = mysqlTable("governedResearchResolutions", {
+  id:                     int("id").autoincrement().primaryKey(),
+  resolutionKey:          varchar("resolutionKey", { length: 220 }).notNull().unique(),
+  observationId:          int("observationId").notNull(),
+  resolutionVersion:      varchar("resolutionVersion", { length: 96 }).notNull(),
+  outcomeValueJson:       text("outcomeValueJson").notNull(),
+  resolvedAt:             timestamp("resolvedAt").notNull(),
+  sourceDataVersionsJson: text("sourceDataVersionsJson").notNull(),
+  createdAt:              timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  observationFk: foreignKey({
+    columns: [t.observationId],
+    foreignColumns: [governedResearchObservations.id],
+    name: "governedResearchResolutions_observation_fk",
+  }).onDelete("restrict"),
+  observationIdx: index("governedResearchResolutions_observation_idx").on(t.observationId),
+  resolvedAtIdx: index("governedResearchResolutions_resolved_idx").on(t.resolvedAt),
+}));
+export type GovernedResearchResolution = typeof governedResearchResolutions.$inferSelect;
+export type InsertGovernedResearchResolution = typeof governedResearchResolutions.$inferInsert;
+
+/** Immutable original forecast record. It never upgrades an interpretation into a forecast. */
+export const forecastObservations = mysqlTable("forecastObservations", {
+  id:                  int("id").autoincrement().primaryKey(),
+  forecastKey:         varchar("forecastKey", { length: 220 }).notNull().unique(),
+  sourceType:          varchar("sourceType", { length: 96 }).notNull(),
+  sourceKey:           varchar("sourceKey", { length: 220 }).notNull(),
+  sourceModel:         varchar("sourceModel", { length: 128 }).notNull(),
+  modelVersion:        varchar("modelVersion", { length: 96 }).notNull(),
+  evidenceClass:       mysqlEnum("evidenceClass", ["OBSERVED", "DERIVED", "HISTORICAL", "INTERPRETED", "FORECAST"]).notNull(),
+  horizonStatus:       mysqlEnum("horizonStatus", ["SUPPORTED", "NOT_ESTABLISHED", "INSUFFICIENT_EVIDENCE"]).notNull(),
+  forecastGeneratedAt: timestamp("forecastGeneratedAt").notNull(),
+  forecastExpiresAt:   timestamp("forecastExpiresAt"),
+  originalForecastJson:text("originalForecastJson").notNull(),
+  sourceVersionsJson:  text("sourceVersionsJson").notNull(),
+  createdAt:           timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  sourceIdx: index("forecastObservations_source_idx").on(t.sourceType, t.sourceKey),
+  generatedIdx: index("forecastObservations_generated_idx").on(t.forecastGeneratedAt),
+}));
+export type ForecastObservation = typeof forecastObservations.$inferSelect;
+export type InsertForecastObservation = typeof forecastObservations.$inferInsert;
+
+/** Append-only later measurement of a forecast observation; never overwrites the original. */
+export const forecastResolutions = mysqlTable("forecastResolutions", {
+  id:                    int("id").autoincrement().primaryKey(),
+  resolutionKey:         varchar("resolutionKey", { length: 220 }).notNull().unique(),
+  forecastObservationId: int("forecastObservationId").notNull(),
+  resolutionStatus:      mysqlEnum("resolutionStatus", ["PENDING", "TARGET_REACHED", "INVALIDATED", "EXPIRED", "UNAVAILABLE"]).notNull(),
+  resolvedAt:            timestamp("resolvedAt").notNull(),
+  outcomeValueJson:      text("outcomeValueJson").notNull(),
+  sourceVersionsJson:    text("sourceVersionsJson").notNull(),
+  createdAt:             timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  observationFk: foreignKey({ columns: [t.forecastObservationId], foreignColumns: [forecastObservations.id], name: "forecastResolutions_observation_fk" }).onDelete("restrict"),
+  observationIdx: index("forecastResolutions_observation_idx").on(t.forecastObservationId),
+  resolvedIdx: index("forecastResolutions_resolved_idx").on(t.resolvedAt),
+}));
+export type ForecastResolution = typeof forecastResolutions.$inferSelect;
+export type InsertForecastResolution = typeof forecastResolutions.$inferInsert;
 
 // ── Signal Pages Cache ───────────────────────────────────────
 /**
@@ -1559,6 +2554,21 @@ export const conversationMessages = mysqlTable("conversationMessages", {
   qualityFlag:      mysqlEnum("qualityFlag", ["hallucination", "low_confidence", "error", "unanswered", "off_topic"]),
   /** User feedback rating 1–5 (if user rated this response) */
   userRating:       tinyint("userRating"),
+  /** Phase 4 response identity for canonical/evidence auditability (assistant messages only) */
+  responseId:       varchar("responseId", { length: 255 }),
+  originatingStateId: varchar("originatingStateId", { length: 255 }),
+  originatingEffectiveAt: timestamp("originatingEffectiveAt"),
+  evidenceClaimIds: text("evidenceClaimIds"),
+  forecastClaimIds: text("forecastClaimIds"),
+  historicalClaimIds: text("historicalClaimIds"),
+  evidenceStrength: text("evidenceStrength"),
+  dataQuality: text("dataQuality"),
+  promptVersion:    varchar("promptVersion", { length: 128 }),
+  modelIdentity:    varchar("modelIdentity", { length: 255 }),
+  generationAttempts: int("generationAttempts"),
+  validationStatus: varchar("validationStatus", { length: 64 }),
+  validationIssues: text("validationIssues"),
+  withheldClaimReasons: text("withheldClaimReasons"),
   timestamp:        timestamp("timestamp").defaultNow().notNull(),
 }, (t) => ({
   convIdx:   index("cm_conv_idx").on(t.conversationId),

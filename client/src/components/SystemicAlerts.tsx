@@ -115,9 +115,9 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
       category: 'ai_concentration_risk',
       severity: sev,
       title: `AI/Mega-Cap Concentration Risk — Score ${aiBubbleScore.toFixed(1)}/10`,
-      what: `The FAULTLINE AI Bubble vector has reached ${aiBubbleScore.toFixed(1)}/10. The top 7 AI-adjacent mega-cap stocks now represent an unprecedented share of S&P 500 market cap, with capex growth outpacing revenue growth and valuations pricing in decades of perfect execution.`,
-      why: `Extreme concentration creates systemic fragility. When a small number of stocks represent a disproportionate share of index weight, passive fund flows amplify both the upside and the downside. A 20% correction in the top 7 names would mechanically produce a 10–15% index-level decline regardless of fundamentals in the remaining 493 stocks.`,
-      historical: `In 2000, the top 10 internet/tech stocks represented 35% of NASDAQ. When the bubble burst, NASDAQ fell 78% over 30 months. In 1989 Japan, the Nikkei was dominated by 10 financial/industrial conglomerates — the subsequent 30-year bear market erased 80% of peak value. Current AI concentration exceeds both precedents.`,
+      what: `The FAULTLINE AI / Speculation vector has reached ${aiBubbleScore.toFixed(1)}/10. Its concentration baseline is a disclosed static model estimate, not a live market-cap series.`,
+      why: `Concentration is a structural context factor in the current model. This alert does not quantify an index-level drawdown or predict a market outcome.`,
+      historical: `Historical concentration comparisons require a separately sourced study and are not used here as a forecast or outcome-rate claim.`,
       color: '#C084FC',
       score: aiBubbleScore,
     });
@@ -134,7 +134,7 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
       title: `Systemic Risk Escalation — ${elevatedDomains.length} Vectors Elevated`,
       what: `${elevatedDomains.length} of ${domains.length} FAULTLINE risk vectors are simultaneously elevated above 6.0/10: ${elevatedDomains.map(d => d.label).join(', ')}. Multi-vector stress elevation indicates systemic, not idiosyncratic, risk.`,
       why: `Systemic risk is qualitatively different from isolated sector stress. When multiple independent risk vectors elevate simultaneously, it signals that macro conditions — not company-specific factors — are the primary driver. Systemic risk cannot be diversified away within a single asset class.`,
-      historical: `In Q3 2008, all 7 FAULTLINE vectors were simultaneously elevated for the first time since 1929. In Q1 2020, 5 vectors spiked within 2 weeks. In 2000, 4 vectors were elevated for 18 months before the crash. Multi-vector elevation has preceded every major market dislocation since 1929.`,
+      historical: `This alert describes the current vector configuration only. It does not claim that FAULTLINE existed or issued historical warnings before prior events.`,
       color: '#FF2D55',
       score: elevatedDomains.length * 1.5,
     });
@@ -150,8 +150,8 @@ function generateSystemicAlerts(output: ReturnType<typeof useEngine>['output']):
       severity: sev,
       title: `Historical Analog: ${topAnalog.era} ${topAnalog.year} — ${topAnalog.similarity}% Match`,
       what: `Current macro conditions show ${topAnalog.similarity}% similarity to the ${topAnalog.era} (${topAnalog.year}). Matching signals include: ${(topAnalog.matchReasons ?? []).slice(0, 3).join('; ')}.`,
-      why: `Historical analogs are not predictions — they are probability-weighted reference cases. When current conditions closely match a historical stress period, the distribution of possible outcomes shifts toward the historical analog's outcome range. A ${topAnalog.similarity}%+ match is statistically significant and warrants heightened awareness.`,
-      historical: `The ${topAnalog.era} ultimately resulted in significant market disruption. Key lessons: (1) The initial phase of analog matches often feels manageable — the severity escalates later. (2) Policy responses in the historical case required extraordinary intervention. (3) Recovery timelines were measured in months to years, not days. View the full analog analysis at Historical Comparisons.`,
+      why: `Historical analogs are feature-set reference cases, not probability-weighted forecasts. A ${topAnalog.similarity}% similarity score is not a statistical-significance result or outcome probability.`,
+      historical: `The historical reference is presented for context only. Its later outcome must not be treated as the expected result for current conditions.`,
       color: '#FFD700',
       score: topAnalog.similarity / 10,
     });

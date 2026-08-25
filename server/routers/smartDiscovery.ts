@@ -27,6 +27,14 @@ import { computeHistoricalIntelligence } from "../historicalIntelligenceEngine";
 import type { HistoricalIntelligenceResult } from "../historicalIntelligenceEngine";
 import { getSeismographState } from "../seismographEngine";
 import { getLatestSeismographOutput } from "../scheduledSeismograph";
+import { formatOrdinal } from "../../shared/historicalPercentile";
+import { forecastHorizonPromptContract } from "../../shared/forecastMetadata";
+import { evidenceNarrativePromptContract } from "../../shared/evidenceContract";
+import { buildCanonicalEvidencePacket } from "../evidencePacket";
+import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } from "../canonicalIntelligenceState";
+import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../../shared/interpretationIntegrity";
+import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "../crossEngineSynthesis";
+import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
 
 // ── LLM timeout helper ───────────────────────────────────────
 // Wraps any promise with a 55-second timeout so the user gets a friendly
@@ -209,6 +217,12 @@ export interface FaultlineAnswer {
     practicalAction: string;                           // What the investor should actually do
     summary: string;                                   // One-paragraph synthesis (the full Collective Reading)
   } | null;
+  integrity?: {
+    transaction: InterpretationTransaction;
+    validation: InterpretationValidationResult;
+    generationAttempts: number;
+    synthesis: { synthesisId: string; originatingStateId: string } | null;
+  };
 }
 
 export interface ConversationMessage {
@@ -255,6 +269,14 @@ function isDayTradeQuery(query: string): boolean {
   return DAY_TRADE_KEYWORDS.some(k => lower.includes(k));
 }
 
+function resolveAnswerFormat(query: string, questionIntent: QuestionIntent): "SIMPLE" | "STRUCTURED" {
+  const normalized = query.trim().toLowerCase();
+  const directFact = /^(what is|what's|is|are)\b/.test(normalized)
+    && /(pressure|regime|credit stress|liquidity|yield|risk)/.test(normalized);
+  if (directFact || (query.trim().split(/\s+/).length <= 7 && questionIntent === "general_analysis")) return "SIMPLE";
+  return "STRUCTURED";
+}
+
 // ── Build deep-dive links ─────────────────────────────────────
 
 function buildDeepDiveLinks(ticker: string | null, assetType: "stock" | "crypto" | null, queryType: string, query = "") {
@@ -288,6 +310,12 @@ async function orchestrateAnswer(
   contextAssetType: "stock" | "crypto" | null,
 ): Promise<FaultlineAnswer> {
   const t0 = Date.now();
+  const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
+  const publicCanonicalState = authoritativeState ? toPublicCanonicalIntelligenceState(authoritativeState) : null;
+  const evidencePacket = publicCanonicalState ? buildCanonicalEvidencePacket(publicCanonicalState) : null;
+  const crossEngineSynthesis = publicCanonicalState && evidencePacket ? buildCrossEngineSynthesis(publicCanonicalState, evidencePacket) : null;
+  const transaction = createInterpretationTransaction("ORACLE", evidencePacket, null);
+  const governedEarlyWarningPresentation = await getCurrentGovernedEarlyWarningPresentation();
 
   // ── Stage 3: Context assembly ──────────────────────────────────
   // 1. Resolve intent using the robust IntentResolver
@@ -299,6 +327,7 @@ async function orchestrateAnswer(
 
   // 1b. Detect the specific question intent (downside / upside / buy_verdict / etc.)
   const questionIntent: QuestionIntent = detectQuestionIntent(query);
+  const answerFormat = resolveAnswerFormat(query, questionIntent);
 
   // ── Stage 4: Market data fetch ─────────────────────────────────
   // 2. Fetch live market data via FMOS pipeline + live price
@@ -487,11 +516,18 @@ QUESTION TYPE: GENERAL ANALYSIS
 Provide a comprehensive institutional analysis. Lead with the verdict and primary driver.`,
   };
 
-  const questionIntentInstruction = intentInstructions[questionIntent];
+  const questionIntentInstruction = `
+QUESTION TYPE: ${questionIntent}
+Answer the user's actual question first using supplied canonical evidence only. Do not create price levels, targets, stop levels, risk/reward ratios, expected reward, probability, forecast timing, confirmation conditions, or invalidation conditions unless an authorized structured claim explicitly supplies them. When such a claim is absent, return a concise governed limitation rather than a substitute value.`;
 
-  const systemPrompt = `You are ASHA — the intelligence layer of FAULTLINE.
+  const legacySystemPrompt = `You are ASHA — the intelligence layer of FAULTLINE.
 You are an institutional market strategist. You deliver briefings to sophisticated investors with the precision of Goldman Sachs, the macro depth of Bridgewater, and the clarity of Bloomberg Intelligence.
 You are NOT a chatbot. You do NOT write essays. You create clarity.
+
+	${forecastHorizonPromptContract()}
+	${evidenceNarrativePromptContract()}
+	${buildInterpretationPromptContract(transaction, evidencePacket)}
+If you mention a target, magnitude, probability, directional outcome, or timing, label it as FORECAST. Do not state or imply a timeframe unless structured forecast metadata supplies a SUPPORTED horizon. Separate observed, derived, historical, interpreted, and forecast statements. Include confirmation and invalidation only when supplied by evidence; otherwise say they are not established.
 You NEVER begin with disclaimers, preambles, or hedging language.
 ${questionIntentInstruction}
 
@@ -637,9 +673,27 @@ Market Summary: ${crossMarket.plainEnglishSummary}
 Key Insights: ${crossMarket.keyInsights.slice(0, 3).join(" | ")}
 ${crossMarket.regimeChangeAlerts.length > 0 ? `ACTIVE REGIME ALERTS: ${crossMarket.regimeChangeAlerts.map(a => `${a.asset} regime changed from ${a.previous} to ${a.current}`).join("; ")}` : ""}` : ""}
 ${fmos ? `Action Bias: ${fmos.decision.actionBias}\nFMOS Decision: ${fmos.decision.verdict} (conviction: ${fmos.decision.conviction}%)\nBull Probability: ${fmos.probability.bull}%\nBear Probability: ${fmos.probability.bear}%\nNeutral Probability: ${fmos.probability.neutral}%\nConfidence: ${fmos.confidence.label} (${fmos.confidence.score}/100)\nTransition Risk: ${fmos.transition.transitionProbability}%\nPrimary Driver: ${fmos.probability.primaryDriver}` : ""}
-${seismographOutput ? `\n${seismographOutput.forASHA.systemPromptBlock}` : seismographState ? `\n── SEISMOGRAPH INTELLIGENCE (PERSISTENT MARKET MEMORY) ──\nCurrent Pressure Score: ${seismographState.today.pressureScore} | Regime: ${seismographState.today.regime} | Stress Level: ${seismographState.today.stressLevel}\nDirection: ${seismographState.today.direction} for ${seismographState.today.streakDays} consecutive days | Historical Percentile: ${seismographState.today.historicalPercentile}th\n7-Day Trend: ${seismographState.evolution.sevenDayTrend} | 30-Day Trend: ${seismographState.evolution.thirtyDayTrend}${seismographState.evolution.accelerating ? " | ACCELERATING" : ""}\nRegime Transition Probabilities: Remain=${seismographState.transitionProbabilities.remainInRegime}% | Elevated=${seismographState.transitionProbabilities.transitionToElevated}% | Low=${seismographState.transitionProbabilities.transitionToLow}% | Crisis=${seismographState.transitionProbabilities.transitionToCrisis}%\nActive Patterns: ${seismographState.activePatterns.length > 0 ? seismographState.activePatterns.map((p: { patternName: string }) => p.patternName).join(", ") : "None detected"}\nMarket Memory: ${seismographState.marketMemorySummary.observationCount} observations | ${seismographState.marketMemorySummary.currentStreakDescription}\nNote: Seismograph probabilities are historical base rates, not predictions.` : ""}
-  ${evidenceContext}
+${seismographOutput ? `\n${seismographOutput.forASHA.systemPromptBlock}` : seismographState ? `\n── SEISMOGRAPH INTELLIGENCE (PERSISTENT MARKET MEMORY) ──\nCurrent Pressure Score: ${seismographState.today.pressureScore} | Regime: ${seismographState.today.regime} | Stress Level: ${seismographState.today.stressLevel}\nDirection: ${seismographState.today.direction} for ${seismographState.today.streakDays} consecutive days | Historical Percentile: ${formatOrdinal(seismographState.today.historicalPercentile)}\n7-Day Trend: ${seismographState.evolution.sevenDayTrend} | 30-Day Trend: ${seismographState.evolution.thirtyDayTrend}${seismographState.evolution.accelerating ? " | ACCELERATING" : ""}\nRegime Transition Probabilities: Remain=${seismographState.transitionProbabilities.remainInRegime}% | Elevated=${seismographState.transitionProbabilities.transitionToElevated}% | Low=${seismographState.transitionProbabilities.transitionToLow}% | Crisis=${seismographState.transitionProbabilities.transitionToCrisis}%\nActive Patterns: ${seismographState.activePatterns.length > 0 ? seismographState.activePatterns.map((p: { patternName: string }) => p.patternName).join(", ") : "None detected"}\nMarket Memory: ${seismographState.marketMemorySummary.observationCount} observations | ${seismographState.marketMemorySummary.currentStreakDescription}\nNote: Seismograph probabilities are historical base rates, not predictions.` : ""}
+	${evidenceContext}
 ${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalIntelligence.promptBlock : ""}`;  // ← Historical Intelligence injected here
+
+  const systemPrompt = `You are ASHA, FAULTLINE's evidence-bound market interpretation layer.
+${forecastHorizonPromptContract()}
+${evidenceNarrativePromptContract()}
+${buildInterpretationPromptContract(transaction, evidencePacket)}
+${buildCrossEngineSynthesisPromptContract(crossEngineSynthesis)}
+
+${buildEarlyWarningPresentationPromptContract(governedEarlyWarningPresentation)}
+${questionIntentInstruction}
+
+RESPONSE RULES:
+- Answer the actual question in one direct sentence first.
+- Response format: ${answerFormat}. For SIMPLE, return only the direct answer, one supporting evidence item, and one limitation; keep nonessential lists empty and unsupported fields null. For STRUCTURED, use concise distinct sections only where evidence supports them.
+- Use concise, distinct sections: executiveSummary, whyThisVerdict, keyFindings, supportingEvidence, limitations, and followUpChips.
+- A field being present in the response schema never authorizes a claim. Return null or empty arrays for unsupported structured fields.
+- Do not use LLM-generated scores, confidence percentages, price targets, entry/exit zones, stop levels, expected reward, time horizons, probabilities, confirmation thresholds, invalidation thresholds, cross-engine synthesis, or Early Warnings. You may describe only the supplied governed Cross-Engine Synthesis relationships and qualified Early Warning objects exactly as provided.
+- Historical context is not a current forecast. Guidance must be explicitly separate from evidence and interpretation.
+- If a requested fact is absent from the evidence packet, state the concise governed limitation rather than creating a substitute.`;
 
   // Explicit global mode instruction when no symbol context
   const globalModeInstruction = !ticker
@@ -920,6 +974,9 @@ JSON schema:
     });
   }
 
+  const integrityValidation = validateInterpretationOutput(raw, transaction);
+  raw = integrityValidation.normalizedOutput;
+
   // Ensure collectiveReading is always present with a fallback
   const rawCollective = raw.collectiveReading as Record<string, unknown> | null | undefined;
   const collectiveReadingFallback = rawCollective ?? {
@@ -950,6 +1007,15 @@ JSON schema:
     deepDiveLinks: buildDeepDiveLinks(ticker, assetType, queryType, query),
     // Historical Intelligence — server-computed, not from LLM
     historicalIntelligence: historicalIntelligence ?? null,
+    integrity: {
+      transaction,
+      validation: integrityValidation,
+      generationAttempts: 1,
+      synthesis: crossEngineSynthesis ? {
+        synthesisId: crossEngineSynthesis.synthesisId,
+        originatingStateId: crossEngineSynthesis.originatingStateId,
+      } : null,
+    },
   }) as FaultlineAnswer;
 }
 
@@ -1402,7 +1468,30 @@ export const smartDiscoveryRouter = router({
         await logMessage({ conversationId: convId, role: 'user', content: input.query });
         const answerText = typeof answer === 'string' ? answer : (answer as any)?.answer ?? JSON.stringify(answer).slice(0, 2000);
         const confidence = (answer as any)?.confidence ?? (answer as any)?.opportunityScore ?? undefined;
-        await logMessage({ conversationId: convId, role: 'assistant', content: answerText, responseTimeMs, confidenceScore: confidence });
+        const integrity = (answer as FaultlineAnswer)?.integrity;
+        await logMessage({
+          conversationId: convId,
+          role: 'assistant',
+          content: answerText,
+          responseTimeMs,
+          confidenceScore: confidence,
+          integrity: integrity ? {
+            responseId: integrity.transaction.responseId,
+            originatingStateId: integrity.transaction.originatingStateId,
+            originatingEffectiveAt: integrity.transaction.originatingEffectiveAt,
+            evidenceClaimIds: integrity.transaction.evidenceClaimIds,
+            forecastClaimIds: integrity.transaction.forecastClaimIds,
+            historicalClaimIds: integrity.transaction.historicalClaimIds,
+            evidenceStrength: integrity.transaction.evidenceStrength,
+            dataQuality: integrity.transaction.dataQuality,
+            promptVersion: integrity.transaction.promptVersion,
+            modelIdentity: integrity.transaction.modelVersion,
+            generationAttempts: integrity.generationAttempts,
+            validationStatus: integrity.validation.status,
+            validationIssues: integrity.validation.issues,
+            withheldClaimReasons: integrity.validation.withheldClaimReasons,
+          } : undefined,
+        });
       }).catch(() => {});
 
       return answer;
