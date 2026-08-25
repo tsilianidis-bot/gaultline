@@ -5315,5 +5315,6 @@
 - [x] Simplify pricing and access into a coherent $299 Founding Lifetime commercial path without fake scarcity or conflicting approval language
 - [x] Standardize CTA labels and destinations, repair the Access navigation anchor, and streamline footer/roadmap content
 - [x] Add/update unit tests and validate desktop/mobile rendering, public links, marketing claims, and full regression suite
-- [ ] Resolve the compatible Phase 10 shared-branch merge while preserving this approved marketing architecture and both task histories
+- [x] Resolve the compatible Phase 10 shared-branch merge while preserving this approved marketing architecture and both task histories
 - [ ] Save the marketing-page rebuild checkpoint and deliver the implementation result
+- [ ] Verify the managed deployment and smoke-test production landing, pricing, methodology, trust, and representative Phase 10 routes

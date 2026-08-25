@@ -23,7 +23,7 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(publicPricing).toBeGreaterThan(goldConstant);
   });
 
-  it('keeps annual checkout unavailable while adding lifetime only inside the Founder Member card', () => {
+  it('keeps annual checkout unavailable while the rebuilt marketing page presents lifetime access from the shared pricing source', () => {
     expect(PRICING_PLANS.core_annual.available).toBe(false);
     expect(PRICING_PLANS.premium_annual.available).toBe(false);
     expect(PRICING_PLANS.lifetime.available).toBe(false);
@@ -35,10 +35,10 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(productExperience).toContain('LOCK IN FOUNDER RATE');
     expect(productExperience).toContain("handlePricingInterest('Lifetime Access — $299')");
     expect(productExperience).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'");
-    expect(marketing).toContain('LIMITED TIME LIFETIME ACCESS');
-    expect(marketing).toContain('GET LIFETIME ACCESS — $299');
-    expect(marketing).toContain('handleCheckout("Lifetime Access — $299")');
-    expect(marketing).not.toContain('FOUNDING LIFETIME');
+    expect(marketing).toContain('const lifetime = PRICING_PLANS.lifetime;');
+    expect(marketing).toContain('FOUNDING LIFETIME ACCESS');
+    expect(marketing).toContain('GET FOUNDING LIFETIME ACCESS — $299');
+    expect(marketing).toContain('href="/pricing"');
     expect(marketing).not.toContain('$9.99');
   });
 
@@ -53,12 +53,11 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(publicSource).not.toMatch(/AlphaPulse|Alpha Pulse/i);
   });
 
-  it('changes only the active Product Experience founder attribution to JT', () => {
+  it('keeps the active Product Experience founder attribution as JT and removes the prior marketing-page attribution block', () => {
     const productExperience = read('client/src/components/ProductExperience.tsx');
     const marketing = read('client/src/pages/MarketingSite.tsx');
     expect(productExperience).toContain('>JT</div>');
     expect(productExperience).not.toContain('RICHARD ROPER');
-    expect(marketing).toContain('>JT</div>');
     expect(marketing).not.toContain('RICHARD ROPER');
   });
 
