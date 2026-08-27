@@ -79,6 +79,6 @@ describe("ASHA Phase 4 canonical evidence integration", () => {
     gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult("   "), trace: modelTrace });
     const greeting = await generateAshaDailyGreeting({ engineContext: { pressureScore: 61, regime: "Late Cycle", regimeConfidence: 0.72, narrative: "Credit is tightening.", trend: "Deteriorating", keyDrivers: ["Credit"] } });
     expect(gatewayMocks.createContext).toHaveBeenCalledWith(expect.objectContaining({ page: "daily-greeting" }));
-    expect(greeting).toBe("Canonical state unavailable. Insufficient evidence for a current market interpretation.");
+    expect(greeting).toBe("Canonical state unavailable. Insufficient evidence for a current market greeting.");
   });
 });

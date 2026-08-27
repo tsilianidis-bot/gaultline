@@ -5333,4 +5333,14 @@
 - [x] Preserve and align Organization/WebSite structured data without duplicate or conflicting schema
 - [x] Add SEO regression coverage for unique metadata, canonical directives, indexability, and proprietary terminology preservation
 - [x] Validate affected public pages, sitemap/robots directives, navigation, authentication, pricing, and responsive behavior
-- [ ] Save the Market Risk Intelligence SEO checkpoint and deliver the file-by-file change report
+- [x] Save the Market Risk Intelligence SEO checkpoint and deliver the file-by-file change report
+
+## FAULTLINE Canonical Intelligence Runtime Restoration (Session 2026-08-27)
+- [x] Trace the legitimate Seismograph-to-atomic-manifest execution path, persistence error handling, scheduler invocation, and current database state
+- [x] Prove the `intelligenceStateManifests` schema, current row count, newest record state, and first broken transition without fabricating a state
+- [x] Repair only the demonstrated canonical-manifest persistence/runtime fault while preserving Phases 2–10 governance and the legacy compatibility boundary
+- [x] Correct Phase 10 no-material presentation semantics when canonical evaluation is unavailable so null state cannot be labeled current
+- [x] Add an end-to-end canonical identity contract covering canonical state, evidence, synthesis, EngineContext, Early Warning, and Pentagonal destinations
+- [x] Validate canonical-versus-legacy values for the same source snapshot and investigate any material divergence before publishing
+- [ ] Run full regression, Phase 2–10 targeted suites, database manifest verification, runtime smoke tests, and production verification
+- [ ] Save the canonical runtime restoration checkpoint and deliver the full root-cause and identity-proof report

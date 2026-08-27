@@ -12,12 +12,16 @@ import {
   phase9WarningTheses,
 } from "../drizzle/schema";
 import { getDb } from "./db";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { getAuthoritativeCrossEngineSynthesis } from "./crossEngineSynthesis";
 import {
   PHASE10_PRESENTATION_CONTRACT_VERSION,
   type ConfirmationPresentationStatus,
   type EarlyWarningPresentation,
+  type GovernedEvaluationUnavailablePresentation,
   type GovernedEarlyWarningPresentation,
   type InvalidationPresentationStatus,
+  type NoMaterialEarlyWarningPresentation,
   type PresentationConfidence,
   type PresentationFreshness,
 } from "../shared/earlyWarningPresentation";
@@ -60,11 +64,18 @@ function invalidationFor(planResult: string | null | undefined, invalidation: st
 export async function getCurrentGovernedEarlyWarningPresentation(): Promise<GovernedEarlyWarningPresentation> {
   const db = await getDb();
   const generatedAt = new Date().toISOString();
-  if (!db) return noMaterial(null, null, "UNAVAILABLE", generatedAt);
+  if (!db) return unavailable(null, null, "GOVERNED_LEDGER_UNAVAILABLE", generatedAt);
+  const canonicalState = await getAuthoritativeCanonicalIntelligenceState();
+  if (!canonicalState) return unavailable(null, null, "CANONICAL_STATE_UNAVAILABLE", generatedAt);
+  const synthesis = await getAuthoritativeCrossEngineSynthesis();
+  if (!synthesis) return unavailable(canonicalState.stateId, null, "SYNTHESIS_UNAVAILABLE", generatedAt);
+  if (synthesis.originatingStateId !== canonicalState.stateId) {
+    return unavailable(canonicalState.stateId, synthesis.synthesisId, "SYNTHESIS_STATE_MISMATCH", generatedAt);
+  }
   const lifecycle = (await db.select().from(earlyWarningLifecycles)
     .where(ne(earlyWarningLifecycles.currentLifecycleState, "INVALIDATED"))
     .orderBy(desc(earlyWarningLifecycles.latestObservationAt)).limit(1))[0];
-  if (!lifecycle) return noMaterial(null, null, "CURRENT", generatedAt);
+  if (!lifecycle) return noMaterial(canonicalState.stateId, synthesis.synthesisId, "CURRENT", generatedAt);
   const [candidate, qualification, observation, thesis, projection] = await Promise.all([
     db.select().from(candidateDetections).where(eq(candidateDetections.candidateId, lifecycle.candidateId)).limit(1),
     db.select().from(importanceQualificationEvaluations).where(eq(importanceQualificationEvaluations.evaluationId, lifecycle.latestQualificationEvaluationId)).limit(1),
@@ -72,7 +83,9 @@ export async function getCurrentGovernedEarlyWarningPresentation(): Promise<Gove
     db.select().from(phase9WarningTheses).where(eq(phase9WarningTheses.lifecycleId, lifecycle.lifecycleId)).limit(1),
     db.select().from(phase9CurrentProjections).where(eq(phase9CurrentProjections.lifecycleId, lifecycle.lifecycleId)).limit(1),
   ]);
-  if (!candidate[0] || !qualification[0] || !observation[0]) return noMaterial(lifecycle.originatingStateId, lifecycle.originatingSynthesisId, "UNAVAILABLE", generatedAt);
+  if (!candidate[0] || !qualification[0] || !observation[0]) {
+    return unavailable(lifecycle.originatingStateId, lifecycle.originatingSynthesisId, "GOVERNED_LEDGER_UNAVAILABLE", generatedAt);
+  }
   const plan = projection[0] ? (await db.select().from(phase9ConfirmationPlans).where(eq(phase9ConfirmationPlans.planId, projection[0].planId)).limit(1))[0] : null;
   const planEvaluation = projection[0] ? (await db.select().from(phase9PlanEvaluations).where(eq(phase9PlanEvaluations.planEvaluationId, projection[0].latestPlanEvaluationId)).limit(1))[0] : null;
   const events = await db.select().from(phase9AuthorityEvents).where(eq(phase9AuthorityEvents.lifecycleId, lifecycle.lifecycleId)).orderBy(desc(phase9AuthorityEvents.effectiveAt));
@@ -170,6 +183,13 @@ export async function getCurrentGovernedEarlyWarningTimeline(limit = 48): Promis
 
 export function buildEarlyWarningPresentationPromptContract(presentation: GovernedEarlyWarningPresentation): string {
   const payload = JSON.stringify(presentation);
+  if (presentation.kind === "GOVERNED_EVALUATION_UNAVAILABLE") {
+    return [
+      "PHASE 10 GOVERNED EARLY WARNING PRESENTATION (READ ONLY):",
+      payload,
+      "State only that the governed Early Warning evaluation is unavailable. Do not imply that no warning exists, markets are safe, markets are bullish, or downside risk is absent.",
+    ].join("\n");
+  }
   return [
     "PHASE 10 GOVERNED EARLY WARNING PRESENTATION (READ ONLY):",
     payload,
@@ -185,6 +205,14 @@ export function createSocialReadyWarningPost(presentation: GovernedEarlyWarningP
   text: string;
   provenanceLabel: string;
 } {
+  if (presentation.kind === "GOVERNED_EVALUATION_UNAVAILABLE") {
+    return {
+      kind: "NO_MATERIAL_EARLY_WARNING_SOCIAL_READY",
+      presentationId: presentation.presentationId,
+      text: "FAULTLINE EARLY WARNING INTELLIGENCE: The governed current evaluation is temporarily unavailable. This is not a statement that no warning exists or that markets are safe.",
+      provenanceLabel: `Governed evaluation unavailable: ${presentation.reason}`,
+    };
+  }
   if (presentation.kind === "NO_MATERIAL_EARLY_WARNING") {
     return {
       kind: "NO_MATERIAL_EARLY_WARNING_SOCIAL_READY",
@@ -201,6 +229,18 @@ export function createSocialReadyWarningPost(presentation: GovernedEarlyWarningP
   };
 }
 
-function noMaterial(stateId: string | null, synthesisId: string | null, freshness: PresentationFreshness, generatedAt: string): GovernedEarlyWarningPresentation {
+export function buildNoMaterialEarlyWarningPresentation(stateId: string, synthesisId: string, freshness: Extract<PresentationFreshness, "CURRENT" | "STALE">, generatedAt: string): NoMaterialEarlyWarningPresentation {
   return { contractVersion: PHASE10_PRESENTATION_CONTRACT_VERSION, kind: "NO_MATERIAL_EARLY_WARNING", presentationId: `p10:none:${stableId([stateId, synthesisId, generatedAt.slice(0, 13)])}`, stateId, synthesisId, message: "Current governed cross-engine evidence does not meet FAULTLINE’s qualification requirements for a material developing warning.", limitations: ["This does not mean markets are safe, bullish, or without downside risk."], freshness, generatedAt, presentationContractVersion: PHASE10_PRESENTATION_CONTRACT_VERSION };
+}
+
+export function buildGovernedEvaluationUnavailablePresentation(stateId: string | null, synthesisId: string | null, reason: GovernedEvaluationUnavailablePresentation["reason"], generatedAt: string): GovernedEvaluationUnavailablePresentation {
+  return { contractVersion: PHASE10_PRESENTATION_CONTRACT_VERSION, kind: "GOVERNED_EVALUATION_UNAVAILABLE", presentationId: `p10:unavailable:${stableId([stateId, synthesisId, reason, generatedAt.slice(0, 13)])}`, stateId, synthesisId, reason, message: "FAULTLINE could not complete the governed Early Warning evaluation for the current market state.", limitations: ["No conclusion about the absence of a warning, market safety, bullishness, or downside risk is authorized."], freshness: "UNAVAILABLE", generatedAt, presentationContractVersion: PHASE10_PRESENTATION_CONTRACT_VERSION };
+}
+
+function noMaterial(stateId: string, synthesisId: string, freshness: Extract<PresentationFreshness, "CURRENT" | "STALE">, generatedAt: string): NoMaterialEarlyWarningPresentation {
+  return buildNoMaterialEarlyWarningPresentation(stateId, synthesisId, freshness, generatedAt);
+}
+
+function unavailable(stateId: string | null, synthesisId: string | null, reason: GovernedEvaluationUnavailablePresentation["reason"], generatedAt: string): GovernedEvaluationUnavailablePresentation {
+  return buildGovernedEvaluationUnavailablePresentation(stateId, synthesisId, reason, generatedAt);
 }

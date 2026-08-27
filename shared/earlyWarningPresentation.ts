@@ -87,7 +87,26 @@ export interface NoMaterialEarlyWarningPresentation {
   presentationContractVersion: typeof PHASE10_PRESENTATION_CONTRACT_VERSION;
 }
 
-export type GovernedEarlyWarningPresentation = EarlyWarningPresentation | NoMaterialEarlyWarningPresentation;
+/**
+ * Fail-closed status for a current market moment that cannot complete its
+ * governed Early Warning evaluation. This is deliberately distinct from a
+ * completed NO_MATERIAL_EARLY_WARNING result.
+ */
+export interface GovernedEvaluationUnavailablePresentation {
+  contractVersion: typeof PHASE10_PRESENTATION_CONTRACT_VERSION;
+  kind: "GOVERNED_EVALUATION_UNAVAILABLE";
+  presentationId: string;
+  stateId: string | null;
+  synthesisId: string | null;
+  reason: "CANONICAL_STATE_UNAVAILABLE" | "SYNTHESIS_UNAVAILABLE" | "SYNTHESIS_STATE_MISMATCH" | "GOVERNED_LEDGER_UNAVAILABLE";
+  message: "FAULTLINE could not complete the governed Early Warning evaluation for the current market state.";
+  limitations: ["No conclusion about the absence of a warning, market safety, bullishness, or downside risk is authorized."];
+  freshness: "UNAVAILABLE";
+  generatedAt: string;
+  presentationContractVersion: typeof PHASE10_PRESENTATION_CONTRACT_VERSION;
+}
+
+export type GovernedEarlyWarningPresentation = EarlyWarningPresentation | NoMaterialEarlyWarningPresentation | GovernedEvaluationUnavailablePresentation;
 
 export const PRESENTATION_SEMANTICS = {
   score: "EARLY WARNING SCORE is a prioritization score, not probability.",
@@ -95,4 +114,5 @@ export const PRESENTATION_SEMANTICS = {
   fading: "FADING means the warning remains active but supporting conditions are weakening.",
   invalidated: "INVALIDATED means governed contradictory evidence terminated the lifecycle episode.",
   noMaterial: "NO MATERIAL EARLY WARNING means no current candidate satisfies governed qualification requirements.",
+  unavailable: "GOVERNED EVALUATION UNAVAILABLE means the current governed Early Warning evaluation could not be completed.",
 } as const;

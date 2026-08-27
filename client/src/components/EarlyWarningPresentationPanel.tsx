@@ -22,6 +22,12 @@ export function EarlyWarningPresentationPanel({ mode = "home" }: { mode?: PanelM
   if (warning.isLoading) return <div style={{ height: 120, border: "1px solid rgba(0,229,255,.16)", background: "rgba(0,229,255,.025)", borderRadius: 8, marginBottom: 16 }} />;
   if (warning.isError || !warning.data) return <div style={{ padding: 14, border: "1px solid rgba(148,163,184,.25)", borderRadius: 8, color: "#94A3B8", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: ".1em" }}>WARNING DATA TEMPORARILY UNAVAILABLE</div>;
   const presentation = warning.data;
+  if (presentation.kind === "GOVERNED_EVALUATION_UNAVAILABLE") return <section data-phase10-presentation-id={presentation.presentationId} style={{ border: "1px solid rgba(148,163,184,.35)", background: "linear-gradient(130deg, rgba(148,163,184,.06), rgba(8,10,15,.96))", borderRadius: 8, padding: "18px", marginBottom: 16 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#94A3B8", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: ".16em" }}><Clock3 size={14} /> EARLY WARNING INTELLIGENCE™</div>
+    <div style={{ color: "#E5F4FF", fontSize: 20, marginTop: 12, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, letterSpacing: ".04em" }}>GOVERNED EVALUATION UNAVAILABLE</div>
+    <p style={{ color: "#AAB9CA", lineHeight: 1.6, fontSize: 13, margin: "8px 0 0" }}>{presentation.message}</p>
+    <p style={{ color: "#64748B", lineHeight: 1.5, fontSize: 11, margin: "8px 0 0" }}>{presentation.limitations[0]} Reason: {presentation.reason.replaceAll("_", " ")}.</p>
+  </section>;
   if (presentation.kind === "NO_MATERIAL_EARLY_WARNING") return <section data-phase10-presentation-id={presentation.presentationId} style={{ border: "1px solid rgba(0,229,255,.22)", background: "linear-gradient(130deg, rgba(0,229,255,.06), rgba(8,10,15,.96))", borderRadius: 8, padding: "18px", marginBottom: 16 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#00E5FF", fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, letterSpacing: ".16em" }}><ShieldCheck size={14} /> EARLY WARNING INTELLIGENCE™</div>
     <div style={{ color: "#E5F4FF", fontSize: 20, marginTop: 12, fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, letterSpacing: ".04em" }}>NO MATERIAL EARLY WARNING</div>
