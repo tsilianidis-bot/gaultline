@@ -292,9 +292,9 @@ export const PAGE_SEO = {
     canonical: "/crypto-signals",
   },
   publicStockMarketRisk: {
-    title: "Stock Market Risk Dashboard — Live Systemic Risk",
+    title: "Stock Market Risk Today | FAULTLINE",
     description:
-      "Real-time stock market risk dashboard: systemic pressure score, regime detection, credit spreads, volatility, liquidity conditions, and breadth deterioration. Know your equity risk before it moves.",
+      "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, volatility, and equity breadth.",
     canonical: "/stock-market-risk-dashboard",
   },
   publicCryptoMarketRisk: {
@@ -316,9 +316,9 @@ export const PAGE_SEO = {
     canonical: "/analogs",
   },
   publicAIBubble: {
-    title: "AI Bubble Risk Tracker — Concentration & Valuation",
+    title: "AI Bubble Risk Monitor | FAULTLINE",
     description:
-      "Track AI-driven market concentration and valuation risk before it unwinds. FAULTLINE AI Bubble Risk Tracker monitors index concentration, AI-exposed equities, and crowded-trade reversal signals in real time.",
+      "AI bubble risk intelligence for assessing concentration, valuation pressure, and systemic exposure across the AI equity complex.",
     canonical: "/ai-bubble-risk-tracker",
   },
   publicDiagnosticAI: {

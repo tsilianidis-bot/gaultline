@@ -104,7 +104,7 @@ function StatusStrip() {
   return (
     <div className="border-b border-[#00D4FF]/15 bg-[#050608] px-4 py-2 text-center">
       <p className="text-[9px] font-mono tracking-[0.22em] text-[#00D4FF]/75">
-        FAULTLINE MARKET INTELLIGENCE <span className="mx-2 text-white/20">/</span> EVIDENCE-FIRST MARKET AWARENESS
+        FAULTLINE MARKET RISK INTELLIGENCE <span className="mx-2 text-white/20">/</span> EVIDENCE-FIRST MARKET AWARENESS
       </p>
     </div>
   );
@@ -124,7 +124,7 @@ function Header() {
             <span className="relative h-2 w-2 rounded-full bg-[#00D4FF]" />
           </span>
           <span className="font-mono text-sm font-black tracking-[0.28em] text-white">FAULTLINE</span>
-          <span className="hidden border-l border-white/10 pl-3 text-[9px] font-mono tracking-[0.2em] text-[#A8B8CC]/60 lg:inline">MARKET INTELLIGENCE</span>
+          <span className="hidden border-l border-white/10 pl-3 text-[9px] font-mono tracking-[0.2em] text-[#A8B8CC]/60 lg:inline">MARKET RISK INTELLIGENCE</span>
         </Link>
 
         <nav className="hidden items-center gap-5 lg:flex" aria-label="Marketing navigation">
@@ -472,13 +472,13 @@ function ResearchLibrary() {
 }
 
 function Footer() {
-  return <footer className="border-t border-white/[0.07] bg-[#030405] py-12"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8"><div className="flex flex-col justify-between gap-6 sm:flex-row"><div><p className="font-mono text-lg font-black tracking-[0.23em] text-white">FAULTLINE</p><p className="mt-3 max-w-md text-sm leading-relaxed text-[#7F90A3]">Market intelligence for understanding changing conditions before headline narratives make them obvious.</p></div><div className="flex flex-wrap gap-x-5 gap-y-3 text-[11px] font-mono tracking-[0.1em] text-[#A8B8CC]"><a href="/methodology" className="hover:text-[#00D4FF]">METHODOLOGY</a><a href="/trust" className="hover:text-[#00D4FF]">TRUST CENTER</a><a href="/contact" className="hover:text-[#00D4FF]">CONTACT</a><a href="/blog" className="hover:text-[#00D4FF]">RESEARCH</a><a href="/pricing" className="hover:text-[#00D4FF]">PRICING</a></div></div><div className="flex flex-col justify-between gap-3 border-t border-white/[0.07] pt-6 text-[10px] font-mono tracking-wide text-[#64748B] sm:flex-row"><span>© 2026 FAULTLINE · A PHOENIX SYSTEMS PLATFORM</span><span>MARKET AWARENESS. BEFORE THE CONSENSUS FORMS.</span></div></div></footer>;
+  return <footer className="border-t border-white/[0.07] bg-[#030405] py-12"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8"><div className="flex flex-col justify-between gap-6 sm:flex-row"><div><p className="font-mono text-lg font-black tracking-[0.23em] text-white">FAULTLINE</p><p className="mt-3 max-w-md text-sm leading-relaxed text-[#7F90A3]">Market risk intelligence for understanding changing conditions before headline narratives make them obvious.</p></div><div className="flex flex-wrap gap-x-5 gap-y-3 text-[11px] font-mono tracking-[0.1em] text-[#A8B8CC]"><a href="/methodology" className="hover:text-[#00D4FF]">METHODOLOGY</a><a href="/trust" className="hover:text-[#00D4FF]">TRUST CENTER</a><a href="/contact" className="hover:text-[#00D4FF]">CONTACT</a><a href="/blog" className="hover:text-[#00D4FF]">RESEARCH</a><a href="/pricing" className="hover:text-[#00D4FF]">PRICING</a></div></div><div className="flex flex-col justify-between gap-3 border-t border-white/[0.07] pt-6 text-[10px] font-mono tracking-wide text-[#64748B] sm:flex-row"><span>© 2026 FAULTLINE · A PHOENIX SYSTEMS PLATFORM</span><span>MARKET AWARENESS. BEFORE THE CONSENSUS FORMS.</span></div></div></footer>;
 }
 
 export default function MarketingSite({ initialSection }: { initialSection?: string } = {}) {
   useSEO({
-    title: "FAULTLINE — Market Intelligence for Changing Conditions",
-    description: "FAULTLINE organizes market, macro, liquidity, credit, volatility, and positioning information into a structured view of changing market conditions.",
+    title: "FAULTLINE | Market Risk Intelligence, Systemic Risk & Early Warning Signals",
+    description: "Market risk intelligence for understanding systemic market stress, early warning signals, macroeconomic risk, and changing market regimes with actionable context.",
     canonical: "/",
   });
 

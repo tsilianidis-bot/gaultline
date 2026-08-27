@@ -5323,4 +5323,14 @@
 - [x] Inspect the existing blog-page composition and select the least disruptive Soro embed placement
 - [x] Add the supplied Soro blog embed to the blog page only with client-side script de-duplication and cleanup
 - [x] Add regression coverage and validate the public blog route and embed initialization
-- [ ] Save the Soro embed checkpoint and deliver the result
+- [x] Save the Soro embed checkpoint and deliver the result
+
+## FAULTLINE Market Risk Intelligence SEO Enhancement (Session 2026-08-27)
+- [x] Audit current titles, descriptions, canonical tags, Open Graph/X metadata, schema, sitemap, robots, and relevant public page coverage
+- [x] Add Market Risk Intelligence as the consistent category descriptor without renaming FAULTLINE or proprietary product terminology
+- [x] Set the precise homepage SEO title and an accurate click-through-focused homepage description
+- [x] Update eligible public-page search-intent metadata only where the corresponding product content exists
+- [x] Preserve and align Organization/WebSite structured data without duplicate or conflicting schema
+- [x] Add SEO regression coverage for unique metadata, canonical directives, indexability, and proprietary terminology preservation
+- [x] Validate affected public pages, sitemap/robots directives, navigation, authentication, pricing, and responsive behavior
+- [ ] Save the Market Risk Intelligence SEO checkpoint and deliver the file-by-file change report

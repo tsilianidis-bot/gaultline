@@ -4,12 +4,31 @@
  * Includes: hero, features, long-form content, FAQ, schema markup, internal links, CTA.
  * No login required. Crawlable. Self-referencing canonical via useSEO.
  */
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import { getLoginUrl } from "@/const";
 import { trackStartFreeClicked } from "@/hooks/useAnalytics";
 
 const PLATFORM_URL = "/app";
+
+const SEARCH_INTENT_OVERRIDES: Record<string, Pick<SEOLandingPageProps["seo"], "title" | "description">> = {
+  "/market-crash-probability-2026": {
+    title: "Market Crash Probability | FAULTLINE",
+    description: "Market crash probability context using systemic market stress, credit conditions, volatility, liquidity, and market-regime evidence.",
+  },
+  "/recession-probability": {
+    title: "Recession Probability | FAULTLINE",
+    description: "Recession probability intelligence using yield curves, credit conditions, leading indicators, policy context, and market-regime evidence.",
+  },
+  "/bitcoin-risk-dashboard": {
+    title: "Bitcoin Risk Indicator | FAULTLINE",
+    description: "Bitcoin risk intelligence for understanding macro regime, liquidity conditions, market structure, and systemic pressure affecting BTC.",
+  },
+  "/market-regime-tracker": {
+    title: "Market Regime Tracker | FAULTLINE",
+    description: "Market regime intelligence for understanding evolving risk conditions, structural pressure, and the evidence shaping today’s market environment.",
+  },
+};
 
 export interface FAQItem {
   question: string;
@@ -76,7 +95,12 @@ export default function SEOLandingPage({
   datePublished = "2024-01-01",
   dateModified = new Date().toISOString().split("T")[0],
 }: SEOLandingPageProps) {
-  useSEO(seo);
+  const resolvedSEO = useMemo(() => {
+    const override = SEARCH_INTENT_OVERRIDES[seo.canonical];
+    return override ? { ...seo, ...override } : seo;
+  }, [seo]);
+
+  useSEO(resolvedSEO);
 
   useEffect(() => {
     const BASE = "https://getfaultline.live";
@@ -87,9 +111,9 @@ export default function SEOLandingPage({
       schemas.push({
         "@context": "https://schema.org",
         "@type": "Article",
-        headline: seo.title,
-        description: seo.description,
-        url: `${BASE}${seo.canonical}`,
+        headline: resolvedSEO.title,
+        description: resolvedSEO.description,
+        url: `${BASE}${resolvedSEO.canonical}`,
         datePublished,
         dateModified,
         author: { "@type": "Organization", name: "FAULTLINE", url: BASE },
@@ -104,9 +128,9 @@ export default function SEOLandingPage({
       schemas.push({
         "@context": "https://schema.org",
         "@type": "WebPage",
-        name: seo.title,
-        description: seo.description,
-        url: `${BASE}${seo.canonical}`,
+        name: resolvedSEO.title,
+        description: resolvedSEO.description,
+        url: `${BASE}${resolvedSEO.canonical}`,
         dateModified,
         publisher: { "@type": "Organization", name: "FAULTLINE", url: BASE },
       });
@@ -130,7 +154,7 @@ export default function SEOLandingPage({
       const el = document.getElementById("seo-landing-schema");
       if (el) el.remove();
     };
-  }, [seo, faqs, schemaType, datePublished, dateModified]);
+  }, [resolvedSEO, faqs, schemaType, datePublished, dateModified]);
 
   const headlineLines = headline.split("\n");
 

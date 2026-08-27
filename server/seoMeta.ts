@@ -23,8 +23,8 @@ interface PageMeta {
 // Keys are exact URL paths. Dynamic routes use prefix matching (see getPageMeta).
 const PAGE_META: Record<string, PageMeta> = {
   "/": {
-    title: "FAULTLINE: Real-time Market Risk Intelligence & Analytics",
-    description: "Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics with FAULTLINE. Get real-time risk intelligence before markets break.",
+    title: "FAULTLINE | Market Risk Intelligence, Systemic Risk & Early Warning Signals",
+    description: "Market risk intelligence for understanding systemic market stress, early warning signals, macroeconomic risk, and changing market regimes with actionable context.",
   },
   "/blog": {
     title: "FAULTLINE Blog — Market Intelligence & Macro Analysis",
@@ -56,8 +56,8 @@ const PAGE_META: Record<string, PageMeta> = {
     description: "Crypto signals aligned with macro regime. FAULTLINE tracks Bitcoin, Ethereum, and altcoin risk using systemic pressure, liquidity, and regime data.",
   },
   "/stock-market-risk-dashboard": {
-    title: "Stock Market Risk Dashboard — Live Systemic Risk | FAULTLINE",
-    description: "Real-time stock market risk dashboard tracking systemic pressure, credit spreads, volatility regime, and equity breadth deterioration.",
+    title: "Stock Market Risk Today | FAULTLINE",
+    description: "Stock market risk intelligence for understanding systemic pressure, market regimes, credit conditions, volatility, and equity breadth.",
   },
   "/crypto-market-risk-dashboard": {
     title: "Crypto Market Risk Dashboard — Digital Asset Risk | FAULTLINE",
@@ -72,8 +72,8 @@ const PAGE_META: Record<string, PageMeta> = {
     description: "FAULTLINE's Historical Analog Engine matches current market conditions to historical crash patterns. Identify which past crises today's setup most resembles.",
   },
   "/ai-bubble-risk-tracker": {
-    title: "AI Bubble Risk Tracker — AI Concentration & Valuation Risk | FAULTLINE",
-    description: "Track AI sector bubble risk in real time. FAULTLINE monitors AI concentration, valuation multiples, and systemic exposure across NVDA, MSFT, GOOGL, and the AI complex.",
+    title: "AI Bubble Risk Monitor | FAULTLINE",
+    description: "AI bubble risk intelligence for assessing concentration, valuation pressure, and systemic exposure across the AI equity complex.",
   },
   "/diagnostic-ai": {
     title: "FAULTLINE Diagnostic AI™ — Multi-Timeframe Market Intelligence",
@@ -81,8 +81,8 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   // ── SEO Flagship Pages ────────────────────────────────────────────────────
   "/market-crash-probability-2026": {
-    title: "Market Crash Probability 2026 — Real-Time Risk | FAULTLINE",
-    description: "Track real-time 2026 market crash probability using credit spreads, VIX regime, yield curve inversion, and AI concentration risk. Updated daily by FAULTLINE.",
+    title: "Market Crash Probability | FAULTLINE",
+    description: "Market crash probability context using systemic market stress, credit conditions, volatility, liquidity, and market-regime evidence.",
     ogType: "article",
   },
   "/market-crash-indicator": {
@@ -91,8 +91,8 @@ const PAGE_META: Record<string, PageMeta> = {
     ogType: "article",
   },
   "/recession-probability": {
-    title: "Recession Probability Indicator — Live US Recession Risk | FAULTLINE",
-    description: "Real-time US recession probability tracking yield curve inversion, credit spreads, leading indicators, and Fed policy. FAULTLINE's recession risk dashboard.",
+    title: "Recession Probability | FAULTLINE",
+    description: "Recession probability intelligence using yield curves, credit conditions, leading indicators, policy context, and market-regime evidence.",
     ogType: "article",
   },
   "/alt-season-indicator": {
@@ -101,8 +101,8 @@ const PAGE_META: Record<string, PageMeta> = {
     ogType: "article",
   },
   "/bitcoin-risk-dashboard": {
-    title: "Bitcoin Risk Dashboard — BTC Risk Score & Analysis | FAULTLINE",
-    description: "Real-time Bitcoin risk dashboard tracking BTC macro regime, on-chain signals, liquidity conditions, and systemic risk score. Know when Bitcoin risk is elevated.",
+    title: "Bitcoin Risk Indicator | FAULTLINE",
+    description: "Bitcoin risk intelligence for understanding macro regime, liquidity conditions, market structure, and systemic pressure affecting BTC.",
     ogType: "article",
   },
   "/ethereum-risk-dashboard": {
@@ -141,8 +141,8 @@ const PAGE_META: Record<string, PageMeta> = {
     ogType: "article",
   },
   "/market-regime-tracker": {
-    title: "Market Regime Tracker — Bull, Bear & Crash Regime | FAULTLINE",
-    description: "Real-time market regime tracker classifying current conditions as Bull, Bear, Crash, or Recovery. FAULTLINE's regime engine drives all signals and risk scores.",
+    title: "Market Regime Tracker | FAULTLINE",
+    description: "Market regime intelligence for understanding evolving risk conditions, structural pressure, and the evidence shaping today’s market environment.",
     ogType: "article",
   },
   // ── Stock signal pages ────────────────────────────────────────────────────

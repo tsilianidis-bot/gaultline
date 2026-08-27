@@ -67,6 +67,16 @@
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://getfaultline.live/market-crash-probability-2026</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://getfaultline.live/bitcoin-risk-dashboard</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
 
   <!-- ── Tier 2b: SEO landing pages — macro ───────────────────── -->
   <url><loc>https://getfaultline.live/bull-or-bear-market</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
