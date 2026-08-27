@@ -38,6 +38,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { captureError, flushErrorTracking } from "../errorTracking";
 import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
+import { renderPublicMaintenancePage, shouldServePublicMaintenance } from "../publicMaintenance";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -252,6 +253,17 @@ async function startServer() {
       },
     })
   );
+
+  // Temporary public maintenance boundary. This is intentionally placed after all application
+  // APIs so data, authentication, scheduled intelligence, database operations, and health
+  // surfaces continue to function normally while public HTML routes show maintenance only.
+  app.use((req, res, next) => {
+    if (!shouldServePublicMaintenance(req.method, req.path)) return next();
+    res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
+    res.setHeader("X-Robots-Tag", "noindex, nofollow");
+    if (req.method === "HEAD") return res.status(200).end();
+    return res.status(200).type("html").send(renderPublicMaintenancePage());
+  });
 
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {

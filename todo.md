@@ -5344,3 +5344,21 @@
 - [x] Validate canonical-versus-legacy values for the same source snapshot and investigate any material divergence before publishing
 - [ ] Run full regression, Phase 2–10 targeted suites, database manifest verification, runtime smoke tests, and production verification
 - [ ] Save the canonical runtime restoration checkpoint and deliver the full root-cause and identity-proof report
+
+## FAULTLINE Build 1 — Portable Authoritative Intelligence Foundation (Source Archive)
+- [ ] Audit the complete uploaded source archive non-destructively: dependencies, tests, TypeScript, build, routes, components, providers, engines, schema, auth, Signals, history, fallback logic, and platform coupling
+- [ ] Establish an isolated salvage workspace so the accepted `ab9888c3` project and currently serving production remain recoverable
+- [ ] Preserve sound FAULTLINE UI, dashboard, charts, Pressure Gauge, alerts, Signals, watchlist, history, scenario, routing, tRPC, reliable data adapters, database, and authentication foundations without visual redesign
+- [ ] Remove or isolate unnecessary platform-specific runtime/deployment coupling while retaining legitimate application behavior and portable hosting support
+- [ ] Implement one server-authoritative validated input snapshot, canonical market state, evidence contract, and typed current-state API boundary
+- [ ] Ensure unavailable provider inputs produce explicit governed degraded/unavailable state rather than fake live browser fallbacks
+- [ ] Map the existing Pressure Index implementation against the approved 20/15/15/15/15/10/10 conceptual vector framework before changing methodology
+- [ ] Migrate frontend current-market consumption to the canonical server state while preserving simulation/demo use only when explicitly labeled
+- [ ] Add Build 1 contracts, migration, portability, authority-boundary, and no-fake-live regression coverage
+- [ ] Validate Build 1 acceptance criteria and save a separate Build 1 checkpoint with a full migration report
+
+## Temporary Public Maintenance State (Session 2026-08-27)
+- [x] Add a single isolated server-side maintenance gate for public HTML routes only, preserving API, database, canonical intelligence, and application behavior beneath it
+- [x] Create the approved FAULTLINE-branded responsive maintenance screen with no navigation, login prompt, technical detail, countdown, or ETA
+- [x] Validate healthy HTTP delivery and no application/database side effects in local domains
+- [ ] Save the temporary maintenance checkpoint and report apex/www status
