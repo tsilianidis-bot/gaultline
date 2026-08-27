@@ -5318,3 +5318,9 @@
 - [x] Resolve the compatible Phase 10 shared-branch merge while preserving this approved marketing architecture and both task histories
 - [ ] Save the marketing-page rebuild checkpoint and deliver the implementation result
 - [ ] Verify the managed deployment and smoke-test production landing, pricing, methodology, trust, and representative Phase 10 routes
+
+## FAULTLINE Blog — Soro Embed (Session 2026-08-25)
+- [x] Inspect the existing blog-page composition and select the least disruptive Soro embed placement
+- [x] Add the supplied Soro blog embed to the blog page only with client-side script de-duplication and cleanup
+- [x] Add regression coverage and validate the public blog route and embed initialization
+- [ ] Save the Soro embed checkpoint and deliver the result

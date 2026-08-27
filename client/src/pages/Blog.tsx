@@ -66,6 +66,34 @@ const EMPTY_FORM: PostForm = {
   published: false,
 };
 
+const SORO_BLOG_EMBED_ID = "faultline-soro-blog-embed";
+const SORO_BLOG_EMBED_SRC = "https://app.trysoro.com/api/embed/46626052-54a8-4bcf-9ec4-84473cffbb53";
+
+function SoroBlogEmbed() {
+  useEffect(() => {
+    // The Soro loader discovers #soro-blog when it executes. Replace any prior
+    // page-instance script so a return visit to /blog initializes a fresh mount.
+    document.getElementById(SORO_BLOG_EMBED_ID)?.remove();
+
+    const script = document.createElement("script");
+    script.id = SORO_BLOG_EMBED_ID;
+    script.src = SORO_BLOG_EMBED_SRC;
+    script.defer = true;
+    script.dataset.soroBlogEmbed = "true";
+    document.body.appendChild(script);
+
+    return () => {
+      script.remove();
+    };
+  }, []);
+
+  return (
+    <section className="mb-10 rounded-xl border border-cyan-400/15 bg-cyan-400/[0.025] p-4 sm:p-6" aria-label="FAULTLINE blog feed">
+      <div id="soro-blog" />
+    </section>
+  );
+}
+
 function PostModal({
   initial,
   onClose,
@@ -448,6 +476,8 @@ export default function Blog() {
             Our intelligence covers five core domains: <strong className="text-slate-300">macro intelligence</strong> (Fed policy, yield curves, credit cycles), <strong className="text-slate-300">market risk analysis</strong> (equity regime, sector rotation, momentum breakdowns), <strong className="text-slate-300">risk intelligence</strong> (systemic contagion, tail risk, crash analogs), <strong className="text-slate-300">crypto intelligence</strong> (digital asset macro correlation, stablecoin liquidity, BTC dominance cycles), and <strong className="text-slate-300">platform updates</strong> (new FAULTLINE features, methodology changes, and signal improvements).
           </p>
         </div>
+
+        {!isAdmin && <SoroBlogEmbed />}
 
         {/* ── Topic Pillars ─────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
