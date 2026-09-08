@@ -1,1 +1,1 @@
-FILE:///workspace/usi-minimal.tsx
+PLACEHOLDER_READ_FROM_WORKSPACE
