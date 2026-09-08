@@ -113,6 +113,8 @@ const SEVERITY_CONFIG = {
 };
 
 // ── Backtesting Summary (from Phase 2 analysis, hardcoded for display) ────────
+// DATA CLASS: STATIC_PHASE2_DEMO — these values are NOT live FMOS outputs and NOT governed MODEL_PROBABILITY.
+const BACKTEST_SUMMARY_DATA_CLASS = "STATIC_PHASE2_DEMO" as const;
 const BACKTEST_SUMMARY = {
   totalObservations: 1902,
   dateRange: "1990-01-08 to 2026-06-20",
@@ -258,13 +260,19 @@ export default function FmosHealthDashboard() {
       {/* ── Overview Tab ─────────────────────────────────────────────────────── */}
       {activeTab === "overview" && (
         <div className="space-y-6">
+          {/* STATIC DEMO banner — Phase 2 research snapshot, not live */}
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+            <span className="font-semibold text-amber-300">STATIC DEMO</span>
+            {" — "}Phase 2 research snapshot. Not live FMOS output and not governed MODEL_PROBABILITY.
+            Data class: {BACKTEST_SUMMARY_DATA_CLASS}.
+          </div>
           {/* KPI Row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Backtest Observations", value: "1,902", sub: "1990–2026 weekly", icon: Database, color: "text-cyan-400" },
-              { label: "Brier Skill Score", value: "+0.145", sub: "vs 0.25 baseline", icon: TrendingUp, color: "text-green-400" },
-              { label: "Direction Accuracy", value: "60.6%", sub: "4-week forward", icon: BarChart3, color: "text-yellow-400" },
-              { label: "Transition F1", value: "0.308", sub: "Recall: 25%", icon: Activity, color: "text-orange-400" },
+              { label: "STATIC · Backtest Observations", value: "1,902", sub: "not live · Phase 2 demo", icon: Database, color: "text-cyan-400" },
+              { label: "STATIC · Brier Skill Score", value: "+0.145", sub: "not live · Phase 2 demo", icon: TrendingUp, color: "text-green-400" },
+              { label: "STATIC · Direction Accuracy", value: "60.6%", sub: "not live · Phase 2 demo", icon: BarChart3, color: "text-yellow-400" },
+              { label: "STATIC · Transition F1", value: "0.308", sub: "not live · Phase 2 demo", icon: Activity, color: "text-orange-400" },
             ].map(kpi => {
               const Icon = kpi.icon;
               return (
@@ -562,10 +570,10 @@ export default function FmosHealthDashboard() {
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Brier Score",     value: "0.2137", target: "< 0.20", status: "warn",  hint: "Baseline: 0.25" },
-              { label: "Brier Skill",     value: "+0.145", target: "> 0.20", status: "warn",  hint: "Positive = better than random" },
-              { label: "ECE",             value: "0.1604", target: "< 0.10", status: "bad",   hint: "Expected Calibration Error" },
-              { label: "Direction Acc.",  value: "60.6%",  target: "> 65%",  status: "warn",  hint: "4-week forward accuracy" },
+              { label: "STATIC Brier Score", value: "0.2137", target: "< 0.20", status: "warn",  hint: "Phase 2 demo — not live" },
+              { label: "STATIC Brier Skill", value: "+0.145", target: "> 0.20", status: "warn",  hint: "Phase 2 demo — not live" },
+              { label: "STATIC ECE",         value: "0.1604", target: "< 0.10", status: "bad",   hint: "Phase 2 demo — not live" },
+              { label: "STATIC Direction Acc.", value: "60.6%",  target: "> 65%",  status: "warn",  hint: "Phase 2 demo — not live" },
             ].map(m => (
               <Card key={m.label} className="bg-[#12121a] border-white/5">
                 <CardContent className="p-4">
@@ -709,7 +717,7 @@ export default function FmosHealthDashboard() {
       {activeTab === "findings" && (
         <div className="space-y-4">
           <p className="text-slate-400 text-sm">
-            {VALIDATION_FINDINGS.length} findings from Phase 2 scientific validation.
+            {VALIDATION_FINDINGS.length} STATIC Phase 2 research findings (not live governed claims).
             {criticalCount + highCount} require immediate attention before production use.
           </p>
           {VALIDATION_FINDINGS.map((finding, idx) => {
