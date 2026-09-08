@@ -26,6 +26,9 @@
 | `028384163d0811ce105d8d7b9e196642d37338a8` | fix(shadow): drizzle eq() |
 | `601219a30a08089e395b6b67159d295c56839dd5` | docs: Grok log + maintenance runbook |
 | `ab31893a675c7ba4a17b6024c02a62457a09acd6` | docs: audit + plan |
+| `729d61e3048bc0ff763932adc11ed1faca115ad6` | fix(usi): restore UniversalSymbolIntelligence (P0-1) |
+| `7f0c8dc3616e897c2ccd7657df767c8457d70c90` | fix(fmos): STATIC DEMO labels on FmosHealthDashboard (P0-3) |
+| `975cc2b79e72e6935a13282802f9a889f35fc895` | fix(fmos): STATIC Phase-2 reference on ValidationLab (P0-3) |
 
 ---
 
@@ -44,7 +47,9 @@
 
 **Owner/parent action:** `push_files` or `create_or_update_file` with **full file bytes** from `/workspace/usi-minimal.tsx` (not a path string). Prefer `/workspace/usi_push_xmlsafe.json` as the exact MCP arguments object.
 
-**Status:** **BLOCKED-TRANSPORT** (executor cannot safely embed 45KB JSX in MCP XML without angle-bracket corruption; path stubs failed)
+**Status:** **DONE** — restored at `729d61e3048bc0ff763932adc11ed1faca115ad6` via Contents API (leave USI alone).
+
+**Do not touch USI again** after this restore.
 
 ---
 
@@ -54,9 +59,23 @@
 
 ---
 
-## P0-3 FMOS claim-honesty — NOT STARTED (blocked behind USI restore)
+## P0-3 FMOS claim-honesty — DONE
 
-Label STATIC DEMO ECE/Brier in `FmosHealthDashboard.tsx` / `ValidationLab.tsx` INSTITUTIONAL_METRICS; wire live `getCalibrationMetrics` with insufficient-data — do not invent numbers.
+Label STATIC DEMO / STATIC Phase-2 reference on hardcoded ECE/Brier display surfaces. Live `getCalibrationMetrics` remains separate; no invented live numbers.
+
+| File | Commit SHA |
+|------|------------|
+| `client/src/pages/FmosHealthDashboard.tsx` | `7f0c8dc3616e897c2ccd7657df767c8457d70c90` |
+| `client/src/pages/ValidationLab.tsx` | `975cc2b79e72e6935a13282802f9a889f35fc895` |
+
+**Changes:**
+- `BACKTEST_SUMMARY_DATA_CLASS = "STATIC_PHASE2_DEMO"` + amber STATIC DEMO banner before overview KPIs
+- Overview KPIs / calibration Brier·Skill·ECE relabeled `STATIC ·` / `STATIC …` with Phase 2 demo / not live hints
+- Findings intro: STATIC Phase 2 research findings (not live governed claims)
+- `INSTITUTIONAL_METRICS_DATA_CLASS = "STATIC_PHASE2_REFERENCE"` + amber STATIC REFERENCE CARDS banner before Tabs
+- Softened "Our score of 0.214" / live ECE tooltips to Phase-2 static reference language
+
+**USI:** left alone at `729d61e3048bc0ff763932adc11ed1faca115ad6`.
 
 ---
 
@@ -68,6 +87,6 @@ See `docs/MAINTENANCE_MODE_RUNBOOK.md`.
 
 ## Next P0
 
-1. **Restore USI** from box xml-safe payload (P0-1).
-2. FMOS claim-honesty commit (P0-3).
+1. ~~Restore USI (P0-1)~~ DONE (`729d61e…`).
+2. ~~FMOS claim-honesty (P0-3)~~ DONE.
 3. Owner: RV-1–RV-3 / RV-6 before maintenance flip.
