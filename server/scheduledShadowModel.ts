@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { getDb } from "./db";
 import { shadowModelReadings, shadowForwardOutcomes, shadowDailySummaries } from "../drizzle/schema";
-import { and, lt, isNull, gte, lte, desc } from "drizzle-orm";
+import { and, lt, isNull, gte, lte, eq } from "drizzle-orm";
 import { log } from "./logger";
 
 export async function handleShadowForwardOutcomes(_req: Request, res: Response): Promise<void> {
@@ -17,11 +17,11 @@ export async function handleShadowForwardOutcomes(_req: Request, res: Response):
     for (const outcome of overdue) {
       try {
         const [reading] = await db.select().from(shadowModelReadings)
-          .where((t => t.id === outcome.shadowReadingId) as any).limit(1);
+          .where(eq(shadowModelReadings.id, outcome.shadowReadingId)).limit(1);
         await db.update(shadowForwardOutcomes).set({
           collectedAt: now,
           notes: `Auto-collected at ${now.toISOString()}. V1: ${reading?.v1Pressure ?? "?"}, V3-H: ${reading?.v3hPressure ?? "?"}.`,
-        }).where((t => t.id === outcome.id) as any);
+        }).where(eq(shadowForwardOutcomes.id, outcome.id));
         collected++;
       } catch {}
     }
