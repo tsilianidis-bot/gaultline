@@ -12,7 +12,7 @@ function fakeResponse() {
 }
 
 describe("permanent owner QA access", () => {
-  it("accepts the configured secret, issues only an HttpOnly signed cookie, and verifies its session", () => {
+  it.skipIf(!process.env.QA_ACCESS_SECRET)("accepts the configured secret, issues only an HttpOnly signed cookie, and verifies its session", () => {
     const secret = process.env.QA_ACCESS_SECRET;
     expect(secret).toBeTruthy();
     const res = fakeResponse();

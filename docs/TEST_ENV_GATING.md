@@ -18,6 +18,7 @@ Do not use silent early `return` inside an `it()` to hide a missing secret. Skip
 | `server/polygon.key.test.ts` | `describe.skipIf` unless `POLYGON_API_KEY` is set | Polygon credential + live prev-bar call |
 | `server/coingecko.key.test.ts` | `describe.skipIf` unless `COINGECKO_API_KEY` is set; `/ping` still uses `it.skipIf(!RUN_INTEGRATION_TESTS)` | CoinGecko credential + optional live ping |
 | `server/gsc.credentials.test.ts` | `describe.skipIf` unless both Google OAuth client values are set | Search Console OAuth client construction |
+| `server/qaAccess.test.ts` | `it.skipIf` unless `QA_ACCESS_SECRET` is set | Owner QA cookie issuance against the live secret |
 
 ## ASHA unavailable copy
 
@@ -25,6 +26,7 @@ ASHA is an interpretation layer. User-visible unavailable copy must say **interp
 
 - `AshaIntelligenceBrief` catch path: `Interpretation temporarily unavailable. Please refresh.`
 - Crypto source-health limitation: `Crypto interpretation is supplemented...`
+- Daily greeting fail-safe: `Canonical state unavailable. Insufficient evidence for a current market interpretation.`
 
 ## Local re-enable
 

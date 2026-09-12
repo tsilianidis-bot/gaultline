@@ -818,7 +818,7 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
 
   const { response: llmResponse } = await invokeAshaGateway({ messages });
   const candidate = readString(llmResponse.choices?.[0]?.message?.content)
-    ?? "Canonical state unavailable. Insufficient evidence for a current market greeting.";
+    ?? "Canonical state unavailable. Insufficient evidence for a current market interpretation.";
   return String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
 }
 
