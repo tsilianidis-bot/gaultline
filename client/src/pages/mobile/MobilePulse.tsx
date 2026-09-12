@@ -16,11 +16,15 @@ function getRegimeColor(regime: string): string {
   return "#00D4FF";
 }
 
-function getVerdictFromScore(score: number): { label: string; sub: string; color: string } {
-  if (score >= 70) return { label: "STEP ASIDE", sub: "Systemic risk is critical. Reduce exposure.", color: "#FF2D55" };
-  if (score >= 55) return { label: "REDUCE EXPOSURE", sub: "Elevated risk. Defensive positioning advised.", color: "#FF9500" };
-  if (score >= 40) return { label: "STAY SELECTIVE", sub: "Mixed conditions. High-conviction setups only.", color: "#FFD700" };
-  return { label: "RISK ON", sub: "Favorable conditions. Opportunities are opening.", color: "#34D399" };
+function getCanonicalAnswer(quality: string | undefined, regime: string | null): { label: string; sub: string; color: string } {
+  if (!quality || quality === "UNAVAILABLE") {
+    return { label: "UNAVAILABLE", sub: "Canonical evidence is withheld. No action light is manufactured.", color: "#64748B" };
+  }
+  return {
+    label: (regime ?? "UNAVAILABLE").toUpperCase(),
+    sub: "Action-specific GREEN/YELLOW/RED lights live in ACT and Situation Room — this screen does not collapse to one bullish or bearish instruction.",
+    color: getRegimeColor(regime ?? ""),
+  };
 }
 
 function getRegimeLabel(regime: string): string {
@@ -36,18 +40,14 @@ function getRegimeLabel(regime: string): string {
 
 // ── Main Component ────────────────────────────────────────────
 export default function MobilePulse() {
-  const { data: canonicalState, isLoading: canonicalLoading } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
-    refetchInterval: 60_000,
-    staleTime: 30_000,
-  });
-  const { data: pressure, isLoading, refetch, isFetching } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
+  const { data: canonicalState, isLoading: canonicalLoading, refetch, isFetching } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
 
-  const regimeColor = useMemo(() => getRegimeColor(pressure?.regime ?? ""), [pressure?.regime]);
+  const regimeColor = useMemo(() => getRegimeColor(canonicalState?.regime ?? ""), [canonicalState?.regime]);
 
-  if (isLoading || canonicalLoading) {
+  if (canonicalLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <div className="w-10 h-10 rounded-full border-2 border-[#00D4FF]/30 border-t-[#00D4FF] animate-spin" />
@@ -56,29 +56,38 @@ export default function MobilePulse() {
     );
   }
 
-  if (!canonicalState) return null;
+  if (!canonicalState) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
+        <span className="text-[10px] font-mono tracking-widest text-[#64748B]">CANONICAL STATE UNAVAILABLE</span>
+        <p className="text-xs text-[#A8B8CC]">Current mobile pulse is withheld. No default, fixture, or live pressure recalculation is shown as current intelligence.</p>
+      </div>
+    );
+  }
 
-  const score = canonicalState.pressureIndex ?? 0;
-  const verdict = getVerdictFromScore(score);
-  const regimeLabel = getRegimeLabel(canonicalState.regime ?? "Unavailable");
-  const bullProb = Math.max(5, Math.round(100 - score * 0.9));
-  const crashProb = Math.min(95, Math.round(score * 0.7));
+  const score = canonicalState.pressureIndex;
+  const quality = canonicalState.confidenceOrEvidenceQuality;
+  const withheld = quality === "UNAVAILABLE" || score == null;
+  const verdict = getCanonicalAnswer(quality, canonicalState.regime);
+  const regimeLabel = withheld ? "UNAVAILABLE" : getRegimeLabel(canonicalState.regime ?? "Unavailable");
+  const bullProb = canonicalState.scenarioOutputs.bull ?? canonicalState.scenarioOutputs.softLanding ?? null;
+  const crashProb = canonicalState.scenarioOutputs.crash ?? canonicalState.scenarioOutputs.bear ?? null;
 
-  const riskVectors = useMemo(() => {
-    if (!pressure?.vectors) return [];
-    return [...pressure.vectors]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-      .map(v => ({ label: v.label, score: v.score }));
-  }, [pressure]);
+  const riskVectors = [...canonicalState.engines]
+    .filter(engine => engine.value != null && engine.qualityStatus !== "UNAVAILABLE")
+    .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
+    .slice(0, 5)
+    .map(engine => ({ label: engine.engineName, score: engine.value ?? 0 }));
 
-  const topAlert = pressure?.alerts?.[0];
-  const topRisk = topAlert?.title ?? riskVectors[0]?.label ?? "Credit Spread Widening";
-  const whatChanged = topAlert?.detail ?? "No significant regime change detected in the last 24 hours.";
+  const topRisk = withheld
+    ? "UNAVAILABLE"
+    : (canonicalState.warnings[0] ?? riskVectors[0]?.label ?? "UNAVAILABLE");
+  const whatChanged = withheld
+    ? "Canonical change narrative is withheld."
+    : (canonicalState.warnings[0] ?? "Canonical change narrative is unavailable.");
 
   // Score arc (0–100 → 0–180deg)
-  const arcPct = Math.min(100, Math.max(0, score)) / 100;
-  const arcColor = score >= 70 ? "#FF2D55" : score >= 55 ? "#FF9500" : score >= 40 ? "#FFD700" : "#34D399";
+  const arcColor = withheld || score == null ? "#64748B" : score >= 70 ? "#FF2D55" : score >= 55 ? "#FF9500" : score >= 40 ? "#FFD700" : "#34D399";
 
   return (
     <div className="flex flex-col h-full overflow-y-auto" style={{ WebkitOverflowScrolling: "touch" }}>
@@ -128,7 +137,7 @@ export default function MobilePulse() {
             style={{ background: `${arcColor}08`, border: `1px solid ${arcColor}25` }}
           >
             <div className="text-[8px] font-mono tracking-widest text-[#64748B]">RISK</div>
-            <div className="text-2xl font-black font-mono" style={{ color: arcColor }}>{Math.round(score)}</div>
+            <div className="text-2xl font-black font-mono" style={{ color: arcColor }}>{score == null ? "—" : Math.round(score)}</div>
             <div className="text-[8px] font-mono text-[#64748B]">/100</div>
           </div>
 
@@ -154,20 +163,20 @@ export default function MobilePulse() {
               <TrendingUp size={10} className="text-[#34D399]" />
               <span className="text-[8px] font-mono tracking-widest text-[#34D399]/70">BULL PROB</span>
             </div>
-            <div className="text-xl font-black font-mono text-[#34D399]">{bullProb}%</div>
+            <div className="text-xl font-black font-mono text-[#34D399]">{bullProb == null ? "UNAVAILABLE" : `${Math.round(bullProb)}%`}</div>
           </div>
           <div
             className="rounded-xl p-3 flex flex-col gap-1"
             style={{
-              background: crashProb >= 50 ? "rgba(255,45,85,0.06)" : "rgba(255,149,0,0.06)",
-              border: `1px solid ${crashProb >= 50 ? "rgba(255,45,85,0.2)" : "rgba(255,149,0,0.2)"}`,
+              background: crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.06)" : "rgba(255,149,0,0.06)",
+              border: `1px solid ${crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.2)" : "rgba(255,149,0,0.2)"}`,
             }}
           >
             <div className="flex items-center gap-1.5">
-              <TrendingDown size={10} style={{ color: crashProb >= 50 ? "#FF2D55" : "#FF9500" }} />
-              <span className="text-[8px] font-mono tracking-widest" style={{ color: crashProb >= 50 ? "rgba(255,45,85,0.7)" : "rgba(255,149,0,0.7)" }}>CRASH RISK</span>
+              <TrendingDown size={10} style={{ color: crashProb != null && crashProb >= 50 ? "#FF2D55" : "#FF9500" }} />
+              <span className="text-[8px] font-mono tracking-widest" style={{ color: crashProb != null && crashProb >= 50 ? "rgba(255,45,85,0.7)" : "rgba(255,149,0,0.7)" }}>CRASH RISK</span>
             </div>
-            <div className="text-xl font-black font-mono" style={{ color: crashProb >= 50 ? "#FF2D55" : "#FF9500" }}>{crashProb}%</div>
+            <div className="text-xl font-black font-mono" style={{ color: crashProb != null && crashProb >= 50 ? "#FF2D55" : "#FF9500" }}>{crashProb == null ? "UNAVAILABLE" : `${Math.round(crashProb)}%`}</div>
           </div>
         </div>
       </div>
@@ -198,8 +207,8 @@ export default function MobilePulse() {
               <span className="text-[9px] font-mono tracking-widest text-[#00D4FF]/60">RISK VECTORS</span>
             </div>
             {riskVectors.map((v) => {
-              const pct = Math.min(100, (v.score / 10) * 100);
-              const c = v.score >= 7 ? "#FF2D55" : v.score >= 5 ? "#FF9500" : "#34D399";
+              const pct = Math.min(100, v.score);
+              const c = v.score >= 70 ? "#FF2D55" : v.score >= 50 ? "#FF9500" : "#34D399";
               return (
                 <div key={v.label} className="flex items-center gap-2">
                   <span className="text-[10px] font-mono text-[#A8B8CC] flex-1 truncate">{v.label}</span>

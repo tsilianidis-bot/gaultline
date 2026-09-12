@@ -187,24 +187,36 @@ export default function PressureIndex() {
     canonical: "/pressure-index",
   });
 
-  const { data, isLoading, error } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
+  const { data, isLoading, error } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
 
-  const score = data?.overallPressure ?? 0;
-  const regime = data?.regime ?? "LOADING...";
-  const color = pressureColor(score);
+  const score = data?.pressureIndex ?? null;
+  const regime = data?.regime ?? (data ? "UNAVAILABLE" : "UNAVAILABLE");
+  const withheld = !data || data.confidenceOrEvidenceQuality === "UNAVAILABLE" || score == null;
+  const color = withheld ? "#64748B" : pressureColor(score);
 
-  // Build vector bars from real data if available
-  const vectors = data?.vectors?.slice(0, 5) ?? [];
+  const vectors = withheld
+    ? []
+    : data.engines
+        .filter(engine => engine.value != null && engine.qualityStatus !== "UNAVAILABLE")
+        .slice(0, 5)
+        .map(engine => ({
+          id: engine.engineId,
+          label: engine.engineName,
+          score: engine.value ?? 0,
+          dataStatus: engine.freshnessStatus === "CURRENT" ? "live" : engine.freshnessStatus.toLowerCase(),
+          fallbackReason: engine.fallbackStatus === "ACTIVE" ? "Governed fallback" : undefined,
+          source: "canonical-state",
+        }));
 
   // Register ASHA page context — memoized to prevent infinite render loop
   const ashaCtx = useMemo(() => ({
     page: "pressure" as const,
-    pressureScore: score,
+    pressureScore: score ?? undefined,
     regime,
-    keyDrivers: vectors.map(v => `${v.label}: ${v.score?.toFixed(1) ?? '—'}`),
+    keyDrivers: vectors.map(v => `${v.label}: ${v.score?.toFixed(1) ?? "UNAVAILABLE"}`),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [score, regime, vectors.length]);
   useRegisterAshaContext(ashaCtx);
@@ -264,7 +276,7 @@ export default function PressureIndex() {
               className="inline-block text-[9px] font-mono tracking-[0.35em] px-4 py-1.5 rounded-full mb-6"
               style={{ color: `${color}`, background: `${color}10`, border: `1px solid ${color}30` }}
             >
-              FAULTLINE PRESSURE INDEX™ — LIVE
+              {withheld ? "FAULTLINE PRESSURE INDEX™ — UNAVAILABLE" : "FAULTLINE PRESSURE INDEX™ — CANONICAL"}
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 tracking-tight leading-tight">
               Systemic Market<br />
@@ -284,7 +296,7 @@ export default function PressureIndex() {
                 <div className="w-52 h-52 flex items-center justify-center">
                   <div className="w-10 h-10 border-2 border-cyan-500/20 border-t-cyan-400/60 rounded-full animate-spin" />
                 </div>
-              ) : error ? (
+              ) : error || withheld || score == null ? (
                 <div className="text-red-400/50 text-sm font-mono">DATA UNAVAILABLE</div>
               ) : (
                 <PressureGauge score={score} regime={regime} />
@@ -324,7 +336,9 @@ export default function PressureIndex() {
                 <div className="text-[9px] font-mono tracking-[0.3em] text-white/30 mb-3">CURRENT REGIME</div>
                 <div className="text-lg font-bold mb-2" style={{ color }}>{regime}</div>
                 <p className="text-white/40 text-xs leading-relaxed">
-                  {score >= 75
+                  {withheld || score == null
+                    ? "Canonical pressure evidence is withheld. This page will not manufacture a live score, regime story, or placeholder vectors."
+                    : score >= 75
                     ? "Multiple systemic stress vectors are converging. Elevated probability of cascade events. Risk management protocols should be active."
                     : score >= 50
                     ? "Significant macro stress detected across credit, rates, and volatility dimensions. Heightened vigilance warranted."
@@ -365,10 +379,9 @@ export default function PressureIndex() {
                       </div>
                     ))
                   ) : (
-                    // Placeholder bars while loading
-                    ["CREDIT STRESS", "YIELD SHOCK", "VOLATILITY", "LIQUIDITY", "MOMENTUM"].map((label, i) => (
-                      <VectorBar key={label} label={label} value={isLoading ? 0 : [42, 58, 35, 27, 61][i]} color={pressureColor([42, 58, 35, 27, 61][i])} />
-                    ))
+                    <div className="text-[10px] font-mono text-white/30">
+                      {isLoading ? "LOADING CANONICAL VECTORS…" : "RISK VECTORS UNAVAILABLE — WITHHELD"}
+                    </div>
                   )}
                 </div>
               </div>
