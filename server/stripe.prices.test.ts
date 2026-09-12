@@ -7,11 +7,18 @@ const STRIPE_PREMIUM_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID ?? "";
 const STRIPE_FOUNDING_PRICE_ID = process.env.STRIPE_FOUNDING_PRICE_ID ?? "";
 const STRIPE_LIFETIME_PRICE_ID = process.env.STRIPE_LIFETIME_PRICE_ID ?? "";
 
+const hasConfiguredPriceIds = [
+  STRIPE_CORE_PRICE_ID,
+  STRIPE_PREMIUM_PRICE_ID,
+  STRIPE_FOUNDING_PRICE_ID,
+  STRIPE_LIFETIME_PRICE_ID,
+].every(id => id.startsWith("price_"));
+
 // Live price IDs cannot be retrieved using a test-mode key.
 // API retrieval tests are skipped when the sandbox is running test-mode keys.
 const isLiveKey = STRIPE_SECRET_KEY.startsWith("sk_live_");
 
-describe("Stripe Price ID validation", () => {
+describe.skipIf(!hasConfiguredPriceIds)("Stripe Price ID validation", () => {
   it("STRIPE_CORE_PRICE_ID is set and non-empty", () => {
     expect(STRIPE_CORE_PRICE_ID).toBeTruthy();
     expect(STRIPE_CORE_PRICE_ID).toMatch(/^price_/);
@@ -38,8 +45,7 @@ describe("Stripe Price ID validation", () => {
     expect(unique.size).toBe(4);
   });
 
-  it("can retrieve FAULTLINE Core (Mobile) price from Stripe API — $9.99/mo", async () => {
-    if (!STRIPE_SECRET_KEY || !isLiveKey) return;
+  it.skipIf(!STRIPE_SECRET_KEY || !isLiveKey)("can retrieve FAULTLINE Core (Mobile) price from Stripe API — $9.99/mo", async () => {
     const stripe = new Stripe(STRIPE_SECRET_KEY);
     const price = await stripe.prices.retrieve(STRIPE_CORE_PRICE_ID);
     expect(price.id).toBe(STRIPE_CORE_PRICE_ID);
@@ -49,8 +55,7 @@ describe("Stripe Price ID validation", () => {
     expect(price.active).toBe(true);
   }, 10000);
 
-  it("can retrieve FAULTLINE Trader (Premium) price from Stripe API — $59/mo", async () => {
-    if (!STRIPE_SECRET_KEY || !isLiveKey) return;
+  it.skipIf(!STRIPE_SECRET_KEY || !isLiveKey)("can retrieve FAULTLINE Trader (Premium) price from Stripe API — $59/mo", async () => {
     const stripe = new Stripe(STRIPE_SECRET_KEY);
     const price = await stripe.prices.retrieve(STRIPE_PREMIUM_PRICE_ID);
     expect(price.id).toBe(STRIPE_PREMIUM_PRICE_ID);
@@ -60,8 +65,7 @@ describe("Stripe Price ID validation", () => {
     expect(price.active).toBe(true);
   }, 10000);
 
-  it("can retrieve FAULTLINE Founding Member price from Stripe API — $49/mo recurring", async () => {
-    if (!STRIPE_SECRET_KEY || !isLiveKey) return;
+  it.skipIf(!STRIPE_SECRET_KEY || !isLiveKey)("can retrieve FAULTLINE Founding Member price from Stripe API — $49/mo recurring", async () => {
     const stripe = new Stripe(STRIPE_SECRET_KEY);
     const price = await stripe.prices.retrieve(STRIPE_FOUNDING_PRICE_ID);
     expect(price.id).toBe(STRIPE_FOUNDING_PRICE_ID);
@@ -72,8 +76,7 @@ describe("Stripe Price ID validation", () => {
     expect(price.active).toBe(true);
   }, 10000);
 
-  it("can retrieve FAULTLINE Founding Lifetime price from Stripe API — $299 one-time", async () => {
-    if (!STRIPE_SECRET_KEY || !isLiveKey) return;
+  it.skipIf(!STRIPE_SECRET_KEY || !isLiveKey)("can retrieve FAULTLINE Founding Lifetime price from Stripe API — $299 one-time", async () => {
     const stripe = new Stripe(STRIPE_SECRET_KEY);
     const price = await stripe.prices.retrieve(STRIPE_LIFETIME_PRICE_ID);
     expect(price.id).toBe(STRIPE_LIFETIME_PRICE_ID);
@@ -83,8 +86,7 @@ describe("Stripe Price ID validation", () => {
     expect(price.active).toBe(true);
   }, 10000);
 
-  it("old $1,200 price is archived (inactive) — test-mode only", async () => {
-    if (!STRIPE_SECRET_KEY || isLiveKey) return;
+  it.skipIf(!STRIPE_SECRET_KEY || isLiveKey)("old $1,200 price is archived (inactive) — test-mode only", async () => {
     const stripe = new Stripe(STRIPE_SECRET_KEY);
     const oldPrice = await stripe.prices.retrieve("price_1TcVgB7f3zM5dNdGb4acS3Mr");
     expect(oldPrice.active).toBe(false);

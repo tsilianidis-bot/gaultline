@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { google } from "googleapis";
 
-describe("Google OAuth credentials", () => {
+describe.skipIf(!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET)("Google OAuth credentials", () => {
   it("should instantiate OAuth2 client with GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET", () => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;

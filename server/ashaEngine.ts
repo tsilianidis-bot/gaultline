@@ -300,7 +300,7 @@ function buildEngineAvailabilityContext(context: AshaGatewayContext): {
       if (source.id === "coingecko") {
         unavailable.push("Crypto Intelligence Engine");
         limitations.push(
-          "Crypto Intelligence Engine is unavailable. Crypto analysis is supplemented from external macro context only and is not FAULTLINE-native intelligence. Confidence is reduced accordingly."
+          "Crypto Intelligence Engine is unavailable. Crypto interpretation is supplemented from external macro context only and is not FAULTLINE-native intelligence. Confidence is reduced accordingly."
         );
       } else if (source.id === "fred") {
         unavailable.push("FRED Economic Data");

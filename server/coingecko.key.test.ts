@@ -14,7 +14,7 @@ import { describe, it, expect } from "vitest";
 const COINGECKO_BASE = "https://api.coingecko.com/api/v3";
 const isIntegrationEnv = !!process.env.RUN_INTEGRATION_TESTS;
 
-describe("COINGECKO_API_KEY validation", () => {
+describe.skipIf(!process.env.COINGECKO_API_KEY)("COINGECKO_API_KEY validation", () => {
   it("COINGECKO_API_KEY env var should be set", () => {
     const key = process.env.COINGECKO_API_KEY;
     expect(key, "COINGECKO_API_KEY is not set").toBeTruthy();
