@@ -356,9 +356,20 @@ export const appRouter = router({
         if (!engineEnabled) {
           throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Pressure engine is temporarily disabled for maintenance." });
         }
-        const pressure = await calculateFaultlinePressure();
-        return await computeHistoricalContext(pressure);
+        const { getAuthoritativeCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
+        const { projectPressureFromCanonical } = await import("./canonicalPressureProjection");
+        const canonical = await getAuthoritativeCanonicalIntelligenceState();
+        const pressure = projectPressureFromCanonical(canonical);
+        if (!canonical || !pressure) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "UNAVAILABLE — no canonical market state is bound. Historical context is withheld.",
+          });
+        }
+        const context = await computeHistoricalContext(pressure);
+        return { ...context, canonicalStateId: canonical.stateId, availability: "AVAILABLE" as const };
       } catch (err) {
+        if (err instanceof TRPCError) throw err;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Historical Context Engine failed", cause: err });
       }
     }),

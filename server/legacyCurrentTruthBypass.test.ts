@@ -10,6 +10,10 @@ describe("legacy current-truth bypasses", () => {
   const mobilePulse = source("client/src/pages/mobile/MobilePulse.tsx");
   const mobileBrief = source("client/src/pages/mobile/MobileBrief.tsx");
   const pressureIndex = source("client/src/pages/PressureIndex.tsx");
+  const homepageBriefing = source("server/homepageBriefing.ts");
+  const homepagePanel = source("client/src/components/HomepageBriefingPanel.tsx");
+  const cryptoIntelligence = source("server/cryptoIntelligence.ts");
+  const historicalRouter = source("server/routers.ts");
 
   it("keeps Mobile Pulse on canonicalCurrent and does not invent bull/crash from a score", () => {
     expect(mobilePulse).toContain("marketState.canonicalCurrent");
@@ -31,5 +35,25 @@ describe("legacy current-truth bypasses", () => {
     expect(pressureIndex).not.toContain("pressure.getCurrentPressure");
     expect(pressureIndex).not.toContain("[42, 58, 35, 27, 61]");
     expect(pressureIndex).toContain("RISK VECTORS UNAVAILABLE — WITHHELD");
+  });
+
+  it("binds homepage briefing to canonical state and does not invent bull/crash from pressure", () => {
+    expect(homepageBriefing).toContain("getAuthoritativeCanonicalIntelligenceState");
+    expect(homepageBriefing).toContain("projectPressureFromCanonical");
+    expect(homepageBriefing).not.toContain("calculateFaultlinePressure");
+    expect(homepageBriefing).not.toContain("currentOverall * 0.6");
+    expect(homepageBriefing).toContain("UNAVAILABLE");
+    expect(homepagePanel).toContain("availability === \"UNAVAILABLE\"");
+    expect(homepagePanel).toContain("CRASH / DRAWDOWN");
+  });
+
+  it("binds crypto intelligence and historical context to canonical state", () => {
+    expect(cryptoIntelligence).toContain("getAuthoritativeCanonicalIntelligenceState");
+    expect(cryptoIntelligence).toContain("projectPressureFromCanonical");
+    expect(cryptoIntelligence).not.toContain("calculateFaultlinePressure");
+    expect(cryptoIntelligence).not.toContain("?? 50");
+    expect(cryptoIntelligence).not.toContain("?? 40");
+    expect(historicalRouter).toContain("projectPressureFromCanonical");
+    expect(historicalRouter).toContain("no canonical market state is bound");
   });
 });

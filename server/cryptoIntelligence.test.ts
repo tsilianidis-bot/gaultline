@@ -2,54 +2,86 @@
 // FAULTLINE Crypto Intelligence™ — server/cryptoIntelligence.test.ts
 //
 // Tests for the crypto signal scoring engine.
-// Validates that all scoring functions produce valid output
-// shapes and that the tRPC procedure is wired correctly.
+// CURRENT macro context binds to the canonical intelligence state.
 // ============================================================
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import { getCryptoIntelligence, clearCryptoCache } from "./cryptoIntelligence";
-import { calculateFaultlinePressure } from "./pressure/engine";
 
-// Mock the pressure engine to return deterministic values
-vi.mock("./pressure/engine", () => ({
-  calculateFaultlinePressure: vi.fn().mockResolvedValue({
-    overallPressure: 45,
-    regime: "MODERATE STRESS",
-    level: "Elevated",
-    vectors: [
-      { id: "liquidity",     score: 40, driver: "test", trend: "stable" },
-      { id: "yield_curve",   score: 50, driver: "test", trend: "stable" },
-      { id: "credit_stress", score: 35, driver: "test", trend: "stable" },
-      { id: "equity_stress", score: 42, driver: "test", trend: "stable" },
-      { id: "sovereign_debt",score: 38, driver: "test", trend: "stable" },
-    ],
-    alerts: [],
-    topAnalog: { year: 2019, label: "2019 Trade War", similarity: 0.7, description: "test" },
-    analogs: [],
-    timestamp: new Date().toISOString(),
-    dataSource: "fallback" as const,
-  }),
-}));
+vi.mock("./canonicalIntelligenceState", async () => {
+  const actual = await vi.importActual<typeof import("./canonicalIntelligenceState")>("./canonicalIntelligenceState");
+  return {
+    ...actual,
+    getAuthoritativeCanonicalIntelligenceState: vi.fn(),
+  };
+});
 
-// Mock LLM to avoid real API calls in tests
 vi.mock("./_core/llm", () => ({
   invokeLLM: vi.fn().mockResolvedValue({
     choices: [{ message: { content: "Test AI narrative for crypto markets." } }],
   }),
 }));
 
+function manifest(overrides: Record<string, unknown> = {}) {
+  return {
+    stateId: "state:crypto-test",
+    generatedAt: "2026-09-12T00:00:00.000Z",
+    championVersion: "champion-v1-frozen",
+    modelVersion: "2.0",
+    scoringVersion: "faultline-pressure-v1-frozen",
+    configurationVersion: "phase1b-governance-v1",
+    inputSnapshotId: "input:crypto-test",
+    stateHash: "hash:crypto-test",
+    pressureIndex: 45,
+    regime: "MODERATE STRESS",
+    engineValues: {
+      "liquidity-stress": 40,
+      "credit-contagion": 35,
+      "volatility-regime": 50,
+      "macro-sensitivity": 38,
+      "market-breadth": 42,
+      "ai-bubble": 40,
+    },
+    engineDirections: { "liquidity-stress": "stable" },
+    domainValues: {},
+    scenarioOutputs: { bull: 43, neutral: 43, bear: 14 },
+    probabilityClaimIds: [],
+    analogClaimIds: [],
+    historicalDatasetVersion: "historical",
+    researchDatasetVersion: "research",
+    coherenceStatus: "COHERENT",
+    coherenceNotes: [],
+    dataQualitySummary: { staleInputs: [], unavailableInputs: [], fallbackInputs: [], staticInputs: [] },
+    staleInputs: [],
+    unavailableInputs: [],
+    fallbackInputs: [],
+    inputQuality: [],
+    ...overrides,
+  };
+}
+
+function bindCanonical(overrides: Record<string, unknown> = {}) {
+  vi.mocked(getAuthoritativeCanonicalIntelligenceState).mockResolvedValue(
+    buildCanonicalIntelligenceState(manifest(overrides)),
+  );
+}
+
 describe("getCryptoIntelligence", () => {
   beforeEach(() => {
     clearCryptoCache();
-    vi.mocked(calculateFaultlinePressure).mockClear();
+    bindCanonical();
   });
 
-  it("returns a valid CryptoIntelligenceReport shape", async () => {
+  it("returns a valid CryptoIntelligenceReport shape bound to canonical state", async () => {
     const report = await getCryptoIntelligence();
 
     expect(report).toBeDefined();
+    expect(report.availability).toBe("AVAILABLE");
+    expect(report.canonicalStateId).toBe("state:crypto-test");
     expect(typeof report.generatedAt).toBe("number");
-    expect(typeof report.pressureIndex).toBe("number");
-    expect(typeof report.regime).toBe("string");
+    expect(report.pressureIndex).toBe(45);
+    expect(report.regime).toBe("MODERATE STRESS");
     expect(Array.isArray(report.signals)).toBe(true);
     expect(report.btcDashboard).toBeDefined();
     expect(report.altcoinRisk).toBeDefined();
@@ -157,7 +189,7 @@ describe("getCryptoIntelligence", () => {
     expect(g.disclaimer).toBeTruthy();
   });
 
-  it("second call returns cached result", async () => {
+  it("second call returns cached result for the same stateId", async () => {
     const first  = await getCryptoIntelligence();
     const second = await getCryptoIntelligence();
     expect(second.cached).toBe(true);
@@ -165,54 +197,43 @@ describe("getCryptoIntelligence", () => {
   });
 
   it("clearCryptoCache forces fresh fetch on next call", async () => {
-    const first = await getCryptoIntelligence();
+    await getCryptoIntelligence();
     clearCryptoCache();
     const second = await getCryptoIntelligence();
-    // After clearing cache, second call should NOT be cached
     expect(second.cached).toBe(false);
-    expect(calculateFaultlinePressure).toHaveBeenCalledTimes(2);
+    expect(getAuthoritativeCanonicalIntelligenceState).toHaveBeenCalled();
   });
 
-  it("pressureIndex matches the mocked overallPressure", async () => {
+  it("pressureIndex matches the canonical pressureIndex", async () => {
     const report = await getCryptoIntelligence();
     expect(report.pressureIndex).toBe(45);
   });
-});
 
-// ── Bear Market → Accumulation Phase tests ───────────────────────────────────
-// These tests use a second mock that produces conditions matching the
-// isAccumulationPhase criteria:
-//   trendScore 25–55 (pressure 40–70 + equity 40–65 → trend = 100 - (p*0.6 + eq*0.4))
-//   pressure 40–70
-//   liquidity 35–60 (liquidity = 100 - liquidityVectorScore, so vector 40–65)
-//   credit < 60
-//   equity < 65
+  it("withholds CURRENT crypto truth when canonical state is missing", async () => {
+    vi.mocked(getAuthoritativeCanonicalIntelligenceState).mockResolvedValue(null);
+    const report = await getCryptoIntelligence();
+    expect(report.availability).toBe("UNAVAILABLE");
+    expect(report.pressureIndex).toBeNull();
+    expect(report.signals).toEqual([]);
+    expect(report.btcDashboard.overallBtcBias).toBe("UNAVAILABLE");
+    expect(report.btcDashboard.marketCyclePhase.phase).toBe("UNAVAILABLE");
+  });
+});
 
 describe("Bear Market → Accumulation Phase classification", () => {
   beforeEach(() => {
     clearCryptoCache();
-    // Override mock with accumulation-phase conditions:
-    //   pressure = 55 (in 40–70 range)
-    //   liquidity vector score = 50 → liquidity = 50 (in 35–60 range)
-    //   credit_stress = 40 (< 60)
-    //   equity_stress = 45 (< 65)
-    //   trendScore = 100 - (55*0.6 + 45*0.4) = 100 - (33 + 18) = 49 (in 25–55 range)
-    (calculateFaultlinePressure as ReturnType<typeof vi.fn>).mockResolvedValue({
-      overallPressure: 55,
+    bindCanonical({
+      pressureIndex: 55,
       regime: "ELEVATED STRESS",
-      level: "Elevated",
-      vectors: [
-        { id: "liquidity",     score: 50, driver: "test", trend: "stable" },
-        { id: "yield_curve",   score: 45, driver: "test", trend: "stable" },
-        { id: "credit_stress", score: 40, driver: "test", trend: "stable" },
-        { id: "equity_stress", score: 45, driver: "test", trend: "stable" },
-        { id: "sovereign_debt",score: 42, driver: "test", trend: "stable" },
-      ],
-      alerts: [],
-      topAnalog: { year: 2019, label: "2019 Trade War", similarity: 0.7, description: "test" },
-      analogs: [],
-      timestamp: new Date().toISOString(),
-      dataSource: "fallback" as const,
+      engineValues: {
+        "liquidity-stress": 50,
+        "credit-contagion": 40,
+        "volatility-regime": 45,
+        "macro-sensitivity": 42,
+        "market-breadth": 45,
+        "ai-bubble": 40,
+      },
     });
   });
 
@@ -273,49 +294,36 @@ describe("Bear Market → Accumulation Phase classification", () => {
 
   it("does NOT include accumulationAnalysis under bull conditions", async () => {
     clearCryptoCache();
-    // Override with bull conditions: high trend, high liquidity, low pressure
-    (calculateFaultlinePressure as ReturnType<typeof vi.fn>).mockResolvedValue({
-      overallPressure: 20,
+    bindCanonical({
+      pressureIndex: 20,
       regime: "RISK ON",
-      level: "Low",
-      vectors: [
-        { id: "liquidity",     score: 20, driver: "test", trend: "stable" }, // liquidity = 80
-        { id: "yield_curve",   score: 25, driver: "test", trend: "stable" },
-        { id: "credit_stress", score: 20, driver: "test", trend: "stable" },
-        { id: "equity_stress", score: 15, driver: "test", trend: "stable" }, // trendScore = 100-(20*0.6+15*0.4) = 88
-        { id: "sovereign_debt",score: 22, driver: "test", trend: "stable" },
-      ],
-      alerts: [],
-      topAnalog: { year: 2019, label: "2019 Trade War", similarity: 0.7, description: "test" },
-      analogs: [],
-      timestamp: new Date().toISOString(),
-      dataSource: "fallback" as const,
+      engineValues: {
+        "liquidity-stress": 20,
+        "credit-contagion": 20,
+        "volatility-regime": 25,
+        "macro-sensitivity": 22,
+        "market-breadth": 15,
+        "ai-bubble": 20,
+      },
     });
     const report = await getCryptoIntelligence();
-    // Should be Mid Bull or Early Bull, not accumulation
     expect(report.btcDashboard.marketCyclePhase.phase).not.toBe("Bear Market → Accumulation Phase");
     expect(report.btcDashboard.accumulationAnalysis).toBeUndefined();
   });
 
   it("does NOT include accumulationAnalysis under crisis/bear conditions", async () => {
     clearCryptoCache();
-    // Override with crisis conditions: very high pressure, very low liquidity
-    (calculateFaultlinePressure as ReturnType<typeof vi.fn>).mockResolvedValue({
-      overallPressure: 88,
+    bindCanonical({
+      pressureIndex: 88,
       regime: "CRISIS",
-      level: "Critical",
-      vectors: [
-        { id: "liquidity",     score: 80, driver: "test", trend: "stable" }, // liquidity = 20
-        { id: "yield_curve",   score: 75, driver: "test", trend: "stable" },
-        { id: "credit_stress", score: 80, driver: "test", trend: "stable" },
-        { id: "equity_stress", score: 82, driver: "test", trend: "stable" },
-        { id: "sovereign_debt",score: 78, driver: "test", trend: "stable" },
-      ],
-      alerts: [],
-      topAnalog: { year: 2019, label: "2019 Trade War", similarity: 0.7, description: "test" },
-      analogs: [],
-      timestamp: new Date().toISOString(),
-      dataSource: "fallback" as const,
+      engineValues: {
+        "liquidity-stress": 80,
+        "credit-contagion": 80,
+        "volatility-regime": 75,
+        "macro-sensitivity": 78,
+        "market-breadth": 82,
+        "ai-bubble": 80,
+      },
     });
     const report = await getCryptoIntelligence();
     expect(report.btcDashboard.marketCyclePhase.phase).not.toBe("Bear Market → Accumulation Phase");

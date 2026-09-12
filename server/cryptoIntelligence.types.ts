@@ -1,5 +1,5 @@
-export type CryptoSignal = "Bullish" | "Neutral" | "Bearish";
-export type CryptoRisk = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
+export type CryptoSignal = "Bullish" | "Neutral" | "Bearish" | "UNAVAILABLE";
+export type CryptoRisk = "Low" | "Moderate" | "Elevated" | "High" | "Critical" | "UNAVAILABLE";
 export type MomentumDir = "Accelerating" | "Stable" | "Decelerating" | "Reversing";
 export type CyclePhase =
   | "Early Bull"
@@ -10,7 +10,8 @@ export type CyclePhase =
   | "Mid Bear"
   | "Capitulation"
   | "Bear Market → Accumulation Phase"
-  | "Accumulation";
+  | "Accumulation"
+  | "UNAVAILABLE";
 
 export interface AccumulationPhaseAnalysis {
   directAnswer: string;
@@ -84,8 +85,11 @@ export interface CryptoPortfolioGuidance {
 
 export interface CryptoIntelligenceReport {
   generatedAt: number;
-  pressureIndex: number;
-  regime: string;
+  availability: "AVAILABLE" | "UNAVAILABLE";
+  canonicalStateId: string | null;
+  qualityStatus: string | null;
+  pressureIndex: number | null;
+  regime: string | null;
   signals: CryptoAssetSignal[];
   btcDashboard: BitcoinMacroDashboard;
   altcoinRisk: AltcoinRiskAssessment;
