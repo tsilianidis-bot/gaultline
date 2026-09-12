@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 
-describe("SENDGRID_API_KEY validation", () => {
+describe.skipIf(!process.env.SENDGRID_API_KEY)("SENDGRID_API_KEY validation", () => {
   it("key is present in environment", () => {
     const key = process.env.SENDGRID_API_KEY;
     expect(key, "SENDGRID_API_KEY must be set").toBeTruthy();

@@ -66,7 +66,7 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     const billing = read('server/routers/billing.ts');
     expect(products).toContain('verifyStripePlanConfiguration');
     expect(products).toContain('price.unit_amount === plan.amount');
-    expect(products).toContain('product?.name === plan.name');
+    expect(products).toContain('product.name === plan.name');
     expect(billing).toContain('const verification = await verifyStripePlanConfiguration(plan);');
     expect(billing).toContain('Checkout is unavailable until Stripe configuration is verified.');
   });

@@ -223,7 +223,7 @@ export async function recordDailyRisingStarsContinuity(
   context: RisingStarObservationContext
 ) {
   const results = await Promise.allSettled(items.map(item => recordRisingStarObservation(item, context, "daily")));
-  const created = results.filter((result): result is PromiseFulfilledResult<{ created: boolean }> => result.status === "fulfilled" && result.value.created).length;
+  const created = results.filter(result => result.status === "fulfilled" && result.value.created).length;
   const failed = results.filter(result => result.status === "rejected").length;
   if (failed) log.warn(`[RisingStarsHistory] Daily continuity partially completed: ${created} created, ${failed} failed`);
   return { attempted: items.length, created, failed };

@@ -145,13 +145,13 @@ function indexPoints(points: SourcePoint[]) {
 }
 
 export function selectSameMonthDaily(points: Map<string, SourcePoint>, month: string): SourcePoint | null {
-  const eligible = [...points.values()].filter(point => point.date.startsWith(month));
+  const eligible = Array.from(points.values()).filter(point => point.date.startsWith(month));
   return eligible.sort((left, right) => right.date.localeCompare(left.date))[0] ?? null;
 }
 
 export function selectPriorReleasedMonthly(points: Map<string, SourcePoint>, month: string): SourcePoint | null {
   const maxReferenceMonth = priorMonth(month);
-  const eligible = [...points.values()].filter(point => point.date.slice(0, 7) <= maxReferenceMonth);
+  const eligible = Array.from(points.values()).filter(point => point.date.slice(0, 7) <= maxReferenceMonth);
   return eligible.sort((left, right) => right.date.localeCompare(left.date))[0] ?? null;
 }
 
@@ -173,14 +173,14 @@ export function buildReconstructedMonth(month: string, series: Record<string, Ma
   const cpiPrior = cpi ? yearAgoMonthly(series.CPIAUCSL!, cpi) : null;
   const ppiPrior = ppi ? yearAgoMonthly(series.PPIACO!, ppi) : null;
   const inputs: Partial<FrozenInputs> = {
-    hySpreadBps: baml ? baml.value * 100 : null,
-    sofr: sofr?.value ?? null,
-    tsy10y: dgs10?.value ?? null,
-    tsy2y: dgs2?.value ?? null,
-    cpiYoy: cpi && cpiPrior && cpiPrior.value !== 0 ? ((cpi.value / cpiPrior.value) - 1) * 100 : null,
-    ppiYoy: ppi && ppiPrior && ppiPrior.value !== 0 ? ((ppi.value / ppiPrior.value) - 1) * 100 : null,
-    fedFunds: fedFunds?.value ?? null,
-    unemployment: unrate?.value ?? null,
+    hySpreadBps: baml ? baml.value * 100 : undefined,
+    sofr: sofr?.value,
+    tsy10y: dgs10?.value,
+    tsy2y: dgs2?.value,
+    cpiYoy: cpi && cpiPrior && cpiPrior.value !== 0 ? ((cpi.value / cpiPrior.value) - 1) * 100 : undefined,
+    ppiYoy: ppi && ppiPrior && ppiPrior.value !== 0 ? ((ppi.value / ppiPrior.value) - 1) * 100 : undefined,
+    fedFunds: fedFunds?.value,
+    unemployment: unrate?.value,
   };
   const completeness = assessFrozenInputCompleteness(inputs);
   const calculation = completeness.scoreStatus === "COMPLETE" ? calculateFrozenChampionV1(inputs as FrozenInputs) : null;

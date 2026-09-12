@@ -11,7 +11,6 @@
  * - Data clearly labelled: live | fallback | stale | demo
  * - All disclaimers present
  */
-import { useState } from "react";
 import { useState, useCallback } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";

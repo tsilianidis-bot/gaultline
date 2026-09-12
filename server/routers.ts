@@ -52,8 +52,6 @@ import {
   upsertTodaySnapshot, getTimeframeReading, computeOutcomeSupport, getReadingHistorySummary,
 } from "./readingHistory";
 import { protectedProcedure, coreProcedure } from "./_core/trpc";
-import { stripe } from './stripe/client';
-import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail, buildFoundingRequestNotification } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';

@@ -1,0 +1,80 @@
+name: FAULTLINE verify
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - grok/faultline-baseline-stabilization-2026-09-11
+      - grok/faultline-completion-2026-09-08
+  pull_request:
+    branches:
+      - grok/faultline-completion-2026-09-08
+      - grok/faultline-baseline-stabilization-2026-09-11
+
+concurrency:
+  group: faultline-verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: typecheck-build-test-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: package.json
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run check
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Startup smoke without Stripe
+        run: bash scripts/ci-startup-smoke.sh
+
+      - name: Write build identity
+        env:
+          BUILD_COMMIT: ${{ github.sha }}
+          BUILD_BRANCH: ${{ github.ref_name }}
+          BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+        run: bash scripts/ci-write-build-identity.sh
+
+      - name: Upload build identity
+        uses: actions/upload-artifact@v4
+        with:
+          name: faultline-build-identity
+          path: dist/build-identity.json
+          if-no-files-found: error
+
+  manus-deploy:
+    name: Manus deploy (manual / disabled)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs: verify
+    environment: manus-deploy-disabled
+    steps:
+      - name: Refuse automatic Manus deploy
+        run: |
+          echo "Manus deploy is disabled on this baseline. This job is workflow_dispatch-only and does not publish."
+          exit 1

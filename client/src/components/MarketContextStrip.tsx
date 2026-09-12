@@ -218,7 +218,7 @@ export default function MarketContextStrip() {
           <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
             {canonicalState && (
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.55)", letterSpacing: "0.08em" }}>
-                CANONICAL {canonicalState.stateId} · {canonicalState.quality}
+                CANONICAL {canonicalState.stateId} · {canonicalState.confidenceOrEvidenceQuality}
               </span>
             )}
             {/* Synthesis */}

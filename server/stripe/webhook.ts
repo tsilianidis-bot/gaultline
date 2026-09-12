@@ -12,6 +12,10 @@ import { sendEmail, buildSubscriptionConfirmationEmail } from '../email';
  * in the webhook payload by default, so we must call listLineItems().
  */
 async function resolveTierFromSession(sessionId: string): Promise<Exclude<AccessTier, 'free'>> {
+  if (!stripe) {
+    console.warn('[Stripe Webhook] Stripe is not configured — defaulting checkout tier to core');
+    return 'core';
+  }
   try {
     const lineItems = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
     const priceId = lineItems.data[0]?.price?.id;
@@ -33,6 +37,10 @@ async function resolveTierFromSession(sessionId: string): Promise<Exclude<Access
  * Looks up the price on the first subscription item.
  */
 async function resolveTierFromSubscription(subscriptionId: string): Promise<Exclude<AccessTier, 'free'> | null> {
+  if (!stripe) {
+    console.warn('[Stripe Webhook] Stripe is not configured — cannot resolve subscription tier');
+    return null;
+  }
   try {
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
     const priceId = subscription.items.data[0]?.price?.id;
@@ -84,6 +92,11 @@ export async function handleStripeWebhook(req: Request, res: Response) {
       return res.status(400).json({ error: 'Invalid JSON body' });
     }
     return res.status(200).json({ verified: true, eventId: parsedEvent?.id });
+  }
+
+  if (!stripe) {
+    console.warn('[Stripe Webhook] Stripe is not configured — ignoring live event');
+    return res.status(200).json({ error: 'Stripe is not configured', verified: false });
   }
 
   let event;

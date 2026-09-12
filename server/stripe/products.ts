@@ -51,6 +51,10 @@ export async function verifyStripePlanConfiguration(plan: Plan): Promise<{ verif
   if (!plan.priceId) return { verified: false, reason: 'A Stripe price ID has not been configured for this membership.' };
   if (plan.amount <= 0) return { verified: false, reason: 'This legacy plan is not available for new checkout.' };
 
+  if (!stripe) {
+    return { verified: false, reason: 'Stripe is not configured.' };
+  }
+
   try {
     const price = await stripe.prices.retrieve(plan.priceId, { expand: ['product'] });
     const product = typeof price.product === 'string' ? null : price.product;
@@ -61,7 +65,7 @@ export async function verifyStripePlanConfiguration(plan: Plan): Promise<{ verif
       && price.unit_amount === plan.amount
       && price.type === expectedType
       && (expectedInterval === null || price.recurring?.interval === expectedInterval)
-      && product?.name === plan.name;
+      && Boolean(product && !product.deleted && "name" in product && product.name === plan.name);
 
     if (!valid) {
       return { verified: false, reason: 'The configured Stripe price does not exactly match the current public plan name, amount, currency, or billing interval.' };

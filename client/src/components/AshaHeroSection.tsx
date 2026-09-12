@@ -22,6 +22,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useEngine } from "@/contexts/EngineContext";
 import { Link } from "wouter";
 import { formatCanonicalScore } from "@shared/marketMetrics";
+import { trpc } from "@/lib/trpc";
 
 // ── Instrument definitions (ticker → display label) ───────────
 // Mapped to symbols available in the existing /api/signals/quotes cache.
@@ -157,7 +158,7 @@ function AshaIntelPanel() {
   if (!canonicalState) return null;
 
   // All values from the single EngineOutput source of truth
-  const score       = canonicalState.pressureIndex / 10;
+  const score       = (canonicalState.pressureIndex ?? 0) / 10;
   const regime      = canonicalState.regime;
   const summary     = output.narrative.summary;
   const prob        = output.probability;

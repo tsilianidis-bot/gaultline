@@ -322,8 +322,8 @@ function AlertsInner() {
     eventType: archiveType === "all" ? undefined : archiveType,
   });
   const archiveEvents = (archiveQuery.data?.events ?? []) as ArchivedEvent[];
-  const archiveSources = useMemo(() => [...new Set(archiveEvents.map(event => event.sourceEngine))].sort(), [archiveEvents]);
-  const archiveTypes = useMemo(() => [...new Set(archiveEvents.map(event => event.eventType))].sort(), [archiveEvents]);
+  const archiveSources = useMemo(() => Array.from(new Set(archiveEvents.map(event => event.sourceEngine))).sort(), [archiveEvents]);
+  const archiveTypes = useMemo(() => Array.from(new Set(archiveEvents.map(event => event.eventType))).sort(), [archiveEvents]);
   const filteredArchiveEvents = archiveEvents.filter(event =>
     (!archiveSearch.trim() || `${event.headline} ${event.explanation} ${event.eventType} ${event.sourceEngine}`.toLowerCase().includes(archiveSearch.trim().toLowerCase()))
   );

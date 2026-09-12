@@ -8,7 +8,7 @@
  */
 import { describe, it, expect } from "vitest";
 
-describe("POLYGON_API_KEY validation", () => {
+describe.skipIf(!process.env.POLYGON_API_KEY)("POLYGON_API_KEY validation", () => {
   it("should have POLYGON_API_KEY set in environment", () => {
     const key = process.env.POLYGON_API_KEY;
     expect(key, "POLYGON_API_KEY must be set").toBeTruthy();

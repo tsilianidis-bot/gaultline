@@ -259,7 +259,7 @@ export default function Act() {
   if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="ACT withholds current decision interpretation until one authoritative state is available." />;
 
   const isCanonical = marketMode === "canonical" && Boolean(marketState);
-  const pressure = canonicalState.pressureIndex;
+  const pressure = canonicalState.pressureIndex ?? 0;
   const posture = marketState?.act.marketPosture ?? fallbackPosture(pressure);
   const postureView = postureConfig[posture];
   const confidence = marketState?.outlook.probabilities.confidence ?? 0;
