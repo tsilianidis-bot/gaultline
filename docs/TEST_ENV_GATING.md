@@ -19,6 +19,7 @@ Do not use silent early `return` inside an `it()` to hide a missing secret. Skip
 | `server/coingecko.key.test.ts` | `describe.skipIf` unless `COINGECKO_API_KEY` is set; `/ping` still uses `it.skipIf(!RUN_INTEGRATION_TESTS)` | CoinGecko credential + optional live ping |
 | `server/gsc.credentials.test.ts` | `describe.skipIf` unless both Google OAuth client values are set | Search Console OAuth client construction |
 | `server/qaAccess.test.ts` | `it.skipIf` unless `QA_ACCESS_SECRET` is set | Owner QA cookie issuance against the live secret |
+| `server/signals.proxy.test.ts` | `describe.skip` unless `RUN_INTEGRATION_TESTS=1` | Live `/api/signals/quotes` against a running server |
 
 ## ASHA unavailable copy
 
