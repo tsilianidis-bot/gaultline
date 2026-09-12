@@ -1675,19 +1675,32 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         try {
-          return await runTradePreflightSimulation({
-            moveType: input.moveType as MoveType,
-            timeframe: input.timeframe as SimulatorTimeframe,
-            ticker: input.ticker,
-            exposureCategory: input.exposureCategory as ExposureCategory | undefined,
-            rotateFrom: input.rotateFrom,
-            rotateTo: input.rotateTo,
-            raiseCashReason: input.raiseCashReason as RaiseCashReason | undefined,
-            deployCashTarget: input.deployCashTarget as DeployCashTarget | undefined,
-            positionSizeType: input.positionSizeType as PositionSizeType | undefined,
-            exitType: input.exitType as ExitType | undefined,
-            holdConcern: input.holdConcern as HoldConcern | undefined,
-          });
+          const { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
+          const canonical = await getAuthoritativeCanonicalIntelligenceState();
+          const publicCanonical = canonical ? toPublicCanonicalIntelligenceState(canonical) : null;
+          return await runTradePreflightSimulation(
+            {
+              moveType: input.moveType as MoveType,
+              timeframe: input.timeframe as SimulatorTimeframe,
+              ticker: input.ticker,
+              exposureCategory: input.exposureCategory as ExposureCategory | undefined,
+              rotateFrom: input.rotateFrom,
+              rotateTo: input.rotateTo,
+              raiseCashReason: input.raiseCashReason as RaiseCashReason | undefined,
+              deployCashTarget: input.deployCashTarget as DeployCashTarget | undefined,
+              positionSizeType: input.positionSizeType as PositionSizeType | undefined,
+              exitType: input.exitType as ExitType | undefined,
+              holdConcern: input.holdConcern as HoldConcern | undefined,
+            },
+            undefined,
+            publicCanonical
+              ? {
+                  stateId: publicCanonical.stateId,
+                  qualityStatus: publicCanonical.confidenceOrEvidenceQuality,
+                  coherenceStatus: publicCanonical.provenance.coherenceStatus,
+                }
+              : null,
+          );
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trade Preflight simulation failed", cause: err });
         }
