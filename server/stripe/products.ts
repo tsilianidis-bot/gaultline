@@ -65,7 +65,7 @@ export async function verifyStripePlanConfiguration(plan: Plan): Promise<{ verif
       && price.unit_amount === plan.amount
       && price.type === expectedType
       && (expectedInterval === null || price.recurring?.interval === expectedInterval)
-      && product?.name === plan.name;
+      && Boolean(product && !product.deleted && "name" in product && product.name === plan.name);
 
     if (!valid) {
       return { verified: false, reason: 'The configured Stripe price does not exactly match the current public plan name, amount, currency, or billing interval.' };

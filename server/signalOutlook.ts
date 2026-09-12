@@ -2414,9 +2414,7 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
   }));
 
   return attempts
-    .filter((attempt): attempt is PromiseFulfilledResult<RisingStarItem | null> => attempt.status === "fulfilled")
-    .map(attempt => attempt.value)
-    .filter((item): item is RisingStarItem => item !== null)
+    .flatMap(attempt => attempt.status === "fulfilled" && attempt.value ? [attempt.value] : [])
     .sort((a, b) => b.risingStarScore - a.risingStarScore);
 }
 

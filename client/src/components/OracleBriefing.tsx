@@ -499,8 +499,8 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               <div style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(250px, 1.65fr)", padding: "10px 14px", background: "rgba(0,229,255,0.04)", borderBottom: "1px solid rgba(0,229,255,0.12)", fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.14em", color: "rgba(0,229,255,0.55)", textTransform: "uppercase" }}>
                 <span>Engine</span><span>Current signal</span><span>Relevance</span>
               </div>
-              {data.crossEngineSynthesis.map((row, index) => (
-                <div key={`${row.engine}-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(250px, 1.65fr)", gap: "12px", padding: "12px 14px", borderBottom: index < data.crossEngineSynthesis.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", lineHeight: 1.45, color: "rgba(226,232,240,0.78)" }}>
+              {(data.crossEngineSynthesis ?? []).map((row, index) => (
+                <div key={`${row.engine}-${index}`} style={{ display: "grid", gridTemplateColumns: "minmax(130px, 0.85fr) minmax(170px, 1fr) minmax(250px, 1.65fr)", gap: "12px", padding: "12px 14px", borderBottom: index < (data.crossEngineSynthesis?.length ?? 0) - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", fontFamily: "'Rajdhani', sans-serif", fontSize: "13px", lineHeight: 1.45, color: "rgba(226,232,240,0.78)" }}>
                   <span style={{ fontWeight: 700, color: "#E2E8F0" }}>{row.engine}</span>
                   <span>{row.currentSignal}</span>
                   <span>{row.relevance}</span>

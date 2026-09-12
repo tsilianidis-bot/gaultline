@@ -969,9 +969,10 @@ export default function Pressure() {
   const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh } = useEngine();
   const data = useMemo(() => {
     if (!canonicalState || canonicalState.pressureIndex === null || !isPressureLevel(canonicalState.pressureLevel)) return null;
+    const pressureLevel = canonicalState.pressureLevel;
     const alerts: PressureAlert[] = [
       ...canonicalState.conflicts.map(conflict => ({
-        severity: conflict.severity === "CRITICAL" ? "critical" : conflict.severity === "HIGH" ? "high" : "elevated",
+        severity: (conflict.severity === "CRITICAL" ? "critical" : conflict.severity === "HIGH" ? "high" : "elevated") as PressureAlert["severity"],
         title: conflict.conflictType,
         detail: conflict.description,
       })),
@@ -982,7 +983,7 @@ export default function Pressure() {
       label: engine.engineName,
       description: `Canonical engine ${engine.engineId}.`,
       score: engine.value ?? 0,
-      level: canonicalState.pressureLevel,
+      level: pressureLevel,
       driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
       trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
       weight: 0,

@@ -170,7 +170,7 @@ export async function runLockedVerifiedChampionMetrics(outputPath?: string) {
   const outcomesByBucket: Record<string, Record<string, { count: number; averageForwardReturnPct: number | null; averageMaximumDrawdownPct: number | null }>> = {};
   for (const horizon of [1, 5, 20, 60]) {
     for (const bucket of VERIFIED_CHAMPION_EVENT_DEFINITIONS.pressureBuckets.map(item => item.label)) {
-      const matching = [...latestOutcomeByScoreAndHorizon.values()].filter(outcome => outcome.horizonTradingDays === horizon && outcome.outcomeStatus === "COMPLETE" && pressureBucket(scoreById.get(outcome.verifiedScoreId)!.overallPressure!) === bucket);
+      const matching = Array.from(latestOutcomeByScoreAndHorizon.values()).filter(outcome => outcome.horizonTradingDays === horizon && outcome.outcomeStatus === "COMPLETE" && pressureBucket(scoreById.get(outcome.verifiedScoreId)!.overallPressure!) === bucket);
       outcomesByBucket[String(horizon)] ??= {};
       outcomesByBucket[String(horizon)][bucket] = {
         count: matching.length,

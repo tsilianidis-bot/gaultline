@@ -58,9 +58,9 @@ export default function MobilePulse() {
 
   if (!canonicalState) return null;
 
-  const score = canonicalState.pressureIndex;
+  const score = canonicalState.pressureIndex ?? 0;
   const verdict = getVerdictFromScore(score);
-  const regimeLabel = getRegimeLabel(canonicalState.regime);
+  const regimeLabel = getRegimeLabel(canonicalState.regime ?? "Unavailable");
   const bullProb = Math.max(5, Math.round(100 - score * 0.9));
   const crashProb = Math.min(95, Math.round(score * 0.7));
 

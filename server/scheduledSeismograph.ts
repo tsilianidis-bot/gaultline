@@ -157,7 +157,12 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
     stressLevel: seismographOutput.stressLevel,
     direction: seismographOutput.direction,
     dataFreshness: seismographOutput.dataFreshness ?? "unknown",
-    probabilities: seismographOutput.regimeProbabilities,
+    probabilities: {
+      bull: seismographOutput.probabilities.bull,
+      neutral: seismographOutput.probabilities.neutral,
+      bear: seismographOutput.probabilities.bear,
+      confidence: seismographOutput.probabilities.confidence,
+    },
     sourceState: {
       activeContributors: seismographOutput.activeContributors,
       evidenceConsensus: seismographOutput.evidenceConsensus,
