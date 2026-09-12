@@ -60,7 +60,7 @@ function overlap(left: string, right: string): number {
   const b = new Set(normalizeText(right));
   if (!a.size || !b.size) return 0;
   let intersection = 0;
-  for (const token of a) if (b.has(token)) intersection += 1;
+  for (const token of Array.from(a)) if (b.has(token)) intersection += 1;
   return intersection / Math.min(a.size, b.size);
 }
 

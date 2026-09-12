@@ -109,8 +109,8 @@ export default function RisingStars() {
   const [sort, setSort] = useState<SortKey>(saved.sort ?? "score");
   const query = trpc.outlook.getOpportunityDiscovery.useQuery(undefined, { staleTime: 2 * 60 * 1000, refetchInterval: 5 * 60 * 1000, retry: 2, retryDelay: attempt => Math.min(1_000 * (attempt + 1), 3_000) });
   const items = (query.data?.risingStars ?? []) as DiscoveryStar[];
-  const sectors = useMemo(() => [...new Set(items.map(item => item.sector).filter((value): value is string => Boolean(value)))].sort(), [items]);
-  const themes = useMemo(() => [...new Set(items.flatMap(item => item.themes))].sort(), [items]);
+  const sectors = useMemo(() => Array.from(new Set(items.map(item => item.sector).filter((value): value is string => Boolean(value)))).sort(), [items]);
+  const themes = useMemo(() => Array.from(new Set(items.flatMap(item => item.themes))).sort(), [items]);
   useEffect(() => { sessionStorage.setItem("faultline:rising-stars:filters", JSON.stringify({ topCategory, listingAge, sector, theme, characteristic, sort })); }, [topCategory, listingAge, sector, theme, characteristic, sort]);
   const visible = useMemo(() => items.filter(item => {
     const topMatch = topCategory === "all" || (topCategory === "new_listings" ? item.listingAgeCategory === "under_1y" : topCategory === "mag7" ? item.isMagnificentSeven : item.marketCapCategory === topCategory);

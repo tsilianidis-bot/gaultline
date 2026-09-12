@@ -40,6 +40,14 @@ import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
+
+function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
+  if (level === "Critical" || level === "Crisis") return "Crisis";
+  if (level === "High") return "High";
+  if (level === "Elevated") return "Elevated";
+  if (level === "Moderate") return "Moderate";
+  return "Low";
+}
 import { getAuthoritativeCrossEngineSynthesis, persistCrossEngineSynthesis } from "./crossEngineSynthesis";
 import { evaluateAndPersistCandidateDetections } from "./candidateDetection";
 import { evaluateAndPersistImportanceQualification } from "./importanceQualification";
@@ -326,7 +334,7 @@ export function buildStateForAssembly(
   return {
     pressureScore,
     regime,
-    stressLevel: pressure.level,
+    stressLevel: mapPressureLevelToSeismographStress(pressure.level),
     direction,
     historicalPercentile,
     analogMatches,

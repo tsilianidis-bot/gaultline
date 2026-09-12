@@ -109,7 +109,7 @@ export default function MobileBrief() {
     );
   }
 
-  const pressureScore = canonicalState.pressureIndex;
+  const pressureScore = canonicalState.pressureIndex ?? 0;
   const bullProb = Math.max(5, Math.round(100 - pressureScore * 0.9));
 
   return (
