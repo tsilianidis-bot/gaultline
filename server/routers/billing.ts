@@ -42,6 +42,9 @@ export const billingRouter = router({
           message: `Checkout is unavailable until Stripe configuration is verified. ${verification.reason}`,
         });
       }
+      if (!stripe) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Checkout is unavailable because Stripe is not configured." });
+      }
       const session = await stripe.checkout.sessions.create({
         mode: plan.interval === "one_time" ? "payment" : "subscription",
         payment_method_types: ["card"],
@@ -64,6 +67,9 @@ export const billingRouter = router({
   verifyCheckoutSession: publicProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input }) => {
+      if (!stripe) {
+        return null;
+      }
       try {
         const session = await stripe.checkout.sessions.retrieve(input.sessionId, {
           expand: ['line_items'],
@@ -87,6 +93,9 @@ export const billingRouter = router({
       const user = ctx.user as any;
       if (!user.stripeCustomerId) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "No billing account found. Please make a purchase first." });
+      }
+      if (!stripe) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Billing portal is unavailable because Stripe is not configured." });
       }
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,
