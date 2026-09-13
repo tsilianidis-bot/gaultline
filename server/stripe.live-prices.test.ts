@@ -3,6 +3,10 @@ import { describe, it, expect } from "vitest";
 /**
  * Validates that all four live-mode Stripe price IDs are set in the environment.
  * These IDs were updated from test-mode to live-mode to fix the "No such price" checkout error.
+ *
+ * Do not inject this live quartet into a sandbox: labels ($9.99 Core / $59 Trader)
+ * disagree with approved shared/tiers.ts (Trader $59 / Power $99).
+ * See docs/RC_STRIPE_SANDBOX_RECONCILE.md. Live mode stays off on this RC.
  */
 const hasLivePriceIds = [
   process.env.STRIPE_CORE_PRICE_ID,

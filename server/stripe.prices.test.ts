@@ -45,6 +45,8 @@ describe.skipIf(!hasConfiguredPriceIds)("Stripe Price ID validation", () => {
     expect(unique.size).toBe(4);
   });
 
+  // Live retrieve amounts are a catalog lock, not the approved public offer.
+  // Sandbox mapping: docs/RC_STRIPE_SANDBOX_RECONCILE.md — do not enable sk_live_.
   it.skipIf(!STRIPE_SECRET_KEY || !isLiveKey)("can retrieve FAULTLINE Core (Mobile) price from Stripe API — $9.99/mo", async () => {
     const stripe = new Stripe(STRIPE_SECRET_KEY);
     const price = await stripe.prices.retrieve(STRIPE_CORE_PRICE_ID);

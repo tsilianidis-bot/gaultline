@@ -2,6 +2,8 @@
 
 Default `pnpm test` / `npm test` (Vitest) must stay green in CI and local sandboxes that do not inject live vendor secrets.
 
+Per-suite classification (VERIFIED_CONNECTION vs ENV_GATED vs MOCKED): `docs/RC_SKIPPED_TESTS_AUDIT.md`.
+
 ## Rule
 
 Suites that *require* a live credential or live vendor object must use Vitest `describe.skipIf` / `it.skipIf` instead of failing the default run.
