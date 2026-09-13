@@ -12,7 +12,10 @@ mkdir -p "${OUT_DIR}"
 
 COMMIT="${BUILD_COMMIT:-${GITHUB_SHA:-$(git -C "${ROOT}" rev-parse HEAD 2>/dev/null || echo unknown)}}"
 BRANCH="${BUILD_BRANCH:-${GITHUB_REF_NAME:-$(git -C "${ROOT}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)}}"
-BUILD_TIME="${BUILD_TIME:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
+# pull_request events leave github.event.head_commit.timestamp empty; treat blank as unset.
+if [[ -z "${BUILD_TIME:-}" ]]; then
+  BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+fi
 NODE_ENV_VALUE="${NODE_ENV:-production}"
 PACKAGE_VERSION="$(node -p "require('${ROOT}/package.json').version" 2>/dev/null || echo unknown)"
 
