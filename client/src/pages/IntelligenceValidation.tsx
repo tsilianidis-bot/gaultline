@@ -1,5 +1,7 @@
 /**
  * FAULTLINE — Intelligence Validation Center
+ * Intelligence Contract v2 (NOT implemented): evaluate ledger stages here;
+ * never invent missing evidence. Scope: docs/FAULTLINE_INTELLIGENCE_CONTRACT_V2_SCOPE.md
  * client/src/pages/IntelligenceValidation.tsx
  *
  * Phase 7: 14-part institutional-grade analytics dashboard.

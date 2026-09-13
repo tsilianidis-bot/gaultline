@@ -22,7 +22,7 @@ call sites must fail closed and leave the HTTP server listening.
 
 ## Out of scope
 
-- Intelligence Contract v2
+- Intelligence Contract v2 (scope only: `docs/FAULTLINE_INTELLIGENCE_CONTRACT_V2_SCOPE.md`)
 - Merge to `main`
 - Manus production deploy
 - Force-push
