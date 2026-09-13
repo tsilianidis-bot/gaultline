@@ -45,6 +45,7 @@ Workspace client grep: single `trpc.pressure.getCurrentPressure` in `AdminPortal
 
 ## Related
 
+- `docs/RC_REMAINING_INDEPENDENT_CALCS.md` — remaining producers (live Pressure writer, FMOS, day-trade, aftershock, outlook, tradePreflight, …). None excluded without CURRENT-reach proof.
 - `PHASE_2I_CONSUMER_INVENTORY.json`
 - `server/legacyCurrentTruthBypass.test.ts`
 - `docs/FAULTLINE_INTELLIGENCE_CONTRACT_V2_SCOPE.md` (v2 not implemented)
