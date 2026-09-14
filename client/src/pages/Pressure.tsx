@@ -86,6 +86,20 @@ function isPressureLevel(value: string | null): value is PressureLevel {
   return value === "Low" || value === "Moderate" || value === "Elevated" || value === "High" || value === "Critical";
 }
 
+// Canonical manifests currently copy regime into pressureLevel ("MODERATE RISK").
+// Match server projectPressureFromCanonical: keep a declared enum level, otherwise derive from score.
+function scoreToPressureLevel(score: number): PressureLevel {
+  if (score >= 80) return "Critical";
+  if (score >= 65) return "High";
+  if (score >= 45) return "Elevated";
+  if (score >= 25) return "Moderate";
+  return "Low";
+}
+
+function resolvePressureLevel(declared: string | null, score: number): PressureLevel {
+  return isPressureLevel(declared) ? declared : scoreToPressureLevel(score);
+}
+
 // ── Color helpers ─────────────────────────────────────────────
 const LEVEL_COLORS: Record<PressureLevel, { primary: string; glow: string; bg: string; text: string }> = {
   Low:      { primary: "#00FF88", glow: "rgba(0,255,136,0.4)",   bg: "rgba(0,255,136,0.06)",   text: "#00FF88" },
@@ -968,8 +982,8 @@ export default function Pressure() {
   });
   const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh } = useEngine();
   const data = useMemo(() => {
-    if (!canonicalState || canonicalState.pressureIndex === null || !isPressureLevel(canonicalState.pressureLevel)) return null;
-    const pressureLevel = canonicalState.pressureLevel;
+    if (!canonicalState || canonicalState.pressureIndex === null || Number.isNaN(canonicalState.pressureIndex)) return null;
+    const pressureLevel = resolvePressureLevel(canonicalState.pressureLevel, canonicalState.pressureIndex);
     const alerts: PressureAlert[] = [
       ...canonicalState.conflicts.map(conflict => ({
         severity: (conflict.severity === "CRITICAL" ? "critical" : conflict.severity === "HIGH" ? "high" : "elevated") as PressureAlert["severity"],
@@ -992,7 +1006,7 @@ export default function Pressure() {
     return {
       overallPressure: canonicalState.pressureIndex,
       regime: canonicalState.regime ?? "Unavailable",
-      level: canonicalState.pressureLevel,
+      level: pressureLevel,
       vectors,
       alerts,
       topAnalog: null as HistoricalAnalog | null,
