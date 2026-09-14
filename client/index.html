@@ -240,9 +240,19 @@
     </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+    <script>
+      (function () {
+        var endpoint = "%VITE_ANALYTICS_ENDPOINT%";
+        var websiteId = "%VITE_ANALYTICS_WEBSITE_ID%";
+        if (!endpoint || endpoint.indexOf("%VITE_") !== -1 || !/^https?:\/\//i.test(endpoint)) return;
+        var script = document.createElement("script");
+        script.defer = true;
+        script.src = endpoint + "/umami";
+        if (websiteId && websiteId.indexOf("%VITE_") === -1) {
+          script.setAttribute("data-website-id", websiteId);
+        }
+        document.body.appendChild(script);
+      })();
+    </script>
   </body>
 </html>
