@@ -37,8 +37,21 @@ for _ in $(seq 1 60); do
     cat "${LOG_FILE}" >&2 || true
     exit 1
   fi
-  if grep -q "Server running on http://localhost:${PORT}/" "${LOG_FILE}"; then
-    echo "Startup smoke passed: server listened without STRIPE_SECRET_KEY"
+  if grep -q "Server running on http://0.0.0.0:${PORT}/" "${LOG_FILE}"; then
+    health_ok=0
+    for _ in $(seq 1 10); do
+      if curl -fsS "http://127.0.0.1:${PORT}/api/health" 2>/dev/null | grep -q '"ok":true'; then
+        health_ok=1
+        break
+      fi
+      sleep 0.2
+    done
+    if [[ "${health_ok}" -ne 1 ]]; then
+      echo "Listen succeeded but GET /api/health failed" >&2
+      cat "${LOG_FILE}" >&2 || true
+      exit 1
+    fi
+    echo "Startup smoke passed: server listened on 0.0.0.0 without STRIPE_SECRET_KEY; /api/health ok"
     exit 0
   fi
   sleep 1

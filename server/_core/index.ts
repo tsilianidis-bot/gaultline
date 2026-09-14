@@ -39,7 +39,10 @@ import { serveStatic, setupVite } from "./vite";
 import { captureError, flushErrorTracking } from "../errorTracking";
 import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
 import { resolveBuildIdentity } from "../buildIdentity";
+import { handleHealth } from "../health";
 import { renderPublicMaintenancePage, shouldServePublicMaintenance } from "../publicMaintenance";
+
+const LISTEN_HOST = "0.0.0.0";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -216,6 +219,10 @@ async function startServer() {
   app.post("/api/publishing/publish-draft/:id", requireCron, handlePublishDraft);
   // RSS feed
   app.get("/api/rss.xml", handleRssFeed);
+  // Independent-runtime health — 200 { ok, commit, buildTime }. Registered under /api
+  // so the public HTML maintenance gate never intercepts it.
+  app.get("/api/health", handleHealth);
+
   // Build info — public endpoint for deployment verification (preview-safe identity).
   // See docs/RC_PREVIEW_BUILD_IDENTITY.md. Does not target getfaultline.live.
   app.get("/api/build-info", (_req, res) => {
@@ -276,15 +283,17 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const preferredPort = parseInt(process.env.PORT || "3000", 10);
+  // Production/Railway must bind the injected PORT. Dev may scan if 3000 is busy.
+  const port =
+    process.env.NODE_ENV === "production" ? preferredPort : await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     process.stderr.write(`Port ${preferredPort} is busy, using port ${port} instead\n`);
   }
 
-  server.listen(port, () => {
-    process.stdout.write(`Server running on http://localhost:${port}/\n`);
+  server.listen(port, LISTEN_HOST, () => {
+    process.stdout.write(`Server running on http://${LISTEN_HOST}:${port}/\n`);
   });
 }
 

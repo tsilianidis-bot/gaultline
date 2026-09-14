@@ -31,4 +31,6 @@ Default verify gates (no live vendor secrets required):
 
 The `manus-deploy` job is **disabled** and **manual** (`workflow_dispatch` only). It does not publish.
 
+Independent staging (GitHub → Railway/Docker, no Manus): [`docs/INDEPENDENT_STAGING.md`](docs/INDEPENDENT_STAGING.md). Env names: [`.env.example`](.env.example).
+
 This baseline does not merge to `main`, force-push, or delete recovery branches.
