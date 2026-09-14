@@ -5,6 +5,8 @@ import { handleHealth, healthBody } from "./health";
 const ORIGINAL = {
   BUILD_COMMIT: process.env.BUILD_COMMIT,
   BUILD_TIME: process.env.BUILD_TIME,
+  FAULTLINE_BUILD_IDENTITY_FILE: process.env.FAULTLINE_BUILD_IDENTITY_FILE,
+  RAILWAY_GIT_COMMIT_SHA: process.env.RAILWAY_GIT_COMMIT_SHA,
 };
 
 afterEach(() => {
@@ -17,6 +19,8 @@ afterEach(() => {
 
 describe("GET /api/health", () => {
   it("returns 200 { ok: true, commit, buildTime } from resolveBuildIdentity", () => {
+    delete process.env.FAULTLINE_BUILD_IDENTITY_FILE;
+    delete process.env.RAILWAY_GIT_COMMIT_SHA;
     process.env.BUILD_COMMIT = "7894429c537e377992a3016d57f61ee3bd5ab7d1";
     process.env.BUILD_TIME = "2026-09-14T00:00:00.000Z";
     resetBuildIdentityBootTime();
