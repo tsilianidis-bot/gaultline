@@ -55,6 +55,8 @@ describe("canonical pressure projection", () => {
     expect(pressure?.regime).toBe("MODERATE RISK");
     expect(pressure?.vectors.find(v => v.id === "liquidity-stress")?.score).toBe(40);
     expect(hasRequiredCryptoVectors(pressure!)).toBe(true);
+    expect(pressure?.level).toBe("Elevated");
+    expect(state.pressureLevel).toBe("MODERATE RISK");
   });
 
   it("keeps bull-continuation and crash/drawdown as separate scenario fields", () => {
