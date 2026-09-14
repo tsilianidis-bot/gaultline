@@ -56,7 +56,7 @@ Install/build/start inside the image: `pnpm install --frozen-lockfile` → `pnpm
 1. New project → deploy from this GitHub repo → branch `grok/faultline-baseline-stabilization-2026-09-11` (or the SHA you pin).
 2. Railway uses `railway.toml` + `Dockerfile`. Health check: `/api/health`.
 3. Set the env **names** from `.env.example` (values only in Railway). Include `FAULTLINE_MAINTENANCE_MODE=false`.
-4. Set `BUILD_COMMIT` and `BUILD_TIME` (build-time for the client badge; runtime for `/api/health`).
+4. Do **not** pin `BUILD_COMMIT` / `BUILD_TIME` as stale Railway service variables. The Dockerfile bakes `RAILWAY_GIT_COMMIT_SHA` (or `--build-arg BUILD_COMMIT`) into `dist/build-identity.json`; `/api/health`, `/api/build-info`, and `/api/version` read that file so a new deploy reports the new SHA.
 5. Add a MySQL-compatible `DATABASE_URL`. Do not attach production DB. Do not run `db:push` from Railway.
 6. Deploy. Confirm `GET /api/health` is 200, then open `/qa-access` with `QA_ACCESS_SECRET`.
 
