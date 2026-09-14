@@ -41,4 +41,5 @@ curl -sS https://<preview-host>/api/version
 ## Related
 
 - `docs/RC_PREVIEW_BUILD_IDENTITY.md`
+- `docs/RC_PREVIEW_OAUTH.md` — preview `VITE_APP_ID` must equal the Manus app-auth `appId` (faultline1 Space `Xbzsed6coyZiRmSu4UeiVi`)
 - `.github/workflows/faultline-verify.yml`

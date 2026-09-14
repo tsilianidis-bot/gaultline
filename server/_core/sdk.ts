@@ -36,6 +36,11 @@ class OAuthService {
         "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
       );
     }
+    if (!ENV.appId) {
+      console.error(
+        "[OAuth] ERROR: VITE_APP_ID is not configured! Server token exchange uses this as clientId and it must match the appId on the Manus app-auth URL."
+      );
+    }
   }
 
   private decodeState(state: string): string {
