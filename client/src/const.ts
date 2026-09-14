@@ -1,5 +1,8 @@
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
+/** Safe href when OAuth portal/app id are unset so bootstrap cannot throw. */
+export const UNAVAILABLE_LOGIN_URL = "#";
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
@@ -16,9 +19,10 @@ export function isValidAbsoluteUrl(value: unknown): value is string {
 }
 
 /**
- * Build the Manus app-auth login URL. Returns "" when the portal or app id is
+ * Build the OAuth app-auth login URL. Returns "#" when the portal or app id is
  * missing/invalid so module load and first render cannot throw `Invalid URL`.
- * When both are set, the constructed URL matches the previous production shape.
+ * Staging does not require these vars (QA-cookie auth). When both are set, the
+ * constructed URL matches the previous production shape.
  */
 export function buildLoginUrl(
   oauthPortalUrl: unknown,
@@ -26,7 +30,7 @@ export function buildLoginUrl(
   origin: string,
 ): string {
   if (!isValidAbsoluteUrl(oauthPortalUrl) || !isNonEmptyString(appId)) {
-    return "";
+    return UNAVAILABLE_LOGIN_URL;
   }
 
   const redirectUri = `${origin}/api/oauth/callback`;
@@ -40,7 +44,7 @@ export function buildLoginUrl(
     url.searchParams.set("type", "signIn");
     return url.toString();
   } catch {
-    return "";
+    return UNAVAILABLE_LOGIN_URL;
   }
 }
 
