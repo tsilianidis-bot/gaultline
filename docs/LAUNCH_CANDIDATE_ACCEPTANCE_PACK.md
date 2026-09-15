@@ -157,7 +157,7 @@ Safe restore: `drizzle-kit migrate` **journal only**; never glob `0056_*.sql`.
 | Finding | Label |
 | --- | --- |
 | Slots look like genuine credential **shapes** (prefixes/lengths), not empty placeholders | **IMPORTANT** |
-| File is `.gitignore`’d **and still tracked**; **43** history commits | **BLOCKER** (secrets-in-git hygiene; owner decide untrack/rotate) |
+| File is `.gitignore`’d; **forward tracking removed** (`git rm --cached`); history still has prior commits | **IMPORTANT** (history rewrite + rotation remain owner/James) |
 | `git_remote` access key + 1040-char session token shape | **BLOCKER** (owner rotate if still valid) |
 | Two different `SG.` keys | **IMPORTANT** |
 | Test Stripe secret + live price IDs | **IMPORTANT** (same as Step 7) |
