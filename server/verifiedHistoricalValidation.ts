@@ -315,7 +315,16 @@ export async function buildVerifiedChampionV1History(options: VerifiedBuildOptio
     };
     const cpiYoy = inputs.cpiLatest !== null && inputs.cpiPriorYear !== null && inputs.cpiPriorYear !== 0 ? Number((((inputs.cpiLatest / inputs.cpiPriorYear) - 1) * 100).toFixed(2)) : null;
     const ppiYoy = inputs.ppiLatest !== null && inputs.ppiPriorYear !== null && inputs.ppiPriorYear !== 0 ? Number((((inputs.ppiLatest / inputs.ppiPriorYear) - 1) * 100).toFixed(2)) : null;
-    const frozenInputs: Partial<FrozenInputs> = { ...inputs, cpiYoy, ppiYoy };
+    const frozenInputs: Partial<FrozenInputs> = {
+      hySpreadBps: inputs.hySpreadBps ?? undefined,
+      sofr: inputs.sofr ?? undefined,
+      tsy10y: inputs.tsy10y ?? undefined,
+      tsy2y: inputs.tsy2y ?? undefined,
+      cpiYoy: cpiYoy ?? undefined,
+      ppiYoy: ppiYoy ?? undefined,
+      fedFunds: inputs.fedFunds ?? undefined,
+      unemployment: inputs.unemployment ?? undefined,
+    };
     delete (frozenInputs as Record<string, unknown>).cpiLatest;
     delete (frozenInputs as Record<string, unknown>).cpiPriorYear;
     delete (frozenInputs as Record<string, unknown>).ppiLatest;

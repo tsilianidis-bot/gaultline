@@ -35,6 +35,14 @@ describe("WATCH destination composition", () => {
     }
   });
 
+  it("registers the document.title effect before any conditional return", () => {
+    const effectIdx = watchSource.indexOf('document.title = "WATCH — FAULTLINE"');
+    const loadingReturnIdx = watchSource.indexOf("if (isLoading && !canonicalState) return");
+    expect(effectIdx, "WATCH must set document.title in a useEffect").toBeGreaterThan(-1);
+    expect(loadingReturnIdx, "WATCH loading early-return must exist").toBeGreaterThan(-1);
+    expect(effectIdx, "document.title useEffect must run before conditional returns (Rules of Hooks)").toBeLessThan(loadingReturnIdx);
+  });
+
   it("binds WATCH to the canonical destination and preserves AI Watch as its deep view", () => {
     expect(appSource).toContain('import Watch from "./pages/Watch"');
     expect(appSource).toContain('const WATCH_DEEP_PATH = "/app/watch/deep"');

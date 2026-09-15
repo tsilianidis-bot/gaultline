@@ -12,7 +12,13 @@
 // do not constitute financial advice.
 // ============================================================
 import { invokeLLM } from "./_core/llm";
-import { calculateFaultlinePressure, type FaultlinePressureOutput } from "./pressure/engine";
+import type { FaultlinePressureOutput } from "./pressure/engine";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import {
+  canonicalVectorScore,
+  hasRequiredCryptoVectors,
+  projectPressureFromCanonical,
+} from "./canonicalPressureProjection";
 import { LRUCache } from "./lruCache";
 import type {
   AccumulationPhaseAnalysis,
@@ -57,10 +63,19 @@ function clamp(v: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, v));
 }
 
-function scoreToSignal(score: number): CryptoSignal {
+function scoreToSignal(score: number | null): CryptoSignal {
+  if (score == null || Number.isNaN(score)) return "UNAVAILABLE";
   if (score >= 60) return "Bullish";
   if (score >= 40) return "Neutral";
   return "Bearish";
+}
+
+function requireVector(p: FaultlinePressureOutput, id: string): number {
+  const score = canonicalVectorScore(p, id);
+  if (score == null) {
+    throw new Error(`UNAVAILABLE crypto vector: ${id}`);
+  }
+  return score;
 }
 
 function scoreToRisk(score: number): CryptoRisk {
@@ -84,10 +99,10 @@ function scoreToMomentum(score: number, prev = 50): MomentumDir {
 function scoreBitcoin(p: FaultlinePressureOutput): { signalScore: number; riskScore: number; drivers: string[] } {
   const pressure = p.overallPressure;
   // BTC signal: inversely correlated with macro pressure, positively with liquidity
-  const liquidityBoost  = clamp(100 - (p.vectors.find(v => v.id === "liquidity")?.score ?? 50), 0, 100);
+  const liquidityBoost  = clamp(100 - requireVector(p, "liquidity-stress"), 0, 100);
   const macroHeadwind   = clamp(pressure, 0, 100);
-  const yieldHeadwind   = clamp((p.vectors.find(v => v.id === "yield_curve")?.score ?? 40), 0, 100);
-  const creditHeadwind  = clamp((p.vectors.find(v => v.id === "credit_stress")?.score ?? 40), 0, 100);
+  const yieldHeadwind   = clamp(requireVector(p, "volatility-regime"), 0, 100);
+  const creditHeadwind  = clamp(requireVector(p, "credit-contagion"), 0, 100);
 
   const signalScore = clamp(
     0.40 * liquidityBoost +
@@ -117,7 +132,7 @@ function scoreBitcoin(p: FaultlinePressureOutput): { signalScore: number; riskSc
 function scoreEthereum(p: FaultlinePressureOutput): { signalScore: number; riskScore: number; drivers: string[] } {
   const btc = scoreBitcoin(p);
   // ETH is more sensitive to liquidity and tech-sector conditions
-  const techSector = clamp((p.vectors.find(v => v.id === "equity_stress")?.score ?? 40), 0, 100);
+  const techSector = clamp(requireVector(p, "market-breadth"), 0, 100);
   const signalScore = clamp(btc.signalScore * 0.7 + (100 - techSector) * 0.3, 0, 100);
   const riskScore   = clamp(btc.riskScore   * 0.6 + techSector           * 0.4, 0, 100);
   const drivers = [
@@ -160,12 +175,12 @@ function scoreTotalMarketCap(p: FaultlinePressureOutput): { signalScore: number;
 
 function scoreAltcoinSeason(p: FaultlinePressureOutput): { signalScore: number; riskScore: number; drivers: string[] } {
   const pressure = p.overallPressure;
-  const liquidity = clamp(100 - (p.vectors.find(v => v.id === "liquidity")?.score ?? 50), 0, 100);
+  const liquidity = clamp(100 - requireVector(p, "liquidity-stress"), 0, 100);
   // Altcoin season requires: low macro pressure, high liquidity, risk-on conditions
   const signalScore = clamp(
     0.40 * liquidity +
     0.40 * (100 - pressure) +
-    0.20 * clamp(100 - (p.vectors.find(v => v.id === "credit_stress")?.score ?? 40), 0, 100),
+    0.20 * clamp(100 - requireVector(p, "credit-contagion"), 0, 100),
     0, 100
   );
   const riskScore = clamp(100 - signalScore, 0, 100);
@@ -181,7 +196,7 @@ function scoreAltcoinSeason(p: FaultlinePressureOutput): { signalScore: number; 
 
 function scoreStablecoinLiquidity(p: FaultlinePressureOutput): { signalScore: number; riskScore: number; drivers: string[] } {
   const pressure = p.overallPressure;
-  const liquidity = clamp(100 - (p.vectors.find(v => v.id === "liquidity")?.score ?? 50), 0, 100);
+  const liquidity = clamp(100 - requireVector(p, "liquidity-stress"), 0, 100);
   // Stablecoin liquidity is a leading indicator — high stablecoin supply = dry powder
   const signalScore = clamp(liquidity * 0.6 + (100 - pressure) * 0.4, 0, 100);
   const riskScore   = clamp(pressure * 0.5 + (100 - liquidity) * 0.5, 0, 100);
@@ -199,11 +214,11 @@ function scoreStablecoinLiquidity(p: FaultlinePressureOutput): { signalScore: nu
 
 function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboard, "aiNarrative"> {
   const pressure  = p.overallPressure;
-  const liquidity = clamp(100 - (p.vectors.find(v => v.id === "liquidity")?.score ?? 50), 0, 100);
-  const yields    = clamp((p.vectors.find(v => v.id === "yield_curve")?.score ?? 40), 0, 100);
-  const credit    = clamp((p.vectors.find(v => v.id === "credit_stress")?.score ?? 40), 0, 100);
-  const equity    = clamp((p.vectors.find(v => v.id === "equity_stress")?.score ?? 40), 0, 100);
-  const sovereign = clamp((p.vectors.find(v => v.id === "sovereign_debt")?.score ?? 40), 0, 100);
+  const liquidity = clamp(100 - requireVector(p, "liquidity-stress"), 0, 100);
+  const yields    = clamp(requireVector(p, "volatility-regime"), 0, 100);
+  const credit    = clamp(requireVector(p, "credit-contagion"), 0, 100);
+  const equity    = clamp(requireVector(p, "market-breadth"), 0, 100);
+  const sovereign = clamp(requireVector(p, "macro-sensitivity"), 0, 100);
 
   // Trend strength: inverse of pressure + equity stress
   const trendScore = clamp(100 - (pressure * 0.6 + equity * 0.4), 0, 100);
@@ -358,9 +373,9 @@ function buildBtcDashboard(p: FaultlinePressureOutput): Omit<BitcoinMacroDashboa
 
 function buildAltcoinRisk(p: FaultlinePressureOutput): AltcoinRiskAssessment {
   const pressure  = p.overallPressure;
-  const liquidity = clamp(100 - (p.vectors.find(v => v.id === "liquidity")?.score ?? 50), 0, 100);
-  const credit    = clamp((p.vectors.find(v => v.id === "credit_stress")?.score ?? 40), 0, 100);
-  const equity    = clamp((p.vectors.find(v => v.id === "equity_stress")?.score ?? 40), 0, 100);
+  const liquidity = clamp(100 - requireVector(p, "liquidity-stress"), 0, 100);
+  const credit    = clamp(requireVector(p, "credit-contagion"), 0, 100);
+  const equity    = clamp(requireVector(p, "market-breadth"), 0, 100);
 
   const riskScore = clamp(
     0.30 * pressure +
@@ -411,11 +426,11 @@ function buildAltcoinRisk(p: FaultlinePressureOutput): AltcoinRiskAssessment {
 
 function buildMacroCorrelation(p: FaultlinePressureOutput): Omit<CryptoMacroCorrelation, "correlationSummary"> {
   const pressure  = p.overallPressure;
-  const liquidity = clamp(100 - (p.vectors.find(v => v.id === "liquidity")?.score ?? 50), 0, 100);
-  const yields    = clamp((p.vectors.find(v => v.id === "yield_curve")?.score ?? 40), 0, 100);
-  const credit    = clamp((p.vectors.find(v => v.id === "credit_stress")?.score ?? 40), 0, 100);
-  const equity    = clamp((p.vectors.find(v => v.id === "equity_stress")?.score ?? 40), 0, 100);
-  const sovereign = clamp((p.vectors.find(v => v.id === "sovereign_debt")?.score ?? 40), 0, 100);
+  const liquidity = clamp(100 - requireVector(p, "liquidity-stress"), 0, 100);
+  const yields    = clamp(requireVector(p, "volatility-regime"), 0, 100);
+  const credit    = clamp(requireVector(p, "credit-contagion"), 0, 100);
+  const equity    = clamp(requireVector(p, "market-breadth"), 0, 100);
+  const sovereign = clamp(requireVector(p, "macro-sensitivity"), 0, 100);
 
   // Fed policy: tighter policy = bearish for crypto
   const fedScore = clamp(100 - (yields * 0.6 + sovereign * 0.4), 0, 100);
@@ -479,7 +494,7 @@ function buildMacroCorrelation(p: FaultlinePressureOutput): Omit<CryptoMacroCorr
 
 function buildPortfolioGuidance(p: FaultlinePressureOutput): CryptoPortfolioGuidance {
   const pressure  = p.overallPressure;
-  const liquidity = clamp(100 - (p.vectors.find(v => v.id === "liquidity")?.score ?? 50), 0, 100);
+  const liquidity = clamp(100 - requireVector(p, "liquidity-stress"), 0, 100);
   const btcScore  = scoreBitcoin(p).signalScore;
   const altScore  = scoreAltcoinSeason(p).signalScore;
 
@@ -589,17 +604,74 @@ Use responsible language. 2 sentences max.`;
   }
 }
 
+function withheldCryptoReport(canonicalStateId: string | null = null, qualityStatus: string | null = "UNAVAILABLE"): CryptoIntelligenceReport {
+  const withheld = "UNAVAILABLE — canonical market state is not bound.";
+  return {
+    generatedAt: Date.now(),
+    availability: "UNAVAILABLE",
+    canonicalStateId,
+    qualityStatus,
+    pressureIndex: null,
+    regime: null,
+    signals: [],
+    btcDashboard: {
+      trendStrength: { score: 0, label: "UNAVAILABLE", direction: "sideways", note: withheld },
+      liquidityConditions: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: withheld },
+      dollarPressure: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: withheld },
+      yieldPressure: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: withheld },
+      etfInstitutionalFlow: { score: 0, label: "UNAVAILABLE", direction: "neutral", note: withheld },
+      marketCyclePhase: { phase: "UNAVAILABLE", confidence: 0, note: withheld },
+      overallBtcBias: "UNAVAILABLE",
+      aiNarrative: withheld,
+    },
+    altcoinRisk: {
+      overallRisk: "UNAVAILABLE",
+      riskScore: 0,
+      btcDominanceSignal: withheld,
+      liquiditySignal: withheld,
+      stablecoinSignal: withheld,
+      riskOnOffSignal: withheld,
+      macroPressureSignal: withheld,
+      volatilitySignal: withheld,
+      altcoinSeasonProbability: 0,
+      recommendation: withheld,
+    },
+    macroCorrelation: {
+      fedPolicyImpact: { signal: "UNAVAILABLE", note: withheld },
+      interestRateImpact: { signal: "UNAVAILABLE", note: withheld },
+      dollarStrength: { signal: "UNAVAILABLE", note: withheld },
+      liquidityCycle: { signal: "UNAVAILABLE", note: withheld },
+      equityRiskAppetite: { signal: "UNAVAILABLE", note: withheld },
+      bondMarketStress: { signal: "UNAVAILABLE", note: withheld },
+      overallMacroSignal: "UNAVAILABLE",
+      correlationSummary: withheld,
+    },
+    portfolioGuidance: {
+      btcGuidance: { action: "UNAVAILABLE", condition: withheld, note: withheld },
+      ethGuidance: { action: "UNAVAILABLE", condition: withheld, note: withheld },
+      altGuidance: { action: "UNAVAILABLE", condition: withheld, note: withheld },
+      stableGuidance: { action: "UNAVAILABLE", condition: withheld, note: withheld },
+      overallBias: "UNAVAILABLE",
+      disclaimer: withheld,
+    },
+    cached: false,
+  };
+}
+
 // ── Main export ───────────────────────────────────────────────
 
 export async function getCryptoIntelligence(): Promise<CryptoIntelligenceReport> {
-  const cacheKey = "crypto-intelligence";
+  const canonical = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+  const pressure = projectPressureFromCanonical(canonical);
+  if (!canonical || !pressure || !hasRequiredCryptoVectors(pressure)) {
+    return withheldCryptoReport(canonical?.stateId ?? null, canonical?.confidenceOrEvidenceQuality ?? "UNAVAILABLE");
+  }
+
+  const cacheKey = `crypto-intelligence:${canonical.stateId}`;
   const cached = cryptoCache.get(cacheKey);
   if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
     return { ...cached.report, cached: true };
   }
-
-  // Get FAULTLINE pressure data
-  const pressure = await calculateFaultlinePressure();
 
   // Build all signal scores
   const btcData   = scoreBitcoin(pressure);
@@ -732,6 +804,9 @@ export async function getCryptoIntelligence(): Promise<CryptoIntelligenceReport>
 
   const report: CryptoIntelligenceReport = {
     generatedAt: Date.now(),
+    availability: "AVAILABLE",
+    canonicalStateId: canonical.stateId,
+    qualityStatus: canonical.confidenceOrEvidenceQuality,
     pressureIndex: pressure.overallPressure,
     regime: pressure.regime,
     signals,

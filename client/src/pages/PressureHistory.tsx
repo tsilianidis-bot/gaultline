@@ -5,8 +5,38 @@ import { trpc } from "@/lib/trpc";
 import { CANONICAL_HOME } from "@shared/routeRegistry";
 
 const ranges = [30, 90] as const;
-const pressure = (n: number) => `${Math.round(n)} / 100`;
+const pressure = (n: number | null | undefined) => n == null ? "unavailable" : `${Math.round(n)} / 100`;
 const colorFor = (severity?: string | null) => severity === "critical" ? "#FF4D6A" : severity === "high" ? "#FFAA00" : "#00D4FF";
+
+type FollowThrough = {
+  spyReturnPct: number | null;
+  tenYearYieldChangeBps: number | null;
+  pressureIndexChange: number | null;
+  laterRegime: string | null;
+};
+
+function parseFollowThrough(outcomeJson: string): FollowThrough {
+  try {
+    const data = JSON.parse(outcomeJson) as {
+      spy?: { returnPercent?: number | null };
+      tenYearTreasury?: { changeBasisPoints?: number | null };
+      pressureIndex?: { change?: number | null };
+      regime?: { target?: string | null };
+      spyReturnPct?: number | null;
+      tenYearYieldChangeBps?: number | null;
+      pressureIndexChange?: number | null;
+      laterRegime?: string | null;
+    };
+    return {
+      spyReturnPct: data.spyReturnPct ?? data.spy?.returnPercent ?? null,
+      tenYearYieldChangeBps: data.tenYearYieldChangeBps ?? data.tenYearTreasury?.changeBasisPoints ?? null,
+      pressureIndexChange: data.pressureIndexChange ?? data.pressureIndex?.change ?? null,
+      laterRegime: data.laterRegime ?? data.regime?.target ?? null,
+    };
+  } catch {
+    return { spyReturnPct: null, tenYearYieldChangeBps: null, pressureIndexChange: null, laterRegime: null };
+  }
+}
 
 export default function PressureHistory() {
   const [days, setDays] = useState<(typeof ranges)[number]>(90);
@@ -37,6 +67,6 @@ export default function PressureHistory() {
         <p style={{ margin: 0, color: "#FACC15", font: "10px IBM Plex Mono,monospace", letterSpacing: ".12em" }}>LIVE VERIFIED EVENTS</p>
         {eventsLoading ? <p style={{ color: "#A6B6C7" }}>Loading immutable archive…</p> : events.length === 0 ? <p style={{ color: "#A6B6C7", fontSize: 12 }}>No immutable events recorded in this window yet.</p> : events.map((e: any) => <button key={e.id} type="button" onClick={() => setSelected(e.id)} style={{ width: "100%", textAlign: "left", marginTop: 10, padding: 10, borderRadius: 6, border: `1px solid ${selected === e.id ? "#00D4FF" : "rgba(255,255,255,.1)"}`, background: "transparent", color: "#EAF5FF" }}><b style={{ fontSize: 12 }}>{e.headline}</b><br/><span style={{ color: "#A6B6C7", fontSize: 10 }}>{new Date(e.eventAt).toLocaleString()} · {pressure(e.pressureIndex)} · {e.marketRegime}</span></button>)}</aside>
     </section>
-    {event && <section style={{ maxWidth: 1280, margin: "18px auto", border: "1px solid rgba(250,204,21,.35)", borderRadius: 10, padding: 18, background: "rgba(28,24,8,.3)" }}><p style={{ margin: 0, color: "#FACC15", font: "10px IBM Plex Mono,monospace" }}>ORIGINAL IMMUTABLE OBSERVATION</p><h2 style={{ margin: "6px 0" }}>{event.headline}</h2><p style={{ color: "#C8D6E5" }}>{event.explanation}</p><p style={{ color: "#A6B6C7", fontSize: 12 }}>Detected: {new Date(event.eventAt).toLocaleString()} · Original Pressure: {pressure(event.pressureIndex)} · Original Regime: {event.marketRegime} · Source: {event.sourceEngine}</p><h3 style={{ fontSize: 13 }}>APPENDED FOLLOW-THROUGH OBSERVATIONS</h3>{[1,5,20,60].map((h) => { const o = event.outcomes?.find((x:any) => x.horizonTradingDays === h); return <div key={h} style={{ display:"grid", gridTemplateColumns:"72px repeat(4,minmax(0,1fr))", gap:8, padding:"8px 0", borderTop:"1px solid rgba(255,255,255,.08)", fontSize:11 }}><b>{h}D</b>{o ? <><span>SPY {o.spyReturnPct == null ? "PENDING" : `${o.spyReturnPct.toFixed(2)}%`}</span><span>10Y {o.tenYearYieldChangeBps == null ? "PENDING" : `${o.tenYearYieldChangeBps.toFixed(1)} bp`}</span><span>PRESSURE {o.pressureIndexChange == null ? "PENDING" : `${o.pressureIndexChange > 0 ? "+" : ""}${o.pressureIndexChange}`}</span><span>REGIME {o.laterRegime ?? "PENDING"}</span></> : <span style={{ gridColumn:"span 4", color:"#A6B6C7" }}>PENDING · completed source window not yet available</span>}</div>; })}</section>}
+    {event && <section style={{ maxWidth: 1280, margin: "18px auto", border: "1px solid rgba(250,204,21,.35)", borderRadius: 10, padding: 18, background: "rgba(28,24,8,.3)" }}><p style={{ margin: 0, color: "#FACC15", font: "10px IBM Plex Mono,monospace" }}>ORIGINAL IMMUTABLE OBSERVATION</p><h2 style={{ margin: "6px 0" }}>{event.headline}</h2><p style={{ color: "#C8D6E5" }}>{event.explanation}</p><p style={{ color: "#A6B6C7", fontSize: 12 }}>Detected: {new Date(event.eventAt).toLocaleString()} · Original Pressure: {pressure(event.pressureIndex)} · Original Regime: {event.marketRegime} · Source: {event.sourceEngine}</p><h3 style={{ fontSize: 13 }}>APPENDED FOLLOW-THROUGH OBSERVATIONS</h3>{[1,5,20,60].map((h) => { const raw = event.outcomes?.find((x: { horizonTradingDays: number }) => x.horizonTradingDays === h); const o = raw ? parseFollowThrough(raw.outcomeJson) : null; return <div key={h} style={{ display:"grid", gridTemplateColumns:"72px repeat(4,minmax(0,1fr))", gap:8, padding:"8px 0", borderTop:"1px solid rgba(255,255,255,.08)", fontSize:11 }}><b>{h}D</b>{o ? <><span>SPY {o.spyReturnPct == null ? "PENDING" : `${o.spyReturnPct.toFixed(2)}%`}</span><span>10Y {o.tenYearYieldChangeBps == null ? "PENDING" : `${o.tenYearYieldChangeBps.toFixed(1)} bp`}</span><span>PRESSURE {o.pressureIndexChange == null ? "PENDING" : `${o.pressureIndexChange > 0 ? "+" : ""}${o.pressureIndexChange}`}</span><span>REGIME {o.laterRegime ?? "PENDING"}</span></> : <span style={{ gridColumn:"span 4", color:"#A6B6C7" }}>PENDING · completed source window not yet available</span>}</div>; })}</section>}
   </main>;
 }

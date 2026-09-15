@@ -22,9 +22,10 @@ export type CryptoRegimeLabel =
   | "Capitulation"
   | "Bear Market → Accumulation Phase"
   | "Accumulation"
-  | "Early Recovery";
+  | "Early Recovery"
+  | "UNAVAILABLE";
 
-export type CryptoRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical";
+export type CryptoRiskLevel = "Low" | "Moderate" | "Elevated" | "High" | "Critical" | "UNAVAILABLE";
 export type CryptoRegimeTrend = "Improving" | "Stable" | "Deteriorating";
 export type IndicatorSignal = "Bullish" | "Neutral" | "Bearish";
 
@@ -94,8 +95,9 @@ function cyclePhaseToRegime(phase: CyclePhase): CryptoRegimeLabel {
     "Capitulation":                     "Capitulation",
     "Bear Market → Accumulation Phase": "Bear Market → Accumulation Phase",
     "Accumulation":                     "Accumulation",
+    "UNAVAILABLE":                       "UNAVAILABLE",
   };
-  return map[phase] ?? "Bear Market";
+  return map[phase] ?? "UNAVAILABLE";
 }
 
 function regimeColor(r: CryptoRegimeLabel): string {
@@ -109,6 +111,7 @@ function regimeColor(r: CryptoRegimeLabel): string {
     "Bear Market → Accumulation Phase":  "#8B5CF6",
     "Accumulation":                      "#38BDF8",
     "Early Recovery":                    "#34D399",
+    "UNAVAILABLE":                       "#64748B",
   };
   return map[r] ?? "#94A3B8";
 }
@@ -124,6 +127,7 @@ function strategyText(r: CryptoRegimeLabel): string {
     "Bear Market → Accumulation Phase":  "Capital preservation first. Selective BTC accumulation at support. Avoid aggressive risk until breakout confirmation.",
     "Accumulation":                      "Gradual accumulation. Dollar-cost average into BTC. Position for the next cycle.",
     "Early Recovery":                    "Selective re-entry. Favour BTC and ETH. Size small initially.",
+    "UNAVAILABLE":                       "UNAVAILABLE — canonical market state is not bound. No crypto regime is manufactured.",
   };
   return map[r] ?? "Monitor conditions closely.";
 }
@@ -156,6 +160,7 @@ function explanationText(r: CryptoRegimeLabel, phase: CyclePhase, confidence: nu
     "Bear Market → Accumulation Phase":  `Bitcoin appears to be in an accumulation phase inside a broader bear-market structure ${confPhrase}. Price may be forming a base, but a new bull cycle is not confirmed until price breaks major resistance with strong volume, improving liquidity, and sustained risk-on confirmation.`,
     "Accumulation":                      `Bitcoin is in an accumulation phase ${confPhrase}. Long-term holders are absorbing supply at depressed prices. This phase can last months before a new bull cycle begins.`,
     "Early Recovery":                    `Bitcoin is showing early recovery signals ${confPhrase}. Price action is improving from lows but a new bull market is not yet confirmed.`,
+    "UNAVAILABLE":                       "Crypto regime is UNAVAILABLE because no canonical market state is bound. No cycle phase is manufactured.",
   };
   return descriptions[r] ?? `Bitcoin cycle phase: ${phase}. Confidence: ${confidence}%.`;
 }
@@ -361,6 +366,14 @@ function buildHistoricalContext(regime: CryptoRegimeLabel): HistoricalContext {
       ethAvgReturn: "+70% to +130% over 6 months",
       altcoinBehavior: "Altcoins begin to participate. BTC dominance starts declining. Selective exposure warranted.",
     },
+    "UNAVAILABLE": {
+      avgDurationWeeks: 0,
+      previousOccurrence: "UNAVAILABLE",
+      nextRegimeProbabilities: [],
+      btcAvgReturn: "UNAVAILABLE",
+      ethAvgReturn: "UNAVAILABLE",
+      altcoinBehavior: "UNAVAILABLE — no canonical market state is bound.",
+    },
   };
   return map[regime] ?? {
     avgDurationWeeks: 16,
@@ -428,6 +441,7 @@ function buildActionableInterpretation(regime: CryptoRegimeLabel, confidence: nu
     "Bear Market → Accumulation Phase": `${confText} accumulation signal inside a bear structure. Crypto remains in an accumulation regime. Historically, this phase favors gradual accumulation of high-quality assets rather than aggressive momentum trading. A new bull cycle is not confirmed — position sizing should reflect that uncertainty. Selective BTC accumulation at support is appropriate for long-term holders.`,
     "Accumulation": `${confText} accumulation signal. Long-term holders are absorbing supply at depressed prices. Dollar-cost averaging into BTC may be appropriate for investors with long time horizons. Avoid broad altcoin exposure until macro conditions improve and price confirms a new trend.`,
     "Early Recovery": `${confText} early recovery signal. Price action is improving from lows but a new bull market is not yet confirmed. Selective re-entry into BTC and ETH is appropriate. Size positions conservatively and wait for confirmation before adding broad risk.`,
+    "UNAVAILABLE": "UNAVAILABLE — canonical market state is not bound. Crypto regime, confirmation, and invalidation are withheld.",
   };
   return map[regime] ?? `Current regime: ${regime}. Monitor conditions closely.`;
 }
@@ -441,6 +455,27 @@ export async function computeCryptoMarketRegime(): Promise<CryptoMarketRegime> {
   }
 
   const report = await getCryptoIntelligence();
+  if (report.availability === "UNAVAILABLE") {
+    const withheld: CryptoMarketRegime = {
+      regime: "UNAVAILABLE",
+      cyclePhase: "UNAVAILABLE",
+      riskLevel: "UNAVAILABLE",
+      trend: "Stable",
+      confidence: 0,
+      keyFactors: ["UNAVAILABLE — canonical market state is not bound."],
+      strategy: strategyText("UNAVAILABLE"),
+      explanation: explanationText("UNAVAILABLE", "UNAVAILABLE", 0),
+      color: regimeColor("UNAVAILABLE"),
+      accumulationAnalysis: null,
+      indicators: [],
+      historicalContext: buildHistoricalContext("UNAVAILABLE"),
+      transitionProbabilities: [],
+      actionableInterpretation: "UNAVAILABLE — no CURRENT crypto regime is manufactured without a canonical bind.",
+      fetchedAt: Date.now(),
+      cached: false,
+    };
+    return withheld;
+  }
   const btc     = report.btcDashboard;
   const phase   = btc.marketCyclePhase.phase;
   const conf    = btc.marketCyclePhase.confidence;

@@ -346,18 +346,18 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const pd = canonicalStateQuery.data;
   const pressureScore = pd?.pressureIndex ?? null;
   const regime = pd?.regime ?? null;
-  const pressureTrend = pd?.quality.overallQuality === "LIVE" ? "stable" : "data-limited";
+  const pressureTrend = pd?.confidenceOrEvidenceQuality === "HEALTHY" ? "stable" : "data-limited";
 
   // Derive bull/crash from pressure score (same formula used across the platform)
   const bullProb = pressureScore !== null ? Math.round(Math.max(5, 100 - pressureScore * 1.1)) : null;
   const crashProb = pressureScore !== null ? Math.round(Math.min(95, pressureScore * 0.85)) : null;
 
-  // Primary drivers from top vectors
-  const topDrivers = pd?.vectors
-    ?.filter(v => v.score >= 50)
-    ?.sort((a, b) => b.score - a.score)
+  // Primary drivers from top engines
+  const topDrivers = pd?.engines
+    ?.filter(engine => (engine.value ?? 0) >= 50)
+    ?.sort((a, b) => (b.value ?? 0) - (a.value ?? 0))
     ?.slice(0, 3)
-    ?.map(v => v.label) ?? [];
+    ?.map(engine => engine.engineName) ?? [];
 
   // ── Personalization summary ───────────────────────────────────
   const priorities = getPersonalizationPriorities(investorType, riskProfile, interests);

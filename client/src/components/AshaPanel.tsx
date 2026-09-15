@@ -134,7 +134,7 @@ export default function AshaPanel() {
 
   // ── Derive regime state for orb ───────────────────────────
   const regimeState: AshaRegimeState = (() => {
-    const score = canonicalState?.pressureIndex !== null && canonicalState?.pressureIndex !== undefined
+    const score = canonicalState?.pressureIndex != null
       ? canonicalState.pressureIndex / 10
       : output?.overall?.score ?? 0;
     if (score >= 7) return "critical";
@@ -153,7 +153,10 @@ export default function AshaPanel() {
     keyDrivers: pageContext?.keyDrivers ?? output?.narrative?.keyRisks,
     historicalAnalog: pageContext?.historicalAnalog,
     transitionProbability: pageContext?.transitionProbability,
-    additionalContext: [pageContext?.additionalContext, canonicalState ? `Canonical state ID: ${canonicalState.stateId}.` : null].filter(Boolean).join(" ") || undefined,
+    additionalContext: {
+      ...(pageContext?.additionalContext ?? {}),
+      ...(canonicalState ? { canonicalStateId: canonicalState.stateId } : {}),
+    },
   };
 
   const suggestions = PAGE_SUGGESTIONS[fullPageContext.page] ?? PAGE_SUGGESTIONS.default;

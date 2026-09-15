@@ -475,7 +475,9 @@ function Footer() {
   return <footer className="border-t border-white/[0.07] bg-[#030405] py-12"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8"><div className="flex flex-col justify-between gap-6 sm:flex-row"><div><p className="font-mono text-lg font-black tracking-[0.23em] text-white">FAULTLINE</p><p className="mt-3 max-w-md text-sm leading-relaxed text-[#7F90A3]">Market risk intelligence for understanding changing conditions before headline narratives make them obvious.</p></div><div className="flex flex-wrap gap-x-5 gap-y-3 text-[11px] font-mono tracking-[0.1em] text-[#A8B8CC]"><a href="/methodology" className="hover:text-[#00D4FF]">METHODOLOGY</a><a href="/trust" className="hover:text-[#00D4FF]">TRUST CENTER</a><a href="/contact" className="hover:text-[#00D4FF]">CONTACT</a><a href="/blog" className="hover:text-[#00D4FF]">RESEARCH</a><a href="/pricing" className="hover:text-[#00D4FF]">PRICING</a></div></div><div className="flex flex-col justify-between gap-3 border-t border-white/[0.07] pt-6 text-[10px] font-mono tracking-wide text-[#64748B] sm:flex-row"><span>© 2026 FAULTLINE · A PHOENIX SYSTEMS PLATFORM</span><span>MARKET AWARENESS. BEFORE THE CONSENSUS FORMS.</span></div></div></footer>;
 }
 
-export default function MarketingSite({ initialSection }: { initialSection?: string } = {}) {
+type MarketingSitePlacement = "methodology" | "thesis" | "system" | "historical" | "access" | "pricing";
+
+export default function MarketingSite({ initialSection }: { initialSection?: MarketingSitePlacement } = {}) {
   useSEO({
     title: "FAULTLINE | Market Risk Intelligence, Systemic Risk & Early Warning Signals",
     description: "Market risk intelligence for understanding systemic market stress, early warning signals, macroeconomic risk, and changing market regimes with actionable context.",
@@ -485,7 +487,8 @@ export default function MarketingSite({ initialSection }: { initialSection?: str
   useEffect(() => {
     trackPricingViewed();
     if (!initialSection) return;
-    const timer = window.setTimeout(() => document.getElementById(initialSection)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+    const targetSection = initialSection === "pricing" ? "access" : initialSection;
+    const timer = window.setTimeout(() => document.getElementById(targetSection)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
     return () => window.clearTimeout(timer);
   }, [initialSection]);
 

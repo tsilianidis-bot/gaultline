@@ -67,11 +67,14 @@ const postureConfig: Record<MarketPosture, { label: string; color: string; bgCol
   },
 };
 
-function fallbackPosture(score: number): MarketPosture {
-  if (score >= 70) return "defensive";
-  if (score <= 35) return "opportunistic";
-  return "balanced";
-}
+const unavailablePostureView = {
+  label: "UNAVAILABLE",
+  color: "#94A3B8",
+  bgColor: "rgba(148,163,184,0.08)",
+  description: "Canonical decision posture is withheld until authoritative evidence is available.",
+  biasLabel: "Withheld",
+  biasScore: 50,
+};
 
 // ── Section wrapper ──────────────────────────────────────────────────────────
 function Section({
@@ -137,7 +140,7 @@ function ActionBiasInstrument({ posture, biasScore, biasLabel, color }: {
 }
 
 // ── Strategy favorability matrix ─────────────────────────────────────────────
-function StrategyMatrix({ posture, scenarios }: { posture: MarketPosture; scenarios: DecisionScenario[] }) {
+function StrategyMatrix({ posture, scenarios }: { posture: MarketPosture | null; scenarios: DecisionScenario[] }) {
   const strategies = [
     { label: "Increase exposure",    defensive: "avoid",    balanced: "conditional", opportunistic: "favorable" },
     { label: "Hold current risk",    defensive: "favorable", balanced: "favorable",   opportunistic: "conditional" },
@@ -238,7 +241,6 @@ export default function Act() {
   const {
     marketState,
     marketMode,
-    output,
     sourceHealth,
     isLoading,
     isRefreshing,
@@ -259,25 +261,22 @@ export default function Act() {
   if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="ACT withholds current decision interpretation until one authoritative state is available." />;
 
   const isCanonical = marketMode === "canonical" && Boolean(marketState);
-  const pressure = canonicalState.pressureIndex;
-  const posture = marketState?.act.marketPosture ?? fallbackPosture(pressure);
-  const postureView = postureConfig[posture];
+  const pressure = canonicalState.pressureIndex ?? 0;
+  const posture = marketState?.act.marketPosture ?? null;
+  const postureView = posture ? postureConfig[posture] : unavailablePostureView;
   const confidence = marketState?.outlook.probabilities.confidence ?? 0;
   const decisionSummary = marketState?.act.decisionSummary
-    ?? `Canonical decision guidance is unavailable. The deterministic ${output.regime.label.toLowerCase()} state supports a ${posture} posture without creating a trade-level instruction.`;
+    ?? "Canonical decision guidance is unavailable. ACT will not manufacture a colored posture or trade-level instruction from deterministic fallback data.";
   const riskControls = marketState?.act.riskControls ?? [];
   const invalidation = marketState?.act.whatWouldInvalidate
     ?? "Canonical decision invalidation is unavailable. ACT will not manufacture a threshold from deterministic fallback data.";
-  const evidence = marketState?.now.topDrivers
-    ?? output.domains.slice(0, 5).map(domain => `${domain.label}: ${domain.drivers[0] ?? domain.description}`);
-  const monitoredTriggers = marketState?.watch.whatToWatch
-    ?? output.domains.slice(0, 5).map(domain => `${domain.label}: ${domain.description}`);
+  const evidence = marketState?.now.topDrivers ?? [];
+  const monitoredTriggers = marketState?.watch.whatToWatch ?? [];
   const developingConditions = marketState?.watch.developingConditions ?? [];
-  const modeLabel = isCanonical ? "Canonical state" : "Deterministic fallback";
+  const modeLabel = isCanonical ? "Canonical state" : "UNAVAILABLE";
 
-  // Green / red flag split from evidence
-  const greenFlags = evidence.filter((_, i) => i % 3 !== 2);
-  const redFlags = evidence.filter((_, i) => i % 3 === 2);
+  const greenFlags = evidence;
+  const redFlags: string[] = marketState?.watch.whatChanged ?? [];
 
   const scenarios: DecisionScenario[] = marketState ? [
     {
@@ -300,21 +299,21 @@ export default function Act() {
     },
   ] : [
     {
-      label: "Bull indicator",
-      probability: output.probability.bullProbability,
-      response: "Deterministic upside probability is visible for context only; canonical decision guidance is unavailable.",
-      boundary: "Fallback probabilities may not form a mutually exclusive distribution.",
+      label: "Bull path",
+      probability: Number.NaN,
+      response: "Bull-continuation probability is withheld. Canonical decision guidance is unavailable.",
+      boundary: "UNAVAILABLE — not a directive to buy, sell, or hedge.",
     },
     {
-      label: "Soft-landing indicator",
-      probability: output.probability.softLandingProbability,
-      response: "The deterministic soft-landing reading is not a position recommendation or an individualized instruction.",
+      label: "Neutral path",
+      probability: Number.NaN,
+      response: "Neutral-path probability is withheld until canonical evidence is available.",
       boundary: "Canonical scenario evidence and transition history are unavailable.",
     },
     {
-      label: "Crash-risk indicator",
-      probability: output.probability.crashProbability,
-      response: "The deterministic crash-risk reading is a system-state signal, not a directive to buy, sell, or hedge.",
+      label: "Bear path",
+      probability: Number.NaN,
+      response: "Crash/drawdown probability is withheld. This is not a directive to buy, sell, or hedge.",
       boundary: "Use a specialist workflow before making any instrument-level decision.",
     },
   ];
@@ -442,7 +441,7 @@ export default function Act() {
               <article key={scenario.label} className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">{scenario.label}</div>
-                  <div className="font-['Rajdhani'] text-xl font-semibold text-emerald-200">{formatCanonicalPercent(scenario.probability)}</div>
+                  <div className="font-['Rajdhani'] text-xl font-semibold text-emerald-200">{Number.isFinite(scenario.probability) ? formatCanonicalPercent(scenario.probability) : "UNAVAILABLE"}</div>
                 </div>
                 <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
                   <div className="h-full rounded-full bg-emerald-400/60" style={{ width: `${normalizeCanonicalMetric(scenario.probability)}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
@@ -604,7 +603,7 @@ export default function Act() {
         </Section>
 
         <div className="flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6 font-mono text-[9px] uppercase tracking-[0.16em] text-slate-700">
-          <span>Regime {marketState?.now.regime ?? output.regime.label}</span>
+          <span>Regime {marketState?.now.regime ?? "UNAVAILABLE"}</span>
           <Link href={CANONICAL_DESTINATION_BY_ID.watch.path} className="text-emerald-300/80 transition hover:text-emerald-200">
             Return to WATCH
           </Link>

@@ -1,0 +1,13 @@
+# Independent Railway deploy (no Manus). Uses the in-repo Dockerfile.
+# Railway injects PORT. Set service env names from .env.example (values stay in Railway).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "pnpm start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10

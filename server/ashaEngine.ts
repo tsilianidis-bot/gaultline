@@ -300,7 +300,7 @@ function buildEngineAvailabilityContext(context: AshaGatewayContext): {
       if (source.id === "coingecko") {
         unavailable.push("Crypto Intelligence Engine");
         limitations.push(
-          "Crypto Intelligence Engine is unavailable. Crypto analysis is supplemented from external macro context only and is not FAULTLINE-native intelligence. Confidence is reduced accordingly."
+          "Crypto Intelligence Engine is unavailable. Crypto interpretation is supplemented from external macro context only and is not FAULTLINE-native intelligence. Confidence is reduced accordingly."
         );
       } else if (source.id === "fred") {
         unavailable.push("FRED Economic Data");
@@ -818,7 +818,7 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
 
   const { response: llmResponse } = await invokeAshaGateway({ messages });
   const candidate = readString(llmResponse.choices?.[0]?.message?.content)
-    ?? "Canonical state unavailable. Insufficient evidence for a current market greeting.";
+    ?? "Canonical state unavailable. Insufficient evidence for a current market interpretation.";
   return String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
 }
 

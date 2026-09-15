@@ -258,7 +258,7 @@ describe("simulateTrade — all move types", () => {
   const moves: MoveType[] = [
     "add_risk", "reduce_risk", "hedge",
     "raise_cash", "rotate", "deploy_cash",
-    "buy_specific_asset", "sell_specific_asset",
+    "buy_specific_asset", "sell_specific_asset", "hold",
   ];
 
   for (const move of moves) {
@@ -272,6 +272,16 @@ describe("simulateTrade — all move types", () => {
       expect(result.moveLabel.length).toBeGreaterThan(0);
       expect(result.moveFavorabilityScore).toBeGreaterThanOrEqual(0);
       expect(result.moveFavorabilityScore).toBeLessThanOrEqual(100);
+      expect(result.decisionLight).toBeDefined();
+      expect(result.decisionLight.proposedAction).toBeTruthy();
+      expect(["GREEN", "YELLOW", "RED", "GRAY"]).toContain(result.decisionLight.decisionLight);
+      expect(result.decisionLight.explanation).toBeTruthy();
+      expect(Array.isArray(result.decisionLight.supportingEvidence)).toBe(true);
+      expect(Array.isArray(result.decisionLight.confirmationTriggers)).toBe(true);
+      expect(Array.isArray(result.decisionLight.invalidationTriggers)).toBe(true);
+      expect(result.decisionLight).toHaveProperty("canonicalStateId");
+      expect(result.decisionLight.timestamp).toBeTruthy();
+      expect(["healthy", "degraded", "unavailable"]).toContain(result.decisionLight.sourceHealthStatus);
     }, 30000);
   }
 });
