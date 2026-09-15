@@ -46,15 +46,15 @@ Non-secret top-level: `build_command`, `dev_command`, `test_command`, `capabilit
 | **Manus / webdev platform** | Injects `env_vars` + `secrets` into the host process. App code does **not** `import` this JSON. |
 | **App runtime** | `import "dotenv/config"` + `process.env.*` (`server/_core/env.ts`, stripe, fred, llm, email, X, GSC, QA). |
 | **Backup / restore docs** | `scripts/generateBackupDocs.mjs` **excludes** this filename; `FAULTLINE_BACKUP_VERIFICATION.md` says the zip omits it. |
-| **Git** | Listed in `.gitignore` **but still tracked** (`git ls-files` hits). Ignore does not untrack. |
+| **Git** | Listed in `.gitignore` and **untracked going forward** (`git rm --cached`). App runtime is unchanged. History is **not** rewritten. |
 
 This agent’s verify suite did **not** load the file into `process.env`. CI similarly does not inject these secrets. Shape-present ≠ process-present.
 
 ## Does git history still contain them?
 
-**Yes.** The file is tracked. `git log -- .project-config.json` has **43** commits on this lineage, first added `42e338c` (2026-05-15). Any clone of the repo history can recover prior secret values. Treating `.gitignore` as protection is **false**.
+**Yes, in history only.** Forward tracking is stopped (`git rm --cached .project-config.json`). `git log -- .project-config.json` still has historical commits on this lineage, first added `42e338c` (2026-05-15). Any clone of the repo history can recover prior secret values until the owner authorizes a separate history rewrite.
 
-`git_remote.session_token` / access keys in a tracked file are especially sensitive (repo-write or object-store scoped, depending on Manus).
+`git_remote.session_token` / access keys that remain in old commits are especially sensitive (repo-write or object-store scoped, depending on Manus). Do not rewrite history in this change.
 
 ## Rotation steps (owner-authorized only)
 
@@ -63,7 +63,7 @@ This agent’s verify suite did **not** load the file into `process.env`. CI sim
 1. Owner confirms which slots are still live (SendGrid pair, Stripe test vs live price mismatch, Forge, FRED, Polygon, X, Google, JWT, QA, DB URL, git_remote STS).
 2. Issue **new** credentials at each vendor; revoke old.
 3. Update **platform secrets UI** (or a new untracked local file). **Do not** commit new values.
-4. `git rm --cached .project-config.json` after a **redacted** replacement (or stop tracking entirely) — needs owner decision; rewriting history is a separate, explicit request.
+4. **Forward untrack is done** (`git rm --cached .project-config.json`). Use the placeholder example or Railway/env for names only. Rewriting history is a separate, explicit owner request.
 5. Rotate `JWT_SECRET` only with a planned cookie invalidation window.
 6. Rotate `DATABASE_URL` only with a planned failover.
 7. After SendGrid: re-run live account check offline before removing `it.skip`.
@@ -75,7 +75,7 @@ This agent’s verify suite did **not** load the file into `process.env`. CI sim
 
 1. **Test Stripe secret + live-locked price IDs** — checkout verify will fail (see `docs/RC_STRIPE_SANDBOX_RECONCILE.md`). No offer change.
 2. **Two SendGrid keys** (`SENDGRID_API_KEY` vs `Sendgrid`) — app reads `SENDGRID_API_KEY`; the other may be stale.
-3. **Tracked + gitignored** — history leak.
+3. **Was tracked + gitignored** — forward tracking removed; history leak remains until owner-authorized rewrite.
 4. **QA secret length 9** — rotate if owner wants production QA.
 5. **git_remote STS** — likely expired; still a secret-in-git issue.
 
@@ -84,3 +84,5 @@ This agent’s verify suite did **not** load the file into `process.env`. CI sim
 - `docs/RC_PROVIDER_MATRIX.md`
 - `docs/RC_STRIPE_SANDBOX_RECONCILE.md`
 - `.gitignore` line `.project-config.json`
+- `.project-config.example.json` (placeholders only)
+- `docs/SECURITY.md`

@@ -18,7 +18,7 @@ Do **not** run `pnpm db:push` from deploy. Schema changes are owner/manual.
 
 ## Required env names
 
-See `.env.example`. Set values in the host secret manager, never in git.
+See `.env.example`. Set values in the host secret manager (Railway/env), never in git. See also [`docs/SECURITY.md`](SECURITY.md).
 
 | Name | Staging notes |
 | --- | --- |
