@@ -7,6 +7,7 @@ vi.mock("./env", () => ({
   },
 }));
 
+import { ENV } from "./env";
 import { invokeLLM, listLLMModels } from "./llm";
 
 const successfulResponse = () =>
@@ -28,6 +29,8 @@ const successfulResponse = () =>
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  ENV.forgeApiKey = "test-forge-key";
+  ENV.forgeApiUrl = "https://forge.example";
 });
 
 describe("invokeLLM transport", () => {
@@ -91,5 +94,29 @@ describe("listLLMModels", () => {
     )));
 
     await expect(listLLMModels()).rejects.toThrow("invalid response");
+  });
+});
+
+describe("invokeLLM gateway config", () => {
+  it("fails closed on BUILT_IN_FORGE_API_KEY and does not read OPENAI_API_KEY", async () => {
+    ENV.forgeApiKey = "";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      invokeLLM({ messages: [{ role: "user", content: "Summarize the market." }] }),
+    ).rejects.toThrow("BUILT_IN_FORGE_API_KEY is not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed on missing BUILT_IN_FORGE_API_URL instead of calling Manus", async () => {
+    ENV.forgeApiUrl = "";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      invokeLLM({ messages: [{ role: "user", content: "Summarize the market." }] }),
+    ).rejects.toThrow("BUILT_IN_FORGE_API_URL is not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

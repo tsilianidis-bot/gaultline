@@ -16,4 +16,17 @@ describe("canonical Global Markets snapshot", () => {
     expect(classifyFreshness({ price: 100, isDelayed: false, fetchedAt: now - 13 * 60 * 1000, provider: "yahoo", state: "REGULAR", now })).toBe("STALE");
     expect(classifyFreshness({ price: 4.3, isDelayed: true, fetchedAt: now, provider: "fred", state: "CLOSED", now })).toBe("LATEST_VERIFIED");
   });
+
+  it("treats a failed Yahoo ^GSPC observation as UNAVAILABLE, not a live zero", () => {
+    expect(GLOBAL_INSTRUMENTS.find(item => item.symbol === "^GSPC")?.provider).toBe("yahoo");
+    const now = 1_000_000;
+    expect(classifyFreshness({
+      price: null,
+      isDelayed: true,
+      fetchedAt: now,
+      provider: "yahoo",
+      state: "UNKNOWN",
+      now,
+    })).toBe("UNAVAILABLE");
+  });
 });

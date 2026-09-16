@@ -206,7 +206,8 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
+      // Expected for public tRPC (e.g. markets ticker poll) and logged-out
+      // browsers. Do not warn — missing cookie is not an auth failure.
       return null;
     }
 
