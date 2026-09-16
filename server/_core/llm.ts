@@ -222,19 +222,22 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+const resolveApiUrl = () => {
+  assertGatewayConfig();
+  return `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`;
+};
 
-const resolveModelsApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
-    : "https://forge.manus.im/v1/models";
+const resolveModelsApiUrl = () => {
+  assertGatewayConfig();
+  return `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`;
+};
 
-const assertApiKey = () => {
+const assertGatewayConfig = () => {
   if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
+  }
+  if (!ENV.forgeApiUrl || ENV.forgeApiUrl.trim().length === 0) {
+    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
   }
 };
 
@@ -284,7 +287,7 @@ const normalizeResponseFormat = ({
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+  assertGatewayConfig();
 
   const {
     model,
@@ -350,7 +353,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 }
 
 export async function listLLMModels(): Promise<ListLLMModelsResult> {
-  assertApiKey();
+  assertGatewayConfig();
 
   const response = await fetch(resolveModelsApiUrl(), {
     headers: {
