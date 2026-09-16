@@ -222,14 +222,34 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () => {
+const gatewayBaseUrl = () => {
   assertGatewayConfig();
-  return `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`;
+  return ENV.forgeApiUrl.trim().replace(/\/$/, "");
+};
+
+const usesGeminiOpenAiCompatPath = (base: string): boolean => {
+  if (base.endsWith("/openai")) {
+    return true;
+  }
+  try {
+    return new URL(base).hostname === "generativelanguage.googleapis.com";
+  } catch {
+    return false;
+  }
+};
+
+const resolveApiUrl = () => {
+  const base = gatewayBaseUrl();
+  return usesGeminiOpenAiCompatPath(base)
+    ? `${base}/chat/completions`
+    : `${base}/v1/chat/completions`;
 };
 
 const resolveModelsApiUrl = () => {
-  assertGatewayConfig();
-  return `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`;
+  const base = gatewayBaseUrl();
+  return usesGeminiOpenAiCompatPath(base)
+    ? `${base}/models`
+    : `${base}/v1/models`;
 };
 
 const assertGatewayConfig = () => {
