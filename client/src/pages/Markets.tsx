@@ -14,6 +14,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import type { MarketQuoteItem, GlobalMarketSnapshot } from "../../../server/routers/markets";
+import {
+  UNAVAILABLE_LABEL,
+  advancingShare,
+  cryptoRiskRelationship,
+  displaySummaryValue,
+  dollarEquityRelationship,
+  formatSpread,
+  isFiniteNumber,
+  rateEquityRelationship,
+  rutVersusSpxSpread,
+  usEquitiesRead,
+  usableChangePercent,
+} from "@shared/marketsDisplay";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG       = "#050608";
@@ -32,23 +45,26 @@ const HEADING  = "'Rajdhani', 'Space Grotesk', sans-serif";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function pctColor(v: number | null): string {
-  if (v === null) return MUTED;
-  if (v > 0.05) return GREEN;
-  if (v < -0.05) return RED;
+  const pct = usableChangePercent(v);
+  if (pct === null) return MUTED;
+  if (pct > 0.05) return GREEN;
+  if (pct < -0.05) return RED;
   return MUTED;
 }
 function pctGlyph(v: number | null): string {
-  if (v === null) return "—";
-  if (v > 0.05) return "▲";
-  if (v < -0.05) return "▼";
+  const pct = usableChangePercent(v);
+  if (pct === null) return "—";
+  if (pct > 0.05) return "▲";
+  if (pct < -0.05) return "▼";
   return "—";
 }
 function fmtPct(v: number | null): string {
-  if (v === null) return "—";
-  return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+  const pct = usableChangePercent(v);
+  if (pct === null) return UNAVAILABLE_LABEL;
+  return `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
 function fmtPrice(v: number | null, item?: Pick<MarketQuoteItem, "symbol" | "unit">): string {
-  if (v === null) return "—";
+  if (!isFiniteNumber(v)) return UNAVAILABLE_LABEL;
   if (item?.unit === "percent") return `${v.toFixed(2)}%`;
   if (item?.unit === "bps") return `${v >= 0 ? "+" : ""}${v.toFixed(0)}bp`;
   if (item?.unit === "percent_of_market") return `${v.toFixed(1)}%`;
@@ -135,7 +151,7 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
         <span style={{ fontFamily: MONO, fontSize: "11px", color }}>
           {pctGlyph(pct)} {fmtPct(pct)}
         </span>
-        {item.change !== null && (
+        {item.change !== null && isFiniteNumber(item.change) && (
           <span style={{ fontFamily: MONO, fontSize: "10px", color: MUTED }}>
             {item.change >= 0 ? "+" : ""}{item.change.toFixed(item.change >= 100 ? 0 : 2)}
           </span>
@@ -161,17 +177,24 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
           Delayed quote — not live
         </div>
       )}
+      {item.freshnessState === "STALE" && (
+        <div style={{ fontFamily: MONO, fontSize: "8px", color: MUTED, marginTop: "4px", opacity: 0.6 }}>
+          Stale quote — not live
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Summary pill ──────────────────────────────────────────────────────────────
 function SummaryPill({ label, value }: { label: string; value: string }) {
+  const display = displaySummaryValue(value);
   const color =
+    display === UNAVAILABLE_LABEL ? MUTED :
     value.includes("risk-on") || value.includes("positive") || value.includes("low") ? GREEN :
     value.includes("risk-off") || value.includes("negative") || value.includes("elevated") || value.includes("weakening") ? RED :
     value.includes("rising") || value.includes("strengthening") ? AMBER :
-    value.includes("unavailable") ? MUTED : TEXT;
+    TEXT;
   return (
     <div style={{
       display: "flex", flexDirection: "column", gap: "2px",
@@ -185,8 +208,8 @@ function SummaryPill({ label, value }: { label: string; value: string }) {
       <span style={{ fontFamily: MONO, fontSize: "8px", color: MUTED, letterSpacing: "0.1em", textTransform: "uppercase" }}>
         {label}
       </span>
-      <span style={{ fontFamily: SANS, fontSize: "12px", color, fontWeight: 600, textTransform: "capitalize" }}>
-        {value === "unavailable" ? "—" : value.replace(/-/g, " ")}
+      <span style={{ fontFamily: SANS, fontSize: "12px", color, fontWeight: 600, textTransform: display === UNAVAILABLE_LABEL ? "none" : "capitalize" }}>
+        {display}
       </span>
     </div>
   );
@@ -207,7 +230,7 @@ function RankRow({ item, rank, direction }: { item: MarketQuoteItem; rank: numbe
         <div style={{ fontFamily: SANS, fontSize: "9px", color: MUTED }}>{item.label}</div>
       </div>
       <span style={{ fontFamily: MONO, fontSize: "12px", color, fontWeight: 600 }}>
-        {direction === "up" ? "▲" : "▼"} {Math.abs(item.changePercent ?? 0).toFixed(2)}%
+        {direction === "up" ? "▲" : "▼"} {usableChangePercent(item.changePercent) === null ? UNAVAILABLE_LABEL : `${Math.abs(item.changePercent as number).toFixed(2)}%`}
       </span>
     </div>
   );
@@ -286,10 +309,9 @@ function generateLocalInterpretation(
 ): string {
   const parts: string[] = [];
 
-  // US equities tone
-  if (s.usEquities === "risk-on") parts.push("U.S. equity markets are broadly positive, with most major indices advancing.");
-  else if (s.usEquities === "risk-off") parts.push("U.S. equity markets are under pressure, with broad-based selling across major indices.");
-  else parts.push("U.S. equity markets are mixed, with no clear directional conviction across major indices.");
+  const usRead = usEquitiesRead(s.usEquities);
+  if (usRead) parts.push(usRead);
+  else parts.push("U.S. equity index observations are unavailable.");
 
   // Volatility context
   if (s.volatility === "elevated" && vix?.price) {
@@ -298,17 +320,20 @@ function generateLocalInterpretation(
     parts.push(`Volatility is suppressed — VIX at ${vix.price.toFixed(1)} — consistent with low near-term fear in options markets.`);
   }
 
-  // Rates and dollar cross-market pressure
-  const ratesRising = s.rates === "rising";
-  const dollarStrong = s.dollar === "strengthening";
-  if (ratesRising && dollarStrong) {
-    parts.push("Rising Treasury yields and a firmer dollar are creating cross-market headwinds, particularly for rate-sensitive and international assets.");
-  } else if (ratesRising) {
-    parts.push("Rising Treasury yields are adding pressure to rate-sensitive sectors and extending the duration risk environment.");
-  } else if (dollarStrong) {
-    parts.push("A strengthening dollar is creating headwinds for commodities and international equity markets.");
-  } else if (s.rates === "falling") {
-    parts.push("Declining Treasury yields are providing a tailwind for rate-sensitive assets and growth equities.");
+  if (s.rates === "unavailable" && s.dollar === "unavailable") {
+    // omit unsupported directional commentary
+  } else {
+    const ratesRising = s.rates === "rising";
+    const dollarStrong = s.dollar === "strengthening";
+    if (ratesRising && dollarStrong) {
+      parts.push("Rising Treasury yields and a firmer dollar are creating cross-market headwinds, particularly for rate-sensitive and international assets.");
+    } else if (ratesRising) {
+      parts.push("Rising Treasury yields are adding pressure to rate-sensitive sectors and extending the duration risk environment.");
+    } else if (dollarStrong) {
+      parts.push("A strengthening dollar is creating headwinds for commodities and international equity markets.");
+    } else if (s.rates === "falling") {
+      parts.push("Declining Treasury yields are providing a tailwind for rate-sensitive assets and growth equities.");
+    }
   }
 
   // Global context
@@ -323,7 +348,18 @@ function generateLocalInterpretation(
 }
 
 // ── Breadth proxy row ─────────────────────────────────────────────────────────
-function BreadthRow({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+function BreadthRow({ label, value, max, color }: { label: string; value: number | null; max: number; color: string }) {
+  if (value === null || !Number.isFinite(value)) {
+    return (
+      <div style={{ marginBottom: "10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+          <span style={{ fontFamily: SANS, fontSize: "11px", color: TEXT }}>{label}</span>
+          <span style={{ fontFamily: MONO, fontSize: "11px", color: MUTED }}>{UNAVAILABLE_LABEL}</span>
+        </div>
+        <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />
+      </div>
+    );
+  }
   const pct = Math.min(100, (value / max) * 100);
   return (
     <div style={{ marginBottom: "10px" }}>
@@ -359,15 +395,17 @@ export default function Markets() {
   const commItems   = byCategory("commodity");
   const cryptoItems = byCategory("crypto");
 
-  // Breadth proxy from US equity performance
-  const usLive = usItems.filter(i => i.changePercent !== null);
-  const advancingPct = usLive.length > 0
-    ? (usLive.filter(i => (i.changePercent ?? 0) > 0).length / usLive.length) * 100
-    : 0;
-  const spxPct = usItems.find(i => i.symbol === "^GSPC")?.changePercent ?? 0;
-  const rutPct = usItems.find(i => i.symbol === "^RUT")?.changePercent ?? 0;
-  const smallVsLarge = (rutPct - spxPct).toFixed(2);
-  const vixPrice = vixItems.find(i => i.symbol === "^VIX")?.price ?? null;
+  // Breadth proxy from US equity performance — missing observations stay Unavailable.
+  const advancing = advancingShare(usItems);
+  const advancingPct = advancing.percent;
+  const { spread: smallVsLarge, commentary: smallCapCommentary } = rutVersusSpxSpread(usItems);
+  const vixItem = vixItems.find(i => i.symbol === "^VIX");
+  const vixPrice = vixItem && vixItem.freshnessState !== "UNAVAILABLE" && isFiniteNumber(vixItem.price)
+    ? vixItem.price
+    : null;
+  const dollarEquity = dollarEquityRelationship(snapshot?.summary.dollar, snapshot?.summary.usEquities);
+  const rateEquity = rateEquityRelationship(snapshot?.summary.rates, snapshot?.summary.usEquities);
+  const cryptoRisk = cryptoRiskRelationship(snapshot?.summary.crypto, snapshot?.summary.usEquities);
 
   const lastUpdated = snapshot
     ? new Date(snapshot.fetchedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
@@ -543,7 +581,7 @@ export default function Markets() {
                   label="U.S. Indices Advancing"
                   value={advancingPct}
                   max={100}
-                  color={advancingPct >= 60 ? GREEN : advancingPct <= 40 ? RED : AMBER}
+                  color={advancingPct == null ? MUTED : advancingPct >= 60 ? GREEN : advancingPct <= 40 ? RED : AMBER}
                 />
                 {vixPrice !== null && (
                   <BreadthRow
@@ -557,16 +595,14 @@ export default function Markets() {
                   <div style={{ fontFamily: MONO, fontSize: "9px", color: MUTED, marginBottom: "4px" }}>
                     SMALL CAP vs LARGE CAP
                   </div>
-                  <div style={{ fontFamily: MONO, fontSize: "12px", color: parseFloat(smallVsLarge) > 0 ? GREEN : parseFloat(smallVsLarge) < 0 ? RED : MUTED }}>
-                    RUT vs SPX: {parseFloat(smallVsLarge) >= 0 ? "+" : ""}{smallVsLarge}% spread
+                  <div style={{ fontFamily: MONO, fontSize: "12px", color: smallVsLarge == null ? MUTED : smallVsLarge > 0 ? GREEN : smallVsLarge < 0 ? RED : MUTED }}>
+                    RUT vs SPX: {formatSpread(smallVsLarge)}
                   </div>
-                  <div style={{ fontFamily: SANS, fontSize: "10px", color: MUTED, marginTop: "3px" }}>
-                    {parseFloat(smallVsLarge) > 0.3
-                      ? "Small caps outperforming — broad participation"
-                      : parseFloat(smallVsLarge) < -0.3
-                      ? "Large caps leading — narrow rally"
-                      : "Small and large caps roughly in line"}
-                  </div>
+                  {smallCapCommentary && (
+                    <div style={{ fontFamily: SANS, fontSize: "10px", color: MUTED, marginTop: "3px" }}>
+                      {smallCapCommentary}
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Risk indicators */}
@@ -577,30 +613,22 @@ export default function Markets() {
                 {[
                   {
                     label: "Dollar / Equity Relationship",
-                    value: snapshot?.summary.dollar === "strengthening" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Divergence — watch for reversal"
-                      : snapshot?.summary.dollar === "weakening" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Aligned — dollar weakness supporting equities"
-                      : "Neutral",
-                    color: snapshot?.summary.dollar === "strengthening" && snapshot?.summary.usEquities === "risk-on" ? AMBER : TEXT,
+                    value: dollarEquity,
+                    color: dollarEquity === UNAVAILABLE_LABEL
+                      ? MUTED
+                      : snapshot?.summary.dollar === "strengthening" && snapshot?.summary.usEquities === "risk-on" ? AMBER : TEXT,
                   },
                   {
                     label: "Rate / Equity Relationship",
-                    value: snapshot?.summary.rates === "rising" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Tension — rising yields pressuring valuations"
-                      : snapshot?.summary.rates === "falling" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Supportive — falling yields tailwind for equities"
-                      : "Neutral",
-                    color: snapshot?.summary.rates === "rising" && snapshot?.summary.usEquities === "risk-on" ? AMBER : TEXT,
+                    value: rateEquity,
+                    color: rateEquity === UNAVAILABLE_LABEL
+                      ? MUTED
+                      : snapshot?.summary.rates === "rising" && snapshot?.summary.usEquities === "risk-on" ? AMBER : TEXT,
                   },
                   {
                     label: "Crypto / Risk Appetite",
-                    value: snapshot?.summary.crypto === "positive" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Aligned — risk appetite broad"
-                      : snapshot?.summary.crypto === "negative" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Divergence — crypto not confirming equity strength"
-                      : "Mixed",
-                    color: TEXT,
+                    value: cryptoRisk,
+                    color: cryptoRisk === UNAVAILABLE_LABEL ? MUTED : TEXT,
                   },
                 ].map(row => (
                   <div key={row.label} style={{ marginBottom: "12px" }}>
