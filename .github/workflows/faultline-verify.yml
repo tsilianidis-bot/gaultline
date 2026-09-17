@@ -6,6 +6,7 @@ on:
     branches:
       - grok/faultline-baseline-stabilization-2026-09-11
       - grok/faultline-completion-2026-09-08
+      - automation/low-credit-execution-router-2026-09-17
   pull_request:
     branches:
       - grok/faultline-completion-2026-09-08
@@ -25,6 +26,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Verify execution routing controls
+        run: |
+          test -f FAULTLINE_EXECUTION_ROUTER.md
+          test -f WORK_QUEUE.md
+          test -f scripts/ci-write-execution-report.sh
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -60,12 +67,25 @@ jobs:
           BUILD_TIME: ${{ github.event.head_commit.timestamp }}
         run: bash scripts/ci-write-build-identity.sh
 
+      - name: Write execution routing report
+        run: bash scripts/ci-write-execution-report.sh
+
       - name: Upload build identity
         uses: actions/upload-artifact@v4
         with:
           name: faultline-build-identity
           path: dist/build-identity.json
           if-no-files-found: error
+
+      - name: Upload execution routing report
+        uses: actions/upload-artifact@v4
+        with:
+          name: faultline-execution-report
+          path: dist/execution-report.md
+          if-no-files-found: error
+
+      - name: Publish routing summary
+        run: cat dist/execution-report.md >> "$GITHUB_STEP_SUMMARY"
 
   manus-deploy:
     name: Manus deploy (manual / disabled)
