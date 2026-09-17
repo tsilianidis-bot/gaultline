@@ -12,7 +12,9 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { X, Play, SkipForward, AlertTriangle, CheckCircle } from "lucide-react";
 
-const VIDEO_URL = "/manus-storage/faultline-getting-started-v3_1a39038f.mp4";
+// Getting-started video lived on Manus object storage and is not bundled.
+// Skip the modal when no independent asset URL is configured.
+const VIDEO_URL: string | null = null;
 
 export function OnboardingVideoModal() {
   const { user } = useAuth();
@@ -32,6 +34,7 @@ export function OnboardingVideoModal() {
 
   // Show modal for logged-in users who haven't seen the video
   useEffect(() => {
+    if (!VIDEO_URL) return;
     if (!isLoading && user && prefs !== undefined) {
       if (!prefs || !prefs.hasSeenGettingStartedVideo) {
         // Small delay so the page loads first
@@ -191,15 +194,18 @@ export function OnboardingVideoModal() {
 
         {/* Video */}
         <div style={{ position: "relative", background: "#000", cursor: "pointer" }} onClick={togglePlay}>
+          {VIDEO_URL ? (
           <video
             ref={videoRef}
             src={VIDEO_URL}
             style={{ width: "100%", display: "block", maxHeight: "450px", objectFit: "contain" }}
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleEnded}
+            onError={handleDismiss}
             onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
             playsInline
           />
+          ) : null}
           {/* Play overlay when paused */}
           {!playing && !completed && (
             <div style={{

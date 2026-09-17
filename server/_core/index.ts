@@ -134,12 +134,10 @@ async function startServer() {
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://manus-analytics.com https://us.umami.is https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
-        // Allow manus storage CDN for OG image and uploaded assets
-        "img-src 'self' data: blob: https://d2xsxph8kpxj0f.cloudfront.net https://assets.coingecko.com https://*.manus.space https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com",
-        // Allow video/audio from manus storage CDN — required for <video> elements pointing to /manus-storage/ paths
-        "media-src 'self' blob: https://*.manus.space https://*.cloudfront.net",
-        // Allow connections to manus analytics, storage CDN, GA4 collect endpoints, and the approved Soro Blog feed
-        "connect-src 'self' https://manus-analytics.com https://us.umami.is https://*.manus.space https://*.cloudfront.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
+        "img-src 'self' data: blob: https://assets.coingecko.com https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com",
+        "media-src 'self' blob:",
+        // Allow connections to first-party analytics, GA4 collect endpoints, and the approved Soro Blog feed
+        "connect-src 'self' https://manus-analytics.com https://us.umami.is https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",

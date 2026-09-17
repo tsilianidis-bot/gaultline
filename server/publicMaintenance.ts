@@ -1,7 +1,7 @@
 /**
  * Temporary public presentation boundary.
  *
- * This gate deliberately leaves API, scheduled, auth, storage, and asset routes untouched.
+ * This gate deliberately leaves API, scheduled, auth, leftover storage-compat, and asset routes untouched.
  * Set FAULTLINE_MAINTENANCE_MODE=false in the deployment environment to resume normal public
  * SPA delivery without changing any intelligence, database, or application behavior.
  */
