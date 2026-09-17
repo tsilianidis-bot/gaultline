@@ -25,8 +25,8 @@ describe("Marketing page positioning guardrails", () => {
     expect(page).not.toMatch(/CURRENT REGIME|SIGNALS ACTIVE|TREASURY STRESS: ELEVATED/);
   });
 
-  it("keeps ASHA current and does not present PLATO as an implemented feature", () => {
-    expect(page).toContain("ASHA market explanation");
-    expect(page).not.toContain("PLATO");
+  it("keeps PLATO current and does not present ASHA as the customer-facing name", () => {
+    expect(page).toContain("PLATO market explanation");
+    expect(page).not.toContain("ASHA");
   });
 });

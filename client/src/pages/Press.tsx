@@ -8,13 +8,13 @@ import { useState } from "react";
 
 const BOILERPLATE_50 = `About Phoenix Systems
 
-Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform powered by ASHA — an AI intelligence layer that synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before markets reprice them. Available at getfaultline.live.`;
+Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform powered by PLATO — an AI intelligence layer that synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before markets reprice them. Available at getfaultline.live.`;
 
 const BOILERPLATE_150 = `About Phoenix Systems
 
 Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. The company develops decision-intelligence systems designed to reduce the information asymmetry between institutional and individual decision-makers.
 
-Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform powered by ASHA — an AI intelligence layer that continuously synthesises ten live market engines: Market Regime, Pressure Index, Liquidity, Treasury Conditions, Volatility, Credit Risk, Historical Analog, Probability, Crypto Intelligence, and Signal. ASHA detects regime shifts, systemic pressure, and structural risk before markets reprice them — and delivers institutional-grade intelligence in plain language.
+Its flagship product, FAULTLINE, is a macroeconomic risk intelligence platform powered by PLATO — an AI intelligence layer that continuously synthesises ten live market engines: Market Regime, Pressure Index, Liquidity, Treasury Conditions, Volatility, Credit Risk, Historical Analog, Probability, Crypto Intelligence, and Signal. PLATO detects regime shifts, systemic pressure, and structural risk before markets reprice them — and delivers institutional-grade intelligence in plain language.
 
 FAULTLINE is designed for investors, traders, and analysts who want to understand the risk environment before it reprices. The platform provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
 
@@ -30,15 +30,15 @@ Phoenix Systems was created to close that gap.
 
 The company's approach to artificial intelligence is deliberately calibrated. Phoenix Systems does not use AI to generate predictions or recommendations. It uses AI to synthesise, classify, and contextualise — to surface what is happening, why it is happening, how long it has been building, and what has historically happened in similar conditions. Every product Phoenix Systems builds is designed to reduce information asymmetry, not to manufacture false certainty.
 
-FAULTLINE is Phoenix Systems' flagship product. FAULTLINE is a macroeconomic risk intelligence platform powered by ASHA — an AI intelligence layer that continuously synthesises ten live market engines before generating any response or briefing. Rather than beginning with stock selection or trading signals, FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system?
+FAULTLINE is Phoenix Systems' flagship product. FAULTLINE is a macroeconomic risk intelligence platform powered by PLATO — an AI intelligence layer that continuously synthesises ten live market engines before generating any response or briefing. Rather than beginning with stock selection or trading signals, FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system?
 
-ASHA — Adaptive Systemic Heuristic Analyst — is the intelligence core of FAULTLINE. Before answering any question, ASHA evaluates all ten engines: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. ASHA identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
+PLATO — Spirit of FAULTLINE — is the intelligence core of FAULTLINE. Before answering any question, PLATO evaluates all ten engines: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. PLATO identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
 
 The platform's primary instrument is the Seismograph™ — a continuous composite of macroeconomic, financial, and market stress that tracks how pressure has built over time, not just today's reading. The Seismograph™ drives FAULTLINE's regime classification engine, which categorises current conditions into one of five regimes and tracks how those regimes have historically resolved.
 
 All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
 
-FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers six access tiers: Free (Observer), Mobile ($9.99/mo), Founding Member ($49/mo locked for life), Trader ($59/mo), Power ($99/mo, coming soon), and Founding Lifetime ($299 one-time).
+FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four public access tiers: Free, Trader ($59/mo), Power ($99/mo), and Founding Member ($49/mo locked while active).
 
 Press contact: press@getfaultline.live
 Website: getfaultline.live`;
@@ -51,7 +51,7 @@ Developer: Phoenix Systems
 Founder: JT
 Website: getfaultline.live
 Category: AI-powered financial intelligence / Systemic risk awareness
-AI Intelligence Layer: ASHA (Adaptive Systemic Heuristic Analyst)
+AI Intelligence Layer: PLATO (Spirit of FAULTLINE)
 Primary instrument: Seismograph™ (continuous systemic pressure composite)
 Primary metric: Pressure Index™ (0–100 composite score, five regime classifications)
 
@@ -69,35 +69,33 @@ Intelligence Engines (10 live):
 
 Data sources: FRED (Federal Reserve Economic Data), live market feeds, institutional flow data, on-chain crypto data, credit market feeds
 
-Platform capabilities: ASHA AI Intelligence, Seismograph™, Pressure Index™, Regime Detection, Signal Intelligence, Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Portfolio Intelligence, Market Scenarios, Aftershock Engine
+Platform capabilities: PLATO AI Intelligence, Seismograph™, Pressure Index™, Regime Detection, Signal Intelligence, Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Portfolio Intelligence, Market Scenarios, Aftershock Engine
 
 Availability: Web (getfaultline.live) + Progressive Web App (iOS/Android)
 
 Pricing tiers:
-  Free (Observer) — Live Pressure Index, limited signal previews
-  Mobile — $9.99/mo — Essential intelligence on any device
-  Founding Member — $49/mo (rate locked for life, limited availability)
+  Free — Live Pressure Index, limited signal previews
   Trader — $59/mo — Full intelligence platform
-  Power — $99/mo — Advanced traders & advisors (coming soon)
-  Founding Lifetime — $299 one-time — Full access forever
+  Power — $99/mo — Advanced traders & advisors
+  Founding Member — $49/mo (rate locked while membership remains active)
 
 Press contact: press@getfaultline.live`;
 
 const PRESS_RELEASE = `FOR IMMEDIATE RELEASE
 
-PHOENIX SYSTEMS INTRODUCES ASHA — THE AI INTELLIGENCE LAYER POWERING FAULTLINE'S TEN-ENGINE MARKET SYNTHESIS
+PHOENIX SYSTEMS INTRODUCES PLATO — THE AI INTELLIGENCE LAYER POWERING FAULTLINE'S TEN-ENGINE MARKET SYNTHESIS
 
-ASHA synthesises ten live market engines in real time, delivering institutional-grade macro intelligence to individual investors before conditions reprice.
+PLATO synthesises ten live market engines in real time, delivering institutional-grade macro intelligence to individual investors before conditions reprice.
 
-[Mentor, Ohio — July 2026] — Phoenix Systems today announced ASHA, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. ASHA — Adaptive Systemic Heuristic Analyst — continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before they become visible in price action.
+[Mentor, Ohio — July 2026] — Phoenix Systems today announced PLATO, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. PLATO — Spirit of FAULTLINE — continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before they become visible in price action.
 
-Unlike AI assistants that answer questions in isolation, ASHA evaluates all ten FAULTLINE engines before generating any response: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. ASHA identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
+Unlike AI assistants that answer questions in isolation, PLATO evaluates all ten FAULTLINE engines before generating any response: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. PLATO identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
 
-"Most investors see price action. ASHA sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "Every time a user asks ASHA a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+"Most investors see price action. PLATO sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
 
-FAULTLINE's Seismograph™ — the platform's primary intelligence instrument — tracks systemic pressure across macroeconomic, financial, and market systems and feeds ASHA's continuous situational awareness. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
+FAULTLINE's Seismograph™ — the platform's primary intelligence instrument — tracks systemic pressure across macroeconomic, financial, and market systems and feeds PLATO's continuous situational awareness. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
-FAULTLINE is available at getfaultline.live with tiered access for individual investors, active traders, and institutional users. The Founding Member tier ($49/mo, rate locked for life) and Founding Lifetime access ($299 one-time) remain available for a limited time during the founding period.
+FAULTLINE is available at getfaultline.live with tiered access for individual investors, active traders, and institutional users. The Founding Member tier ($49/mo, rate locked while membership remains active) is the current founding offer.
 
 About Phoenix Systems
 Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. FAULTLINE is its flagship product.
@@ -121,9 +119,9 @@ WHAT WE BUILD
 Phoenix Systems develops AI-powered intelligence systems that help investors, traders, and analysts make better decisions by transforming complex macroeconomic and market data into clear, actionable understanding. Every product Phoenix Systems builds is designed to reduce the information asymmetry between institutional and individual decision-makers — giving individuals access to the same structural awareness that professional risk managers use as a matter of course.
 
 FAULTLINE — FLAGSHIP PLATFORM
-FAULTLINE is a macroeconomic risk intelligence platform powered by ASHA — an AI intelligence layer that continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before markets reprice them.
+FAULTLINE is a macroeconomic risk intelligence platform powered by PLATO — an AI intelligence layer that continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before markets reprice them.
 
-The platform's primary instrument is the Seismograph™ — a continuous composite of macroeconomic, financial, and market stress that drives FAULTLINE's regime classification engine. The Historical Analog Engine identifies historical periods that most closely resemble current conditions and surfaces their outcome distributions. ASHA synthesises all ten engines before answering any question, identifying consensus and divergence across the full intelligence stack.
+The platform's primary instrument is the Seismograph™ — a continuous composite of macroeconomic, financial, and market stress that drives FAULTLINE's regime classification engine. The Historical Analog Engine identifies historical periods that most closely resemble current conditions and surfaces their outcome distributions. PLATO synthesises all ten engines before answering any question, identifying consensus and divergence across the full intelligence stack.
 
 FAULTLINE's ten intelligence engines:
 1. Market Regime Engine — classifies current market conditions into one of five regimes
@@ -138,7 +136,7 @@ FAULTLINE's ten intelligence engines:
 10. Signal Intelligence — institutional-grade directional signals across equities, crypto, and macro
 
 PHILOSOPHY
-We believe the most valuable intelligence is not a recommendation — it is context. Phoenix Systems products emphasise probabilistic reasoning over binary predictions. We surface likelihoods, regimes, and stress indicators — not buy or sell signals. ASHA is designed to augment human judgment, not replace it.
+We believe the most valuable intelligence is not a recommendation — it is context. Phoenix Systems products emphasise probabilistic reasoning over binary predictions. We surface likelihoods, regimes, and stress indicators — not buy or sell signals. PLATO is designed to augment human judgment, not replace it.
 
 DISCLAIMER
 FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
@@ -153,13 +151,13 @@ As of July 2026
 Platform: Macroeconomic Risk Intelligence
 Developer: Phoenix Systems
 Website: getfaultline.live
-AI Intelligence Layer: ASHA (Adaptive Systemic Heuristic Analyst)
+AI Intelligence Layer: PLATO (Spirit of FAULTLINE)
 
 WHAT FAULTLINE DOES
-FAULTLINE monitors the economic, financial, and market fault lines where stress builds beneath the surface. Powered by ASHA — an AI intelligence layer that synthesises ten live market engines — FAULTLINE gives investors, traders, and analysts a continuous, integrated view of systemic risk before it reprices. The platform answers three questions before any other: What is happening? Why is it happening? How long has it been building?
+FAULTLINE monitors the economic, financial, and market fault lines where stress builds beneath the surface. Powered by PLATO — an AI intelligence layer that synthesises ten live market engines — FAULTLINE gives investors, traders, and analysts a continuous, integrated view of systemic risk before it reprices. The platform answers three questions before any other: What is happening? Why is it happening? How long has it been building?
 
-ASHA — THE INTELLIGENCE LAYER
-ASHA (Adaptive Systemic Heuristic Analyst) is the AI core of FAULTLINE. Before responding to any question, ASHA evaluates all ten live engines, identifies where they agree and where they diverge, and synthesises a single coherent intelligence briefing. ASHA is not a chatbot — she is a continuously active intelligence layer reading the full market context at all times.
+PLATO — THE INTELLIGENCE LAYER
+PLATO (Spirit of FAULTLINE) is the AI core of FAULTLINE. Before responding to any question, PLATO evaluates all ten live engines, identifies where they agree and where they diverge, and synthesises a single coherent intelligence briefing. PLATO is not a chatbot — she is a continuously active intelligence layer reading the full market context at all times.
 
 CORE CAPABILITIES
 
@@ -169,29 +167,29 @@ CORE CAPABILITIES
 2. Pressure Index™
    A composite 0–100 score synthesising macroeconomic, financial, and market stress indicators. Updated continuously. Five regime classifications: Low Risk / Moderate Risk / Elevated Risk / High Risk / Critical.
 
-3. ASHA Daily Intelligence Brief
+3. PLATO Daily Intelligence Brief
    A daily AI-generated briefing synthesising all ten engines — what is happening, why it is happening, how long it has been developing, and what to watch next.
 
 4. Historical Analog Engine
    Identifies historical market periods that most closely resemble current conditions. Surfaces outcome distributions — not a single prediction, but a range of historically plausible scenarios with forward return data.
 
 5. Signal Intelligence
-   Institutional-grade directional signals across equities, crypto, and macro. Includes conviction scores, regime context, and ASHA synthesis.
+   Institutional-grade directional signals across equities, crypto, and macro. Includes conviction scores, regime context, and PLATO synthesis.
 
 6. Decision Engine
    A structured decision-support framework that evaluates trade ideas against the current macro regime, pressure environment, and signal consensus.
 
 7. Day Trade Intelligence
-   Intraday intelligence layer for active traders. Regime-aware setups, pre-market context, and real-time ASHA synthesis.
+   Intraday intelligence layer for active traders. Regime-aware setups, pre-market context, and real-time PLATO synthesis.
 
 8. Pre-Flight Briefing
-   A structured pre-session intelligence briefing covering macro conditions, key risk factors, and ASHA's read on the current environment before each trading session.
+   A structured pre-session intelligence briefing covering macro conditions, key risk factors, and PLATO's read on the current environment before each trading session.
 
 9. Symbol Intelligence
-   Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, regime overlay, institutional flow, and ASHA synthesis.
+   Deep-dive analysis for individual stocks and crypto assets. Includes pressure context, regime overlay, institutional flow, and PLATO synthesis.
 
 10. Crypto Hub & Crypto Intelligence
-    Dedicated crypto intelligence layer covering on-chain data, crypto regime classification, digital asset stress indicators, and ASHA crypto synthesis.
+    Dedicated crypto intelligence layer covering on-chain data, crypto regime classification, digital asset stress indicators, and PLATO crypto synthesis.
 
 11. Portfolio Intelligence
     Portfolio-level regime awareness. Evaluates holdings against current macro conditions and surfaces concentration risk, regime misalignment, and hedging considerations.
@@ -205,7 +203,7 @@ CORE CAPABILITIES
 AVAILABILITY
 Web: getfaultline.live
 PWA: Available on iOS and Android
-Tiers: Free · Mobile ($9.99/mo) · Founding Member ($49/mo locked) · Trader ($59/mo) · Power ($99/mo, coming soon) · Lifetime ($299 one-time)
+Tiers: Free · Founding Member ($49/mo locked) · Trader ($59/mo) · Power ($99/mo)
 
 DISCLAIMER
 FAULTLINE provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
@@ -217,9 +215,9 @@ const OUTREACH_EMAIL = `Subject: FAULTLINE — AI Market Intelligence Operating 
 
 Dear [Editor/Reporter Name],
 
-I am writing on behalf of Phoenix Systems to introduce FAULTLINE and ASHA — a macroeconomic risk intelligence platform and AI intelligence layer that takes a fundamentally different approach to market analysis.
+I am writing on behalf of Phoenix Systems to introduce FAULTLINE and PLATO — a macroeconomic risk intelligence platform and AI intelligence layer that takes a fundamentally different approach to market analysis.
 
-Most investing platforms begin with stock selection or trading signals. FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system? At the core of FAULTLINE is ASHA — an AI intelligence layer that synthesises ten live market engines before generating any response or briefing. ASHA reads Market Regime, Pressure Index, Liquidity, Treasury Conditions, Volatility, Credit Risk, Historical Analog, Probability, Crypto Intelligence, and Signal — identifying where engines agree and where they diverge — before delivering a single synthesised intelligence briefing.
+Most investing platforms begin with stock selection or trading signals. FAULTLINE begins with the question that institutional risk managers ask first: what is the current state of the system? At the core of FAULTLINE is PLATO — an AI intelligence layer that synthesises ten live market engines before generating any response or briefing. PLATO reads Market Regime, Pressure Index, Liquidity, Treasury Conditions, Volatility, Credit Risk, Historical Analog, Probability, Crypto Intelligence, and Signal — identifying where engines agree and where they diverge — before delivering a single synthesised intelligence briefing.
 
 FAULTLINE is available at getfaultline.live and is designed for investors, traders, and analysts who want to understand the risk environment before making investment decisions.
 
@@ -256,7 +254,7 @@ For Journalists, Investors, Enterprise Customers, and Strategic Partners
 As of July 2026
 
 WHAT FAULTLINE IS
-FAULTLINE is an AI Market Intelligence Operating System that continuously monitors the economic, financial, and market fault lines where stress builds beneath the surface — detecting regime shifts before they become obvious in price action. At its core is ASHA, an AI intelligence layer that synthesises ten live market engines to deliver institutional-grade macro intelligence in plain language.
+FAULTLINE is an AI Market Intelligence Operating System that continuously monitors the economic, financial, and market fault lines where stress builds beneath the surface — detecting regime shifts before they become obvious in price action. At its core is PLATO, an AI intelligence layer that synthesises ten live market engines to deliver institutional-grade macro intelligence in plain language.
 
 THE PROBLEM
 Markets have become increasingly complex. Information has become abundant. Understanding has become scarce. Most individual investors are making consequential financial decisions with fundamentally incomplete situational awareness. They can see price action. They can access earnings data. What they cannot easily access is a continuous, integrated view of the underlying structural conditions that drive markets — the systemic pressures, regime shifts, and macroeconomic fault lines that institutional investors monitor as a matter of course. FAULTLINE was created to close that gap.
@@ -266,17 +264,17 @@ The convergence of AI capability, real-time data infrastructure, and growing ret
 
 KEY DIFFERENTIATORS
 • Risk-first architecture: FAULTLINE begins with the state of the system, not a stock pick
-• Ten-engine synthesis: ASHA evaluates ten live engines before every response
+• Ten-engine synthesis: PLATO evaluates ten live engines before every response
 • Historical context: the Analog Engine surfaces what happened in comparable conditions
 • Probabilistic framing: likelihoods and distributions, not binary predictions
 • Plain language intelligence: institutional-grade analysis delivered in clear, direct language
-• Continuous awareness: ASHA is always reading the market — not just when asked
+• Continuous awareness: PLATO is always reading the market — not just when asked
 
 CORE TECHNOLOGY
-The Seismograph™ is FAULTLINE's primary intelligence instrument — a continuous composite of macroeconomic, financial, and market stress that tracks how pressure has built over time. The Pressure Index™ (0–100) synthesises this composite into a single score and drives regime classification. The Historical Analog Engine identifies the closest historical parallels and surfaces their forward return distributions. ASHA synthesises all ten engines into a single coherent briefing before every interaction.
+The Seismograph™ is FAULTLINE's primary intelligence instrument — a continuous composite of macroeconomic, financial, and market stress that tracks how pressure has built over time. The Pressure Index™ (0–100) synthesises this composite into a single score and drives regime classification. The Historical Analog Engine identifies the closest historical parallels and surfaces their forward return distributions. PLATO synthesises all ten engines into a single coherent briefing before every interaction.
 
-ASHA'S ROLE
-ASHA (Adaptive Systemic Heuristic Analyst) is the unified intelligence interface of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times. Before answering any question, ASHA evaluates all ten engines, identifies consensus and divergence, and synthesises a single coherent market assessment. She transforms complexity into clarity.
+PLATO'S ROLE
+PLATO (Spirit of FAULTLINE) is the unified intelligence interface of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times. Before answering any question, PLATO evaluates all ten engines, identifies consensus and divergence, and synthesises a single coherent market assessment. She transforms complexity into clarity.
 
 TARGET CUSTOMERS
 • Individual investors seeking institutional-quality situational awareness
@@ -286,7 +284,7 @@ TARGET CUSTOMERS
 • Media and research organisations covering financial markets
 
 CURRENT PLATFORM CAPABILITIES
-Seismograph™ · Pressure Index™ · ASHA Daily Intelligence Brief · Historical Analog Engine · Signal Intelligence · Decision Engine · Day Trade Intelligence · Pre-Flight Briefing · Symbol Intelligence · Crypto Hub · Portfolio Intelligence · Aftershock Engine · Market Scenarios
+Seismograph™ · Pressure Index™ · PLATO Daily Intelligence Brief · Historical Analog Engine · Signal Intelligence · Decision Engine · Day Trade Intelligence · Pre-Flight Briefing · Symbol Intelligence · Crypto Hub · Portfolio Intelligence · Aftershock Engine · Market Scenarios
 
 LONG-TERM VISION
 To become the world's most trusted AI Market Intelligence Operating System — the platform that serious investors, traders, advisers, and institutions rely on to understand what markets are communicating before they move.
@@ -300,7 +298,7 @@ const PRESS_KIT_ASSETS = [
   { id: "company-overview", label: "Company Overview", desc: "One-page summary of Phoenix Systems and FAULTLINE.", type: "TXT", icon: "📄" },
   { id: "product-overview", label: "Product Overview", desc: "FAULTLINE platform capabilities, feature summary, and use cases.", type: "TXT", icon: "📋" },
   { id: "fact-sheet", label: "Fact Sheet", desc: "Key data points, platform metrics, and product facts.", type: "TXT", icon: "📊" },
-  { id: "press-release", label: "Press Release", desc: "Official ASHA announcement for FAULTLINE.", type: "TXT", icon: "📰" },
+  { id: "press-release", label: "Press Release", desc: "Official PLATO announcement for FAULTLINE.", type: "TXT", icon: "📰" },
   { id: "boilerplate-50", label: "Company Boilerplate — 50 Words", desc: "Approved short-form boilerplate for editorial use.", type: "TXT", icon: "📝" },
   { id: "boilerplate-150", label: "Company Boilerplate — 150 Words", desc: "Standard boilerplate for articles and publications.", type: "TXT", icon: "📝" },
   { id: "boilerplate-500", label: "Company Boilerplate — 500 Words", desc: "Long-form boilerplate for feature articles and profiles.", type: "TXT", icon: "📝" },
@@ -404,7 +402,7 @@ const maxW: React.CSSProperties = { maxWidth: "900px", margin: "0 auto", padding
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function Press() {
-  useSEO({ title: "Press | FAULTLINE", description: "Institutional press package for FAULTLINE — the AI Market Intelligence Operating System powered by ASHA. Press releases, fact sheets, brand standards, and media assets." });
+  useSEO({ title: "Press | FAULTLINE", description: "Institutional press package for FAULTLINE — the AI Market Intelligence Operating System powered by PLATO. Press releases, fact sheets, brand standards, and media assets." });
   const [contactCopied, setContactCopied] = useState(false);
 
   return (
@@ -457,7 +455,7 @@ export default function Press() {
             That asymmetry is not a feature of markets. It is a failure of infrastructure. And it is the problem FAULTLINE was built to solve.
           </p>
           <p style={prose}>
-            We built ASHA — our AI intelligence layer — to do what no single analyst can: read ten live market engines simultaneously, identify where they agree, surface where they diverge, and synthesise everything into a single coherent picture of what is building beneath the surface. Not a prediction. Not a recommendation. A clear, evidence-based understanding of the current state of the system.
+            We built PLATO — our AI intelligence layer — to do what no single analyst can: read ten live market engines simultaneously, identify where they agree, surface where they diverge, and synthesise everything into a single coherent picture of what is building beneath the surface. Not a prediction. Not a recommendation. A clear, evidence-based understanding of the current state of the system.
           </p>
           <p style={prose}>
             Our mission is straightforward: to help every investor understand markets with greater clarity through evidence-based intelligence. Not to replace human judgment — to make it better informed.
@@ -483,8 +481,8 @@ export default function Press() {
             { label: "WHAT IT IS", body: "An AI Market Intelligence Operating System that detects regime shifts, systemic pressure, and structural risk before markets reprice them." },
             { label: "THE PROBLEM", body: "Information is abundant. Understanding is scarce. Individual investors lack the structural situational awareness that institutional risk managers use as a matter of course." },
             { label: "WHY NOW", body: "The convergence of AI capability, real-time data infrastructure, and retail investor sophistication has made institutional-quality intelligence deliverable at scale for the first time." },
-            { label: "KEY DIFFERENTIATOR", body: "FAULTLINE begins with the state of the system — not a stock pick. ASHA synthesises ten live engines before every response. No other platform does this." },
-            { label: "CORE TECHNOLOGY", body: "Seismograph™ · Pressure Index™ · Ten-engine synthesis · Historical Analog Engine · Probability Engine · ASHA intelligence layer." },
+            { label: "KEY DIFFERENTIATOR", body: "FAULTLINE begins with the state of the system — not a stock pick. PLATO synthesises ten live engines before every response. No other platform does this." },
+            { label: "CORE TECHNOLOGY", body: "Seismograph™ · Pressure Index™ · Ten-engine synthesis · Historical Analog Engine · Probability Engine · PLATO intelligence layer." },
             { label: "LONG-TERM VISION", body: "To become the world's most trusted AI Market Intelligence Operating System — the platform serious investors rely on to understand what markets are communicating before they move." },
           ].map((item) => (
             <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "24px" }}>
@@ -505,23 +503,23 @@ export default function Press() {
 
       <div style={divider} />
 
-      {/* ── ASHA ── */}
+      {/* ── PLATO ── */}
       <section style={{ ...maxW, padding: "80px 24px" }}>
         <SectionEyebrow text="The Intelligence Behind FAULTLINE" />
-        <SectionHeading>Meet ASHA</SectionHeading>
+        <SectionHeading>Meet PLATO</SectionHeading>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "32px" }}>
           <div style={card}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "rgba(0,212,255,0.6)", marginBottom: "12px" }}>WHO SHE IS</div>
-            <p style={{ ...prose, marginBottom: 0 }}>ASHA — Adaptive Systemic Heuristic Analyst — is the unified intelligence interface of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times and synthesises it into clear, evidence-based understanding.</p>
+            <p style={{ ...prose, marginBottom: 0 }}>PLATO — Spirit of FAULTLINE — is the unified intelligence interface of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times and synthesises it into clear, evidence-based understanding.</p>
           </div>
           <div style={card}>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "rgba(0,212,255,0.6)", marginBottom: "12px" }}>WHAT SHE DOES</div>
-            <p style={{ ...prose, marginBottom: 0 }}>Before answering any question, ASHA evaluates all ten FAULTLINE engines, identifies where they agree and where they diverge, and synthesises a single coherent market assessment. She transforms complexity into clarity.</p>
+            <p style={{ ...prose, marginBottom: 0 }}>Before answering any question, PLATO evaluates all ten FAULTLINE engines, identifies where they agree and where they diverge, and synthesises a single coherent market assessment. She transforms complexity into clarity.</p>
           </div>
         </div>
         <div style={{ ...card, borderColor: "rgba(0,212,255,0.12)", background: "rgba(0,212,255,0.02)" }}>
           <blockquote style={{ borderLeft: "2px solid rgba(0,212,255,0.5)", paddingLeft: "24px", margin: 0, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "16px", color: "#CBD5E1", fontStyle: "italic", lineHeight: 1.75 }}>
-            "Most investors see price action. ASHA sees the structural conditions beneath it. Every time a user asks ASHA a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+            "Most investors see price action. PLATO sees the structural conditions beneath it. Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "12px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
         </div>
@@ -533,14 +531,14 @@ export default function Press() {
       <section style={{ ...maxW, padding: "80px 24px" }}>
         <SectionEyebrow text="Architecture" />
         <SectionHeading>How FAULTLINE Thinks</SectionHeading>
-        <p style={{ ...prose, maxWidth: "600px" }}>Every conclusion FAULTLINE generates is evidence-based and derived from multiple intelligence engines. No single data point drives a conclusion. ASHA synthesises the full stack before speaking.</p>
+        <p style={{ ...prose, maxWidth: "600px" }}>Every conclusion FAULTLINE generates is evidence-based and derived from multiple intelligence engines. No single data point drives a conclusion. PLATO synthesises the full stack before speaking.</p>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0", margin: "40px 0" }}>
           {[
             { label: "Live Market Data", sub: "FRED · Market Feeds · On-Chain · Credit Markets", color: "#64748B" },
             { label: "Pressure Index™", sub: "0–100 Composite Systemic Stress Score", color: "#94A3B8" },
             { label: "Ten Intelligence Engines", sub: "Regime · Liquidity · Treasury · Volatility · Credit · Analog · Probability · Crypto · Signal", color: "#CBD5E1" },
             { label: "Seismograph™", sub: "Unified Systemic Pressure Instrument", color: "#E2E8F0" },
-            { label: "ASHA", sub: "Adaptive Systemic Heuristic Analyst", color: "#00D4FF" },
+            { label: "PLATO", sub: "Spirit of FAULTLINE", color: "#00D4FF" },
             { label: "Clear Market Understanding", sub: "What is happening · Why · How long it has been building", color: "#F0F4FF" },
           ].map((step, i, arr) => (
             <div key={step.label} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
@@ -573,7 +571,7 @@ export default function Press() {
             { principle: "Information is abundant. Understanding is scarce.", detail: "The problem facing investors is not access to data. It is the synthesis of data into coherent situational awareness. That is what FAULTLINE provides." },
             { principle: "Evidence matters more than emotion.", detail: "Every FAULTLINE conclusion is derived from multiple data sources and historical precedents. No single indicator drives a conclusion. No emotion influences an output." },
             { principle: "Clarity creates confidence.", detail: "Investors who understand the environment they are operating in make better decisions. Not because they have a prediction — because they have context." },
-            { principle: "Artificial intelligence should amplify human judgment, never replace it.", detail: "ASHA is designed to make human judgment better informed, not to substitute for it. Every output is a tool for thinking, not a substitute for thinking." },
+            { principle: "Artificial intelligence should amplify human judgment, never replace it.", detail: "PLATO is designed to make human judgment better informed, not to substitute for it. Every output is a tool for thinking, not a substitute for thinking." },
             { principle: "Every conclusion should be explainable.", detail: "FAULTLINE does not produce black-box outputs. Every assessment is traceable to the engines that produced it and the historical evidence that supports it." },
             { principle: "Institutional-quality intelligence should be available to everyone.", detail: "The information asymmetry between institutional and individual investors is not a feature of markets. It is a failure of infrastructure. FAULTLINE exists to close that gap." },
             { principle: "The greatest investment advantage is clarity, not speed.", detail: "Speed is a commodity. Clarity is rare. Understanding what is building beneath the surface — before it becomes obvious — is the most durable edge in markets." },
@@ -592,21 +590,21 @@ export default function Press() {
       <section style={{ ...maxW, padding: "80px 24px" }}>
         <SectionEyebrow text="Platform" />
         <SectionHeading>One Connected Intelligence System</SectionHeading>
-        <p style={{ ...prose, maxWidth: "600px" }}>FAULTLINE is not a collection of features. It is one connected operating system. Every module feeds into ASHA. Every conclusion is contextualised against the current regime. Every output is traceable to the engines that produced it.</p>
+        <p style={{ ...prose, maxWidth: "600px" }}>FAULTLINE is not a collection of features. It is one connected operating system. Every module feeds into PLATO. Every conclusion is contextualised against the current regime. Every output is traceable to the engines that produced it.</p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "10px", marginTop: "32px" }}>
           {[
             { name: "Seismograph™", role: "Primary intelligence instrument. Continuous composite of systemic stress. Tracks how pressure has built over time." },
             { name: "Pressure Index™", role: "0–100 composite score. Five regime classifications. The single most important number on the platform." },
-            { name: "ASHA", role: "The unified intelligence interface. Synthesises all ten engines before every response. Transforms complexity into clarity." },
+            { name: "PLATO", role: "The unified intelligence interface. Synthesises all ten engines before every response. Transforms complexity into clarity." },
             { name: "Regime Detection", role: "Classifies current market conditions into one of five regimes. Drives all downstream intelligence." },
             { name: "Historical Analog Engine", role: "Identifies the closest historical parallels. Surfaces forward return distributions — not predictions, but precedents." },
             { name: "Probability Engine", role: "Assigns regime transition probabilities across 1M, 3M, 6M, and 12M horizons." },
             { name: "Signal Intelligence", role: "Institutional-grade directional signals across equities, crypto, and macro. Always contextualised against the current regime." },
             { name: "Decision Engine", role: "Evaluates trade ideas against the current macro regime, pressure environment, and signal consensus." },
-            { name: "Day Trade Intelligence", role: "Intraday intelligence layer for active traders. Regime-aware setups and real-time ASHA synthesis." },
-            { name: "Pre-Flight Briefing", role: "Structured pre-session intelligence briefing. ASHA's read on the current environment before each trading session." },
-            { name: "Symbol Intelligence", role: "Deep-dive analysis for individual stocks and crypto assets. Pressure context, regime overlay, and ASHA synthesis." },
-            { name: "Crypto Hub", role: "Dedicated crypto intelligence layer. On-chain data, crypto regime classification, and ASHA crypto synthesis." },
+            { name: "Day Trade Intelligence", role: "Intraday intelligence layer for active traders. Regime-aware setups and real-time PLATO synthesis." },
+            { name: "Pre-Flight Briefing", role: "Structured pre-session intelligence briefing. PLATO's read on the current environment before each trading session." },
+            { name: "Symbol Intelligence", role: "Deep-dive analysis for individual stocks and crypto assets. Pressure context, regime overlay, and PLATO synthesis." },
+            { name: "Crypto Hub", role: "Dedicated crypto intelligence layer. On-chain data, crypto regime classification, and PLATO crypto synthesis." },
             { name: "Portfolio Intelligence", role: "Portfolio-level regime awareness. Surfaces concentration risk, regime misalignment, and hedging considerations." },
             { name: "Aftershock Engine", role: "Detects secondary market stress events and systemic contagion risk following initial regime shifts." },
             { name: "Market Scenarios", role: "Probabilistic scenario analysis for key macro events. Likelihood scores and potential market impact." },
@@ -674,7 +672,7 @@ export default function Press() {
             { label: "WEBSITE", value: "getfaultline.live" },
             { label: "AVAILABILITY", value: "Web + PWA (iOS / Android)" },
             { label: "INTELLIGENCE ENGINES", value: "10 Live Engines" },
-            { label: "AI LAYER", value: "ASHA" },
+            { label: "AI LAYER", value: "PLATO" },
             { label: "TIERS", value: "Free · Core · Pro · Founding" },
             { label: "PRESS CONTACT", value: "press@getfaultline.live" },
           ].map((fact) => (
@@ -695,23 +693,23 @@ export default function Press() {
         <div style={card}>
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.2em", color: "#64748B", marginBottom: "20px" }}>FOR IMMEDIATE RELEASE · PHOENIX SYSTEMS PRESS TEAM · press@getfaultline.live</p>
           <h3 style={{ fontFamily: "'Rajdhani', sans-serif", fontSize: "22px", fontWeight: 700, color: "#F0F4FF", lineHeight: 1.3, marginBottom: "8px", letterSpacing: "0.03em" }}>
-            Phoenix Systems Introduces ASHA — The AI Intelligence Layer Powering FAULTLINE's Ten-Engine Market Synthesis
+            Phoenix Systems Introduces PLATO — The AI Intelligence Layer Powering FAULTLINE's Ten-Engine Market Synthesis
           </h3>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "rgba(0,212,255,0.7)", fontStyle: "italic", marginBottom: "28px", lineHeight: 1.6 }}>
-            ASHA synthesises ten live market engines in real time, delivering institutional-grade macro intelligence to individual investors before conditions reprice
+            PLATO synthesises ten live market engines in real time, delivering institutional-grade macro intelligence to individual investors before conditions reprice
           </p>
           <p style={prose}>
-            Phoenix Systems, an AI-first technology company focused on decision intelligence, today announced ASHA, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. ASHA — Adaptive Systemic Heuristic Analyst — continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before they become visible in price action.
+            Phoenix Systems, an AI-first technology company focused on decision intelligence, today announced PLATO, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. PLATO — Spirit of FAULTLINE — continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before they become visible in price action.
           </p>
           <p style={prose}>
-            Unlike AI assistants that answer questions in isolation, ASHA evaluates all ten FAULTLINE engines before generating any response: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. ASHA identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
+            Unlike AI assistants that answer questions in isolation, PLATO evaluates all ten FAULTLINE engines before generating any response: Market Regime, Pressure Index, Liquidity Conditions, Treasury Stress, Volatility Environment, Credit Risk, Historical Analog, Probability Distribution, Crypto Intelligence, and Signal Intelligence. PLATO identifies where engines agree, where they diverge, and what the divergence means — delivering a synthesised intelligence briefing rather than a raw data output.
           </p>
           <blockquote style={{ borderLeft: "2px solid rgba(0,212,255,0.4)", paddingLeft: "20px", margin: "24px 0", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "15px", color: "#CBD5E1", fontStyle: "italic", lineHeight: 1.7 }}>
-            "Most investors see price action. ASHA sees the structural conditions beneath it. Every time a user asks ASHA a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+            "Most investors see price action. PLATO sees the structural conditions beneath it. Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
           <p style={prose}>
-            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers six access tiers: Free (Observer), Mobile ($9.99/mo), Founding Member ($49/mo locked for life), Trader ($59/mo), Power ($99/mo, coming soon), and Founding Lifetime ($299 one-time). The Founding Member tier remains available for a limited time.
+            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four public access tiers: Free, Trader ($59/mo), Power ($99/mo), and Founding Member ($49/mo locked while active).
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
             FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.
@@ -729,15 +727,15 @@ export default function Press() {
           {([
             {
               q: "What is FAULTLINE?",
-              a: "FAULTLINE is an AI Market Intelligence Operating System that continuously monitors the economic, financial, and market fault lines where stress builds beneath the surface. It detects regime shifts before they become obvious in price action — giving investors, traders, and analysts a continuous, integrated view of systemic risk before it reprices. At its core is ASHA, an AI intelligence layer that synthesises ten live market engines to deliver institutional-grade macro intelligence in plain language.",
+              a: "FAULTLINE is an AI Market Intelligence Operating System that continuously monitors the economic, financial, and market fault lines where stress builds beneath the surface. It detects regime shifts before they become obvious in price action — giving investors, traders, and analysts a continuous, integrated view of systemic risk before it reprices. At its core is PLATO, an AI intelligence layer that synthesises ten live market engines to deliver institutional-grade macro intelligence in plain language.",
             },
             {
               q: "What is the Pressure Index™?",
-              a: "The Pressure Index™ is FAULTLINE's primary composite metric — a continuously updated 0–100 score that synthesises macroeconomic, financial, and market stress indicators across multiple data sources. It drives FAULTLINE's regime classification engine, which categorises current conditions into one of five regimes: Low Risk, Moderate Risk, Elevated Risk, High Risk, and Critical. The Pressure Index™ is the single most important number on the platform — the first thing ASHA reads before generating any response.",
+              a: "The Pressure Index™ is FAULTLINE's primary composite metric — a continuously updated 0–100 score that synthesises macroeconomic, financial, and market stress indicators across multiple data sources. It drives FAULTLINE's regime classification engine, which categorises current conditions into one of five regimes: Low Risk, Moderate Risk, Elevated Risk, High Risk, and Critical. The Pressure Index™ is the single most important number on the platform — the first thing PLATO reads before generating any response.",
             },
             {
-              q: "Who is ASHA?",
-              a: "ASHA — Adaptive Systemic Heuristic Analyst — is the AI intelligence layer at the core of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times. Before answering any question, ASHA evaluates all ten FAULTLINE engines, identifies where they agree and where they diverge, and synthesises a single coherent market assessment. ASHA transforms complexity into clarity.",
+              q: "Who is PLATO?",
+              a: "PLATO — Spirit of FAULTLINE — is the AI intelligence layer at the core of FAULTLINE. She is not a chatbot. She is a continuously active intelligence layer that reads the full market context at all times. Before answering any question, PLATO evaluates all ten FAULTLINE engines, identifies where they agree and where they diverge, and synthesises a single coherent market assessment. PLATO transforms complexity into clarity.",
             },
             {
               q: "How is this different from Bloomberg, TradingView, Yahoo Finance, or generic AI?",
@@ -749,11 +747,11 @@ export default function Press() {
             },
             {
               q: "How are conclusions generated?",
-              a: "Every FAULTLINE conclusion is derived from multiple intelligence engines and historical precedents. ASHA evaluates all ten engines before generating any response — identifying consensus across engines, surfacing divergence where it exists, and synthesising a coherent assessment that is traceable to the data that produced it. No single indicator drives a conclusion. No black-box model produces an unexplained output.",
+              a: "Every FAULTLINE conclusion is derived from multiple intelligence engines and historical precedents. PLATO evaluates all ten engines before generating any response — identifying consensus across engines, surfacing divergence where it exists, and synthesising a coherent assessment that is traceable to the data that produced it. No single indicator drives a conclusion. No black-box model produces an unexplained output.",
             },
             {
               q: "How often is intelligence updated?",
-              a: "The Seismograph™, Pressure Index™, and underlying data feeds update continuously throughout the trading day. ASHA's Daily Intelligence Brief is generated each morning before market open. Signal Intelligence updates in real time as market conditions change. Historical Analog and Probability Engine outputs update as new data is incorporated.",
+              a: "The Seismograph™, Pressure Index™, and underlying data feeds update continuously throughout the trading day. PLATO's Daily Intelligence Brief is generated each morning before market open. Signal Intelligence updates in real time as market conditions change. Historical Analog and Probability Engine outputs update as new data is incorporated.",
             },
             {
               q: "What data powers the platform?",
@@ -799,7 +797,7 @@ export default function Press() {
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "#64748B", marginBottom: "16px" }}>COLOR PALETTE</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
             {[
-              { name: "ASHA Cyan", hex: "#00D4FF", bg: "#00D4FF", text: "#050608" },
+              { name: "PLATO Cyan", hex: "#00D4FF", bg: "#00D4FF", text: "#050608" },
               { name: "Deep Navy", hex: "#050608", bg: "#050608", text: "#F0F4FF", border: "rgba(255,255,255,0.1)" },
               { name: "Primary Text", hex: "#F0F4FF", bg: "#F0F4FF", text: "#050608" },
               { name: "Secondary Text", hex: "#94A3B8", bg: "#94A3B8", text: "#050608" },
@@ -817,20 +815,20 @@ export default function Press() {
           </div>
         </div>
 
-        {/* ASHA Usage Guidelines */}
+        {/* PLATO Usage Guidelines */}
         <div style={{ marginBottom: "40px" }}>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "#64748B", marginBottom: "16px" }}>ASHA USAGE GUIDELINES</div>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.3em", color: "#64748B", marginBottom: "16px" }}>PLATO USAGE GUIDELINES</div>
           <div style={{ ...card, borderColor: "rgba(0,212,255,0.12)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(0,212,255,0.7)", marginBottom: "12px", letterSpacing: "0.15em" }}>APPROVED USAGE</div>
-                {["ASHA (full name, first reference)", "ASHA (subsequent references)", "ASHA — the AI intelligence layer of FAULTLINE", "Ask ASHA (as a call to action)", "ASHA synthesises / ASHA reads / ASHA identifies"].map((item) => (
+                {["PLATO (full name, first reference)", "PLATO (subsequent references)", "PLATO — the AI intelligence layer of FAULTLINE", "Ask PLATO (as a call to action)", "PLATO synthesises / PLATO reads / PLATO identifies"].map((item) => (
                   <div key={item} style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#94A3B8", lineHeight: 1.7, paddingLeft: "12px", borderLeft: "1px solid rgba(0,212,255,0.2)", marginBottom: "6px" }}>✓ {item}</div>
                 ))}
               </div>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(251,191,36,0.7)", marginBottom: "12px", letterSpacing: "0.15em" }}>AVOID</div>
-                {["ASHA chatbot", "ASHA AI assistant", "ASHA bot", "ASHA predicts / ASHA recommends", "ASHA tells you what to buy"].map((item) => (
+                {["PLATO chatbot", "PLATO AI assistant", "PLATO bot", "PLATO predicts / PLATO recommends", "PLATO tells you what to buy"].map((item) => (
                   <div key={item} style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, paddingLeft: "12px", borderLeft: "1px solid rgba(251,191,36,0.2)", marginBottom: "6px" }}>✗ {item}</div>
                 ))}
               </div>
@@ -848,7 +846,7 @@ export default function Press() {
               { label: "FAULTLINE Wordmark", format: "PNG" },
               { label: "FAULTLINE Wordmark", format: "SVG" },
               { label: "FAULTLINE Icon", format: "PNG" },
-              { label: "ASHA Orb", format: "PNG" },
+              { label: "PLATO Orb", format: "PNG" },
               { label: "Platform Screenshot", format: "PNG" },
               { label: "Seismograph™ Screenshot", format: "PNG" },
             ].map((asset, i) => (
@@ -892,7 +890,7 @@ export default function Press() {
           <p style={prose}>Phoenix Systems uses artificial intelligence as a foundational component of the FAULTLINE platform. The following disclosure explains how AI is used and what it is not designed to do.</p>
           <ul style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#94A3B8", lineHeight: 1.8, margin: "0 0 12px", paddingLeft: "20px" }}>
             <li style={{ marginBottom: "10px" }}><strong style={{ color: "#CBD5E1" }}>AI assists in software development.</strong> AI-assisted development tools are used to accelerate the engineering process, improve code quality, and identify potential issues before they reach production.</li>
-            <li style={{ marginBottom: "10px" }}><strong style={{ color: "#CBD5E1" }}>AI assists in data synthesis and intelligence generation.</strong> FAULTLINE uses AI models to synthesise large volumes of heterogeneous data, classify market regimes, identify historical analogs, generate signal labels and diagnostic summaries, and power ASHA. AI models are used to synthesise and contextualise data — not to generate predictions, recommendations, or investment advice.</li>
+            <li style={{ marginBottom: "10px" }}><strong style={{ color: "#CBD5E1" }}>AI assists in data synthesis and intelligence generation.</strong> FAULTLINE uses AI models to synthesise large volumes of heterogeneous data, classify market regimes, identify historical analogs, generate signal labels and diagnostic summaries, and power PLATO. AI models are used to synthesise and contextualise data — not to generate predictions, recommendations, or investment advice.</li>
             <li style={{ marginBottom: "10px" }}><strong style={{ color: "#CBD5E1" }}>Final outputs are designed to support informed decision-making.</strong> All AI-generated content is clearly labelled within the platform. AI outputs are probabilistic and reflect historical patterns and current conditions. They are intended to augment human judgment, not replace it.</li>
             <li><strong style={{ color: "#CBD5E1" }}>FAULTLINE does not guarantee predictions, investment returns, or financial outcomes.</strong> AI-generated analysis is not investment advice. Past performance of any indicator or signal does not guarantee future results.</li>
           </ul>
@@ -915,8 +913,8 @@ export default function Press() {
             { declaration: "Markets communicate long before they move.", body: "Pressure builds in credit markets before it appears in equity prices. Liquidity deteriorates before volatility spikes. Yield curves invert months before recessions arrive. The signals are always there. They have always been there. The problem has never been the absence of signals — it has been the absence of the instruments needed to read them." },
             { declaration: "Information is abundant. Understanding is scarce.", body: "The defining challenge of modern markets is not access to data. It is the synthesis of data into coherent situational awareness. Every investor has access to more information than any investor in history. Almost none of them have access to a continuous, integrated understanding of what that information means. FAULTLINE was built to close that gap." },
             { declaration: "Hidden pressure builds long before headlines appear.", body: "By the time a market event appears in the news, the structural conditions that produced it have been building for months or years. FAULTLINE exists to reveal what is building beneath the surface before it becomes obvious — to give investors the awareness they need before the market forces the question." },
-            { declaration: "Artificial intelligence should amplify human judgment, never replace it.", body: "ASHA is not designed to tell investors what to do. She is designed to ensure that when investors make decisions, those decisions are informed by the clearest possible understanding of the current state of the system. The judgment belongs to the human. The intelligence belongs to ASHA." },
-            { declaration: "Every conclusion should be explainable.", body: "FAULTLINE does not produce black-box outputs. Every assessment is traceable to the engines that produced it and the historical evidence that supports it. If ASHA cannot explain why she reached a conclusion, she should not reach it." },
+            { declaration: "Artificial intelligence should amplify human judgment, never replace it.", body: "PLATO is not designed to tell investors what to do. She is designed to ensure that when investors make decisions, those decisions are informed by the clearest possible understanding of the current state of the system. The judgment belongs to the human. The intelligence belongs to PLATO." },
+            { declaration: "Every conclusion should be explainable.", body: "FAULTLINE does not produce black-box outputs. Every assessment is traceable to the engines that produced it and the historical evidence that supports it. If PLATO cannot explain why she reached a conclusion, she should not reach it." },
             { declaration: "Every probability should be evidence-based.", body: "FAULTLINE does not generate predictions. It generates probability-weighted assessments derived from historical precedent, current conditions, and multi-engine synthesis. The difference matters. A prediction claims to know the future. A probability-weighted assessment acknowledges uncertainty while providing the best available evidence about what is likely." },
             { declaration: "Institutional-quality intelligence should be available to everyone.", body: "The information asymmetry between institutional and individual investors is not a feature of markets. It is a failure of infrastructure. Institutional risk managers have access to continuous systemic awareness as a matter of course. Individual investors have historically had access to price action and earnings reports. FAULTLINE exists to change that." },
             { declaration: "The greatest investment advantage is clarity, not speed.", body: "Speed is a commodity. High-frequency traders have already won that competition. The durable edge in markets belongs to investors who understand the environment they are operating in — who know what regime they are in, what historical precedents apply, and what the range of plausible outcomes looks like. Clarity is the advantage that compounds." },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { PRICING_PLANS } from "../../../shared/tiers";
-import { getLoginUrl } from "@/const";
+import { MARKETING_TIER_CARDS, TIER_META } from "../../../shared/tiers";
+import { getLoginUrl, handleLoginCtaClick } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
 import { trackPricingViewed, trackStartFreeClicked } from "@/hooks/useAnalytics";
 
@@ -74,7 +74,7 @@ const systemGroups = [
   {
     label: "Interpretation",
     description: "Current product capabilities that turn evidence into context.",
-    items: ["ASHA market explanation", "Scenario framing", "Evidence retrieval", "Decision awareness"],
+    items: ["PLATO market explanation", "Scenario framing", "Evidence retrieval", "Decision awareness"],
   },
 ];
 
@@ -109,6 +109,22 @@ function StatusStrip() {
   );
 }
 
+function SignInCta({ className }: { className: string }) {
+  const loginUrl = getLoginUrl();
+  if (loginUrl) {
+    return (
+      <a href={loginUrl} onClick={handleLoginCtaClick} className={className}>
+        SIGN IN
+      </a>
+    );
+  }
+  return (
+    <button type="button" onClick={() => handleLoginCtaClick()} className={className}>
+      SIGN IN
+    </button>
+  );
+}
+
 function Header() {
   const [open, setOpen] = useState(false);
 
@@ -136,7 +152,7 @@ function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
-          <a href={getLoginUrl()} className="rounded-lg border border-white/15 px-3 py-2 text-[10px] font-mono tracking-[0.14em] text-[#A8B8CC] transition-colors hover:border-[#00D4FF]/50 hover:text-white">SIGN IN</a>
+          <SignInCta className="rounded-lg border border-white/15 px-3 py-2 text-[10px] font-mono tracking-[0.14em] text-[#A8B8CC] transition-colors hover:border-[#00D4FF]/50 hover:text-white" />
           <a href="#access" className="rounded-lg bg-[#00D4FF] px-3 py-2 text-[10px] font-mono font-black tracking-[0.14em] text-[#050608] transition-colors hover:bg-[#6EE7FF]">FOUNDING ACCESS</a>
         </div>
 
@@ -156,7 +172,8 @@ function Header() {
               </a>
             ))}
             <a href="/blog" onClick={close} className="rounded-lg px-3 py-3 text-[12px] font-mono tracking-[0.12em] text-white/85 active:bg-white/5">RESEARCH</a>
-            <a href="#access" onClick={close} className="mt-2 rounded-lg bg-[#00D4FF] px-3 py-3 text-center text-[12px] font-mono font-black tracking-[0.12em] text-[#050608]">GET FOUNDING LIFETIME ACCESS — $299</a>
+            <SignInCta className="rounded-lg px-3 py-3 text-left text-[12px] font-mono tracking-[0.12em] text-white/85" />
+            <a href="#access" onClick={close} className="mt-2 rounded-lg bg-[#00D4FF] px-3 py-3 text-center text-[12px] font-mono font-black tracking-[0.12em] text-[#050608]">FOUNDING ACCESS</a>
           </div>
         </nav>
       )}
@@ -439,17 +456,71 @@ function Audience() {
 }
 
 function Pricing() {
-  const lifetime = PRICING_PLANS.lifetime;
-  const pro = PRICING_PLANS.premium;
-  const core = PRICING_PLANS.core;
+  const free = TIER_META.free;
+  const trader = MARKETING_TIER_CARDS.find((card) => card.tier === "core");
+  const power = MARKETING_TIER_CARDS.find((card) => card.tier === "premium");
+  const founding = MARKETING_TIER_CARDS.find((card) => card.tier === "founding");
   return (
     <section id="access" className="scroll-mt-20 border-y border-[#00D4FF]/15 bg-[radial-gradient(ellipse_80%_100%_at_50%_0%,rgba(0,212,255,0.1),transparent_62%),#071018] py-20 sm:py-28">
       <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="mx-auto max-w-3xl text-center"><SectionLabel>ACCESS</SectionLabel><h2 className="text-3xl font-bold tracking-[-0.04em] text-white sm:text-5xl">A clear way to start. A clear founding offer.</h2><p className="mt-5 text-lg leading-relaxed text-[#B7C5D5]">Begin with the market environment. When you want full access, the current promotional centerpiece is Founding Lifetime Access.</p></div>
-        <div className="mt-12 grid gap-5 lg:grid-cols-[0.8fr_0.9fr_1.2fr]">
-          <article className="rounded-2xl border border-white/[0.1] bg-[#050608]/70 p-6 sm:p-7"><p className="font-mono text-[10px] tracking-[0.2em] text-[#A8B8CC]">START HERE</p><h3 className="mt-5 text-2xl font-bold text-white">Free market awareness</h3><p className="mt-3 text-sm leading-relaxed text-[#98A7B9]">Explore the current market environment, Pressure Index™, core regime context, and daily intelligence summary.</p><p className="mt-7 text-3xl font-bold text-white">$0</p><a href={PLATFORM_URL} onClick={() => trackStartFreeClicked("marketing_pricing_free")} className="mt-7 inline-flex w-full items-center justify-center rounded-xl border border-[#00D4FF]/35 px-5 py-4 text-[11px] font-mono font-bold tracking-[0.13em] text-[#00D4FF] hover:bg-[#00D4FF]/10">SEE TODAY’S MARKET ENVIRONMENT</a></article>
-          <article className="rounded-2xl border border-white/[0.1] bg-[#050608]/70 p-6 sm:p-7"><p className="font-mono text-[10px] tracking-[0.2em] text-[#A8B8CC]">MONTHLY ACCESS</p><h3 className="mt-5 text-2xl font-bold text-white">{pro.name.replace("FAULTLINE ", "")}</h3><p className="mt-3 text-sm leading-relaxed text-[#98A7B9]">Full market intelligence suite including advanced analysis, historical context, and premium tools.</p><p className="mt-7 text-3xl font-bold text-white">{pro.priceLabel}</p><p className="mt-2 text-[11px] leading-relaxed text-[#6F8092]">Core access is also available from {core.priceLabel}.</p><a href="/pricing" className="mt-7 inline-flex w-full items-center justify-center rounded-xl border border-white/15 px-5 py-4 text-[11px] font-mono font-bold tracking-[0.13em] text-[#D0DAE6] hover:border-white/35">VIEW PLAN OPTIONS</a></article>
-          <article className="relative overflow-hidden rounded-2xl border border-[#FFD700]/45 bg-[linear-gradient(145deg,rgba(255,215,0,0.12),rgba(0,212,255,0.08)_55%,rgba(5,6,8,0.9))] p-6 shadow-[0_0_50px_rgba(255,215,0,0.1)] sm:p-7"><div className="absolute right-0 top-0 rounded-bl-xl border-b border-l border-[#FFD700]/35 bg-[#FFD700]/10 px-3 py-2 text-[9px] font-mono font-bold tracking-[0.15em] text-[#FFD700]">FOUNDING OFFER</div><p className="font-mono text-[10px] tracking-[0.2em] text-[#FFD700]">FOUNDING LIFETIME ACCESS</p><h3 className="mt-5 text-2xl font-bold text-white">One payment. Founding access for life.</h3><p className="mt-3 text-sm leading-relaxed text-[#D2DCE6]">Everything in Pro, lifetime access to current Pro features, future core Pro features, a Founding Member badge, and early access to major releases.</p><div className="mt-7 flex items-end gap-3"><p className="text-5xl font-bold tracking-[-0.06em] text-[#FFD700]">{lifetime.priceLabel.replace(" one-time", "")}</p><span className="pb-1 text-[12px] font-mono tracking-wide text-[#D0B452]">ONE-TIME</span></div><p className="mt-3 text-sm text-[#B9C8D8]">No recurring subscription. The break-even point versus Pro is approximately five months.</p><a href="/pricing" className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD700] px-5 py-4 text-[11px] font-mono font-black tracking-[0.13em] text-[#050608] transition hover:bg-[#FFE277]">GET FOUNDING LIFETIME ACCESS — $299 <Arrow /></a><p className="mt-4 text-center text-[10px] leading-relaxed text-[#9AA9BA]">No claimed-member count or manufactured scarcity is displayed.</p></article>
+        <div className="mx-auto max-w-3xl text-center">
+          <SectionLabel>ACCESS</SectionLabel>
+          <h2 className="text-3xl font-bold tracking-[-0.04em] text-white sm:text-5xl">A clear way to start. A clear founding offer.</h2>
+          <p className="mt-5 text-lg leading-relaxed text-[#B7C5D5]">Begin with the market environment. Upgrade when you want Trader, Power, or Founding access at the published monthly rates.</p>
+        </div>
+        <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-2xl border border-white/[0.1] bg-[#050608]/70 p-6 sm:p-7">
+            <p className="font-mono text-[10px] tracking-[0.2em] text-[#A8B8CC]">START HERE</p>
+            <h3 className="mt-5 text-2xl font-bold text-white">{free.displayName}</h3>
+            <p className="mt-3 text-sm leading-relaxed text-[#98A7B9]">{free.description}</p>
+            <p className="mt-7 text-3xl font-bold text-white">$0</p>
+            <a href={PLATFORM_URL} onClick={() => trackStartFreeClicked("marketing_pricing_free")} className="mt-7 inline-flex w-full items-center justify-center rounded-xl border border-[#00D4FF]/35 px-5 py-4 text-[11px] font-mono font-bold tracking-[0.13em] text-[#00D4FF] hover:bg-[#00D4FF]/10">SEE TODAY’S MARKET ENVIRONMENT</a>
+          </article>
+          {trader && (
+            <article className="rounded-2xl border border-white/[0.1] bg-[#050608]/70 p-6 sm:p-7">
+              <p className="font-mono text-[10px] tracking-[0.2em] text-[#A8B8CC]">{trader.badge ?? "MONTHLY ACCESS"}</p>
+              <h3 className="mt-5 text-2xl font-bold text-white">{trader.marketingName}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-[#98A7B9]">{trader.tagline}</p>
+              <p className="mt-7 text-3xl font-bold text-white">{trader.price}</p>
+              <ul className="mt-4 grid gap-2 text-sm text-[#98A7B9]">
+                {trader.features.slice(0, 4).map((feature) => (
+                  <li key={feature} className="flex items-start gap-2"><span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-[#22D3EE]" />{feature}</li>
+                ))}
+              </ul>
+              <a href={PLATFORM_URL} className="mt-7 inline-flex w-full items-center justify-center rounded-xl border border-white/15 px-5 py-4 text-[11px] font-mono font-bold tracking-[0.13em] text-[#D0DAE6] hover:border-white/35">{trader.ctaLabel}</a>
+            </article>
+          )}
+          {power && (
+            <article className="rounded-2xl border border-white/[0.1] bg-[#050608]/70 p-6 sm:p-7">
+              <p className="font-mono text-[10px] tracking-[0.2em] text-[#A8B8CC]">{power.badge ?? "PROFESSIONAL"}</p>
+              <h3 className="mt-5 text-2xl font-bold text-white">{power.marketingName}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-[#98A7B9]">{power.tagline}</p>
+              <p className="mt-7 text-3xl font-bold text-white">{power.price}</p>
+              <ul className="mt-4 grid gap-2 text-sm text-[#98A7B9]">
+                {power.features.slice(0, 4).map((feature) => (
+                  <li key={feature} className="flex items-start gap-2"><span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-[#00D4FF]" />{feature}</li>
+                ))}
+              </ul>
+              <a href={PLATFORM_URL} className="mt-7 inline-flex w-full items-center justify-center rounded-xl border border-white/15 px-5 py-4 text-[11px] font-mono font-bold tracking-[0.13em] text-[#D0DAE6] hover:border-white/35">{power.ctaLabel}</a>
+            </article>
+          )}
+          {founding && (
+            <article className="relative overflow-hidden rounded-2xl border border-[#FFD700]/45 bg-[linear-gradient(145deg,rgba(255,215,0,0.12),rgba(0,212,255,0.08)_55%,rgba(5,6,8,0.9))] p-6 shadow-[0_0_50px_rgba(255,215,0,0.1)] sm:p-7">
+              <div className="absolute right-0 top-0 rounded-bl-xl border-b border-l border-[#FFD700]/35 bg-[#FFD700]/10 px-3 py-2 text-[9px] font-mono font-bold tracking-[0.15em] text-[#FFD700]">FOUNDING RATE</div>
+              <p className="font-mono text-[10px] tracking-[0.2em] text-[#FFD700]">FOUNDING MEMBER</p>
+              <h3 className="mt-5 text-2xl font-bold text-white">{founding.marketingName}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-[#D2DCE6]">{founding.tagline}. Everything in Power at the founding monthly rate, locked while membership remains active.</p>
+              <div className="mt-7 flex items-end gap-3">
+                <p className="text-5xl font-bold tracking-[-0.06em] text-[#FFD700]">{founding.price.replace(" (locked while active)", "")}</p>
+              </div>
+              <ul className="mt-4 grid gap-2 text-sm text-[#B9C8D8]">
+                {founding.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2"><span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-[#FFD700]" />{feature}</li>
+                ))}
+              </ul>
+              <a href={PLATFORM_URL} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#FFD700] px-5 py-4 text-[11px] font-mono font-black tracking-[0.13em] text-[#050608] transition hover:bg-[#FFE277]">{founding.ctaLabel} <Arrow /></a>
+            </article>
+          )}
         </div>
       </div>
     </section>
