@@ -56,3 +56,24 @@ export const getLoginUrl = () => {
     origin,
   );
 };
+
+/**
+ * Navigate to the OAuth portal only when Vite OAuth env produced a real URL.
+ * Independent staging leaves getLoginUrl() as "" — do not send the browser to Manus.
+ */
+export function navigateToLogin(): void {
+  const url = getLoginUrl();
+  if (!url) return;
+  if (typeof window === "undefined") return;
+  window.location.href = url;
+}
+
+/** Prevent empty-href same-document navigation when OAuth is inactive. */
+export function handleLoginCtaClick(event?: { preventDefault(): void }): void {
+  const url = getLoginUrl();
+  if (!url) {
+    event?.preventDefault();
+    return;
+  }
+  navigateToLogin();
+}

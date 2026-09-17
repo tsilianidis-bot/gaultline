@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, CheckCircle, Send, AlertCircle, CreditCard, Share2, Eye, Trash2, ExternalLink, RotateCcw, BookOpen } from 'lucide-react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
-import { getLoginUrl } from '@/const';
+import { navigateToLogin } from '@/const';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { toast } from 'sonner';
 import { useSearch } from 'wouter';
@@ -517,7 +517,7 @@ export default function UserAccount() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      window.location.href = getLoginUrl();
+      navigateToLogin();
     }
   }, [loading, isAuthenticated]);
 

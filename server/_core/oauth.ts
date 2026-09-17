@@ -2,7 +2,7 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
-import { sdk } from "./sdk";
+import { isOAuthConfigured, OAuthInactiveError, sdk } from "./sdk";
 import { sendEmail, buildWelcomeEmail } from "../email";
 
 export const OAUTH_CALLBACK_ERROR_CODES = [
@@ -84,6 +84,11 @@ export function registerOAuthRoutes(app: Express) {
 
     if (!code || !state) {
       res.status(400).json({ error: "code and state are required" });
+      return;
+    }
+
+    if (!isOAuthConfigured()) {
+      respondOAuthCallbackFailure(res, new OAuthCallbackStepError("token_exchange_failed", new OAuthInactiveError()));
       return;
     }
 

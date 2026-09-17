@@ -14,7 +14,7 @@ import {
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { navigateToLogin } from "@/const";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
@@ -731,7 +731,7 @@ function PortfolioInner() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
-      window.location.href = getLoginUrl();
+      navigateToLogin();
     }
   }, [user, authLoading]);
 

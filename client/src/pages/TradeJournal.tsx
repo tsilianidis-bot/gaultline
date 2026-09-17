@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { navigateToLogin } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -383,7 +383,7 @@ function TradeJournalInner() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "16px" }}>
         <BookOpen size={40} style={{ color: "#374151" }} />
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "14px", color: "#6B7280" }}>Sign in to access your Trade Journal</div>
-        <Button onClick={() => window.location.href = getLoginUrl()}>Sign In</Button>
+        <Button onClick={() => navigateToLogin()}>Sign In</Button>
       </div>
     );
   }
