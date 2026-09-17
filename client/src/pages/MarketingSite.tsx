@@ -512,7 +512,6 @@ function Pricing() {
               <p className="mt-3 text-sm leading-relaxed text-[#D2DCE6]">{founding.tagline}. Everything in Power at the founding monthly rate, locked while membership remains active.</p>
               <div className="mt-7 flex items-end gap-3">
                 <p className="text-5xl font-bold tracking-[-0.06em] text-[#FFD700]">{founding.price.replace(" (locked while active)", "")}</p>
-                <span className="pb-1 text-[12px] font-mono tracking-wide text-[#D0B452]">/ MO</span>
               </div>
               <ul className="mt-4 grid gap-2 text-sm text-[#B9C8D8]">
                 {founding.features.map((feature) => (
