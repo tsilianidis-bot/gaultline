@@ -39,7 +39,7 @@ export function usIndicesAdvancing(
   items: ReadonlyArray<MarketsObservation>,
 ): PercentDisplay {
   const usable = items.filter(
-    (item) =>
+    (item): item is MarketsObservation & { changePercent: number } =>
       isValidNumericObservation(item.changePercent) &&
       isUsableFreshness(item.freshnessState),
   );
