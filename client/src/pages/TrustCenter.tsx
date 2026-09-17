@@ -339,12 +339,12 @@ function FAQTab() {
       a: "The Pressure Index is updated whenever new underlying data is released by source providers. FRED macroeconomic data is typically released weekly or monthly. The engine recalculates automatically when new inputs are available. The timestamp on the Pressure Index reading reflects the most recent calculation.",
     },
     {
-      q: "What is ASHA?",
-      a: "ASHA (Adaptive Systemic Heuristic Analyst) is FAULTLINE's AI intelligence layer. ASHA synthesizes the current Pressure Index reading, regime classification, and market conditions into natural-language briefings and answers questions about market conditions. ASHA does not provide investment advice.",
+      q: "What is PLATO?",
+      a: "PLATO (Spirit of FAULTLINE) is FAULTLINE's AI intelligence layer. PLATO synthesizes the current Pressure Index reading, regime classification, and market conditions into natural-language briefings and answers questions about market conditions. PLATO does not provide investment advice.",
     },
     {
       q: "What is the difference between the plans?",
-      a: "The Observer (free) plan provides access to the live Pressure Index, one daily briefing, and limited signals. The FAULTLINE Mobile plan ($9.99/mo) adds full watchlist and rotation tools. The Trader plan ($59/mo) provides full access to all intelligence modules. The Founding Member plan ($49/mo) locks in a rate for life. Lifetime Access ($299 one-time) provides permanent access to all current and future features.",
+      a: "The Free plan provides access to the live Pressure Index, a daily intelligence summary, and limited signals. The Trader plan ($59/mo) provides core market intelligence. The Power plan ($99/mo) provides the full professional toolset. The Founding Member plan ($49/mo) locks in a rate while membership remains active.",
     },
     {
       q: "Is my data secure?",
@@ -352,7 +352,7 @@ function FAQTab() {
     },
     {
       q: "Can I cancel my subscription?",
-      a: "Yes. You can cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period. Lifetime Access purchases are non-refundable.",
+      a: "Yes. You can cancel your subscription at any time from your account settings. Cancellation takes effect at the end of the current billing period.",
     },
     {
       q: "Who built FAULTLINE?",

@@ -28,9 +28,10 @@ describe("Pentagonal Thesis canonical identity", () => {
     }
   });
 
-  it("does not present PLATO as a separate implemented product", () => {
+  it("presents PLATO as the customer-visible intelligence layer, not a separate product", () => {
     const marketing = source("client/src/pages/MarketingSite.tsx");
     expect(marketing).toContain("Pentagonal Thesis");
-    expect(marketing).not.toContain("PLATO");
+    expect(marketing).toContain("PLATO market explanation");
+    expect(marketing).not.toContain("ASHA market explanation");
   });
 });

@@ -76,6 +76,9 @@ export class CinematicAudioEngine {
   private layers: Partial<Record<LayerKey, Layer>> = {};
   private started = false;
   private stopped = false;
+  private muted = false;
+  private autoplayBlocked = false;
+  private intendedVolume = 0.55;
 
   // ── Utility ──────────────────────────────────────────────────
 
@@ -171,9 +174,14 @@ export class CinematicAudioEngine {
   /**
    * Initialize the AudioContext. Must be called from a user gesture
    * (click, keydown) or the browser will block audio.
+   * Autoplay-blocked contexts stay silent until resume succeeds.
    */
   start(masterVolume = 0.55) {
-    if (this.started) return;
+    this.intendedVolume = masterVolume;
+    if (this.started && this.ctx && this.ctx.state !== "closed") {
+      this.resumeIfNeeded();
+      return;
+    }
     this.started = true;
     this.stopped = false;
 
@@ -182,11 +190,61 @@ export class CinematicAudioEngine {
       this.masterGain = this.ctx.createGain();
       this.masterGain.gain.value = 0;
       this.masterGain.connect(this.ctx.destination);
-      // Fade master in gently
-      this.fadeGain(this.masterGain, masterVolume, 1.2);
+      if (this.ctx.state === "suspended") {
+        this.autoplayBlocked = true;
+        this.ctx.resume().then(() => {
+          if (this.ctx?.state === "running") {
+            this.autoplayBlocked = false;
+            if (!this.muted && this.masterGain) {
+              this.fadeGain(this.masterGain, this.intendedVolume, 1.2);
+            }
+          }
+        }).catch(() => {
+          this.autoplayBlocked = true;
+        });
+      } else {
+        this.autoplayBlocked = false;
+        if (!this.muted) {
+          this.fadeGain(this.masterGain, masterVolume, 1.2);
+        }
+      }
     } catch (e) {
       console.warn("[CinematicAudioEngine] Web Audio API not available:", e);
+      this.autoplayBlocked = true;
     }
+  }
+
+  private resumeIfNeeded() {
+    if (!this.ctx) return;
+    if (this.ctx.state === "suspended") {
+      this.autoplayBlocked = true;
+      this.ctx.resume().then(() => {
+        if (this.ctx?.state === "running") {
+          this.autoplayBlocked = false;
+          if (!this.muted && this.masterGain) {
+            this.fadeGain(this.masterGain, this.intendedVolume, 0.4);
+          }
+        }
+      }).catch(() => {
+        this.autoplayBlocked = true;
+      });
+    } else if (this.ctx.state === "running") {
+      this.autoplayBlocked = false;
+    }
+  }
+
+  setMuted(muted: boolean) {
+    this.muted = muted;
+    if (!this.masterGain || !this.ctx || this.ctx.state === "closed") return;
+    const target = muted ? 0 : this.intendedVolume;
+    this.masterGain.gain.cancelScheduledValues(this.ctx.currentTime);
+    this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
+    this.masterGain.gain.linearRampToValueAtTime(target, this.ctx.currentTime + 0.25);
+  }
+
+  toggleMute(): boolean {
+    this.setMuted(!this.muted);
+    return this.muted;
   }
 
   /**
@@ -524,7 +582,15 @@ export class CinematicAudioEngine {
    * Returns true if the AudioContext is running.
    */
   get isRunning(): boolean {
-    return !!this.ctx && !this.stopped && this.ctx.state !== "closed";
+    return !!this.ctx && !this.stopped && this.ctx.state === "running";
+  }
+
+  get isMuted(): boolean {
+    return this.muted;
+  }
+
+  get isAutoplayBlocked(): boolean {
+    return this.autoplayBlocked || (!!this.ctx && this.ctx.state === "suspended");
   }
 }
 

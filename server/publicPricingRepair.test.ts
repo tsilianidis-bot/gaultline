@@ -23,22 +23,33 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(publicPricing).toBeGreaterThan(goldConstant);
   });
 
-  it('keeps annual checkout unavailable while the rebuilt marketing page presents lifetime access from the shared pricing source', () => {
+  it('keeps annual checkout unavailable and does not advertise Lifetime publicly', () => {
     expect(PRICING_PLANS.core_annual.available).toBe(false);
     expect(PRICING_PLANS.premium_annual.available).toBe(false);
     expect(PRICING_PLANS.lifetime.available).toBe(false);
 
     const productExperience = read('client/src/components/ProductExperience.tsx');
     const marketing = read('client/src/pages/MarketingSite.tsx');
-    expect(productExperience).toContain('LIMITED TIME LIFETIME ACCESS');
-    expect(productExperience).toContain('GET LIFETIME ACCESS — $299');
+    const app = read('client/src/App.tsx');
+    expect(productExperience).not.toContain('LIMITED TIME LIFETIME ACCESS');
+    expect(productExperience).not.toContain('GET LIFETIME ACCESS — $299');
+    expect(productExperience).not.toContain("handlePricingInterest('Lifetime Access — $299')");
     expect(productExperience).toContain('LOCK IN FOUNDER RATE');
-    expect(productExperience).toContain("handlePricingInterest('Lifetime Access — $299')");
     expect(productExperience).toContain("gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'");
-    expect(marketing).toContain('const lifetime = PRICING_PLANS.lifetime;');
-    expect(marketing).toContain('FOUNDING LIFETIME ACCESS');
-    expect(marketing).toContain('GET FOUNDING LIFETIME ACCESS — $299');
-    expect(marketing).toContain('href="/pricing"');
+    expect(marketing).toContain('MARKETING_TIER_CARDS');
+    expect(marketing).toContain('trader.marketingName');
+    expect(marketing).toContain('founding.marketingName');
+    expect(marketing).toContain('trader.ctaLabel');
+    expect(marketing).toContain('power.ctaLabel');
+    expect(marketing).toContain('founding.ctaLabel');
+    expect(marketing).not.toContain('GET FOUNDING LIFETIME ACCESS — $299');
+    expect(marketing).not.toContain('FOUNDING LIFETIME ACCESS');
+    expect(marketing).not.toContain('$299');
+    expect(marketing).not.toContain('Observer');
+    expect(marketing).not.toMatch(/\bCore access\b/);
+    expect(marketing).not.toContain('Everything in Pro');
+    expect(app).not.toMatch(/<ProductExperience\b/);
+    expect(app).not.toContain("planId: 'lifetime'");
     expect(marketing).not.toContain('$9.99');
   });
 
@@ -53,12 +64,17 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(publicSource).not.toMatch(/AlphaPulse|Alpha Pulse/i);
   });
 
-  it('keeps the active Product Experience founder attribution as JT and removes the prior marketing-page attribution block', () => {
+  it('keeps the active Product Experience founder attribution as JT and removes RICHARD ROPER from public surfaces', () => {
     const productExperience = read('client/src/components/ProductExperience.tsx');
     const marketing = read('client/src/pages/MarketingSite.tsx');
+    const about = read('client/src/pages/About.tsx');
     expect(productExperience).toContain('>JT</div>');
     expect(productExperience).not.toContain('RICHARD ROPER');
     expect(marketing).not.toContain('RICHARD ROPER');
+    expect(about).toContain('JT');
+    expect(about).not.toContain('RICHARD ROPER');
+    expect(read('client/src/pages/Press.tsx')).not.toContain('RICHARD ROPER');
+    expect(read('client/src/pages/TrustCenter.tsx')).not.toContain('RICHARD ROPER');
   });
 
   it('blocks checkout unless configured Stripe price metadata exactly matches the public plan', () => {

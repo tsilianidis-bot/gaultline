@@ -8,13 +8,14 @@
    PHASE 2 — TRANSFORMATION (3.0–5.6s)
      Logo dissolves. Energy converges. Intelligence awakens.
 
-   PHASE 3 — ASHA REVEAL (5.6–12.5s)
+   PHASE 3 — PLATO REVEAL (5.6–12.1s)
      AshaIntelligenceCanvas takes over the full screen.
      One living orb. Breathing. Filaments. Wisps.
-     Text fades in: ASHA → SPIRIT OF FAULTLINE → tagline.
-     Orb brightens → particle dissolve → dashboard.
+     Text fades in: PLATO → SPIRIT OF FAULTLINE → tagline.
+     Orb brightens → particle dissolve → MarketingSite.
 
-   Skip always available top-right.
+   Skip always available top-right. Mute available top-left.
+   Autoplay-blocked audio stays silent until a user gesture.
    ============================================================ */
 import { useEffect, useRef, useState, useCallback } from "react";
 import { PressureEngine } from "@/lib/pressureEngine";
@@ -35,13 +36,13 @@ type Phase =
   | "faultline"   // 0.4–3.0s  — full FAULTLINE identity
   | "converge"    // 3.0–3.8s  — energy gathering, logo dims
   | "transform"   // 3.8–5.6s  — logo dissolves
-  | "asha"        // 5.6–12.5s — ASHA canvas reveal
+  | "asha"        // 5.6–12.1s — PLATO canvas reveal
   | "exiting";    // particle dissolve → onComplete
 
 // ── Text reveal stages within asha phase ──────────────────────
 // These are offsets from when the asha phase starts (elapsed - 5.6)
 const ASHA_TEXT_DELAYS = {
-  name:      1.4,   // "ASHA" fades in 1.4s after orb phase starts
+  name:      1.4,   // "PLATO" fades in 1.4s after orb phase starts
   subtitle:  2.6,   // "SPIRIT OF FAULTLINE"
   tagline:   3.6,   // "The Intelligence Beneath the Surface."
 };
@@ -158,6 +159,8 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
   const ashaCanvasRef     = useRef<AshaCanvasHandle>(null);
 
   const [phase, setPhase]               = useState<Phase>("black");
+  const [muted, setMuted] = useState(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [stylesInjected, setStylesInjected] = useState(false);
   const [ashaElapsed, setAshaElapsed]   = useState(0);  // seconds since asha phase started
   const ashaStartRef = useRef(0);
@@ -194,12 +197,19 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     const engine = new CinematicAudioEngine();
     audioRef.current = engine;
 
+    const syncAudioFlags = () => {
+      setAutoplayBlocked(engine.isAutoplayBlocked);
+      setMuted(engine.isMuted);
+    };
+
     // Attempt auto-start (works if user has already interacted with the page)
     const tryStart = () => {
-      if (audioStartedRef.current) return;
+      if (audioStartedRef.current && engine.isRunning) return;
       audioStartedRef.current = true;
       engine.start(0.5);
       engine.playFaultlinePhase();
+      // Browsers may leave AudioContext suspended until a gesture.
+      window.setTimeout(syncAudioFlags, 80);
     };
 
     // Try immediately — may succeed if AudioContext is already unlocked
@@ -208,9 +218,12 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
     // Also listen for first interaction as a fallback
     const onInteract = () => {
       tryStart();
-      window.removeEventListener("click", onInteract);
-      window.removeEventListener("keydown", onInteract);
-      window.removeEventListener("touchstart", onInteract);
+      syncAudioFlags();
+      if (engine.isRunning) {
+        window.removeEventListener("click", onInteract);
+        window.removeEventListener("keydown", onInteract);
+        window.removeEventListener("touchstart", onInteract);
+      }
     };
     window.addEventListener("click", onInteract);
     window.addEventListener("keydown", onInteract);
@@ -251,8 +264,8 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
       // Audio: intelligence drone + holographic shimmer + system online tone
       audioRef.current?.playAshaPhase();
     }, 5600));
-    // Auto-complete after ~3.4s of ASHA showcase (shimmer fades at ~2.4s, so this gives a clean silence before exit)
-    t.push(setTimeout(() => triggerExit(), 9000));
+    // Auto-complete at ~12.1s so Phase 3 tagline (starts 9.2s) is visible before exit
+    t.push(setTimeout(() => triggerExit(), 12100));
     return () => t.forEach(clearTimeout);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -497,7 +510,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
           <div style={{ flex: "0 0 52%" }} />
 
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
-            {/* ASHA */}
+            {/* PLATO */}
             {showAshaName && (
               <div style={{
                 fontFamily: "'Rajdhani', sans-serif",
@@ -509,7 +522,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 textShadow: "0 0 30px rgba(0,212,255,0.55), 0 0 80px rgba(0,212,255,0.18)",
                 animation: "ci-asha-name 1.4s cubic-bezier(0.23,1,0.32,1) forwards",
               }}>
-                ASHA
+                PLATO
               </div>
             )}
 
@@ -542,6 +555,50 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
           </div>
         </div>
       )}
+
+      {/* ── Mute / autoplay-blocked control ── */}
+      <button
+        onClick={() => {
+          const engine = audioRef.current;
+          if (!engine) return;
+          if (engine.isAutoplayBlocked || !engine.isRunning) {
+            engine.start(0.5);
+            engine.playFaultlinePhase();
+            engine.setMuted(false);
+            audioStartedRef.current = true;
+          } else {
+            engine.toggleMute();
+          }
+          setMuted(engine.isMuted);
+          setAutoplayBlocked(engine.isAutoplayBlocked);
+        }}
+        aria-label={muted || autoplayBlocked ? "Unmute introduction" : "Mute introduction"}
+        style={{
+          position: "absolute", top: "20px", left: "20px", zIndex: 40,
+          background: "rgba(0,0,0,0.32)",
+          border: "1px solid rgba(255,255,255,0.09)",
+          borderRadius: "4px",
+          padding: "8px 18px",
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: "10px", letterSpacing: "0.15em",
+          color: "rgba(255,255,255,0.28)",
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          animation: "ci-fade-up 0.5s ease-out 1.2s both",
+        }}
+        onMouseEnter={e => {
+          const b = e.currentTarget as HTMLButtonElement;
+          b.style.color = "rgba(0,212,255,0.75)";
+          b.style.borderColor = "rgba(0,212,255,0.28)";
+        }}
+        onMouseLeave={e => {
+          const b = e.currentTarget as HTMLButtonElement;
+          b.style.color = "rgba(255,255,255,0.28)";
+          b.style.borderColor = "rgba(255,255,255,0.09)";
+        }}
+      >
+        {autoplayBlocked ? "TAP FOR SOUND" : muted ? "SOUND OFF" : "MUTE"}
+      </button>
 
       {/* ── Skip button ── */}
       <button

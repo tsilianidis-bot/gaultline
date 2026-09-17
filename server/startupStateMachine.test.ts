@@ -51,16 +51,37 @@ function shouldShowCinematic(ls: ReturnType<typeof makeStorage>, path = "/") {
 function initAuthGateDone(
   ls: ReturnType<typeof makeStorage>,
   ss: ReturnType<typeof makeStorage>,
-  isFirstTime: boolean,
+  _isFirstTime: boolean,
   isDemo = false,
 ): boolean {
   if (isDemo) return true;
-  if (!isFirstTime) return true; // returning visitors skip auth gate
   if (ss.getItem(FL_POST_AUTH_ASHA) === "1") {
     ss.removeItem(FL_POST_AUTH_ASHA);
     return true;
   }
   return false;
+}
+
+function isProductPath(path: string): boolean {
+  return path === "/app" || path.startsWith("/app/");
+}
+
+function shouldShowAuthGate(opts: {
+  cinematicDone: boolean;
+  isDemo?: boolean;
+  path: string;
+  authLoading: boolean;
+  user: boolean;
+  authGateDone: boolean;
+}): boolean {
+  return (
+    opts.cinematicDone &&
+    !opts.isDemo &&
+    isProductPath(opts.path) &&
+    !opts.authLoading &&
+    !opts.user &&
+    !opts.authGateDone
+  );
 }
 
 /** Returns initial ashaBriefingDone state. */
@@ -124,39 +145,49 @@ describe("Scenario 1 — New user login", () => {
     expect(shouldShowCinematic(ls, "/")).toBe(true);
   });
 
-  it("authGateDone starts false for first-time user (auth gate must show)", () => {
+  it("authGateDone starts false for first-time user (auth gate must show on product entry)", () => {
     const ls = makeStorage();
     const ss = makeStorage();
     const isFirstTime = shouldShowCinematic(ls, "/");
     expect(initAuthGateDone(ls, ss, isFirstTime)).toBe(false);
   });
 
-  it("ashaBriefingDone starts false for first-time user (ASHA must show after auth)", () => {
+  it("ashaBriefingDone starts false for first-time user (PLATO must show after auth)", () => {
     const ls = makeStorage();
     const ss = makeStorage();
     expect(initAshaBriefingDone(ls, ss, true)).toBe(false);
   });
 
-  it("full new-user flow: cinematic → auth gate → ASHA → dashboard", () => {
+  it("full new-user flow: cinematic → MarketingSite → product-entry auth → PLATO → NOW", () => {
     const ls = makeStorage();
     const ss = makeStorage();
     const isFirstTime = shouldShowCinematic(ls, "/");
     expect(isFirstTime).toBe(true);
 
-    // After cinematic completes
     markCinematicComplete(ls);
     const authGateDone = initAuthGateDone(ls, ss, isFirstTime);
-    expect(authGateDone).toBe(false); // auth gate shows
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/",
+      authLoading: false,
+      user: false,
+      authGateDone,
+    })).toBe(false);
 
-    // After auth resolves (useEffect sets authGateDone=true)
-    // ashaBriefingDone re-checked after user resolves
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/app/now",
+      authLoading: false,
+      user: false,
+      authGateDone,
+    })).toBe(true);
+
     const ashaSeenToday = reCheckAshaBriefingAfterUserResolves(ls, "user-123");
-    expect(ashaSeenToday).toBe(false); // ASHA shows
+    expect(ashaSeenToday).toBe(false);
 
-    // After ASHA completes
     markAshaComplete(ls, ss, "user-123");
     const ashaSeenNow = reCheckAshaBriefingAfterUserResolves(ls, "user-123");
-    expect(ashaSeenNow).toBe(true); // dashboard shows
+    expect(ashaSeenNow).toBe(true);
   });
 });
 
@@ -170,12 +201,34 @@ describe("Scenario 2 — Returning user, same day", () => {
     expect(shouldShowCinematic(ls, "/")).toBe(false);
   });
 
-  it("authGateDone starts true for returning user (auth gate skipped)", () => {
+  it("auth gate is skipped on MarketingSite for returning unauthenticated visitors", () => {
     const ls = makeStorage();
     const ss = makeStorage();
     markCinematicComplete(ls);
     const isFirstTime = shouldShowCinematic(ls, "/");
-    expect(initAuthGateDone(ls, ss, isFirstTime)).toBe(true);
+    const authGateDone = initAuthGateDone(ls, ss, isFirstTime);
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/",
+      authLoading: false,
+      user: false,
+      authGateDone,
+    })).toBe(false);
+  });
+
+  it("auth gate shows on product entry for returning unauthenticated visitors", () => {
+    const ls = makeStorage();
+    const ss = makeStorage();
+    markCinematicComplete(ls);
+    const isFirstTime = shouldShowCinematic(ls, "/");
+    const authGateDone = initAuthGateDone(ls, ss, isFirstTime);
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/app/now",
+      authLoading: false,
+      user: false,
+      authGateDone,
+    })).toBe(true);
   });
 
   it("ashaBriefingDone starts true for returning user who saw ASHA today", () => {
@@ -203,9 +256,15 @@ describe("Scenario 2 — Returning user, same day", () => {
     const authGateDone = initAuthGateDone(ls, ss, isFirstTime);
     const ashaBriefingDone = initAshaBriefingDone(ls, ss, isFirstTime);
     const ashaSeenAfterUserResolves = reCheckAshaBriefingAfterUserResolves(ls, "user-123");
-    // All gates clear → dashboard visible
-    expect(authGateDone && ashaSeenAfterUserResolves).toBe(true);
-    expect(ashaBriefingDone).toBe(true); // init is true (today key found)
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/app/now",
+      authLoading: false,
+      user: true,
+      authGateDone,
+    })).toBe(false);
+    expect(ashaSeenAfterUserResolves).toBe(true);
+    expect(ashaBriefingDone).toBe(true);
   });
 });
 
@@ -345,13 +404,26 @@ describe("Scenario 6 — Expired authentication session", () => {
     expect(shouldShowCinematic(ls, "/")).toBe(false);
   });
 
-  it("authGateDone starts true for returning user even with expired session", () => {
+  it("expired session does not replay cinematic; auth is required only on product entry", () => {
     const ls = makeStorage();
     const ss = makeStorage();
     markCinematicComplete(ls);
     const isFirstTime = shouldShowCinematic(ls, "/");
-    // Auth gate is skipped for returning users — router's protected route guards handle auth
-    expect(initAuthGateDone(ls, ss, isFirstTime)).toBe(true);
+    const authGateDone = initAuthGateDone(ls, ss, isFirstTime);
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/",
+      authLoading: false,
+      user: false,
+      authGateDone,
+    })).toBe(false);
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/app/now",
+      authLoading: false,
+      user: false,
+      authGateDone,
+    })).toBe(true);
   });
 
   it("15-second safety timeout key is defined and non-empty", () => {
@@ -422,8 +494,14 @@ describe("Scenario 9 — User refresh after dashboard", () => {
     const authGateDone = initAuthGateDone(ls, ss, isFirstTime);
     const ashaBriefingDone = initAshaBriefingDone(ls, ss, isFirstTime);
     expect(isFirstTime).toBe(false);
-    expect(authGateDone).toBe(true);
-    expect(ashaBriefingDone).toBe(true); // today key found
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/app/now",
+      authLoading: false,
+      user: true,
+      authGateDone,
+    })).toBe(false);
+    expect(ashaBriefingDone).toBe(true);
   });
 
   it("dashboard is immediately visible on refresh after ASHA completion", () => {
@@ -434,7 +512,14 @@ describe("Scenario 9 — User refresh after dashboard", () => {
     const isFirstTime = shouldShowCinematic(ls, "/");
     const authGateDone = initAuthGateDone(ls, ss, isFirstTime);
     const seenToday = reCheckAshaBriefingAfterUserResolves(ls, "user-123");
-    expect(!isFirstTime && authGateDone && seenToday).toBe(true);
+    expect(!isFirstTime && seenToday).toBe(true);
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/app/now",
+      authLoading: false,
+      user: true,
+      authGateDone,
+    })).toBe(false);
   });
 });
 
@@ -502,7 +587,14 @@ describe("Scenario 12 — Missing market-state request", () => {
     const authGateDone = initAuthGateDone(ls, ss, isFirstTime);
     const ashaBriefingDone = initAshaBriefingDone(ls, ss, isFirstTime);
     // All gates clear regardless of market state
-    expect(authGateDone && ashaBriefingDone).toBe(true);
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/app/now",
+      authLoading: false,
+      user: true,
+      authGateDone,
+    })).toBe(false);
+    expect(ashaBriefingDone).toBe(true);
   });
 });
 
@@ -543,7 +635,7 @@ describe("Scenario 14 — Completed overlays removed from DOM", () => {
     const root = resolve(import.meta.dirname, "..");
     const app = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
     // CinematicAuthGate must be conditionally rendered
-    expect(app).toMatch(/cinematicDone[\s\S]{0,100}!authGateDone[\s\S]{0,100}CinematicAuthGate/);
+    expect(app).toMatch(/showAuthGate &&[\s\S]{0,80}CinematicAuthGate/);
   });
 
   it("App.tsx uses conditional rendering for ASHA briefing gate", async () => {
@@ -552,7 +644,7 @@ describe("Scenario 14 — Completed overlays removed from DOM", () => {
     const root = resolve(import.meta.dirname, "..");
     const app = readFileSync(resolve(root, "client/src/App.tsx"), "utf8");
     // AshaLiveBriefing must be conditionally rendered
-    expect(app).toMatch(/authGateDone[\s\S]{0,100}!ashaBriefingDone[\s\S]{0,100}AshaLiveBriefing/);
+    expect(app).toMatch(/showPlatoBriefing &&[\s\S]{0,80}AshaLiveBriefing/);
   });
 });
 
@@ -567,10 +659,22 @@ describe("Scenario 15 — localStorage controls presentation only", () => {
     const isFirstTime = shouldShowCinematic(ls, "/");
     // Key controls cinematic (presentation)
     expect(isFirstTime).toBe(false);
-    // But authGateDone for first-time path still requires server auth
-    // (returning user path skips auth gate via !FIRST_TIME guard, not localStorage auth)
-    expect(initAuthGateDone(ls, ss, false)).toBe(true); // returning user — gate skipped
-    expect(initAuthGateDone(ls, ss, true)).toBe(false); // first-time — gate required
+    expect(initAuthGateDone(ls, ss, false)).toBe(false);
+    expect(initAuthGateDone(ls, ss, true)).toBe(false);
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/",
+      authLoading: false,
+      user: false,
+      authGateDone: false,
+    })).toBe(false);
+    expect(shouldShowAuthGate({
+      cinematicDone: true,
+      path: "/app/now",
+      authLoading: false,
+      user: false,
+      authGateDone: false,
+    })).toBe(true);
   });
 
   it("ASHA briefing key only controls whether ASHA shows, not auth state", () => {
