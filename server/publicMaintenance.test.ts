@@ -9,6 +9,7 @@ describe("public maintenance boundary", () => {
     expect(shouldServePublicMaintenance("GET", "/api/trpc/marketState.canonicalCurrent")).toBe(false);
     expect(shouldServePublicMaintenance("GET", "/api/oauth/callback")).toBe(false);
     expect(shouldServePublicMaintenance("GET", "/assets/index.js")).toBe(false);
+    expect(shouldServePublicMaintenance("GET", "/manus-storage/legacy-asset.jpg")).toBe(false);
     expect(shouldServePublicMaintenance("GET", "/robots.txt")).toBe(false);
     expect(shouldServePublicMaintenance("POST", "/")).toBe(false);
   });

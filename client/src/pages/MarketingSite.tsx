@@ -6,7 +6,6 @@ import { useSEO } from "@/hooks/useSEO";
 import { trackPricingViewed, trackStartFreeClicked } from "@/hooks/useAnalytics";
 
 const PLATFORM_URL = "/app";
-const HERO_BACKGROUND = "/manus-storage/faultline_hero_bg_7d6aaf14.jpg";
 
 const navItems = [
   { label: "Methodology", href: "#methodology" },
@@ -168,7 +167,6 @@ function Header() {
 function Hero() {
   return (
     <section className="relative isolate overflow-hidden border-b border-[#00D4FF]/10 bg-[#050608]">
-      <div className="absolute inset-0 bg-cover bg-center opacity-35" style={{ backgroundImage: `url(${HERO_BACKGROUND})` }} />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_20%_35%,rgba(0,212,255,0.16),transparent_60%),linear-gradient(180deg,rgba(5,6,8,0.25),#050608_92%)]" />
       <div className="absolute inset-0 opacity-[0.045] [background-image:linear-gradient(rgba(0,212,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,212,255,1)_1px,transparent_1px)] [background-size:72px_72px]" />
       <div className="relative mx-auto grid min-h-[calc(100svh-102px)] max-w-7xl items-center gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
