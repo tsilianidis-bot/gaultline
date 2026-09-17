@@ -60,7 +60,7 @@ export const ANALYTICAL_LEGACY_ALIASES: Readonly<Record<string, string>> = {
   "/app/command": "/app/now/deep",
   "/app/command-center": "/app/now/deep",
   "/app/crypto-regime": "/app/outlook/deep",
-  "/app/daily-briefing": "/app/now/deep",
+  "/app/daily-briefing": "/app/now",
   "/app/dashboard": "/app/now",
   "/app/diagnostic": "/app/now/deep",
   "/app/intelligence-hub": "/app/now/deep",
