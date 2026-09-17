@@ -17,7 +17,7 @@
    ============================================================ */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getLoginUrl } from '../const';
+import { navigateToLogin } from '../const';
 import { trackGa4Event } from '../lib/ga4';
 
 /** localStorage key for preserving checkout intent across the OAuth login redirect */
@@ -290,7 +290,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
 
   const handleLogin = useCallback(() => {
     track('sign_in_click', { source: 'product_experience' });
-    window.location.href = getLoginUrl();
+    navigateToLogin();
   }, []);
 
   const handlePricingInterest = useCallback((planName: string) => {

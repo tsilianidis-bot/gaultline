@@ -25,9 +25,9 @@ See `.env.example`. Set values in the host secret manager (Railway/env), never i
 | `DATABASE_URL` | MySQL/TiDB URL |
 | `JWT_SECRET` | Session signing |
 | `QA_ACCESS_SECRET` | Secret-gated `/qa-access` on production-like hosts (`NODE_ENV=production`) |
-| `OAUTH_SERVER_URL` | OAuth token/userinfo host |
-| `VITE_APP_ID` | OAuth client / app id (baked at `pnpm run build`) |
-| `VITE_OAUTH_PORTAL_URL` | Browser login portal (baked at build) |
+| `OAUTH_SERVER_URL` | Optional. Token/userinfo host. If unset with `VITE_APP_ID`, callback and JWT user-sync fail closed locally (no `api.manus.im` fallback). |
+| `VITE_APP_ID` | Optional on independent staging. Missing value logs an inactive warning at boot; health stays 200. Required together with `OAUTH_SERVER_URL` for live Manus OAuth. |
+| `VITE_OAUTH_PORTAL_URL` | Optional. Browser login portal (baked at build). Absent → `getLoginUrl()` is `""` and login CTAs do not navigate to Manus. |
 | `BUILD_COMMIT` / `BUILD_TIME` | Build identity; Dockerfile ARG/ENV; Railway can inject |
 | `FAULTLINE_MAINTENANCE_MODE` | **`false` on staging** so the app shell renders |
 | `PORT` | Injected by Railway |

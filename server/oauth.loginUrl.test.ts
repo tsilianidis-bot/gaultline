@@ -1,5 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { buildLoginUrl, getLoginUrl, isValidAbsoluteUrl } from "../client/src/const";
+import { describe, expect, it, vi } from "vitest";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, resolve } from "node:path";
+import {
+  buildLoginUrl,
+  getLoginUrl,
+  handleLoginCtaClick,
+  isValidAbsoluteUrl,
+  navigateToLogin,
+} from "../client/src/const";
 
 const PORTAL = "https://manus.im";
 const APP_ID = "Xbzsed6coyZiRmSu4UeiVi";
@@ -39,8 +47,50 @@ describe("client login URL bootstrap", () => {
     expect(isValidAbsoluteUrl("undefined/app-auth")).toBe(false);
   });
 
-  it("getLoginUrl does not throw when Vite OAuth env is unset", () => {
+  it("getLoginUrl is empty when Vite OAuth env is unset", () => {
     expect(() => getLoginUrl()).not.toThrow();
-    expect(typeof getLoginUrl()).toBe("string");
+    expect(getLoginUrl()).toBe("");
+    expect(getLoginUrl()).not.toContain("manus.im");
+    expect(getLoginUrl()).not.toContain("api.manus.im");
+  });
+
+  it("navigateToLogin and login CTAs do not send the browser to Manus when Vite OAuth is absent", () => {
+    const location = {
+      href: "https://staging.example.com/app",
+      origin: "https://staging.example.com",
+    };
+    vi.stubGlobal("window", { location });
+
+    expect(getLoginUrl()).toBe("");
+    navigateToLogin();
+    expect(location.href).toBe("https://staging.example.com/app");
+    expect(location.href).not.toContain("manus.im");
+
+    const prevented: boolean[] = [];
+    handleLoginCtaClick({ preventDefault: () => prevented.push(true) });
+    expect(prevented).toEqual([true]);
+    expect(location.href).toBe("https://staging.example.com/app");
+
+    vi.unstubAllGlobals();
+  });
+
+  it("login CTAs bind getLoginUrl/navigateToLogin and do not hardcode a Manus host", () => {
+    const root = resolve(process.cwd(), "client/src");
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (/\.(ts|tsx)$/.test(full)) files.push(full);
+      }
+    };
+    walk(root);
+
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      expect(source, file).not.toMatch(/https:\/\/api\.manus\.im/);
+      expect(source, file).not.toMatch(/https:\/\/manus\.im\/app-auth/);
+      expect(source, file).not.toContain("window.location.href = getLoginUrl()");
+    }
   });
 });

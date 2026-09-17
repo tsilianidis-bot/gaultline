@@ -15,7 +15,7 @@
    ============================================================ */
 import { useState, useEffect } from "react";
 import { useAuth } from "../_core/hooks/useAuth";
-import { getLoginUrl } from "../const";
+import { navigateToLogin } from "../const";
 import AshaOrb from "./AshaOrb";
 
 interface CinematicAuthGateProps {
@@ -49,7 +49,7 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
     try {
       sessionStorage.setItem("fl_post_auth_asha", "1");
     } catch {}
-    window.location.href = getLoginUrl();
+    navigateToLogin();
   };
 
   return (

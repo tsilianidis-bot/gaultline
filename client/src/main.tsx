@@ -5,7 +5,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
-import { getLoginUrl } from "./const";
+import { navigateToLogin } from "./const";
 import { TickerStoreProvider } from "./contexts/TickerStore";
 import { AshaProvider } from "./contexts/AshaContext";
 import { ExperienceProvider } from "./contexts/ExperienceContext";
@@ -122,7 +122,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (authResolved === null) return; // auth still loading — suppress redirect
   if (authHasUser) return; // user is logged in — stale error, suppress redirect
 
-  window.location.href = getLoginUrl();
+  navigateToLogin();
 };
 
 queryClient.getQueryCache().subscribe(event => {
