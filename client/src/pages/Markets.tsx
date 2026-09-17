@@ -14,6 +14,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import type { MarketQuoteItem, GlobalMarketSnapshot } from "../../../server/routers/markets";
+import {
+  advancingShare,
+  appearsLive,
+  isFiniteNumber,
+  overlayLabel,
+  relationshipRead,
+  rutSpxCommentary,
+  rutVersusSpxSpread,
+  usEquityRead,
+  validChangePercent,
+} from "@shared/marketsDisplay";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG       = "#050608";
@@ -32,23 +43,26 @@ const HEADING  = "'Rajdhani', 'Space Grotesk', sans-serif";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function pctColor(v: number | null): string {
-  if (v === null) return MUTED;
-  if (v > 0.05) return GREEN;
-  if (v < -0.05) return RED;
+  const pct = validChangePercent(v);
+  if (pct === null) return MUTED;
+  if (pct > 0.05) return GREEN;
+  if (pct < -0.05) return RED;
   return MUTED;
 }
 function pctGlyph(v: number | null): string {
-  if (v === null) return "—";
-  if (v > 0.05) return "▲";
-  if (v < -0.05) return "▼";
+  const pct = validChangePercent(v);
+  if (pct === null) return "—";
+  if (pct > 0.05) return "▲";
+  if (pct < -0.05) return "▼";
   return "—";
 }
 function fmtPct(v: number | null): string {
-  if (v === null) return "—";
-  return `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+  const pct = validChangePercent(v);
+  if (pct === null) return "Unavailable";
+  return `${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
 function fmtPrice(v: number | null, item?: Pick<MarketQuoteItem, "symbol" | "unit">): string {
-  if (v === null) return "—";
+  if (!isFiniteNumber(v)) return "Unavailable";
   if (item?.unit === "percent") return `${v.toFixed(2)}%`;
   if (item?.unit === "bps") return `${v >= 0 ? "+" : ""}${v.toFixed(0)}bp`;
   if (item?.unit === "percent_of_market") return `${v.toFixed(1)}%`;
@@ -93,8 +107,10 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
         ? { label: `${item.sessionStatus} · DELAYED`, color: AMBER }
         : item.freshnessState === "LATEST_VERIFIED"
           ? { label: "LATEST VERIFIED", color: MUTED }
-          : marketStatusLabel(item.marketState);
-  const pct = item.changePercent;
+          : appearsLive(item.freshnessState)
+            ? marketStatusLabel(item.marketState)
+            : { label: item.freshnessState || "UNAVAILABLE", color: AMBER };
+  const pct = validChangePercent(item.changePercent);
   const color = pctColor(pct);
   return (
     <div
@@ -135,9 +151,9 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
         <span style={{ fontFamily: MONO, fontSize: "11px", color }}>
           {pctGlyph(pct)} {fmtPct(pct)}
         </span>
-        {item.change !== null && (
+        {validChangePercent(item.change) !== null && (
           <span style={{ fontFamily: MONO, fontSize: "10px", color: MUTED }}>
-            {item.change >= 0 ? "+" : ""}{item.change.toFixed(item.change >= 100 ? 0 : 2)}
+            {item.change! >= 0 ? "+" : ""}{item.change!.toFixed(item.change! >= 100 ? 0 : 2)}
           </span>
         )}
       </div>
@@ -156,9 +172,9 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
           )}
         </div>
       )}
-      {item.freshnessState === "DELAYED" && (
+      {(item.freshnessState === "DELAYED" || item.freshnessState === "STALE") && (
         <div style={{ fontFamily: MONO, fontSize: "8px", color: MUTED, marginTop: "4px", opacity: 0.6 }}>
-          Delayed quote — not live
+          {item.freshnessState === "STALE" ? "Stale observation — not live" : "Delayed quote — not live"}
         </div>
       )}
     </div>
@@ -186,7 +202,7 @@ function SummaryPill({ label, value }: { label: string; value: string }) {
         {label}
       </span>
       <span style={{ fontFamily: SANS, fontSize: "12px", color, fontWeight: 600, textTransform: "capitalize" }}>
-        {value === "unavailable" ? "—" : value.replace(/-/g, " ")}
+        {overlayLabel(value)}
       </span>
     </div>
   );
@@ -207,7 +223,9 @@ function RankRow({ item, rank, direction }: { item: MarketQuoteItem; rank: numbe
         <div style={{ fontFamily: SANS, fontSize: "9px", color: MUTED }}>{item.label}</div>
       </div>
       <span style={{ fontFamily: MONO, fontSize: "12px", color, fontWeight: 600 }}>
-        {direction === "up" ? "▲" : "▼"} {Math.abs(item.changePercent ?? 0).toFixed(2)}%
+        {validChangePercent(item.changePercent) === null
+          ? "Unavailable"
+          : `${direction === "up" ? "▲" : "▼"} ${Math.abs(item.changePercent!).toFixed(2)}%`}
       </span>
     </div>
   );
@@ -243,11 +261,11 @@ function MarketRead({ snapshot }: { snapshot: GlobalMarketSnapshot | undefined }
     const btc = items.find(i => i.symbol === "BTC-USD");
 
     const parts: string[] = [];
-    if (spx?.changePercent !== null) parts.push(`S&P 500 ${fmtPct(spx?.changePercent ?? null)}`);
-    if (vix?.price !== null) parts.push(`VIX ${vix?.price?.toFixed(1)}`);
-    if (t10?.price !== null) parts.push(`10Y ${fmtPrice(t10?.price ?? null, t10)}`);
-    if (dxy?.changePercent !== null) parts.push(`DXY ${fmtPct(dxy?.changePercent ?? null)}`);
-    if (btc?.changePercent !== null) parts.push(`BTC ${fmtPct(btc?.changePercent ?? null)}`);
+    if (validChangePercent(spx?.changePercent) !== null) parts.push(`S&P 500 ${fmtPct(spx?.changePercent ?? null)}`);
+    if (isFiniteNumber(vix?.price)) parts.push(`VIX ${vix!.price!.toFixed(1)}`);
+    if (isFiniteNumber(t10?.price)) parts.push(`10Y ${fmtPrice(t10?.price ?? null, t10)}`);
+    if (validChangePercent(dxy?.changePercent) !== null) parts.push(`DXY ${fmtPct(dxy?.changePercent ?? null)}`);
+    if (validChangePercent(btc?.changePercent) !== null) parts.push(`BTC ${fmtPct(btc?.changePercent ?? null)}`);
 
     // Generate interpretation using rule-based approach
     // (ASHA integration would require a tRPC mutation — using local logic for now)
@@ -286,19 +304,16 @@ function generateLocalInterpretation(
 ): string {
   const parts: string[] = [];
 
-  // US equities tone
-  if (s.usEquities === "risk-on") parts.push("U.S. equity markets are broadly positive, with most major indices advancing.");
-  else if (s.usEquities === "risk-off") parts.push("U.S. equity markets are under pressure, with broad-based selling across major indices.");
-  else parts.push("U.S. equity markets are mixed, with no clear directional conviction across major indices.");
+  const usRead = usEquityRead(s.usEquities);
+  if (usRead) parts.push(usRead);
+  else parts.push("U.S. equity index observations are unavailable. No advancing, mixed, or directional interpretation is offered.");
 
-  // Volatility context
-  if (s.volatility === "elevated" && vix?.price) {
-    parts.push(`Volatility is elevated — VIX at ${vix.price.toFixed(1)} — signaling that options markets are pricing in meaningful near-term uncertainty.`);
-  } else if (s.volatility === "low" && vix?.price) {
-    parts.push(`Volatility is suppressed — VIX at ${vix.price.toFixed(1)} — consistent with low near-term fear in options markets.`);
+  if (s.volatility === "elevated" && isFiniteNumber(vix?.price)) {
+    parts.push(`Volatility is elevated — VIX at ${vix!.price!.toFixed(1)} — signaling that options markets are pricing in meaningful near-term uncertainty.`);
+  } else if (s.volatility === "low" && isFiniteNumber(vix?.price)) {
+    parts.push(`Volatility is suppressed — VIX at ${vix!.price!.toFixed(1)} — consistent with low near-term fear in options markets.`);
   }
 
-  // Rates and dollar cross-market pressure
   const ratesRising = s.rates === "rising";
   const dollarStrong = s.dollar === "strengthening";
   if (ratesRising && dollarStrong) {
@@ -311,19 +326,31 @@ function generateLocalInterpretation(
     parts.push("Declining Treasury yields are providing a tailwind for rate-sensitive assets and growth equities.");
   }
 
-  // Global context
-  if (s.europe === "negative" || s.asia === "negative") {
+  if (s.europe === "unavailable" && s.asia === "unavailable") {
+    // omit unsupported international interpretation
+  } else if (s.europe === "negative" || s.asia === "negative") {
     parts.push(`International markets are showing weakness — ${s.europe === "negative" ? "European" : "Asian"} indices are broadly lower, suggesting the risk-off tone extends beyond U.S. borders.`);
   } else if (s.europe === "positive" && s.asia === "positive") {
     parts.push("Global equity markets are broadly positive, with European and Asian indices participating in the risk-on tone.");
   }
 
-  if (parts.length === 0) return "Market data is loading. Interpretation will appear shortly.";
+  if (parts.length === 0) return "Market observations are unavailable. No interpretation is offered.";
   return parts.join(" ");
 }
 
 // ── Breadth proxy row ─────────────────────────────────────────────────────────
-function BreadthRow({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+function BreadthRow({ label, value, max, color }: { label: string; value: number | null; max: number; color: string }) {
+  if (value === null) {
+    return (
+      <div style={{ marginBottom: "10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+          <span style={{ fontFamily: SANS, fontSize: "11px", color: TEXT }}>{label}</span>
+          <span style={{ fontFamily: MONO, fontSize: "11px", color: MUTED }}>Unavailable</span>
+        </div>
+        <div style={{ height: "3px", background: "rgba(255,255,255,0.06)", borderRadius: "2px" }} />
+      </div>
+    );
+  }
   const pct = Math.min(100, (value / max) * 100);
   return (
     <div style={{ marginBottom: "10px" }}>
@@ -359,15 +386,15 @@ export default function Markets() {
   const commItems   = byCategory("commodity");
   const cryptoItems = byCategory("crypto");
 
-  // Breadth proxy from US equity performance
-  const usLive = usItems.filter(i => i.changePercent !== null);
-  const advancingPct = usLive.length > 0
-    ? (usLive.filter(i => (i.changePercent ?? 0) > 0).length / usLive.length) * 100
-    : 0;
-  const spxPct = usItems.find(i => i.symbol === "^GSPC")?.changePercent ?? 0;
-  const rutPct = usItems.find(i => i.symbol === "^RUT")?.changePercent ?? 0;
-  const smallVsLarge = (rutPct - spxPct).toFixed(2);
-  const vixPrice = vixItems.find(i => i.symbol === "^VIX")?.price ?? null;
+  const advancingPct = advancingShare(usItems);
+  const rutSpx = rutVersusSpxSpread(
+    usItems.find(i => i.symbol === "^RUT"),
+    usItems.find(i => i.symbol === "^GSPC"),
+  );
+  const smallVsLarge = rutSpx.value;
+  const smallVsLargeCopy = rutSpxCommentary(smallVsLarge, rutSpx.live);
+  const vixRaw = vixItems.find(i => i.symbol === "^VIX")?.price;
+  const vixPrice = isFiniteNumber(vixRaw) ? vixRaw : null;
 
   const lastUpdated = snapshot
     ? new Date(snapshot.fetchedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
@@ -543,7 +570,7 @@ export default function Markets() {
                   label="U.S. Indices Advancing"
                   value={advancingPct}
                   max={100}
-                  color={advancingPct >= 60 ? GREEN : advancingPct <= 40 ? RED : AMBER}
+                  color={advancingPct === null ? MUTED : advancingPct >= 60 ? GREEN : advancingPct <= 40 ? RED : AMBER}
                 />
                 {vixPrice !== null && (
                   <BreadthRow
@@ -557,16 +584,16 @@ export default function Markets() {
                   <div style={{ fontFamily: MONO, fontSize: "9px", color: MUTED, marginBottom: "4px" }}>
                     SMALL CAP vs LARGE CAP
                   </div>
-                  <div style={{ fontFamily: MONO, fontSize: "12px", color: parseFloat(smallVsLarge) > 0 ? GREEN : parseFloat(smallVsLarge) < 0 ? RED : MUTED }}>
-                    RUT vs SPX: {parseFloat(smallVsLarge) >= 0 ? "+" : ""}{smallVsLarge}% spread
+                  <div style={{ fontFamily: MONO, fontSize: "12px", color: smallVsLarge === null ? MUTED : smallVsLarge > 0 ? GREEN : smallVsLarge < 0 ? RED : MUTED }}>
+                    {smallVsLarge === null
+                      ? "RUT vs SPX: Unavailable"
+                      : `RUT vs SPX: ${smallVsLarge >= 0 ? "+" : ""}${smallVsLarge.toFixed(2)}% spread${rutSpx.live ? "" : " · DELAYED"}`}
                   </div>
-                  <div style={{ fontFamily: SANS, fontSize: "10px", color: MUTED, marginTop: "3px" }}>
-                    {parseFloat(smallVsLarge) > 0.3
-                      ? "Small caps outperforming — broad participation"
-                      : parseFloat(smallVsLarge) < -0.3
-                      ? "Large caps leading — narrow rally"
-                      : "Small and large caps roughly in line"}
-                  </div>
+                  {smallVsLargeCopy && (
+                    <div style={{ fontFamily: SANS, fontSize: "10px", color: MUTED, marginTop: "3px" }}>
+                      {smallVsLargeCopy}
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Risk indicators */}
@@ -577,29 +604,35 @@ export default function Markets() {
                 {[
                   {
                     label: "Dollar / Equity Relationship",
-                    value: snapshot?.summary.dollar === "strengthening" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Divergence — watch for reversal"
-                      : snapshot?.summary.dollar === "weakening" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Aligned — dollar weakness supporting equities"
-                      : "Neutral",
+                    value: relationshipRead(
+                      snapshot?.summary.dollar,
+                      snapshot?.summary.usEquities,
+                      "Aligned — dollar weakness supporting equities",
+                      "Divergence — watch for reversal",
+                      "Neutral",
+                    ),
                     color: snapshot?.summary.dollar === "strengthening" && snapshot?.summary.usEquities === "risk-on" ? AMBER : TEXT,
                   },
                   {
                     label: "Rate / Equity Relationship",
-                    value: snapshot?.summary.rates === "rising" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Tension — rising yields pressuring valuations"
-                      : snapshot?.summary.rates === "falling" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Supportive — falling yields tailwind for equities"
-                      : "Neutral",
+                    value: relationshipRead(
+                      snapshot?.summary.rates,
+                      snapshot?.summary.usEquities,
+                      "Supportive — falling yields tailwind for equities",
+                      "Tension — rising yields pressuring valuations",
+                      "Neutral",
+                    ),
                     color: snapshot?.summary.rates === "rising" && snapshot?.summary.usEquities === "risk-on" ? AMBER : TEXT,
                   },
                   {
                     label: "Crypto / Risk Appetite",
-                    value: snapshot?.summary.crypto === "positive" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Aligned — risk appetite broad"
-                      : snapshot?.summary.crypto === "negative" && snapshot?.summary.usEquities === "risk-on"
-                      ? "Divergence — crypto not confirming equity strength"
-                      : "Mixed",
+                    value: relationshipRead(
+                      snapshot?.summary.crypto,
+                      snapshot?.summary.usEquities,
+                      "Aligned — risk appetite broad",
+                      "Divergence — crypto not confirming equity strength",
+                      "Mixed",
+                    ),
                     color: TEXT,
                   },
                 ].map(row => (
