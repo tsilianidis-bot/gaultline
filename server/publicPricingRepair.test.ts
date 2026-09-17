@@ -73,6 +73,8 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(marketing).not.toContain('RICHARD ROPER');
     expect(about).toContain('JT');
     expect(about).not.toContain('RICHARD ROPER');
+    expect(read('client/src/pages/Press.tsx')).not.toContain('RICHARD ROPER');
+    expect(read('client/src/pages/TrustCenter.tsx')).not.toContain('RICHARD ROPER');
   });
 
   it('blocks checkout unless configured Stripe price metadata exactly matches the public plan', () => {

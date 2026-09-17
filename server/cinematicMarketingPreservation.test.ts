@@ -16,6 +16,8 @@ const TOUCHED = {
   briefing: read("client/src/components/AshaLiveBriefing.tsx"),
   guide: read("client/src/pages/Guide.tsx"),
   about: read("client/src/pages/About.tsx"),
+  press: read("client/src/pages/Press.tsx"),
+  trustCenter: read("client/src/pages/TrustCenter.tsx"),
   consts: read("client/src/const.ts"),
 } as const;
 
@@ -31,6 +33,8 @@ describe("cinematic + marketing preservation plan", () => {
       authGate: TOUCHED.authGate,
       briefing: TOUCHED.briefing,
       about: TOUCHED.about,
+      press: TOUCHED.press,
+      trustCenter: TOUCHED.trustCenter,
     })) {
       expect(source, name).not.toContain("GET LIFETIME ACCESS — $299");
       expect(source, name).not.toContain("GET FOUNDING LIFETIME ACCESS — $299");
@@ -100,12 +104,18 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.guide).not.toContain("Ask ASHA");
     expect(TOUCHED.productExperience).toContain("PLATO synthesizes");
     expect(TOUCHED.productExperience).not.toContain("ASHA synthesizes");
+    expect(TOUCHED.press).toContain("PLATO");
+    expect(TOUCHED.press).not.toMatch(/\bASHA\b/);
+    expect(TOUCHED.trustCenter).toContain("What is PLATO?");
+    expect(TOUCHED.trustCenter).not.toMatch(/\bASHA\b/);
   });
 
   it("uses founder JT and removes RICHARD ROPER from public surfaces", () => {
     expect(TOUCHED.about).toContain("JT");
     expect(TOUCHED.about).not.toContain("RICHARD ROPER");
     expect(TOUCHED.marketing).not.toContain("RICHARD ROPER");
+    expect(TOUCHED.press).not.toContain("RICHARD ROPER");
+    expect(TOUCHED.trustCenter).not.toContain("RICHARD ROPER");
     expect(TOUCHED.productExperience).toContain(">JT</div>");
     expect(TOUCHED.productExperience).not.toContain("RICHARD ROPER");
   });

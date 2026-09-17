@@ -339,8 +339,8 @@ function FAQTab() {
       a: "The Pressure Index is updated whenever new underlying data is released by source providers. FRED macroeconomic data is typically released weekly or monthly. The engine recalculates automatically when new inputs are available. The timestamp on the Pressure Index reading reflects the most recent calculation.",
     },
     {
-      q: "What is ASHA?",
-      a: "ASHA (Adaptive Systemic Heuristic Analyst) is FAULTLINE's AI intelligence layer. ASHA synthesizes the current Pressure Index reading, regime classification, and market conditions into natural-language briefings and answers questions about market conditions. ASHA does not provide investment advice.",
+      q: "What is PLATO?",
+      a: "PLATO (Spirit of FAULTLINE) is FAULTLINE's AI intelligence layer. PLATO synthesizes the current Pressure Index reading, regime classification, and market conditions into natural-language briefings and answers questions about market conditions. PLATO does not provide investment advice.",
     },
     {
       q: "What is the difference between the plans?",

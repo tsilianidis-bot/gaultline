@@ -203,7 +203,7 @@ const PAGE_META: Record<string, PageMeta> = {
     description: "FAULTLINE press resources, media kit, and coverage. Contact the FAULTLINE team for media inquiries, interviews, and partnership opportunities.",
   },
   "/pricing": {
-    title: "FAULTLINE Pricing — Free, Pro & Founding Member Plans",
+    title: "FAULTLINE Pricing — Free, Trader, Power & Founding Member Plans",
     description: "FAULTLINE pricing plans: Free market awareness, Trader at $59/month, Power at $99/month, and Founding Member at $49/month locked while active.",
   },
   "/intelligence-library": {
