@@ -40,7 +40,7 @@ export function evaluateRedesignReadiness(evidence: ResearchEvidenceState) {
     stability: evidence.stabilitySampleAdequate,
     explainability: evidence.explainabilityContractComplete,
   } as const;
-  const missing = REDESIGN_EVALUATION_GATES.filter(gate => values[gate.name] !== true).map(gate => gate.name);
+  const missing = REDESIGN_EVALUATION_GATES.filter(gate => values[gate.name as keyof typeof values] !== true).map(gate => gate.name);
   return {
     status: missing.length === 0 ? "ELIGIBLE_FOR_SHADOW" as const : "BLOCKED" as const,
     missingGates: missing,

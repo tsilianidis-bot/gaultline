@@ -1,6 +1,5 @@
 import { desc } from "drizzle-orm";
 import { intelligenceStateManifests } from "../drizzle/schema";
-import { desc } from "drizzle-orm";
 import {
   CANONICAL_STATE_SCHEMA_VERSION,
   type CanonicalDirection,

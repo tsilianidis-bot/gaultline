@@ -6,7 +6,6 @@ import { useSEO } from "@/hooks/useSEO";
 import { trackPricingViewed, trackStartFreeClicked } from "@/hooks/useAnalytics";
 
 const PLATFORM_URL = "/app";
-const HERO_BACKGROUND = "/manus-storage/faultline_hero_bg_7d6aaf14.jpg";
 
 const navItems = [
   { label: "Methodology", href: "#methodology" },
@@ -168,7 +167,6 @@ function Header() {
 function Hero() {
   return (
     <section className="relative isolate overflow-hidden border-b border-[#00D4FF]/10 bg-[#050608]">
-      <div className="absolute inset-0 bg-cover bg-center opacity-35" style={{ backgroundImage: `url(${HERO_BACKGROUND})` }} />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_20%_35%,rgba(0,212,255,0.16),transparent_60%),linear-gradient(180deg,rgba(5,6,8,0.25),#050608_92%)]" />
       <div className="absolute inset-0 opacity-[0.045] [background-image:linear-gradient(rgba(0,212,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(0,212,255,1)_1px,transparent_1px)] [background-size:72px_72px]" />
       <div className="relative mx-auto grid min-h-[calc(100svh-102px)] max-w-7xl items-center gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
@@ -475,7 +473,9 @@ function Footer() {
   return <footer className="border-t border-white/[0.07] bg-[#030405] py-12"><div className="mx-auto flex max-w-7xl flex-col gap-8 px-5 sm:px-8"><div className="flex flex-col justify-between gap-6 sm:flex-row"><div><p className="font-mono text-lg font-black tracking-[0.23em] text-white">FAULTLINE</p><p className="mt-3 max-w-md text-sm leading-relaxed text-[#7F90A3]">Market risk intelligence for understanding changing conditions before headline narratives make them obvious.</p></div><div className="flex flex-wrap gap-x-5 gap-y-3 text-[11px] font-mono tracking-[0.1em] text-[#A8B8CC]"><a href="/methodology" className="hover:text-[#00D4FF]">METHODOLOGY</a><a href="/trust" className="hover:text-[#00D4FF]">TRUST CENTER</a><a href="/contact" className="hover:text-[#00D4FF]">CONTACT</a><a href="/blog" className="hover:text-[#00D4FF]">RESEARCH</a><a href="/pricing" className="hover:text-[#00D4FF]">PRICING</a></div></div><div className="flex flex-col justify-between gap-3 border-t border-white/[0.07] pt-6 text-[10px] font-mono tracking-wide text-[#64748B] sm:flex-row"><span>© 2026 FAULTLINE · A PHOENIX SYSTEMS PLATFORM</span><span>MARKET AWARENESS. BEFORE THE CONSENSUS FORMS.</span></div></div></footer>;
 }
 
-export default function MarketingSite({ initialSection }: { initialSection?: string } = {}) {
+type MarketingSitePlacement = "methodology" | "thesis" | "system" | "historical" | "access" | "pricing";
+
+export default function MarketingSite({ initialSection }: { initialSection?: MarketingSitePlacement } = {}) {
   useSEO({
     title: "FAULTLINE | Market Risk Intelligence, Systemic Risk & Early Warning Signals",
     description: "Market risk intelligence for understanding systemic market stress, early warning signals, macroeconomic risk, and changing market regimes with actionable context.",
@@ -485,7 +485,8 @@ export default function MarketingSite({ initialSection }: { initialSection?: str
   useEffect(() => {
     trackPricingViewed();
     if (!initialSection) return;
-    const timer = window.setTimeout(() => document.getElementById(initialSection)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+    const targetSection = initialSection === "pricing" ? "access" : initialSection;
+    const timer = window.setTimeout(() => document.getElementById(targetSection)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
     return () => window.clearTimeout(timer);
   }, [initialSection]);
 

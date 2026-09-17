@@ -9,6 +9,7 @@ import { fetchFredBulk, type FredObservation } from "../fredClient";
 import { getGlobalStats } from "../coingeckoProxy";
 import { LRUCache } from "../lruCache";
 import { log } from "../logger";
+import { isFiniteNumber } from "../../shared/marketsDisplay";
 
 export type MarketCategory = "us_equity" | "volatility" | "europe" | "asia" | "rates" | "fx" | "commodity" | "crypto";
 type InstrumentProvider = "yahoo" | "fred" | "coingecko" | "derived";
@@ -131,7 +132,7 @@ function sessionStatus(state: YahooQuote["marketState"]): MarketQuoteItem["sessi
 }
 
 export function classifyFreshness({ price, isDelayed, fetchedAt, provider, state, now = Date.now() }: { price: number | null; isDelayed: boolean; fetchedAt: number; provider: InstrumentProvider; state: YahooQuote["marketState"]; now?: number }): FreshnessState {
-  if (price == null) return "UNAVAILABLE";
+  if (!isFiniteNumber(price)) return "UNAVAILABLE";
   const age = Math.max(0, now - fetchedAt);
   const threshold = provider === "fred" ? 27 * 60 * 60 * 1000 : state === "CLOSED" ? 26 * 60 * 60 * 1000 : 12 * 60 * 1000;
   if (age > threshold) return "STALE";
@@ -196,10 +197,10 @@ function cryptoGlobalItem(inst: MarketInstrument, value: number | null, changePe
 }
 
 function deriveStatus<T extends string>(items: MarketQuoteItem[], positive: T, negative: T, mixed: T, unavailable: T, closed?: T): T {
-  const available = items.filter(item => item.changePercent != null && item.freshnessState !== "STALE");
+  const available = items.filter(item => isFiniteNumber(item.changePercent) && item.freshnessState !== "STALE");
   if (!available.length) return unavailable;
   if (closed && available.every(item => item.sessionStatus === "CLOSED")) return closed;
-  const average = available.reduce((sum, item) => sum + (item.changePercent ?? 0), 0) / available.length;
+  const average = available.reduce((sum, item) => sum + item.changePercent!, 0) / available.length;
   if (Math.abs(average) < 0.15) return mixed;
   return average > 0 ? positive : negative;
 }
@@ -207,17 +208,21 @@ function deriveStatus<T extends string>(items: MarketQuoteItem[], positive: T, n
 function summary(items: MarketQuoteItem[]): GlobalMarketSnapshot["summary"] {
   const group = (category: MarketCategory) => items.filter(item => item.category === category);
   const us = group("us_equity");
-  const usAverage = us.filter(item => item.changePercent != null).reduce((sum, item) => sum + (item.changePercent ?? 0), 0) / Math.max(1, us.filter(item => item.changePercent != null).length);
+  const usMoves = us.filter(item => item.freshnessState !== "STALE").map(item => item.changePercent).filter(isFiniteNumber);
+  const usAverage = usMoves.length ? usMoves.reduce((sum, value) => sum + value, 0) / usMoves.length : null;
   const vix = items.find(item => item.symbol === "^VIX");
   const dxy = items.find(item => item.symbol === "DX-Y.NYB");
   const tenYear = items.find(item => item.symbol === "FRED:DGS10");
+  const vixPrice = vix?.price;
+  const dollarMove = dxy?.changePercent;
+  const tenYearChange = tenYear?.change;
   return {
-    usEquities: !us.some(item => item.changePercent != null) ? "unavailable" : usAverage > 0.3 ? "risk-on" : usAverage < -0.3 ? "risk-off" : "mixed",
+    usEquities: usAverage === null ? "unavailable" : usAverage > 0.3 ? "risk-on" : usAverage < -0.3 ? "risk-off" : "mixed",
     europe: deriveStatus(group("europe"), "positive", "negative", "mixed", "unavailable", "closed"),
     asia: deriveStatus(group("asia"), "positive", "negative", "mixed", "unavailable", "closed"),
-    volatility: vix?.price == null ? "unavailable" : vix.price > 25 ? "elevated" : vix.price < 15 ? "low" : "normal",
-    dollar: dxy?.changePercent == null ? "unavailable" : dxy.changePercent > 0.15 ? "strengthening" : dxy.changePercent < -0.15 ? "weakening" : "stable",
-    rates: tenYear?.change == null ? "unavailable" : tenYear.change > 0.04 ? "rising" : tenYear.change < -0.04 ? "falling" : "stable",
+    volatility: !isFiniteNumber(vixPrice) ? "unavailable" : vixPrice > 25 ? "elevated" : vixPrice < 15 ? "low" : "normal",
+    dollar: !isFiniteNumber(dollarMove) ? "unavailable" : dollarMove > 0.15 ? "strengthening" : dollarMove < -0.15 ? "weakening" : "stable",
+    rates: !isFiniteNumber(tenYearChange) ? "unavailable" : tenYearChange > 0.04 ? "rising" : tenYearChange < -0.04 ? "falling" : "stable",
     commodities: deriveStatus(group("commodity"), "positive", "negative", "mixed", "unavailable"),
     crypto: deriveStatus(group("crypto"), "positive", "negative", "mixed", "unavailable"),
   };
@@ -256,8 +261,8 @@ export async function getGlobalMarketSnapshot(force = false): Promise<GlobalMark
   if (totalCap) items.push(cryptoGlobalItem(totalCap, global ? global.totalMarketCap / 1_000_000_000_000 : null, global?.marketCapChangePercent24h ?? null, global?.fetchedAt ?? fetchedAt));
   if (btcDom) items.push(cryptoGlobalItem(btcDom, global?.btcDominance ?? null, null, global?.fetchedAt ?? fetchedAt));
 
-  const rankable = items.filter(item => item.changePercent != null && !["rates", "volatility"].includes(item.category) && item.freshnessState !== "STALE");
-  const ranked = [...rankable].sort((a, b) => (b.changePercent ?? 0) - (a.changePercent ?? 0));
+  const rankable = items.filter(item => isFiniteNumber(item.changePercent) && !["rates", "volatility"].includes(item.category) && item.freshnessState !== "STALE");
+  const ranked = [...rankable].sort((a, b) => b.changePercent! - a.changePercent!);
   const snapshot: GlobalMarketSnapshot = { items, fetchedAt, activeSession: globalSession(), summary: summary(items), strongest: ranked.slice(0, 5), weakest: ranked.slice(-5).reverse() };
   snapshotCache.set("global", snapshot);
   return snapshot;

@@ -31,7 +31,7 @@ export interface AshaModelTrace {
 }
 
 export interface AshaContextProvenance {
-  contextVersion: "1.0";
+  contextVersion: "1.0" | "1.1";
   marketStateVersion: CanonicalMarketState["version"];
   generatedAt: string;
   sourceUpdatedAt: string;

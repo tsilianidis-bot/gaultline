@@ -7,6 +7,7 @@ vi.mock("./env", () => ({
   },
 }));
 
+import { ENV } from "./env";
 import { invokeLLM, listLLMModels } from "./llm";
 
 const successfulResponse = () =>
@@ -28,6 +29,8 @@ const successfulResponse = () =>
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  ENV.forgeApiKey = "test-forge-key";
+  ENV.forgeApiUrl = "https://forge.example";
 });
 
 describe("invokeLLM transport", () => {
@@ -84,6 +87,24 @@ describe("listLLMModels", () => {
     );
   });
 
+  it("uses Gemini OpenAI-compat /models when the gateway ends with /openai", async () => {
+    ENV.forgeApiUrl = "https://generativelanguage.googleapis.com/v1beta/openai/";
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      object: "list",
+      data: [{ id: "gemini-3-flash-preview" }],
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await listLLMModels();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://generativelanguage.googleapis.com/v1beta/openai/models",
+      expect.objectContaining({
+        headers: { authorization: "Bearer test-forge-key" },
+      }),
+    );
+  });
+
   it("rejects malformed catalog responses instead of inventing model availability", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
       JSON.stringify({ models: [] }),
@@ -91,5 +112,70 @@ describe("listLLMModels", () => {
     )));
 
     await expect(listLLMModels()).rejects.toThrow("invalid response");
+  });
+});
+
+describe("invokeLLM gateway config", () => {
+  it("fails closed on BUILT_IN_FORGE_API_KEY and does not read OPENAI_API_KEY", async () => {
+    ENV.forgeApiKey = "";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      invokeLLM({ messages: [{ role: "user", content: "Summarize the market." }] }),
+    ).rejects.toThrow("BUILT_IN_FORGE_API_KEY is not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("fails closed on missing BUILT_IN_FORGE_API_URL instead of calling Manus", async () => {
+    ENV.forgeApiUrl = "";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      invokeLLM({ messages: [{ role: "user", content: "Summarize the market." }] }),
+    ).rejects.toThrow("BUILT_IN_FORGE_API_URL is not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps OpenAI-style /v1/chat/completions for generic gateways", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(successfulResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await invokeLLM({
+      messages: [{ role: "user", content: "Summarize the market." }],
+    });
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://forge.example/v1/chat/completions",
+    );
+  });
+
+  it("uses Gemini OpenAI-compat /chat/completions when the URL ends with /openai", async () => {
+    ENV.forgeApiUrl = "https://generativelanguage.googleapis.com/v1beta/openai";
+    const fetchMock = vi.fn().mockResolvedValue(successfulResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await invokeLLM({
+      messages: [{ role: "user", content: "Summarize the market." }],
+    });
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    );
+  });
+
+  it("uses Gemini OpenAI-compat paths for generativelanguage.googleapis.com even without /openai", async () => {
+    ENV.forgeApiUrl = "https://generativelanguage.googleapis.com/v1beta";
+    const fetchMock = vi.fn().mockResolvedValue(successfulResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await invokeLLM({
+      messages: [{ role: "user", content: "Summarize the market." }],
+    });
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://generativelanguage.googleapis.com/v1beta/chat/completions",
+    );
   });
 });

@@ -280,7 +280,7 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, ge
   const staticInputs = inputQuality.filter(input => input.availabilityStatus === "STATIC_MODEL_INPUT").map(input => input.inputId);
   const engineValues = Object.fromEntries(pressure.vectors.map(vector => [vector.id, vector.score]));
   const engineDirections = Object.fromEntries(pressure.vectors.map(vector => [vector.id, vector.trend]));
-  const scenarioOutputs = seismograph ? { bull: seismograph.probabilities.bull, neutral: seismograph.probabilities.neutral, bear: seismograph.probabilities.bear } : {};
+  const scenarioOutputs: Record<string, number> = seismograph ? { bull: seismograph.probabilities.bull, neutral: seismograph.probabilities.neutral, bear: seismograph.probabilities.bear } : {};
   const core = {
     championVersion: CHAMPION_V1_GOVERNANCE_VERSION,
     modelVersion: seismograph?.version ?? "seismograph-unavailable",

@@ -2,6 +2,11 @@
  * FAULTLINE — Intelligence Validation Center
  * server/routers/intelligenceValidation.ts
  *
+ * Intelligence Contract v2 (NOT implemented): this center is the evaluation
+ * surface for Decision Ledger stage records (REALITY → ACTION). Do not fill
+ * missing evidence with invented confidence, WWCMIM, or triggers.
+ * Scope: docs/FAULTLINE_INTELLIGENCE_CONTRACT_V2_SCOPE.md
+ *
  * Phase 7: 9 analytics procedures that measure, audit, and surface
  * the accuracy and improvement patterns of every FAULTLINE recommendation.
  *

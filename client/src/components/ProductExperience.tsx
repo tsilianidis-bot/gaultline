@@ -17,20 +17,11 @@
    ============================================================ */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getLoginUrl } from '../const';
+import { navigateToLogin } from '../const';
 import { trackGa4Event } from '../lib/ga4';
 
 /** localStorage key for preserving checkout intent across the OAuth login redirect */
 export const CHECKOUT_INTENT_KEY = 'fl_checkout_intent_v1';
-
-// ── Assets ────────────────────────────────────────────────────
-const ASSETS = {
-  heroBg:          '/manus-storage/faultline_hero_bg_7d6aaf14.jpg',
-  dashboardMockup: '/manus-storage/faultline_dashboard_mockup_456bb973.jpg',
-  macroIntel:      '/manus-storage/faultline_macro_intel_09b4c85d.jpg',
-  riskEngine:      '/manus-storage/faultline_risk_engine_fd070c61.jpg',
-  ctaAtmosphere:   '/manus-storage/faultline_cta_atmosphere_93bd4048.jpg',
-};
 
 const CYAN   = '#00E5FF';
 const GOLD   = '#FFAA00';
@@ -299,7 +290,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
 
   const handleLogin = useCallback(() => {
     track('sign_in_click', { source: 'product_experience' });
-    window.location.href = getLoginUrl();
+    navigateToLogin();
   }, []);
 
   const handlePricingInterest = useCallback((planName: string) => {
@@ -484,9 +475,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           padding: '80px clamp(16px,5vw,80px)',
           position: 'relative',
-          backgroundImage: `url(${ASSETS.heroBg})`,
-          backgroundSize: 'cover', backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
+          background: 'radial-gradient(ellipse at 20% 20%, rgba(0,229,255,0.12), transparent 55%), #050810',
         }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,8,16,0.7) 0%, rgba(5,8,16,0.5) 50%, rgba(5,8,16,0.9) 100%)' }} />
 
@@ -923,9 +912,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: 'clamp(60px,8vw,120px) clamp(20px,5vw,80px)',
         position: 'relative',
-        backgroundImage: `url(${ASSETS.ctaAtmosphere})`,
-        backgroundSize: 'cover', backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
+        background: 'radial-gradient(ellipse at 50% 40%, rgba(0,229,255,0.10), transparent 55%), #050810',
         textAlign: 'center',
       }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,8,16,0.8), rgba(5,8,16,0.6), rgba(5,8,16,0.9))' }} />

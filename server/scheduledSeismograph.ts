@@ -40,6 +40,14 @@ import { invalidateCanonicalMarketStateCache } from "./marketStateCache";
 import { collectBroadInstitutionalEventOutcomes, recordDailyMarketEvidence } from "./institutionalMemory";
 import { collectForwardChampionOutcomes, recordForwardChampionProvenance } from "./algorithmProvenance";
 import { buildAtomicIntelligenceStateManifest, persistAtomicIntelligenceStateManifest } from "./intelligenceGovernance";
+
+function mapPressureLevelToSeismographStress(level: string | null | undefined): SeismographOutput["stressLevel"] {
+  if (level === "Critical" || level === "Crisis") return "Crisis";
+  if (level === "High") return "High";
+  if (level === "Elevated") return "Elevated";
+  if (level === "Moderate") return "Moderate";
+  return "Low";
+}
 import { getAuthoritativeCrossEngineSynthesis, persistCrossEngineSynthesis } from "./crossEngineSynthesis";
 import { evaluateAndPersistCandidateDetections } from "./candidateDetection";
 import { evaluateAndPersistImportanceQualification } from "./importanceQualification";
@@ -149,7 +157,12 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
     stressLevel: seismographOutput.stressLevel,
     direction: seismographOutput.direction,
     dataFreshness: seismographOutput.dataFreshness ?? "unknown",
-    probabilities: seismographOutput.regimeProbabilities,
+    probabilities: {
+      bull: seismographOutput.probabilities.bull,
+      neutral: seismographOutput.probabilities.neutral,
+      bear: seismographOutput.probabilities.bear,
+      confidence: seismographOutput.probabilities.confidence,
+    },
     sourceState: {
       activeContributors: seismographOutput.activeContributors,
       evidenceConsensus: seismographOutput.evidenceConsensus,
@@ -326,7 +339,7 @@ export function buildStateForAssembly(
   return {
     pressureScore,
     regime,
-    stressLevel: pressure.level,
+    stressLevel: mapPressureLevelToSeismographStress(pressure.level),
     direction,
     historicalPercentile,
     analogMatches,

@@ -165,7 +165,7 @@ export default function MarketSynthesisPanel({
   const synthesis = getSynthesis(
     context,
     canonicalRiskLevel,
-    canonicalState.regime,
+    canonicalState.regime ?? "Unavailable",
     probability.bullProbability,
     probability.crashProbability,
     narrative.keyRisks ?? [],
@@ -205,7 +205,7 @@ export default function MarketSynthesisPanel({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
           <SentimentIcon size={12} color={pressureColor} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{formatCanonicalScore(canonicalState.pressureIndex)}</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{formatCanonicalScore(canonicalState.pressureIndex ?? 0)}</span>
         </div>
       </div>
 

@@ -1,6 +1,13 @@
 /**
  * Decision Ledger Evaluation Engine
  *
+ * Intelligence Contract v2 (NOT implemented): approved stages REALITY → CAUSATION →
+ * CONSEQUENCE → VERIFICATION → ACTION must eventually be stored and evaluated here.
+ * Each stage requires confidence+basis, assumptions, supporting evidence,
+ * mandatory “What Would Change My Mind?”, and confirmation/invalidation triggers.
+ * Missing evidence must stay missing — do not invent scores or triggers.
+ * Scope: docs/FAULTLINE_INTELLIGENCE_CONTRACT_V2_SCOPE.md
+ *
  * Automatically evaluates expired Decision Ledger recommendations against
  * subsequent market data. Uses conservative scoring — never marks outcomes
  * as guaranteed. Preserves user-driven review by only auto-evaluating entries

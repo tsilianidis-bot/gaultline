@@ -7,8 +7,8 @@
  *   3. History Says — percentile, analogs, streak, probabilities, confidence, sample size
  *
  * All data is sourced from the `pressure.getHomepageBriefing` tRPC procedure,
- * which computes everything from the live pressure engine + pressureHistory DB.
- * No hardcoded values.
+ * which binds CURRENT readings to the canonical intelligence state.
+ * Missing evidence is shown as UNAVAILABLE — never invented.
  */
 
 import { trpc } from "@/lib/trpc";
@@ -108,10 +108,49 @@ export default function HomepageBriefingPanel() {
   }
 
   if (error || !data) {
-    return null; // Fail silently — existing MarketSynthesisPanel still renders below
+    return (
+      <div style={{
+        background: "rgba(12,15,22,0.95)",
+        border: "1px solid rgba(100,116,139,0.35)",
+        borderLeft: "3px solid #64748B",
+        borderRadius: "6px",
+        padding: "16px",
+        marginBottom: "10px",
+      }}>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8", letterSpacing: "0.18em", textTransform: "uppercase" }}>
+          UNAVAILABLE — CURRENT briefing could not be loaded
+        </span>
+      </div>
+    );
+  }
+
+  if (data.availability === "UNAVAILABLE") {
+    return (
+      <div style={{
+        background: "rgba(12,15,22,0.95)",
+        border: "1px solid rgba(100,116,139,0.35)",
+        borderLeft: "3px solid #64748B",
+        borderRadius: "6px",
+        padding: "16px",
+        marginBottom: "10px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+          <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#64748B" }} />
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8", letterSpacing: "0.18em", textTransform: "uppercase", fontWeight: 600 }}>
+            UNAVAILABLE — GRAY
+          </span>
+        </div>
+        <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "#CBD5E1", lineHeight: 1.65, margin: 0 }}>
+          {data.marketStory}
+        </p>
+      </div>
+    );
   }
 
   const { marketStory, whyTodayIsDifferent, historySays, metrics, timeline } = data;
+  const pressureValue = metrics.pressureIndex.current;
+  const bullValue = metrics.bullProbability;
+  const crashValue = metrics.crashProbability;
 
   return (
     <div style={{ marginBottom: "10px", animation: "cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) both" }}>
@@ -134,7 +173,7 @@ export default function HomepageBriefingPanel() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#475569", letterSpacing: "0.08em" }}>
-              {new Date(data.computedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · {data.dataSource === "live" ? "LIVE DATA" : "CACHED"}
+              {new Date(data.computedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · CANONICAL{data.canonicalStateId ? ` · ${data.canonicalStateId}` : ""}
             </span>
             <button
               onClick={() => navigate("/app/pressure?tab=context")}
@@ -170,10 +209,10 @@ export default function HomepageBriefingPanel() {
         {/* Metric strip */}
         <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           {[
-            { label: "PRESSURE", value: `${metrics.pressureIndex.current}/100`, color: metrics.pressureIndex.current >= 65 ? "#FF2D55" : metrics.pressureIndex.current >= 45 ? "#FF9500" : "#00FF88" },
-            { label: "REGIME", value: metrics.regime, color: "#00E5FF" },
-            { label: "BULL PROB", value: `${metrics.bullProbability}%`, color: "#00FF88" },
-            { label: "BEAR PROB", value: `${metrics.bearProbability}%`, color: "#FF2D55" },
+            { label: "PRESSURE", value: pressureValue !== null ? `${pressureValue}/100` : "UNAVAILABLE", color: pressureValue == null ? "#64748B" : pressureValue >= 65 ? "#FF2D55" : pressureValue >= 45 ? "#FF9500" : "#00FF88" },
+            { label: "REGIME", value: metrics.regime ?? "UNAVAILABLE", color: "#00E5FF" },
+            { label: "BULL CONTINUATION", value: bullValue !== null ? `${bullValue}%` : "UNAVAILABLE", color: "#00FF88" },
+            { label: "CRASH / DRAWDOWN", value: crashValue !== null ? `${crashValue}%` : "UNAVAILABLE", color: "#FF2D55" },
           ].map(m => (
             <div key={m.label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>{m.label}</span>
@@ -215,7 +254,7 @@ export default function HomepageBriefingPanel() {
               whyTodayIsDifferent.pressureDelta,
               whyTodayIsDifferent.regimeDelta,
               whyTodayIsDifferent.bullProbDelta,
-              whyTodayIsDifferent.bearProbDelta,
+              whyTodayIsDifferent.crashProbDelta,
               whyTodayIsDifferent.biggestImproving,
               whyTodayIsDifferent.biggestDeteriorating,
             ].filter(Boolean).map((card, i) => {

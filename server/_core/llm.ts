@@ -222,19 +222,42 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+const gatewayBaseUrl = () => {
+  assertGatewayConfig();
+  return ENV.forgeApiUrl.trim().replace(/\/$/, "");
+};
 
-const resolveModelsApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/models`
-    : "https://forge.manus.im/v1/models";
+const usesGeminiOpenAiCompatPath = (base: string): boolean => {
+  if (base.endsWith("/openai")) {
+    return true;
+  }
+  try {
+    return new URL(base).hostname === "generativelanguage.googleapis.com";
+  } catch {
+    return false;
+  }
+};
 
-const assertApiKey = () => {
+const resolveApiUrl = () => {
+  const base = gatewayBaseUrl();
+  return usesGeminiOpenAiCompatPath(base)
+    ? `${base}/chat/completions`
+    : `${base}/v1/chat/completions`;
+};
+
+const resolveModelsApiUrl = () => {
+  const base = gatewayBaseUrl();
+  return usesGeminiOpenAiCompatPath(base)
+    ? `${base}/models`
+    : `${base}/v1/models`;
+};
+
+const assertGatewayConfig = () => {
   if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+    throw new Error("BUILT_IN_FORGE_API_KEY is not configured");
+  }
+  if (!ENV.forgeApiUrl || ENV.forgeApiUrl.trim().length === 0) {
+    throw new Error("BUILT_IN_FORGE_API_URL is not configured");
   }
 };
 
@@ -284,7 +307,7 @@ const normalizeResponseFormat = ({
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+  assertGatewayConfig();
 
   const {
     model,
@@ -350,7 +373,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 }
 
 export async function listLLMModels(): Promise<ListLLMModelsResult> {
-  assertApiKey();
+  assertGatewayConfig();
 
   const response = await fetch(resolveModelsApiUrl(), {
     headers: {

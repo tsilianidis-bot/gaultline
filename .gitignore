@@ -7,12 +7,25 @@ dist/
 build/
 *.dist
 
-# Environment variables
+# Secrets and credentials — never commit real values
+.project-config.json
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx
+*.p8
+id_rsa
+id_ed25519
+.secrets
+secrets.json
+**/credentials.json
+**/*service-account*.json
 
 # IDE and editor files
 .vscode/
@@ -111,4 +124,3 @@ temp/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
-.project-config.json

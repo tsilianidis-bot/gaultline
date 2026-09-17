@@ -474,17 +474,21 @@ function CollapsiblePanel({
 // ── Main component ────────────────────────────────────────────
 export default function SituationRoom() {
   useSEO(PAGE_SEO.situationRoom);
-  const { output } = useEngine();
+  const { marketState, canonicalState, marketMode, sourceHealth } = useEngine();
+  const evidenceAvailable =
+    Boolean(canonicalState) &&
+    canonicalState?.confidenceOrEvidenceQuality !== "UNAVAILABLE" &&
+    marketMode === "canonical";
 
   // Register ASHA page context — memoized to prevent infinite render loop
   const ashaCtx = useMemo(() => ({
     page: "situation-room" as const,
-    pressureScore: output?.overall?.score !== undefined ? output.overall.score * 10 : undefined,
-    regime: output?.regime?.label,
-    narrative: output?.narrative?.summary,
-    keyDrivers: output?.narrative?.keyRisks,
+    pressureScore: evidenceAvailable ? (canonicalState?.pressureIndex ?? undefined) : undefined,
+    regime: evidenceAvailable ? (canonicalState?.regime ?? undefined) : undefined,
+    narrative: evidenceAvailable ? marketState?.now.headline : "Canonical state unavailable. Situation Room withholds current market interpretation.",
+    keyDrivers: evidenceAvailable ? marketState?.now.topDrivers : ["UNAVAILABLE"],
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [output?.overall?.score, output?.regime?.label, output?.narrative?.summary]);
+  }), [evidenceAvailable, canonicalState?.pressureIndex, canonicalState?.regime, marketState?.now.headline, marketState?.now.topDrivers]);
   useRegisterAshaContext(ashaCtx);
 
   // URL param auto-execution (Smart Discovery dispatch)
@@ -628,12 +632,21 @@ export default function SituationRoom() {
 
   const result = simulate.data;
   const isLoading = simulate.isPending;
-  const pressureScore = Math.round(output.overall.score * 10);
-  const pColor = pressureColor(pressureScore);
-
-  // Derive market status from engine output (client-side, pre-simulation)
-  const clientMarketStatus = pressureScore >= 60 ? "Defensive" : pressureScore >= 40 ? "Caution" : "Cleared";
-  const msColor = condColor(clientMarketStatus);
+  const pressureScore = evidenceAvailable
+    ? (canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? null)
+    : null;
+  const pColor = pressureScore == null ? "#64748B" : pressureColor(pressureScore);
+  const bullProbability = evidenceAvailable
+    ? (marketState?.outlook.regimeProbabilities.bull ?? null)
+    : null;
+  const crashProbability = evidenceAvailable
+    ? (marketState?.outlook.regimeProbabilities.crash ?? null)
+    : null;
+  const regimeLabel = evidenceAvailable
+    ? (canonicalState?.regime ?? marketState?.now.regime ?? "UNAVAILABLE")
+    : "UNAVAILABLE";
+  const clientMarketStatus = evidenceAvailable ? (marketState?.now.stressLevel ?? "Canonical") : "UNAVAILABLE";
+  const msColor = evidenceAvailable ? condColor(pressureScore != null && pressureScore >= 60 ? "Defensive" : pressureScore != null && pressureScore >= 40 ? "Caution" : "Cleared") : "#64748B";
 
   return (
     <div style={{ background: "#050608", minHeight: "100vh", paddingBottom: "80px" }}>
@@ -684,13 +697,13 @@ export default function SituationRoom() {
             {/* Pressure index */}
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)", textTransform: "uppercase", letterSpacing: "0.12em" }}><FaultlineTerm id="pressure-index">Pressure</FaultlineTerm></span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "26px", color: pColor, textShadow: `0 0 16px ${pColor}70`, lineHeight: 1 }}>{pressureScore}</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "26px", color: pColor, textShadow: `0 0 16px ${pColor}70`, lineHeight: 1 }}>{pressureScore == null ? "—" : pressureScore}</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.45)" }}>/100</span>
             </div>
 
             {/* Regime */}
             <div style={{ padding: "3px 10px", background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: "3px" }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.1em" }}>{output.regime.label}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.1em" }}>{regimeLabel}</span>
             </div>
           </div>
 
@@ -699,28 +712,35 @@ export default function SituationRoom() {
             <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
               <TrendingUp size={13} color="#00FF88" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>Bull</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00FF88" }}>{output.probability.bullProbability}%</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#00FF88" }}>{bullProbability == null ? "UNAVAILABLE" : `${bullProbability}%`}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
               <TrendingDown size={13} color="#FF2D55" />
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.65)" }}>Drawdown</span>
-              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF2D55" }}>{output.probability.crashProbability}%</span>
+              <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#FF2D55" }}>{crashProbability == null ? "UNAVAILABLE" : `${crashProbability}%`}</span>
             </div>
           </div>
 
           {/* Score Explainers */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-            <ScoreExplainer scoreKey="pressureIndex" value={pressureScore} trend={pressureScore > 60 ? 'rising' : pressureScore < 40 ? 'falling' : 'stable'} historicalPercentile={pressureScore} compact />
-            <ScoreExplainer scoreKey="bullProbability" value={output.probability.bullProbability} trend="stable" compact />
-            <ScoreExplainer scoreKey="crashRisk" value={output.probability.crashProbability} trend="stable" compact />
+            {pressureScore != null ? (
+              <ScoreExplainer scoreKey="pressureIndex" value={pressureScore} trend={marketState?.now.direction === "Deteriorating" || marketState?.now.direction === "Accelerating" ? "rising" : marketState?.now.direction === "Improving" ? "falling" : "stable"} historicalPercentile={marketState?.now.historicalPercentile ?? pressureScore} compact />
+            ) : (
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#64748B" }}>Pressure Index UNAVAILABLE — withheld</div>
+            )}
+            {bullProbability != null ? <ScoreExplainer scoreKey="bullProbability" value={bullProbability} trend="stable" compact /> : null}
+            {crashProbability != null ? <ScoreExplainer scoreKey="crashRisk" value={crashProbability} trend="stable" compact /> : null}
           </div>
-          {/* Condition chips */}
+          {/* Condition chips — canonical evidence families only; never browser-computed current truth */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-            {output.domains.map(d => {
-              const chipLevel = d.riskLevel === "low" ? "Low" : d.riskLevel === "moderate" ? "Moderate" : d.riskLevel === "elevated" ? "Elevated" : "Critical";
-              const chipLabel = d.label.split(" ")[0];
-              return <MetricChip key={d.id} label={chipLabel} value={chipLevel} />;
-            })}
+            {evidenceAvailable && marketState?.why.evidenceFamilies.length
+              ? marketState.why.evidenceFamilies.map(family => (
+                  <MetricChip key={family.name} label={family.name.split(" ")[0]} value={family.signal} />
+                ))
+              : <MetricChip label="Evidence" value="UNAVAILABLE" />}
+            {sourceHealth.map(source => (
+              <MetricChip key={source.id} label={source.label} value={source.status} />
+            ))}
           </div>
         </div>
 
@@ -1068,25 +1088,17 @@ export default function SituationRoom() {
                 SECTION 1 — MARKET VERDICT (Large institutional label)
             ═══════════════════════════════════════════════════════ */}
             {(() => {
+              const light = result.decisionLight;
               const vt = result.verdict.verdict as VerdictType;
-              const vc = VERDICT_CONFIG[vt] ?? VERDICT_CONFIG.CAUTION;
-              // Map internal verdict to Phase 4 institutional labels
-              const institutionalLabel: Record<VerdictType, string> = {
-                HIGH_CONVICTION: "BUY",
-                APPROVED: "BUY",
-                CAUTION: "HOLD",
-                WAIT: "WAIT",
-                DEFENSIVE: "REDUCE",
+              const lightConfig: Record<string, { color: string; glow: string; borderColor: string }> = {
+                GREEN: { color: "#00FF88", glow: "rgba(0,255,136,0.08)", borderColor: "rgba(0,255,136,0.35)" },
+                YELLOW: { color: "#FFB020", glow: "rgba(255,176,32,0.08)", borderColor: "rgba(255,176,32,0.35)" },
+                RED: { color: "#FF2D55", glow: "rgba(255,45,85,0.08)", borderColor: "rgba(255,45,85,0.35)" },
+                GRAY: { color: "#94A3B8", glow: "rgba(148,163,184,0.08)", borderColor: "rgba(148,163,184,0.28)" },
               };
-              const institutionalSub: Record<VerdictType, string> = {
-                HIGH_CONVICTION: "High Conviction — Begin Accumulating",
-                APPROVED: "Conditions Favorable — Proceed with Sizing",
-                CAUTION: "Mixed Signals — Monitor and Size Conservatively",
-                WAIT: "Insufficient Confirmation — Wait for Setup",
-                DEFENSIVE: "Elevated Risk — Reduce Exposure",
-              };
-              const label = institutionalLabel[vt] ?? "HOLD";
-              const sub = institutionalSub[vt] ?? "";
+              const vc = (light ? lightConfig[light.decisionLight] : null) ?? VERDICT_CONFIG[vt] ?? VERDICT_CONFIG.CAUTION;
+              const label = light?.decisionLabel ?? "UNAVAILABLE";
+              const sub = light?.explanation ?? result.verdict.reason;
               const oppScore = Math.round(result.moveFavorabilityScore);
               const riskScore = Math.round(result.adversePressureProbability);
               return (
@@ -1106,7 +1118,7 @@ export default function SituationRoom() {
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
                     <div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: "6px" }}>
-                        MARKET VERDICT{result.ticker ? ` — ${result.ticker}` : ""}
+                        DECISION LIGHT{result.ticker ? ` — ${result.ticker}` : ""}{light?.canonicalStateId ? ` · ${light.canonicalStateId}` : ""}
                       </div>
                       <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "64px", lineHeight: 1, color: vc.color, letterSpacing: "-0.02em", textShadow: `0 0 40px ${vc.color}50` }}>
                         {label}

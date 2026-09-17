@@ -1,0 +1,11 @@
+# Fallback if the host uses Nixpacks instead of the Dockerfile.
+# Equivalent commands: install / build / start. PORT comes from the environment.
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm run build"]
+
+[start]
+cmd = "pnpm start"

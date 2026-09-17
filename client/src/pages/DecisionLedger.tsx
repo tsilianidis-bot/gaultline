@@ -3,6 +3,10 @@
  * Tracks every Ask Intelligence recommendation with verdict, confidence,
  * and outcome tracking. Supports manual user review AND automated evaluation
  * via the scheduled heartbeat engine.
+ *
+ * Intelligence Contract v2 (NOT implemented): future stage rows
+ * (REALITY → CAUSATION → CONSEQUENCE → VERIFICATION → ACTION) belong here.
+ * Do not invent scores or triggers. Scope: docs/FAULTLINE_INTELLIGENCE_CONTRACT_V2_SCOPE.md
  */
 import React, { useState } from "react";
 import { useLocation } from "wouter";

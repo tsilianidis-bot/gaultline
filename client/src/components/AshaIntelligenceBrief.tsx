@@ -309,7 +309,7 @@ export function AshaIntelligenceBrief({
       setLastFetched(Date.now());
       fetchedRef.current = true;
     } catch {
-      setError("Intelligence temporarily unavailable. Please refresh.");
+      setError("Interpretation temporarily unavailable. Please refresh.");
     } finally {
       setLoading(false);
     }

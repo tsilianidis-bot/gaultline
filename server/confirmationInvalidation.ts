@@ -192,7 +192,7 @@ export function evaluatePlan(input: Phase9EvaluationInput, thesis: WarningThesis
   else result = "CONFIRMATION_PENDING";
 
   const conditionEvaluationIds = [...confirmation, ...invalidation].map(item => item.evaluationId);
-  const evidenceClaimIds = [...new Set([...confirmation, ...invalidation].flatMap(item => item.evidenceClaimIds))];
+  const evidenceClaimIds = Array.from(new Set([...confirmation, ...invalidation].flatMap(item => item.evidenceClaimIds)));
   const planEvaluation: PlanEvaluation = {
     planEvaluationId: `p9pe:${stableId([plan.planId, input.qualification.qualificationId, input.qualification.originatingStateId])}`,
     planId: plan.planId,

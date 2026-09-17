@@ -9,7 +9,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { navigateToLogin } from "@/const";
 
 // ── Style constants ───────────────────────────────────────────
 const MONO = "'IBM Plex Mono', monospace";
@@ -446,7 +446,7 @@ export function CryptoPorchPanel() {
         color="#00D4FF"
         isLoggedIn={!!user}
         onUpgrade={() => navigate("/app/account")}
-        onLogin={() => { window.location.href = getLoginUrl(); }}
+        onLogin={() => { navigateToLogin(); }}
       />
     </div>
   );
@@ -680,7 +680,7 @@ export function StockPorchPanel() {
         color="#FF9500"
         isLoggedIn={!!user}
         onUpgrade={() => navigate("/app/account")}
-        onLogin={() => { window.location.href = getLoginUrl(); }}
+        onLogin={() => { navigateToLogin(); }}
       />
     </div>
   );

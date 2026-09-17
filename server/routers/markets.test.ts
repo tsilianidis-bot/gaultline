@@ -13,7 +13,34 @@ describe("canonical Global Markets snapshot", () => {
     const now = 1_000_000;
     expect(classifyFreshness({ price: 100, isDelayed: true, fetchedAt: now, provider: "yahoo", state: "REGULAR", now })).toBe("DELAYED");
     expect(classifyFreshness({ price: null, isDelayed: false, fetchedAt: now, provider: "yahoo", state: "REGULAR", now })).toBe("UNAVAILABLE");
+    expect(classifyFreshness({ price: Number.NaN, isDelayed: false, fetchedAt: now, provider: "yahoo", state: "REGULAR", now })).toBe("UNAVAILABLE");
     expect(classifyFreshness({ price: 100, isDelayed: false, fetchedAt: now - 13 * 60 * 1000, provider: "yahoo", state: "REGULAR", now })).toBe("STALE");
     expect(classifyFreshness({ price: 4.3, isDelayed: true, fetchedAt: now, provider: "fred", state: "CLOSED", now })).toBe("LATEST_VERIFIED");
+  });
+
+  it("does not treat a non-finite overlay print as mixed or live", () => {
+    expect(Number.isNaN(Number.NaN)).toBe(true);
+    expect(Number.NaN != null).toBe(true);
+    expect(classifyFreshness({
+      price: Number.NaN,
+      isDelayed: false,
+      fetchedAt: 1_000_000,
+      provider: "yahoo",
+      state: "REGULAR",
+      now: 1_000_000,
+    })).toBe("UNAVAILABLE");
+  });
+
+  it("treats a failed Yahoo ^GSPC observation as UNAVAILABLE, not a live zero", () => {
+    expect(GLOBAL_INSTRUMENTS.find(item => item.symbol === "^GSPC")?.provider).toBe("yahoo");
+    const now = 1_000_000;
+    expect(classifyFreshness({
+      price: null,
+      isDelayed: true,
+      fetchedAt: now,
+      provider: "yahoo",
+      state: "UNKNOWN",
+      now,
+    })).toBe("UNAVAILABLE");
   });
 });

@@ -2774,7 +2774,7 @@ export default function SmartDiscovery() {
           role: 'assistant',
           content: 'Institutional Daily Brief generated.',
           timestamp: Date.now(),
-          briefAnswer: briefResult as BriefAnswer,
+          briefAnswer: briefResult as unknown as BriefAnswer,
         };
         setConversation(prev => [...prev, briefMsg]);
         setIsExecuting(false);

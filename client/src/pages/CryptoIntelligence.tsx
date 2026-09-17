@@ -21,16 +21,19 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 // ── Colour helpers ────────────────────────────────────────────
 
 function signalColor(s: CryptoSignal) {
+  if (s === "UNAVAILABLE") return "text-slate-400";
   if (s === "Bullish") return "text-cyan-400";
   if (s === "Bearish") return "text-red-400";
   return "text-amber-400";
 }
 function signalBg(s: CryptoSignal) {
+  if (s === "UNAVAILABLE") return "bg-slate-500/15 border-slate-500/40 text-slate-300";
   if (s === "Bullish") return "bg-cyan-500/15 border-cyan-500/40 text-cyan-300";
   if (s === "Bearish") return "bg-red-500/15 border-red-500/40 text-red-300";
   return "bg-amber-500/15 border-amber-500/40 text-amber-300";
 }
 function riskColor(r: CryptoRisk) {
+  if (r === "UNAVAILABLE") return "text-slate-400";
   if (r === "Critical") return "text-red-400";
   if (r === "High")     return "text-orange-400";
   if (r === "Elevated") return "text-amber-400";
@@ -38,6 +41,7 @@ function riskColor(r: CryptoRisk) {
   return "text-emerald-400";
 }
 function riskBg(r: CryptoRisk) {
+  if (r === "UNAVAILABLE") return "bg-slate-500/15 border-slate-500/40 text-slate-300";
   if (r === "Critical") return "bg-red-500/15 border-red-500/40 text-red-300";
   if (r === "High")     return "bg-orange-500/15 border-orange-500/40 text-orange-300";
   if (r === "Elevated") return "bg-amber-500/15 border-amber-500/40 text-amber-300";
@@ -455,8 +459,8 @@ function CryptoIntelligenceInner() {
   // Register ASHA page context — memoized to prevent infinite render loop
   const ashaCtx = useMemo(() => ({
     page: "crypto" as const,
-    pressureScore: data?.pressureIndex,
-    regime: data?.regime,
+    pressureScore: data?.pressureIndex ?? undefined,
+    regime: data?.regime ?? undefined,
     keyDrivers: data?.signals?.slice(0, 3).map(s => `${s.ticker}: ${s.signal} (${s.signalScore})`),
     additionalContext: {
       btcSignal: data?.btcDashboard?.overallBtcBias,
@@ -467,13 +471,14 @@ function CryptoIntelligenceInner() {
   useRegisterAshaContext(ashaCtx);
 
   const pressureLabel = useMemo(() => {
-    const p = data?.pressureIndex ?? 0;
+    const p = data?.pressureIndex;
+    if (p == null || data?.availability === "UNAVAILABLE") return { label: "UNAVAILABLE", color: "text-slate-400" };
     if (p >= 80) return { label: "CRITICAL", color: "text-red-400" };
     if (p >= 65) return { label: "HIGH STRESS", color: "text-orange-400" };
     if (p >= 45) return { label: "ELEVATED", color: "text-amber-400" };
     if (p >= 25) return { label: "MODERATE", color: "text-yellow-400" };
     return { label: "LOW", color: "text-emerald-400" };
-  }, [data?.pressureIndex]);
+  }, [data?.pressureIndex, data?.availability]);
 
   return (
     <div className="min-h-screen bg-[#080c14] text-white">
@@ -524,14 +529,15 @@ function CryptoIntelligenceInner() {
           {data && (
             <div className="flex items-center gap-4 text-xs font-mono">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className={`w-2 h-2 rounded-full ${data.availability === "UNAVAILABLE" ? "bg-slate-500" : "bg-cyan-400 animate-pulse"}`} />
                 <span className="text-slate-400">FAULTLINE PRESSURE</span>
                 <span className={`font-bold ${pressureLabel.color}`}>
-                  {data.pressureIndex.toFixed(0)}/100 — {pressureLabel.label}
+                  {data.pressureIndex == null ? "UNAVAILABLE" : `${data.pressureIndex.toFixed(0)}/100`} — {pressureLabel.label}
                 </span>
               </div>
               <span className="text-slate-600">|</span>
-              <span className="text-slate-500">REGIME: <span className="text-slate-300">{data.regime}</span></span>
+              <span className="text-slate-500">REGIME: <span className="text-slate-300">{data.regime ?? "UNAVAILABLE"}</span></span>
+              {data.canonicalStateId && <span className="text-slate-600">{data.canonicalStateId}</span>}
               {data.cached && <span className="text-slate-600">CACHED</span>}
             </div>
           )}
@@ -540,6 +546,17 @@ function CryptoIntelligenceInner() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-16">
 
+        {data?.availability === "UNAVAILABLE" && (
+          <div className="rounded-2xl border border-slate-500/40 bg-slate-500/10 p-6">
+            <div className="text-xs font-mono text-slate-400 tracking-[0.18em] uppercase mb-2">UNAVAILABLE — GRAY</div>
+            <p className="text-sm text-slate-300">
+              CURRENT crypto intelligence is withheld. No canonical market state is bound, so signals, cycle phase, and portfolio guidance are not manufactured from a live pressure recalc.
+            </p>
+          </div>
+        )}
+
+        {data?.availability !== "UNAVAILABLE" && (
+        <>
         {/* ── BLOCK 1: Crypto Market Signals ── */}
         <section>
           <div className="flex items-center justify-between mb-6">
@@ -854,6 +871,9 @@ function CryptoIntelligenceInner() {
         <section className="mb-8">
           <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="crypto-brief" /></SectionErrorBoundary>
         </section>
+
+        </>
+        )}
 
         {/* ── CTA ── */}
         <section className="relative overflow-hidden rounded-2xl border border-cyan-500/20 bg-gradient-to-br from-cyan-500/8 via-transparent to-orange-500/5 p-8 text-center">

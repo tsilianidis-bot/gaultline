@@ -252,12 +252,16 @@ export interface UnifiedSeismographIntelligence {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function regimeToStressLevel(regime: string): "Low" | "Elevated" | "High" | "Crisis" {
-  const r = regime.toUpperCase();
-  if (r.includes("CRITICAL") || r.includes("CRISIS")) return "Crisis";
-  if (r.includes("HIGH")) return "High";
-  if (r.includes("ELEVATED")) return "Elevated";
+function mapToUnifiedStressLevel(level: string | null | undefined): "Low" | "Elevated" | "High" | "Crisis" {
+  const normalized = (level ?? "").toUpperCase();
+  if (normalized.includes("CRISIS") || normalized.includes("CRITICAL")) return "Crisis";
+  if (normalized.includes("HIGH")) return "High";
+  if (normalized.includes("ELEVATED") || normalized.includes("MODERATE")) return "Elevated";
   return "Low";
+}
+
+function regimeToStressLevel(regime: string): "Low" | "Elevated" | "High" | "Crisis" {
+  return mapToUnifiedStressLevel(regime);
 }
 
 function scoreToStressLevel(score: number): "Low" | "Elevated" | "High" | "Crisis" {
@@ -419,7 +423,9 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   // Prefer the latest assembled output (live run) if available, fall back to pressureHistory
   const currentScore = latestAssembled?.pressureScore ?? latest.score;
   const currentRegime = latestAssembled?.regime ?? latest.regime;
-  const currentStressLevel = latestAssembled?.stressLevel ?? scoreToStressLevel(currentScore);
+  const currentStressLevel = latestAssembled?.stressLevel
+    ? mapToUnifiedStressLevel(latestAssembled.stressLevel)
+    : scoreToStressLevel(currentScore);
   const currentDirection = latestAssembled?.direction ?? "Stable";
 
   // Historical percentile

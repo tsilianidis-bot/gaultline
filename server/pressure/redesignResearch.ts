@@ -86,8 +86,9 @@ export const REDESIGN_EVALUATION_GATES: readonly ResearchEvaluationGate[] = [
  */
 export function scoreCompleteResearchFeature(state: IndicatorFeatureState): number | null {
   const values = [state.level, state.direction, state.velocity, state.acceleration, state.persistence, state.historicalPercentile];
-  if (!state.sourceComplete || values.some(value => value == null || !Number.isFinite(value))) return null;
-  return Math.round(values.reduce((total, value) => total + (value as number), 0) / values.length);
+  const numeric = values.filter((value): value is number => value != null && Number.isFinite(value));
+  if (!state.sourceComplete || numeric.length !== values.length) return null;
+  return Math.round(numeric.reduce((total, value) => total + value, 0) / numeric.length);
 }
 
 /** An independent-confirmation count, not an uncontrolled amplification factor. */

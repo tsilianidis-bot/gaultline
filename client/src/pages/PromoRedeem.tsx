@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import { navigateToLogin } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -84,7 +84,7 @@ export default function PromoRedeem() {
       // Redirect to login, return here after
       // Store return path and redirect to login
       sessionStorage.setItem("promoReturnCode", upperCode);
-      window.location.href = getLoginUrl();
+      navigateToLogin();
       return;
     }
     setState("redeeming");
