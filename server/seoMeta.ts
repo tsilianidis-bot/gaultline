@@ -204,7 +204,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/pricing": {
     title: "FAULTLINE Pricing — Free, Pro & Founding Member Plans",
-    description: "FAULTLINE pricing plans: Free access to the Pressure Index, Pro at $59/month for full intelligence, and Founding Lifetime membership at $299 one-time. Limited founding cohort.",
+    description: "FAULTLINE pricing plans: Free market awareness, Trader at $59/month, Power at $99/month, and Founding Member at $49/month locked while active.",
   },
   "/intelligence-library": {
     title: "Intelligence Library — FAULTLINE Research & Analysis",

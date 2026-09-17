@@ -633,7 +633,7 @@ export default function About() {
                   letterSpacing: "0.1em",
                 }}
               >
-                RICHARD ROPER
+                JT
               </div>
               <div
                 style={{
