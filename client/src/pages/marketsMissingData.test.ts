@@ -114,13 +114,13 @@ describe("rutVersusSpxSpread", () => {
 
   it("calculates the spread only when both observations are valid and comparable", () => {
     expect(rutVersusSpxSpread(
-      { changePercent: 1.2, freshnessState: "LIVE" },
-      { changePercent: 0.4, freshnessState: "LIVE" },
-    )).toEqual({ status: "ok", value: 0.8 });
+      { changePercent: 1.25, freshnessState: "LIVE" },
+      { changePercent: 0.25, freshnessState: "LIVE" },
+    )).toEqual({ status: "ok", value: 1 });
     expect(rutVersusSpxSpread(
-      { changePercent: -1.1, freshnessState: "DELAYED" },
-      { changePercent: 0.4, freshnessState: "LIVE" },
-    )).toEqual({ status: "ok", value: -1.5 });
+      { changePercent: -1.5, freshnessState: "DELAYED" },
+      { changePercent: 0.5, freshnessState: "LIVE" },
+    )).toEqual({ status: "ok", value: -2 });
   });
 
   it("preserves genuine zeros on either side of the spread", () => {
