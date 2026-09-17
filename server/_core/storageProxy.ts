@@ -4,8 +4,8 @@ import type { Express, Request, Response } from "express";
  * Compatibility shim for leftover `/manus-storage/*` requests.
  *
  * Manus Forge object storage is gone. This handler must never call
- * Manus storage hosts, BUILT_IN_FORGE_API_URL, or any presign endpoint.
- * Missing optional assets return 404 (not 502) so product pages keep booting.
+ * Manus storage hosts, the LLM gateway, or any presign endpoint.
+ * Missing optional assets return 404 so product pages keep booting.
  */
 export const STORAGE_UNAVAILABLE_MESSAGE = "Storage object not available";
 

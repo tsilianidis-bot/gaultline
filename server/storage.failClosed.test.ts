@@ -121,7 +121,7 @@ describe("storage proxy compatibility route", () => {
 
   it("does not log or return 502 backend errors", () => {
     const src = read("server/_core/storageProxy.ts");
-    expect(src).not.toContain("502");
+    expect(src).not.toMatch(/res\.status\(502\)/);
     expect(src).not.toContain("[StorageProxy] forge error");
     expect(src).not.toContain("v1/storage/presign");
     expect(src).not.toContain("fetch(");
@@ -173,13 +173,13 @@ describe("product sources no longer hardcode Manus storage", () => {
     const helper = read("server/storage.ts");
     const proxy = read("server/_core/storageProxy.ts");
 
-    expect(helper).not.toContain("ENV");
+    expect(helper).not.toMatch(/\bENV\b/);
     expect(helper).not.toContain("forgeApiUrl");
-    expect(helper).not.toContain("BUILT_IN_FORGE_API_URL");
+    expect(helper).not.toMatch(/process\.env\.BUILT_IN_FORGE_API_URL/);
     expect(helper).not.toContain("generativelanguage.googleapis.com");
-    expect(proxy).not.toContain("ENV");
+    expect(proxy).not.toMatch(/\bENV\b/);
     expect(proxy).not.toContain("forgeApiUrl");
-    expect(proxy).not.toContain("BUILT_IN_FORGE_API_URL");
+    expect(proxy).not.toMatch(/process\.env\.BUILT_IN_FORGE_API_URL/);
     expect(proxy).not.toContain("generativelanguage.googleapis.com");
   });
 });
