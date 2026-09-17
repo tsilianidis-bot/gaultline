@@ -54,8 +54,17 @@ function mockResponse() {
   return { res, state };
 }
 
+const ORIGINAL_FORGE = {
+  BUILT_IN_FORGE_API_URL: process.env.BUILT_IN_FORGE_API_URL,
+  BUILT_IN_FORGE_API_KEY: process.env.BUILT_IN_FORGE_API_KEY,
+};
+
 afterEach(() => {
   vi.unstubAllGlobals();
+  for (const [key, value] of Object.entries(ORIGINAL_FORGE)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
 });
 
 describe("storage helpers fail closed", () => {
@@ -91,7 +100,10 @@ describe("storage helpers fail closed", () => {
 });
 
 describe("storage proxy compatibility route", () => {
-  it("returns 404 without fetching Forge even when forge env is present", () => {
+  it("returns 404 without fetching Forge or Gemini even when forge env is present", () => {
+    process.env.BUILT_IN_FORGE_API_URL =
+      "https://generativelanguage.googleapis.com/v1beta/openai";
+    process.env.BUILT_IN_FORGE_API_KEY = "test-gemini-key";
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     const { res, state } = mockResponse();
@@ -155,5 +167,19 @@ describe("product sources no longer hardcode Manus storage", () => {
       expect(source, file).not.toContain("v1/storage/presign");
       expect(source, file).not.toMatch(/https?:\/\/forge\.manus\.im/);
     }
+  });
+
+  it("decouples object storage from the LLM forge / Gemini chat URL", () => {
+    const helper = read("server/storage.ts");
+    const proxy = read("server/_core/storageProxy.ts");
+
+    expect(helper).not.toContain("ENV");
+    expect(helper).not.toContain("forgeApiUrl");
+    expect(helper).not.toContain("BUILT_IN_FORGE_API_URL");
+    expect(helper).not.toContain("generativelanguage.googleapis.com");
+    expect(proxy).not.toContain("ENV");
+    expect(proxy).not.toContain("forgeApiUrl");
+    expect(proxy).not.toContain("BUILT_IN_FORGE_API_URL");
+    expect(proxy).not.toContain("generativelanguage.googleapis.com");
   });
 });
