@@ -1,9 +1,9 @@
 /**
- * FAULTLINE — ASHA Intelligence Center
+ * FAULTLINE — PLATO Intelligence Center
  * Route: /app/asha-intelligence
  *
  * The memory and reasoning center of FAULTLINE.
- * Shows ASHA's ongoing market observations, session context,
+ * Shows PLATO's ongoing market observations, session context,
  * conversation history, and follow-up intelligence.
  * This is not a chat inbox. It is the record of an ongoing
  * relationship with market intelligence.
@@ -495,7 +495,7 @@ export default function AshaIntelligenceCenter() {
           )}
         </IntelCard>
 
-        {/* ── Follow-up Questions Suggested by ASHA ── */}
+        {/* ── Follow-up Questions Suggested by PLATO ── */}
         <IntelCard accent="#00E5FF">
           <SectionLabel text="Follow-up Questions Suggested by PLATO" />
           {loadingFollowUps ? (
