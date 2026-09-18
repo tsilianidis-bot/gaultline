@@ -869,7 +869,7 @@ function CryptoIntelligenceInner() {
 
         {/* ASHA Crypto Risk Brief */}
         <section className="mb-8">
-          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="crypto-brief" /></SectionErrorBoundary>
+          <SectionErrorBoundary label="PLATO Intelligence"><AshaIntelligenceBrief variant="crypto-brief" /></SectionErrorBoundary>
         </section>
 
         </>

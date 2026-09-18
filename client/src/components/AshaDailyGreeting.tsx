@@ -123,7 +123,7 @@ export default function AshaDailyGreeting() {
             textTransform: "uppercase",
             fontWeight: 700,
           }}>
-            ASHA · DAILY BRIEFING
+            PLATO · DAILY BRIEFING
           </span>
           {/* Pressure status pill */}
           <span style={{

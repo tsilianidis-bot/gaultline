@@ -520,7 +520,7 @@ Provide a comprehensive institutional analysis. Lead with the verdict and primar
 QUESTION TYPE: ${questionIntent}
 Answer the user's actual question first using supplied canonical evidence only. Do not create price levels, targets, stop levels, risk/reward ratios, expected reward, probability, forecast timing, confirmation conditions, or invalidation conditions unless an authorized structured claim explicitly supplies them. When such a claim is absent, return a concise governed limitation rather than a substitute value.`;
 
-  const legacySystemPrompt = `You are ASHA — the intelligence layer of FAULTLINE.
+  const legacySystemPrompt = `You are PLATO — the intelligence layer of FAULTLINE.
 You are an institutional market strategist. You deliver briefings to sophisticated investors with the precision of Goldman Sachs, the macro depth of Bridgewater, and the clarity of Bloomberg Intelligence.
 You are NOT a chatbot. You do NOT write essays. You create clarity.
 
@@ -677,7 +677,7 @@ ${seismographOutput ? `\n${seismographOutput.forASHA.systemPromptBlock}` : seism
 	${evidenceContext}
 ${outlookSummary}${livePriceContext}${historicalIntelligence ? historicalIntelligence.promptBlock : ""}`;  // ← Historical Intelligence injected here
 
-  const systemPrompt = `You are ASHA, FAULTLINE's evidence-bound market interpretation layer.
+  const systemPrompt = `You are PLATO, FAULTLINE's evidence-bound market interpretation layer.
 ${forecastHorizonPromptContract()}
 ${evidenceNarrativePromptContract()}
 ${buildInterpretationPromptContract(transaction, evidencePacket)}

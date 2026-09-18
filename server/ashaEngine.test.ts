@@ -43,9 +43,16 @@ describe("ASHA Phase 4 canonical evidence integration", () => {
     gatewayMocks.invokeGateway.mockResolvedValue({ response: llmResult(JSON.stringify({ reply: "The supplied evidence is limited." })), trace: modelTrace });
     const response = await askAsha({ userMessage: "What is happening?", history: [], pageContext: { page: "/app/now" } });
     expect(gatewayMocks.invokeGateway).toHaveBeenCalledWith(expect.objectContaining({
-      messages: expect.arrayContaining([expect.objectContaining({ role: "system", content: expect.stringContaining("PHASE 4 INTERPRETATION CONTRACT") })]),
+      messages: expect.arrayContaining([expect.objectContaining({
+        role: "system",
+        content: expect.stringMatching(/You are PLATO, the Spirit of FAULTLINE[\s\S]*PHASE 4 INTERPRETATION CONTRACT/),
+      })]),
       response_format: expect.objectContaining({ type: "json_schema" }),
     }));
+    const systemContent = gatewayMocks.invokeGateway.mock.calls[0][0].messages.find((message: { role: string }) => message.role === "system").content as string;
+    expect(systemContent).toContain("Your name is PLATO.");
+    expect(systemContent).not.toContain("You are ASHA");
+    expect(systemContent).not.toContain("Your name is ASHA");
     expect(response.integrity.transaction.contractVersion).toBe("phase4-interpretation-integrity-v1");
     expect(response.provenance).toBe(provenance);
     expect(response.modelTrace).toBe(modelTrace);

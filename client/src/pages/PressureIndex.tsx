@@ -474,7 +474,7 @@ export default function PressureIndex() {
 
           {/* ASHA Pressure Brief */}
           <div className="mb-12">
-            <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="pressure-brief" /></SectionErrorBoundary>
+            <SectionErrorBoundary label="PLATO Intelligence"><AshaIntelligenceBrief variant="pressure-brief" /></SectionErrorBoundary>
           </div>
 
           {/* CTA section */}

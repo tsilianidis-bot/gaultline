@@ -341,7 +341,7 @@ export function OnboardingVideoModal() {
                 lineHeight: 1.6,
                 marginBottom: "22px",
               }}>
-                This video explains how FAULTLINE works — the Seismograph, Pressure Index, regime probabilities, and ASHA. Skipping is not recommended for new users.
+                This video explains how FAULTLINE works — the Seismograph, Pressure Index, regime probabilities, and PLATO. Skipping is not recommended for new users.
               </div>
               <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
                 <button

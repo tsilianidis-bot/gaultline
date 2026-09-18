@@ -1264,7 +1264,7 @@ export default function SeismographIntelligence() {
             ASHA SEISMIC REPORT
         ══════════════════════════════════════════════════════ */}
         <div style={{ marginBottom: "24px", opacity: loadPhase >= 7 ? 1 : 0, transition: "opacity 0.5s ease-out 0.65s" }}>
-          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="seismic-report" /></SectionErrorBoundary>
+          <SectionErrorBoundary label="PLATO Intelligence"><AshaIntelligenceBrief variant="seismic-report" /></SectionErrorBoundary>
         </div>
 
         {/* ── ASK PLATO ── */}

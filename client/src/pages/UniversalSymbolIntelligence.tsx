@@ -904,7 +904,7 @@ function UniversalSymbolIntelligence() {
             )}
             {/* ASHA Symbol Interpretation */}
             <div style={{ marginBottom: '20px' }}>
-              <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="symbol-interpretation" /></SectionErrorBoundary>
+              <SectionErrorBoundary label="PLATO Intelligence"><AshaIntelligenceBrief variant="symbol-interpretation" /></SectionErrorBoundary>
             </div>
 
             {/* Tab content */}

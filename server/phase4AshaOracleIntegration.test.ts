@@ -23,7 +23,7 @@ describe("Phase 4 ASHA / Oracle integration boundaries", () => {
     expect(source).toContain("buildInterpretationPromptContract(transaction, evidencePacket)");
     expect(source).toContain("validateInterpretationOutput(raw, transaction)");
     expect(source).toContain("withheldClaimReasons: integrity.validation.withheldClaimReasons");
-    expect(source).toContain("const systemPrompt = `You are ASHA, FAULTLINE's evidence-bound market interpretation layer.");
+    expect(source).toContain("const systemPrompt = `You are PLATO, FAULTLINE's evidence-bound market interpretation layer.");
     expect(source).not.toContain("const systemPrompt = `${legacySystemPrompt}");
     expect(source).toContain("function resolveAnswerFormat");
     expect(source).toContain("Response format: ${answerFormat}");

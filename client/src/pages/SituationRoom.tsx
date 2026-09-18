@@ -666,7 +666,7 @@ export default function SituationRoom() {
 
         {/* ASHA Command Narrator */}
         <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 60ms both' }}>
-          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="command-narrator" /></SectionErrorBoundary>
+          <SectionErrorBoundary label="PLATO Intelligence"><AshaIntelligenceBrief variant="command-narrator" /></SectionErrorBoundary>
         </div>
 
         {/* ══════════════════════════════════════════════════════
