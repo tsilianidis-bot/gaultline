@@ -492,10 +492,10 @@ export default function Why() {
           {marketState?.warnings.length ? <div className="mt-4 rounded-sm border border-amber-300/15 bg-amber-300/[0.03] p-5"><p className="font-mono text-[9px] uppercase tracking-[0.13em] text-amber-300/75">Warnings</p>{marketState.warnings.map(warning => <p key={warning} className="mt-2 text-sm leading-6 text-slate-400">{warning}</p>)}</div> : null}
         </Section>
 
-        <Section id="asha" index="09" eyebrow="ASHA" title="Continue the causal analysis with ASHA" description="Open the advisor with the same destination and canonical market context so the conversation begins from the evidence already on screen.">
+        <Section id="asha" index="09" eyebrow="PLATO" title="Continue the causal analysis with PLATO" description="Open the advisor with the same destination and canonical market context so the conversation begins from the evidence already on screen.">
           <div className="rounded-sm border border-cyan-300/20 bg-cyan-300/[0.035] p-6 md:flex md:items-center md:justify-between md:gap-8">
-            <div className="flex gap-4"><BrainCircuit size={24} className="shrink-0 text-cyan-300" /><div><p className="font-['Rajdhani'] text-xl font-semibold text-white">Ask what is driving the current regime</p><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">ASHA can trace one driver, compare evidence families, or challenge the invalidation thesis without changing the canonical source.</p></div></div>
-            <Link href={`${ashaPath}?from=why`} className="mt-5 inline-flex shrink-0 items-center gap-2 rounded-sm border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.13em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.97] md:mt-0">Open ASHA <ArrowRight size={13} /></Link>
+            <div className="flex gap-4"><BrainCircuit size={24} className="shrink-0 text-cyan-300" /><div><p className="font-['Rajdhani'] text-xl font-semibold text-white">Ask what is driving the current regime</p><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">PLATO can trace one driver, compare evidence families, or challenge the invalidation thesis without changing the canonical source.</p></div></div>
+            <Link href={`${ashaPath}?from=why`} className="mt-5 inline-flex shrink-0 items-center gap-2 rounded-sm border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.13em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.97] md:mt-0">Open PLATO <ArrowRight size={13} /></Link>
           </div>
         </Section>
 

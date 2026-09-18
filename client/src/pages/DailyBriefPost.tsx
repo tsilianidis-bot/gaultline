@@ -325,7 +325,7 @@ export default function DailyBriefPost() {
               textTransform: 'uppercase',
               transition: 'all 0.15s ease',
             }}>
-              Ask ASHA →
+              Ask PLATO →
             </button>
           </Link>
         </div>

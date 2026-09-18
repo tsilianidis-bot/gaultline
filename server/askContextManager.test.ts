@@ -269,11 +269,15 @@ describe("getAskPlaceholder", () => {
   it("shows symbol-specific placeholder when symbol is active", () => {
     const placeholder = getAskPlaceholder("stock", "RIGHT");
     expect(placeholder).toContain("RIGHT");
+    expect(placeholder).toContain("Ask PLATO");
+    expect(placeholder).not.toContain("ASHA");
   });
 
   it("shows global placeholder when no symbol is active", () => {
     const placeholder = getAskPlaceholder("global", null);
     expect(placeholder).toContain("markets");
+    expect(placeholder).toContain("Ask PLATO");
+    expect(placeholder).not.toContain("ASHA");
   });
 
   it("shows macro placeholder for macro mode", () => {

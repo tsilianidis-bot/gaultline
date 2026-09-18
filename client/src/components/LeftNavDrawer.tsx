@@ -114,7 +114,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { id: "x-posts",          label: "X Posts",                 icon: Zap,           path: "/app/x-posts" },
   { id: "x-post-queue",     label: "X Post Queue",            icon: Send,          path: "/app/x-post-queue" },
   { id: "engineering",      label: "Engineering Diagnostics", icon: FlaskConical,  path: "/app/admin/engineering" },
-  { id: "chat-inbox",       label: "ASHA Intelligence",       icon: BrainCircuit,  path: "/app/asha-intelligence" },
+  { id: "chat-inbox",       label: "PLATO Intelligence",       icon: BrainCircuit,  path: "/app/asha-intelligence" },
   { id: "seo-optimizer",    label: "SEO Optimizer",           icon: Globe,         path: "/app/seo-optimizer" },
   { id: "admin-users",      label: "User Management",         icon: Users,         path: "/app/admin/users" },
   { id: "admin-publishing", label: "Publishing",              icon: Library,       path: "/app/admin/publishing" },

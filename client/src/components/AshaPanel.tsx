@@ -377,7 +377,7 @@ export default function AshaPanel() {
               color: "#00E5FF",
               textTransform: "uppercase",
             }}>
-              Ask ASHA
+              Ask PLATO
             </span>
           </button>
         </div>

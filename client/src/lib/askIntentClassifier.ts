@@ -468,24 +468,24 @@ export function getAskPlaceholder(
   activeSymbol: string | null,
 ): string {
   if (activeSymbol) {
-    return `Ask ASHA about ${activeSymbol}…`;
+    return `Ask PLATO about ${activeSymbol}…`;
   }
   switch (mode) {
     case "macro":
-      return "Ask ASHA about macro conditions, Fed policy, inflation…";
+      return "Ask PLATO about macro conditions, Fed policy, inflation…";
     case "portfolio":
-      return "Ask ASHA about your portfolio…";
+      return "Ask PLATO about your portfolio…";
     case "sector":
-      return "Ask ASHA about sectors, rotation, industry trends…";
+      return "Ask PLATO about sectors, rotation, industry trends…";
     case "crypto":
-      return "Ask ASHA about crypto markets, DeFi, opportunities…";
+      return "Ask PLATO about crypto markets, DeFi, opportunities…";
     case "trading":
-      return "Ask ASHA about trade setups, technicals, momentum…";
+      return "Ask PLATO about trade setups, technicals, momentum…";
     case "risk":
-      return "Ask ASHA about market risk, hedging, downside protection…";
+      return "Ask PLATO about market risk, hedging, downside protection…";
     case "economic":
-      return "Ask ASHA about the economy, recession risk, cycles…";
+      return "Ask PLATO about the economy, recession risk, cycles…";
     default:
-      return "Ask ASHA about markets, risk, and opportunities…";
+      return "Ask PLATO about markets, risk, and opportunities…";
   }
 }

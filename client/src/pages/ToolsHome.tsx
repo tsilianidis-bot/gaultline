@@ -91,14 +91,14 @@ const ALL_TOOLS: Tool[] = [
   { id: "crypto-watchlist", label: "Crypto Watchlist", description: "Monitor your crypto positions with AI intelligence", path: "/app/crypto/watchlist", category: "Crypto Intelligence", icon: Eye },
   { id: "crypto-signals", label: "Crypto Signals", description: "Crypto-specific signal and momentum analysis", path: "/app/crypto/signals", category: "Crypto Intelligence", icon: Radio },
   // Reports & Research
-  { id: "daily-brief-archive", label: "Daily Brief Archive", description: "Full archive of ASHA's daily market briefings", path: "/app/daily-brief", category: "Reports & Research", icon: Newspaper },
+  { id: "daily-brief-archive", label: "Daily Brief Archive", description: "Full archive of PLATO's daily market briefings", path: "/app/daily-brief", category: "Reports & Research", icon: Newspaper },
   { id: "intelligence-library", label: "Intelligence Library", description: "Curated research and intelligence reports", path: "/app/intelligence-library", category: "Reports & Research", icon: BookOpen },
   { id: "methodology", label: "Methodology", description: "How FAULTLINE's intelligence is built and scored", path: "/app/methodology", category: "Reports & Research", icon: FileText },
   { id: "guide", label: "Platform Guide", description: "How to use FAULTLINE effectively", path: "/app/guide", category: "Reports & Research", icon: BookOpen },
   // ASHA Intelligence
-  { id: "asha-center", label: "ASHA Intelligence Center", description: "Full conversational intelligence with ASHA", path: "/app/asha", category: "ASHA Intelligence", icon: Sparkles },
-  { id: "fmos", label: "FMOS Health Dashboard", description: "FAULTLINE Market Operating System diagnostics", path: "/app/fmos", category: "ASHA Intelligence", icon: Activity, isNew: true },
-  { id: "situation-room", label: "Situation Room", description: "Real-time crisis monitoring and systemic risk alerts", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "ASHA Intelligence", icon: Shield },
+  { id: "asha-center", label: "PLATO Intelligence Center", description: "Full conversational intelligence with PLATO", path: "/app/asha", category: "PLATO Intelligence", icon: Sparkles },
+  { id: "fmos", label: "FMOS Health Dashboard", description: "FAULTLINE Market Operating System diagnostics", path: "/app/fmos", category: "PLATO Intelligence", icon: Activity, isNew: true },
+  { id: "situation-room", label: "Situation Room", description: "Real-time crisis monitoring and systemic risk alerts", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "PLATO Intelligence", icon: Shield },
 ];
 
 const CATEGORIES = [
@@ -112,7 +112,7 @@ const CATEGORIES = [
   { label: "Portfolio & Risk", icon: Briefcase, color: "#F7DC6F" },
   { label: "Crypto Intelligence", icon: Bitcoin, color: "#F7931A" },
   { label: "Reports & Research", icon: FileText, color: "#85C1E9" },
-  { label: "ASHA Intelligence", icon: Sparkles, color: "#D7BDE2" },
+  { label: "PLATO Intelligence", icon: Sparkles, color: "#D7BDE2" },
 ];
 
 const ASHA_RECOMMENDATIONS = [
@@ -255,7 +255,7 @@ export default function ToolsHome() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "14px" }}>
               <Sparkles size={14} color={ACCENT} />
               <span style={{ ...MONO, fontSize: "10px", fontWeight: 700, color: ACCENT, letterSpacing: "0.15em" }}>
-                ASHA RECOMMENDS
+                PLATO RECOMMENDS
               </span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px" }}>
@@ -392,7 +392,7 @@ export default function ToolsHome() {
             GUIDED INTELLIGENCE
           </div>
           <p style={{ ...SANS, fontSize: "12px", color: TEXT_SECONDARY, margin: "0 0 14px", lineHeight: 1.6 }}>
-            Prefer conclusion-first answers? Switch to Guided Intelligence for ASHA-guided analysis organized around five essential market questions.
+            Prefer conclusion-first answers? Switch to Guided Intelligence for PLATO-guided analysis organized around five essential market questions.
           </p>
           <button
             onClick={() => setExperience("guided")}

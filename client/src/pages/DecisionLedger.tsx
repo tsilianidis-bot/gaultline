@@ -676,7 +676,7 @@ export default function DecisionLedger() {
                 fontSize: "11px",
               }}
             >
-              ASK ASHA
+              ASK PLATO
             </button>
           )}
         </div>
