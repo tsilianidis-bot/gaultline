@@ -113,7 +113,7 @@ export default function SignalDetail() {
 
     <section style={grid}>
       <Panel title="SOURCE STATUS"><div style={sourceList}>{Object.entries(detail.providerHealth).map(([name, source]) => <div key={name} style={sourceRow}><span style={{ color: source.status === "available" ? GREEN : AMBER }}>{source.status === "available" ? "●" : "▲"}</span><div><b>{name.replace(/([A-Z])/g, " $1").toUpperCase()}</b><p style={sourceCopy}>{source.detail}</p></div></div>)}</div></Panel>
-      <Panel title="ASK ASHA"><p style={copy}>ASHA receives only this current observed signal context, source availability, and the explicit no-history boundary.</p><button style={primaryButton} onClick={askAsha}><BrainCircuit size={15} /> EXPLAIN THIS CHART</button></Panel>
+      <Panel title="ASK PLATO"><p style={copy}>PLATO receives only this current observed signal context, source availability, and the explicit no-history boundary.</p><button style={primaryButton} onClick={askAsha}><BrainCircuit size={15} /> EXPLAIN THIS CHART</button></Panel>
     </section>
   </div></main>;
 }

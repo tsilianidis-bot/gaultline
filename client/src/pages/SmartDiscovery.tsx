@@ -3000,7 +3000,7 @@ export default function SmartDiscovery() {
               lineHeight: 1.7,
             }}>
               {user
-                ? "Ask ASHA anything. She synthesizes every FAULTLINE engine — regime, pressure, liquidity, credit, volatility, crypto, and more — before responding."
+                ? "Ask PLATO anything. She synthesizes every FAULTLINE engine — regime, pressure, liquidity, credit, volatility, crypto, and more — before responding."
                 : "Sign in to access FAULTLINE's institutional intelligence. One question. One answer."
               }
             </div>

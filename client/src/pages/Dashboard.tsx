@@ -713,7 +713,7 @@ export default function Dashboard() {
                     window.location.href = `/app/discover?q=${encodeURIComponent(heroInputValue.trim())}`;
                   }
                 }}
-                placeholder="Ask ASHA..."
+                placeholder="Ask PLATO..."
                 style={{
                   flex: 1, background: 'transparent', border: 'none', outline: 'none',
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px',

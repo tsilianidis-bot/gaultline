@@ -558,14 +558,14 @@ export default function Watch() {
           ) : null}
         </Section>
 
-        <Section id="asha" index="09" eyebrow="ASHA continuity" title="Interrogate the watch posture without losing context" description="Carry the current regime, monitored conditions, evidence quality, and invalidation state into the shared advisor workspace.">
+        <Section id="asha" index="09" eyebrow="PLATO continuity" title="Interrogate the watch posture without losing context" description="Carry the current regime, monitored conditions, evidence quality, and invalidation state into the shared advisor workspace.">
           <div className="flex flex-col gap-5 rounded-sm border border-cyan-300/15 bg-cyan-300/[0.035] p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-4">
               <BrainCircuit className="mt-1 h-5 w-5 shrink-0 text-cyan-300" />
               <div>
                 <div className="text-sm font-semibold text-slate-100">Ask what would make this watch posture more or less urgent</div>
                 <p className="mt-2 max-w-2xl text-xs leading-5 text-slate-400">
-                  ASHA receives the canonical market context through the shared gateway; no parallel monitoring state is created here.
+                  PLATO receives the canonical market context through the shared gateway; no parallel monitoring state is created here.
                 </p>
               </div>
             </div>
@@ -573,7 +573,7 @@ export default function Watch() {
               href={PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha"}
               className="inline-flex shrink-0 items-center justify-center gap-2 rounded-sm border border-cyan-300/25 px-4 py-3 font-mono text-[9px] uppercase tracking-[0.16em] text-cyan-200 transition hover:bg-cyan-300/10 active:scale-[0.97]"
             >
-              Open ASHA <ArrowRight className="h-3.5 w-3.5" />
+              Open PLATO <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
         </Section>

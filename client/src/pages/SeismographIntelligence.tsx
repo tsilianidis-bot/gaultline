@@ -1267,15 +1267,15 @@ export default function SeismographIntelligence() {
           <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="seismic-report" /></SectionErrorBoundary>
         </div>
 
-        {/* ── ASK ASHA ── */}
+        {/* ── ASK PLATO ── */}
         <div style={{ padding: "20px", background: "rgba(6,182,212,0.03)", borderRadius: "8px", border: "1px solid rgba(6,182,212,0.12)", textAlign: "center", marginBottom: "32px", opacity: loadPhase >= 8 ? 1 : 0, transition: "opacity 0.5s ease-out 0.7s" }}>
-          <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.18em", color: "rgba(6,182,212,0.4)", marginBottom: "10px" }}>ASK ASHA</div>
+          <div style={{ ...mono, fontSize: "8px", letterSpacing: "0.18em", color: "rgba(6,182,212,0.4)", marginBottom: "10px" }}>ASK PLATO</div>
           <p style={{ fontSize: "13px", color: "rgba(226,232,240,0.55)", lineHeight: 1.65, margin: "0 0 16px", fontFamily: "'IBM Plex Sans',system-ui,sans-serif" }}>
-            Ask ASHA any question about the current market environment. ASHA reads the full FAULTLINE intelligence context before responding.
+            Ask PLATO any question about the current market environment. PLATO reads the full FAULTLINE intelligence context before responding.
           </p>
           <Link href="/asha">
             <button style={{ ...mono, fontSize: "11px", letterSpacing: "0.1em", fontWeight: 700, color: "#050608", background: "#06b6d4", border: "none", borderRadius: "5px", padding: "10px 24px", cursor: "pointer", transition: "opacity 0.15s" }}>
-              OPEN ASHA →
+              OPEN PLATO →
             </button>
           </Link>
         </div>

@@ -49,31 +49,31 @@ const utility = PERSISTENT_UTILITY_BY_ID;
 
 const PAGE_ACTIONS: Record<CanonicalDestinationId, QuickAction[]> = {
   now: [
-    { id: "ask-today", label: "Ask ASHA About Today", icon: MessageSquare, action: "asha", target: "Explain what is happening in markets right now and what changed." },
+    { id: "ask-today", label: "Ask PLATO About Today", icon: MessageSquare, action: "asha", target: "Explain what is happening in markets right now and what changed." },
     { id: "open-pressure", label: "Open Pressure Engine", icon: AlertTriangle, action: "navigate", target: expert.pressure.path },
     { id: "open-signals", label: "Open Signals", icon: Radio, action: "navigate", target: destination.watch.path },
     { id: "view-history", label: "Compare With History", icon: Layers, action: "navigate", target: `${destination.why.path}?view=history` },
   ],
   why: [
-    { id: "ask-drivers", label: "Ask ASHA Why", icon: MessageSquare, action: "asha", target: "Why are current market conditions developing, and which evidence carries the most weight?" },
+    { id: "ask-drivers", label: "Ask PLATO Why", icon: MessageSquare, action: "asha", target: "Why are current market conditions developing, and which evidence carries the most weight?" },
     { id: "view-history", label: "View Historical Context", icon: Layers, action: "navigate", target: `${destination.why.path}?view=history` },
     { id: "open-pressure", label: "Open Pressure Engine", icon: AlertTriangle, action: "navigate", target: expert.pressure.path },
     { id: "view-outlook", label: "View Outlook", icon: Eye, action: "navigate", target: destination.outlook.path },
   ],
   outlook: [
-    { id: "ask-outcome", label: "Ask ASHA What Is Next", icon: MessageSquare, action: "asha", target: "What is the highest-probability market path, and what would invalidate it?" },
+    { id: "ask-outcome", label: "Ask PLATO What Is Next", icon: MessageSquare, action: "asha", target: "What is the highest-probability market path, and what would invalidate it?" },
     { id: "signal-outlook", label: "Open Signal Outlook", icon: Eye, action: "navigate", target: expert["signal-outlook"].path },
     { id: "scenarios", label: "Compare Scenarios", icon: BarChart2, action: "navigate", target: `${destination.outlook.path}?view=scenarios` },
     { id: "watch", label: "Review What to Watch", icon: Bell, action: "navigate", target: destination.watch.path },
   ],
   watch: [
-    { id: "ask-watch", label: "Ask ASHA What to Watch", icon: MessageSquare, action: "asha", target: "Which developing conditions and signals deserve the most attention now?" },
+    { id: "ask-watch", label: "Ask PLATO What to Watch", icon: MessageSquare, action: "asha", target: "Which developing conditions and signals deserve the most attention now?" },
     { id: "alerts", label: "Review Alerts", icon: Bell, action: "navigate", target: utility.alerts.path },
     { id: "watchlists", label: "Open Watchlists", icon: Bookmark, action: "navigate", target: `${destination.watch.path}?view=watchlists` },
     { id: "portfolio", label: "Review Portfolio", icon: Briefcase, action: "navigate", target: `${destination.watch.path}?view=portfolio` },
   ],
   act: [
-    { id: "ask-response", label: "Ask ASHA How to Respond", icon: MessageSquare, action: "asha", target: "How should I respond to current conditions, and what risk controls matter most?" },
+    { id: "ask-response", label: "Ask PLATO How to Respond", icon: MessageSquare, action: "asha", target: "How should I respond to current conditions, and what risk controls matter most?" },
     { id: "analyze", label: "Analyze a Symbol", icon: Search, action: "navigate", target: expert["symbol-intelligence"].path },
     { id: "decide", label: "Open Decision Engine", icon: Command, action: "navigate", target: expert["decision-engine"].path },
     { id: "journal", label: "Open Decision Journal", icon: FileText, action: "navigate", target: `${destination.act.path}?view=journal` },
@@ -82,7 +82,7 @@ const PAGE_ACTIONS: Record<CanonicalDestinationId, QuickAction[]> = {
 
 // ── Default actions (fallback for any page) ───────────────────
 const DEFAULT_ACTIONS: QuickAction[] = [
-  { id: "ask-asha",      label: "Ask ASHA",                   icon: MessageSquare, action: "asha",     target: "What is the most important thing happening in the market right now?" },
+  { id: "ask-asha",      label: "Ask PLATO",                   icon: MessageSquare, action: "asha",     target: "What is the most important thing happening in the market right now?" },
   { id: "analyze",       label: "Analyze a Symbol",           icon: Search,        action: "navigate", target: expert["symbol-intelligence"].path },
   { id: "decide",        label: "Open Decision Engine",       icon: Command,       action: "navigate", target: expert["decision-engine"].path },
   { id: "watchlist",     label: "View Watchlists",            icon: Bookmark,      action: "navigate", target: `${destination.watch.path}?view=watchlists` },
@@ -346,7 +346,7 @@ export default function RightActionDrawer() {
                       marginTop: 2,
                       letterSpacing: "0.06em",
                     }}>
-                      ASK ASHA
+                      ASK PLATO
                     </div>
                   )}
                 </div>

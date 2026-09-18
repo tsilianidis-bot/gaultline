@@ -192,7 +192,7 @@ export default function AshaIntelligenceCenter() {
         <AshaOrb regimeState={regimeState} size={28} isListening={false} />
         <div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "18px", color: "#F0F6FF", lineHeight: 1 }}>
-            ASHA Intelligence
+            PLATO Intelligence
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(0,229,255,0.5)", letterSpacing: "0.15em", marginTop: "2px" }}>
             MEMORY · REASONING · CONTINUITY
@@ -213,7 +213,7 @@ export default function AshaIntelligenceCenter() {
             cursor: "pointer",
           }}
         >
-          ASK ASHA →
+          ASK PLATO →
         </button>
       </div>
 
@@ -272,7 +272,7 @@ export default function AshaIntelligenceCenter() {
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", marginBottom: "5px", fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", letterSpacing: "0.1em", color: message.role === "assistant" ? "rgba(0,229,255,0.7)" : "rgba(148,163,184,0.65)", textTransform: "uppercase" }}>
-                    <span>{message.role === "assistant" ? "ASHA" : "You"} · {message.page}</span>
+                    <span>{message.role === "assistant" ? "PLATO" : "You"} · {message.page}</span>
                     <span>{formatTime(new Date(message.createdAt))}</span>
                   </div>
                   <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", lineHeight: 1.65, color: "rgba(240,244,255,0.82)", whiteSpace: "pre-wrap" }}>
@@ -296,7 +296,7 @@ export default function AshaIntelligenceCenter() {
           ) : (
             <div data-asha-shared-thread-empty style={{ padding: "8px 0 4px" }}>
               <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", lineHeight: 1.65, color: "rgba(148,163,184,0.72)" }}>
-                Ask ASHA from any destination. The same session thread will continue here with its page context, confidence, and available-source provenance intact.
+                Ask PLATO from any destination. The same session thread will continue here with its page context, confidence, and available-source provenance intact.
               </div>
               <button
                 onClick={() => summonSharedThread()}
@@ -316,7 +316,7 @@ export default function AshaIntelligenceCenter() {
             style={{ display: "flex", gap: "8px", marginTop: "14px", paddingTop: "14px", borderTop: "1px solid rgba(0,229,255,0.12)" }}
           >
             <input
-              aria-label="Continue the shared ASHA thread"
+              aria-label="Continue the shared PLATO thread"
               value={workspacePrompt}
               onChange={(event) => setWorkspacePrompt(event.target.value)}
               placeholder="Continue this thread from the workspace..."
@@ -337,7 +337,7 @@ export default function AshaIntelligenceCenter() {
           <SectionLabel text="Current Market Thesis" />
           {loadingThesis ? (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.5)", padding: "12px 0" }}>
-              ASHA is synthesizing your recent conversations...
+              PLATO is synthesizing your recent conversations...
             </div>
           ) : thesis?.thesis ? (
             <>
@@ -368,8 +368,8 @@ export default function AshaIntelligenceCenter() {
             <EmptyState
               icon="🧠"
               title="No thesis yet"
-              subtitle="Ask ASHA a few market questions and she will synthesize your current market perspective here."
-              ctaLabel="ASK ASHA →"
+              subtitle="Ask PLATO a few market questions and she will synthesize your current market perspective here."
+              ctaLabel="ASK PLATO →"
               ctaPath="/app/discover"
             />
           )}
@@ -488,7 +488,7 @@ export default function AshaIntelligenceCenter() {
             <EmptyState
               icon="💬"
               title="No conversations today"
-              subtitle="ASHA has been observing markets. Ask her anything to begin today's intelligence session."
+              subtitle="PLATO has been observing markets. Ask her anything to begin today's intelligence session."
               ctaLabel="START CONVERSATION →"
               ctaPath="/app/discover"
             />
@@ -497,10 +497,10 @@ export default function AshaIntelligenceCenter() {
 
         {/* ── Follow-up Questions Suggested by ASHA ── */}
         <IntelCard accent="#00E5FF">
-          <SectionLabel text="Follow-up Questions Suggested by ASHA" />
+          <SectionLabel text="Follow-up Questions Suggested by PLATO" />
           {loadingFollowUps ? (
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "rgba(100,116,139,0.5)", padding: "8px 0" }}>
-              ASHA is generating follow-up questions...
+              PLATO is generating follow-up questions...
             </div>
           ) : (followUps?.questions?.length ?? 0) > 0 ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -543,8 +543,8 @@ export default function AshaIntelligenceCenter() {
             <EmptyState
               icon="❓"
               title="No follow-ups yet"
-              subtitle="After your first conversation, ASHA will suggest questions that deepen your market understanding."
-              ctaLabel="ASK ASHA →"
+              subtitle="After your first conversation, PLATO will suggest questions that deepen your market understanding."
+              ctaLabel="ASK PLATO →"
               ctaPath="/app/discover"
             />
           )}
@@ -618,7 +618,7 @@ export default function AshaIntelligenceCenter() {
             <EmptyState
               icon="📅"
               title="No history yet"
-              subtitle="Your intelligence timeline will appear here as you ask ASHA questions over time."
+              subtitle="Your intelligence timeline will appear here as you ask PLATO questions over time."
               ctaLabel="BEGIN →"
               ctaPath="/app/discover"
             />
@@ -735,7 +735,7 @@ export default function AshaIntelligenceCenter() {
             </div>
             {stats.firstSession && (
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "rgba(100,116,139,0.35)", textAlign: "center", marginTop: "10px", borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "10px" }}>
-                ASHA has been your intelligence layer since {formatDate(stats.firstSession)}
+                PLATO has been your intelligence layer since {formatDate(stats.firstSession)}
               </div>
             )}
           </div>
@@ -747,7 +747,7 @@ export default function AshaIntelligenceCenter() {
           padding: "24px 0 40px",
         }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.4)", letterSpacing: "0.15em", marginBottom: "14px" }}>
-            ASHA CONTINUES OBSERVING MARKETS WHILE YOU ARE AWAY
+            PLATO CONTINUES OBSERVING MARKETS WHILE YOU ARE AWAY
           </div>
           <button
             onClick={() => navigate("/app/discover")}
@@ -764,7 +764,7 @@ export default function AshaIntelligenceCenter() {
               boxShadow: `0 0 20px ${color}15`,
             }}
           >
-            CONTINUE YOUR CONVERSATION WITH ASHA →
+            CONTINUE YOUR CONVERSATION WITH PLATO →
           </button>
         </div>
 

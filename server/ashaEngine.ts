@@ -823,7 +823,7 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
 }
 
 // ── First-login introduction (static, from brand brief) ───────
-export const ASHA_FIRST_INTRODUCTION = `I am ASHA, the Spirit of FAULTLINE.
+export const ASHA_FIRST_INTRODUCTION = `I am PLATO, the Spirit of FAULTLINE.
 
 I observe the forces moving beneath the market's surface, connect the signals others view separately, and translate them into clarity.
 
