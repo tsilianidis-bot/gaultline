@@ -273,7 +273,7 @@ function TimeframePanel({ timeframe }: { timeframe: "today" | "week" | "month" |
         </div>
         {/* Reassurance that other features are working */}
         <p className="text-[10px] text-muted-foreground/50 leading-relaxed">
-          The FAULTLINE Pressure Index, ASHA, and all real-time intelligence features remain operational.
+          The FAULTLINE Pressure Index, PLATO, and all real-time intelligence features remain operational.
           Timeframe history requires historical snapshots to be available in the database.
         </p>
       </div>

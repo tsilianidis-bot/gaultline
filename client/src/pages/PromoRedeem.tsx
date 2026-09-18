@@ -201,7 +201,7 @@ export default function PromoRedeem() {
             <p className="text-xs text-[#8899aa] font-mono tracking-widest uppercase mb-4">Your Access Includes</p>
             {[
               "Pressure Index™ — Real-time systemic risk scoring",
-              "ASHA Intelligence Engine — Ask anything about the markets",
+              "PLATO Intelligence Engine — Ask anything about the markets",
               "Signals Screener — Institutional-grade stock and crypto signals",
               "Situation Room — Macro stress simulation",
               "Market Seismograph — Structural fault detection",
@@ -264,7 +264,7 @@ export default function PromoRedeem() {
           <p className="text-xs text-[#8899aa] font-mono tracking-widest uppercase mb-4">30 Days of Full Access</p>
           {[
             ["Pressure Index™", "Real-time systemic risk scoring across 6 macro vectors"],
-            ["ASHA Intelligence", "Ask any market question — get an institutional-grade briefing"],
+            ["PLATO Intelligence", "Ask any market question — get an institutional-grade briefing"],
             ["Signals Screener", "Stock and crypto signals with regime-aware context"],
             ["Situation Room", "Macro stress simulation and portfolio scenario analysis"],
             ["Market Seismograph", "Structural fault detection before markets move"],

@@ -31,37 +31,37 @@ const VARIANT_META: Record<
   { label: string; sublabel: string; accentColor: string; borderColor: string }
 > = {
   "market-brief": {
-    label: "ASHA MARKET BRIEF",
+    label: "PLATO MARKET BRIEF",
     sublabel: "Current intelligence assessment",
     accentColor: "#00E5FF",
     borderColor: "rgba(0,229,255,0.20)",
   },
   "seismic-report": {
-    label: "ASHA SEISMIC REPORT",
+    label: "PLATO SEISMIC REPORT",
     sublabel: "Market stress and transition intelligence",
     accentColor: "#00E5FF",
     borderColor: "rgba(0,229,255,0.20)",
   },
   "pressure-brief": {
-    label: "ASHA PRESSURE BRIEF",
+    label: "PLATO PRESSURE BRIEF",
     sublabel: "Risk vector analysis and pressure drivers",
     accentColor: "#FFAA00",
     borderColor: "rgba(255,170,0,0.20)",
   },
   "symbol-interpretation": {
-    label: "ASHA INTERPRETATION",
+    label: "PLATO INTERPRETATION",
     sublabel: "Asset intelligence and setup analysis",
     accentColor: "#00E5FF",
     borderColor: "rgba(0,229,255,0.20)",
   },
   "crypto-brief": {
-    label: "ASHA CRYPTO RISK BRIEF",
+    label: "PLATO CRYPTO RISK BRIEF",
     sublabel: "Digital asset risk and regime intelligence",
     accentColor: "#D09EFF",
     borderColor: "rgba(208,158,255,0.20)",
   },
   "command-narrator": {
-    label: "ASHA COMMAND BRIEF",
+    label: "PLATO COMMAND BRIEF",
     sublabel: "Situation room market operations intelligence",
     accentColor: "#00E5FF",
     borderColor: "rgba(0,229,255,0.20)",
@@ -96,12 +96,12 @@ function parseBrief(text: string, enginesConsulted: string[]): ParsedBrief {
 
   // Extract sections by header patterns
   const patterns: [keyof Omit<ParsedBrief, "raw" | "confidence" | "enginesConsulted">, RegExp][] = [
-    ["currentState",     /(?:current state|what is happening|current condition)[:\s]*([\s\S]*?)(?=(?:primary drivers|why it|what is building|hidden|historical|risk transition|asha monitoring|$))/i],
-    ["primaryDrivers",   /(?:primary drivers|why it matters|the significance)[:\s]*([\s\S]*?)(?=(?:hidden pressure|what is building|historical|risk transition|asha monitoring|$))/i],
-    ["hiddenPressure",   /(?:hidden pressure|what is building|emerging pressure)[:\s]*([\s\S]*?)(?=(?:historical|risk transition|asha monitoring|$))/i],
-    ["historicalContext",/(?:historical context|relevant analog|history)[:\s]*([\s\S]*?)(?=(?:risk transition|what could change|asha monitoring|$))/i],
-    ["riskTransition",   /(?:risk transition|what could change|what would change)[:\s]*([\s\S]*?)(?=(?:asha monitoring|monitoring|$))/i],
-    ["ashaMonitoring",   /(?:asha monitoring|monitoring|watching)[:\s]*([\s\S]*?)(?=$)/i],
+    ["currentState",     /(?:current state|what is happening|current condition)[:\s]*([\s\S]*?)(?=(?:primary drivers|why it|what is building|hidden|historical|risk transition|asha monitoring|plato monitoring|$))/i],
+    ["primaryDrivers",   /(?:primary drivers|why it matters|the significance)[:\s]*([\s\S]*?)(?=(?:hidden pressure|what is building|historical|risk transition|asha monitoring|plato monitoring|$))/i],
+    ["hiddenPressure",   /(?:hidden pressure|what is building|emerging pressure)[:\s]*([\s\S]*?)(?=(?:historical|risk transition|asha monitoring|plato monitoring|$))/i],
+    ["historicalContext",/(?:historical context|relevant analog|history)[:\s]*([\s\S]*?)(?=(?:risk transition|what could change|asha monitoring|plato monitoring|$))/i],
+    ["riskTransition",   /(?:risk transition|what could change|what would change)[:\s]*([\s\S]*?)(?=(?:asha monitoring|plato monitoring|monitoring|$))/i],
+    ["ashaMonitoring",   /(?:asha monitoring|plato monitoring|monitoring|watching)[:\s]*([\s\S]*?)(?=$)/i],
   ];
 
   for (const [key, pattern] of patterns) {
@@ -279,17 +279,17 @@ export function AshaIntelligenceBrief({
     const ctx = contextSummary || "";
     const questions: Record<AshaIntelligenceBriefProps["variant"], string> = {
       "market-brief":
-        `Provide an ASHA Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: What is happening in the market right now.\nPrimary Drivers: What is causing the current condition.\nHidden Pressure: What is developing beneath the surface.\nHistorical Context: Relevant market parallels and analogs.\nRisk Transition: What could increase or reduce pressure.\nASHA Monitoring: The specific signals being watched next.\n\nUse the current regime, pressure score, and key risk drivers. Be concise, institutional, data-grounded. ${ctx}`,
+        `Provide a PLATO Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: What is happening in the market right now.\nPrimary Drivers: What is causing the current condition.\nHidden Pressure: What is developing beneath the surface.\nHistorical Context: Relevant market parallels and analogs.\nRisk Transition: What could increase or reduce pressure.\nPLATO Monitoring: The specific signals being watched next.\n\nUse the current regime, pressure score, and key risk drivers. Be concise, institutional, data-grounded. ${ctx}`,
       "seismic-report":
-        `Provide an ASHA Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: What the seismograph is detecting right now.\nPrimary Drivers: What is driving the current stress reading.\nHidden Pressure: What is building beneath the surface.\nHistorical Context: Closest analog period and what followed.\nRisk Transition: Conditions that would shift the regime.\nASHA Monitoring: Signals being watched for confirmation.\n\nInclude transition probability and stress level. Be concise, institutional. ${ctx}`,
+        `Provide a PLATO Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: What the seismograph is detecting right now.\nPrimary Drivers: What is driving the current stress reading.\nHidden Pressure: What is building beneath the surface.\nHistorical Context: Closest analog period and what followed.\nRisk Transition: Conditions that would shift the regime.\nPLATO Monitoring: Signals being watched for confirmation.\n\nInclude transition probability and stress level. Be concise, institutional. ${ctx}`,
       "pressure-brief":
-        `Provide an ASHA Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: Current pressure index reading and which risk vectors are elevated.\nPrimary Drivers: Which engines are contributing most to pressure.\nHidden Pressure: What is building that is not yet fully visible.\nHistorical Context: Similar pressure environments and outcomes.\nRisk Transition: What would cause pressure to rise or fall.\nASHA Monitoring: The specific indicators being tracked. ${ctx}`,
+        `Provide a PLATO Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: Current pressure index reading and which risk vectors are elevated.\nPrimary Drivers: Which engines are contributing most to pressure.\nHidden Pressure: What is building that is not yet fully visible.\nHistorical Context: Similar pressure environments and outcomes.\nRisk Transition: What would cause pressure to rise or fall.\nPLATO Monitoring: The specific indicators being tracked. ${ctx}`,
       "symbol-interpretation":
-        `Provide an ASHA Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: What is happening with this asset right now.\nPrimary Drivers: What is driving the current setup.\nHidden Pressure: Risk factors developing beneath the surface.\nHistorical Context: Similar setups and what followed.\nRisk Transition: What would change the current view.\nASHA Monitoring: Key levels and signals being watched. ${ctx}`,
+        `Provide a PLATO Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: What is happening with this asset right now.\nPrimary Drivers: What is driving the current setup.\nHidden Pressure: Risk factors developing beneath the surface.\nHistorical Context: Similar setups and what followed.\nRisk Transition: What would change the current view.\nPLATO Monitoring: Key levels and signals being watched. ${ctx}`,
       "crypto-brief":
-        `Provide an ASHA Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: Current crypto market conditions including liquidity and risk appetite.\nPrimary Drivers: What is driving BTC leadership and altcoin behavior.\nHidden Pressure: Regime shifts developing beneath the surface.\nHistorical Context: Comparable crypto cycle periods.\nRisk Transition: What would change the current crypto regime.\nASHA Monitoring: On-chain and macro signals being tracked. ${ctx}`,
+        `Provide a PLATO Intelligence Brief using this exact structure with these exact section headers:\n\nCurrent State: Current crypto market conditions including liquidity and risk appetite.\nPrimary Drivers: What is driving BTC leadership and altcoin behavior.\nHidden Pressure: Regime shifts developing beneath the surface.\nHistorical Context: Comparable crypto cycle periods.\nRisk Transition: What would change the current crypto regime.\nPLATO Monitoring: On-chain and macro signals being tracked. ${ctx}`,
       "command-narrator":
-        `Provide an ASHA Intelligence Brief for the Situation Room using this exact structure with these exact section headers:\n\nCurrent State: What is happening across all monitored markets right now.\nPrimary Drivers: The dominant forces shaping current conditions.\nHidden Pressure: What is building beneath the surface.\nHistorical Context: The closest comparable macro environment.\nRisk Transition: Conditions that would change the operational picture.\nASHA Monitoring: The highest-priority signals for the next session. ${ctx}`,
+        `Provide a PLATO Intelligence Brief for the Situation Room using this exact structure with these exact section headers:\n\nCurrent State: What is happening across all monitored markets right now.\nPrimary Drivers: The dominant forces shaping current conditions.\nHidden Pressure: What is building beneath the surface.\nHistorical Context: The closest comparable macro environment.\nRisk Transition: Conditions that would change the operational picture.\nPLATO Monitoring: The highest-priority signals for the next session. ${ctx}`,
     };
     return questions[variant];
   };
@@ -338,9 +338,9 @@ export function AshaIntelligenceBrief({
       "",
       `RISK TRANSITION\n${brief.riskTransition}`,
       "",
-      `ASHA MONITORING\n${brief.ashaMonitoring}`,
+      `PLATO MONITORING\n${brief.ashaMonitoring}`,
       "",
-      "ASHA · FAULTLINE INTELLIGENCE SYSTEM · NOT FINANCIAL ADVICE",
+      "PLATO · FAULTLINE INTELLIGENCE SYSTEM · NOT FINANCIAL ADVICE",
     ].join("\n");
     try {
       await navigator.clipboard.writeText(text);
@@ -501,7 +501,7 @@ export function AshaIntelligenceBrief({
           <BriefSection label="HIDDEN PRESSURE"    content={brief.hiddenPressure}    accentColor={meta.accentColor} />
           <BriefSection label="HISTORICAL CONTEXT" content={brief.historicalContext} accentColor={meta.accentColor} />
           <BriefSection label="RISK TRANSITION"    content={brief.riskTransition}    accentColor={meta.accentColor} />
-          <BriefSection label="ASHA MONITORING"    content={brief.ashaMonitoring || "Monitoring for regime shift signals."} accentColor={meta.accentColor} isLast />
+          <BriefSection label="PLATO MONITORING"    content={brief.ashaMonitoring || "Monitoring for regime shift signals."} accentColor={meta.accentColor} isLast />
 
           {/* Transparency panel */}
           {brief.enginesConsulted && brief.enginesConsulted.length > 0 && (
@@ -524,7 +524,7 @@ export function AshaIntelligenceBrief({
                 }}
               >
                 {showTransparency ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
-                WHY IS ASHA SAYING THIS?
+                WHY IS PLATO SAYING THIS?
               </button>
               {showTransparency && (
                 <div style={{
@@ -569,7 +569,7 @@ export function AshaIntelligenceBrief({
                     color: "rgba(255,255,255,0.35)",
                     marginTop: "2px",
                   }}>
-                    ASHA interprets live data from FAULTLINE's engine network. Every conclusion reflects the current readings from the engines listed above. Confidence reflects the consistency and completeness of the available signals.
+                    PLATO interprets live data from FAULTLINE's engine network. Every conclusion reflects the current readings from the engines listed above. Confidence reflects the consistency and completeness of the available signals.
                   </div>
                 </div>
               )}
@@ -600,7 +600,7 @@ export function AshaIntelligenceBrief({
           letterSpacing: "0.12em",
           color: "rgba(255,255,255,0.20)",
         }}>
-          ASHA · FAULTLINE INTELLIGENCE SYSTEM · NOT FINANCIAL ADVICE
+          PLATO · FAULTLINE INTELLIGENCE SYSTEM · NOT FINANCIAL ADVICE
         </div>
       </div>
 
