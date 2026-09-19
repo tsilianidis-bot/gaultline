@@ -11,6 +11,7 @@ import ScoreRing from "@/components/ScoreRing";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
+import { customerIntegrityBadgeColor } from "@shared/customerIntegrityLabels";
 
 // ── Seeded deterministic sparkline ───────────────────────────
 function seededRand(seed: number) {
@@ -185,7 +186,7 @@ function DomainCard({ score, index }: { score: DomainScore; index: number }) {
 export default function Scores() {
   useSEO(PAGE_SEO.scores);
   const [mounted, setMounted] = useState(false);
-  const { output } = useEngine();
+  const { output, integrityLabel } = useEngine();
   const { overall, domains, regime } = output;
 
   useEffect(() => { setMounted(true); }, []);
@@ -200,8 +201,8 @@ export default function Scores() {
       <PageHeader
         title="Risk Score Breakdown"
         subtitle="Composite scoring across all major stress dimensions — pressure-reactive and computed live from FRED, market, and macro data."
-        badge="LIVE"
-        badgeColor="green"
+        badge={integrityLabel}
+        badgeColor={customerIntegrityBadgeColor(integrityLabel)}
         rightSlot={<PreflightTrigger currentPage="scores" regimeLabel={regime.label} actionKey="viewed_scores" />}
       />
       <div style={{ padding: '20px 16px 32px' }}>

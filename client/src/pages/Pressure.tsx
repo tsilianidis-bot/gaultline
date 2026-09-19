@@ -21,7 +21,7 @@ import SimulatePressure from "./SimulatePressure";
 import HistoricalContextEngine from "./HistoricalContextEngine";
 import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
-import { customerIntegrityBadgeColor, humanizeConflictType } from "@shared/customerIntegrityLabels";
+import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUnavailableCopy, humanizeConflictType, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -431,7 +431,7 @@ function AnalogBar({ analog, index, isTop }: { analog: HistoricalAnalog; index: 
 }
 
 // ── Liquidity Stress Meter ───────────────────────────────────
-function LiquidityStressMeter({ vectors }: { vectors: RiskVector[] }) {
+function LiquidityStressMeter({ vectors, integrityLabel }: { vectors: RiskVector[]; integrityLabel: CustomerIntegrityLabel }) {
   const liq = vectors.find(v => v.id === "liquidity-stress");
   const credit = vectors.find(v => v.id === "credit-contagion");
   const vol = vectors.find(v => v.id === "volatility-regime");
@@ -537,7 +537,7 @@ function LiquidityStressMeter({ vectors }: { vectors: RiskVector[] }) {
         })}
         {meters.length === 0 && (
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#374151", textAlign: "center", padding: "16px" }}>
-            DATA UNAVAILABLE — USING FALLBACK
+            {customerPressureUnavailableCopy(integrityLabel)}
           </div>
         )}
       </div>
@@ -1079,7 +1079,7 @@ export default function Pressure() {
         <PageHeader
           title="Market Stress"
           subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
-          badge={integrityLabel}
+          badge={customerPressureBadge(integrityLabel)}
           badgeColor={customerIntegrityBadgeColor(integrityLabel)}
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
@@ -1329,7 +1329,7 @@ export default function Pressure() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
 
           {/* Liquidity Stress Meter */}
-          <LiquidityStressMeter vectors={data.vectors} />
+          <LiquidityStressMeter vectors={data.vectors} integrityLabel={integrityLabel} />
 
           {/* Contagion Cascade */}
           <ContagionVisualization vectors={data.vectors} overallPressure={data.overallPressure} />

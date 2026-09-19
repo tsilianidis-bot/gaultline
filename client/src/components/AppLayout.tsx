@@ -823,7 +823,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <AshaIntroModal />
       <AshaPanel />
 
-      {/* ── Build Badge — deployment verification ── */}
+      {/* ── Build Badge — hidden from customers; ?founderQa=1 for founder QA ── */}
       <BuildBadge />
     </div>
     </DrawerProvider>

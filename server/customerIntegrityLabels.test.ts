@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  CUSTOMER_INTEGRITY_LABELS,
+  allowsLivePressureClaim,
   customerIntegrityBadgeColor,
   customerIntegrityChipLevel,
   customerIntegrityColor,
   customerIntegrityFromEngine,
   customerIntegrityLabel,
+  customerPressureBadge,
+  customerPressureUnavailableCopy,
   hideBlankMarketQuoteDuplicates,
   hideBlankTickerDuplicates,
   humanizeConflictType,
@@ -14,6 +18,7 @@ import {
   isBlankTickerValue,
   isCustomerDebugWatermark,
 } from "../shared/customerIntegrityLabels";
+import { isCustomerBuildBadgeVisible } from "../shared/customerBuildBadge";
 
 const root = resolve(import.meta.dirname, "..");
 const read = (relativePath: string) => readFileSync(resolve(root, relativePath), "utf8");
@@ -201,6 +206,52 @@ describe("customer-facing debug code humanization", () => {
   });
 });
 
+describe("customer Pressure badge is a single coherent label", () => {
+  it("emits LIVE PRESSURE only when integrity is truly LIVE", () => {
+    expect(customerPressureBadge("LIVE")).toBe("LIVE PRESSURE");
+    expect(allowsLivePressureClaim("LIVE")).toBe(true);
+    expect(customerPressureBadge("FALLBACK")).toBe("FALLBACK");
+    expect(customerPressureBadge("STALE")).toBe("STALE");
+    expect(customerPressureBadge("UNAVAILABLE")).toBe("UNAVAILABLE");
+    expect(customerPressureBadge("CACHED")).toBe("CACHED");
+    expect(allowsLivePressureClaim("FALLBACK")).toBe(false);
+    expect(allowsLivePressureClaim("STALE")).toBe(false);
+    expect(allowsLivePressureClaim("UNAVAILABLE")).toBe(false);
+    expect(allowsLivePressureClaim("CACHED")).toBe(false);
+  });
+
+  it("never pairs LIVE PRESSURE with fallback / stale / unavailable copy", () => {
+    for (const label of CUSTOMER_INTEGRITY_LABELS) {
+      const badge = customerPressureBadge(label);
+      const copy = customerPressureUnavailableCopy(label);
+      if (badge === "LIVE PRESSURE") {
+        expect(copy).not.toMatch(/FALLBACK|STALE|UNAVAILABLE/);
+      }
+      if (/FALLBACK|STALE|UNAVAILABLE/.test(copy) && copy !== "VECTOR DETAIL UNAVAILABLE") {
+        expect(badge).not.toBe("LIVE PRESSURE");
+      }
+    }
+  });
+
+  it("does not claim FALLBACK when vector detail is missing on a live or cached feed", () => {
+    expect(customerPressureUnavailableCopy("LIVE")).toBe("VECTOR DETAIL UNAVAILABLE");
+    expect(customerPressureUnavailableCopy("CACHED")).toBe("VECTOR DETAIL UNAVAILABLE");
+    expect(customerPressureUnavailableCopy("FALLBACK")).toBe("DATA UNAVAILABLE — USING FALLBACK");
+    expect(customerPressureUnavailableCopy("STALE")).toBe("DATA STALE");
+    expect(customerPressureUnavailableCopy("UNAVAILABLE")).toBe("DATA UNAVAILABLE");
+  });
+});
+
+describe("customer-facing SHA watermark is hidden", () => {
+  it("hides the build badge unless founderQa=1", () => {
+    expect(isCustomerBuildBadgeVisible("")).toBe(false);
+    expect(isCustomerBuildBadgeVisible("?tab=pressure")).toBe(false);
+    expect(isCustomerBuildBadgeVisible("?founderQa=0")).toBe(false);
+    expect(isCustomerBuildBadgeVisible("founderQa=1")).toBe(true);
+    expect(isCustomerBuildBadgeVisible("?tab=pressure&founderQa=1")).toBe(true);
+  });
+});
+
 describe("blank vs ticker duplicates", () => {
   it("hides a blank copy when the same strip already has a usable ticker", () => {
     expect(hideBlankTickerDuplicates([
@@ -251,6 +302,9 @@ describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
   const warning = read("client/src/components/EarlyWarningPresentationPanel.tsx");
   const ticker = read("client/src/components/GlobalMarketTicker.tsx");
   const header = read("client/src/components/AppMarketHeader.tsx");
+  const badge = read("client/src/components/BuildBadge.tsx");
+  const banner = read("client/src/components/SeismographNarrativeBanner.tsx");
+  const scores = read("client/src/pages/Scores.tsx");
 
   it("computes integrity from engine state instead of treating any bound state as LIVE", () => {
     expect(engine).toContain("customerIntegrityFromEngine");
@@ -285,6 +339,26 @@ describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
     expect(strip).not.toContain("CANONICAL {canonicalState.stateId}");
     expect(room).not.toContain("light?.canonicalStateId ? ` · ${light.canonicalStateId}`");
     expect(warning).not.toContain("Canonical state: {presentation.stateId}");
+  });
+
+  it("keeps one coherent Pressure badge and never hardcodes LIVE PRESSURE next to FALLBACK", () => {
+    expect(pressure).toContain("customerPressureBadge");
+    expect(pressure).toContain("customerPressureUnavailableCopy");
+    expect(pressure).toContain("badge={customerPressureBadge(integrityLabel)}");
+    expect(pressure).not.toContain("DATA UNAVAILABLE — USING FALLBACK");
+    expect(pressure).not.toContain('"LIVE PRESSURE"');
+    expect(pressure).not.toContain("'LIVE PRESSURE'");
+    expect(banner).toContain("integrityLabel");
+    expect(banner).toContain("customerIntegrityChipLevel");
+    expect(banner).not.toContain("output.dataFreshness.toUpperCase()");
+    expect(scores).toContain("integrityLabel");
+    expect(scores).not.toContain('badge="LIVE"');
+  });
+
+  it("hides the customer-facing SHA build watermark unless founder QA reveals it", () => {
+    expect(badge).toContain("isCustomerBuildBadgeVisible");
+    expect(badge).toContain("if (!visible || !info) return null");
+    expect(layout).toContain("BuildBadge");
   });
 
   it("dedupes blank ticker copies on the shared market strips", () => {

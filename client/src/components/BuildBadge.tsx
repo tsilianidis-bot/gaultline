@@ -1,13 +1,14 @@
 /**
- * BuildBadge — fixed bottom-right badge showing the deployed commit hash and build time.
- * Fetches from /api/build-info which reads BUILD_COMMIT + BUILD_TIME env vars injected at deploy time.
- * Allows the team to confirm which version is live at getfaultline.live.
+ * BuildBadge — founder-QA-only commit watermark.
+ * Hidden from customer UI. Reveal with ?founderQa=1.
+ * Deployment identity stays on /api/health and /api/build-info.
  *
  * IMPORTANT: z-index is set to 40 (below the mobile bottom tab bar at z-50) and
  * bottom is offset above the tab bar (~60px) so it never intercepts tab bar taps.
  */
 
 import { useEffect, useState } from "react";
+import { isCustomerBuildBadgeVisible } from "@shared/customerBuildBadge";
 
 interface BuildInfo {
   commit: string;
@@ -25,17 +26,19 @@ function formatBuildTime(iso: string): string {
 }
 
 export function BuildBadge() {
+  const visible = typeof window !== "undefined" && isCustomerBuildBadgeVisible(window.location.search);
   const [info, setInfo] = useState<BuildInfo | null>(null);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    if (!visible) return;
     fetch("/api/build-info")
       .then((r) => r.json())
       .then((d: BuildInfo) => setInfo(d))
       .catch(() => setInfo({ commit: "unknown", buildTime: "", nodeEnv: "unknown" }));
-  }, []);
+  }, [visible]);
 
-  if (!info) return null;
+  if (!visible || !info) return null;
 
   const commit = info.commit === "dev" ? "dev" : info.commit.substring(0, 7);
 

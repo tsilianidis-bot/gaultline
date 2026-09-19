@@ -158,6 +158,30 @@ export function customerIntegrityChipLevel(
   return "unavailable";
 }
 
+/**
+ * Single customer-facing Pressure badge.
+ * "LIVE PRESSURE" is reserved for truly live evidence and must never
+ * appear alongside FALLBACK / STALE / UNAVAILABLE / CACHED.
+ */
+export function customerPressureBadge(label: CustomerIntegrityLabel): string {
+  return label === "LIVE" ? "LIVE PRESSURE" : label;
+}
+
+export function allowsLivePressureClaim(label: CustomerIntegrityLabel): boolean {
+  return label === "LIVE";
+}
+
+/**
+ * Copy when Pressure vector detail is missing.
+ * Never claims LIVE, and never claims FALLBACK unless integrity is FALLBACK.
+ */
+export function customerPressureUnavailableCopy(label: CustomerIntegrityLabel): string {
+  if (label === "FALLBACK") return "DATA UNAVAILABLE — USING FALLBACK";
+  if (label === "STALE") return "DATA STALE";
+  if (label === "UNAVAILABLE") return "DATA UNAVAILABLE";
+  return "VECTOR DETAIL UNAVAILABLE";
+}
+
 export function humanizeConflictType(conflictType: string | null | undefined): string {
   if (!conflictType) return "Data notice";
   const known = CONFLICT_TITLES[conflictType];
