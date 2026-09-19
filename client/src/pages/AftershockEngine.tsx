@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { PremiumGateFull } from "@/components/PremiumGate";
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
+import { useEngine } from "@/contexts/EngineContext";
 
 // ── Types (mirrored from server) ───────────────────────────────
 type AftershockLabel =
@@ -475,6 +476,7 @@ function ChainView({ chain }: { chain: AftershockChain }) {
 
 function AftershockEnginePageInner() {
   useSEO(PAGE_SEO.aftershock);
+  const { integrityLabel } = useEngine();
   const { data, isLoading, error, refetch } = trpc.aftershock.getAnalysis.useQuery(undefined, {
     refetchInterval: 3 * 60 * 1000, // refresh every 3 min
     staleTime: 2 * 60 * 1000,
@@ -524,7 +526,7 @@ function AftershockEnginePageInner() {
                     AFTERSHOCK ENGINE™
                   </h1>
                   <span className="text-[10px] px-1.5 py-0.5 rounded border border-red-500/40 bg-red-500/10 text-red-300 font-mono">
-                    LIVE
+                    {integrityLabel}
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-500 mt-0.5">

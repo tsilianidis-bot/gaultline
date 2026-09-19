@@ -87,6 +87,14 @@ describe("customerIntegrityLabel", () => {
     expect(customerIntegrityLabel({
       hasState: true,
       freshness: "live",
+      cacheStatus: "refreshed",
+      quality: "PARTIAL",
+      fallbackInputCount: 0,
+      fredStatus: "healthy",
+    })).toBe("FALLBACK");
+    expect(customerIntegrityLabel({
+      hasState: true,
+      freshness: "live",
       quality: "HEALTHY",
       marketMode: "deterministic-fallback",
     })).toBe("FALLBACK");
@@ -170,6 +178,15 @@ describe("customerIntegrityFromEngine", () => {
       marketState: { freshness: "live", cache: { status: "refreshed" } },
       sourceHealth: [{ id: "fred", status: "degraded", required: true }],
     })).toBe("FALLBACK");
+    expect(customerIntegrityFromEngine({
+      canonicalState: {
+        confidenceOrEvidenceQuality: "PARTIAL",
+        fallbackInputs: [],
+        dataQualitySummary: { fallbackInputCount: 0, staleInputCount: 0 },
+      },
+      marketState: { freshness: "live", cache: { status: "refreshed" } },
+      sourceHealth: [{ id: "fred", status: "healthy", required: true }],
+    })).toBe("FALLBACK");
   });
 });
 
@@ -234,6 +251,21 @@ describe("customer Pressure badge is a single coherent label", () => {
     }
   });
 
+  it("maps PARTIAL quality with fallbackInputCount 0 to FALLBACK, never LIVE PRESSURE", () => {
+    const label = customerIntegrityLabel({
+      hasState: true,
+      freshness: "live",
+      cacheStatus: "refreshed",
+      quality: "PARTIAL",
+      fallbackInputCount: 0,
+      fredStatus: "healthy",
+    });
+    expect(label).toBe("FALLBACK");
+    expect(customerPressureBadge(label)).toBe("FALLBACK");
+    expect(allowsLivePressureClaim(label)).toBe(false);
+    expect(customerPressureUnavailableCopy(label)).toBe("DATA UNAVAILABLE — USING FALLBACK");
+  });
+
   it("does not claim FALLBACK when vector detail is missing on a live or cached feed", () => {
     expect(customerPressureUnavailableCopy("LIVE")).toBe("VECTOR DETAIL UNAVAILABLE");
     expect(customerPressureUnavailableCopy("CACHED")).toBe("VECTOR DETAIL UNAVAILABLE");
@@ -244,12 +276,9 @@ describe("customer Pressure badge is a single coherent label", () => {
 });
 
 describe("customer-facing SHA watermark is hidden", () => {
-  it("hides the build badge unless founderQa=1", () => {
-    expect(isCustomerBuildBadgeVisible("")).toBe(false);
-    expect(isCustomerBuildBadgeVisible("?tab=pressure")).toBe(false);
-    expect(isCustomerBuildBadgeVisible("?founderQa=0")).toBe(false);
-    expect(isCustomerBuildBadgeVisible("founderQa=1")).toBe(true);
-    expect(isCustomerBuildBadgeVisible("?tab=pressure&founderQa=1")).toBe(true);
+  it("hides the build badge in production customer UI", () => {
+    expect(isCustomerBuildBadgeVisible(true)).toBe(false);
+    expect(isCustomerBuildBadgeVisible(false)).toBe(true);
   });
 });
 
@@ -306,6 +335,8 @@ describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
   const badge = read("client/src/components/BuildBadge.tsx");
   const banner = read("client/src/components/SeismographNarrativeBanner.tsx");
   const scores = read("client/src/pages/Scores.tsx");
+  const aftershock = read("client/src/pages/AftershockEngine.tsx");
+  const health = read("server/_core/index.ts");
 
   it("computes integrity from engine state instead of treating any bound state as LIVE", () => {
     expect(engine).toContain("customerIntegrityFromEngine");
@@ -354,12 +385,17 @@ describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
     expect(banner).not.toContain("output.dataFreshness.toUpperCase()");
     expect(scores).toContain("integrityLabel");
     expect(scores).not.toContain('badge="LIVE"');
+    expect(aftershock).toContain("integrityLabel");
+    expect(aftershock).not.toMatch(/<span[^>]*>\s*LIVE\s*<\/span>/);
   });
 
-  it("hides the customer-facing SHA build watermark unless founder QA reveals it", () => {
+  it("removes the SHA build watermark from customer AppLayout and keeps /api/build-info", () => {
+    expect(layout).not.toContain("BuildBadge");
     expect(badge).toContain("isCustomerBuildBadgeVisible");
+    expect(badge).toContain("import.meta.env.PROD");
     expect(badge).toContain("if (!visible || !info) return null");
-    expect(layout).toContain("BuildBadge");
+    expect(health).toContain('app.get("/api/build-info"');
+    expect(health).toContain('app.get("/api/health"');
   });
 
   it("dedupes blank ticker copies on the shared market strips", () => {

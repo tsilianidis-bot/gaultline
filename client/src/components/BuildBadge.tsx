@@ -1,6 +1,5 @@
 /**
- * BuildBadge — founder-QA-only commit watermark.
- * Hidden from customer UI. Reveal with ?founderQa=1.
+ * BuildBadge — local/dev only. Production customer UI always returns null.
  * Deployment identity stays on /api/health and /api/build-info.
  *
  * IMPORTANT: z-index is set to 40 (below the mobile bottom tab bar at z-50) and
@@ -26,7 +25,7 @@ function formatBuildTime(iso: string): string {
 }
 
 export function BuildBadge() {
-  const visible = typeof window !== "undefined" && isCustomerBuildBadgeVisible(window.location.search);
+  const visible = isCustomerBuildBadgeVisible(import.meta.env.PROD);
   const [info, setInfo] = useState<BuildInfo | null>(null);
   const [expanded, setExpanded] = useState(false);
 
