@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { GLOBAL_INSTRUMENTS, classifyFreshness } from "./markets";
+import type { YahooQuote } from "../yahooProxy";
+import { GLOBAL_INSTRUMENTS, classifyFreshness, freshnessForYahooQuote } from "./markets";
 
 describe("canonical Global Markets snapshot", () => {
   it("covers the intended cross-asset categories without a simulated instrument", () => {
@@ -42,5 +43,51 @@ describe("canonical Global Markets snapshot", () => {
       state: "UNKNOWN",
       now,
     })).toBe("UNAVAILABLE");
+  });
+
+  it("marks failed ^RUT and ^VIX quotes UNAVAILABLE, never LIVE", () => {
+    const failed: YahooQuote = {
+      ticker: "^RUT",
+      price: null,
+      prevClose: null,
+      open: null,
+      high: null,
+      low: null,
+      volume: null,
+      change: null,
+      changePercent: null,
+      marketState: "UNKNOWN",
+      isDelayed: true,
+      source: "error",
+      fetchedAt: 1_000_000,
+      error: "Yahoo index unavailable; Polygon cannot serve this index",
+    };
+    expect(GLOBAL_INSTRUMENTS.find(item => item.symbol === "^RUT")?.provider).toBe("yahoo");
+    expect(GLOBAL_INSTRUMENTS.find(item => item.symbol === "^VIX")?.provider).toBe("yahoo");
+    expect(freshnessForYahooQuote(failed)).toBe("UNAVAILABLE");
+    expect(freshnessForYahooQuote({ ...failed, ticker: "^VIX" })).toBe("UNAVAILABLE");
+    expect(freshnessForYahooQuote(undefined)).toBe("UNAVAILABLE");
+  });
+
+  it("never labels an IWM RUT proxy or Polygon prev-close as LIVE", () => {
+    const now = 1_000_000;
+    const proxy: YahooQuote = {
+      ticker: "^RUT",
+      price: 284.1,
+      prevClose: 284.1,
+      open: 283,
+      high: 285,
+      low: 282,
+      volume: 2_000_000,
+      change: null,
+      changePercent: null,
+      marketState: "CLOSED",
+      isDelayed: false,
+      source: "polygon-prev",
+      proxySymbol: "IWM",
+      fetchedAt: now,
+    };
+    expect(freshnessForYahooQuote(proxy, now)).toBe("DELAYED");
+    expect(freshnessForYahooQuote({ ...proxy, proxySymbol: undefined, isDelayed: false }, now)).toBe("DELAYED");
   });
 });

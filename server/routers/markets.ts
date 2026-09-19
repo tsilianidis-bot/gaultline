@@ -91,6 +91,8 @@ export interface MarketQuoteItem {
   fetchedAt: number;
   source: string;
   destination: string;
+  /** Present only when the print is an explicitly labeled ETF proxy, never the cash index. */
+  proxySymbol?: string;
   error?: string;
 }
 
@@ -163,15 +165,35 @@ function fredItem(inst: MarketInstrument, observations: FredObservation[], fetch
   };
 }
 
+/** Polygon prev-close and ETF proxies are never LIVE, even if a quote omits isDelayed. */
+export function freshnessForYahooQuote(quote: YahooQuote | undefined, now = Date.now()): FreshnessState {
+  const price = quote?.price ?? null;
+  if (!quote || quote.source === "error" || !isFiniteNumber(price)) return "UNAVAILABLE";
+  const forceDelayed = quote.source === "polygon-prev" || Boolean(quote.proxySymbol);
+  return classifyFreshness({
+    price,
+    isDelayed: forceDelayed || (quote.isDelayed ?? true),
+    fetchedAt: quote.fetchedAt,
+    provider: "yahoo",
+    state: quote.marketState,
+    now,
+  });
+}
+
 function yahooItem(inst: MarketInstrument, quote: YahooQuote | undefined): MarketQuoteItem {
   const fetchedAt = quote?.fetchedAt ?? Date.now();
   const marketState = quote?.marketState ?? "UNKNOWN";
+  const proxySymbol = quote?.proxySymbol;
   return {
     ...inst,
+    label: proxySymbol ? `${inst.label} (${proxySymbol} proxy)` : inst.label,
+    shortLabel: proxySymbol ? `${inst.shortLabel}·${proxySymbol}` : inst.shortLabel,
     price: quote?.price ?? null, prevClose: quote?.prevClose ?? null, open: quote?.open ?? null, high: quote?.high ?? null, low: quote?.low ?? null,
     change: quote?.change ?? null, changePercent: quote?.changePercent ?? null, marketState, sessionStatus: sessionStatus(marketState),
-    isDelayed: quote?.isDelayed ?? true, observedAt: quote?.observedAt ?? null, fetchedAt, source: quote?.source ?? "error", destination: inst.destination,
-    freshnessState: classifyFreshness({ price: quote?.price ?? null, isDelayed: quote?.isDelayed ?? true, fetchedAt, provider: "yahoo", state: marketState }),
+    isDelayed: Boolean(proxySymbol) || quote?.source !== "yahoo" || (quote?.isDelayed ?? true),
+    observedAt: quote?.observedAt ?? null, fetchedAt, source: quote?.source ?? "error", destination: inst.destination,
+    freshnessState: freshnessForYahooQuote(quote),
+    ...(proxySymbol ? { proxySymbol } : {}),
     ...(quote?.error ? { error: quote.error } : {}),
   };
 }

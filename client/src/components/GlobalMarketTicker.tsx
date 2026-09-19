@@ -56,6 +56,7 @@ function stateTone(item: MarketQuoteItem) {
 function humanState(item: MarketQuoteItem) {
   if (item.freshnessState === "STALE") return "STALE";
   if (item.freshnessState === "UNAVAILABLE") return "UNAVAILABLE";
+  if (item.proxySymbol) return `${item.proxySymbol} PROXY · DELAYED`;
   if (item.sessionStatus === "CLOSED") return "CLOSED · LAST SESSION";
   if (item.freshnessState === "DELAYED") return `${item.sessionStatus} · DELAYED`;
   if (item.freshnessState === "LATEST_VERIFIED") return "LATEST VERIFIED";
