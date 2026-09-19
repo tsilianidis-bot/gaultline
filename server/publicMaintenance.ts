@@ -2,16 +2,23 @@
  * Temporary public presentation boundary.
  *
  * This gate deliberately leaves API, scheduled, auth, leftover storage-compat, and asset routes untouched.
- * Set FAULTLINE_MAINTENANCE_MODE=false in the deployment environment to resume normal public
+ * Opt-in: set FAULTLINE_MAINTENANCE_MODE=true (exactly, case-sensitive) to serve the branded
+ * maintenance page on public GET/HEAD HTML routes. Unset or any other value keeps normal public
  * SPA delivery without changing any intelligence, database, or application behavior.
  */
-export const PUBLIC_MAINTENANCE_ACTIVE = process.env.FAULTLINE_MAINTENANCE_MODE !== "false";
+export function isMaintenanceModeEnabled(
+  value: string | undefined = process.env.FAULTLINE_MAINTENANCE_MODE,
+): boolean {
+  return value === "true";
+}
+
+export const PUBLIC_MAINTENANCE_ACTIVE = isMaintenanceModeEnabled();
 
 const NON_PUBLIC_PREFIXES = ["/api/", "/assets/", "/manus-storage/"];
 const NON_PAGE_PATHS = new Set(["/favicon.ico", "/robots.txt", "/sitemap.xml", "/manifest.json"]);
 
 export function shouldServePublicMaintenance(method: string, path: string): boolean {
-  if (!PUBLIC_MAINTENANCE_ACTIVE) return false;
+  if (!isMaintenanceModeEnabled()) return false;
   if (method !== "GET" && method !== "HEAD") return false;
   if (NON_PAGE_PATHS.has(path)) return false;
   return !NON_PUBLIC_PREFIXES.some(prefix => path.startsWith(prefix));
