@@ -79,6 +79,9 @@ export const ANALYTICAL_LEGACY_ALIASES: Readonly<Record<string, string>> = {
   "/app/stock-heatmap": "/app/now/deep",
   "/app/todays-story": "/app/now",
   "/app/trade-preflight": "/app/decision-engine#trade-preflight",
+  "/pricing": "/#access",
+  "/mobile": "/app/now",
+  "/mobile/": "/app/now",
   "/mobile/brief": "/app/now",
   "/mobile/crypto": "/app/now?view=markets",
   "/mobile/rotation": "/app/why?view=transmission",
@@ -99,7 +102,12 @@ export function preserveRouteContext(target: string, currentSearch = "", current
   const hash = currentHash || (targetHash ? `#${targetHash}` : "");
   return `${targetPath}${query ? `?${query}` : ""}${hash}`;
 }
-export function getLegacyAliasTarget(pathname: string): string | undefined { return ANALYTICAL_LEGACY_ALIASES[stripRouteContext(pathname)]; }
+export function getLegacyAliasTarget(pathname: string): string | undefined {
+  const clean = stripRouteContext(pathname);
+  if (ANALYTICAL_LEGACY_ALIASES[clean]) return ANALYTICAL_LEGACY_ALIASES[clean];
+  const withoutTrailingSlash = clean.replace(/\/+$/, "") || "/";
+  return ANALYTICAL_LEGACY_ALIASES[withoutTrailingSlash];
+}
 export function resolveCanonicalDestination(pathname: string): CanonicalDestination | undefined {
   const clean = stripRouteContext(pathname);
   const direct = CANONICAL_DESTINATIONS.find(item => item.path === clean);

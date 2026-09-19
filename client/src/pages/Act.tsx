@@ -26,6 +26,7 @@ import {
   formatCanonicalScore,
   normalizeCanonicalMetric,
 } from "@shared/marketMetrics";
+import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
@@ -240,13 +241,13 @@ function FlagBalance({ greenFlags, redFlags }: { greenFlags: string[]; redFlags:
 export default function Act() {
   const {
     marketState,
-    marketMode,
     sourceHealth,
     isLoading,
     isRefreshing,
     lastUpdated,
     dataError,
     refresh,
+    integrityLabel,
   } = useEngine();
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
@@ -260,7 +261,6 @@ export default function Act() {
   if (isLoading && !canonicalState) return <PageLoadingState eyebrow="ACT · Decision state" message="Loading authoritative canonical decision state…" />;
   if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="ACT withholds current decision interpretation until one authoritative state is available." />;
 
-  const isCanonical = marketMode === "canonical" && Boolean(marketState);
   const pressure = canonicalState.pressureIndex ?? 0;
   const posture = marketState?.act.marketPosture ?? null;
   const postureView = posture ? postureConfig[posture] : unavailablePostureView;
@@ -273,7 +273,7 @@ export default function Act() {
   const evidence = marketState?.now.topDrivers ?? [];
   const monitoredTriggers = marketState?.watch.whatToWatch ?? [];
   const developingConditions = marketState?.watch.developingConditions ?? [];
-  const modeLabel = isCanonical ? "Canonical state" : "UNAVAILABLE";
+  const modeLabel = customerChromeModeLabel(integrityLabel);
 
   const greenFlags = evidence;
   const redFlags: string[] = marketState?.watch.whatChanged ?? [];
@@ -335,7 +335,7 @@ export default function Act() {
                   <Crosshair className="h-4 w-4" /> ACT · Decision state
                 </div>
                 <DataFreshnessChip
-                  freshness={marketState?.freshness ?? (isCanonical ? "live" : "stale")}
+                  freshness={customerIntegrityChipLevel(integrityLabel)}
                   tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
                 />
               </div>

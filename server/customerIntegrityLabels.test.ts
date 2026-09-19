@@ -8,6 +8,7 @@ import {
   customerIntegrityChipLevel,
   customerIntegrityColor,
   customerIntegrityFromEngine,
+  customerChromeModeLabel,
   customerIntegrityLabel,
   customerPressureBadge,
   customerPressureUnavailableCopy,
@@ -224,6 +225,17 @@ describe("customer-facing debug code humanization", () => {
 });
 
 describe("customer Pressure badge is a single coherent label", () => {
+  it("never claims Canonical state or LIVE when integrity is FALLBACK", () => {
+    expect(customerChromeModeLabel("LIVE")).toBe("Canonical state");
+    expect(customerChromeModeLabel("FALLBACK")).toBe("FALLBACK");
+    expect(customerChromeModeLabel("STALE")).toBe("STALE");
+    expect(customerChromeModeLabel("CACHED")).toBe("CACHED");
+    expect(customerChromeModeLabel("UNAVAILABLE")).toBe("UNAVAILABLE");
+    expect(customerChromeModeLabel("FALLBACK")).not.toMatch(/LIVE|Canonical/i);
+    expect(customerIntegrityChipLevel("FALLBACK")).toBe("fallback");
+    expect(customerIntegrityChipLevel("FALLBACK")).not.toBe("live");
+  });
+
   it("emits LIVE PRESSURE only when integrity is truly LIVE", () => {
     expect(customerPressureBadge("LIVE")).toBe("LIVE PRESSURE");
     expect(allowsLivePressureClaim("LIVE")).toBe(true);
@@ -323,6 +335,10 @@ describe("blank vs ticker duplicates", () => {
 
 describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
   const now = read("client/src/pages/Now.tsx");
+  const why = read("client/src/pages/Why.tsx");
+  const watch = read("client/src/pages/Watch.tsx");
+  const outlook = read("client/src/pages/Outlook.tsx");
+  const act = read("client/src/pages/Act.tsx");
   const pressure = read("client/src/pages/Pressure.tsx");
   const layout = read("client/src/components/AppLayout.tsx");
   const dashboard = read("client/src/pages/Dashboard.tsx");
@@ -348,6 +364,18 @@ describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
     expect(now).toContain("customerIntegrityChipLevel");
     expect(now).not.toMatch(/value:\s*isLive\s*\?\s*"LIVE"/);
     expect(now).not.toContain('isLive ? "LIVE" : "PROTECTED"');
+    expect(now).toContain("marketMode === \"simulation\" ? \"SIMULATION\" : integrityLabel");
+  });
+
+  it("binds destination chrome mode and freshness to customerIntegrityLabels", () => {
+    for (const source of [why, watch, outlook, act]) {
+      expect(source).toContain("customerChromeModeLabel");
+      expect(source).toContain("customerIntegrityChipLevel(integrityLabel)");
+      expect(source).not.toContain('marketMode === "canonical" ? "Canonical state"');
+      expect(source).not.toContain('isCanonical ? "Canonical state"');
+      expect(source).not.toContain('marketState?.freshness ?? (marketMode === "canonical" ? "live"');
+      expect(source).not.toContain('marketState?.freshness ?? (isCanonical ? "live"');
+    }
   });
 
   it("keeps header / dashboard LIVE badges bound to integrity", () => {

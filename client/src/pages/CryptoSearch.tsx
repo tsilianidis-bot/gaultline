@@ -538,16 +538,69 @@ function CryptoSearchInner() {
   );
 
   // Top markets for heatmap
-  const { data: topMarkets, isLoading: isLoadingMarkets } = trpc.crypto.getTopMarkets.useQuery(
+  const { data: topMarkets, isLoading: isLoadingMarkets, isError: marketsError, isFetched: marketsFetched } = trpc.crypto.getTopMarkets.useQuery(
     { limit: 100 },
-    { staleTime: 2 * 60_000, refetchOnWindowFocus: false }
+    { staleTime: 2 * 60_000, refetchOnWindowFocus: false, retry: 1 }
   );
 
-  // Global stats
-  const { data: globalStats } = trpc.crypto.getGlobalStats.useQuery(
+  // Global stats — also available at GET /api/crypto/global
+  const { data: globalStats, isError: globalError } = trpc.crypto.getGlobalStats.useQuery(
     undefined,
-    { staleTime: 3 * 60_000, refetchOnWindowFocus: false }
+    { staleTime: 3 * 60_000, refetchOnWindowFocus: false, retry: 1 }
   );
+
+  const [restMarkets, setRestMarkets] = useState<typeof topMarkets | null>(null);
+  const [restGlobal, setRestGlobal] = useState<typeof globalStats | null>(null);
+  const [restMarketsSettled, setRestMarketsSettled] = useState(false);
+
+  useEffect(() => {
+    if (topMarkets && topMarkets.length > 0) return;
+    let cancelled = false;
+    const delay = isLoadingMarkets ? 2_000 : 0;
+    const timer = window.setTimeout(() => {
+      fetch("/api/crypto/markets", { signal: AbortSignal.timeout(8000) })
+        .then(res => (res.ok ? res.json() : null))
+        .then(payload => {
+          if (cancelled) return;
+          const coins = Array.isArray(payload) ? payload : payload?.coins;
+          setRestMarkets(Array.isArray(coins) && coins.length > 0 ? coins : null);
+        })
+        .catch(() => {
+          if (!cancelled) setRestMarkets(null);
+        })
+        .finally(() => {
+          if (!cancelled) setRestMarketsSettled(true);
+        });
+    }, delay);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [topMarkets, isLoadingMarkets]);
+
+  useEffect(() => {
+    if (globalStats) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      fetch("/api/crypto/global", { signal: AbortSignal.timeout(8000) })
+        .then(res => (res.ok ? res.json() : null))
+        .then(payload => {
+          if (!cancelled && payload && typeof payload.totalMarketCap === "number") setRestGlobal(payload);
+        })
+        .catch(() => {
+          if (!cancelled) setRestGlobal(null);
+        });
+    }, globalError ? 0 : 2_000);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [globalStats, globalError]);
+
+  const heatmapMarkets = (topMarkets && topMarkets.length > 0) ? topMarkets : restMarkets;
+  const resolvedGlobal = globalStats ?? restGlobal;
+  const marketsPending = isLoadingMarkets || (!marketsFetched && !marketsError && !restMarketsSettled);
+  const marketsUnavailable = !marketsPending && !(heatmapMarkets && heatmapMarkets.length > 0);
 
   // Recovery confirmation analysis — fetched when an asset is searched
   const { data: recoveryData, isLoading: isLoadingRecovery } = trpc.recovery.getAssetRecovery.useQuery(
@@ -603,13 +656,13 @@ function CryptoSearchInner() {
           </p>
 
           {/* Global stats strip */}
-          {globalStats && (
+          {resolvedGlobal && (
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginBottom: "16px" }}>
               {[
-                { label: "Total Market Cap",  value: fmt(globalStats.totalMarketCap),                                                    color: globalStats.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
-                { label: "24h Volume",        value: fmt(globalStats.totalVolume24h),                                                     color: "#00D4FF" },
-                { label: "BTC Dominance",     value: `${globalStats.btcDominance.toFixed(1)}%`,                                           color: globalStats.btcDominance > 60 ? "#FF9500" : "#00D4FF" },
-                { label: "Market Cap Δ 24h",  value: fmtPct(globalStats.marketCapChangePercent24h),                                       color: globalStats.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
+                { label: "Total Market Cap",  value: fmt(resolvedGlobal.totalMarketCap),                                                    color: resolvedGlobal.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
+                { label: "24h Volume",        value: fmt(resolvedGlobal.totalVolume24h),                                                     color: "#00D4FF" },
+                { label: "BTC Dominance",     value: `${resolvedGlobal.btcDominance.toFixed(1)}%`,                                           color: resolvedGlobal.btcDominance > 60 ? "#FF9500" : "#00D4FF" },
+                { label: "Market Cap Δ 24h",  value: fmtPct(resolvedGlobal.marketCapChangePercent24h),                                       color: resolvedGlobal.marketCapChangePercent24h >= 0 ? "#00FF88" : "#FF2D55" },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#374151", letterSpacing: "0.1em" }}>{label.toUpperCase()}</span>
@@ -790,13 +843,13 @@ function CryptoSearchInner() {
             <BarChart2 size={12} style={{ color: "#00D4FF" }} />
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151", letterSpacing: "0.15em" }}>MARKET HEATMAP — TOP 100 BY MARKET CAP</span>
           </div>
-          {isLoadingMarkets ? (
+          {marketsPending && !heatmapMarkets ? (
             <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>
               <div style={{ width: "16px", height: "16px", border: "2px solid rgba(0,212,255,0.2)", borderTopColor: "#00D4FF", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
             </div>
-          ) : topMarkets && topMarkets.length > 0 ? (
+          ) : heatmapMarkets && heatmapMarkets.length > 0 ? (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))", gap: "4px" }}>
-              {topMarkets.map(coin => (
+              {heatmapMarkets.map(coin => (
                 <div key={coin.id} onClick={() => handleSearch(coin.id)} style={{ cursor: "pointer" }}>
                   <HeatCell
                     symbol={coin.symbol}
@@ -808,7 +861,7 @@ function CryptoSearchInner() {
               ))}
             </div>
           ) : (
-            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#374151", textAlign: "center", padding: "20px 0" }}>Market data loading…</p>
+            <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#374151", textAlign: "center", padding: "20px 0" }}>{marketsUnavailable ? "Market data unavailable." : "Market data loading…"}</p>
           )}
           <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#1F2937", margin: "8px 0 0", textAlign: "center" }}>Click any asset to load its intelligence card</p>
         </div>

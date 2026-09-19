@@ -27,6 +27,10 @@ describe("canonical route registry", () => {
     expect(resolveCanonicalDestination("/app/daily-briefing")?.id).toBe("now");
     expect(resolveCanonicalDestination("/app/daily-briefing")?.defaultView).toBe("brief");
     expect(getLegacyAliasTarget("/mobile/brief")).toBe("/app/now");
+    expect(getLegacyAliasTarget("/mobile")).toBe("/app/now");
+    expect(getLegacyAliasTarget("/mobile/")).toBe("/app/now");
+    expect(getLegacyAliasTarget("/pricing")).toBe("/#access");
+    expect(getLegacyAliasTarget("/pricing/")).toBe("/#access");
   });
   it("provides typed lookup maps for every route surface", () => { expect(CANONICAL_DESTINATION_BY_ID.now.path).toBe("/app/now"); expect(PERSISTENT_UTILITY_BY_ID.alerts.path).toBe("/app/alerts"); expect(EXPERT_WORKSPACE_BY_ID["decision-engine"].owner).toBe("act"); });
   it("preserves route context", () => {

@@ -375,6 +375,10 @@ function Router() {
           </Suspense>
         </ErrorBoundary>
       </Route>
+      {/* Bare /mobile and /mobile/ 404'd because /mobile/:tab* requires a tab.
+          Redirect to NOW so Pulse nav and typed URLs never dead-end. */}
+      <Route path="/mobile"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
+      <Route path="/mobile/"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
       {/* Mobile PWA routes — standalone, no AppLayout */}
       <Route path="/mobile/:tab*">
         <ErrorBoundary>
@@ -845,7 +849,7 @@ function shouldShowCinematic(): boolean {
     const publicPaths = ['/blog', '/daily-brief', '/intelligence-library', '/analysis',
       '/intelligence', '/intel-archive', '/methodology', '/pressure-index', '/legal',
       '/contact', '/press', '/about', '/platform', '/phoenix-systems', '/glossary',
-      '/pricing', '/r/', '/mobile/', '/public-', '/market-crash', '/alt-season',
+      '/pricing', '/r/', '/mobile', '/public-', '/market-crash', '/alt-season',
       '/bitcoin-', '/ethereum-', '/nvda-', '/pltr-', '/tao-', '/tsla-', '/meta-',
       '/amd-', '/ai-stocks', '/market-regime', '/market-crash-indicator',
       '/recession-', '/federal-reserve', '/liquidity-', '/volatility-', '/ai-bubble',
