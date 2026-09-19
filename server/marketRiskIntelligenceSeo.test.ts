@@ -34,6 +34,18 @@ describe("Market Risk Intelligence SEO positioning", () => {
     expect(homepage).toContain('"description": "FAULTLINE is a market risk intelligence platform');
   });
 
+  it("advertises only the public pricing ladder in SoftwareApplication JSON-LD", () => {
+    expect(homepage).toContain('"name": "Trader"');
+    expect(homepage).toContain('"name": "Power"');
+    expect(homepage).toContain('"name": "Founding"');
+    expect(homepage).toContain('"price": "59.00"');
+    expect(homepage).toContain('"price": "99.00"');
+    expect(homepage).toContain('"price": "49.00"');
+    expect(homepage).not.toContain('"name": "Founding Lifetime"');
+    expect(homepage).not.toContain('"price": "299.00"');
+    expect(homepage).not.toContain('"price": "9.99"');
+  });
+
   it("gives eligible public risk pages distinct, content-aligned search-intent titles", () => {
     expect(getPageMeta("/market-crash-probability-2026").title).toBe("Market Crash Probability | FAULTLINE");
     expect(getPageMeta("/recession-probability").title).toBe("Recession Probability | FAULTLINE");
