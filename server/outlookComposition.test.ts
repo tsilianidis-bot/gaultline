@@ -56,7 +56,8 @@ describe("OUTLOOK destination composition", () => {
     expect(outlookSource).toContain("marketState?.outlook.probabilities ?? {");
     expect(outlookSource).toContain("marketState?.outlook.transitionProbabilities ?? null");
     expect(outlookSource).toContain("marketState?.outlook.highestProbabilityPath ??");
-    expect(outlookSource).toContain('marketMode === "canonical" ? "Canonical state" : "Deterministic fallback"');
+    expect(outlookSource).toContain("customerChromeModeLabel(integrityLabel)");
+    expect(outlookSource).toContain("customerIntegrityChipLevel(integrityLabel)");
     expect(outlookSource).toContain("Canonical refresh is degraded");
     expect(outlookSource).not.toContain("trpc.");
   });

@@ -54,7 +54,8 @@ describe("WHY destination composition", () => {
     expect(whySource).toContain("marketState?.why.evidenceFamilies ?? output.domains.map");
     expect(whySource).toContain("marketState?.why.story ?? output.narrative.summary");
     expect(whySource).toContain("marketState?.why.whyThisRegime ?? output.narrative.regimeAssessment");
-    expect(whySource).toContain('marketMode === "canonical" ? "Canonical state" : "Deterministic fallback"');
+    expect(whySource).toContain("customerChromeModeLabel(integrityLabel)");
+    expect(whySource).toContain("customerIntegrityChipLevel(integrityLabel)");
     expect(whySource).toContain("Canonical refresh is degraded");
     expect(whySource).toContain("trpc.marketState.canonicalCurrent.useQuery");
   });

@@ -54,7 +54,8 @@ describe("ACT destination composition", () => {
     expect(actSource).toContain("marketState?.act.decisionSummary");
     expect(actSource).toContain("marketState?.act.riskControls ?? []");
     expect(actSource).toContain("marketState?.act.whatWouldInvalidate");
-    expect(actSource).toContain('marketMode === "canonical" && Boolean(marketState)');
+    expect(actSource).toContain("customerChromeModeLabel(integrityLabel)");
+    expect(actSource).toContain("customerIntegrityChipLevel(integrityLabel)");
     expect(actSource).toContain("Canonical refresh is degraded");
     expect(actSource).toContain("trpc.marketState.canonicalCurrent.useQuery");
   });
