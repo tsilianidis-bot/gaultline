@@ -24,7 +24,6 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import AshaIntroModal from "@/components/AshaIntroModal";
 import AshaPanel from "@/components/AshaPanel";
-import { BuildBadge } from "@/components/BuildBadge";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 import { customerIntegrityColor, hideBlankTickerDuplicates } from "@shared/customerIntegrityLabels";
 import { DrawerProvider } from "@/contexts/DrawerContext";
@@ -823,8 +822,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <AshaIntroModal />
       <AshaPanel />
 
-      {/* ── Build Badge — deployment verification ── */}
-      <BuildBadge />
     </div>
     </DrawerProvider>
   );

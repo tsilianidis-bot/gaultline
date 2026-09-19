@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  CUSTOMER_INTEGRITY_LABELS,
+  allowsLivePressureClaim,
   customerIntegrityBadgeColor,
   customerIntegrityChipLevel,
   customerIntegrityColor,
   customerIntegrityFromEngine,
   customerIntegrityLabel,
+  customerPressureBadge,
+  customerPressureUnavailableCopy,
   hideBlankMarketQuoteDuplicates,
   hideBlankTickerDuplicates,
   humanizeConflictType,
@@ -14,6 +18,7 @@ import {
   isBlankTickerValue,
   isCustomerDebugWatermark,
 } from "../shared/customerIntegrityLabels";
+import { isCustomerBuildBadgeVisible } from "../shared/customerBuildBadge";
 
 const root = resolve(import.meta.dirname, "..");
 const read = (relativePath: string) => readFileSync(resolve(root, relativePath), "utf8");
@@ -78,6 +83,14 @@ describe("customerIntegrityLabel", () => {
       cacheStatus: "refreshed",
       quality: "PARTIAL",
       fallbackInputCount: 2,
+    })).toBe("FALLBACK");
+    expect(customerIntegrityLabel({
+      hasState: true,
+      freshness: "live",
+      cacheStatus: "refreshed",
+      quality: "PARTIAL",
+      fallbackInputCount: 0,
+      fredStatus: "healthy",
     })).toBe("FALLBACK");
     expect(customerIntegrityLabel({
       hasState: true,
@@ -165,6 +178,15 @@ describe("customerIntegrityFromEngine", () => {
       marketState: { freshness: "live", cache: { status: "refreshed" } },
       sourceHealth: [{ id: "fred", status: "degraded", required: true }],
     })).toBe("FALLBACK");
+    expect(customerIntegrityFromEngine({
+      canonicalState: {
+        confidenceOrEvidenceQuality: "PARTIAL",
+        fallbackInputs: [],
+        dataQualitySummary: { fallbackInputCount: 0, staleInputCount: 0 },
+      },
+      marketState: { freshness: "live", cache: { status: "refreshed" } },
+      sourceHealth: [{ id: "fred", status: "healthy", required: true }],
+    })).toBe("FALLBACK");
   });
 });
 
@@ -198,6 +220,65 @@ describe("customer-facing debug code humanization", () => {
     expect(customerIntegrityColor("LIVE")).toBe("#00FF88");
     expect(customerIntegrityBadgeColor("FALLBACK")).toBe("amber");
     expect(customerIntegrityBadgeColor("UNAVAILABLE")).toBe("gray");
+  });
+});
+
+describe("customer Pressure badge is a single coherent label", () => {
+  it("emits LIVE PRESSURE only when integrity is truly LIVE", () => {
+    expect(customerPressureBadge("LIVE")).toBe("LIVE PRESSURE");
+    expect(allowsLivePressureClaim("LIVE")).toBe(true);
+    expect(customerPressureBadge("FALLBACK")).toBe("FALLBACK");
+    expect(customerPressureBadge("STALE")).toBe("STALE");
+    expect(customerPressureBadge("UNAVAILABLE")).toBe("UNAVAILABLE");
+    expect(customerPressureBadge("CACHED")).toBe("CACHED");
+    expect(allowsLivePressureClaim("FALLBACK")).toBe(false);
+    expect(allowsLivePressureClaim("STALE")).toBe(false);
+    expect(allowsLivePressureClaim("UNAVAILABLE")).toBe(false);
+    expect(allowsLivePressureClaim("CACHED")).toBe(false);
+  });
+
+  it("never pairs LIVE PRESSURE with fallback / stale / unavailable copy", () => {
+    for (const label of CUSTOMER_INTEGRITY_LABELS) {
+      const badge = customerPressureBadge(label);
+      const copy = customerPressureUnavailableCopy(label);
+      if (badge === "LIVE PRESSURE") {
+        expect(copy).toBe("VECTOR DETAIL UNAVAILABLE");
+        expect(copy).not.toMatch(/USING FALLBACK|DATA STALE|DATA UNAVAILABLE/);
+      }
+      if (copy === "DATA UNAVAILABLE — USING FALLBACK" || copy === "DATA STALE" || copy === "DATA UNAVAILABLE") {
+        expect(badge).not.toBe("LIVE PRESSURE");
+      }
+    }
+  });
+
+  it("maps PARTIAL quality with fallbackInputCount 0 to FALLBACK, never LIVE PRESSURE", () => {
+    const label = customerIntegrityLabel({
+      hasState: true,
+      freshness: "live",
+      cacheStatus: "refreshed",
+      quality: "PARTIAL",
+      fallbackInputCount: 0,
+      fredStatus: "healthy",
+    });
+    expect(label).toBe("FALLBACK");
+    expect(customerPressureBadge(label)).toBe("FALLBACK");
+    expect(allowsLivePressureClaim(label)).toBe(false);
+    expect(customerPressureUnavailableCopy(label)).toBe("DATA UNAVAILABLE — USING FALLBACK");
+  });
+
+  it("does not claim FALLBACK when vector detail is missing on a live or cached feed", () => {
+    expect(customerPressureUnavailableCopy("LIVE")).toBe("VECTOR DETAIL UNAVAILABLE");
+    expect(customerPressureUnavailableCopy("CACHED")).toBe("VECTOR DETAIL UNAVAILABLE");
+    expect(customerPressureUnavailableCopy("FALLBACK")).toBe("DATA UNAVAILABLE — USING FALLBACK");
+    expect(customerPressureUnavailableCopy("STALE")).toBe("DATA STALE");
+    expect(customerPressureUnavailableCopy("UNAVAILABLE")).toBe("DATA UNAVAILABLE");
+  });
+});
+
+describe("customer-facing SHA watermark is hidden", () => {
+  it("hides the build badge in production customer UI", () => {
+    expect(isCustomerBuildBadgeVisible(true)).toBe(false);
+    expect(isCustomerBuildBadgeVisible(false)).toBe(true);
   });
 });
 
@@ -251,6 +332,11 @@ describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
   const warning = read("client/src/components/EarlyWarningPresentationPanel.tsx");
   const ticker = read("client/src/components/GlobalMarketTicker.tsx");
   const header = read("client/src/components/AppMarketHeader.tsx");
+  const badge = read("client/src/components/BuildBadge.tsx");
+  const banner = read("client/src/components/SeismographNarrativeBanner.tsx");
+  const scores = read("client/src/pages/Scores.tsx");
+  const aftershock = read("client/src/pages/AftershockEngine.tsx");
+  const health = read("server/_core/index.ts");
 
   it("computes integrity from engine state instead of treating any bound state as LIVE", () => {
     expect(engine).toContain("customerIntegrityFromEngine");
@@ -285,6 +371,31 @@ describe("customer-facing surfaces do not leak LIVE or debug codes", () => {
     expect(strip).not.toContain("CANONICAL {canonicalState.stateId}");
     expect(room).not.toContain("light?.canonicalStateId ? ` · ${light.canonicalStateId}`");
     expect(warning).not.toContain("Canonical state: {presentation.stateId}");
+  });
+
+  it("keeps one coherent Pressure badge and never hardcodes LIVE PRESSURE next to FALLBACK", () => {
+    expect(pressure).toContain("customerPressureBadge");
+    expect(pressure).toContain("customerPressureUnavailableCopy");
+    expect(pressure).toContain("badge={customerPressureBadge(integrityLabel)}");
+    expect(pressure).not.toContain("DATA UNAVAILABLE — USING FALLBACK");
+    expect(pressure).not.toContain('"LIVE PRESSURE"');
+    expect(pressure).not.toContain("'LIVE PRESSURE'");
+    expect(banner).toContain("integrityLabel");
+    expect(banner).toContain("customerIntegrityChipLevel");
+    expect(banner).not.toContain("output.dataFreshness.toUpperCase()");
+    expect(scores).toContain("integrityLabel");
+    expect(scores).not.toContain('badge="LIVE"');
+    expect(aftershock).toContain("integrityLabel");
+    expect(aftershock).not.toMatch(/<span[^>]*>\s*LIVE\s*<\/span>/);
+  });
+
+  it("removes the SHA build watermark from customer AppLayout and keeps /api/build-info", () => {
+    expect(layout).not.toContain("BuildBadge");
+    expect(badge).toContain("isCustomerBuildBadgeVisible");
+    expect(badge).toContain("import.meta.env.PROD");
+    expect(badge).toContain("if (!visible || !info) return null");
+    expect(health).toContain('app.get("/api/build-info"');
+    expect(health).toContain('app.get("/api/health"');
   });
 
   it("dedupes blank ticker copies on the shared market strips", () => {
