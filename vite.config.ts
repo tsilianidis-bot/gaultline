@@ -7,8 +7,12 @@ import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
-// Build-time constants injected into the client bundle
+// Build-time constants injected into the client bundle.
+// Preview pipelines should export BUILD_COMMIT / BUILD_TIME before `pnpm run build`
+// so the badge and /api/build-info can agree. Empty strings are treated as unset.
 function getBuildCommit(): string {
+  const fromEnv = process.env.BUILD_COMMIT?.trim();
+  if (fromEnv) return fromEnv;
   try {
     return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
   } catch {
@@ -16,6 +20,8 @@ function getBuildCommit(): string {
   }
 }
 function getBuildTime(): string {
+  const fromEnv = process.env.BUILD_TIME?.trim();
+  if (fromEnv) return fromEnv;
   try {
     return execSync("git log -1 --format=%cI", { encoding: "utf-8" }).trim();
   } catch {

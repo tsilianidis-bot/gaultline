@@ -98,7 +98,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
         regime,
         direction: canonicalState.pressureDirection === 'Unknown' ? legacy.now.direction : canonicalState.pressureDirection,
       },
-      warnings: [...new Set([...legacy.warnings, ...canonicalState.warnings])],
+      warnings: Array.from(new Set([...legacy.warnings, ...canonicalState.warnings])),
     };
   }, [canonicalState, legacyProjectionQuery.data]);
   const canonicalEnvelope = useMemo<CanonicalConsumerEnvelope<CanonicalMarketState> | null>(() => {

@@ -1,5 +1,5 @@
 /* ============================================================
-   ASHA LIVE BRIEFING  v3  — Oracle Welcome Screen
+   PLATO LIVE BRIEFING  v3  — Oracle Welcome Screen
    Refinements (Jul 2026):
    1. Calm idle state: entrance animation plays once, then gentle
       ambient motion after 3-5s (no repetitive flashing)
@@ -284,7 +284,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
     },
     {
       label: "Search Any Stock or Crypto",
-      sub: "Instant ASHA symbol analysis",
+      sub: "Instant PLATO symbol analysis",
       icon: "\u25ce",
       color: "#B388FF",
       action: () => handleAction("/app/symbol-intelligence"),
@@ -377,7 +377,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.2s both",
           }}
         >
-          ASHA \u00b7 FAULTLINE INTELLIGENCE LAYER
+          PLATO \u00b7 FAULTLINE INTELLIGENCE LAYER
         </div>
 
         {/* Live status pill */}

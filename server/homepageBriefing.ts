@@ -7,14 +7,18 @@
  *   3. History Says (percentile, analogs, streak, probabilities)
  *   4. Market Evolution Timeline (last 28 pressure readings)
  *
- * All values are derived from live platform data — no hardcoded values.
+ * Current readings bind to the authoritative canonical state.
+ * Missing evidence is withheld as UNAVAILABLE — never invented from a live recalc.
  */
 
-import { calculateFaultlinePressure } from "./pressure/engine";
 import { computeHistoricalContext } from "./historicalContextEngine";
 import { getPressureHistory, getRecentPressureRuns } from "./db";
 import { invokeLLM } from "./_core/llm";
-import type { FaultlinePressureOutput } from "./pressure/engine";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
+import {
+  projectPressureFromCanonical,
+  selectScenarioProbabilities,
+} from "./canonicalPressureProjection";
 import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -32,8 +36,11 @@ export interface DeltaCard {
 export interface HomepageBriefingResult {
   /** ISO timestamp of when this briefing was computed */
   computedAt: string;
-  /** Whether live FRED data was used */
-  dataSource: "live" | "fallback";
+  /** Canonical bind status — never a live recalc or silent fallback */
+  dataSource: "canonical" | "unavailable";
+  availability: "AVAILABLE" | "UNAVAILABLE";
+  canonicalStateId: string | null;
+  qualityStatus: string | null;
 
   // ── Section 1: Today's Market Story ──────────────────────────────────────
   marketStory: string;
@@ -44,7 +51,7 @@ export interface HomepageBriefingResult {
     pressureDelta: DeltaCard;
     regimeDelta: DeltaCard;
     bullProbDelta: DeltaCard;
-    bearProbDelta: DeltaCard;
+    crashProbDelta: DeltaCard;
     biggestImproving: DeltaCard | null;
     biggestDeteriorating: DeltaCard | null;
     biggestMacroDriver: string;
@@ -89,21 +96,21 @@ export interface HomepageBriefingResult {
   // ── Enhanced metric context ───────────────────────────────────────────────
   metrics: {
     pressureIndex: {
-      current: number;
+      current: number | null;
       todayChange: number | null;
       sevenDayChange: number | null;
       thirtyDayChange: number | null;
       streak: number;
       streakDirection: "rising" | "falling" | "stable";
-      historicalPercentile: number;
+      historicalPercentile: number | null;
       historicalComparison: string;
       institutionalInterpretation: string;
     };
-    regime: string;
-    regimeLevel: string;
-    bullProbability: number;
-    bearProbability: number;
-    opportunityScore: number;
+    regime: string | null;
+    regimeLevel: string | null;
+    bullProbability: number | null;
+    crashProbability: number | null;
+    opportunityScore: number | null;
   };
 }
 
@@ -130,18 +137,101 @@ function colorForDirection(dir: "up" | "down" | "neutral", higherIsBad: boolean)
   return dir === "up" ? "#00FF88" : "#FF2D55";
 }
 
+function unavailableHomepageBriefing(
+  computedAt: string,
+  canonicalStateId: string | null = null,
+  qualityStatus: string | null = "UNAVAILABLE",
+): HomepageBriefingResult {
+  const unavailableCard = (label: string): DeltaCard => ({
+    label,
+    current: "UNAVAILABLE",
+    previous: null,
+    change: null,
+    direction: "neutral",
+    color: "#64748B",
+    significance: "low",
+  });
+  return {
+    computedAt,
+    dataSource: "unavailable",
+    availability: "UNAVAILABLE",
+    canonicalStateId,
+    qualityStatus,
+    marketStory: "CURRENT market briefing is UNAVAILABLE. No canonical intelligence state is bound — readings are withheld rather than recalculated.",
+    marketStoryHeadline: "UNAVAILABLE — NO CANONICAL STATE",
+    whyTodayIsDifferent: {
+      pressureDelta: unavailableCard("Pressure Index"),
+      regimeDelta: unavailableCard("Regime"),
+      bullProbDelta: unavailableCard("Bull Continuation"),
+      crashProbDelta: unavailableCard("Crash / Drawdown"),
+      biggestImproving: null,
+      biggestDeteriorating: null,
+      biggestMacroDriver: "UNAVAILABLE",
+      biggestRiskIncrease: "UNAVAILABLE",
+      biggestPositiveDevelopment: "UNAVAILABLE",
+      hasPreviousReading: false,
+      previousReadingAge: null,
+    },
+    historySays: {
+      historicalPercentile: 0,
+      percentileLabel: "UNAVAILABLE",
+      closestAnalogs: [],
+      currentRegimeDuration: 0,
+      consecutiveElevatedStreak: 0,
+      avgDurationSimilarEnvironments: null,
+      historicalBullContinuationRate: null,
+      historicalElevatedVolatilityRate: null,
+      historicalCorrectionProbability: null,
+      historicalRecoveryProbability: null,
+      confidenceLevel: "insufficient",
+      historicalSampleSize: 0,
+      historicalDateRange: "UNAVAILABLE",
+      plainEnglishSummary: "Historical comparison is withheld until a canonical CURRENT state is available.",
+      insufficientData: true,
+    },
+    timeline: [],
+    timelineCaption: "UNAVAILABLE",
+    metrics: {
+      pressureIndex: {
+        current: null,
+        todayChange: null,
+        sevenDayChange: null,
+        thirtyDayChange: null,
+        streak: 0,
+        streakDirection: "stable",
+        historicalPercentile: null,
+        historicalComparison: "UNAVAILABLE",
+        institutionalInterpretation: "Canonical market state is unavailable. No CURRENT briefing is manufactured.",
+      },
+      regime: null,
+      regimeLevel: null,
+      bullProbability: null,
+      crashProbability: null,
+      opportunityScore: null,
+    },
+  };
+}
+
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export async function computeHomepageBriefing(): Promise<HomepageBriefingResult> {
-  // Run pressure engine + historical context in parallel
-  const [pressure, histContext, recentRuns, historyRows] = await Promise.all([
-    calculateFaultlinePressure(),
-    computeHistoricalContext(await calculateFaultlinePressure()).catch(() => null),
+  const now = new Date();
+  const canonical = await getAuthoritativeCanonicalIntelligenceState().catch(() => null);
+  const pressure = projectPressureFromCanonical(canonical);
+  if (!canonical || !pressure) {
+    return unavailableHomepageBriefing(
+      now.toISOString(),
+      canonical?.stateId ?? null,
+      canonical?.confidenceOrEvidenceQuality ?? "UNAVAILABLE",
+    );
+  }
+
+  const [histContext, recentRuns, historyRows] = await Promise.all([
+    computeHistoricalContext(pressure).catch(() => null),
     getRecentPressureRuns(90),
     getPressureHistory({ limit: 36 }),
   ]);
-
-  const now = new Date();
+  const scenarios = selectScenarioProbabilities(canonical);
 
   // ── Section 2: Why Today Is Different ──────────────────────────────────────
   // Use pressureRuns for recent delta (last run vs current)
@@ -163,8 +253,8 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     const dir = prevV ? directionOf(v.score, prevV.score) : "neutral";
     return {
       label: v.label,
-      current: `${v.score.toFixed(1)}/10`,
-      previous: prevV ? `${prevV.score.toFixed(1)}/10` : null,
+      current: `${v.score.toFixed(1)}/100`,
+      previous: prevV ? `${prevV.score.toFixed(1)}/100` : null,
       change: delta !== null ? `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}` : null,
       direction: dir,
       color: colorForDirection(dir, true),
@@ -179,18 +269,8 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     .filter(d => d.direction === "up" && d.change !== null)
     .sort((a, b) => parseFloat(b.change!) - parseFloat(a.change!));
 
-  // Bull/bear probability deltas — derive from pressure score change
-  // Derive bull/bear from pressure score (mirrors client-side computeProbabilities formula)
-  const crashRaw = Math.min(95, Math.max(0, currentOverall * 0.6));
-  const bullRaw = Math.max(5, 100 - crashRaw);
-  const probTotal = crashRaw + bullRaw;
-  const bullProb = Math.round((bullRaw / probTotal) * 100);
-  const bearProb = 100 - bullProb;
-  const prevCrashRaw = prevOverall !== null ? Math.min(95, Math.max(0, prevOverall * 0.6)) : null;
-  const prevBullRaw = prevCrashRaw !== null ? Math.max(5, 100 - prevCrashRaw) : null;
-  const prevProbTotal = prevBullRaw !== null && prevCrashRaw !== null ? prevBullRaw + prevCrashRaw : null;
-  const prevBull = prevProbTotal !== null && prevBullRaw !== null ? Math.round((prevBullRaw / prevProbTotal) * 100) : null;
-  const prevBear = prevBull !== null ? 100 - prevBull : null;
+  const bullProb = scenarios.bull;
+  const crashProb = scenarios.crash;
 
   const whyTodayIsDifferent = {
     pressureDelta: {
@@ -212,20 +292,20 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
       significance: (prevRun && prevRun.regime !== pressure.regime ? "high" : "low") as "high" | "medium" | "low",
     },
     bullProbDelta: {
-      label: "Bull Probability",
-      current: `${Math.round(bullProb)}%`,
-      previous: prevBull !== null ? `${Math.round(prevBull)}%` : null,
-      change: prevBull !== null ? `${(bullProb - prevBull) >= 0 ? "+" : ""}${(bullProb - prevBull).toFixed(1)}%` : null,
-      direction: prevBull !== null ? directionOf(bullProb, prevBull) : "neutral",
+      label: "Bull Continuation",
+      current: bullProb !== null ? `${Math.round(bullProb)}%` : "UNAVAILABLE",
+      previous: null,
+      change: null,
+      direction: "neutral" as const,
       color: "#00FF88",
       significance: "medium" as const,
     },
-    bearProbDelta: {
-      label: "Bear Probability",
-      current: `${Math.round(bearProb)}%`,
-      previous: prevBear !== null ? `${Math.round(prevBear)}%` : null,
-      change: prevBear !== null ? `${(bearProb - prevBear) >= 0 ? "+" : ""}${(bearProb - prevBear).toFixed(1)}%` : null,
-      direction: prevBear !== null ? directionOf(bearProb, prevBear) : "neutral",
+    crashProbDelta: {
+      label: "Crash / Drawdown",
+      current: crashProb !== null ? `${Math.round(crashProb)}%` : "UNAVAILABLE",
+      previous: null,
+      change: null,
+      direction: "neutral" as const,
       color: "#FF2D55",
       significance: "medium" as const,
     },
@@ -296,10 +376,10 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
 
     // Outcome stats from historical context
     const outcomeStats = histContext?.outcomeStats;
-    const bullContinuation = outcomeStats ? Math.round(100 - (outcomeStats.avgDrawdownPct ?? 20)) : null;
-    const correctionProb = outcomeStats ? Math.min(95, Math.round((outcomeStats.avgDrawdownPct ?? 15))) : null;
-    const recoveryProb = outcomeStats ? Math.round(85 - (currentOverall * 0.3)) : null;
-    const elevatedVolRate = percentile >= 70 ? Math.round(percentile * 0.85) : Math.round(percentile * 0.6);
+    const bullContinuation = null;
+    const correctionProb = outcomeStats?.avgDrawdownPct != null ? Math.min(95, Math.round(Math.abs(outcomeStats.avgDrawdownPct))) : null;
+    const recoveryProb = null;
+    const elevatedVolRate = null;
 
     const percentileLabel =
       percentile >= 90 ? "Extreme — top 10% of all historical readings" :
@@ -393,7 +473,7 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
 
   const percentileForMetric = histRows.length >= INSUFFICIENT_THRESHOLD
     ? Math.round((histRows.filter(r => r.overallPressure <= currentOverall).length / histRows.length) * 100)
-    : 50;
+    : null;
 
   const historicalComparison = histContext?.analogMatches?.[0]
     ? `Most similar to ${histContext.analogMatches[0].label}`
@@ -417,29 +497,34 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     },
     regime: pressure.regime,
     regimeLevel: pressure.level,
-    bullProbability: Math.round(bullProb),
-    bearProbability: Math.round(bearProb),
-    opportunityScore: Math.max(5, 80 - currentOverall),
+    bullProbability: bullProb !== null ? Math.round(bullProb) : null,
+    crashProbability: crashProb !== null ? Math.round(crashProb) : null,
+    opportunityScore: null,
   };
 
   // ── Section 1: Today's Market Story (LLM) ─────────────────────────────────
-  const topVector = pressure.vectors.sort((a, b) => b.score - a.score)[0];
+  const topVector = [...pressure.vectors].sort((a, b) => b.score - a.score)[0];
   const analogLabel = histContext?.analogMatches?.[0]?.label ?? "no close historical match";
   const analogSim = histContext?.analogMatches?.[0]?.similarity ?? 0;
+  const bullLabel = bullProb !== null ? `${Math.round(bullProb)}%` : "UNAVAILABLE";
+  const crashLabel = crashProb !== null ? `${Math.round(crashProb)}%` : "UNAVAILABLE";
+  const percentileLabel = percentileForMetric !== null
+    ? `${formatOrdinal(percentileForMetric)} (${describeHistoricalPercentile(percentileForMetric)})`
+    : "UNAVAILABLE";
 
   const storyPrompt = `You are FAULTLINE's institutional market intelligence engine. Generate a concise, professional market briefing (3-4 sentences, no bullet points) for today's conditions.
 
-Current data:
+Current data (canonical state ${canonical.stateId}):
 - Pressure Index: ${currentOverall}/100 (${pressure.level} — ${pressure.regime})
-- Primary driver: ${topVector?.label ?? "Macro Sensitivity"} at ${topVector?.score?.toFixed(1) ?? "N/A"}/10
-- Bull probability: ${Math.round(bullProb)}% | Bear probability: ${Math.round(bearProb)}%
-- Historical percentile: ${formatOrdinal(percentileForMetric)} (${describeHistoricalPercentile(percentileForMetric)}) (N=${histRows.length} months)
+- Primary driver: ${topVector?.label ?? "UNAVAILABLE"} at ${topVector?.score?.toFixed(1) ?? "N/A"}/100
+- Bull continuation: ${bullLabel} | Crash / drawdown: ${crashLabel}
+- Historical percentile: ${percentileLabel} (N=${histRows.length} months)
 - Closest historical analog: ${analogLabel} (${analogSim}% similarity)
 - Pressure trend: ${streakDir} for ${streak} consecutive readings
 ${whyTodayIsDifferent.biggestDeteriorating ? `- Biggest deteriorating factor: ${whyTodayIsDifferent.biggestDeteriorating.label}` : ""}
 ${whyTodayIsDifferent.biggestImproving ? `- Biggest improving factor: ${whyTodayIsDifferent.biggestImproving.label}` : ""}
 
-Write a 3-4 sentence institutional briefing covering: what is happening, why it is happening, whether pressure is increasing or decreasing, and how today compares with history. Tone: professional, institutional, factual. No predictions. No hype. No bullet points.`;
+Write a 3-4 sentence institutional briefing covering: what is happening, why it is happening, whether pressure is increasing or decreasing, and how today compares with history. Tone: professional, institutional, factual. No predictions. No hype. No bullet points. Keep bull-continuation and crash/drawdown as separate facts. If a field is UNAVAILABLE, say so — do not invent it.`;
 
   let marketStory = "";
   let marketStoryHeadline = `${pressure.regime} — ${pressure.level} Systemic Pressure`;
@@ -462,12 +547,15 @@ Write a 3-4 sentence institutional briefing covering: what is happening, why it 
     marketStoryHeadline = (headlineResult.choices?.[0]?.message?.content as string ?? marketStoryHeadline).trim();
   } catch {
     // Fallback: use the historical context engine's market story if available
-    marketStory = histContext?.marketStory ?? `The FAULTLINE Pressure Index currently reads ${currentOverall}/100, indicating ${pressure.level.toLowerCase()} systemic pressure in a ${pressure.regime} regime. ${topVector ? `${topVector.label} is the primary driver at ${topVector.score.toFixed(1)}/10.` : ""} Current conditions rank at the ${formatOrdinal(percentileForMetric)} percentile (${describeHistoricalPercentile(percentileForMetric)}) of all historical readings analyzed.`;
+    marketStory = histContext?.marketStory ?? `The FAULTLINE Pressure Index currently reads ${currentOverall}/100, indicating ${pressure.level.toLowerCase()} systemic pressure in a ${pressure.regime} regime. ${topVector ? `${topVector.label} is the primary driver at ${topVector.score.toFixed(1)}/100.` : ""} Historical percentile: ${percentileLabel}.`;
   }
 
   return {
     computedAt: now.toISOString(),
-    dataSource: pressure.dataSource,
+    dataSource: "canonical",
+    availability: "AVAILABLE",
+    canonicalStateId: canonical.stateId,
+    qualityStatus: canonical.confidenceOrEvidenceQuality,
     marketStory,
     marketStoryHeadline,
     whyTodayIsDifferent,

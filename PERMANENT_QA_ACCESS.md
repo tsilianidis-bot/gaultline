@@ -6,6 +6,8 @@ The resulting synthetic principal is labeled **OWNER QA · READ ONLY**. It may e
 
 Managed local and Manus preview hosts are designated internal QA environments and receive the same read-only principal without a production secret. Public domains do not receive that convenience path.
 
+Independent staging hosts (`NODE_ENV=production`, no `*.manus.computer` hostname) stay **secret-gated** via `QA_ACCESS_SECRET` and `/qa-access`. Set `FAULTLINE_MANAGED_PREVIEW=true` only when you explicitly want auto-QA on that host; do not set it on production. See `docs/INDEPENDENT_STAGING.md`.
+
 ## Validation record
 
 The managed preview at `https://3000-ipnf4bqutsccuw2s5ekp8-5ab5291b.us4.manus.computer` returned the synthetic `faultline_owner_qa` principal through `auth.me`, rendered the visible **OWNER QA · READ ONLY** indicator, and reached the protected Day Trade visual-detail route without an OAuth login. The Day Trade report provider itself remained unavailable during this observation; the route now bounds the report at 12 seconds and completed daily bars at 8 seconds so that condition must resolve to an explicit source-status response rather than indefinite loading.

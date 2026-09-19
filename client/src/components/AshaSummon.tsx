@@ -412,7 +412,7 @@ export default function AshaSummon({
               textTransform: "uppercase",
               textShadow: `0 0 40px ${regimeGlow(regimeState, 0.6)}`,
             }}>
-              ASHA
+              PLATO
             </div>
             <div style={{
               fontFamily: "'IBM Plex Sans', sans-serif",
@@ -502,7 +502,7 @@ export default function AshaSummon({
                     onSubmit(input.trim());
                   }
                 }}
-                placeholder="Ask ASHA anything..."
+                placeholder="Ask PLATO anything..."
                 style={{
                   flex: 1,
                   background: "transparent",
@@ -571,7 +571,7 @@ export default function AshaSummon({
                 color: "rgba(148,163,184,0.35)",
                 textTransform: "uppercase",
               }}>
-                ASHA is connected to all core intelligence systems
+                PLATO is connected to all core intelligence systems
               </span>
             </div>
           </div>

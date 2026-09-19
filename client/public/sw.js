@@ -10,8 +10,8 @@
    - Offline fallback: /mobile (PWA shell)
    ============================================================ */
 
-const CACHE_NAME = "faultline-core-v5";
-const STATIC_CACHE = "faultline-static-v5";
+const CACHE_NAME = "faultline-core-v6";
+const STATIC_CACHE = "faultline-static-v6";
 
 // Assets to precache on install
 const PRECACHE_URLS = [
@@ -39,12 +39,12 @@ self.addEventListener("activate", (event) => {
         cacheNames
           .filter((name) => !CURRENT_CACHES.includes(name))
           .map((name) => {
-            console.log("[SW v5] Deleting stale cache:", name);
+            console.log("[SW v6] Deleting stale cache:", name);
             return caches.delete(name);
           })
       )
     ).then(() => {
-      console.log("[SW v5] Activated — all stale caches cleared");
+      console.log("[SW v6] Activated — all stale caches cleared");
       return self.clients.claim();
     })
   );
@@ -77,8 +77,7 @@ self.addEventListener("fetch", (event) => {
   // Changed from Cache-First to Network-First so new JS bundles
   // are always fetched immediately after a deployment.
   if (
-    url.pathname.match(/\.(js|css|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|ico|webp)$/) ||
-    url.pathname.startsWith("/manus-storage/")
+    url.pathname.match(/\.(js|css|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|ico|webp)$/)
   ) {
     event.respondWith(networkFirstWithCache(request, STATIC_CACHE));
     return;

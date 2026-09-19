@@ -78,7 +78,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: "owner-simulation", label: "Owner Simulation", shortLabel: "Simulation",icon: Trophy,    path: "/owner/simulation" },
   { id: "seo-optimizer",    label: "SEO Optimizer",    shortLabel: "SEO",       icon: Search,    path: "/app/seo-optimizer" },
   { id: "analytics",        label: "Site Analytics",   shortLabel: "Analytics", icon: BarChart2, path: "/app/analytics" },
-  { id: "chat-inbox",       label: "ASHA Intelligence", shortLabel: "ASHA Intel", icon: BrainCircuit, path: "/app/asha-intelligence" },
+  { id: "chat-inbox",       label: "PLATO Intelligence", shortLabel: "PLATO Intel", icon: BrainCircuit, path: "/app/asha-intelligence" },
   { id: "engineering",      label: "Engineering Diagnostics", shortLabel: "Eng. Diag", icon: FlaskConical,  path: "/app/admin/engineering" },
   { id: "conv-intelligence", label: "Conversation Intelligence", shortLabel: "Conv. Intel", icon: BrainCircuit, path: "/app/admin/conversation-intelligence" },
 ];
@@ -818,7 +818,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* ── Universal Command Search (Cmd+K) ── */}
       <CommandSearch isOpen={cmdOpen} onClose={closeCmd} />
 
-      {/* ── ASHA — Spirit of FAULTLINE ── */}
+      {/* ── PLATO — Spirit of FAULTLINE ── */}
       <AshaIntroModal />
       <AshaPanel />
 

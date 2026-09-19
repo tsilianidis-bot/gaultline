@@ -682,7 +682,7 @@ export default function Dashboard() {
               <AshaOrb regimeState={ashaRegimeState} size={56} isListening={heroInputFocused} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.25em', color: 'rgba(0,229,255,0.55)', marginBottom: '3px' }}>ASHA · FAULTLINE INTELLIGENCE LAYER</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.25em', color: 'rgba(0,229,255,0.55)', marginBottom: '3px' }}>PLATO · FAULTLINE INTELLIGENCE LAYER</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 'clamp(28px, 7vw, 40px)', lineHeight: 1, color, textShadow: `0 0 30px ${color}70`, letterSpacing: '-0.01em' }}>
                 {overall.score.toFixed(1)}<span style={{ fontSize: '0.45em', color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>/10</span>
               </div>
@@ -713,7 +713,7 @@ export default function Dashboard() {
                     window.location.href = `/app/discover?q=${encodeURIComponent(heroInputValue.trim())}`;
                   }
                 }}
-                placeholder="Ask ASHA..."
+                placeholder="Ask PLATO..."
                 style={{
                   flex: 1, background: 'transparent', border: 'none', outline: 'none',
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px',
@@ -797,7 +797,7 @@ export default function Dashboard() {
             lineHeight: 1.65,
             margin: 0,
           }}>
-            <span style={{ color, fontWeight: 600 }}>ASHA:</span>{' '}
+            <span style={{ color, fontWeight: 600 }}>PLATO:</span>{' '}
             {overall.riskLevel === 'low'
               ? `Systemic pressure is low at ${overall.score.toFixed(1)}/10 — conditions favor risk-taking with bull probability at ${probability.bullProbability}%. The closest historical analog is ${analogs[0]?.era ?? 'a low-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
               : overall.riskLevel === 'moderate'
@@ -976,10 +976,10 @@ export default function Dashboard() {
             {/* ── 1. ASHA Intelligence First — Greeting + Market Brief above the fold ── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
         {/* ASHA Daily Greeting — first thing the user sees on every session */}
-        <SectionErrorBoundary label="ASHA Greeting"><AshaDailyGreeting /></SectionErrorBoundary>
+        <SectionErrorBoundary label="PLATO Greeting"><AshaDailyGreeting /></SectionErrorBoundary>
         {/* ASHA Market Brief — 30-60 second synthesis from all 10 engines */}
         <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 80ms both' }}>
-          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="market-brief" /></SectionErrorBoundary>
+          <SectionErrorBoundary label="PLATO Intelligence"><AshaIntelligenceBrief variant="market-brief" /></SectionErrorBoundary>
         </div>
         {/* Inline upgrade prompt (free/core tier only) */}
         <DashboardUpgradePrompt />

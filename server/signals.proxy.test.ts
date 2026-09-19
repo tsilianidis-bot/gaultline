@@ -71,6 +71,9 @@ interface QuotesResponse {
 let response: QuotesResponse;
 
 beforeAll(async () => {
+  // File-level hook must not hit localhost when the suite is ENV_GATED.
+  // See docs/RC_SKIPPED_TESTS_AUDIT.md.
+  if (!isIntegrationEnv) return;
   const res = await fetch(`${BASE_URL}/api/signals/quotes`, {
     signal: AbortSignal.timeout(30000),
   });

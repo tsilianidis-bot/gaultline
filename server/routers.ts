@@ -52,8 +52,6 @@ import {
   upsertTodaySnapshot, getTimeframeReading, computeOutcomeSupport, getReadingHistorySummary,
 } from "./readingHistory";
 import { protectedProcedure, coreProcedure } from "./_core/trpc";
-import { stripe } from './stripe/client';
-import { PLANS } from './stripe/products';
 import { generateXPosts } from './xPostGenerator';
 import { sendEmail, buildApprovalEmail, buildFoundingRequestNotification } from './email';
 import { postTweet, postThread, parseThread } from './xPoster';
@@ -358,9 +356,20 @@ export const appRouter = router({
         if (!engineEnabled) {
           throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Pressure engine is temporarily disabled for maintenance." });
         }
-        const pressure = await calculateFaultlinePressure();
-        return await computeHistoricalContext(pressure);
+        const { getAuthoritativeCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
+        const { projectPressureFromCanonical } = await import("./canonicalPressureProjection");
+        const canonical = await getAuthoritativeCanonicalIntelligenceState();
+        const pressure = projectPressureFromCanonical(canonical);
+        if (!canonical || !pressure) {
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "UNAVAILABLE — no canonical market state is bound. Historical context is withheld.",
+          });
+        }
+        const context = await computeHistoricalContext(pressure);
+        return { ...context, canonicalStateId: canonical.stateId, availability: "AVAILABLE" as const };
       } catch (err) {
+        if (err instanceof TRPCError) throw err;
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Historical Context Engine failed", cause: err });
       }
     }),
@@ -1677,19 +1686,32 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         try {
-          return await runTradePreflightSimulation({
-            moveType: input.moveType as MoveType,
-            timeframe: input.timeframe as SimulatorTimeframe,
-            ticker: input.ticker,
-            exposureCategory: input.exposureCategory as ExposureCategory | undefined,
-            rotateFrom: input.rotateFrom,
-            rotateTo: input.rotateTo,
-            raiseCashReason: input.raiseCashReason as RaiseCashReason | undefined,
-            deployCashTarget: input.deployCashTarget as DeployCashTarget | undefined,
-            positionSizeType: input.positionSizeType as PositionSizeType | undefined,
-            exitType: input.exitType as ExitType | undefined,
-            holdConcern: input.holdConcern as HoldConcern | undefined,
-          });
+          const { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
+          const canonical = await getAuthoritativeCanonicalIntelligenceState();
+          const publicCanonical = canonical ? toPublicCanonicalIntelligenceState(canonical) : null;
+          return await runTradePreflightSimulation(
+            {
+              moveType: input.moveType as MoveType,
+              timeframe: input.timeframe as SimulatorTimeframe,
+              ticker: input.ticker,
+              exposureCategory: input.exposureCategory as ExposureCategory | undefined,
+              rotateFrom: input.rotateFrom,
+              rotateTo: input.rotateTo,
+              raiseCashReason: input.raiseCashReason as RaiseCashReason | undefined,
+              deployCashTarget: input.deployCashTarget as DeployCashTarget | undefined,
+              positionSizeType: input.positionSizeType as PositionSizeType | undefined,
+              exitType: input.exitType as ExitType | undefined,
+              holdConcern: input.holdConcern as HoldConcern | undefined,
+            },
+            undefined,
+            publicCanonical
+              ? {
+                  stateId: publicCanonical.stateId,
+                  qualityStatus: publicCanonical.confidenceOrEvidenceQuality,
+                  coherenceStatus: publicCanonical.provenance.coherenceStatus,
+                }
+              : null,
+          );
         } catch (err) {
           throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Trade Preflight simulation failed", cause: err });
         }

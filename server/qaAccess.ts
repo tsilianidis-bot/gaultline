@@ -14,7 +14,15 @@ function secureFor(req: Request) {
   return req.protocol === "https" || req.headers["x-forwarded-proto"] === "https";
 }
 
-function isManagedPreview(req: Request) {
+/** Explicit staging opt-in. Never default-on. Do not set on production. */
+export function isManagedPreviewFlagEnabled() {
+  return process.env.FAULTLINE_MANAGED_PREVIEW === "true";
+}
+
+export function isManagedPreview(req: Request) {
+  // Independent staging hosts have no *.manus.computer name. Only an explicit env
+  // enables auto-QA there. Production-like hosts stay secret-gated unless this is set.
+  if (isManagedPreviewFlagEnabled()) return true;
   const host = String(req.headers.host ?? "").split(":")[0].toLowerCase();
   return process.env.NODE_ENV === "development" && (host.endsWith(".manus.computer") || host === "localhost" || host === "127.0.0.1");
 }

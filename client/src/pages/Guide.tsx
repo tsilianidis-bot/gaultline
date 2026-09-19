@@ -916,7 +916,7 @@ const SECTIONS: Section[] = [
           <div className="grid grid-cols-2 gap-2">
             {[
               { name: "Dashboard", desc: "Receives the Seismograph Narrative Banner — current state, drivers, duration, analog, and what to watch." },
-              { name: "ASHA — Spirit of FAULTLINE", desc: "Receives the full forASHA context block — evidence consensus, probabilities, analog, and transition risk — before generating every response." },
+              { name: "PLATO — Spirit of FAULTLINE", desc: "Receives the full PLATO context block — evidence consensus, probabilities, analog, and transition risk — before generating every response." },
               { name: "Daily Brief", desc: "Generated directly from the Seismograph's forDailyBrief context — direction, probabilities, analog, and key developments." },
               { name: "Signal Intelligence", desc: "Injects Seismograph evidence consensus and analog into every symbol interpretation prompt." },
               { name: "Stock & Crypto Pages", desc: "Consume the Seismograph's macro assessment, probabilities, and historical analogs rather than generating separate macro conclusions." },
@@ -1498,27 +1498,27 @@ const SECTIONS: Section[] = [
       </div>
     ),
   },
-  // ─── ASK FAULTLINE (ASHA) ────────────────────────────────────────────────
+  // ─── ASK FAULTLINE (PLATO) ────────────────────────────────────────────────
   {
     id: "ask-faultline",
     icon: Brain,
-    title: "Ask ASHA",
-    subtitle: "The AI intelligence interface — ask ASHA anything about the market",
+    title: "Ask PLATO",
+    subtitle: "The AI intelligence interface — ask PLATO anything about the market",
     color: "#A78BFA",
-    keywords: ["ask faultline", "asha", "ai", "chat", "ask", "question", "intelligence"],
+    keywords: ["ask faultline", "plato", "asha", "ai", "chat", "ask", "question", "intelligence"],
     content: (
       <div className="space-y-4">
         <Panel accentColor="rgba(167,139,250,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            <span className="text-purple-400 font-bold">ASHA</span> is the AI intelligence interface. Ask any question about the current market, a specific ticker, the current regime, historical analogs, or what the Seismograph is detecting — and ASHA will answer using the full context of the FAULTLINE platform, including the Seismograph's current evidence consensus.
+            <span className="text-purple-400 font-bold">PLATO</span> is the AI intelligence interface. Ask any question about the current market, a specific ticker, the current regime, historical analogs, or what the Seismograph is detecting — and PLATO will answer using the full context of the FAULTLINE platform, including the Seismograph's current evidence consensus.
           </p>
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "Seismograph-Grounded Responses", desc: "Every ASHA response is grounded in the Seismograph's current forASHA context block — evidence consensus, active analog, transition probability, and market direction. ASHA never answers in a macro vacuum." },
+            { name: "Seismograph-Grounded Responses", desc: "Every PLATO response is grounded in the Seismograph's current context block — evidence consensus, active analog, transition probability, and market direction. PLATO never answers in a macro vacuum." },
             { name: "What to Ask", desc: "What is the current macro regime and why? What does the Seismograph say about transition risk? Which sectors are most aligned with the current environment? What does the current analog suggest about the next 90 days?" },
-            { name: "Ticker Analysis", desc: "Ask about any specific ticker — ASHA will analyse it in the context of the current regime, Seismograph state, and risk vectors." },
-            { name: "Historical Context", desc: "Ask about historical analogs, past regimes, or how similar environments have resolved — ASHA has access to the full FAULTLINE historical knowledge base." },
+            { name: "Ticker Analysis", desc: "Ask about any specific ticker — PLATO will analyse it in the context of the current regime, Seismograph state, and risk vectors." },
+            { name: "Historical Context", desc: "Ask about historical analogs, past regimes, or how similar environments have resolved — PLATO has access to the full FAULTLINE historical knowledge base." },
           ].map(({ name, desc }) => (
             <Panel key={name} className="!p-3">
               <p className="text-[11px] font-mono text-purple-400 font-bold mb-1">{name}</p>
@@ -1528,7 +1528,7 @@ const SECTIONS: Section[] = [
         </div>
         <Panel accentColor="rgba(255,200,0,0.2)">
           <p className="text-[10px] font-mono text-yellow-400/80 leading-relaxed">
-            <span className="text-yellow-400 font-bold">NOTE</span> — ASHA is an AI assistant grounded in FAULTLINE's analytical framework. It does not provide personalised financial advice. All responses are for informational and educational purposes only.
+            <span className="text-yellow-400 font-bold">NOTE</span> — PLATO is an AI assistant grounded in FAULTLINE's analytical framework. It does not provide personalised financial advice. All responses are for informational and educational purposes only.
           </p>
         </Panel>
       </div>

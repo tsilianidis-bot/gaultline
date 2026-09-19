@@ -65,25 +65,20 @@ export default function MobileBrief() {
     staleTime: 60_000,
   });
 
-  // Pressure data
-  const { data: pressure, isLoading: pressureLoading } = trpc.pressure.getCurrentPressure.useQuery(undefined, {
-    staleTime: 60_000,
-  });
-
-  // Alt rotation for crypto/rotation note
+  // Alt rotation for crypto/rotation note — not current market-state authority
   const { data: rotation } = trpc.altRotation.getData.useQuery(undefined, {
     staleTime: 120_000,
     retry: false,
   });
 
-  // Derive narrative from pressure data directly (no EngineContext dependency)
   const regimeColor = useMemo(() => getRegimeColor(canonicalState?.regime ?? ""), [canonicalState?.regime]);
 
-  // Top signal: highest pressure vector
-  const topVector = useMemo(() => {
-    if (!pressure?.vectors?.length) return null;
-    return [...pressure.vectors].sort((a, b) => b.score - a.score)[0];
-  }, [pressure?.vectors]);
+  const topEngine = useMemo(() => {
+    if (!canonicalState?.engines?.length) return null;
+    return [...canonicalState.engines]
+      .filter(engine => engine.value != null && engine.qualityStatus !== "UNAVAILABLE")
+      .sort((a, b) => (b.value ?? 0) - (a.value ?? 0))[0] ?? null;
+  }, [canonicalState?.engines]);
 
   // Top rotation note
   const topSector = useMemo(() => {
@@ -91,9 +86,16 @@ export default function MobileBrief() {
     return [...rotation.sectors].sort((a, b) => Math.abs(b.avgChange24h) - Math.abs(a.avgChange24h))[0];
   }, [rotation?.sectors]);
 
-  const isLoading = pressureLoading || canonicalLoading;
+  const isLoading = canonicalLoading;
 
-  if (!canonicalState) return null;
+  if (!canonicalState) {
+    return (
+      <div className="px-4 py-8 text-center">
+        <div className="text-[9px] font-mono tracking-widest text-[#64748B]">CANONICAL STATE UNAVAILABLE</div>
+        <p className="mt-2 text-[11px] font-mono text-[#A8B8CC]">Daily brief is withheld. No live pressure recalculation is shown as current intelligence.</p>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -110,7 +112,10 @@ export default function MobileBrief() {
   }
 
   const pressureScore = canonicalState.pressureIndex;
-  const bullProb = Math.max(5, Math.round(100 - pressureScore * 0.9));
+  const withheld = canonicalState.confidenceOrEvidenceQuality === "UNAVAILABLE" || pressureScore == null;
+  const bullProb = canonicalState.scenarioOutputs.bull ?? canonicalState.scenarioOutputs.softLanding ?? null;
+  const crashProb = canonicalState.scenarioOutputs.crash ?? canonicalState.scenarioOutputs.bear ?? null;
+  const regimeHold = canonicalState.scenarioOutputs.neutral ?? canonicalState.scenarioOutputs.remainInRegime ?? null;
 
   return (
     <div className="px-4 py-4 pb-6 space-y-4">
@@ -137,54 +142,55 @@ export default function MobileBrief() {
             className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full"
             style={{ background: `${regimeColor}15`, color: regimeColor }}
           >
-            {pressureScore.toFixed(0)} / 100
+            {pressureScore == null ? "UNAVAILABLE" : `${pressureScore.toFixed(0)} / 100`}
           </div>
         </div>
         <div className="text-base font-bold font-mono text-white mb-1">
           {canonicalState.regime}
         </div>
         <p className="text-[11px] font-mono text-[#A8B8CC] leading-relaxed">
-          {`Market operating in ${canonicalState.regime} regime. Pressure Index at ${pressureScore.toFixed(0)}/100. ${pressureScore > 65 ? "Elevated systemic risk — reduce exposure." : pressureScore > 40 ? "Moderate risk conditions — maintain discipline." : "Low-stress environment — risk-on conditions favored."}`}
+          {withheld
+            ? "Canonical daily interpretation is withheld. Bull-continuation and crash/drawdown probabilities are not manufactured from a single score."
+            : `Market operating in ${canonicalState.regime ?? "an unpublished"} regime. Pressure Index at ${pressureScore}/100. Action-specific Decision-Light remains in ACT / Situation Room.`}
         </p>
         {/* Bull/crash probabilities */}
         <div className="flex gap-4 mt-3">
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">BULL CONTINUATION</div>
-            <div className="text-sm font-mono font-bold text-[#34D399]">{bullProb}%</div>
+            <div className="text-sm font-mono font-bold text-[#34D399]">{bullProb == null ? "UNAVAILABLE" : `${Math.round(bullProb)}%`}</div>
           </div>
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">CRASH RISK</div>
             <div className="text-sm font-mono font-bold text-[#FF2D55]">
-              {Math.min(95, Math.round(pressureScore * 0.7))}%
+              {crashProb == null ? "UNAVAILABLE" : `${Math.round(crashProb)}%`}
             </div>
           </div>
           <div>
             <div className="text-[8px] font-mono text-[#64748B] mb-0.5">REGIME HOLD</div>
             <div className="text-sm font-mono font-bold text-[#FFD700]">
-              {Math.round(50 + (50 - pressureScore / 2))}%
+              {regimeHold == null ? "UNAVAILABLE" : `${Math.round(regimeHold)}%`}
             </div>
           </div>
         </div>
       </div>
 
       {/* Top macro pressure */}
-      {topVector && (
+      {topEngine && !withheld && (
         <BriefCard
           icon={<Shield size={12} />}
           label="TOP MACRO PRESSURE"
-          title={topVector.label}
-          body={topVector.driver || topVector.description}
+          title={topEngine.engineName}
+          body={topEngine.classification ?? `Canonical engine reading ${topEngine.value}/100 · ${topEngine.qualityStatus}`}
           accentColor="#FF9500"
         />
       )}
 
-      {/* Top signal from pressure vectors */}
-      {topVector && (
+      {topEngine && !withheld && (
         <BriefCard
           icon={<Zap size={12} />}
           label="TOP SIGNAL"
-          title={topVector.label}
-          body={topVector.driver || topVector.description || "Monitor closely for regime confirmation."}
+          title={topEngine.engineName}
+          body={canonicalState.warnings[0] ?? `Canonical engine ${topEngine.engineName} is ${topEngine.qualityStatus}.`}
           accentColor="#00D4FF"
         />
       )}

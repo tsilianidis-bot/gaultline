@@ -1256,13 +1256,13 @@ export default function Now() {
           <div className="mt-5"><DestinationLink href={CANONICAL_DESTINATION_BY_ID.watch.path} label="Open WATCH" detail="Set thresholds, monitor signals, and follow developing conditions." /></div>
         </Section>
 
-        <Section id="asha" index="08" eyebrow="ASHA" title="Continue the interpretation with ASHA" description="Carry today's canonical market state into a focused conversation without changing the evidence source.">
+        <Section id="asha" index="08" eyebrow="PLATO" title="Continue the interpretation with PLATO" description="Carry today's canonical market state into a focused conversation without changing the evidence source.">
           <div className="rounded border border-cyan-300/20 bg-cyan-300/[0.035] p-6 md:flex md:items-center md:justify-between md:gap-8">
             <div className="flex gap-4">
               <BrainCircuit className="mt-1 shrink-0 text-cyan-300" size={22} />
-              <div><p className="font-['Rajdhani'] text-xl font-semibold text-white">Ask what is happening, why it matters, or what would change the conclusion.</p><p className="mt-2 text-sm leading-6 text-slate-400">ASHA receives the same regime, pressure, evidence, probability, history, and source-health context shown here.</p></div>
+              <div><p className="font-['Rajdhani'] text-xl font-semibold text-white">Ask what is happening, why it matters, or what would change the conclusion.</p><p className="mt-2 text-sm leading-6 text-slate-400">PLATO receives the same regime, pressure, evidence, probability, history, and source-health context shown here.</p></div>
             </div>
-            <Link href={PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha"} className="mt-5 inline-flex shrink-0 items-center gap-2 rounded bg-cyan-300 px-4 py-2.5 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] text-[#031014] transition hover:bg-cyan-200 active:scale-[0.97] md:mt-0">Open ASHA <ArrowRight size={14} /></Link>
+            <Link href={PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha"} className="mt-5 inline-flex shrink-0 items-center gap-2 rounded bg-cyan-300 px-4 py-2.5 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] text-[#031014] transition hover:bg-cyan-200 active:scale-[0.97] md:mt-0">Open PLATO <ArrowRight size={14} /></Link>
           </div>
         </Section>
 

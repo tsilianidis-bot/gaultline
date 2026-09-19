@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Uploaded TTS narration files — one per cinematic scene
-const NARRATION_URLS: Record<number, string> = {
-  1: "/manus-storage/scene1_v2_c9707dbb.wav",
-  2: "/manus-storage/scene2_v2_8bfbd3d6.wav",
-  3: "/manus-storage/scene3_v2_21cf6145.wav",
-  4: "/manus-storage/scene4_v2_4f336fe9.wav",
-  5: "/manus-storage/scene5_v2_7af3a6d8.wav",
-};
+// Narration files lived on Manus object storage and are not bundled.
+const NARRATION_URLS: Record<number, string> = {};
 
 // Narration volume relative to the synthesized soundscape
 // The synthesized audio is ducked to 0.15 during narration, so the voice
@@ -23,6 +17,7 @@ export function useNarrationAudio() {
   // ── Preload all five scenes ───────────────────────────────
   useEffect(() => {
     Object.entries(NARRATION_URLS).forEach(([scene, url]) => {
+      if (!url) return;
       const audio = new Audio(url);
       audio.preload = "auto";
       audio.volume = NARRATION_VOLUME;

@@ -31,10 +31,10 @@ import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWar
 export type { AshaPageContext } from "../shared/ashaContext";
 
 // ── ASHA core identity system prompt ─────────────────────────
-const ASHA_IDENTITY = `You are ASHA, the Spirit of FAULTLINE.
+const ASHA_IDENTITY = `You are PLATO, the Spirit of FAULTLINE.
 
 IDENTITY:
-Your name is ASHA. Your title is "The Spirit of FAULTLINE." You are the AI market intelligence guide and voice of the FAULTLINE platform. You are a symbolic digital intelligence powered by FAULTLINE's 10 proprietary intelligence engines. Your purpose is to reveal what is building beneath the market's surface and translate complex conditions into understandable intelligence.
+Your name is PLATO. Your title is "The Spirit of FAULTLINE." You are the AI market intelligence guide and voice of the FAULTLINE platform. You are a symbolic digital intelligence powered by FAULTLINE's 10 proprietary intelligence engines. Your purpose is to reveal what is building beneath the market's surface and translate complex conditions into understandable intelligence.
 
 You are NOT a generic language model. You are NOT a chatbot. You are the interpretation layer for FAULTLINE's supplied evidence systems. Every current-market response must originate from the canonical FAULTLINE state and structured evidence packet. Never imply an engine, source, metric, probability, target, timing window, confirmation rule, or invalidation rule that is not supplied.
 
@@ -300,7 +300,7 @@ function buildEngineAvailabilityContext(context: AshaGatewayContext): {
       if (source.id === "coingecko") {
         unavailable.push("Crypto Intelligence Engine");
         limitations.push(
-          "Crypto Intelligence Engine is unavailable. Crypto analysis is supplemented from external macro context only and is not FAULTLINE-native intelligence. Confidence is reduced accordingly."
+          "Crypto Intelligence Engine is unavailable. Crypto interpretation is supplemented from external macro context only and is not FAULTLINE-native intelligence. Confidence is reduced accordingly."
         );
       } else if (source.id === "fred") {
         unavailable.push("FRED Economic Data");
@@ -818,12 +818,12 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
 
   const { response: llmResponse } = await invokeAshaGateway({ messages });
   const candidate = readString(llmResponse.choices?.[0]?.message?.content)
-    ?? "Canonical state unavailable. Insufficient evidence for a current market greeting.";
+    ?? "Canonical state unavailable. Insufficient evidence for a current market interpretation.";
   return String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
 }
 
 // ── First-login introduction (static, from brand brief) ───────
-export const ASHA_FIRST_INTRODUCTION = `I am ASHA, the Spirit of FAULTLINE.
+export const ASHA_FIRST_INTRODUCTION = `I am PLATO, the Spirit of FAULTLINE.
 
 I observe the forces moving beneath the market's surface, connect the signals others view separately, and translate them into clarity.
 

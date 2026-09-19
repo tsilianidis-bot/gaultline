@@ -114,10 +114,12 @@ function EmptyState({ title, description }: { title: string; description: string
 
 
 // -- 14 Institutional Metrics --
+// DATA CLASS: STATIC_PHASE2_REFERENCE — Phase-2 static reference cards, not live governed metrics.
+const INSTITUTIONAL_METRICS_DATA_CLASS = "STATIC_PHASE2_REFERENCE" as const;
 const INSTITUTIONAL_METRICS = [
-  { id: 'brier_score',      label: 'Brier Score',                category: 'Accuracy',     value: '0.214',  target: '< 0.20', status: 'warn',  tooltip: 'Measures the mean squared error of probabilistic forecasts. 0 = perfect, 1 = worst. Our score of 0.214 beats the 0.25 climatological baseline, indicating genuine skill.' },
+  { id: 'brier_score',      label: 'Brier Score',                category: 'Accuracy',     value: '0.214',  target: '< 0.20', status: 'warn',  tooltip: 'Phase-2 static reference: mean squared error of probabilistic forecasts. 0 = perfect, 1 = worst. The Phase-2 static reference score of 0.214 beats the 0.25 climatological baseline in that research snapshot — not a live governed claim.' },
   { id: 'brier_skill',      label: 'Brier Skill Score',          category: 'Accuracy',     value: '+0.145', target: '> 0.20', status: 'warn',  tooltip: 'Relative improvement over a naive baseline forecast. Positive = better than random. Target of 0.20 represents institutional-grade predictive skill.' },
-  { id: 'ece',              label: 'Expected Calibration Error', category: 'Calibration',  value: '0.160',  target: '< 0.10', status: 'bad',   tooltip: 'Measures how well predicted probabilities match observed frequencies. 0 = perfectly calibrated. ECE of 0.160 indicates overconfidence in the 0.4-0.6 probability range.' },
+  { id: 'ece',              label: 'Expected Calibration Error', category: 'Calibration',  value: '0.160',  target: '< 0.10', status: 'bad',   tooltip: 'Phase-2 static reference: how well predicted probabilities matched observed frequencies in that snapshot. 0 = perfectly calibrated. Static ECE of 0.160 indicated overconfidence in the 0.4-0.6 range — not a live governed metric.' },
   { id: 'direction_acc',    label: 'Direction Accuracy',         category: 'Accuracy',     value: '60.6%',  target: '> 65%',  status: 'warn',  tooltip: '4-week forward directional accuracy: did the market move in the predicted direction? 60.6% vs 50% random baseline shows meaningful signal extraction.' },
   { id: 'transition_f1',    label: 'Transition F1 Score',        category: 'Regime',       value: '0.308',  target: '> 0.50', status: 'bad',   tooltip: 'Harmonic mean of precision and recall for regime transition detection. F1 of 0.308 means the engine misses 75% of actual transitions -- a known limitation of threshold-based signals.' },
   { id: 'transition_prec',  label: 'Transition Precision',       category: 'Regime',       value: '40.0%',  target: '> 60%',  status: 'bad',   tooltip: 'When the engine signals a regime transition, it is correct 40% of the time. High false-positive rate requires improvement in the transition detection algorithm.' },
@@ -234,6 +236,13 @@ export default function ValidationLab() {
             icon={Target}
             trend={((calibration as any)?.brierScore ?? 1) < 0.25 ? "up" : "down"}
           />
+        </div>
+
+        {/* STATIC REFERENCE CARDS banner */}
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200 mb-4">
+          <span className="font-semibold text-amber-300">STATIC REFERENCE CARDS</span>
+          {" — "}Phase-2 research snapshot metrics. Not live FMOS output and not governed MODEL_PROBABILITY.
+          Data class: {INSTITUTIONAL_METRICS_DATA_CLASS}.
         </div>
 
         {/* Tabs */}

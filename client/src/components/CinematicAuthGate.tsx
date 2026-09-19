@@ -6,7 +6,7 @@
 
    Flow:
      Unauthenticated → CinematicAuthGate → OAuth sign-in
-     → redirect back → auth resolves → ASHA greeting (with name)
+     → redirect back → auth resolves → PLATO greeting (with name)
 
    This component never shows a personalized greeting. It holds
    the experience in the cinematic aesthetic until identity is
@@ -15,7 +15,7 @@
    ============================================================ */
 import { useState, useEffect } from "react";
 import { useAuth } from "../_core/hooks/useAuth";
-import { getLoginUrl } from "../const";
+import { navigateToLogin } from "../const";
 import AshaOrb from "./AshaOrb";
 
 interface CinematicAuthGateProps {
@@ -45,11 +45,11 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
   const handleSignIn = () => {
     setSigningIn(true);
     // Store a flag so after OAuth redirect we skip the cinematic
-    // and go straight to ASHA greeting
+    // and go straight to PLATO greeting
     try {
       sessionStorage.setItem("fl_post_auth_asha", "1");
     } catch {}
-    window.location.href = getLoginUrl();
+    navigateToLogin();
   };
 
   return (
@@ -115,7 +115,7 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
           textAlign: "center",
         }}>
           Sign in to continue.<br />
-          ASHA will greet you once your identity is confirmed.
+          PLATO will greet you once your identity is confirmed.
         </div>
 
         {/* Sign in button */}
@@ -192,7 +192,7 @@ export default function CinematicAuthGate({ onAuthenticated }: CinematicAuthGate
           fontSize: "9px", letterSpacing: "0.15em",
           color: "rgba(0,229,255,0.3)",
         }}>
-          ASHA · FAULTLINE INTELLIGENCE LAYER
+          PLATO · FAULTLINE INTELLIGENCE LAYER
         </div>
       </div>
     </div>
