@@ -101,5 +101,7 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(products).toContain('product.name === plan.name');
     expect(billing).toContain('const verification = await verifyStripePlanConfiguration(plan);');
     expect(billing).toContain('Checkout is unavailable until Stripe configuration is verified.');
+    expect(billing).toContain('PRICING_PLANS[planId].available && !!priceId');
+    expect(billing).not.toMatch(/available:\s*!!p\.priceId/);
   });
 });
