@@ -187,11 +187,30 @@ async function fetchYahooQuote(ticker: string): Promise<YahooQuote> {
 
 // ── Polygon prev-close fallback ───────────────────────────────
 
+/**
+ * Yahoo index symbols (^RUT, ^VIX, …) are not valid Polygon tickers.
+ * Map only the known indices that markets depends on; leave equities unchanged.
+ * Response ticker stays the Yahoo symbol so markets quoteMap lookups still match.
+ */
+const POLYGON_INDEX_ALIASES: Record<string, string> = {
+  "^RUT": "I:RUT",
+  "^VIX": "I:VIX",
+  "^GSPC": "I:SPX",
+  "^DJI": "I:DJI",
+  "^IXIC": "I:COMP",
+};
+
+export function toPolygonTicker(ticker: string): string {
+  const upper = ticker.toUpperCase();
+  return POLYGON_INDEX_ALIASES[upper] ?? ticker;
+}
+
 async function fetchPolygonPrevClose(ticker: string): Promise<YahooQuote> {
   const apiKey = process.env.POLYGON_API_KEY;
   if (!apiKey) throw new Error("No POLYGON_API_KEY configured");
 
-  const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/prev?adjusted=true&apiKey=${apiKey}`;
+  const polygonTicker = toPolygonTicker(ticker);
+  const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(polygonTicker)}/prev?adjusted=true&apiKey=${apiKey}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
 
   if (!res.ok) throw new Error(`Polygon HTTP ${res.status}`);

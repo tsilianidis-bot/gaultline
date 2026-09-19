@@ -31,7 +31,7 @@ describe("Yahoo quote fallback is fail-closed", () => {
       if (url.includes(YAHOO_HOST) && url.includes("%5EGSPC")) {
         return jsonResponse({ chart: { error: { description: "Unauthorized" } } }, 401);
       }
-      if (url.includes(POLYGON_PREV) && url.includes("%5EGSPC")) {
+      if (url.includes(POLYGON_PREV) && url.includes("I%3ASPX")) {
         return jsonResponse({ status: "ERROR", results: [] }, 404);
       }
       throw new Error(`unexpected fetch: ${url}`);
@@ -93,4 +93,52 @@ describe("Yahoo quote fallback is fail-closed", () => {
     expect(quote.price).toBeNull();
     expect(quote.changePercent).toBeNull();
   });
+
+  it("maps ^RUT/^VIX to Polygon I:RUT/I:VIX and never claims live", async () => {
+    process.env.POLYGON_API_KEY = "test-polygon-key";
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes(YAHOO_HOST)) {
+        return jsonResponse({ chart: { result: null } }, 503);
+      }
+      if (url.includes(POLYGON_PREV) && url.includes("I%3ARUT")) {
+        return jsonResponse({
+          results: [{ c: 2201.5, o: 2190, h: 2210, l: 2185, v: 1, t: 1_700_000_000_000 }],
+        });
+      }
+      if (url.includes(POLYGON_PREV) && url.includes("I%3AVIX")) {
+        return jsonResponse({
+          results: [{ c: 18.4, o: 17.9, h: 19.1, l: 17.5, v: 1, t: 1_700_000_000_000 }],
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const rut = await getQuote("^RUT");
+    const vix = await getQuote("^VIX");
+
+    expect(rut.source).toBe("polygon-prev");
+    expect(rut.ticker).toBe("^RUT");
+    expect(rut.price).toBe(2201.5);
+    expect(rut.changePercent).toBeNull();
+    expect(rut.isDelayed).toBe(true);
+    expect(rut.marketState).toBe("CLOSED");
+
+    expect(vix.source).toBe("polygon-prev");
+    expect(vix.ticker).toBe("^VIX");
+    expect(vix.price).toBe(18.4);
+    expect(vix.changePercent).toBeNull();
+    expect(vix.isDelayed).toBe(true);
+    expect(vix.marketState).toBe("CLOSED");
+  });
+
+  it("leaves non-index tickers unmapped for Polygon", async () => {
+    const { toPolygonTicker } = await import("./yahooProxy");
+    expect(toPolygonTicker("^RUT")).toBe("I:RUT");
+    expect(toPolygonTicker("^VIX")).toBe("I:VIX");
+    expect(toPolygonTicker("SPY")).toBe("SPY");
+    expect(toPolygonTicker("AAPL")).toBe("AAPL");
+  });
+
 });
