@@ -27,6 +27,7 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalScore, normalizeCanonicalMetric } from "@shared/marketMetrics";
 import type { CanonicalMarketState } from "@shared/marketState";
+import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
@@ -239,13 +240,13 @@ export default function Why() {
   const {
     output,
     marketState,
-    marketMode,
     sourceHealth,
     isLoading,
     isRefreshing,
     lastUpdated,
     dataError,
     refresh,
+    integrityLabel,
   } = useEngine();
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
@@ -300,13 +301,13 @@ export default function Why() {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-mono text-[10px] uppercase tracking-[0.23em] text-amber-300">WHY · Causal interpretation</p>
                 <DataFreshnessChip
-                  freshness={marketState?.freshness ?? (marketMode === "canonical" ? "live" : "stale")}
+                  freshness={customerIntegrityChipLevel(integrityLabel)}
                   tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-sm border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-400">
-                  {marketMode === "canonical" ? "Canonical state" : "Deterministic fallback"}
+                  {customerChromeModeLabel(integrityLabel)}
                 </span>
                 <Link href="/app/tools" className="flex items-center gap-1.5 rounded-sm border border-white/10 px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.13em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300">
                   <ArrowRight size={11} /> Tools & Features

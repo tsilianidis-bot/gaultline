@@ -167,6 +167,15 @@ export function customerPressureBadge(label: CustomerIntegrityLabel): string {
   return label === "LIVE" ? "LIVE PRESSURE" : label;
 }
 
+/**
+ * Destination / chrome mode label.
+ * "Canonical state" is reserved for truly LIVE integrity. FALLBACK / STALE /
+ * CACHED / UNAVAILABLE must never be presented as Canonical or LIVE.
+ */
+export function customerChromeModeLabel(label: CustomerIntegrityLabel): string {
+  return label === "LIVE" ? "Canonical state" : label;
+}
+
 export function allowsLivePressureClaim(label: CustomerIntegrityLabel): boolean {
   return label === "LIVE";
 }

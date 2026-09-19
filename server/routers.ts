@@ -800,8 +800,8 @@ export const appRouter = router({
         }
       }),
 
-    // Top 50 markets for heatmap
-    getTopMarkets: protectedProcedure
+    // Top 50 markets for heatmap — public; same data as GET /api/crypto/markets
+    getTopMarkets: publicProcedure
       .input(z.object({ limit: z.number().min(1).max(100).default(50) }).optional())
       .query(async ({ input }) => {
         try {
@@ -811,8 +811,8 @@ export const appRouter = router({
         }
       }),
 
-    // Global market stats
-    getGlobalStats: protectedProcedure
+    // Global market stats — public; same data as GET /api/crypto/global
+    getGlobalStats: publicProcedure
       .query(async () => {
         try {
           const stats = await getGlobalStats();

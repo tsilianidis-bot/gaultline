@@ -27,6 +27,7 @@ import {
   formatCanonicalScore,
   normalizeCanonicalMetric,
 } from "@shared/marketMetrics";
+import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
@@ -204,7 +205,6 @@ function TriggerDistanceRow({ condition }: { condition: DevelopingCondition }) {
 export default function Watch() {
   const {
     marketState,
-    marketMode,
     output,
     sourceHealth,
     isLoading,
@@ -212,6 +212,7 @@ export default function Watch() {
     lastUpdated,
     dataError,
     refresh,
+    integrityLabel,
   } = useEngine();
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
@@ -225,7 +226,6 @@ export default function Watch() {
   if (isLoading && !canonicalState) return <PageLoadingState eyebrow="WATCH · Monitoring state" message="Loading authoritative canonical state…" />;
   if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="WATCH withholds current monitoring interpretation until one authoritative state is available." />;
 
-  const isCanonical = marketMode === "canonical" && Boolean(marketState);
   const pressure = canonicalState?.pressureIndex ?? marketState?.now.pressureScore ?? output.overall.score * 10;
   const whatChanged = marketState?.watch.whatChanged ?? [
     "Canonical change records are unavailable. Deterministic risk domains are shown below without claiming measured changes.",
@@ -258,7 +258,7 @@ export default function Watch() {
     ...activePatterns.map(pattern => pattern.invalidationConditions),
   ].filter((item, index, values) => item && values.indexOf(item) === index);
   const confidence = marketState?.outlook.probabilities.confidence ?? 0;
-  const modeLabel = isCanonical ? "Canonical state" : "Deterministic fallback";
+  const modeLabel = customerChromeModeLabel(integrityLabel);
   const watchAcceleration = marketState?.watch.accelerating ?? false;
   const buildingPressure = marketState?.watch.buildingPressure ?? developingConditions.some(condition => condition.trend === "building");
 
@@ -280,7 +280,7 @@ export default function Watch() {
                   <Radar className="h-4 w-4" /> WATCH · Monitoring state
                 </div>
                 <DataFreshnessChip
-                  freshness={marketState?.freshness ?? (isCanonical ? "live" : "stale")}
+                  freshness={customerIntegrityChipLevel(integrityLabel)}
                   tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
                 />
               </div>

@@ -753,7 +753,7 @@ function StatusRail({
     { label: "PRESSURE", value: formatCanonicalScore(pressure), color: accent },
     { label: "MODE", value: integrityLabel, color: customerIntegrityColor(integrityLabel) },
     { label: "UPDATED", value: lastUpdated ? lastUpdated.toLocaleTimeString() : "—", color: "rgba(255,255,255,0.5)" },
-    { label: "STATE", value: marketMode === "deterministic-fallback" ? "FALLBACK" : marketMode === "simulation" ? "SIMULATION" : marketMode.toUpperCase(), color: "rgba(255,255,255,0.4)" },
+    { label: "STATE", value: marketMode === "simulation" ? "SIMULATION" : integrityLabel, color: "rgba(255,255,255,0.4)" },
   ];
   return (
     <div

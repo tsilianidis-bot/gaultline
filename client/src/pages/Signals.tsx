@@ -6,6 +6,8 @@
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useEngine } from '@/contexts/EngineContext';
+import { useAuth } from '@/_core/hooks/useAuth';
+import { customerPressureBadge } from '@shared/customerIntegrityLabels';
 import { trpc } from '@/lib/trpc';
 import { TickerSearch } from '@/components/TickerSearch';
 import {
@@ -1378,6 +1380,8 @@ function SignalsSubNav() {
 function SignalsInner() {
   useSEO(PAGE_SEO.signals);
   const engine = useEngine();
+  const { isAuthenticated, user } = useAuth();
+  const isQaSession = Boolean((user as { isQaSession?: boolean } | null)?.isQaSession);
   const [location] = useLocation();
 
   // ── Live Yahoo Finance data state ─────────────────────────────
@@ -1397,7 +1401,7 @@ function SignalsInner() {
     try {
       const tickerParam = tickers.slice(0, 20).join(',');
       const res = await fetch(`/api/signals/daily-bars?tickers=${encodeURIComponent(tickerParam)}&days=200`, {
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) return; // graceful — signal engine falls back to sparkline
       const data = await res.json() as { bars: Record<string, DailyBar[]> };
@@ -1413,7 +1417,7 @@ function SignalsInner() {
     setQuotesError(null);
     try {
       const res = await fetch('/api/signals/quotes', {
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.timeout(8000),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json() as QuotesResponse;
@@ -1433,11 +1437,17 @@ function SignalsInner() {
 
   useEffect(() => {
     fetchQuotes();
+    const failsafe = window.setTimeout(() => {
+      setQuotesLoading(false);
+    }, 10_000);
     const interval = setInterval(() => {
       fetchQuotes();
       setSignalsRefreshCounter(c => c + 1); // force signals re-run even if prices unchanged
     }, REFRESH_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(failsafe);
+      clearInterval(interval);
+    };
   }, [fetchQuotes]);
 
   // Fetch daily bars once after quotes load (server caches for 1 hour)
@@ -1569,15 +1579,20 @@ function SignalsInner() {
     },
   });
 
-  // Re-run the mutation whenever the input changes OR a manual/periodic refresh is triggered
+  // Re-run the mutation whenever the input changes OR a manual/periodic refresh is triggered.
+  // QA sessions cannot execute mutations; guests should not wait on a forbidden compute.
   const signalsInputRef = useRef<string>('');
   useEffect(() => {
+    if (isQaSession || !isAuthenticated) {
+      setSignalBlocked(false);
+      return;
+    }
     const key = JSON.stringify(tradingSignalsInput) + ':' + signalsRefreshCounter;
     if (key === signalsInputRef.current) return;
     signalsInputRef.current = key;
     computeSignalsMutation.mutate(tradingSignalsInput);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tradingSignalsInput, signalsRefreshCounter]);
+  }, [tradingSignalsInput, signalsRefreshCounter, isQaSession, isAuthenticated]);
 
   // Build a map of ticker → trading signal
   const tradingSignalMap = useMemo(() => {
@@ -1608,8 +1623,8 @@ function SignalsInner() {
       <PageHeader
         title="Signals"
         subtitle="Macro-regime-aware market scanner — live prices, trading signals, and regime-fit scores for 30+ tickers."
-        badge="LIVE PRICES"
-        badgeColor="green"
+        badge={engine?.integrityLabel === 'LIVE' ? 'LIVE PRICES' : customerPressureBadge(engine?.integrityLabel ?? 'UNAVAILABLE')}
+        badgeColor={engine?.integrityLabel === 'LIVE' ? 'green' : engine?.integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={
           <div className="flex items-center gap-2">
             {tradingSignalsData.length > 0 && (
@@ -1865,7 +1880,7 @@ function SignalsInner() {
       {/* ── Filter Panel Toggle ───────────────────────────── */}
       <div style={{ padding: '12px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ fontSize: '13px', color: 'rgba(100,116,139,0.75)', letterSpacing: '0.1em' }}>
-          {quotesLoading ? 'LOADING...' : `${displayedStocks.length} SIGNALS FOUND`}
+          {quotesLoading ? 'LOADING...' : quotesError ? `QUOTES UNAVAILABLE · ${displayedStocks.length} CATALOG SIGNALS` : `${displayedStocks.length} SIGNALS FOUND`}
         </div>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           <button
