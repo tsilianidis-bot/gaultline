@@ -225,9 +225,10 @@ describe("customer Pressure badge is a single coherent label", () => {
       const badge = customerPressureBadge(label);
       const copy = customerPressureUnavailableCopy(label);
       if (badge === "LIVE PRESSURE") {
-        expect(copy).not.toMatch(/FALLBACK|STALE|UNAVAILABLE/);
+        expect(copy).toBe("VECTOR DETAIL UNAVAILABLE");
+        expect(copy).not.toMatch(/USING FALLBACK|DATA STALE|DATA UNAVAILABLE/);
       }
-      if (/FALLBACK|STALE|UNAVAILABLE/.test(copy) && copy !== "VECTOR DETAIL UNAVAILABLE") {
+      if (copy === "DATA UNAVAILABLE — USING FALLBACK" || copy === "DATA STALE" || copy === "DATA UNAVAILABLE") {
         expect(badge).not.toBe("LIVE PRESSURE");
       }
     }
