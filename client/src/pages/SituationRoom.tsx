@@ -1089,6 +1089,7 @@ export default function SituationRoom() {
             ═══════════════════════════════════════════════════════ */}
             {(() => {
               const light = result.decisionLight;
+              const boundToCanonical = Boolean(light?.canonicalStateId);
               const vt = result.verdict.verdict as VerdictType;
               const lightConfig: Record<string, { color: string; glow: string; borderColor: string }> = {
                 GREEN: { color: "#00FF88", glow: "rgba(0,255,136,0.08)", borderColor: "rgba(0,255,136,0.35)" },
@@ -1102,7 +1103,7 @@ export default function SituationRoom() {
               const oppScore = Math.round(result.moveFavorabilityScore);
               const riskScore = Math.round(result.adversePressureProbability);
               return (
-                <div style={{
+                <div data-decision-bound={boundToCanonical ? "canonical" : "unbound"} style={{
                   background: `linear-gradient(135deg, ${vc.glow} 0%, rgba(10,13,20,0.98) 55%)`,
                   border: `1px solid ${vc.borderColor}`,
                   borderRadius: "8px",
@@ -1118,7 +1119,7 @@ export default function SituationRoom() {
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "16px" }}>
                     <div>
                       <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "rgba(100,116,139,0.6)", textTransform: "uppercase", letterSpacing: "0.18em", marginBottom: "6px" }}>
-                        DECISION LIGHT{result.ticker ? ` — ${result.ticker}` : ""}{light?.canonicalStateId ? ` · ${light.canonicalStateId}` : ""}
+                        DECISION LIGHT{result.ticker ? ` — ${result.ticker}` : ""}
                       </div>
                       <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 800, fontSize: "64px", lineHeight: 1, color: vc.color, letterSpacing: "-0.02em", textShadow: `0 0 40px ${vc.color}50` }}>
                         {label}

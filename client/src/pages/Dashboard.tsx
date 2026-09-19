@@ -531,7 +531,7 @@ function DashboardAwarenessSection() {
 
 export default function Dashboard() {
   useSEO(PAGE_SEO.home);
-  const { output, rawFred, indicators, isLoading, isLive, lastUpdated, isSimulating } = useEngine();
+  const { output, rawFred, indicators, isLoading, isLive, integrityLabel, lastUpdated, isSimulating } = useEngine();
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -617,7 +617,7 @@ export default function Dashboard() {
         { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
         { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00E5FF' },
         { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, color },
-        { label: 'STATUS', value: isLive ? 'LIVE FEED' : 'SIMULATED', color: isLive ? '#00FF88' : '#FF9500' },
+        { label: 'STATUS', value: integrityLabel === 'LIVE' ? 'LIVE FEED' : integrityLabel, color: integrityLabel === 'LIVE' ? '#00FF88' : integrityLabel === 'UNAVAILABLE' ? '#94A3B8' : '#FF9500' },
       ]} />
 
       {/* Onboarding */}
@@ -1295,12 +1295,12 @@ export default function Dashboard() {
         <div style={{ marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 460ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Market Stress Indicators</span>
-            {isLive && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: '2px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: integrityLabel === 'LIVE' ? 'rgba(0,255,136,0.06)' : 'rgba(255,149,0,0.06)', border: `1px solid ${integrityLabel === 'LIVE' ? 'rgba(0,255,136,0.15)' : 'rgba(255,149,0,0.15)'}`, borderRadius: '2px' }}>
+              {integrityLabel === 'LIVE' && (
                 <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00FF88', animation: 'pulse-gold 2s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', letterSpacing: '0.1em' }}>FRED LIVE</span>
-              </div>
-            )}
+              )}
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: integrityLabel === 'LIVE' ? '#00FF88' : '#FF9500', letterSpacing: '0.1em' }}>FRED {integrityLabel}</span>
+            </div>
           </div>
           {/* What Changed — Market Stress */}
           {indicators.hySpread > 400 && (

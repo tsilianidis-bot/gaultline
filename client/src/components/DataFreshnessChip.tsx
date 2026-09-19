@@ -2,7 +2,7 @@
  * DataFreshnessChip
  *
  * Inline chip that communicates data trust and freshness state.
- * Six states: LIVE · RECENT · STALE · CACHED · ESTIMATED · UNAVAILABLE
+ * Seven states: LIVE · RECENT · STALE · CACHED · FALLBACK · ESTIMATED · UNAVAILABLE
  *
  * Usage:
  *   <DataFreshnessChip freshness="live" />
@@ -16,6 +16,7 @@ import type { MarketStateFreshness } from "@shared/marketState";
 export type DataFreshnessLevel =
   | MarketStateFreshness   // "live" | "recent" | "stale"
   | "cached"
+  | "fallback"
   | "estimated"
   | "unavailable";
 
@@ -36,6 +37,7 @@ const FRESHNESS_CONFIG: Record<
   live:        { label: "LIVE",        color: "#34d399", bg: "rgba(52,211,153,0.08)",  border: "rgba(52,211,153,0.25)",  dot: "#34d399" },
   recent:      { label: "RECENT",      color: "#60a5fa", bg: "rgba(96,165,250,0.08)",  border: "rgba(96,165,250,0.25)",  dot: "#60a5fa" },
   cached:      { label: "CACHED",      color: "#a78bfa", bg: "rgba(167,139,250,0.08)", border: "rgba(167,139,250,0.25)", dot: "#a78bfa" },
+  fallback:    { label: "FALLBACK",    color: "#fb923c", bg: "rgba(251,146,60,0.08)",  border: "rgba(251,146,60,0.25)",  dot: "#fb923c" },
   stale:       { label: "STALE",       color: "#fbbf24", bg: "rgba(251,191,36,0.08)",  border: "rgba(251,191,36,0.25)",  dot: "#fbbf24" },
   estimated:   { label: "ESTIMATED",   color: "#fb923c", bg: "rgba(251,146,60,0.08)",  border: "rgba(251,146,60,0.25)",  dot: "#fb923c" },
   unavailable: { label: "UNAVAILABLE", color: "#94a3b8", bg: "rgba(148,163,184,0.06)", border: "rgba(148,163,184,0.15)", dot: "#94a3b8" },

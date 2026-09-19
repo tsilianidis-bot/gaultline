@@ -21,6 +21,7 @@ import SimulatePressure from "./SimulatePressure";
 import HistoricalContextEngine from "./HistoricalContextEngine";
 import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
+import { customerIntegrityBadgeColor, humanizeConflictType } from "@shared/customerIntegrityLabels";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -536,7 +537,7 @@ function LiquidityStressMeter({ vectors }: { vectors: RiskVector[] }) {
         })}
         {meters.length === 0 && (
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#374151", textAlign: "center", padding: "16px" }}>
-            LIVE DATA UNAVAILABLE — USING FALLBACK
+            DATA UNAVAILABLE — USING FALLBACK
           </div>
         )}
       </div>
@@ -980,14 +981,14 @@ export default function Pressure() {
     const requested = new URLSearchParams(window.location.search).get('tab');
     return STRESS_TABS.some(tab => tab.id === requested) ? requested as StressTabId : 'pressure';
   });
-  const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh } = useEngine();
+  const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh, integrityLabel } = useEngine();
   const data = useMemo(() => {
     if (!canonicalState || canonicalState.pressureIndex === null || Number.isNaN(canonicalState.pressureIndex)) return null;
     const pressureLevel = resolvePressureLevel(canonicalState.pressureLevel, canonicalState.pressureIndex);
     const alerts: PressureAlert[] = [
       ...canonicalState.conflicts.map(conflict => ({
         severity: (conflict.severity === "CRITICAL" ? "critical" : conflict.severity === "HIGH" ? "high" : "elevated") as PressureAlert["severity"],
-        title: conflict.conflictType,
+        title: humanizeConflictType(conflict.conflictType),
         detail: conflict.description,
       })),
       ...canonicalState.warnings.map(warning => ({ severity: "moderate" as const, title: "Canonical warning", detail: warning })),
@@ -1078,8 +1079,8 @@ export default function Pressure() {
         <PageHeader
           title="Market Stress"
           subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
-          badge="CANONICAL STATE"
-          badgeColor="green"
+          badge={integrityLabel}
+          badgeColor={customerIntegrityBadgeColor(integrityLabel)}
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
         <div style={{ padding: '0 16px' }}>
@@ -1110,7 +1111,7 @@ export default function Pressure() {
               </span>
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", letterSpacing: "0.12em" }}>
-              FAULTLINE SYSTEMIC RISK INDEX · {new Date(data.timestamp).toLocaleString()} · PHASE2-CANONICAL-STATE-V1
+              FAULTLINE SYSTEMIC RISK INDEX · {new Date(data.timestamp).toLocaleString()}
             </div>
           </div>
           <button
