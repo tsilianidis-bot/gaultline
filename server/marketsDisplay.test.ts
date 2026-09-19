@@ -123,5 +123,8 @@ describe("Markets missing-data display", () => {
     expect(source).toContain("advancingShare");
     expect(source).toContain("rutVersusSpxSpread");
     expect(source).toContain("Unavailable");
+    expect(source).toContain("UNAVAILABLE");
+    expect(source).toContain("proxySymbol");
+    expect(source).not.toContain("vixPrice !== null &&");
   });
 });

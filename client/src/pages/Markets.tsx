@@ -101,6 +101,8 @@ function MarketCard({ item, onClick }: { item: MarketQuoteItem; onClick?: () => 
   const [hovered, setHovered] = useState(false);
   const status = item.freshnessState === "UNAVAILABLE"
     ? { label: "UNAVAILABLE", color: AMBER }
+    : item.proxySymbol
+      ? { label: `${item.proxySymbol} PROXY · DELAYED`, color: AMBER }
     : item.freshnessState === "STALE"
       ? { label: "STALE", color: AMBER }
       : item.freshnessState === "DELAYED"
@@ -572,14 +574,12 @@ export default function Markets() {
                   max={100}
                   color={advancingPct === null ? MUTED : advancingPct >= 60 ? GREEN : advancingPct <= 40 ? RED : AMBER}
                 />
-                {vixPrice !== null && (
-                  <BreadthRow
-                    label="VIX (fear gauge)"
-                    value={vixPrice}
-                    max={50}
-                    color={vixPrice > 25 ? RED : vixPrice < 15 ? GREEN : AMBER}
-                  />
-                )}
+                <BreadthRow
+                  label="VIX (fear gauge)"
+                  value={vixPrice}
+                  max={50}
+                  color={vixPrice === null ? MUTED : vixPrice > 25 ? RED : vixPrice < 15 ? GREEN : AMBER}
+                />
                 <div style={{ marginTop: "10px", padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: "4px" }}>
                   <div style={{ fontFamily: MONO, fontSize: "9px", color: MUTED, marginBottom: "4px" }}>
                     SMALL CAP vs LARGE CAP
