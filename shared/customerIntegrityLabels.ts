@@ -173,7 +173,7 @@ export function humanizeQualityStatus(quality: string | null | undefined): strin
   return QUALITY_TITLES[quality] ?? quality.replace(/[_-]+/g, " ").toLowerCase().replace(/^\w/, char => char.toUpperCase());
 }
 
-const DEBUG_CODE = /STALE_INPUT|FALLBACK_INPUT|UNAVAILABLE_INPUT|CANONICAL[^\n]{0,40}DEGRADED|PHASE2-CANONICAL|state:[0-9T.:-]+[:/][a-f0-9]{8,}|stateHash|[a-f0-9]{24,}/i;
+const DEBUG_CODE = /STALE_INPUT|FALLBACK_INPUT|UNAVAILABLE_INPUT|CANONICAL[\s\S]{0,80}DEGRADED|PHASE2-CANONICAL|state:\S*[a-f0-9]{8,}|stateHash|[a-f0-9]{24,}/i;
 
 export function isCustomerDebugWatermark(value: string | null | undefined): boolean {
   if (!value) return false;
