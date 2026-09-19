@@ -43,7 +43,7 @@ export default function AshaDailyGreeting() {
         pressureScore: score * 10,
         regime: canonicalState.regime ?? "Unavailable",
         regimeConfidence: 0.75,
-        narrative: `Canonical state ${canonicalState.stateId} · ${canonicalState.confidenceOrEvidenceQuality}`,
+        narrative: `Current evidence quality: ${canonicalState.confidenceOrEvidenceQuality === "HEALTHY" ? "healthy" : canonicalState.confidenceOrEvidenceQuality === "DEGRADED" ? "limited" : canonicalState.confidenceOrEvidenceQuality === "PARTIAL" ? "partial" : "unavailable"}`,
         trend: output.regime?.sublabel ?? "",
         keyDrivers: output.narrative?.keyRisks ?? [],
       },

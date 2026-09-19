@@ -775,14 +775,14 @@ function InstitutionalWidgets() {
 // ── Main Charts Page ────────────────────────────────────────────
 export default function Charts() {
   useSEO(PAGE_SEO.charts);
-  const { isLive, lastUpdated } = useEngine();
+  const { lastUpdated, integrityLabel } = useEngine();
   return (
     <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
       <PageHeader
         title="Charts"
-        subtitle="Systemic pressure timeline and macro chart suite — FRED live data where available, simulated baseline otherwise."
-        badge={isLive ? 'FRED LIVE' : 'SIMULATED'}
-        badgeColor={isLive ? 'green' : 'amber'}
+        subtitle="Systemic pressure timeline and macro chart suite — FRED live data where available, cached or fallback otherwise."
+        badge={integrityLabel === 'LIVE' ? 'FRED LIVE' : `FRED ${integrityLabel}`}
+        badgeColor={integrityLabel === 'LIVE' ? 'green' : integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={<PreflightTrigger currentPage="charts" actionKey="viewed_charts" />}
       />
       <div style={{ padding: '20px 16px 32px' }}>

@@ -24,6 +24,7 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
@@ -568,7 +569,7 @@ function SeismographStrip({ pressure, accent, phase }: { pressure: number; accen
       }}
     >
       <div className="absolute left-3 top-2 font-mono text-[8px] uppercase tracking-[0.16em] text-slate-600">
-        LIVE PRESSURE SIGNAL
+        PRESSURE SIGNAL
       </div>
       <canvas ref={canvasRef} className="h-full w-full" />
     </div>
@@ -743,16 +744,16 @@ function WhatChangedPanel({
 
 // ── Status rail ──────────────────────────────────────────────────────────────
 function StatusRail({
-  pressure, accent, isLive, lastUpdated, marketMode, phase,
+  pressure, accent, integrityLabel, lastUpdated, marketMode, phase,
 }: {
-  pressure: number; accent: string; isLive: boolean; lastUpdated?: Date | null;
+  pressure: number; accent: string; integrityLabel: CustomerIntegrityLabel; lastUpdated?: Date | null;
   marketMode: string; phase: number;
 }) {
   const items = [
     { label: "PRESSURE", value: formatCanonicalScore(pressure), color: accent },
-    { label: "MODE", value: isLive ? "LIVE" : "PROTECTED", color: isLive ? "#00e599" : "#ffaa00" },
+    { label: "MODE", value: integrityLabel, color: customerIntegrityColor(integrityLabel) },
     { label: "UPDATED", value: lastUpdated ? lastUpdated.toLocaleTimeString() : "—", color: "rgba(255,255,255,0.5)" },
-    { label: "STATE", value: marketMode.toUpperCase(), color: "rgba(255,255,255,0.4)" },
+    { label: "STATE", value: marketMode === "deterministic-fallback" ? "FALLBACK" : marketMode === "simulation" ? "SIMULATION" : marketMode.toUpperCase(), color: "rgba(255,255,255,0.4)" },
   ];
   return (
     <div
@@ -806,8 +807,8 @@ function DestinationLink({ href, label, detail }: { href: string; label: string;
 export default function Now() {
   const {
     output, marketState, marketMode, sourceHealth,
-    isLoading, isLive, lastUpdated, dataError, refresh,
-    canonicalState,
+    isLoading, lastUpdated, dataError, refresh,
+    canonicalState, integrityLabel,
   } = useEngine();
 
   // Staged cinematic entry: phases 1–7 over ~5s
@@ -851,7 +852,6 @@ export default function Now() {
   const watchItems = marketState?.watch.whatToWatch ?? output.narrative.keyRisks;
   const changedItems = marketState?.watch.whatChanged
     ?? output.domains.filter(domain => Math.abs(domain.delta) > 0.1).map(domain => `${domain.label}: ${domain.delta > 0 ? "pressure increased" : "pressure eased"}.`);
-  const modeLabel = marketState ? (isLive ? "Canonical live state" : "Canonical protected state") : "Protected fallback state";
   const accent = pressureColor(pressure);
 
   const topDriversWithStrength = useMemo(() => {
@@ -908,7 +908,7 @@ export default function Now() {
                   NOW · Current market state
                 </span>
                 <DataFreshnessChip
-                  freshness={marketState?.freshness ?? (isLive ? "live" : "stale")}
+                  freshness={customerIntegrityChipLevel(integrityLabel)}
                   tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
                 />
               </div>
@@ -932,7 +932,7 @@ export default function Now() {
               <StatusRail
                 pressure={pressure}
                 accent={accent}
-                isLive={isLive}
+                integrityLabel={integrityLabel}
                 lastUpdated={lastUpdated}
                 marketMode={marketMode}
                 phase={phase}
