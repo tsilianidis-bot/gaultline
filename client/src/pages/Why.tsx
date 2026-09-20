@@ -281,11 +281,8 @@ export default function Why() {
   const evidenceConsensus = marketState?.why.evidenceConsensus ?? "fallback";
   const pressureColor = pressure >= 75 ? "#ff4d6d" : pressure >= 50 ? "#ffaa00" : pressure >= 30 ? "#00e5ff" : "#00e599";
 
-  // Sort evidence families by strength descending for driver bars
-  const sortedFamilies = useMemo(
-    () => [...evidenceFamilies].sort((a, b) => b.strength - a.strength),
-    [evidenceFamilies],
-  );
+  // Plain sort (not useMemo): must not call hooks after the early returns above.
+  const sortedFamilies = [...evidenceFamilies].sort((a, b) => b.strength - a.strength);
 
   return (
     <main className="min-h-screen bg-[#04070b] text-slate-200">
