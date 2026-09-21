@@ -1,0 +1,822 @@
+{
+  "modelFamily": "statistical-pca-hmm",
+  "pcaMethod": "standard_scaler_pca",
+  "notAi": true,
+  "lookAheadBias": false,
+  "validation": "expanding-window OOS, train years never include the test year",
+  "stressPeriods": [
+    {
+      "id": "gfc",
+      "label": "Global Financial Crisis",
+      "start": "2007-07-01",
+      "end": "2009-03-31",
+      "severity": "critical",
+      "notes": "Housing/credit unwind into Lehman and equity trough."
+    },
+    {
+      "id": "eu_debt",
+      "label": "Euro area sovereign stress",
+      "start": "2011-07-01",
+      "end": "2012-06-30",
+      "severity": "high",
+      "notes": "EMU periphery + US rating downgrade risk-off."
+    },
+    {
+      "id": "taper_em",
+      "label": "Taper / EM stress",
+      "start": "2015-08-01",
+      "end": "2016-02-29",
+      "severity": "high",
+      "notes": "China FX + commodity + HY energy stress."
+    },
+    {
+      "id": "volmageddon",
+      "label": "Q4 2018 drawdown",
+      "start": "2018-10-01",
+      "end": "2018-12-31",
+      "severity": "moderate",
+      "notes": "Tightening + growth scare equity drawdown."
+    },
+    {
+      "id": "covid",
+      "label": "COVID liquidity shock",
+      "start": "2020-02-20",
+      "end": "2020-04-30",
+      "severity": "critical",
+      "notes": "Dash-for-cash; fastest equity collapse in sample."
+    },
+    {
+      "id": "hike_2022",
+      "label": "2022 hiking / inflation shock",
+      "start": "2022-01-03",
+      "end": "2022-10-31",
+      "severity": "high",
+      "notes": "Policy tightening, yield shock, equity bear."
+    }
+  ],
+  "architectureChoice": {
+    "chosenNStates": 3,
+    "ranked": [
+      {
+        "nStates": 3,
+        "score": 1.7183660918765,
+        "precision": 0.4492862509391435,
+        "recall": 0.8026845637583893,
+        "falseTransitions": 31,
+        "meanDwellDays": 114.125,
+        "meanLeadTimeDays": 41.0,
+        "warningShare": 0.3644578313253012
+      },
+      {
+        "nStates": 2,
+        "score": 1.609164365648573,
+        "precision": 0.8948306595365418,
+        "recall": 0.6738255033557047,
+        "falseTransitions": 18,
+        "meanDwellDays": 192.21052631578948,
+        "meanLeadTimeDays": 35.0,
+        "warningShare": 0.1536144578313253
+      },
+      {
+        "nStates": 4,
+        "score": -1.2501083224192269,
+        "precision": 0.3082502266545784,
+        "recall": 0.912751677852349,
+        "falseTransitions": 64,
+        "meanDwellDays": 56.184615384615384,
+        "meanLeadTimeDays": 91.2,
+        "warningShare": 0.604052573932092
+      }
+    ],
+    "topByScore": 3,
+    "rationale": "3-state GaussianHMM (NORMAL / STRESS BUILDING / CRISIS) is the production architecture when the decoded path is persistent. 2-state (NORMAL / CRISIS) is more stable but cannot express a building-stress early-warning state. 4-state (RISK ON / TRANSITION / STRESS / CRISIS) is rejected when it stays in a warning state most days (crash-hunting) even if recall looks high. States are mapped by observable stress (PC1, HY OAS, vol, drawdown), never by HMM index. Transition matrix is sticky (self-transition 0.97, not re-estimated) so regimes persist."
+  },
+  "byNStates": {
+    "2": {
+      "nStates": 2,
+      "labels": [
+        "NORMAL",
+        "CRISIS"
+      ],
+      "folds": [
+        {
+          "trainEnd": "2010",
+          "testYear": 2011,
+          "nTrain": 1544,
+          "nTest": 260,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2011",
+          "testYear": 2012,
+          "nTrain": 1804,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2012",
+          "testYear": 2013,
+          "nTrain": 2065,
+          "nTest": 261,
+          "stateMap": {
+            "1": "NORMAL",
+            "0": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2013",
+          "testYear": 2014,
+          "nTrain": 2326,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2014",
+          "testYear": 2015,
+          "nTrain": 2587,
+          "nTest": 261,
+          "stateMap": {
+            "1": "NORMAL",
+            "0": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2015",
+          "testYear": 2016,
+          "nTrain": 2848,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2016",
+          "testYear": 2017,
+          "nTrain": 3109,
+          "nTest": 260,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2017",
+          "testYear": 2018,
+          "nTrain": 3369,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2018",
+          "testYear": 2019,
+          "nTrain": 3630,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2019",
+          "testYear": 2020,
+          "nTrain": 3891,
+          "nTest": 262,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2020",
+          "testYear": 2021,
+          "nTrain": 4153,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2021",
+          "testYear": 2022,
+          "nTrain": 4414,
+          "nTest": 260,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2022",
+          "testYear": 2023,
+          "nTrain": 4674,
+          "nTest": 260,
+          "stateMap": {
+            "1": "NORMAL",
+            "0": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2023",
+          "testYear": 2024,
+          "nTrain": 4934,
+          "nTest": 262,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "CRISIS"
+          }
+        }
+      ],
+      "nOos": 3652,
+      "precision": 0.8948306595365418,
+      "recall": 0.6738255033557047,
+      "falseTransitions": 18,
+      "meanDwellDays": 192.21052631578948,
+      "leadTimesDays": {
+        "gfc": null,
+        "eu_debt": null,
+        "taper_em": 57.0,
+        "volmageddon": null,
+        "covid": 13.0,
+        "hike_2022": null
+      },
+      "meanLeadTimeDays": 35.0,
+      "warningShare": 0.1536144578313253,
+      "eventShare": 0.20399780941949616,
+      "maxDrawdownAfterFirstWarning": -0.9999996943948097,
+      "calibration": {
+        "bins": [
+          {
+            "lo": 0.0,
+            "hi": 0.125,
+            "n": 3029,
+            "meanPred": 0.0008552249538533876,
+            "freq": 0.06668867613073622
+          },
+          {
+            "lo": 0.125,
+            "hi": 0.25,
+            "n": 9,
+            "meanPred": 0.17554450770816624,
+            "freq": 0.4444444444444444
+          },
+          {
+            "lo": 0.25,
+            "hi": 0.375,
+            "n": 9,
+            "meanPred": 0.29609898446103305,
+            "freq": 0.6666666666666666
+          },
+          {
+            "lo": 0.375,
+            "hi": 0.5,
+            "n": 6,
+            "meanPred": 0.4396801965304327,
+            "freq": 0.5
+          },
+          {
+            "lo": 0.5,
+            "hi": 0.625,
+            "n": 6,
+            "meanPred": 0.5979600370029305,
+            "freq": 0.5
+          },
+          {
+            "lo": 0.625,
+            "hi": 0.75,
+            "n": 5,
+            "meanPred": 0.6987028303888304,
+            "freq": 0.6
+          },
+          {
+            "lo": 0.75,
+            "hi": 0.875,
+            "n": 9,
+            "meanPred": 0.8192398172742982,
+            "freq": 0.7777777777777778
+          },
+          {
+            "lo": 0.875,
+            "hi": 1.0,
+            "n": 579,
+            "meanPred": 0.9977817524452522,
+            "freq": 0.8929188255613126
+          }
+        ],
+        "ece": 0.07330140153376347
+      }
+    },
+    "3": {
+      "nStates": 3,
+      "labels": [
+        "NORMAL",
+        "STRESS BUILDING",
+        "CRISIS"
+      ],
+      "folds": [
+        {
+          "trainEnd": "2010",
+          "testYear": 2011,
+          "nTrain": 1544,
+          "nTest": 260,
+          "stateMap": {
+            "2": "NORMAL",
+            "0": "STRESS BUILDING",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2011",
+          "testYear": 2012,
+          "nTrain": 1804,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "2": "STRESS BUILDING",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2012",
+          "testYear": 2013,
+          "nTrain": 2065,
+          "nTest": 261,
+          "stateMap": {
+            "1": "NORMAL",
+            "2": "STRESS BUILDING",
+            "0": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2013",
+          "testYear": 2014,
+          "nTrain": 2326,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "STRESS BUILDING",
+            "2": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2014",
+          "testYear": 2015,
+          "nTrain": 2587,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "2": "STRESS BUILDING",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2015",
+          "testYear": 2016,
+          "nTrain": 2848,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "STRESS BUILDING",
+            "2": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2016",
+          "testYear": 2017,
+          "nTrain": 3109,
+          "nTest": 260,
+          "stateMap": {
+            "0": "NORMAL",
+            "2": "STRESS BUILDING",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2017",
+          "testYear": 2018,
+          "nTrain": 3369,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "2": "STRESS BUILDING",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2018",
+          "testYear": 2019,
+          "nTrain": 3630,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "STRESS BUILDING",
+            "2": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2019",
+          "testYear": 2020,
+          "nTrain": 3891,
+          "nTest": 262,
+          "stateMap": {
+            "0": "NORMAL",
+            "2": "STRESS BUILDING",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2020",
+          "testYear": 2021,
+          "nTrain": 4153,
+          "nTest": 261,
+          "stateMap": {
+            "0": "NORMAL",
+            "1": "STRESS BUILDING",
+            "2": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2021",
+          "testYear": 2022,
+          "nTrain": 4414,
+          "nTest": 260,
+          "stateMap": {
+            "0": "NORMAL",
+            "2": "STRESS BUILDING",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2022",
+          "testYear": 2023,
+          "nTrain": 4674,
+          "nTest": 260,
+          "stateMap": {
+            "1": "NORMAL",
+            "0": "STRESS BUILDING",
+            "2": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2023",
+          "testYear": 2024,
+          "nTrain": 4934,
+          "nTest": 262,
+          "stateMap": {
+            "1": "NORMAL",
+            "0": "STRESS BUILDING",
+            "2": "CRISIS"
+          }
+        }
+      ],
+      "nOos": 3652,
+      "precision": 0.4492862509391435,
+      "recall": 0.8026845637583893,
+      "falseTransitions": 31,
+      "meanDwellDays": 114.125,
+      "leadTimesDays": {
+        "gfc": null,
+        "eu_debt": null,
+        "taper_em": 66.0,
+        "volmageddon": null,
+        "covid": 17.0,
+        "hike_2022": 40.0
+      },
+      "meanLeadTimeDays": 41.0,
+      "warningShare": 0.3644578313253012,
+      "eventShare": 0.20399780941949616,
+      "maxDrawdownAfterFirstWarning": -0.9999998254553791,
+      "calibration": {
+        "bins": [
+          {
+            "lo": 0.0,
+            "hi": 0.125,
+            "n": 3336,
+            "meanPred": 0.00022926928501888286,
+            "freq": 0.12859712230215828
+          },
+          {
+            "lo": 0.125,
+            "hi": 0.25,
+            "n": 4,
+            "meanPred": 0.18727539010723734,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.25,
+            "hi": 0.375,
+            "n": 1,
+            "meanPred": 0.30818087519305304,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.375,
+            "hi": 0.5,
+            "n": 6,
+            "meanPred": 0.44263235239344056,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.5,
+            "hi": 0.625,
+            "n": 1,
+            "meanPred": 0.5633211987210521,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.625,
+            "hi": 0.75,
+            "n": 3,
+            "meanPred": 0.7151014729177175,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.75,
+            "hi": 0.875,
+            "n": 7,
+            "meanPred": 0.7973065354328133,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.875,
+            "hi": 1.0,
+            "n": 294,
+            "meanPred": 0.9976527373949731,
+            "freq": 1.0
+          }
+        ],
+        "ece": 0.12018685787392344
+      }
+    },
+    "4": {
+      "nStates": 4,
+      "labels": [
+        "RISK ON",
+        "TRANSITION",
+        "STRESS",
+        "CRISIS"
+      ],
+      "folds": [
+        {
+          "trainEnd": "2010",
+          "testYear": 2011,
+          "nTrain": 1544,
+          "nTest": 260,
+          "stateMap": {
+            "3": "RISK ON",
+            "0": "TRANSITION",
+            "2": "STRESS",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2011",
+          "testYear": 2012,
+          "nTrain": 1804,
+          "nTest": 261,
+          "stateMap": {
+            "0": "RISK ON",
+            "2": "TRANSITION",
+            "3": "STRESS",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2012",
+          "testYear": 2013,
+          "nTrain": 2065,
+          "nTest": 261,
+          "stateMap": {
+            "0": "RISK ON",
+            "3": "TRANSITION",
+            "2": "STRESS",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2013",
+          "testYear": 2014,
+          "nTrain": 2326,
+          "nTest": 261,
+          "stateMap": {
+            "2": "RISK ON",
+            "0": "TRANSITION",
+            "1": "STRESS",
+            "3": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2014",
+          "testYear": 2015,
+          "nTrain": 2587,
+          "nTest": 261,
+          "stateMap": {
+            "0": "RISK ON",
+            "3": "TRANSITION",
+            "2": "STRESS",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2015",
+          "testYear": 2016,
+          "nTrain": 2848,
+          "nTest": 261,
+          "stateMap": {
+            "3": "RISK ON",
+            "1": "TRANSITION",
+            "0": "STRESS",
+            "2": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2016",
+          "testYear": 2017,
+          "nTrain": 3109,
+          "nTest": 260,
+          "stateMap": {
+            "0": "RISK ON",
+            "3": "TRANSITION",
+            "1": "STRESS",
+            "2": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2017",
+          "testYear": 2018,
+          "nTrain": 3369,
+          "nTest": 261,
+          "stateMap": {
+            "2": "RISK ON",
+            "0": "TRANSITION",
+            "3": "STRESS",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2018",
+          "testYear": 2019,
+          "nTrain": 3630,
+          "nTest": 261,
+          "stateMap": {
+            "0": "RISK ON",
+            "3": "TRANSITION",
+            "2": "STRESS",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2019",
+          "testYear": 2020,
+          "nTrain": 3891,
+          "nTest": 262,
+          "stateMap": {
+            "2": "RISK ON",
+            "0": "TRANSITION",
+            "3": "STRESS",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2020",
+          "testYear": 2021,
+          "nTrain": 4153,
+          "nTest": 261,
+          "stateMap": {
+            "2": "RISK ON",
+            "0": "TRANSITION",
+            "1": "STRESS",
+            "3": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2021",
+          "testYear": 2022,
+          "nTrain": 4414,
+          "nTest": 260,
+          "stateMap": {
+            "2": "RISK ON",
+            "0": "TRANSITION",
+            "3": "STRESS",
+            "1": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2022",
+          "testYear": 2023,
+          "nTrain": 4674,
+          "nTest": 260,
+          "stateMap": {
+            "3": "RISK ON",
+            "0": "TRANSITION",
+            "1": "STRESS",
+            "2": "CRISIS"
+          }
+        },
+        {
+          "trainEnd": "2023",
+          "testYear": 2024,
+          "nTrain": 4934,
+          "nTest": 262,
+          "stateMap": {
+            "1": "RISK ON",
+            "0": "TRANSITION",
+            "3": "STRESS",
+            "2": "CRISIS"
+          }
+        }
+      ],
+      "nOos": 3652,
+      "precision": 0.3082502266545784,
+      "recall": 0.912751677852349,
+      "falseTransitions": 64,
+      "meanDwellDays": 56.184615384615384,
+      "leadTimesDays": {
+        "gfc": null,
+        "eu_debt": 9.0,
+        "taper_em": 180.0,
+        "volmageddon": 165.0,
+        "covid": 62.0,
+        "hike_2022": 40.0
+      },
+      "meanLeadTimeDays": 91.2,
+      "warningShare": 0.604052573932092,
+      "eventShare": 0.20399780941949616,
+      "maxDrawdownAfterFirstWarning": -0.9999998768411783,
+      "calibration": {
+        "bins": [
+          {
+            "lo": 0.0,
+            "hi": 0.125,
+            "n": 3506,
+            "meanPred": 0.00020305777956471023,
+            "freq": 0.1708499714774672
+          },
+          {
+            "lo": 0.125,
+            "hi": 0.25,
+            "n": 8,
+            "meanPred": 0.17144838538062854,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.25,
+            "hi": 0.375,
+            "n": 4,
+            "meanPred": 0.3337090863742387,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.375,
+            "hi": 0.5,
+            "n": 4,
+            "meanPred": 0.4273158394535995,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.5,
+            "hi": 0.625,
+            "n": 3,
+            "meanPred": 0.5564491865027291,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.625,
+            "hi": 0.75,
+            "n": 7,
+            "meanPred": 0.7017962905775118,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.75,
+            "hi": 0.875,
+            "n": 6,
+            "meanPred": 0.824698788300707,
+            "freq": 1.0
+          },
+          {
+            "lo": 0.875,
+            "hi": 1.0,
+            "n": 114,
+            "meanPred": 0.9937007818509915,
+            "freq": 1.0
+          }
+        ],
+        "ece": 0.16841741215337397
+      }
+    }
+  }
+}

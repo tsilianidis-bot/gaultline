@@ -2967,3 +2967,67 @@ export const shadowDailySummaries = mysqlTable("shadowDailySummaries", {
 }));
 export type ShadowDailySummary = typeof shadowDailySummaries.$inferSelect;
 export type InsertShadowDailySummary = typeof shadowDailySummaries.$inferInsert;
+
+// ── Systemic Regime Engine (independent statistical worker; not Pressure) ──
+export const systemicRegimeModels = mysqlTable("systemicRegimeModels", {
+  id: int("id").autoincrement().primaryKey(),
+  modelVersion: varchar("modelVersion", { length: 64 }).notNull(),
+  modelType: varchar("modelType", { length: 64 }).notNull(),
+  pcaMethod: varchar("pcaMethod", { length: 64 }).notNull().default("standard_scaler_pca"),
+  nStates: int("nStates").notNull().default(3),
+  featureSchemaVersion: varchar("featureSchemaVersion", { length: 64 }).notNull(),
+  trainingStart: varchar("trainingStart", { length: 10 }),
+  trainingEnd: varchar("trainingEnd", { length: 10 }),
+  approved: boolean("approved").notNull().default(false),
+  registryJson: text("registryJson").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (t) => ({
+  versionIdx: uniqueIndex("systemicRegimeModels_modelVersion_uniq").on(t.modelVersion),
+}));
+export type SystemicRegimeModel = typeof systemicRegimeModels.$inferSelect;
+export type InsertSystemicRegimeModel = typeof systemicRegimeModels.$inferInsert;
+
+export const systemicRegimeReadings = mysqlTable("systemicRegimeReadings", {
+  id: int("id").autoincrement().primaryKey(),
+  dataAsOf: varchar("dataAsOf", { length: 10 }).notNull(),
+  computedAt: timestamp("computedAt").notNull(),
+  historyClass: mysqlEnum("historyClass", ["LIVE_INFERENCE", "OOS_RESEARCH"]).notNull().default("LIVE_INFERENCE"),
+  currentRegime: varchar("currentRegime", { length: 32 }).notNull(),
+  systemicRiskScore: int("systemicRiskScore"),
+  crisisProbability: decimal("crisisProbability", { precision: 8, scale: 6 }),
+  stressBuildingProbability: decimal("stressBuildingProbability", { precision: 8, scale: 6 }),
+  transitionProbability: decimal("transitionProbability", { precision: 8, scale: 6 }),
+  regimeConfidence: decimal("regimeConfidence", { precision: 8, scale: 6 }),
+  creditStressZ: decimal("creditStressZ", { precision: 8, scale: 4 }),
+  volStressZ: decimal("volStressZ", { precision: 8, scale: 4 }),
+  ratesStressZ: decimal("ratesStressZ", { precision: 8, scale: 4 }),
+  pc1: decimal("pc1", { precision: 10, scale: 6 }),
+  factorArrowsJson: text("factorArrowsJson"),
+  freshnessStatus: varchar("freshnessStatus", { length: 16 }).notNull().default("UNAVAILABLE"),
+  modelVersion: varchar("modelVersion", { length: 64 }).notNull(),
+  modelType: varchar("modelType", { length: 64 }).notNull(),
+  payloadJson: text("payloadJson").notNull(),
+  contributesToPressureIndex: boolean("contributesToPressureIndex").notNull().default(false),
+}, (t) => ({
+  asOfIdx: index("systemicRegimeReadings_dataAsOf_idx").on(t.dataAsOf),
+  classIdx: index("systemicRegimeReadings_historyClass_idx").on(t.historyClass),
+  computedIdx: index("systemicRegimeReadings_computedAt_idx").on(t.computedAt),
+}));
+export type SystemicRegimeReadingRow = typeof systemicRegimeReadings.$inferSelect;
+export type InsertSystemicRegimeReading = typeof systemicRegimeReadings.$inferInsert;
+
+export const signalConvergenceReadings = mysqlTable("signalConvergenceReadings", {
+  id: int("id").autoincrement().primaryKey(),
+  computedAt: timestamp("computedAt").notNull(),
+  level: varchar("level", { length: 16 }).notNull(),
+  deterioratingCount: int("deterioratingCount").notNull(),
+  availableCount: int("availableCount").notNull(),
+  voteCount: int("voteCount").notNull(),
+  methodology: varchar("methodology", { length: 64 }).notNull(),
+  payloadJson: text("payloadJson").notNull(),
+  contributesToPressureIndex: boolean("contributesToPressureIndex").notNull().default(false),
+}, (t) => ({
+  computedIdx: index("signalConvergenceReadings_computedAt_idx").on(t.computedAt),
+}));
+export type SignalConvergenceReadingRow = typeof signalConvergenceReadings.$inferSelect;
+export type InsertSignalConvergenceReading = typeof signalConvergenceReadings.$inferInsert;

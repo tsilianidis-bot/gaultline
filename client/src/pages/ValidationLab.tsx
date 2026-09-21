@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEngine } from "@/contexts/EngineContext";
+import SystemicRegimeChart from "@/components/SystemicRegimeChart";
 import {
   BarChart,
   Bar,
@@ -148,6 +149,7 @@ export default function ValidationLab() {
   const calibration = _calibration as any;
   const { data: _learning, isLoading: learnLoading } = trpc.fmos.getLearningInsights.useQuery({ days });
   const learning = _learning as any;
+  const { data: regimeHistory } = trpc.systemicRegime.history.useQuery();
 
   const isLoading = statsLoading || calLoading || learnLoading;
 
@@ -253,6 +255,7 @@ export default function ValidationLab() {
             <TabsTrigger value="health">Engine Health</TabsTrigger>
             <TabsTrigger value="calibration">Calibration</TabsTrigger>
             <TabsTrigger value="learning">Learning Insights</TabsTrigger>
+            <TabsTrigger value="systemic-regime">Systemic Regime</TabsTrigger>
             <TabsTrigger value="engines">Engine Registry</TabsTrigger>
           </TabsList>
 
@@ -785,6 +788,24 @@ export default function ValidationLab() {
                 )}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="systemic-regime" className="space-y-4">
+            <Card className="bg-card/50 border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">Systemic Regime HMM (statistical, not AI)</CardTitle>
+                <CardDescription className="text-xs">
+                  Expanding-window out-of-sample path. Ordinary StandardScaler + PCA (n_components=1) plus a 3-state GaussianHMM.
+                  Independent of Pressure Index weights. Live NOW readings require a persisted inference, not this research path.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SystemicRegimeChart
+                  points={regimeHistory?.research ?? []}
+                  stressPeriods={regimeHistory?.stressPeriods ?? []}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Engine Registry Tab */}

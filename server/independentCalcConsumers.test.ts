@@ -121,3 +121,15 @@ describe("independent calc consumers — marketStateCache stale-if-error", () =>
     expect(currentCanonical.length).toBeGreaterThan(0);
   });
 });
+
+describe("independent calc consumers — Systemic Regime Engine", () => {
+  it("is visible on NOW as a parallel statistical module and does not author Pressure", () => {
+    const now = source("client/src/pages/Now.tsx");
+    expect(now).toContain("trpc.systemicRegime.current");
+    expect(now).toContain("SystemicRegimeModule");
+    expect(now).not.toContain("canonicalState.pressureIndex =");
+    expect(now).not.toContain("pressure.getCurrentPressure");
+    const engine = source("server/pressure/engine.ts");
+    expect(engine).not.toMatch(/id:\s*"systemic-regime"/);
+  });
+});

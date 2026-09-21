@@ -7,7 +7,7 @@
 
 | Artifact | Role |
 | --- | --- |
-| `drizzle/meta/_journal.json` | **Executable apply order** (idx 0–70, tags `0000`…`0070` drizzle-kit names) |
+| `drizzle/meta/_journal.json` | **Executable apply order** (idx 0–71, tags `0000`…`0071` drizzle-kit names) |
 | `drizzle/*.sql` on disk | Files that *may* be applied if named in the journal |
 | `drizzle/schema.ts` | Desired TypeScript schema (can drift from applied SQL) |
 | `FAULTLINE_DATABASE_SCHEMA.md` | Readable backup map (2026-08-13; older than 0070) |
@@ -16,9 +16,9 @@ Dialect: **mysql**. Journal `version: 7`, entries `version: 5`.
 
 ## Journal chain (clean)
 
-`_journal.json` has **71** entries, idx 0–70, unique tags:
+`_journal.json` has **72** entries, idx 0–71, unique tags:
 
-`0000_solid_martin_li` … `0070_brief_slipstream`
+`0000_solid_martin_li` … `0071_systemic_regime_engine`
 
 No duplicate **tags** in the journal. Numeric prefixes in the journal are unique.
 
@@ -62,7 +62,7 @@ These SQL files exist beside the journaled twins. Drizzle Kit will **not** apply
 
 | Item | Label |
 | --- | --- |
-| Journal 0000–0070 unique and ordered | CLEANUP / documented |
+| Journal 0000–0071 unique and ordered | CLEANUP / documented |
 | Orphan repair SQL reusing 0056–0059 | **IMPORTANT** — restore footgun; no prod change here |
 | schema vs prod unknown (no DB in this agent) | **IMPORTANT** — owner must diff |
 | Destructive migrate | Not done |

@@ -568,6 +568,9 @@ export async function calculateFaultlinePressure(): Promise<FaultlinePressureOut
   const aiResult = scoreAIBubble(tsy10, hy);
 
   // ── 4. Build vector objects ────────────────────────────────
+  // Frozen Champion V1 weights. The Systemic Regime Engine is an independent
+  // statistical vote (see server/systemicRegime) and MUST NOT be added here
+  // until a later validation-backed PR explicitly changes this table.
   const vectors: RiskVector[] = [
     {
       id: "liquidity-stress",

@@ -27,6 +27,8 @@ import { getAuthoritativeCanonicalIntelligenceState, toPublicCanonicalIntelligen
 import { buildInterpretationPromptContract, createInterpretationTransaction, validateInterpretationOutput, type InterpretationTransaction, type InterpretationValidationResult } from "../shared/interpretationIntegrity";
 import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } from "./crossEngineSynthesis";
 import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "./earlyWarningPresentation";
+import { getLatestSignalConvergence, getLatestSystemicRegimeReading } from "./systemicRegime/reader";
+import { buildSystemicRegimePromptContract } from "./systemicRegime/platoRead";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -401,6 +403,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   const governedCrossEngineSynthesis = publicCanonicalState && evidencePacket ? buildCrossEngineSynthesis(publicCanonicalState, evidencePacket) : null;
   const transaction = createInterpretationTransaction("ASHA", evidencePacket, null);
   const governedEarlyWarningPresentation = await getCurrentGovernedEarlyWarningPresentation();
+  const persistedSystemicRegime = await getLatestSystemicRegimeReading("LIVE_INFERENCE");
+  const persistedConvergence = await getLatestSignalConvergence();
   const packetClaims = evidencePacket?.claims ?? [];
   const packetEngines = Array.from(new Set(packetClaims
     .filter(claim => claim.sourceType === "ENGINE")
@@ -437,7 +441,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     "17. Historical analog similarity is not forecast probability. Explain weighting from the supplied evidence and never let one analog replace the combined current evidence.",
   ].join("\n");
 
-  const systemPrompt = ASHA_IDENTITY + "\n\n" + requestScopeBlock + responseStructureBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket) + "\n\n" + buildCrossEngineSynthesisPromptContract(governedCrossEngineSynthesis) + "\n\n" + buildEarlyWarningPresentationPromptContract(governedEarlyWarningPresentation);
+  const systemPrompt = ASHA_IDENTITY + "\n\n" + requestScopeBlock + responseStructureBlock + "\n\n" + evidenceNarrativePromptContract() + "\n\n" + buildInterpretationPromptContract(transaction, evidencePacket) + "\n\n" + buildCrossEngineSynthesisPromptContract(governedCrossEngineSynthesis) + "\n\n" + buildEarlyWarningPresentationPromptContract(governedEarlyWarningPresentation) + "\n\n" + buildSystemicRegimePromptContract(persistedSystemicRegime, persistedConvergence);
 
   const messages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
     { role: "system", content: systemPrompt },

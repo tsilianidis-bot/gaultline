@@ -43,6 +43,8 @@ Schedules below are **comments in handlers**, not a live Forge export. Owner mus
 | `POST /api/scheduled/shadow-forward-outcomes` | Owner (shadow eval) | `requireCron` only | `{ ok, collected }` or `{ ok:false, error:"DB unavailable" }` **200 even on no DB** | 500 `{ ok:false, error:"Failed" }` | `shadowForwardOutcomes.collectedAt` |
 | `POST /api/scheduled/shadow-daily-summary` | Owner daily | `requireCron` only | Summary row or `{ message:"No readings today" }` | 500 | `shadowDailySummaries` |
 | `POST /api/scheduled/rising-stars-continuity` | Owner daily | `requireCron` only | `{ ok, historyClass:"live_verified", … }` | 500 `rising_stars_daily_continuity_failed` | `risingStarHistoryJobs` |
+| `POST /api/scheduled/systemic-regime-infer` | Comment: **daily after seismograph** (owner must register; this RC does not fire Forge jobs) | `requireCron` only | Load approved PCA+HMM bundle, persist reading + Signal Convergence. **Never fits.** | 200 `{ok:false,skipped}` if no approved model; 500 on crash | `systemicRegimeReadings` LIVE_INFERENCE |
+| `POST /api/scheduled/systemic-regime-train` | Comment: **weekly** (owner must register) | `requireCron` only | Fit scaler+PCA+HMM offline; write approved joblib. Not an API-request path. | 500 | `quant/systemic-regime/artifacts/approved` + `systemicRegimeModels` |
 | `POST /api/scheduled/daily-brief` | Comment: **07:00 UTC weekdays** | `requireCron` | Publish or draft after evidence guard | Fail closed on missing engine data (no fabrication) | `daily_brief_snapshots` / `organicContent` |
 | `POST /api/scheduled/weekly-review` | Comment: **Sunday 08:00 UTC** | `requireCron` | Same pipeline, weekly type | Same | Publishing tables |
 | `POST /api/scheduled/monthly-report` | Comment: **1st 09:00 UTC** | `requireCron` | Monthly type | Same | Publishing tables |
@@ -59,6 +61,8 @@ Schedules below are **comments in handlers**, not a live Forge export. Owner mus
 | `daily-snapshot` | Today’s snapshot number (Preflight / history) |
 | `daily-brief` / weekly / monthly | Archived / published narrative from live engines |
 | `rising-stars-continuity` | Live outlook Pressure snapshot into history |
+| `systemic-regime-infer` | Independent Systemic Regime row + Signal Convergence. **Does not write Pressure Index / Champion CURRENT.** |
+| `systemic-regime-train` | Frozen model artifacts only |
 | X / drip / blog / organic / sim / shadow / ledger | Publishing, email, sim, or ledger — not EngineContext |
 
 ## Owner verification (preview only)

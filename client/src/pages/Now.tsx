@@ -27,6 +27,8 @@ import { formatOrdinal } from "@shared/historicalPercentile";
 import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import SystemicRegimeModule from "@/components/SystemicRegimeModule";
+import { trpc } from "@/lib/trpc";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -810,6 +812,8 @@ export default function Now() {
     isLoading, lastUpdated, dataError, refresh,
     canonicalState, integrityLabel,
   } = useEngine();
+  const { data: systemicRegime } = trpc.systemicRegime.current.useQuery(undefined, { staleTime: 60_000 });
+  const { data: signalConvergence } = trpc.systemicRegime.convergenceCurrent.useQuery(undefined, { staleTime: 60_000 });
 
   // Staged cinematic entry: phases 1–7 over ~5s
   const phase = useStagedLoad([0, 400, 900, 1500, 2200, 3000, 4000], [isLoading]);
@@ -1077,6 +1081,8 @@ export default function Now() {
                 ))}
               </div>
             </div>
+
+            <SystemicRegimeModule reading={systemicRegime} convergence={signalConvergence ?? null} />
           </div>
         </section>
 
