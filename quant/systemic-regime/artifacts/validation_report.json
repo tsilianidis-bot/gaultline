@@ -59,33 +59,33 @@
     "ranked": [
       {
         "nStates": 3,
-        "score": 1.7183660918765,
-        "precision": 0.4492862509391435,
-        "recall": 0.8026845637583893,
-        "falseTransitions": 31,
-        "meanDwellDays": 114.125,
-        "meanLeadTimeDays": 41.0,
-        "warningShare": 0.3644578313253012
+        "score": 4.534095315896718,
+        "precision": 0.3555408970976253,
+        "recall": 0.723489932885906,
+        "falseTransitions": 33,
+        "meanDwellDays": 107.41176470588235,
+        "meanLeadTimeDays": 97.5,
+        "warningShare": 0.41511500547645125
       },
       {
         "nStates": 2,
-        "score": 1.609164365648573,
-        "precision": 0.8948306595365418,
-        "recall": 0.6738255033557047,
-        "falseTransitions": 18,
-        "meanDwellDays": 192.21052631578948,
-        "meanLeadTimeDays": 35.0,
-        "warningShare": 0.1536144578313253
+        "score": 3.4746825250835065,
+        "precision": 0.8914027149321267,
+        "recall": 0.5288590604026846,
+        "falseTransitions": 14,
+        "meanDwellDays": 243.46666666666667,
+        "meanLeadTimeDays": 66.0,
+        "warningShare": 0.12102957283680175
       },
       {
         "nStates": 4,
-        "score": -1.2501083224192269,
-        "precision": 0.3082502266545784,
-        "recall": 0.912751677852349,
-        "falseTransitions": 64,
-        "meanDwellDays": 56.184615384615384,
-        "meanLeadTimeDays": 91.2,
-        "warningShare": 0.604052573932092
+        "score": 0.743513879105417,
+        "precision": 0.26669654863290004,
+        "recall": 0.7986577181208053,
+        "falseTransitions": 56,
+        "meanDwellDays": 64.0701754385965,
+        "meanLeadTimeDays": 115.0,
+        "warningShare": 0.6108981380065718
       }
     ],
     "topByScore": 3,
@@ -115,8 +115,8 @@
           "nTrain": 1804,
           "nTest": 261,
           "stateMap": {
-            "0": "NORMAL",
-            "1": "CRISIS"
+            "1": "NORMAL",
+            "0": "CRISIS"
           }
         },
         {
@@ -125,8 +125,8 @@
           "nTrain": 2065,
           "nTest": 261,
           "stateMap": {
-            "1": "NORMAL",
-            "0": "CRISIS"
+            "0": "NORMAL",
+            "1": "CRISIS"
           }
         },
         {
@@ -135,8 +135,8 @@
           "nTrain": 2326,
           "nTest": 261,
           "stateMap": {
-            "0": "NORMAL",
-            "1": "CRISIS"
+            "1": "NORMAL",
+            "0": "CRISIS"
           }
         },
         {
@@ -241,82 +241,82 @@
         }
       ],
       "nOos": 3652,
-      "precision": 0.8948306595365418,
-      "recall": 0.6738255033557047,
-      "falseTransitions": 18,
-      "meanDwellDays": 192.21052631578948,
+      "precision": 0.8914027149321267,
+      "recall": 0.5288590604026846,
+      "falseTransitions": 14,
+      "meanDwellDays": 243.46666666666667,
       "leadTimesDays": {
         "gfc": null,
         "eu_debt": null,
-        "taper_em": 57.0,
+        "taper_em": 66.0,
         "volmageddon": null,
-        "covid": 13.0,
+        "covid": null,
         "hike_2022": null
       },
-      "meanLeadTimeDays": 35.0,
-      "warningShare": 0.1536144578313253,
+      "meanLeadTimeDays": 66.0,
+      "warningShare": 0.12102957283680175,
       "eventShare": 0.20399780941949616,
-      "maxDrawdownAfterFirstWarning": -0.9999996943948097,
+      "maxDrawdownAfterFirstWarning": -0.48001332702095134,
       "calibration": {
         "bins": [
           {
             "lo": 0.0,
             "hi": 0.125,
-            "n": 3029,
-            "meanPred": 0.0008552249538533876,
-            "freq": 0.06668867613073622
+            "n": 3151,
+            "meanPred": 0.0007591245007092911,
+            "freq": 0.09774674706442399
           },
           {
             "lo": 0.125,
             "hi": 0.25,
-            "n": 9,
-            "meanPred": 0.17554450770816624,
-            "freq": 0.4444444444444444
+            "n": 16,
+            "meanPred": 0.16631341576586497,
+            "freq": 0.5
           },
           {
             "lo": 0.25,
             "hi": 0.375,
-            "n": 9,
-            "meanPred": 0.29609898446103305,
+            "n": 6,
+            "meanPred": 0.27473457764895565,
             "freq": 0.6666666666666666
           },
           {
             "lo": 0.375,
             "hi": 0.5,
-            "n": 6,
-            "meanPred": 0.4396801965304327,
-            "freq": 0.5
+            "n": 8,
+            "meanPred": 0.41898867326383216,
+            "freq": 0.75
           },
           {
             "lo": 0.5,
             "hi": 0.625,
-            "n": 6,
-            "meanPred": 0.5979600370029305,
-            "freq": 0.5
+            "n": 4,
+            "meanPred": 0.5507545407905864,
+            "freq": 1.0
           },
           {
             "lo": 0.625,
             "hi": 0.75,
-            "n": 5,
-            "meanPred": 0.6987028303888304,
-            "freq": 0.6
+            "n": 6,
+            "meanPred": 0.6486094623856626,
+            "freq": 0.8333333333333334
           },
           {
             "lo": 0.75,
             "hi": 0.875,
-            "n": 9,
-            "meanPred": 0.8192398172742982,
-            "freq": 0.7777777777777778
+            "n": 10,
+            "meanPred": 0.8087820655379907,
+            "freq": 0.9
           },
           {
             "lo": 0.875,
             "hi": 1.0,
-            "n": 579,
-            "meanPred": 0.9977817524452522,
-            "freq": 0.8929188255613126
+            "n": 451,
+            "meanPred": 0.9975321153031493,
+            "freq": 0.8891352549889135
           }
         ],
-        "ece": 0.07330140153376347
+        "ece": 0.1009450042724181
       }
     },
     "3": {
@@ -333,8 +333,8 @@
           "nTrain": 1544,
           "nTest": 260,
           "stateMap": {
-            "2": "NORMAL",
-            "0": "STRESS BUILDING",
+            "0": "NORMAL",
+            "2": "STRESS BUILDING",
             "1": "CRISIS"
           }
         },
@@ -344,8 +344,8 @@
           "nTrain": 1804,
           "nTest": 261,
           "stateMap": {
-            "0": "NORMAL",
-            "2": "STRESS BUILDING",
+            "2": "NORMAL",
+            "0": "STRESS BUILDING",
             "1": "CRISIS"
           }
         },
@@ -355,9 +355,9 @@
           "nTrain": 2065,
           "nTest": 261,
           "stateMap": {
-            "1": "NORMAL",
+            "0": "NORMAL",
             "2": "STRESS BUILDING",
-            "0": "CRISIS"
+            "1": "CRISIS"
           }
         },
         {
@@ -367,8 +367,8 @@
           "nTest": 261,
           "stateMap": {
             "0": "NORMAL",
-            "1": "STRESS BUILDING",
-            "2": "CRISIS"
+            "2": "STRESS BUILDING",
+            "1": "CRISIS"
           }
         },
         {
@@ -388,9 +388,9 @@
           "nTrain": 2848,
           "nTest": 261,
           "stateMap": {
-            "0": "NORMAL",
-            "1": "STRESS BUILDING",
-            "2": "CRISIS"
+            "2": "NORMAL",
+            "0": "STRESS BUILDING",
+            "1": "CRISIS"
           }
         },
         {
@@ -399,9 +399,9 @@
           "nTrain": 3109,
           "nTest": 260,
           "stateMap": {
-            "0": "NORMAL",
-            "2": "STRESS BUILDING",
-            "1": "CRISIS"
+            "1": "NORMAL",
+            "0": "STRESS BUILDING",
+            "2": "CRISIS"
           }
         },
         {
@@ -411,8 +411,8 @@
           "nTest": 261,
           "stateMap": {
             "0": "NORMAL",
-            "2": "STRESS BUILDING",
-            "1": "CRISIS"
+            "1": "STRESS BUILDING",
+            "2": "CRISIS"
           }
         },
         {
@@ -421,9 +421,9 @@
           "nTrain": 3630,
           "nTest": 261,
           "stateMap": {
-            "0": "NORMAL",
-            "1": "STRESS BUILDING",
-            "2": "CRISIS"
+            "2": "NORMAL",
+            "0": "STRESS BUILDING",
+            "1": "CRISIS"
           }
         },
         {
@@ -433,8 +433,8 @@
           "nTest": 262,
           "stateMap": {
             "0": "NORMAL",
-            "2": "STRESS BUILDING",
-            "1": "CRISIS"
+            "1": "STRESS BUILDING",
+            "2": "CRISIS"
           }
         },
         {
@@ -443,9 +443,9 @@
           "nTrain": 4153,
           "nTest": 261,
           "stateMap": {
-            "0": "NORMAL",
-            "1": "STRESS BUILDING",
-            "2": "CRISIS"
+            "1": "NORMAL",
+            "2": "STRESS BUILDING",
+            "0": "CRISIS"
           }
         },
         {
@@ -454,9 +454,9 @@
           "nTrain": 4414,
           "nTest": 260,
           "stateMap": {
-            "0": "NORMAL",
-            "2": "STRESS BUILDING",
-            "1": "CRISIS"
+            "1": "NORMAL",
+            "0": "STRESS BUILDING",
+            "2": "CRISIS"
           }
         },
         {
@@ -483,82 +483,82 @@
         }
       ],
       "nOos": 3652,
-      "precision": 0.4492862509391435,
-      "recall": 0.8026845637583893,
-      "falseTransitions": 31,
-      "meanDwellDays": 114.125,
+      "precision": 0.3555408970976253,
+      "recall": 0.723489932885906,
+      "falseTransitions": 33,
+      "meanDwellDays": 107.41176470588235,
       "leadTimesDays": {
         "gfc": null,
         "eu_debt": null,
-        "taper_em": 66.0,
+        "taper_em": 180.0,
         "volmageddon": null,
-        "covid": 17.0,
-        "hike_2022": 40.0
+        "covid": 15.0,
+        "hike_2022": null
       },
-      "meanLeadTimeDays": 41.0,
-      "warningShare": 0.3644578313253012,
+      "meanLeadTimeDays": 97.5,
+      "warningShare": 0.41511500547645125,
       "eventShare": 0.20399780941949616,
-      "maxDrawdownAfterFirstWarning": -0.9999998254553791,
+      "maxDrawdownAfterFirstWarning": -0.48001332702095134,
       "calibration": {
         "bins": [
           {
             "lo": 0.0,
             "hi": 0.125,
-            "n": 3336,
-            "meanPred": 0.00022926928501888286,
-            "freq": 0.12859712230215828
+            "n": 3350,
+            "meanPred": 0.0004279136098138369,
+            "freq": 0.1480597014925373
           },
           {
             "lo": 0.125,
             "hi": 0.25,
-            "n": 4,
-            "meanPred": 0.18727539010723734,
-            "freq": 1.0
+            "n": 8,
+            "meanPred": 0.17518056001910923,
+            "freq": 0.875
           },
           {
             "lo": 0.25,
             "hi": 0.375,
-            "n": 1,
-            "meanPred": 0.30818087519305304,
+            "n": 5,
+            "meanPred": 0.303155574950452,
             "freq": 1.0
           },
           {
             "lo": 0.375,
             "hi": 0.5,
-            "n": 6,
-            "meanPred": 0.44263235239344056,
-            "freq": 1.0
+            "n": 4,
+            "meanPred": 0.437975934574781,
+            "freq": 0.75
           },
           {
             "lo": 0.5,
             "hi": 0.625,
-            "n": 1,
-            "meanPred": 0.5633211987210521,
+            "n": 4,
+            "meanPred": 0.5524959675066207,
             "freq": 1.0
           },
           {
             "lo": 0.625,
             "hi": 0.75,
-            "n": 3,
-            "meanPred": 0.7151014729177175,
-            "freq": 1.0
+            "n": 5,
+            "meanPred": 0.6961574088330422,
+            "freq": 0.8
           },
           {
             "lo": 0.75,
             "hi": 0.875,
-            "n": 7,
-            "meanPred": 0.7973065354328133,
+            "n": 8,
+            "meanPred": 0.8235198636251779,
             "freq": 1.0
           },
           {
             "lo": 0.875,
             "hi": 1.0,
-            "n": 294,
-            "meanPred": 0.9976527373949731,
-            "freq": 1.0
+            "n": 268,
+            "meanPred": 0.996282949808159,
+            "freq": 0.8134328358208955
           }
         ],
-        "ece": 0.12018685787392344
+        "ece": 0.15268955751350294
       }
     },
     "4": {
@@ -576,9 +576,9 @@
           "nTrain": 1544,
           "nTest": 260,
           "stateMap": {
-            "3": "RISK ON",
-            "0": "TRANSITION",
-            "2": "STRESS",
+            "0": "RISK ON",
+            "2": "TRANSITION",
+            "3": "STRESS",
             "1": "CRISIS"
           }
         },
@@ -590,8 +590,8 @@
           "stateMap": {
             "0": "RISK ON",
             "2": "TRANSITION",
-            "3": "STRESS",
-            "1": "CRISIS"
+            "1": "STRESS",
+            "3": "CRISIS"
           }
         },
         {
@@ -600,10 +600,10 @@
           "nTrain": 2065,
           "nTest": 261,
           "stateMap": {
-            "0": "RISK ON",
-            "3": "TRANSITION",
-            "2": "STRESS",
-            "1": "CRISIS"
+            "3": "RISK ON",
+            "1": "TRANSITION",
+            "0": "STRESS",
+            "2": "CRISIS"
           }
         },
         {
@@ -614,8 +614,8 @@
           "stateMap": {
             "2": "RISK ON",
             "0": "TRANSITION",
-            "1": "STRESS",
-            "3": "CRISIS"
+            "3": "STRESS",
+            "1": "CRISIS"
           }
         },
         {
@@ -624,10 +624,10 @@
           "nTrain": 2587,
           "nTest": 261,
           "stateMap": {
-            "0": "RISK ON",
+            "1": "RISK ON",
             "3": "TRANSITION",
-            "2": "STRESS",
-            "1": "CRISIS"
+            "0": "STRESS",
+            "2": "CRISIS"
           }
         },
         {
@@ -636,10 +636,10 @@
           "nTrain": 2848,
           "nTest": 261,
           "stateMap": {
-            "3": "RISK ON",
-            "1": "TRANSITION",
-            "0": "STRESS",
-            "2": "CRISIS"
+            "2": "RISK ON",
+            "0": "TRANSITION",
+            "3": "STRESS",
+            "1": "CRISIS"
           }
         },
         {
@@ -649,9 +649,9 @@
           "nTest": 260,
           "stateMap": {
             "0": "RISK ON",
-            "3": "TRANSITION",
+            "2": "TRANSITION",
             "1": "STRESS",
-            "2": "CRISIS"
+            "3": "CRISIS"
           }
         },
         {
@@ -672,9 +672,9 @@
           "nTrain": 3630,
           "nTest": 261,
           "stateMap": {
-            "0": "RISK ON",
-            "3": "TRANSITION",
-            "2": "STRESS",
+            "2": "RISK ON",
+            "0": "TRANSITION",
+            "3": "STRESS",
             "1": "CRISIS"
           }
         },
@@ -684,10 +684,10 @@
           "nTrain": 3891,
           "nTest": 262,
           "stateMap": {
-            "2": "RISK ON",
-            "0": "TRANSITION",
-            "3": "STRESS",
-            "1": "CRISIS"
+            "0": "RISK ON",
+            "2": "TRANSITION",
+            "1": "STRESS",
+            "3": "CRISIS"
           }
         },
         {
@@ -710,8 +710,8 @@
           "stateMap": {
             "2": "RISK ON",
             "0": "TRANSITION",
-            "3": "STRESS",
-            "1": "CRISIS"
+            "1": "STRESS",
+            "3": "CRISIS"
           }
         },
         {
@@ -720,10 +720,10 @@
           "nTrain": 4674,
           "nTest": 260,
           "stateMap": {
-            "3": "RISK ON",
+            "2": "RISK ON",
             "0": "TRANSITION",
             "1": "STRESS",
-            "2": "CRISIS"
+            "3": "CRISIS"
           }
         },
         {
@@ -732,90 +732,90 @@
           "nTrain": 4934,
           "nTest": 262,
           "stateMap": {
-            "1": "RISK ON",
-            "0": "TRANSITION",
-            "3": "STRESS",
-            "2": "CRISIS"
+            "0": "RISK ON",
+            "2": "TRANSITION",
+            "1": "STRESS",
+            "3": "CRISIS"
           }
         }
       ],
       "nOos": 3652,
-      "precision": 0.3082502266545784,
-      "recall": 0.912751677852349,
-      "falseTransitions": 64,
-      "meanDwellDays": 56.184615384615384,
+      "precision": 0.26669654863290004,
+      "recall": 0.7986577181208053,
+      "falseTransitions": 56,
+      "meanDwellDays": 64.0701754385965,
       "leadTimesDays": {
         "gfc": null,
-        "eu_debt": 9.0,
+        "eu_debt": null,
         "taper_em": 180.0,
-        "volmageddon": 165.0,
+        "volmageddon": 180.0,
         "covid": 62.0,
-        "hike_2022": 40.0
+        "hike_2022": 38.0
       },
-      "meanLeadTimeDays": 91.2,
-      "warningShare": 0.604052573932092,
+      "meanLeadTimeDays": 115.0,
+      "warningShare": 0.6108981380065718,
       "eventShare": 0.20399780941949616,
-      "maxDrawdownAfterFirstWarning": -0.9999998768411783,
+      "maxDrawdownAfterFirstWarning": -0.48001332702095134,
       "calibration": {
         "bins": [
           {
             "lo": 0.0,
             "hi": 0.125,
-            "n": 3506,
-            "meanPred": 0.00020305777956471023,
-            "freq": 0.1708499714774672
+            "n": 3516,
+            "meanPred": 0.00017146321587832464,
+            "freq": 0.17320819112627986
           },
           {
             "lo": 0.125,
             "hi": 0.25,
-            "n": 8,
-            "meanPred": 0.17144838538062854,
+            "n": 6,
+            "meanPred": 0.18507569765222628,
             "freq": 1.0
           },
           {
             "lo": 0.25,
             "hi": 0.375,
-            "n": 4,
-            "meanPred": 0.3337090863742387,
+            "n": 5,
+            "meanPred": 0.3230277306732579,
             "freq": 1.0
           },
           {
             "lo": 0.375,
             "hi": 0.5,
             "n": 4,
-            "meanPred": 0.4273158394535995,
+            "meanPred": 0.41435780774723585,
             "freq": 1.0
           },
           {
             "lo": 0.5,
             "hi": 0.625,
-            "n": 3,
-            "meanPred": 0.5564491865027291,
+            "n": 1,
+            "meanPred": 0.5374308192136611,
             "freq": 1.0
           },
           {
             "lo": 0.625,
             "hi": 0.75,
-            "n": 7,
-            "meanPred": 0.7017962905775118,
+            "n": 4,
+            "meanPred": 0.6852155160539081,
             "freq": 1.0
           },
           {
             "lo": 0.75,
             "hi": 0.875,
             "n": 6,
-            "meanPred": 0.824698788300707,
+            "meanPred": 0.8320350352386764,
             "freq": 1.0
           },
           {
             "lo": 0.875,
             "hi": 1.0,
-            "n": 114,
-            "meanPred": 0.9937007818509915,
+            "n": 110,
+            "meanPred": 0.9933469154414943,
             "freq": 1.0
           }
         ],
-        "ece": 0.16841741215337397
+        "ece": 0.17044782241765538
       }
     }
   }

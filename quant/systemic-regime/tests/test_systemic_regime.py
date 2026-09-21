@@ -119,6 +119,26 @@ def test_architecture_choice_documents_three_state() -> None:
     assert "Dynamic PCA" not in choice["rationale"]
 
 
+def test_synthetic_spx_stays_a_usable_price_index() -> None:
+    panel = generate_synthetic_panel(start="2005-01-03", end="2024-12-31", seed=42)
+    spx = panel["SP500"]
+    assert float(spx.min()) > 400
+    assert float(spx.max()) < 8000
+    max_dd = float((spx / spx.cummax() - 1.0).min())
+    assert -0.75 <= max_dd <= -0.15
+
+
+def test_packaged_oos_path_uses_spx_levels_not_returns() -> None:
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "artifacts" / "oos_regime_path.json"
+    rows = json.loads(path.read_text())
+    spx = [row["spx"] for row in rows if row.get("spx") is not None]
+    assert len(spx) > 100
+    assert min(spx) > 100
+    assert max(spx) > 1000
+
+
 def test_score_history_preserves_timestamps(panel: pd.DataFrame, tmp_path) -> None:
     train(panel.loc[: "2016-12-30"], tmp_path, n_states=3, approve=True, compare_states=False)
     bundle = load_bundle(tmp_path)

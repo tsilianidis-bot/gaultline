@@ -20,9 +20,9 @@
       "2": "CRISIS"
     },
     "trainStateStress": {
-      "0": -0.4557967979937142,
-      "1": -0.657176060182599,
-      "2": 1.6810335136563397
+      "0": -0.3432974250859805,
+      "1": -0.5394680761922414,
+      "2": 1.6317580449641063
     }
   },
   "modelType": "gaussian-hmm-3state",
@@ -31,7 +31,7 @@
   "nStates": 3,
   "note": "Ordinary StandardScaler + PCA (n_components=1) plus hmmlearn GaussianHMM. Statistical, not AI.",
   "pca": {
-    "explainedVarianceRatio": 0.5260089007502894,
+    "explainedVarianceRatio": 0.43872024428675327,
     "featureSchema": [
       "hy_oas",
       "hy_oas_20d_change",
@@ -54,9 +54,9 @@
       "ig_oas": 1.1565193326869188,
       "nfci": -0.3674188885011625,
       "sofr": 2.252956332245754,
-      "spx_drawdown_252d": -0.23852455853286014,
-      "spx_realized_vol_21d": 0.14690318067407254,
-      "spx_return_21d": -0.018155959804641852,
+      "spx_drawdown_252d": -0.0866950788609453,
+      "spx_realized_vol_21d": 0.14362832983107546,
+      "spx_return_21d": -0.0004798108391905753,
       "stlfsi": -0.4592736106264531,
       "tsy_10y": 3.2554980731904344,
       "tsy_2y": 2.5599772801261227,
@@ -68,5 +68,5 @@
     "trainingEnd": "2024-12-31",
     "trainingStart": "2005-02-01"
   },
-  "trainedAt": "2026-09-21T08:53:01.045933+00:00"
+  "trainedAt": "2026-09-21T09:02:06.009272+00:00"
 }

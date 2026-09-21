@@ -27,11 +27,11 @@ not CURRENT product truth.
 
 | Spec | Precision | Recall | False transitions | Mean dwell | Mean lead (days) | Warning share |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2-state | 0.89 | 0.67 | 18 | 192 | 35 | 0.15 |
-| **3-state (chosen)** | **0.45** | **0.80** | **31** | **114** | **41** | **0.36** |
-| 4-state | 0.31 | 0.91 | 64 | 56 | 91 | 0.60 (rejected: always-on) |
+| 2-state | 0.89 | 0.53 | 14 | 243 | 66 | 0.12 |
+| **3-state (chosen)** | **0.36** | **0.72** | **33** | **107** | **98** | **0.42** |
+| 4-state | 0.27 | 0.80 | 56 | 64 | 115 | 0.61 (rejected: always-on) |
 
-3-state lead times where a warning existed in the 180d pre-window: taper 66d, COVID 17d, 2022 40d. Early events can fall before the expanding OOS start. Crisis-probability ECE ≈ 0.12. 4-state is not used because it warned on ~60% of days vs ~20% event share.
+3-state lead times where a warning existed in the 180d pre-window: taper 180d, COVID 15d. GFC / 2011 sit before the expanding OOS start; Q4 2018 and 2022 did not warn inside the pre-window on this synthetic panel. Max drawdown after first persisted warning ≈ 48%. Crisis-probability ECE ≈ 0.15. 4-state is not used because it warned on ~61% of days vs ~20% event share. Synthetic SPX is a usable price path (not a wipeout) so the historical chart can overlay regime bands.
 
 ## Data (existing FRED provider only)
 

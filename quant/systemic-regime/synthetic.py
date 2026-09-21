@@ -50,7 +50,10 @@ def generate_synthetic_panel(start: str = "2005-01-03", end: str = "2024-12-31",
     sofr = np.clip(dgs2 - 0.3 + 0.15 * noise, 0.01, None)
     stlfsi = -0.5 + 2.2 * stress + 0.1 * noise
     vix = 14 + 32 * stress + 1.5 * np.abs(noise)
-    log_ret = rng.normal(0.00025, 0.009, n) - 0.045 * stress + 0.01 * stress * noise
+    # Crisis extra loss is ~20 bps/day at peak intensity so planted windows
+    # produce 20–50% drawdowns without collapsing the index to ~0 (the
+    # historical SPX chart needs a usable price path, not a wipeout).
+    log_ret = rng.normal(0.00032, 0.009, n) - 0.002 * stress + 0.004 * stress * noise
     spx = 1200 * np.exp(np.cumsum(log_ret))
 
     # Weekly-ish missingness for NFCI / STLFSI
