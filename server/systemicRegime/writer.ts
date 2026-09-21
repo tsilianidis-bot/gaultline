@@ -96,22 +96,23 @@ export async function persistApprovedModelRegistry(registry: Record<string, unkn
   const db = await getDb();
   if (!db) return;
   const modelVersion = String(registry.modelVersion ?? "unknown");
-  const payload = { ...registry, approved: true };
+  const payload: Record<string, unknown> = { ...registry, approved: true };
   if (modelDir) {
     const joblib = resolve(modelDir, "approved.joblib");
     if (existsSync(joblib)) {
       payload.artifactBase64 = readFileSync(joblib).toString("base64");
     }
   }
+  const pca = payload.pca as { pcaMethod?: string; trainingStart?: string; trainingEnd?: string } | undefined;
   try {
     await db.insert(systemicRegimeModels).values({
       modelVersion,
       modelType: String(payload.modelType ?? "gaussian-hmm-2state"),
-      pcaMethod: String((payload.pca as { pcaMethod?: string } | undefined)?.pcaMethod ?? payload.pcaMethod ?? "standard_scaler_pca"),
+      pcaMethod: String(pca?.pcaMethod ?? payload.pcaMethod ?? "standard_scaler_pca"),
       nStates: Number(payload.nStates ?? 2),
       featureSchemaVersion: String(payload.featureSchemaVersion ?? "sre-features-v1"),
-      trainingStart: (payload.pca as { trainingStart?: string } | undefined)?.trainingStart ?? null,
-      trainingEnd: (payload.pca as { trainingEnd?: string } | undefined)?.trainingEnd ?? null,
+      trainingStart: pca?.trainingStart ?? null,
+      trainingEnd: pca?.trainingEnd ?? null,
       approved: true,
       registryJson: JSON.stringify(payload),
     }).onDuplicateKeyUpdate({
