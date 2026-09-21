@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import { UnifiedIntelligenceChart, type IntelligenceBar, type IntelligenceMarker } from "@/components/UnifiedIntelligenceChart";
+import SystemicRegimeChart from "@/components/SystemicRegimeChart";
 import { trpc } from "@/lib/trpc";
 import { CANONICAL_HOME } from "@shared/routeRegistry";
 
@@ -42,6 +43,7 @@ export default function PressureHistory() {
   const [days, setDays] = useState<(typeof ranges)[number]>(90);
   const { data: readings = [], isLoading: readingsLoading } = trpc.seismograph.getReadingHistory.useQuery({ days });
   const { data: archive, isLoading: eventsLoading } = trpc.institutionalMemory.listEvents.useQuery({ limit: 100 });
+  const { data: regimeHistory } = trpc.systemicRegime.history.useQuery();
   const [selected, setSelected] = useState<number | null>(null);
   const bars = useMemo<IntelligenceBar[]>(() => [...readings].reverse().map((r: any) => ({
     timestamp: new Date(`${r.readingDate}T16:00:00Z`).getTime(), open: r.pressureScore, high: r.pressureScore, low: r.pressureScore, close: r.pressureScore, volume: 0,
@@ -68,5 +70,14 @@ export default function PressureHistory() {
         {eventsLoading ? <p style={{ color: "#A6B6C7" }}>Loading immutable archive…</p> : events.length === 0 ? <p style={{ color: "#A6B6C7", fontSize: 12 }}>No immutable events recorded in this window yet.</p> : events.map((e: any) => <button key={e.id} type="button" onClick={() => setSelected(e.id)} style={{ width: "100%", textAlign: "left", marginTop: 10, padding: 10, borderRadius: 6, border: `1px solid ${selected === e.id ? "#00D4FF" : "rgba(255,255,255,.1)"}`, background: "transparent", color: "#EAF5FF" }}><b style={{ fontSize: 12 }}>{e.headline}</b><br/><span style={{ color: "#A6B6C7", fontSize: 10 }}>{new Date(e.eventAt).toLocaleString()} · {pressure(e.pressureIndex)} · {e.marketRegime}</span></button>)}</aside>
     </section>
     {event && <section style={{ maxWidth: 1280, margin: "18px auto", border: "1px solid rgba(250,204,21,.35)", borderRadius: 10, padding: 18, background: "rgba(28,24,8,.3)" }}><p style={{ margin: 0, color: "#FACC15", font: "10px IBM Plex Mono,monospace" }}>ORIGINAL IMMUTABLE OBSERVATION</p><h2 style={{ margin: "6px 0" }}>{event.headline}</h2><p style={{ color: "#C8D6E5" }}>{event.explanation}</p><p style={{ color: "#A6B6C7", fontSize: 12 }}>Detected: {new Date(event.eventAt).toLocaleString()} · Original Pressure: {pressure(event.pressureIndex)} · Original Regime: {event.marketRegime} · Source: {event.sourceEngine}</p><h3 style={{ fontSize: 13 }}>APPENDED FOLLOW-THROUGH OBSERVATIONS</h3>{[1,5,20,60].map((h) => { const raw = event.outcomes?.find((x: { horizonTradingDays: number }) => x.horizonTradingDays === h); const o = raw ? parseFollowThrough(raw.outcomeJson) : null; return <div key={h} style={{ display:"grid", gridTemplateColumns:"72px repeat(4,minmax(0,1fr))", gap:8, padding:"8px 0", borderTop:"1px solid rgba(255,255,255,.08)", fontSize:11 }}><b>{h}D</b>{o ? <><span>SPY {o.spyReturnPct == null ? "PENDING" : `${o.spyReturnPct.toFixed(2)}%`}</span><span>10Y {o.tenYearYieldChangeBps == null ? "PENDING" : `${o.tenYearYieldChangeBps.toFixed(1)} bp`}</span><span>PRESSURE {o.pressureIndexChange == null ? "PENDING" : `${o.pressureIndexChange > 0 ? "+" : ""}${o.pressureIndexChange}`}</span><span>REGIME {o.laterRegime ?? "PENDING"}</span></> : <span style={{ gridColumn:"span 4", color:"#A6B6C7" }}>PENDING · completed source window not yet available</span>}</div>; })}</section>}
+    <section style={{ maxWidth: 1280, margin: "18px auto" }}>
+      <p style={{ color: "#00D4FF", fontSize: 10, fontFamily: "IBM Plex Mono,monospace", letterSpacing: ".18em" }}>SYSTEMIC REGIME · EXPANDING-WINDOW OOS RESEARCH</p>
+      <h2 style={{ margin: "6px 0 12px", fontFamily: "Rajdhani,sans-serif" }}>Independent HMM path (not Pressure Index)</h2>
+      <SystemicRegimeChart
+        points={regimeHistory?.research ?? []}
+        stressPeriods={regimeHistory?.stressPeriods ?? []}
+        warningDates={(archive?.events ?? []).map((e: { eventAt: Date | string }) => new Date(e.eventAt).toISOString().slice(0, 10))}
+      />
+    </section>
   </main>;
 }

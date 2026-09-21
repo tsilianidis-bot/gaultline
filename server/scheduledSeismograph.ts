@@ -179,6 +179,7 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
       pressure: pressureOutput,
       seismograph: seismographOutput,
       generatedAt: new Date().toISOString(),
+      persistedHooks: await import("./systemicRegime/hooks").then(mod => mod.getPersistedRegimeHooks(seismographOutput)).catch(() => undefined),
     });
     const persisted = await persistAtomicIntelligenceStateManifest(governanceState);
     console.log(`[Seismograph] Governance manifest ${persisted.created ? "recorded" : "already present"}: ${persisted.stateId} (${governanceState.manifest.coherenceStatus})`);

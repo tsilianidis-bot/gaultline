@@ -2,7 +2,11 @@
 # Equivalent commands: install / build / start. PORT comes from the environment.
 
 [phases.install]
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = [
+  "apt-get update && apt-get install -y --no-install-recommends python3 python3-pip libgomp1",
+  "pnpm install --frozen-lockfile",
+  "python3 -m pip install --no-cache-dir --break-system-packages -r quant/systemic-regime/requirements-runtime.txt",
+]
 
 [phases.build]
 cmds = ["pnpm run build"]

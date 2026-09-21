@@ -1,0 +1,69 @@
+{
+  "approved": true,
+  "architectureComparison": null,
+  "artifact": "approved.joblib",
+  "chosenNStates": 2,
+  "featureSchemaVersion": "sre-features-v1",
+  "hmm": {
+    "covarianceType": "diag",
+    "modelFamily": "hmmlearn.GaussianHMM",
+    "nMix": 1,
+    "nStates": 2,
+    "regimeToState": {
+      "CRISIS": 1,
+      "NORMAL": 0
+    },
+    "stateToRegime": {
+      "0": "NORMAL",
+      "1": "CRISIS"
+    },
+    "trainStateStress": {
+      "0": -0.551653713061275,
+      "1": 0.9297267319265466
+    }
+  },
+  "modelType": "gaussian-hmm-2state",
+  "modelVersion": "sre-hmm2-v1.0.0",
+  "nRows": 2492,
+  "nStates": 2,
+  "note": "Ordinary StandardScaler + PCA (n_components=1) plus hmmlearn GaussianHMM. Statistical, not AI.",
+  "pca": {
+    "explainedVarianceRatio": 0.32106492369010375,
+    "featureSchema": [
+      "hy_oas",
+      "hy_oas_20d_change",
+      "ig_oas",
+      "nfci",
+      "tsy_10y",
+      "tsy_2y",
+      "curve_10y2y",
+      "sofr",
+      "stlfsi",
+      "vix",
+      "spx_return_21d",
+      "spx_realized_vol_21d",
+      "spx_drawdown_252d"
+    ],
+    "fillValues": {
+      "curve_10y2y": 0.39,
+      "hy_oas": 3.04,
+      "hy_oas_20d_change": -0.06000000000000005,
+      "ig_oas": 0.85,
+      "nfci": -0.505,
+      "sofr": 2.43,
+      "spx_drawdown_252d": -0.016352887574535624,
+      "spx_realized_vol_21d": 0.12462657092409068,
+      "spx_return_21d": 0.01769839940025497,
+      "stlfsi": -0.4607,
+      "tsy_10y": 2.85,
+      "tsy_2y": 2.55,
+      "vix": 16.985
+    },
+    "pc1Sign": 1,
+    "pcaMethod": "standard_scaler_pca",
+    "pcaNComponents": 1,
+    "trainingEnd": "2026-09-17",
+    "trainingStart": "2016-10-18"
+  },
+  "trainedAt": "2026-09-21T09:51:55.798964+00:00"
+}
