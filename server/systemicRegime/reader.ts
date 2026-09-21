@@ -34,7 +34,9 @@ export async function getSystemicRegimeHistory(
   limit = 2500,
 ): Promise<SystemicRegimeHistoryPoint[]> {
   const db = await getDb();
-  if (!db) return loadPackagedResearchHistory(limit);
+  if (!db) {
+    return historyClass === "OOS_RESEARCH" ? loadPackagedResearchHistory(limit) : [];
+  }
   const rows = await db
     .select()
     .from(systemicRegimeReadings)

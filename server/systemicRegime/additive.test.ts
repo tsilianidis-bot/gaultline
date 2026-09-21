@@ -40,6 +40,12 @@ describe("Systemic Regime Engine remains additive", () => {
     expect(pca).toContain("This is NOT Dynamic PCA");
   });
 
+  it("does not treat packaged OOS research as live inference", () => {
+    const reader = source("server/systemicRegime/reader.ts");
+    expect(reader).toContain('historyClass === "OOS_RESEARCH" ? loadPackagedResearchHistory(limit) : []');
+    expect(reader).toContain('if (rows.length === 0 && historyClass === "OOS_RESEARCH")');
+  });
+
   it("NOW reads persisted systemic regime without writing Pressure", () => {
     const now = source("client/src/pages/Now.tsx");
     expect(now).toContain("trpc.systemicRegime.current");
