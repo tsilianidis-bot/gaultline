@@ -9,12 +9,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-MODEL_VERSION = "sre-hmm3-v1.0.0"
+MODEL_VERSION = "sre-hmm2-v1.0.0"
 FEATURE_SCHEMA_VERSION = "sre-features-v1"
-MODEL_TYPE = "gaussian-hmm-3state"
+MODEL_TYPE = "gaussian-hmm-2state"
 PCA_METHOD = "standard_scaler_pca"  # ordinary PCA; never labeled Dynamic PCA
 N_PCA_COMPONENTS = 1
-CHOSEN_N_STATES = 3
+CHOSEN_N_STATES = 2
 RANDOM_STATE = 42
 
 # FAULTLINE-existing FRED series. required=True means a row is dropped if the
@@ -31,7 +31,7 @@ class FredSeriesSpec:
 
 
 FRED_SERIES: tuple[FredSeriesSpec, ...] = (
-    FredSeriesSpec("BAMLH0A0HYM2", "hy_oas", "credit", True, "daily", 4, "pressure engine + Champion inputs"),
+    FredSeriesSpec("BAMLH0A0HYM2", "hy_oas", "credit", False, "daily", 4, "pressure engine + Champion inputs"),
     FredSeriesSpec("BAMLC0A0CM", "ig_oas", "credit", False, "daily", 4, "client chartData credit series"),
     FredSeriesSpec("NFCI", "nfci", "liquidity", False, "weekly", 10, "client live-data / FCI"),
     FredSeriesSpec("DGS10", "tsy_10y", "rates", True, "daily", 4, "pressure engine"),
@@ -62,7 +62,6 @@ FEATURE_COLUMNS: tuple[str, ...] = (
 )
 
 REQUIRED_FEATURES: tuple[str, ...] = (
-    "hy_oas",
     "tsy_10y",
     "tsy_2y",
     "spx_return_21d",

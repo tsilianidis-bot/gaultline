@@ -115,23 +115,30 @@ function parseHistoryPoint(
 }
 
 function loadPackagedResearchHistory(limit: number): SystemicRegimeHistoryPoint[] {
-  try {
-    const path = resolve(process.cwd(), "quant/systemic-regime/artifacts/oos_regime_path.json");
-    if (!existsSync(path)) return [];
-    const parsed = JSON.parse(readFileSync(path, "utf8")) as Array<SystemicRegimeHistoryPoint & { regime?: string }>;
-    return (Array.isArray(parsed) ? parsed : []).slice(-limit).map(row => ({
-      date: row.date,
-      currentRegime: row.currentRegime ?? row.regime ?? "NORMAL",
-      crisisProbability: row.crisisProbability ?? null,
-      stressBuildingProbability: row.stressBuildingProbability ?? null,
-      transitionProbability: row.transitionProbability ?? null,
-      regimeConfidence: row.regimeConfidence ?? null,
-      systemicRiskScore: row.systemicRiskScore ?? null,
-      pc1: row.pc1 ?? null,
-      spx: row.spx ?? null,
-      pressureIndex: row.pressureIndex ?? null,
-    }));
-  } catch {
-    return [];
+  const candidates = [
+    resolve(process.cwd(), "quant/systemic-regime/artifacts/fred_oos_regime_path.json"),
+    resolve(process.cwd(), "quant/systemic-regime/artifacts/oos_regime_path.json"),
+  ];
+  for (const path of candidates) {
+    try {
+      if (!existsSync(path)) continue;
+      const parsed = JSON.parse(readFileSync(path, "utf8")) as Array<SystemicRegimeHistoryPoint & { regime?: string }>;
+      const rows = (Array.isArray(parsed) ? parsed : []).slice(-limit).map(row => ({
+        date: row.date,
+        currentRegime: row.currentRegime ?? row.regime ?? "NORMAL",
+        crisisProbability: row.crisisProbability ?? null,
+        stressBuildingProbability: row.stressBuildingProbability ?? null,
+        transitionProbability: row.transitionProbability ?? null,
+        regimeConfidence: row.regimeConfidence ?? null,
+        systemicRiskScore: row.systemicRiskScore ?? null,
+        pc1: row.pc1 ?? null,
+        spx: row.spx ?? null,
+        pressureIndex: row.pressureIndex ?? null,
+      }));
+      if (rows.length) return rows;
+    } catch {
+      continue;
+    }
   }
+  return [];
 }

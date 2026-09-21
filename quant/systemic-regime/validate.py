@@ -28,7 +28,9 @@ from regime_hmm import (
 )
 from systemic_pca import fit_systemic_pca, transform_systemic_pca
 
-MIN_TRAIN_YEARS = 6
+# FRED SP500 history through this worker starts ~2016, so 3 expanding-window
+# train years is the minimum that still holds COVID (2020) and the 2022 hike OOS.
+MIN_TRAIN_YEARS = 3
 PERSISTENCE_DAYS = 5
 
 
@@ -257,25 +259,48 @@ def choose_architecture(results: dict[int, dict[str, Any]]) -> dict[str, Any]:
     ranked = sorted(rows, key=lambda row: row["score"], reverse=True)
     three = next((row for row in ranked if row["nStates"] == 3), None)
     two = next((row for row in ranked if row["nStates"] == 2), None)
-    chosen = ranked[0]["nStates"]
-    if three and three["meanDwellDays"] and three["meanDwellDays"] >= 8:
+    usable = [row for row in ranked if not (row["nStates"] == 4 and (row["warningShare"] or 0) > 0.55)]
+    chosen = (usable[0] if usable else ranked[0])["nStates"]
+    if three and two:
+        three_ok = (three["meanDwellDays"] or 0) >= 8 and (three["warningShare"] or 0) <= 0.55
+        if three_ok and three["score"] >= two["score"] - 0.75:
+            chosen = 3
+        elif (not three_ok) or two["score"] > three["score"] + 0.75:
+            chosen = 2
+    elif three and (three["meanDwellDays"] or 0) >= 8:
         chosen = 3
-    elif two and (not three or (three["meanDwellDays"] or 0) < 8):
+    elif two:
         chosen = 2
     rationale = (
         "3-state GaussianHMM (NORMAL / STRESS BUILDING / CRISIS) is the production architecture when the "
-        "decoded path is persistent. 2-state (NORMAL / CRISIS) is more stable but cannot express a building-stress "
-        "early-warning state. 4-state (RISK ON / TRANSITION / STRESS / CRISIS) is rejected when it stays in a "
+        "decoded path is persistent and competitive with 2-state on real expanding-window OOS. "
+        "2-state (NORMAL / CRISIS) is used when 3-state flickers or over-warns. "
+        "4-state (RISK ON / TRANSITION / STRESS / CRISIS) is rejected when it stays in a "
         "warning state most days (crash-hunting) even if recall looks high. "
         "States are mapped by observable stress (PC1, HY OAS, vol, drawdown), never by HMM index. "
         "Transition matrix is sticky (self-transition 0.97, not re-estimated) so regimes persist."
     )
     if chosen == 2:
-        rationale = (
-            "2-state GaussianHMM (NORMAL / CRISIS) is used because the 3-state decoder was not persistent on this "
-            "sample (dwell below 8 sessions). 4-state over-warned relative to labeled stress windows and is not used. "
-            "Semantic mapping still ranks states by observable stress. Sticky transitions are applied."
-        )
+        overwarned = bool(three and (three["warningShare"] or 0) > 0.55)
+        flicker = bool(three and (three["meanDwellDays"] or 0) < 8)
+        if overwarned:
+            rationale = (
+                "2-state GaussianHMM (NORMAL / CRISIS) is used because 3-state over-warned on this "
+                "expanding-window OOS sample (warning share above 55% of days versus labeled event share). "
+                "4-state is not used. Semantic mapping still ranks states by observable stress. Sticky transitions are applied."
+            )
+        elif flicker:
+            rationale = (
+                "2-state GaussianHMM (NORMAL / CRISIS) is used because the 3-state decoder was not persistent on this "
+                "sample (dwell below 8 sessions). 4-state over-warned relative to labeled stress windows and is not used. "
+                "Semantic mapping still ranks states by observable stress. Sticky transitions are applied."
+            )
+        else:
+            rationale = (
+                "2-state GaussianHMM (NORMAL / CRISIS) scored higher on expanding-window OOS usefulness "
+                "(dwell, false transitions, warning share) than 3-state. 4-state is not used. "
+                "Semantic mapping still ranks states by observable stress. Sticky transitions are applied."
+            )
     if chosen == 4:
         rationale = (
             "4-state scored highest under the usefulness rule on this sample. Warning share and precision must still "
@@ -308,6 +333,7 @@ def main() -> None:
     parser.add_argument("--from-json")
     parser.add_argument("--from-csv")
     parser.add_argument("--out", required=True)
+    parser.add_argument("--history-out", help="OOS path JSON. Defaults next to --out as oos_regime_path.json. Use fred_oos_regime_path.json for live FRED research so synthetic OOS is not overwritten.")
     args = parser.parse_args()
     panel = load_panel(from_json=args.from_json, from_csv=args.from_csv)
     report = run_validation(panel)
@@ -316,10 +342,10 @@ def main() -> None:
     full = report.get("chosenOosPath") or []
     summary = {k: v for k, v in report.items() if k != "chosenOosPath"}
     out.write_text(json.dumps(summary, indent=2))
-    slim_path = out.with_name("oos_regime_path.json")
+    slim_path = Path(args.history_out) if args.history_out else out.with_name("oos_regime_path.json")
     slim = [row for i, row in enumerate(full) if i % 5 == 0 or i == len(full) - 1]
     slim_path.write_text(json.dumps(slim))
-    print(json.dumps({"ok": True, "chosenNStates": report["architectureChoice"]["chosenNStates"], "oosPoints": len(slim)}))
+    print(json.dumps({"ok": True, "chosenNStates": report["architectureChoice"]["chosenNStates"], "oosPoints": len(slim), "historyOut": str(slim_path)}))
 
 
 if __name__ == "__main__":

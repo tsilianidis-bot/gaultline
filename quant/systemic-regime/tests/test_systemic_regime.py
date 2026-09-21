@@ -119,6 +119,27 @@ def test_architecture_choice_documents_three_state() -> None:
     assert "Dynamic PCA" not in choice["rationale"]
 
 
+def test_architecture_choice_rejects_overwarning_three_state() -> None:
+    fake = {
+        2: {"meanLeadTimeDays": 179.0, "falseTransitions": 29, "warningShare": 0.60, "eventShare": 0.13, "recall": 0.78, "precision": 0.17, "meanDwellDays": 65},
+        3: {"meanLeadTimeDays": 179.0, "falseTransitions": 55, "warningShare": 0.73, "eventShare": 0.13, "recall": 0.98, "precision": 0.18, "meanDwellDays": 35},
+        4: {"meanLeadTimeDays": 179.0, "falseTransitions": 68, "warningShare": 0.77, "eventShare": 0.13, "recall": 0.98, "precision": 0.17, "meanDwellDays": 28},
+    }
+    choice = choose_architecture(fake)
+    assert choice["chosenNStates"] == 2
+    assert "over-warned" in choice["rationale"]
+
+
+def test_spx_features_survive_holiday_gap(panel: pd.DataFrame) -> None:
+    poked = panel.copy()
+    hole = poked.index[len(poked) // 2]
+    poked.loc[hole, "SP500"] = np.nan
+    features = engineer_features(poked)
+    last_spx = poked["SP500"].last_valid_index()
+    assert last_spx in features.index
+    assert pd.notna(features.loc[last_spx, "spx_realized_vol_21d"])
+
+
 def test_synthetic_spx_stays_a_usable_price_index() -> None:
     panel = generate_synthetic_panel(start="2005-01-03", end="2024-12-31", seed=42)
     spx = panel["SP500"]

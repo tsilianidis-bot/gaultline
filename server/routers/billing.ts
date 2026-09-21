@@ -51,16 +51,21 @@ export const billingRouter = router({
       if (!stripe) {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Checkout is unavailable because Stripe is not configured." });
       }
+      const priceId = plan.priceId;
+      if (!priceId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "This plan is not yet available for purchase. Please contact us." });
+      }
+      const customerEmail = ctx.user.email ?? undefined;
       const session = await stripe.checkout.sessions.create({
         mode: plan.interval === "one_time" ? "payment" : "subscription",
         payment_method_types: ["card"],
-        customer_email: ctx.user.email ?? undefined,
+        ...(customerEmail ? { customer_email: customerEmail } : {}),
         allow_promotion_codes: true,
-        line_items: [{ price: plan.priceId, quantity: 1 }],
+        line_items: [{ price: priceId, quantity: 1 }],
         client_reference_id: ctx.user.id.toString(),
         metadata: {
           user_id: ctx.user.id.toString(),
-          customer_email: ctx.user.email ?? "",
+          customer_email: customerEmail ?? "",
           customer_name: ctx.user.name ?? "",
           plan_id: input.planId,
         },

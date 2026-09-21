@@ -11,7 +11,7 @@ import type { SeismographOutput } from "../seismographCore";
 import { getAuthoritativeCrossEngineSynthesis } from "../crossEngineSynthesis";
 import { getCurrentGovernedEarlyWarningPresentation } from "../earlyWarningPresentation";
 import { computeSignalConvergence } from "./signalConvergence";
-import { persistApprovedModelRegistry, persistSignalConvergence, persistSystemicRegimeHistory, persistSystemicRegimeReading } from "./writer";
+import { persistApprovedModelRegistry, persistSignalConvergence, persistSystemicRegimeHistory, persistSystemicRegimeReading, restoreApprovedModelFromDb, ensureSystemicRegimeTables } from "./writer";
 import type { SystemicRegimeHistoryPoint, SystemicRegimeReading } from "../../shared/systemicRegime";
 
 const QUANT_DIR = resolve(process.cwd(), "quant/systemic-regime");
@@ -19,7 +19,8 @@ const ARTIFACT_DIR = resolve(QUANT_DIR, "artifacts");
 const MODEL_DIR = resolve(ARTIFACT_DIR, "approved");
 const PANEL_JSON = resolve(ARTIFACT_DIR, "fred_panel.json");
 const INFERENCE_JSON = resolve(ARTIFACT_DIR, "latest_inference.json");
-const HISTORY_JSON = resolve(ARTIFACT_DIR, "oos_regime_path.json");
+const RESEARCH_HISTORY_JSON = resolve(ARTIFACT_DIR, "oos_regime_path.json");
+const LIVE_HISTORY_JSON = resolve(ARTIFACT_DIR, "live_regime_path.json");
 
 function runPython(args: string[], timeoutMs = 180_000): Promise<{ ok: boolean; stdout: string; stderr: string; skipped?: string }> {
   if (!existsSync(resolve(QUANT_DIR, "train.py"))) {
@@ -45,7 +46,7 @@ function runPython(args: string[], timeoutMs = 180_000): Promise<{ ok: boolean; 
 
 export async function exportFredPanelForQuant(): Promise<{ path: string; series: string[] }> {
   mkdirSync(ARTIFACT_DIR, { recursive: true });
-  const bulk = await fetchFredBulk(FRED_SERIES.map(spec => ({ id: spec.id, limit: spec.limit, sortOrder: "asc" })));
+  const bulk = await fetchFredBulk(FRED_SERIES.map(spec => ({ id: spec.id, limit: spec.limit, sortOrder: spec.sortOrder })));
   const payload = { exportedAt: new Date().toISOString(), provider: "FRED", source: "server/fredClient.ts", series: bulk.results };
   writeFileSync(PANEL_JSON, JSON.stringify(payload));
   return { path: PANEL_JSON, series: Object.keys(bulk.results) };
@@ -53,9 +54,13 @@ export async function exportFredPanelForQuant(): Promise<{ path: string; series:
 
 export async function runSystemicRegimeInferenceJob(): Promise<Record<string, unknown>> {
   mkdirSync(ARTIFACT_DIR, { recursive: true });
-  const approved = existsSync(resolve(MODEL_DIR, "approved.joblib"));
-  if (!approved) {
-    return { ok: false, skipped: "no approved model; weekly train has not produced a frozen bundle" };
+  mkdirSync(MODEL_DIR, { recursive: true });
+  await ensureSystemicRegimeTables();
+  if (!existsSync(resolve(MODEL_DIR, "approved.joblib"))) {
+    const restored = await restoreApprovedModelFromDb(MODEL_DIR);
+    if (!restored) {
+      return { ok: false, skipped: "no approved model; weekly train has not produced a frozen bundle" };
+    }
   }
   try {
     await exportFredPanelForQuant();
@@ -63,7 +68,7 @@ export async function runSystemicRegimeInferenceJob(): Promise<Record<string, un
     log.warn("[SystemicRegime] FRED export failed; inference may use last panel", { err: error as Error });
   }
   const panelArg = existsSync(PANEL_JSON) ? ["--from-json", PANEL_JSON] : [];
-  const result = await runPython(["inference.py", "--model-dir", MODEL_DIR, ...panelArg, "--out", INFERENCE_JSON, "--history-out", HISTORY_JSON]);
+  const result = await runPython(["inference.py", "--model-dir", MODEL_DIR, ...panelArg, "--out", INFERENCE_JSON, "--history-out", LIVE_HISTORY_JSON]);
   if (result.skipped) return { ok: false, skipped: result.skipped };
   if (!result.ok || !existsSync(INFERENCE_JSON)) {
     return { ok: false, error: result.stderr || "inference failed", stdout: result.stdout };
@@ -88,20 +93,22 @@ export async function runSystemicRegimeInferenceJob(): Promise<Record<string, un
 
 export async function runSystemicRegimeTrainJob(): Promise<Record<string, unknown>> {
   mkdirSync(MODEL_DIR, { recursive: true });
+  await ensureSystemicRegimeTables();
   try {
     await exportFredPanelForQuant();
   } catch (error) {
     return { ok: false, error: `FRED export failed: ${String(error)}` };
   }
+  const nStates = process.env.SYSTEMIC_REGIME_N_STATES === "3" ? "3" : "2";
   const result = await runPython(
-    ["train.py", "--from-json", PANEL_JSON, "--model-dir", MODEL_DIR],
+    ["train.py", "--from-json", PANEL_JSON, "--model-dir", MODEL_DIR, "--n-states", nStates, "--skip-compare"],
     10 * 60_000,
   );
   if (!result.ok) return { ok: false, error: result.stderr || result.skipped || "train failed", stdout: result.stdout };
   try {
     const registryPath = resolve(MODEL_DIR, "registry.json");
     if (existsSync(registryPath)) {
-      await persistApprovedModelRegistry(JSON.parse(readFileSync(registryPath, "utf8")) as Record<string, unknown>);
+      await persistApprovedModelRegistry(JSON.parse(readFileSync(registryPath, "utf8")) as Record<string, unknown>, MODEL_DIR);
     }
   } catch (error) {
     log.warn("[SystemicRegime] Registry persist failed", { err: error as Error });
@@ -110,9 +117,9 @@ export async function runSystemicRegimeTrainJob(): Promise<Record<string, unknow
 }
 
 export async function ingestPackagedResearchHistory(): Promise<number> {
-  if (!existsSync(HISTORY_JSON)) return 0;
-  const points = JSON.parse(readFileSync(HISTORY_JSON, "utf8")) as SystemicRegimeHistoryPoint[];
-  return persistSystemicRegimeHistory(points, "sre-hmm3-v1.0.0", "gaussian-hmm-3state");
+  if (!existsSync(RESEARCH_HISTORY_JSON)) return 0;
+  const points = JSON.parse(readFileSync(RESEARCH_HISTORY_JSON, "utf8")) as SystemicRegimeHistoryPoint[];
+  return persistSystemicRegimeHistory(points, "sre-hmm2-v1.0.0", "gaussian-hmm-2state");
 }
 
 export async function handleScheduledSystemicRegimeInfer(_req: Request, res: Response): Promise<void> {

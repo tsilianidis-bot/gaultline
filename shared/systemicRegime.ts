@@ -1,4 +1,4 @@
-export const SYSTEMIC_REGIME_MODEL_TYPE = "gaussian-hmm-3state" as const;
+export const SYSTEMIC_REGIME_MODEL_TYPE = "gaussian-hmm-2state" as const;
 export const SYSTEMIC_REGIME_PCA_METHOD = "standard_scaler_pca" as const;
 export const SIGNAL_CONVERGENCE_METHODOLOGY = "n-of-m-independent-votes-v1" as const;
 
@@ -97,7 +97,7 @@ export const EMPTY_SYSTEMIC_REGIME_READING: SystemicRegimeReading = {
   modelVersion: "unavailable",
   modelType: SYSTEMIC_REGIME_MODEL_TYPE,
   pcaMethod: SYSTEMIC_REGIME_PCA_METHOD,
-  nStates: 3,
+  nStates: 2,
   dataAsOf: null,
   computedAt: null,
   freshnessStatus: "UNAVAILABLE",

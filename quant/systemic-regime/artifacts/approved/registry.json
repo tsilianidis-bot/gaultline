@@ -2,36 +2,33 @@
   "approved": true,
   "architectureComparison": null,
   "artifact": "approved.joblib",
-  "chosenNStates": 3,
+  "chosenNStates": 2,
   "featureSchemaVersion": "sre-features-v1",
   "hmm": {
     "covarianceType": "diag",
     "modelFamily": "hmmlearn.GaussianHMM",
     "nMix": 1,
-    "nStates": 3,
+    "nStates": 2,
     "regimeToState": {
-      "CRISIS": 2,
-      "NORMAL": 1,
-      "STRESS BUILDING": 0
+      "CRISIS": 1,
+      "NORMAL": 0
     },
     "stateToRegime": {
-      "0": "STRESS BUILDING",
-      "1": "NORMAL",
-      "2": "CRISIS"
+      "0": "NORMAL",
+      "1": "CRISIS"
     },
     "trainStateStress": {
-      "0": -0.3432974250859805,
-      "1": -0.5394680761922414,
-      "2": 1.6317580449641063
+      "0": -0.551653713061275,
+      "1": 0.9297267319265466
     }
   },
-  "modelType": "gaussian-hmm-3state",
-  "modelVersion": "sre-hmm3-v1.0.0",
-  "nRows": 5196,
-  "nStates": 3,
+  "modelType": "gaussian-hmm-2state",
+  "modelVersion": "sre-hmm2-v1.0.0",
+  "nRows": 2492,
+  "nStates": 2,
   "note": "Ordinary StandardScaler + PCA (n_components=1) plus hmmlearn GaussianHMM. Statistical, not AI.",
   "pca": {
-    "explainedVarianceRatio": 0.43872024428675327,
+    "explainedVarianceRatio": 0.32106492369010375,
     "featureSchema": [
       "hy_oas",
       "hy_oas_20d_change",
@@ -48,25 +45,25 @@
       "spx_drawdown_252d"
     ],
     "fillValues": {
-      "curve_10y2y": 0.7052846503929626,
-      "hy_oas": 4.45862210238243,
-      "hy_oas_20d_change": 0.0059144502654235875,
-      "ig_oas": 1.1565193326869188,
-      "nfci": -0.3674188885011625,
-      "sofr": 2.252956332245754,
-      "spx_drawdown_252d": -0.0866950788609453,
-      "spx_realized_vol_21d": 0.14362832983107546,
-      "spx_return_21d": -0.0004798108391905753,
-      "stlfsi": -0.4592736106264531,
-      "tsy_10y": 3.2554980731904344,
-      "tsy_2y": 2.5599772801261227,
-      "vix": 15.531820015237969
+      "curve_10y2y": 0.39,
+      "hy_oas": 3.04,
+      "hy_oas_20d_change": -0.06000000000000005,
+      "ig_oas": 0.85,
+      "nfci": -0.505,
+      "sofr": 2.43,
+      "spx_drawdown_252d": -0.016352887574535624,
+      "spx_realized_vol_21d": 0.12462657092409068,
+      "spx_return_21d": 0.01769839940025497,
+      "stlfsi": -0.4607,
+      "tsy_10y": 2.85,
+      "tsy_2y": 2.55,
+      "vix": 16.985
     },
     "pc1Sign": 1,
     "pcaMethod": "standard_scaler_pca",
     "pcaNComponents": 1,
-    "trainingEnd": "2024-12-31",
-    "trainingStart": "2005-02-01"
+    "trainingEnd": "2026-09-17",
+    "trainingStart": "2016-10-18"
   },
-  "trainedAt": "2026-09-21T09:02:06.009272+00:00"
+  "trainedAt": "2026-09-21T09:51:55.798964+00:00"
 }

@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 artifacts/latest_inference.json
 artifacts/fred_panel.json
+artifacts/live_regime_path.json

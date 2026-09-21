@@ -1,3 +1,6 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { desc, eq, sql } from "drizzle-orm";
 import { signalConvergenceReadings, systemicRegimeModels, systemicRegimeReadings } from "../../drizzle/schema";
 import { getDb } from "../db";
 import type { HistoryClass, SignalConvergenceSnapshot, SystemicRegimeHistoryPoint, SystemicRegimeReading } from "../../shared/systemicRegime";
@@ -89,23 +92,141 @@ export async function persistSignalConvergence(snapshot: SignalConvergenceSnapsh
   });
 }
 
-export async function persistApprovedModelRegistry(registry: Record<string, unknown>): Promise<void> {
+export async function persistApprovedModelRegistry(registry: Record<string, unknown>, modelDir?: string): Promise<void> {
   const db = await getDb();
   if (!db) return;
   const modelVersion = String(registry.modelVersion ?? "unknown");
+  const payload = { ...registry, approved: true };
+  if (modelDir) {
+    const joblib = resolve(modelDir, "approved.joblib");
+    if (existsSync(joblib)) {
+      payload.artifactBase64 = readFileSync(joblib).toString("base64");
+    }
+  }
   try {
     await db.insert(systemicRegimeModels).values({
       modelVersion,
-      modelType: String(registry.modelType ?? "gaussian-hmm-3state"),
-      pcaMethod: String((registry.pca as { pcaMethod?: string } | undefined)?.pcaMethod ?? registry.pcaMethod ?? "standard_scaler_pca"),
-      nStates: Number(registry.nStates ?? 3),
-      featureSchemaVersion: String(registry.featureSchemaVersion ?? "sre-features-v1"),
-      trainingStart: (registry.pca as { trainingStart?: string } | undefined)?.trainingStart ?? null,
-      trainingEnd: (registry.pca as { trainingEnd?: string } | undefined)?.trainingEnd ?? null,
-      approved: Boolean(registry.approved),
-      registryJson: JSON.stringify(registry),
+      modelType: String(payload.modelType ?? "gaussian-hmm-2state"),
+      pcaMethod: String((payload.pca as { pcaMethod?: string } | undefined)?.pcaMethod ?? payload.pcaMethod ?? "standard_scaler_pca"),
+      nStates: Number(payload.nStates ?? 2),
+      featureSchemaVersion: String(payload.featureSchemaVersion ?? "sre-features-v1"),
+      trainingStart: (payload.pca as { trainingStart?: string } | undefined)?.trainingStart ?? null,
+      trainingEnd: (payload.pca as { trainingEnd?: string } | undefined)?.trainingEnd ?? null,
+      approved: true,
+      registryJson: JSON.stringify(payload),
+    }).onDuplicateKeyUpdate({
+      set: {
+        modelType: String(payload.modelType ?? "gaussian-hmm-2state"),
+        nStates: Number(payload.nStates ?? 2),
+        approved: true,
+        registryJson: JSON.stringify(payload),
+      },
     });
   } catch (error) {
     log.warn("[SystemicRegime] Model registry persist skipped", { err: error as Error, modelVersion });
   }
+}
+
+/** Restore the frozen joblib onto ephemeral disk from the latest approved DB row. */
+export async function restoreApprovedModelFromDb(modelDir: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const [row] = await db
+    .select()
+    .from(systemicRegimeModels)
+    .where(eq(systemicRegimeModels.approved, true))
+    .orderBy(desc(systemicRegimeModels.createdAt))
+    .limit(1);
+  if (!row) return false;
+  try {
+    const parsed = JSON.parse(row.registryJson) as { artifactBase64?: string };
+    if (!parsed.artifactBase64) return false;
+    mkdirSync(modelDir, { recursive: true });
+    writeFileSync(resolve(modelDir, "approved.joblib"), Buffer.from(parsed.artifactBase64, "base64"));
+    writeFileSync(resolve(modelDir, "registry.json"), JSON.stringify({ ...parsed, artifactBase64: undefined }, null, 2));
+    return true;
+  } catch (error) {
+    log.warn("[SystemicRegime] Approved model restore failed", { err: error as Error });
+    return false;
+  }
+}
+
+/** Apply 0071 CREATE TABLE IF NOT EXISTS so inference can persist without a separate migrate step. */
+export async function ensureSystemicRegimeTables(): Promise<{ ok: boolean }> {
+  const db = await getDb();
+  if (!db) return { ok: false };
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS \`systemicRegimeModels\` (
+      \`id\` int AUTO_INCREMENT NOT NULL,
+      \`modelVersion\` varchar(64) NOT NULL,
+      \`modelType\` varchar(64) NOT NULL,
+      \`pcaMethod\` varchar(64) NOT NULL DEFAULT 'standard_scaler_pca',
+      \`nStates\` int NOT NULL DEFAULT 2,
+      \`featureSchemaVersion\` varchar(64) NOT NULL,
+      \`trainingStart\` varchar(10),
+      \`trainingEnd\` varchar(10),
+      \`approved\` boolean NOT NULL DEFAULT false,
+      \`registryJson\` longtext NOT NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT (now()),
+      CONSTRAINT \`systemicRegimeModels_id\` PRIMARY KEY(\`id\`),
+      CONSTRAINT \`systemicRegimeModels_modelVersion_uniq\` UNIQUE(\`modelVersion\`)
+    )
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS \`systemicRegimeReadings\` (
+      \`id\` int AUTO_INCREMENT NOT NULL,
+      \`dataAsOf\` varchar(10) NOT NULL,
+      \`computedAt\` timestamp NOT NULL,
+      \`historyClass\` enum('LIVE_INFERENCE','OOS_RESEARCH') NOT NULL DEFAULT 'LIVE_INFERENCE',
+      \`currentRegime\` varchar(32) NOT NULL,
+      \`systemicRiskScore\` int,
+      \`crisisProbability\` decimal(8,6),
+      \`stressBuildingProbability\` decimal(8,6),
+      \`transitionProbability\` decimal(8,6),
+      \`regimeConfidence\` decimal(8,6),
+      \`creditStressZ\` decimal(8,4),
+      \`volStressZ\` decimal(8,4),
+      \`ratesStressZ\` decimal(8,4),
+      \`pc1\` decimal(10,6),
+      \`factorArrowsJson\` text,
+      \`freshnessStatus\` varchar(16) NOT NULL DEFAULT 'UNAVAILABLE',
+      \`modelVersion\` varchar(64) NOT NULL,
+      \`modelType\` varchar(64) NOT NULL,
+      \`payloadJson\` text NOT NULL,
+      \`contributesToPressureIndex\` boolean NOT NULL DEFAULT false,
+      CONSTRAINT \`systemicRegimeReadings_id\` PRIMARY KEY(\`id\`)
+    )
+  `);
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS \`signalConvergenceReadings\` (
+      \`id\` int AUTO_INCREMENT NOT NULL,
+      \`computedAt\` timestamp NOT NULL,
+      \`level\` varchar(16) NOT NULL,
+      \`deterioratingCount\` int NOT NULL,
+      \`availableCount\` int NOT NULL,
+      \`voteCount\` int NOT NULL,
+      \`methodology\` varchar(64) NOT NULL,
+      \`payloadJson\` text NOT NULL,
+      \`contributesToPressureIndex\` boolean NOT NULL DEFAULT false,
+      CONSTRAINT \`signalConvergenceReadings_id\` PRIMARY KEY(\`id\`)
+    )
+  `);
+  try {
+    await db.execute(sql`ALTER TABLE \`systemicRegimeModels\` MODIFY \`registryJson\` LONGTEXT NOT NULL`);
+  } catch {
+    // Table missing or already LONGTEXT.
+  }
+  for (const statement of [
+    sql`CREATE INDEX \`systemicRegimeReadings_dataAsOf_idx\` ON \`systemicRegimeReadings\` (\`dataAsOf\`)`,
+    sql`CREATE INDEX \`systemicRegimeReadings_historyClass_idx\` ON \`systemicRegimeReadings\` (\`historyClass\`)`,
+    sql`CREATE INDEX \`systemicRegimeReadings_computedAt_idx\` ON \`systemicRegimeReadings\` (\`computedAt\`)`,
+    sql`CREATE INDEX \`signalConvergenceReadings_computedAt_idx\` ON \`signalConvergenceReadings\` (\`computedAt\`)`,
+  ]) {
+    try {
+      await db.execute(statement);
+    } catch {
+      // Index already exists after the first apply.
+    }
+  }
+  return { ok: true };
 }

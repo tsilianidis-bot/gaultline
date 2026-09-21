@@ -2974,7 +2974,7 @@ export const systemicRegimeModels = mysqlTable("systemicRegimeModels", {
   modelVersion: varchar("modelVersion", { length: 64 }).notNull(),
   modelType: varchar("modelType", { length: 64 }).notNull(),
   pcaMethod: varchar("pcaMethod", { length: 64 }).notNull().default("standard_scaler_pca"),
-  nStates: int("nStates").notNull().default(3),
+  nStates: int("nStates").notNull().default(2),
   featureSchemaVersion: varchar("featureSchemaVersion", { length: 64 }).notNull(),
   trainingStart: varchar("trainingStart", { length: 10 }),
   trainingEnd: varchar("trainingEnd", { length: 10 }),

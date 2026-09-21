@@ -7,7 +7,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from config import CHOSEN_N_STATES, MODEL_VERSION
+from config import CHOSEN_N_STATES
 from feature_engineering import apply_fill, engineer_features, training_fill_values
 from fred_pipeline import load_panel
 from model_registry import save_bundle
@@ -44,9 +44,12 @@ def train(
         "note": "Ordinary StandardScaler + PCA (n_components=1) plus hmmlearn GaussianHMM. Statistical, not AI.",
     }
     save_bundle(model_dir, pca_model, hmm_model, approved=approve, extra=extra)
+    model_type = f"gaussian-hmm-{selected}state"
+    model_version = f"sre-hmm{selected}-v1.0.0"
     return {
         "ok": True,
-        "modelVersion": MODEL_VERSION,
+        "modelVersion": model_version,
+        "modelType": model_type,
         "nStates": selected,
         "nRows": int(len(filled)),
         "trainingStart": pca_model.training_start,

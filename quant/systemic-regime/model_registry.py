@@ -12,8 +12,6 @@ import joblib
 from config import (
     CHOSEN_N_STATES,
     FEATURE_SCHEMA_VERSION,
-    MODEL_TYPE,
-    MODEL_VERSION,
     PCA_METHOD,
 )
 from regime_hmm import RegimeHmmModel
@@ -33,24 +31,27 @@ def save_bundle(
 ) -> Path:
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
+    n_states = hmm_model.n_states
+    model_type = f"gaussian-hmm-{n_states}state"
+    model_version = f"sre-hmm{n_states}-v1.0.0"
     bundle = {
         "pca": pca_model,
         "hmm": hmm_model,
-        "modelVersion": MODEL_VERSION,
-        "modelType": MODEL_TYPE,
+        "modelVersion": model_version,
+        "modelType": model_type,
         "featureSchemaVersion": FEATURE_SCHEMA_VERSION,
         "pcaMethod": PCA_METHOD,
-        "nStates": hmm_model.n_states,
+        "nStates": n_states,
         "savedAt": datetime.now(timezone.utc).isoformat(),
     }
-    path = directory / ("approved.joblib" if approved else f"{MODEL_VERSION}.joblib")
+    path = directory / ("approved.joblib" if approved else f"{model_version}.joblib")
     joblib.dump(bundle, path)
     meta = {
-        "modelVersion": MODEL_VERSION,
-        "modelType": MODEL_TYPE,
+        "modelVersion": model_version,
+        "modelType": model_type,
         "featureSchemaVersion": FEATURE_SCHEMA_VERSION,
         "approved": approved,
-        "nStates": hmm_model.n_states,
+        "nStates": n_states,
         "chosenNStates": CHOSEN_N_STATES,
         "pca": pca_model.to_registry_meta(),
         "hmm": hmm_model.to_registry_meta(),

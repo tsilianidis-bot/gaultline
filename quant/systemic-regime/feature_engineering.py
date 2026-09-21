@@ -78,11 +78,15 @@ def engineer_features(panel: pd.DataFrame, as_of: pd.Timestamp | None = None) ->
     if vix is not None:
         out["vix"] = vix
     if spx is not None:
-        log_ret = np.log(spx / spx.shift(1))
-        out["spx_return_21d"] = spx.pct_change(21)
-        out["spx_realized_vol_21d"] = log_ret.rolling(21, min_periods=21).std() * np.sqrt(252)
-        rolling_peak = spx.rolling(252, min_periods=21).max()
-        out["spx_drawdown_252d"] = spx / rolling_peak - 1.0
+        # Equity features are defined on trading sessions. Computing them on the
+        # outer-joined calendar (weekends / holidays as NaN) lets a single gap
+        # poison rolling vol for 21 sessions and drops the live as-of date.
+        spx_session = spx.dropna()
+        log_ret = np.log(spx_session / spx_session.shift(1))
+        out["spx_return_21d"] = spx_session.pct_change(21, fill_method=None).reindex(out.index)
+        out["spx_realized_vol_21d"] = (log_ret.rolling(21, min_periods=21).std() * np.sqrt(252)).reindex(out.index)
+        rolling_peak = spx_session.rolling(252, min_periods=21).max()
+        out["spx_drawdown_252d"] = (spx_session / rolling_peak - 1.0).reindex(out.index)
 
     for column in FEATURE_COLUMNS:
         if column not in out.columns:

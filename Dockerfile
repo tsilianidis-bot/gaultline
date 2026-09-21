@@ -36,6 +36,9 @@ FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends python3 python3-pip libgomp1 \
+  && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -47,6 +50,8 @@ COPY package.json pnpm-lock.yaml .npmrc ./
 COPY patches ./patches
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/quant ./quant
+RUN python3 -m pip install --no-cache-dir --break-system-packages -r quant/systemic-regime/requirements-runtime.txt
 
 EXPOSE 3000
 CMD ["pnpm", "start"]

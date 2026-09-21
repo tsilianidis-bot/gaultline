@@ -29,6 +29,10 @@ describe("Systemic Regime Engine remains additive", () => {
     const scheduled = source("server/systemicRegime/scheduled.ts");
     expect(scheduled).toContain("inference.py");
     expect(scheduled).toContain("train.py");
+    expect(scheduled).toContain("live_regime_path.json");
+    expect(scheduled).toContain("restoreApprovedModelFromDb");
+    expect(scheduled).toContain("--skip-compare");
+    expect(scheduled).not.toContain('--history-out", HISTORY_JSON');
   });
 
   it("does not market PCA as Dynamic PCA or the HMM as AI", () => {

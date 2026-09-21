@@ -1,9 +1,11 @@
 """Systemic Regime Engine — independent statistical worker (not AI).
 
 PCA: ordinary StandardScaler + PCA with n_components=1. Never called Dynamic PCA.
-HMM: hmmlearn GaussianHMM, 3-state production model (NORMAL / STRESS BUILDING / CRISIS).
-Training is a scheduled weekly CLI. Inference loads the approved frozen bundle and
-writes JSON for Node to persist. UI and PLATO read persisted output only.
+HMM: hmmlearn GaussianHMM. Production n_states is chosen by expanding-window
+OOS on real FRED (currently 2-state NORMAL / CRISIS). 3-state remains available
+for research. Training is a scheduled weekly CLI. Inference loads the approved
+frozen bundle and writes JSON for Node to persist. UI and PLATO read persisted
+output only.
 
 This module does not change Pressure Index weights.
 """

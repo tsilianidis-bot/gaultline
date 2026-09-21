@@ -18,7 +18,7 @@ export const systemicRegimeRouter = router({
       research,
       stressPeriods: MAJOR_STRESS_PERIODS,
       pcaMethod: "standard_scaler_pca",
-      modelType: "gaussian-hmm-3state",
+      modelType: "gaussian-hmm-2state",
       contributesToPressureIndex: false,
     };
   }),

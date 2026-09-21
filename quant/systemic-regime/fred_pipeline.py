@@ -65,7 +65,7 @@ def fetch_fred_series(series_id: str, api_key: str, limit: int = FRED_HISTORY_LI
             "series_id": series_id,
             "api_key": api_key,
             "file_type": "json",
-            "sort_order": "asc",
+            "sort_order": "desc",
             "limit": str(limit),
         }
     )
