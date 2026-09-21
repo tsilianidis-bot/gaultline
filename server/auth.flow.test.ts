@@ -14,7 +14,16 @@
  * 10. Role field is present and valid on authenticated user
  */
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("./db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./db")>();
+  return {
+    ...actual,
+    getUserTier: vi.fn(async () => "core" as const),
+  };
+});
+
 import { TRPCError } from "@trpc/server";
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";

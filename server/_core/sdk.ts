@@ -28,12 +28,53 @@ const EXCHANGE_TOKEN_PATH = `/webdev.v1.WebDevAuthPublicService/ExchangeToken`;
 const GET_USER_INFO_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfo`;
 const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserInfoWithJwt`;
 
+const OAUTH_INACTIVE_MESSAGE =
+  "OAuth is inactive: OAUTH_SERVER_URL and VITE_APP_ID are required";
+
+/** Thrown locally when OAuth env is incomplete. Must not be preceded by outbound HTTP. */
+export class OAuthInactiveError extends Error {
+  constructor() {
+    super(OAUTH_INACTIVE_MESSAGE);
+    this.name = "OAuthInactiveError";
+  }
+}
+
+function isAbsoluteHttpUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * OAuth is complete only when both the token/userinfo host and app id are set.
+ * Missing either is the independent-staging path: fail closed locally, never
+ * default to https://api.manus.im.
+ */
+export function isOAuthConfigured(): boolean {
+  const appId = typeof ENV.appId === "string" ? ENV.appId.trim() : "";
+  const url = typeof ENV.oAuthServerUrl === "string" ? ENV.oAuthServerUrl.trim() : "";
+  return appId.length > 0 && isAbsoluteHttpUrl(url);
+}
+
+function assertOAuthReady(client?: AxiosInstance): void {
+  if (!isOAuthConfigured()) {
+    throw new OAuthInactiveError();
+  }
+  if (client?.defaults) {
+    client.defaults.baseURL = ENV.oAuthServerUrl.trim();
+  }
+}
+
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
-    if (!ENV.oAuthServerUrl) {
-      console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
+    if (isOAuthConfigured()) {
+      console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
+    } else {
+      console.warn(
+        "[OAuth] Inactive on this host: VITE_APP_ID and/or OAUTH_SERVER_URL are not configured. Independent staging boots without Manus HTTP; /api/oauth/callback and JWT user-sync fail closed locally."
       );
     }
   }
@@ -47,6 +88,7 @@ class OAuthService {
     code: string,
     state: string
   ): Promise<ExchangeTokenResponse> {
+    assertOAuthReady(this.client);
     const payload: ExchangeTokenRequest = {
       clientId: ENV.appId,
       grantType: "authorization_code",
@@ -65,6 +107,7 @@ class OAuthService {
   async getUserInfoByToken(
     token: ExchangeTokenResponse
   ): Promise<GetUserInfoResponse> {
+    assertOAuthReady(this.client);
     const { data } = await this.client.post<GetUserInfoResponse>(
       GET_USER_INFO_PATH,
       {
@@ -78,11 +121,12 @@ class OAuthService {
 
 const createOAuthHttpClient = (): AxiosInstance =>
   axios.create({
-    baseURL: ENV.oAuthServerUrl,
+    // Never fall back to https://api.manus.im when OAuth env is incomplete.
+    baseURL: isOAuthConfigured() ? ENV.oAuthServerUrl.trim() : undefined,
     timeout: AXIOS_TIMEOUT_MS,
   });
 
-class SDKServer {
+export class SDKServer {
   private readonly client: AxiosInstance;
   private readonly oauthService: OAuthService;
 
@@ -201,7 +245,8 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
+      // Expected for public tRPC (e.g. markets ticker poll) and logged-out
+      // browsers. Do not warn — missing cookie is not an auth failure.
       return null;
     }
 
@@ -235,6 +280,7 @@ class SDKServer {
   async getUserInfoWithJwt(
     jwtToken: string
   ): Promise<GetUserInfoWithJwtResponse> {
+    assertOAuthReady(this.client);
     const payload: GetUserInfoWithJwtRequest = {
       jwtToken,
       projectId: ENV.appId,
@@ -267,6 +313,9 @@ class SDKServer {
     }
 
     if (session.openId.startsWith(CRON_OPEN_ID_PREFIX)) {
+      if (!isOAuthConfigured()) {
+        throw ForbiddenError("Failed to sync user info");
+      }
       const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
       const taskUid = userInfo.taskUid ?? null;
       if (!taskUid) {
@@ -281,6 +330,9 @@ class SDKServer {
 
     // If user not in DB, sync from OAuth server automatically
     if (!user) {
+      if (!isOAuthConfigured()) {
+        throw ForbiddenError("Failed to sync user info");
+      }
       try {
         const userInfo = await this.getUserInfoWithJwt(sessionCookie ?? "");
         await db.upsertUser({

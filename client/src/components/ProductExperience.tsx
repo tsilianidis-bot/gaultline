@@ -1,7 +1,8 @@
 /* ============================================================
    FAULTLINE — Product Experience Gate
-   Shown once to first-time visitors after the CinematicIntro
-   and before the ASHA onboarding / CinematicAuthGate.
+   Preserved product-experience source. Not mounted on first-run
+   (cinematic → MarketingSite). If reached later, pricing and claims
+   must match MarketingSite: Free / Trader $59 / Power $99 / Founding $49.
 
    Sections:
    1.  Hero — full-viewport atmospheric opener with "See the Proof" CTA
@@ -17,20 +18,11 @@
    ============================================================ */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getLoginUrl } from '../const';
+import { navigateToLogin } from '../const';
 import { trackGa4Event } from '../lib/ga4';
 
 /** localStorage key for preserving checkout intent across the OAuth login redirect */
 export const CHECKOUT_INTENT_KEY = 'fl_checkout_intent_v1';
-
-// ── Assets ────────────────────────────────────────────────────
-const ASSETS = {
-  heroBg:          '/manus-storage/faultline_hero_bg_7d6aaf14.jpg',
-  dashboardMockup: '/manus-storage/faultline_dashboard_mockup_456bb973.jpg',
-  macroIntel:      '/manus-storage/faultline_macro_intel_09b4c85d.jpg',
-  riskEngine:      '/manus-storage/faultline_risk_engine_fd070c61.jpg',
-  ctaAtmosphere:   '/manus-storage/faultline_cta_atmosphere_93bd4048.jpg',
-};
 
 const CYAN   = '#00E5FF';
 const GOLD   = '#FFAA00';
@@ -45,10 +37,10 @@ const SANS   = "'IBM Plex Sans', system-ui, sans-serif";
 // Stripe Price ID has been independently verified server-side.
 const PUBLIC_PRICING = [
   {
-    id: 'founding', name: 'FOUNDING MEMBER', price: '$49', period: '/ month', color: GOLD,
-    badge: 'FOUNDING RATE — LOCKED', cta: 'LOCK IN FOUNDER RATE',
-    tagline: 'Join FAULTLINE during the founding period and keep your $49 monthly rate locked as long as your membership remains active.',
-    features: ['Founding-member access to the FAULTLINE platform', 'Locked $49 monthly rate while membership remains active', 'Founding member recognition'],
+    id: 'free', name: 'FREE', price: '$0', period: '', color: GREEN,
+    badge: 'START HERE', cta: 'SEE TODAY’S MARKET ENVIRONMENT',
+    tagline: 'Explore the current market environment, Pressure Index™, core regime context, and daily intelligence summary.',
+    features: ['Live FAULTLINE Pressure Index™', 'Current market regime context', 'Daily intelligence summary'],
   },
   {
     id: 'trader', name: 'TRADER', price: '$59', period: '/ month', color: CYAN,
@@ -62,14 +54,13 @@ const PUBLIC_PRICING = [
     tagline: 'For users who want the deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.',
     features: ['Everything in Trader', 'Advanced analysis and expanded research', 'Full professional intelligence toolset'],
   },
+  {
+    id: 'founding', name: 'FOUNDING MEMBER', price: '$49', period: '/ month', color: GOLD,
+    badge: 'FOUNDING RATE — LOCKED', cta: 'LOCK IN FOUNDER RATE',
+    tagline: 'Join FAULTLINE during the founding period and keep your $49 monthly rate locked as long as your membership remains active.',
+    features: ['Everything in Power', 'Locked $49 monthly rate while membership remains active', 'Founding member recognition'],
+  },
 ] as const;
-
-const FOUNDER_LIFETIME_OPTION = {
-  label: 'LIMITED TIME LIFETIME ACCESS',
-  price: '$299',
-  description: 'One-time payment • Lifetime access • No recurring monthly charge',
-  cta: 'GET LIFETIME ACCESS — $299',
-} as const;
 
 // ── Analytics helper ──────────────────────────────────────────
 function track(eventName: string, params?: Record<string, string | number>) {
@@ -291,7 +282,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
     pricingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  // Enter platform (triggers ASHA after click — not on load)
+  // Enter platform (triggers PLATO after click — not on load)
   const handleEnter = useCallback(() => {
     track('enter_platform_click', { source: 'product_experience' });
     onEnter();
@@ -299,7 +290,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
 
   const handleLogin = useCallback(() => {
     track('sign_in_click', { source: 'product_experience' });
-    window.location.href = getLoginUrl();
+    navigateToLogin();
   }, []);
 
   const handlePricingInterest = useCallback((planName: string) => {
@@ -312,7 +303,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
     { icon: '🎯', title: 'Scenario Context', description: 'Derived scenario context across macro states, clearly separated from calibrated probability or forecast claims.', accent: GREEN },
     { icon: '🔍', title: 'Market Regime Detection', description: 'Identifies the current macro regime and how long it has been developing — context that changes how every signal should be read.', accent: GOLD },
     { icon: '📚', title: 'Historical Analog Engine', description: 'Compares current features with documented historical references for context; similarity does not forecast what happens next.', accent: PURPLE },
-    { icon: '🤖', title: 'AI Market Intelligence', description: 'ASHA synthesizes all platform data into a personalized Oracle Briefing — your institutional-grade market strategist, available 24/7.', accent: CYAN },
+    { icon: '🤖', title: 'AI Market Intelligence', description: 'PLATO synthesizes all platform data into a personalized Oracle Briefing — your institutional-grade market strategist, available 24/7.', accent: CYAN },
     { icon: '🔔', title: 'Signals & Alerts', description: 'Screener-grade signal detection across equities, crypto, and macro instruments with configurable alert thresholds.', accent: GREEN },
     { icon: '💼', title: 'Portfolio Intelligence', description: 'Analyze your portfolio against current macro conditions. Understand how your positions are exposed to each risk regime.', accent: GOLD },
     { icon: '📋', title: 'Daily Briefings', description: 'Structured daily intelligence reports covering market state, key drivers, and what to watch — delivered before markets open.', accent: PURPLE },
@@ -484,9 +475,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           padding: '80px clamp(16px,5vw,80px)',
           position: 'relative',
-          backgroundImage: `url(${ASSETS.heroBg})`,
-          backgroundSize: 'cover', backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
+          background: 'radial-gradient(ellipse at 20% 20%, rgba(0,229,255,0.12), transparent 55%), #050810',
         }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,8,16,0.7) 0%, rgba(5,8,16,0.5) 50%, rgba(5,8,16,0.9) 100%)' }} />
 
@@ -897,17 +886,6 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                     {plan.features.map((feature) => <div key={feature} style={{ display: 'flex', gap: '9px', fontFamily: SANS, fontSize: '13px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45 }}><span style={{ color: plan.color }}>✓</span><span>{feature}</span></div>)}
                   </div>
                   <button onClick={() => handlePricingInterest(plan.name)} style={{ width: '100%', padding: '14px', background: isFounding ? 'rgba(255,170,0,0.16)' : 'transparent', border: `1px solid ${plan.color}70`, borderRadius: '8px', color: plan.color, fontFamily: MONO, fontSize: '11px', letterSpacing: '0.1em', fontWeight: 700, cursor: 'pointer' }}>{plan.cta}</button>
-                  {isFounding && (
-                    <div style={{ marginTop: '16px', paddingTop: '18px', borderTop: `1px solid ${GOLD}35` }}>
-                      <div style={{ fontFamily: MONO, fontSize: '9px', letterSpacing: '0.16em', color: GOLD, marginBottom: '9px' }}>{FOUNDER_LIFETIME_OPTION.label}</div>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '7px', marginBottom: '7px' }}>
-                        <span style={{ fontFamily: MONO, fontSize: '30px', color: GOLD, fontWeight: 700, lineHeight: 1 }}>{FOUNDER_LIFETIME_OPTION.price}</span>
-                        <span style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.45)' }}>one time</span>
-                      </div>
-                      <p style={{ fontFamily: SANS, fontSize: '12px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.55, margin: '0 0 14px' }}>{FOUNDER_LIFETIME_OPTION.description}</p>
-                      <button onClick={() => handlePricingInterest('Lifetime Access — $299')} style={{ width: '100%', padding: '12px', background: 'rgba(255,170,0,0.1)', border: `1px solid ${GOLD}80`, borderRadius: '8px', color: GOLD, fontFamily: MONO, fontSize: '10px', letterSpacing: '0.08em', fontWeight: 700, cursor: 'pointer' }}>{FOUNDER_LIFETIME_OPTION.cta}</button>
-                    </div>
-                  )}
                 </div>
               );
             })}
@@ -923,9 +901,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: 'clamp(60px,8vw,120px) clamp(20px,5vw,80px)',
         position: 'relative',
-        backgroundImage: `url(${ASSETS.ctaAtmosphere})`,
-        backgroundSize: 'cover', backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
+        background: 'radial-gradient(ellipse at 50% 40%, rgba(0,229,255,0.10), transparent 55%), #050810',
         textAlign: 'center',
       }}>
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(5,8,16,0.8), rgba(5,8,16,0.6), rgba(5,8,16,0.9))' }} />
@@ -940,7 +916,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                 Now enter it.
               </h2>
               <p style={{ fontFamily: SANS, fontSize: 'clamp(14px,2vw,18px)', color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, maxWidth: '500px', margin: '0 auto 48px' }}>
-                ASHA will personalize your experience based on your investing style, goals, and interests. Your first briefing is waiting.
+                PLATO will personalize your experience based on your investing style, goals, and interests. Your first briefing is waiting.
               </p>
               <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button

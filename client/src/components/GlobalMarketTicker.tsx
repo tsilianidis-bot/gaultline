@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import type { MarketQuoteItem, GlobalSession } from "../../../server/routers/markets";
+import { hideBlankMarketQuoteDuplicates } from "@shared/customerIntegrityLabels";
 
 type TickerFilter = "ALL" | "US" | "EUROPE" | "ASIA" | "RATES" | "FX" | "COMMODITIES" | "CRYPTO";
 
@@ -55,6 +56,7 @@ function stateTone(item: MarketQuoteItem) {
 function humanState(item: MarketQuoteItem) {
   if (item.freshnessState === "STALE") return "STALE";
   if (item.freshnessState === "UNAVAILABLE") return "UNAVAILABLE";
+  if (item.proxySymbol) return `${item.proxySymbol} PROXY · DELAYED`;
   if (item.sessionStatus === "CLOSED") return "CLOSED · LAST SESSION";
   if (item.freshnessState === "DELAYED") return `${item.sessionStatus} · DELAYED`;
   if (item.freshnessState === "LATEST_VERIFIED") return "LATEST VERIFIED";
@@ -85,10 +87,10 @@ export default function GlobalMarketTicker() {
     if (!snapshot) return [];
     const candidates = currentFilter.categories.length ? snapshot.items.filter(item => currentFilter.categories.includes(item.category)) : snapshot.items;
     const priority = SESSION_PRIORITY[snapshot.activeSession];
-    return [...candidates].sort((left, right) => {
+    return hideBlankMarketQuoteDuplicates([...candidates].sort((left, right) => {
       const sessionOrder = priority.indexOf(left.category) - priority.indexOf(right.category);
       return sessionOrder || left.shortLabel.localeCompare(right.shortLabel);
-    });
+    }));
   }, [snapshot, currentFilter.categories]);
 
   if (!snapshot && !query.isError) return null;

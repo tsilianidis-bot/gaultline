@@ -22,8 +22,8 @@ import { handleStripeWebhook } from './webhook';
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 // Mock stripe client
-vi.mock('./client', () => ({
-  stripe: {
+vi.mock('./client', () => {
+  const stripe = {
     webhooks: {
       constructEvent: vi.fn(),
     },
@@ -35,8 +35,12 @@ vi.mock('./client', () => ({
     subscriptions: {
       retrieve: vi.fn(),
     },
-  },
-}));
+  };
+  return {
+    stripe,
+    requireStripe: () => stripe,
+  };
+});
 
 // Mock db helpers
 vi.mock('../db', () => ({

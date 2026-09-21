@@ -45,7 +45,7 @@ function FeedStatusDot({ live, loading }: { live: boolean; loading: boolean }) {
 }
 
 export default function DataIntegrity() {
-  const { rawFred, isLoading, isLive, lastUpdated, dataError, forceRefresh } = useEngine();
+  const { rawFred, isLoading, isLive, integrityLabel, lastUpdated, dataError, forceRefresh } = useEngine();
   const [expanded, setExpanded] = useState(false);
 
   const liveCount = FRED_FEEDS.filter(f => rawFred[f.series] != null).length;
@@ -54,8 +54,8 @@ export default function DataIntegrity() {
     ? Math.round((Date.now() - lastUpdated.getTime()) / 60000)
     : null;
 
-  const statusColor = isLoading ? '#4B5563' : isLive ? '#00FF88' : '#FF9500';
-  const statusLabel = isLoading ? 'LOADING' : isLive ? 'LIVE' : 'CACHED';
+  const statusColor = isLoading ? '#4B5563' : integrityLabel === 'LIVE' ? '#00FF88' : integrityLabel === 'UNAVAILABLE' ? '#94A3B8' : '#FF9500';
+  const statusLabel = isLoading ? 'LOADING' : integrityLabel;
 
   return (
     <div style={{

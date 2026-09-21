@@ -11,6 +11,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
 import { formatCanonicalScore } from "@shared/marketMetrics";
+import { humanizeQualityStatus } from "@shared/customerIntegrityLabels";
 import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
 import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
 
@@ -45,7 +46,7 @@ function ProbBar({ value, color, label }: { value: number; color: string; label:
 
 export default function MarketContextStrip() {
   const [location] = useLocation();
-  const { output, isLoading } = useEngine();
+  const { output, isLoading, integrityLabel } = useEngine();
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
@@ -218,7 +219,7 @@ export default function MarketContextStrip() {
           <div style={{ display: "flex", alignItems: "flex-start", gap: "12px", flexWrap: "wrap" }}>
             {canonicalState && (
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(100,116,139,0.55)", letterSpacing: "0.08em" }}>
-                CANONICAL {canonicalState.stateId} · {canonicalState.quality}
+                {integrityLabel} · {humanizeQualityStatus(canonicalState.confidenceOrEvidenceQuality)}
               </span>
             )}
             {/* Synthesis */}
@@ -280,7 +281,7 @@ export default function MarketContextStrip() {
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${regimeColor}20`; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = `${regimeColor}10`; }}
             >
-              ASK ASHA
+              ASK PLATO
               <ArrowRight size={9} />
             </button>
           </div>

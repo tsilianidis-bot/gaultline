@@ -73,7 +73,7 @@ const COMING_SOON_FEATURES = [
     label: "Weekly Portfolio Health Report",
     tagline: "Institutional-quality briefings. Weekly.",
     description:
-      "Receive an institutional-style weekly briefing that summarizes what changed, why it matters, emerging risks, improving conditions, and key portfolio observations — written by ASHA and calibrated to your specific holdings.",
+      "Receive an institutional-style weekly briefing that summarizes what changed, why it matters, emerging risks, improving conditions, and key portfolio observations — written by PLATO and calibrated to your specific holdings.",
     benefits: [
       "What changed in the macro environment this week",
       "Why it matters for your portfolio specifically",
@@ -92,7 +92,7 @@ const COMING_SOON_FEATURES = [
     benefits: [
       "Six investor profiles: Long-Term, Active, Retirement, Income, Growth, Crypto",
       "Personalized signal weighting and risk thresholds",
-      "Tailored ASHA responses and briefings",
+      "Tailored PLATO responses and briefings",
       "Switch profiles at any time without data loss",
     ],
     color: "#34D399",
@@ -219,7 +219,7 @@ export default function Roadmap() {
         >
           <div className="text-[10px] font-mono tracking-[0.3em] text-[#64748B]">CURRENTLY AVAILABLE</div>
           <p className="text-[14px] text-[#94A3B8]">
-            The full intelligence platform is live today — Pressure Index, Seismograph, ASHA, Signals, Situation Room, and more.
+            The full intelligence platform is live today — Pressure Index, Seismograph, PLATO, Signals, Situation Room, and more.
           </p>
           <a
             href="/app/seismograph-command-center"

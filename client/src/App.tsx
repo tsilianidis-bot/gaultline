@@ -11,7 +11,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { EngineProvider } from "./contexts/EngineContext";
 import AppLayout from "./components/AppLayout";
 import IntroScreen from "./components/IntroScreen";
-import CinematicIntro, { CINEMATIC_SEEN_KEY } from "./components/CinematicIntro";
+import CinematicIntro from "./components/CinematicIntro";
 import FREDDebugConsole from "./components/FREDDebugConsole";
 import CookieConsent from './components/CookieConsent';
 import RouteTracker from './components/RouteTracker';
@@ -19,10 +19,8 @@ import { DemoProvider, isDemoPath } from './contexts/DemoContext';
 import DemoBanner from './components/DemoBanner';
 import { OnboardingVideoModal } from './components/OnboardingVideoModal';
 import AshaLiveBriefing from './components/AshaLiveBriefing';
-import ProductExperience, { CHECKOUT_INTENT_KEY } from './components/ProductExperience';
 import CinematicAuthGate from './components/CinematicAuthGate';
 import { useAuth } from './_core/hooks/useAuth';
-import { trpc } from './lib/trpc';
 import { useLocation } from 'wouter';
 import { ANALYTICAL_LEGACY_ALIASES, CANONICAL_DESTINATIONS, CANONICAL_DESTINATION_BY_ID, EXPERT_WORKSPACE_BY_ID, preserveRouteContext, type CanonicalDestinationId, CANONICAL_HOME } from '@shared/routeRegistry';
 
@@ -273,7 +271,7 @@ function RootRoute() {
 const INTRO_SEEN_KEY = 'fl_intro_seen_v1';
 // ── Persistent key: cinematic completed at least once (survives sessions) ──
 const CINEMATIC_COMPLETED_KEY = 'fl_cinematic_completed_v1';
-const PRODUCT_EXPERIENCE_KEY = 'fl_product_experience_v1';
+const CHECKOUT_INTENT_KEY = 'fl_checkout_intent_v1';
 
 function Router() {
   return (
@@ -377,6 +375,10 @@ function Router() {
           </Suspense>
         </ErrorBoundary>
       </Route>
+      {/* Bare /mobile and /mobile/ 404'd because /mobile/:tab* requires a tab.
+          Redirect to NOW so Pulse nav and typed URLs never dead-end. */}
+      <Route path="/mobile"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
+      <Route path="/mobile/"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
       {/* Mobile PWA routes — standalone, no AppLayout */}
       <Route path="/mobile/:tab*">
         <ErrorBoundary>
@@ -847,7 +849,7 @@ function shouldShowCinematic(): boolean {
     const publicPaths = ['/blog', '/daily-brief', '/intelligence-library', '/analysis',
       '/intelligence', '/intel-archive', '/methodology', '/pressure-index', '/legal',
       '/contact', '/press', '/about', '/platform', '/phoenix-systems', '/glossary',
-      '/pricing', '/r/', '/mobile/', '/public-', '/market-crash', '/alt-season',
+      '/pricing', '/r/', '/mobile', '/public-', '/market-crash', '/alt-season',
       '/bitcoin-', '/ethereum-', '/nvda-', '/pltr-', '/tao-', '/tsla-', '/meta-',
       '/amd-', '/ai-stocks', '/market-regime', '/market-crash-indicator',
       '/recession-', '/federal-reserve', '/liquidity-', '/volatility-', '/ai-bubble',
@@ -871,77 +873,44 @@ const FIRST_TIME = shouldShowCinematic();
 function App() {
   const isDemo = isDemoPath();
   const { user, loading: authLoading } = useAuth();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
+  const isProductPath = location === "/app" || location.startsWith("/app/");
 
   // ── ARCHITECTURAL RULE ─────────────────────────────────────────────────────
   // CinematicIntro is the ABSOLUTE ROOT render for first-time users.
-  // Nothing else mounts until it completes or is skipped.
+  // ProductExperience is preserved in source but is NOT mounted on first-run.
   //
-  // Render order:
-  //   1. CinematicIntro          (first-time only, localStorage gate)
-  //   2. CinematicAuthGate       (if user is not authenticated after cinematic)
-  //   3. AshaLiveBriefing        (once per session, after auth confirmed)
-  //   4. Dashboard / Router      (fades in after briefing)
-  //
-  // IntroScreen (legacy loading screen) is NEVER shown as a first impression.
-  // It is only available as an internal fallback if needed post-cinematic.
+  // Arrival:
+  //   1. CinematicIntro          (first-time only, ~12.1s, skip + mute)
+  //   2. MarketingSite           (first-time after cinematic; returning unauth)
+  //   3. CinematicAuthGate       (product entry only — /app*)
+  //   4. PLATO briefing          (AshaLiveBriefing, after auth/access on product)
+  //   5. Canonical NOW           (Router)
   // ──────────────────────────────────────────────────────────────────────────
 
   // cinematicDone: false until cinematic completes or is skipped.
   // First-time visitors: cinematic plays. Returning visitors: skip.
   const [cinematicDone, setCinematicDone] = useState<boolean>(() => !FIRST_TIME);
 
-  // productExperienceDone: true if user has already seen the product experience page.
-  // Only shown to first-time visitors after the cinematic, before auth gate.
-  const [productExperienceDone, setProductExperienceDone] = useState<boolean>(() => {
-    try {
-      if (isDemo) return true;
-      if (!FIRST_TIME) return true; // returning visitors skip it
-      return !!localStorage.getItem(PRODUCT_EXPERIENCE_KEY);
-    } catch { return true; }
-  });
-  const handleProductExperienceComplete = useCallback(() => {
-    try { localStorage.setItem(PRODUCT_EXPERIENCE_KEY, '1'); } catch {}
-    setProductExperienceDone(true);
-  }, []);
-
-  // returningUnauth: returning visitor who has seen cinematic but is not logged in
-  // → show styled sign-in page instead of cinematic
-  const [returningUnauth] = useState<boolean>(() => {
-    try {
-      if (isDemoPath()) return false;
-      const completed = localStorage.getItem(CINEMATIC_COMPLETED_KEY);
-      if (!completed) return false; // first-timer, cinematic handles it
-      return true; // returning visitor — auth gate will handle sign-in vs skip
-    } catch { return false; }
-  });
-
   // introComplete: always true for first-time users (cinematic IS the intro)
   // and always true for returning users (IntroScreen is no longer a session gate).
   const [introComplete, setIntroComplete] = useState<boolean>(true);
 
-  // ASHA Live Briefing — shown once per calendar day after auth is confirmed
+  // PLATO Live Briefing — shown once per calendar day after auth is confirmed
   // Uses localStorage keyed per-user per-day so it survives OAuth cross-origin redirects.
-  // CRITICAL FIX: Returning visitors (FIRST_TIME=false) skip ASHA on initial render.
-  // The useEffect below re-checks the per-user key once user resolves and resets it
-  // to false if ASHA hasn't been seen today, triggering the briefing then.
-  // This prevents a race condition where ashaBriefingDone=false at init causes the
-  // ASHA gate to render before user resolves, blocking the dashboard.
+  // Returning visitors skip briefing on initial render; useEffect re-checks the
+  // per-user key once user resolves.
   const [ashaBriefingDone, setAshaBriefingDone] = useState<boolean>(() => {
     try {
       if (isDemo) return true;
       // Returning visitors: start as done, re-check per-user key in useEffect
       if (!FIRST_TIME) {
-        // Quick check: if any today key exists, ASHA already ran today
         const today = new Date().toISOString().slice(0, 10);
         if (sessionStorage.getItem(ASHA_BRIEFING_KEY) === '1') return true;
         const keys = Object.keys(localStorage).filter(k => k.startsWith(ASHA_BRIEFING_KEY) && k.endsWith(today));
         if (keys.some(k => localStorage.getItem(k) === '1')) return true;
-        // No today key found — ASHA should run, but defer to useEffect after user resolves
-        // Return true here to prevent blank screen; useEffect will set false if needed
         return true;
       }
-      // First-time user: check today's key for any stored user id
       const today = new Date().toISOString().slice(0, 10);
       if (sessionStorage.getItem(ASHA_BRIEFING_KEY) === '1') return true;
       const keys = Object.keys(localStorage).filter(k => k.startsWith(ASHA_BRIEFING_KEY) && k.endsWith(today));
@@ -952,63 +921,54 @@ function App() {
     try {
       const key = getAshaBriefingKey(user?.id?.toString());
       localStorage.setItem(key, '1');
-      // Also set legacy sessionStorage key for backwards compat
       sessionStorage.setItem(ASHA_BRIEFING_KEY, '1');
     } catch {}
     setAshaBriefingDone(true);
-    // ASHA is the front door; Home is the command center. Post-welcome
-    // continuation must never inherit a prior drill-down or user preference.
     navigate(CANONICAL_HOME);
   }, [user, navigate]);
 
-  // Auth gate — shown after cinematic when user is not authenticated.
-  // ASHA must never greet by name before identity is confirmed.
-  // CRITICAL FIX: Returning visitors (FIRST_TIME=false) have already seen the cinematic
-  // and should NEVER be shown the auth gate on subsequent visits. The auth gate is only
-  // needed for first-time users completing the cinematic → auth → ASHA → dashboard flow.
-  // Without this fix, returning users landing on /app/now see the CinematicAuthGate
-  // overlay while the router renders behind it with opacity:0, causing the blank screen.
+  // Auth gate — product entry only. MarketingSite is the public landing after cinematic.
   const [authGateDone, setAuthGateDone] = useState<boolean>(() => {
     try {
       if (isDemo) return true;
-      // Returning visitors skip the auth gate entirely — they go straight to dashboard.
-      // Unauthenticated returning users are handled by the router's protected route guards.
-      if (!FIRST_TIME) return true;
-      // fl_post_auth_asha is set before OAuth redirect but wiped by cross-origin navigation.
-      // We fall back to the useEffect below which resolves authGateDone from auth.me.
       if (sessionStorage.getItem('fl_post_auth_asha') === '1') {
         sessionStorage.removeItem('fl_post_auth_asha');
         return true;
       }
-      return false; // resolved by auth check in useEffect below
+      return false;
     } catch { return true; }
   });
   const handleAuthGateComplete = useCallback(() => {
     setAuthGateDone(true);
   }, []);
 
-  // For returning visitors (cinematic already seen):
-  // - Authenticated: skip cinematic + ASHA briefing, go straight to dashboard
-  // - Unauthenticated: skip cinematic, show auth gate only
   const isReturning = !FIRST_TIME && !isDemo;
+  const showAuthGate =
+    cinematicDone &&
+    !isDemo &&
+    isProductPath &&
+    !authLoading &&
+    !user &&
+    !authGateDone;
+  const showPlatoBriefing =
+    cinematicDone &&
+    !isDemo &&
+    isProductPath &&
+    !showAuthGate &&
+    authGateDone &&
+    !ashaBriefingDone;
 
-  // Dashboard visibility — fades in once all gates are cleared
   const [dashVisible, setDashVisible] = useState(() => {
     if (isDemo) return false;
-    if (!FIRST_TIME) return true; // returning visitor: dashboard immediately visible
+    if (!FIRST_TIME) return true;
     return false;
   });
 
-  // Cinematic complete handler — called when CinematicIntro finishes or is skipped
   const handleCinematicComplete = useCallback(() => {
     try {
-      // Mark cinematic as permanently completed so returning visitors skip it
       localStorage.setItem(CINEMATIC_COMPLETED_KEY, '1');
-      // NOTE: Do NOT set ashaBriefingDone here — ASHA briefing runs after cinematic.
-      // The flow is: CinematicIntro → (CinematicAuthGate if needed) → AshaLiveBriefing → Dashboard
     } catch {}
     setCinematicDone(true);
-    // ashaBriefingDone stays false — ASHA will show after auth resolves
   }, []);
 
   // Resolve auth gate: if auth has loaded and user is present, mark done automatically
@@ -1017,73 +977,50 @@ function App() {
       setAuthGateDone(true);
     }
   }, [authLoading, user, authGateDone]);
-  // ── Checkout intent preservation ──────────────────────────────────────────
-  // When an unauthenticated user clicks "Get Lifetime Access" on ProductExperience,
-  // fl_checkout_intent_v1='lifetime' is stored in localStorage before the OAuth redirect.
-  // After login completes and user resolves here, we detect the intent, auto-trigger
-  // the Stripe checkout in a new tab, then clear the flag so it only fires once.
-  const checkoutIntentMutation = trpc.billing.createCheckout.useMutation({
-    onSuccess: (data) => {
-      if (data?.url) window.open(data.url, '_blank');
-    },
-  });
+  // Public Lifetime checkout is suppressed — leftover intents are cleared, never auto-fired.
   useEffect(() => {
     if (authLoading || !user) return;
     try {
       const intent = localStorage.getItem(CHECKOUT_INTENT_KEY);
       if (intent === 'lifetime') {
         localStorage.removeItem(CHECKOUT_INTENT_KEY);
-        checkoutIntentMutation.mutate({ planId: 'lifetime', origin: window.location.origin });
       }
     } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user?.id]);
   // Re-check ashaBriefingDone when user resolves (user id needed for per-user key).
-  // For returning users, ashaBriefingDone starts as true (to prevent blank screen).
-  // Once user resolves, we check the per-user today key:
-  //   - If found: ASHA already ran today, stay done.
-  //   - If not found: ASHA hasn't run today, set false to trigger the briefing.
-  // This deferred check is the correct trigger for the daily ASHA greeting.
   useEffect(() => {
     if (!user) return;
     try {
       const key = getAshaBriefingKey(user.id?.toString());
       if (localStorage.getItem(key) === '1') {
-        // Already seen today — ensure done is true
         if (!ashaBriefingDone) setAshaBriefingDone(true);
-      } else {
-        // Not seen today — trigger ASHA briefing
+      } else if (isProductPath) {
         setAshaBriefingDone(false);
       }
     } catch {}
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, isProductPath]);
 
-  // Safety fallback: if auth gate is done but ASHA briefing hasn't completed after 15s,
-  // force skip to dashboard. Prevents users getting stuck on a blank screen.
   useEffect(() => {
-    if (!cinematicDone || !authGateDone || ashaBriefingDone) return;
+    if (!showPlatoBriefing) return;
     const t = setTimeout(() => {
-      console.warn('[ASHA] Briefing timeout — forcing skip to dashboard');
+      console.warn('[PLATO] Briefing timeout — forcing skip to dashboard');
       handleAshaBriefingComplete();
-    }, 300000); // 5-min crash-guard — user controls transition
+    }, 300000);
     return () => clearTimeout(t);
-  }, [cinematicDone, authGateDone, ashaBriefingDone, handleAshaBriefingComplete]);
+  }, [showPlatoBriefing, handleAshaBriefingComplete]);
 
-  // Show dashboard once all post-cinematic gates are cleared
   useEffect(() => {
-    if (cinematicDone && authGateDone && ashaBriefingDone) {
-      setDashVisible(true);
-    }
-  }, [cinematicDone, authGateDone, ashaBriefingDone]);
-
-  // If ASHA briefing is triggered for a returning user (ashaBriefingDone flips to false
-  // after user resolves), hide the dashboard so ASHA renders over a clean background.
-  useEffect(() => {
-    if (cinematicDone && authGateDone && !ashaBriefingDone) {
+    if (!cinematicDone) {
       setDashVisible(false);
+      return;
     }
-  }, [cinematicDone, authGateDone, ashaBriefingDone]);
+    if (showAuthGate || showPlatoBriefing) {
+      setDashVisible(false);
+      return;
+    }
+    setDashVisible(true);
+  }, [cinematicDone, showAuthGate, showPlatoBriefing]);
 
   const appContent = (
     <ErrorBoundary>
@@ -1105,28 +1042,13 @@ function App() {
               <CinematicIntro onComplete={handleCinematicComplete} />
             )}
 
-            {/* ── RENDER GATE 1.5: Product Experience ──────────────────────────
-                 First-time visitors only. Shown after cinematic, before auth gate.
-                 Introduces the platform before ASHA onboarding begins.
-                 Returning visitors skip this entirely. */}
-            {cinematicDone && !productExperienceDone && (
-              <ProductExperience onEnter={handleProductExperienceComplete} />
-            )}
+            {/* ProductExperience is preserved in source and is not mounted on first-run. */}
 
-            {/* ── RENDER GATE 2: Auth gate ───────────────────────────────────────
-                 Case A: After cinematic (first-time user) — show if not authenticated.
-                 Case B: Returning unauthenticated user — show directly (skip cinematic).
-                 Cinematic-styled sign-in — never a white page or redirect. */}
-            {/* cinematicDone is already true for returning visitors, so one
-                mutually exclusive gate covers both onboarding paths. */}
-            {cinematicDone && productExperienceDone && !authGateDone && (
+            {showAuthGate && (
               <CinematicAuthGate onAuthenticated={handleAuthGateComplete} />
             )}
 
-            {/* ── RENDER GATE 3: ASHA Live Briefing ─────────────────────────
-                 Only mounts after cinematic + auth are both done.
-                 Shown once per session. ASHA greets by confirmed name. */}
-            {cinematicDone && productExperienceDone && authGateDone && !ashaBriefingDone && (
+            {showPlatoBriefing && (
               <AshaLiveBriefing onContinue={handleAshaBriefingComplete} />
             )}
 

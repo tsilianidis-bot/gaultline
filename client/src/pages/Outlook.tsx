@@ -25,6 +25,7 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore, normalizeCanonicalMetric } from "@shared/marketMetrics";
 import type { CanonicalMarketState } from "@shared/marketState";
+import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
@@ -202,13 +203,13 @@ export default function Outlook() {
   const {
     output,
     marketState,
-    marketMode,
     sourceHealth,
     isLoading,
     isRefreshing,
     lastUpdated,
     dataError,
     refresh,
+    integrityLabel,
   } = useEngine();
 
   const regimeProbabilities: CanonicalMarketState["outlook"]["regimeProbabilities"] = marketState?.outlook.regimeProbabilities ?? {
@@ -276,13 +277,13 @@ export default function Outlook() {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-mono text-[10px] uppercase tracking-[0.23em] text-violet-300">OUTLOOK · Probability state</p>
                 <DataFreshnessChip
-                  freshness={marketState?.freshness ?? (marketMode === "canonical" ? "live" : "stale")}
+                  freshness={customerIntegrityChipLevel(integrityLabel)}
                   tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-sm border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-400">
-                  {marketMode === "canonical" ? "Canonical state" : "Deterministic fallback"}
+                  {customerChromeModeLabel(integrityLabel)}
                 </span>
                 <Link href="/app/tools" className="flex items-center gap-1.5 rounded-sm border border-white/10 px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.13em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300">
                   <ArrowRight size={11} /> Tools & Features
@@ -454,10 +455,10 @@ export default function Outlook() {
           {marketState?.warnings.length ? <div className="mt-4 rounded-sm border border-amber-300/15 bg-amber-300/[0.03] p-4 text-xs leading-5 text-amber-100">{marketState.warnings.join(" · ")}</div> : null}
         </Section>
 
-        <Section id="asha" index="10" eyebrow="ASHA continuity" title="Interrogate the forecast without losing context" description="Open ASHA with the OUTLOOK handoff so the current path, alternatives, triggers, invalidations, and evidence boundaries remain attached.">
+        <Section id="asha" index="10" eyebrow="PLATO continuity" title="Interrogate the forecast without losing context" description="Open PLATO with the OUTLOOK handoff so the current path, alternatives, triggers, invalidations, and evidence boundaries remain attached.">
           <div className="flex flex-col justify-between gap-5 rounded-sm border border-cyan-300/15 bg-cyan-300/[0.025] p-5 md:flex-row md:items-center">
             <div><div className="flex items-center gap-2 text-cyan-300"><Sparkles size={15} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Ask next</p></div><p className="mt-3 text-sm leading-6 text-slate-300">Ask which evidence would move the base case, which alternative is underpriced, or how the current analog resolved.</p></div>
-            <Link href={`${ashaPath}?from=outlook`} className="inline-flex shrink-0 items-center gap-2 rounded-sm border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.13em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.97]">Open ASHA <ArrowRight size={13} /></Link>
+            <Link href={`${ashaPath}?from=outlook`} className="inline-flex shrink-0 items-center gap-2 rounded-sm border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.13em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.97]">Open PLATO <ArrowRight size={13} /></Link>
           </div>
         </Section>
 

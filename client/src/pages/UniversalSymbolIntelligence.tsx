@@ -101,6 +101,7 @@ type DayTradeReport = {
     momentumScore: number;
     riskRewardScore: number;
   };
+  _providerHealth?: Record<string, "live" | "degraded" | "unavailable" | "not_applicable" | string>;
   generatedAt: number;
 };
 
@@ -605,7 +606,7 @@ function UniversalSymbolIntelligence() {
     }
   );
 
-  const report = data as DayTradeReport | null | undefined;
+  const report = data as (DayTradeReport & { _providerHealth?: Record<string, "live" | "degraded" | "unavailable" | "not_applicable" | string> }) | null | undefined;
 
   const { setTicker } = useTickerStore();
 
@@ -903,7 +904,7 @@ function UniversalSymbolIntelligence() {
             )}
             {/* ASHA Symbol Interpretation */}
             <div style={{ marginBottom: '20px' }}>
-              <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="symbol-interpretation" /></SectionErrorBoundary>
+              <SectionErrorBoundary label="PLATO Intelligence"><AshaIntelligenceBrief variant="symbol-interpretation" /></SectionErrorBoundary>
             </div>
 
             {/* Tab content */}

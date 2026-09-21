@@ -78,7 +78,7 @@ const PRINT_STYLES = `
 
 export default function DailyReport() {
   useSEO(PAGE_SEO.report);
-  const { output, indicators, isLive, lastUpdated, isSimulating } = useEngine();
+  const { output, indicators, integrityLabel, lastUpdated, isSimulating } = useEngine();
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const reportRef = useRef<HTMLDivElement>(null);
   const now = useMemo(() => lastUpdated ?? new Date(), [lastUpdated]);
@@ -216,7 +216,8 @@ export default function DailyReport() {
             <div>{formatDate(now)}</div>
             <div style={{ marginTop: '2px' }}>{formatTime(now)}</div>
             {isSimulating && <div style={{ color: '#FF9500', marginTop: '2px' }}>⚡ SIMULATED</div>}
-            {isLive && !isSimulating && <div style={{ color: '#00FF88', marginTop: '2px' }}>● LIVE DATA</div>}
+            {integrityLabel === 'LIVE' && !isSimulating && <div style={{ color: '#00FF88', marginTop: '2px' }}>● LIVE DATA</div>}
+            {integrityLabel !== 'LIVE' && !isSimulating && <div style={{ color: '#FF9500', marginTop: '2px' }}>● {integrityLabel} DATA</div>}
           </div>
 
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '6px' }}>

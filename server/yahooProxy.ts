@@ -31,10 +31,58 @@ export interface YahooQuote {
   marketState: "REGULAR" | "PRE" | "POST" | "CLOSED" | "PREPRE" | "POSTPOST" | "UNKNOWN";
   isDelayed: boolean;
   source: "yahoo" | "polygon-prev" | "error";
+  /** ETF used only when the cash index is unobtainable. Never treated as the index itself. */
+  proxySymbol?: string;
   /** Provider-reported market observation time when available; never inferred as live. */
   observedAt?: number | null;
   fetchedAt: number;
   error?: string;
+}
+
+export type PolygonFallbackKind = "index" | "equity" | "proxy";
+
+export type PolygonFallbackStep = {
+  ticker: string;
+  kind: PolygonFallbackKind;
+};
+
+/**
+ * Yahoo index symbols (^RUT, ^VIX, …) are not valid Polygon tickers.
+ * Map only the known indices that markets depends on; leave equities unchanged.
+ * Response ticker stays the Yahoo symbol so markets quoteMap lookups still match.
+ */
+const POLYGON_INDEX_ALIASES: Record<string, string> = {
+  "^RUT": "I:RUT",
+  "^VIX": "I:VIX",
+  "^GSPC": "I:SPX",
+  "^DJI": "I:DJI",
+  "^IXIC": "I:COMP",
+};
+
+/** Labeled ETF proxy used only after toPolygonTicker's index alias returns empty. */
+const INDEX_ETF_PROXIES: Record<string, string> = {
+  "^RUT": "IWM",
+};
+
+export function toPolygonTicker(ticker: string): string {
+  const upper = ticker.toUpperCase();
+  return POLYGON_INDEX_ALIASES[upper] ?? ticker;
+}
+
+/**
+ * Polygon lookup plan on top of toPolygonTicker. Never emits a caret ticker.
+ * Unmapped Yahoo indices have no Polygon step (alias map is not extended here).
+ */
+export function resolvePolygonFallbackPlan(yahooTicker: string): PolygonFallbackStep[] {
+  const upper = yahooTicker.toUpperCase();
+  const mapped = toPolygonTicker(upper);
+  const steps: PolygonFallbackStep[] = [];
+  if (!mapped.includes("^")) {
+    steps.push({ ticker: mapped, kind: mapped.startsWith("I:") ? "index" : "equity" });
+  }
+  const proxy = INDEX_ETF_PROXIES[upper];
+  if (proxy) steps.push({ ticker: proxy, kind: "proxy" });
+  return steps;
 }
 
 // Per-ticker LRU cache — max 500 tickers, 60s TTL
@@ -133,8 +181,14 @@ function deriveMarketStateFromPeriod(meta: any): YahooQuote["marketState"] {
   return "CLOSED";
 }
 
-async function fetchYahooQuote(ticker: string): Promise<YahooQuote> {
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1m&range=1d&includePrePost=true`;
+async function fetchYahooQuote(
+  ticker: string,
+  opts: { interval?: "1m" | "1d"; range?: "1d" | "5d" } = {},
+): Promise<YahooQuote> {
+  const interval = opts.interval ?? "1m";
+  const range = opts.range ?? "1d";
+  const includePrePost = interval === "1m";
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}&range=${range}&includePrePost=${includePrePost}`;
 
   const res = await fetch(url, {
     headers: {
@@ -187,11 +241,15 @@ async function fetchYahooQuote(ticker: string): Promise<YahooQuote> {
 
 // ── Polygon prev-close fallback ───────────────────────────────
 
-async function fetchPolygonPrevClose(ticker: string): Promise<YahooQuote> {
+async function fetchPolygonPrevClose(lookupTicker: string, requestedTicker: string): Promise<YahooQuote> {
   const apiKey = process.env.POLYGON_API_KEY;
   if (!apiKey) throw new Error("No POLYGON_API_KEY configured");
 
-  const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(ticker)}/prev?adjusted=true&apiKey=${apiKey}`;
+  const polygonTicker = toPolygonTicker(lookupTicker);
+  if (polygonTicker.includes("^")) {
+    throw new Error("Yahoo caret ticker is not a valid Polygon symbol");
+  }
+  const url = `https://api.polygon.io/v2/aggs/ticker/${encodeURIComponent(polygonTicker)}/prev?adjusted=true&apiKey=${apiKey}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
 
   if (!res.ok) throw new Error(`Polygon HTTP ${res.status}`);
@@ -201,7 +259,7 @@ async function fetchPolygonPrevClose(ticker: string): Promise<YahooQuote> {
   if (!bar) throw new Error("No results from Polygon prev-close");
 
   return {
-    ticker: ticker.toUpperCase(),
+    ticker: requestedTicker.toUpperCase(),
     price:         bar.c ?? null,   // close price
     prevClose:     bar.c ?? null,
     open:          bar.o ?? null,
@@ -221,24 +279,48 @@ async function fetchPolygonPrevClose(ticker: string): Promise<YahooQuote> {
 // ── Core fetch with fallback ──────────────────────────────────
 
 async function fetchQuoteWithFallback(ticker: string): Promise<YahooQuote> {
-  // 1. Try Yahoo Finance
+  // 1. Try Yahoo Finance (1-minute chart)
   try {
     return await fetchYahooQuote(ticker);
   } catch (yahooErr: any) {
-    log.warn(`[Yahoo Proxy] Yahoo failed for ${ticker}: ${yahooErr?.message} — trying Polygon fallback`);
+    log.warn(`[Yahoo Proxy] Yahoo failed for ${ticker}: ${yahooErr?.message} — retrying daily chart`);
   }
 
-  // 2. Try Polygon prev-close
+  // 1b. Daily chart is a smaller payload and often survives when the 1m fetch resets.
   try {
-    const q = await fetchPolygonPrevClose(ticker);
-    log.info(`[Yahoo Proxy] Polygon fallback succeeded for ${ticker}`);
-    return q;
-  } catch (polyErr: any) {
-    log.warn(`[Yahoo Proxy] Polygon fallback also failed for ${ticker}: ${polyErr?.message}`);
-    captureError(polyErr as Error, { source: "yahooProxy", ticker, stage: "both_sources_failed" }).catch(() => {});
+    return await fetchYahooQuote(ticker, { interval: "1d", range: "5d" });
+  } catch (dailyErr: any) {
+    log.warn(`[Yahoo Proxy] Yahoo daily retry failed for ${ticker}: ${dailyErr?.message} — trying Polygon fallback`);
   }
 
-  // 3. Return error placeholder
+  // 2. Polygon prev-close using mapped tickers — never the Yahoo caret form.
+  const plan = resolvePolygonFallbackPlan(ticker);
+  let lastPolygonError: unknown;
+  for (const step of plan) {
+    try {
+      const q = await fetchPolygonPrevClose(step.ticker, ticker);
+      if (step.kind === "proxy") {
+        q.proxySymbol = step.ticker;
+        q.isDelayed = true;
+        log.info(`[Yahoo Proxy] Polygon ${step.ticker} proxy succeeded for ${ticker} — labeled proxy, not live`);
+      } else {
+        log.info(`[Yahoo Proxy] Polygon fallback succeeded for ${ticker} via ${step.ticker}`);
+      }
+      return q;
+    } catch (polyErr: any) {
+      lastPolygonError = polyErr;
+      log.warn(`[Yahoo Proxy] Polygon fallback failed for ${ticker} via ${step.ticker}: ${polyErr?.message}`);
+    }
+  }
+
+  captureError((lastPolygonError as Error) ?? new Error("index observation unavailable"), {
+    source: "yahooProxy",
+    ticker,
+    stage: "both_sources_failed",
+  }).catch(() => {});
+
+  // 3. Return error placeholder — never a live print
+  const isIndex = ticker.startsWith("^");
   return {
     ticker: ticker.toUpperCase(),
     price: null,
@@ -254,7 +336,9 @@ async function fetchQuoteWithFallback(ticker: string): Promise<YahooQuote> {
     source: "error",
     observedAt: null,
     fetchedAt: Date.now(),
-    error: "Both Yahoo and Polygon failed",
+    error: isIndex
+      ? "Yahoo index unavailable; Polygon cannot serve this index"
+      : "Both Yahoo and Polygon failed",
   };
 }
 

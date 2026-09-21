@@ -387,7 +387,7 @@ export async function generateBotResponse(
           ...messages.slice(1),
           {
             role: "system",
-            content: `CORRECTION REQUIRED: Your previous response contained incorrect pricing. You MUST use ONLY these prices: Free=$0, Mobile=${CANONICAL_PRICING.core.priceLabel}/mo, Trader=${CANONICAL_PRICING.premium.priceLabel}/mo, Founding Member=${CANONICAL_PRICING.founding.priceLabel}, Lifetime=${CANONICAL_PRICING.lifetime.priceLabel}. Please restate your answer using only these prices.`,
+            content: `CORRECTION REQUIRED: Your previous response contained incorrect pricing. You MUST use ONLY these prices: Free=$0, Mobile=${CANONICAL_PRICING.core.priceLabel}/mo, Trader=${CANONICAL_PRICING.premium.priceLabel}/mo, Founding Member=${CANONICAL_PRICING.founding.priceLabel}, Lifetime=${PRICING_PLANS.lifetime.priceLabel}. Please restate your answer using only these prices.`,
           },
         ];
 

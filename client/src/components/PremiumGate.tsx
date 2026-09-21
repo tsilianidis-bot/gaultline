@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Lock, Zap, Shield, TrendingUp, Crown, LogIn, BarChart2 } from "lucide-react";
 import { getLoginUrl } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -477,9 +478,19 @@ export function PremiumGateFull({
     retry: false,
     staleTime: 60_000,
   });
+  const AUTH_LOAD_BUDGET_MS = 4_000;
+  const [authLoadTimedOut, setAuthLoadTimedOut] = useState(false);
+  useEffect(() => {
+    if (!loading && !(isAuthenticated && tierQuery.isLoading)) {
+      setAuthLoadTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setAuthLoadTimedOut(true), AUTH_LOAD_BUDGET_MS);
+    return () => window.clearTimeout(timer);
+  }, [loading, isAuthenticated, tierQuery.isLoading]);
 
-  // While auth or tier is loading, show spinner
-  if (loading || (isAuthenticated && tierQuery.isLoading)) {
+  // While auth or tier is loading, show spinner — never hang past the budget.
+  if ((loading || (isAuthenticated && tierQuery.isLoading)) && !authLoadTimedOut) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin" />

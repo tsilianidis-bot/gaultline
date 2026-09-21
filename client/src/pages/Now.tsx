@@ -24,8 +24,11 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalPercent, formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import SystemicRegimeModule from "@/components/SystemicRegimeModule";
+import { trpc } from "@/lib/trpc";
 
 const NOW_DEEP_PATH = "/app/now/deep";
 
@@ -568,7 +571,7 @@ function SeismographStrip({ pressure, accent, phase }: { pressure: number; accen
       }}
     >
       <div className="absolute left-3 top-2 font-mono text-[8px] uppercase tracking-[0.16em] text-slate-600">
-        LIVE PRESSURE SIGNAL
+        PRESSURE SIGNAL
       </div>
       <canvas ref={canvasRef} className="h-full w-full" />
     </div>
@@ -743,16 +746,16 @@ function WhatChangedPanel({
 
 // ── Status rail ──────────────────────────────────────────────────────────────
 function StatusRail({
-  pressure, accent, isLive, lastUpdated, marketMode, phase,
+  pressure, accent, integrityLabel, lastUpdated, marketMode, phase,
 }: {
-  pressure: number; accent: string; isLive: boolean; lastUpdated?: Date | null;
+  pressure: number; accent: string; integrityLabel: CustomerIntegrityLabel; lastUpdated?: Date | null;
   marketMode: string; phase: number;
 }) {
   const items = [
     { label: "PRESSURE", value: formatCanonicalScore(pressure), color: accent },
-    { label: "MODE", value: isLive ? "LIVE" : "PROTECTED", color: isLive ? "#00e599" : "#ffaa00" },
+    { label: "MODE", value: integrityLabel, color: customerIntegrityColor(integrityLabel) },
     { label: "UPDATED", value: lastUpdated ? lastUpdated.toLocaleTimeString() : "—", color: "rgba(255,255,255,0.5)" },
-    { label: "STATE", value: marketMode.toUpperCase(), color: "rgba(255,255,255,0.4)" },
+    { label: "STATE", value: marketMode === "simulation" ? "SIMULATION" : integrityLabel, color: "rgba(255,255,255,0.4)" },
   ];
   return (
     <div
@@ -806,9 +809,11 @@ function DestinationLink({ href, label, detail }: { href: string; label: string;
 export default function Now() {
   const {
     output, marketState, marketMode, sourceHealth,
-    isLoading, isLive, lastUpdated, dataError, refresh,
-    canonicalState,
+    isLoading, lastUpdated, dataError, refresh,
+    canonicalState, integrityLabel,
   } = useEngine();
+  const { data: systemicRegime } = trpc.systemicRegime.current.useQuery(undefined, { staleTime: 60_000 });
+  const { data: signalConvergence } = trpc.systemicRegime.convergenceCurrent.useQuery(undefined, { staleTime: 60_000 });
 
   // Staged cinematic entry: phases 1–7 over ~5s
   const phase = useStagedLoad([0, 400, 900, 1500, 2200, 3000, 4000], [isLoading]);
@@ -851,7 +856,6 @@ export default function Now() {
   const watchItems = marketState?.watch.whatToWatch ?? output.narrative.keyRisks;
   const changedItems = marketState?.watch.whatChanged
     ?? output.domains.filter(domain => Math.abs(domain.delta) > 0.1).map(domain => `${domain.label}: ${domain.delta > 0 ? "pressure increased" : "pressure eased"}.`);
-  const modeLabel = marketState ? (isLive ? "Canonical live state" : "Canonical protected state") : "Protected fallback state";
   const accent = pressureColor(pressure);
 
   const topDriversWithStrength = useMemo(() => {
@@ -908,7 +912,7 @@ export default function Now() {
                   NOW · Current market state
                 </span>
                 <DataFreshnessChip
-                  freshness={marketState?.freshness ?? (isLive ? "live" : "stale")}
+                  freshness={customerIntegrityChipLevel(integrityLabel)}
                   tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
                 />
               </div>
@@ -932,7 +936,7 @@ export default function Now() {
               <StatusRail
                 pressure={pressure}
                 accent={accent}
-                isLive={isLive}
+                integrityLabel={integrityLabel}
                 lastUpdated={lastUpdated}
                 marketMode={marketMode}
                 phase={phase}
@@ -1077,6 +1081,8 @@ export default function Now() {
                 ))}
               </div>
             </div>
+
+            <SystemicRegimeModule reading={systemicRegime} convergence={signalConvergence ?? null} />
           </div>
         </section>
 
@@ -1256,13 +1262,13 @@ export default function Now() {
           <div className="mt-5"><DestinationLink href={CANONICAL_DESTINATION_BY_ID.watch.path} label="Open WATCH" detail="Set thresholds, monitor signals, and follow developing conditions." /></div>
         </Section>
 
-        <Section id="asha" index="08" eyebrow="ASHA" title="Continue the interpretation with ASHA" description="Carry today's canonical market state into a focused conversation without changing the evidence source.">
+        <Section id="asha" index="08" eyebrow="PLATO" title="Continue the interpretation with PLATO" description="Carry today's canonical market state into a focused conversation without changing the evidence source.">
           <div className="rounded border border-cyan-300/20 bg-cyan-300/[0.035] p-6 md:flex md:items-center md:justify-between md:gap-8">
             <div className="flex gap-4">
               <BrainCircuit className="mt-1 shrink-0 text-cyan-300" size={22} />
-              <div><p className="font-['Rajdhani'] text-xl font-semibold text-white">Ask what is happening, why it matters, or what would change the conclusion.</p><p className="mt-2 text-sm leading-6 text-slate-400">ASHA receives the same regime, pressure, evidence, probability, history, and source-health context shown here.</p></div>
+              <div><p className="font-['Rajdhani'] text-xl font-semibold text-white">Ask what is happening, why it matters, or what would change the conclusion.</p><p className="mt-2 text-sm leading-6 text-slate-400">PLATO receives the same regime, pressure, evidence, probability, history, and source-health context shown here.</p></div>
             </div>
-            <Link href={PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha"} className="mt-5 inline-flex shrink-0 items-center gap-2 rounded bg-cyan-300 px-4 py-2.5 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] text-[#031014] transition hover:bg-cyan-200 active:scale-[0.97] md:mt-0">Open ASHA <ArrowRight size={14} /></Link>
+            <Link href={PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha"} className="mt-5 inline-flex shrink-0 items-center gap-2 rounded bg-cyan-300 px-4 py-2.5 font-mono text-[9px] font-semibold uppercase tracking-[0.13em] text-[#031014] transition hover:bg-cyan-200 active:scale-[0.97] md:mt-0">Open PLATO <ArrowRight size={14} /></Link>
           </div>
         </Section>
 

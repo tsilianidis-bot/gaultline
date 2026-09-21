@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { Shield, Zap, Crown, User, Mail, Clock, LogOut, ChevronRight, Lock, CheckCircle, Send, AlertCircle, CreditCard, Share2, Eye, Trash2, ExternalLink, RotateCcw, BookOpen } from 'lucide-react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
-import { getLoginUrl } from '@/const';
+import { navigateToLogin } from '@/const';
 import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import { toast } from 'sonner';
 import { useSearch } from 'wouter';
@@ -277,7 +277,7 @@ const STARTUP_OPTIONS: { value: string; label: string; description: string }[] =
   { value: 'outlook', label: 'OUTLOOK — Scenarios', description: 'Start with probability-weighted scenario forecasts.' },
   { value: 'watch',   label: 'WATCH — Signals',     description: 'Jump straight to your active signals and alerts.' },
   { value: 'act',     label: 'ACT — Opportunities', description: 'Open to the decision and trade intelligence workspace.' },
-  { value: 'last',    label: 'Last Visited Page',   description: 'Resume where you left off after each ASHA greeting.' },
+  { value: 'last',    label: 'Last Visited Page',   description: 'Resume where you left off after each PLATO greeting.' },
 ];
 
 function StartupPageCard() {
@@ -311,7 +311,7 @@ function StartupPageCard() {
         </span>
       </div>
       <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, marginBottom: '18px', marginTop: '6px' }}>
-        Choose where FAULTLINE takes you after each ASHA greeting. The default is <strong style={{ color: '#E5E7EB' }}>NOW</strong> — the Seismograph — which gives you the strongest first impression of current market conditions.
+        Choose where FAULTLINE takes you after each PLATO greeting. The default is <strong style={{ color: '#E5E7EB' }}>NOW</strong> — the Seismograph — which gives you the strongest first impression of current market conditions.
       </p>
       {isLoading ? (
         <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#4B5563', letterSpacing: '0.1em' }}>LOADING…</div>
@@ -517,7 +517,7 @@ export default function UserAccount() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      window.location.href = getLoginUrl();
+      navigateToLogin();
     }
   }, [loading, isAuthenticated]);
 

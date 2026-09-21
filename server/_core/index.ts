@@ -33,12 +33,17 @@ import { handleDripEmail } from "../scheduledDripEmail";
 import { handleScheduledSeismograph } from "../scheduledSeismograph";
 import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../scheduledShadowModel";
 import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
+import { handleScheduledSystemicRegimeInfer, handleScheduledSystemicRegimeTrain } from "../systemicRegime/scheduled";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { captureError, flushErrorTracking } from "../errorTracking";
 import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
+import { resolveBuildIdentity } from "../buildIdentity";
+import { handleHealth } from "../health";
 import { renderPublicMaintenancePage, shouldServePublicMaintenance } from "../publicMaintenance";
+
+const LISTEN_HOST = "0.0.0.0";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -130,12 +135,10 @@ async function startServer() {
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://manus-analytics.com https://us.umami.is https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
-        // Allow manus storage CDN for OG image and uploaded assets
-        "img-src 'self' data: blob: https://d2xsxph8kpxj0f.cloudfront.net https://assets.coingecko.com https://*.manus.space https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com",
-        // Allow video/audio from manus storage CDN — required for <video> elements pointing to /manus-storage/ paths
-        "media-src 'self' blob: https://*.manus.space https://*.cloudfront.net",
-        // Allow connections to manus analytics, storage CDN, GA4 collect endpoints, and the approved Soro Blog feed
-        "connect-src 'self' https://manus-analytics.com https://us.umami.is https://*.manus.space https://*.cloudfront.net https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
+        "img-src 'self' data: blob: https://assets.coingecko.com https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com",
+        "media-src 'self' blob:",
+        // Allow connections to first-party analytics, GA4 collect endpoints, and the approved Soro Blog feed
+        "connect-src 'self' https://manus-analytics.com https://us.umami.is https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",
@@ -205,6 +208,8 @@ async function startServer() {
   app.post("/api/scheduled/shadow-forward-outcomes", requireCron, handleShadowForwardOutcomes);
   app.post("/api/scheduled/shadow-daily-summary", requireCron, handleShadowDailySummary);
   app.post("/api/scheduled/rising-stars-continuity", requireCron, handleScheduledRisingStarsContinuity);
+  app.post("/api/scheduled/systemic-regime-infer", requireCron, handleScheduledSystemicRegimeInfer);
+  app.post("/api/scheduled/systemic-regime-train", requireCron, handleScheduledSystemicRegimeTrain);
   // Autonomous publishing pipeline
   app.post("/api/scheduled/daily-brief", requireCron, handleDailyBrief);
   app.post("/api/scheduled/weekly-review", requireCron, handleWeeklyReview);
@@ -215,22 +220,29 @@ async function startServer() {
   app.post("/api/publishing/publish-draft/:id", requireCron, handlePublishDraft);
   // RSS feed
   app.get("/api/rss.xml", handleRssFeed);
-  // Build info — public endpoint for deployment verification
+  // Independent-runtime health — 200 { ok, commit, buildTime }. Registered under /api
+  // so the public HTML maintenance gate never intercepts it.
+  app.get("/api/health", handleHealth);
+
+  // Build info — public endpoint for deployment verification (preview-safe identity).
+  // See docs/RC_PREVIEW_BUILD_IDENTITY.md. Does not target getfaultline.live.
   app.get("/api/build-info", (_req, res) => {
+    const identity = resolveBuildIdentity();
     res.json({
-      commit: process.env.BUILD_COMMIT ?? "dev",
-      buildTime: process.env.BUILD_TIME ?? new Date().toISOString(),
-      nodeEnv: process.env.NODE_ENV ?? "unknown",
+      commit: identity.commit,
+      buildTime: identity.buildTime,
+      nodeEnv: identity.nodeEnv,
     });
   });
 
   // Version endpoint — public, returns build metadata for deployment verification
   app.get("/api/version", (_req, res) => {
+    const identity = resolveBuildIdentity();
     res.json({
-      version: process.env.npm_package_version ?? "1.0.0",
-      commit: process.env.BUILD_COMMIT ?? "dev",
-      buildTime: process.env.BUILD_TIME ?? new Date().toISOString(),
-      nodeEnv: process.env.NODE_ENV ?? "unknown",
+      version: identity.version,
+      commit: identity.commit,
+      buildTime: identity.buildTime,
+      nodeEnv: identity.nodeEnv,
     });
   });
 
@@ -272,15 +284,17 @@ async function startServer() {
     serveStatic(app);
   }
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const preferredPort = parseInt(process.env.PORT || "3000", 10);
+  // Production/Railway must bind the injected PORT. Dev may scan if 3000 is busy.
+  const port =
+    process.env.NODE_ENV === "production" ? preferredPort : await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     process.stderr.write(`Port ${preferredPort} is busy, using port ${port} instead\n`);
   }
 
-  server.listen(port, () => {
-    process.stdout.write(`Server running on http://localhost:${port}/\n`);
+  server.listen(port, LISTEN_HOST, () => {
+    process.stdout.write(`Server running on http://${LISTEN_HOST}:${port}/\n`);
   });
 }
 

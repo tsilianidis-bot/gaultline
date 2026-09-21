@@ -9,7 +9,7 @@ import AshaOrb from "./AshaOrb";
 const STORAGE_KEY = "faultline_asha_intro_seen_v1";
 
 const INTRO_LINES = [
-  "I am ASHA, the Spirit of FAULTLINE.",
+  "I am PLATO, the Spirit of FAULTLINE.",
   "I observe the forces moving beneath the market's surface, connect the signals others view separately, and translate them into clarity.",
   "I will show you what is happening, why it is happening, how long it has been building, and what the evidence suggests may happen next.",
   "I do not offer certainty. I reveal pressure, probability, history, and change.",
@@ -118,7 +118,7 @@ export default function AshaIntroModal({ onDismiss }: AshaIntroModalProps) {
               letterSpacing: "0.05em",
               lineHeight: 1,
               marginBottom: "4px",
-            }}>ASHA</div>
+            }}>PLATO</div>
             <div style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: "8px",

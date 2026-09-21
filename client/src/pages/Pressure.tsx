@@ -21,6 +21,7 @@ import SimulatePressure from "./SimulatePressure";
 import HistoricalContextEngine from "./HistoricalContextEngine";
 import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
+import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUnavailableCopy, humanizeConflictType, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -84,6 +85,20 @@ interface HistoricalAnalog {
 
 function isPressureLevel(value: string | null): value is PressureLevel {
   return value === "Low" || value === "Moderate" || value === "Elevated" || value === "High" || value === "Critical";
+}
+
+// Canonical manifests currently copy regime into pressureLevel ("MODERATE RISK").
+// Match server projectPressureFromCanonical: keep a declared enum level, otherwise derive from score.
+function scoreToPressureLevel(score: number): PressureLevel {
+  if (score >= 80) return "Critical";
+  if (score >= 65) return "High";
+  if (score >= 45) return "Elevated";
+  if (score >= 25) return "Moderate";
+  return "Low";
+}
+
+function resolvePressureLevel(declared: string | null, score: number): PressureLevel {
+  return isPressureLevel(declared) ? declared : scoreToPressureLevel(score);
 }
 
 // ── Color helpers ─────────────────────────────────────────────
@@ -416,7 +431,7 @@ function AnalogBar({ analog, index, isTop }: { analog: HistoricalAnalog; index: 
 }
 
 // ── Liquidity Stress Meter ───────────────────────────────────
-function LiquidityStressMeter({ vectors }: { vectors: RiskVector[] }) {
+function LiquidityStressMeter({ vectors, integrityLabel }: { vectors: RiskVector[]; integrityLabel: CustomerIntegrityLabel }) {
   const liq = vectors.find(v => v.id === "liquidity-stress");
   const credit = vectors.find(v => v.id === "credit-contagion");
   const vol = vectors.find(v => v.id === "volatility-regime");
@@ -522,7 +537,7 @@ function LiquidityStressMeter({ vectors }: { vectors: RiskVector[] }) {
         })}
         {meters.length === 0 && (
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#374151", textAlign: "center", padding: "16px" }}>
-            LIVE DATA UNAVAILABLE — USING FALLBACK
+            {customerPressureUnavailableCopy(integrityLabel)}
           </div>
         )}
       </div>
@@ -966,13 +981,14 @@ export default function Pressure() {
     const requested = new URLSearchParams(window.location.search).get('tab');
     return STRESS_TABS.some(tab => tab.id === requested) ? requested as StressTabId : 'pressure';
   });
-  const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh } = useEngine();
+  const { canonicalState, canonicalEnvelope, isLoading, isRefreshing, dataError, refresh, integrityLabel } = useEngine();
   const data = useMemo(() => {
-    if (!canonicalState || canonicalState.pressureIndex === null || !isPressureLevel(canonicalState.pressureLevel)) return null;
+    if (!canonicalState || canonicalState.pressureIndex === null || Number.isNaN(canonicalState.pressureIndex)) return null;
+    const pressureLevel = resolvePressureLevel(canonicalState.pressureLevel, canonicalState.pressureIndex);
     const alerts: PressureAlert[] = [
       ...canonicalState.conflicts.map(conflict => ({
-        severity: conflict.severity === "CRITICAL" ? "critical" : conflict.severity === "HIGH" ? "high" : "elevated",
-        title: conflict.conflictType,
+        severity: (conflict.severity === "CRITICAL" ? "critical" : conflict.severity === "HIGH" ? "high" : "elevated") as PressureAlert["severity"],
+        title: humanizeConflictType(conflict.conflictType),
         detail: conflict.description,
       })),
       ...canonicalState.warnings.map(warning => ({ severity: "moderate" as const, title: "Canonical warning", detail: warning })),
@@ -982,7 +998,7 @@ export default function Pressure() {
       label: engine.engineName,
       description: `Canonical engine ${engine.engineId}.`,
       score: engine.value ?? 0,
-      level: canonicalState.pressureLevel,
+      level: pressureLevel,
       driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
       trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
       weight: 0,
@@ -991,7 +1007,7 @@ export default function Pressure() {
     return {
       overallPressure: canonicalState.pressureIndex,
       regime: canonicalState.regime ?? "Unavailable",
-      level: canonicalState.pressureLevel,
+      level: pressureLevel,
       vectors,
       alerts,
       topAnalog: null as HistoricalAnalog | null,
@@ -1063,8 +1079,8 @@ export default function Pressure() {
         <PageHeader
           title="Market Stress"
           subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
-          badge="CANONICAL STATE"
-          badgeColor="green"
+          badge={customerPressureBadge(integrityLabel)}
+          badgeColor={customerIntegrityBadgeColor(integrityLabel)}
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}
         />
         <div style={{ padding: '0 16px' }}>
@@ -1095,7 +1111,7 @@ export default function Pressure() {
               </span>
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563", letterSpacing: "0.12em" }}>
-              FAULTLINE SYSTEMIC RISK INDEX · {new Date(data.timestamp).toLocaleString()} · PHASE2-CANONICAL-STATE-V1
+              FAULTLINE SYSTEMIC RISK INDEX · {new Date(data.timestamp).toLocaleString()}
             </div>
           </div>
           <button
@@ -1313,7 +1329,7 @@ export default function Pressure() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
 
           {/* Liquidity Stress Meter */}
-          <LiquidityStressMeter vectors={data.vectors} />
+          <LiquidityStressMeter vectors={data.vectors} integrityLabel={integrityLabel} />
 
           {/* Contagion Cascade */}
           <ContagionVisualization vectors={data.vectors} overallPressure={data.overallPressure} />

@@ -317,7 +317,7 @@ export const ashaMemoryRouter = router({
         .slice(0, 10)
         .join(", ");
 
-      const prompt = `You are ASHA, the continuously active intelligence layer of FAULTLINE. Based on the following questions a user has asked you over the past 7 days, synthesize their current market thesis in 2-3 sentences. Write in first person as if you are describing what you understand about their current market perspective. Be specific, evidence-based, and institutional in tone. Do not use generic language.
+      const prompt = `You are PLATO, the continuously active intelligence layer of FAULTLINE. Based on the following questions a user has asked you over the past 7 days, synthesize their current market thesis in 2-3 sentences. Write in first person as if you are describing what you understand about their current market perspective. Be specific, evidence-based, and institutional in tone. Do not use generic language.
 
 User's recent questions:
 ${questions.map((q, i) => `${i + 1}. ${q}`).join("\n")}
@@ -329,7 +329,7 @@ Write a 2-3 sentence synthesis of their current market thesis. Start with "Based
 
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "You are ASHA, the intelligence layer of FAULTLINE. You synthesize market understanding from conversation history. Be concise, institutional, and specific." },
+          { role: "system", content: "You are PLATO, the intelligence layer of FAULTLINE. You synthesize market understanding from conversation history. Be concise, institutional, and specific." },
           { role: "user", content: prompt },
         ],
       });
@@ -376,7 +376,7 @@ Write a 2-3 sentence synthesis of their current market thesis. Start with "Based
 
       if (!lastUserMsg || !lastAssistantMsg) return { questions: [] };
 
-      const prompt = `You are ASHA, the intelligence layer of FAULTLINE. Based on this recent exchange, generate exactly 4 follow-up questions that would deepen the user's market understanding. Each question should be specific, actionable, and build naturally on the conversation. Return as a JSON array of strings.
+      const prompt = `You are PLATO, the intelligence layer of FAULTLINE. Based on this recent exchange, generate exactly 4 follow-up questions that would deepen the user's market understanding. Each question should be specific, actionable, and build naturally on the conversation. Return as a JSON array of strings.
 
 User asked: ${lastUserMsg.content.slice(0, 300)}
 ASHA responded: ${lastAssistantMsg.content.slice(0, 400)}
@@ -385,7 +385,7 @@ Return exactly this format: ["question 1", "question 2", "question 3", "question
 
       const response = await invokeLLM({
         messages: [
-          { role: "system", content: "You are ASHA. Generate follow-up questions as a JSON array. Return only the JSON array, nothing else." },
+          { role: "system", content: "You are PLATO. Generate follow-up questions as a JSON array. Return only the JSON array, nothing else." },
           { role: "user", content: prompt },
         ],
         response_format: {
@@ -468,11 +468,11 @@ Return exactly this format: ["question 1", "question 2", "question 3", "question
           .orderBy(desc(conversationMessages.timestamp))
           .limit(1);
 
-        const prompt = `You are ASHA, the continuously active intelligence layer of FAULTLINE. The user last spoke with you ${daysSince === 0 ? "earlier today" : `${daysSince} day${daysSince > 1 ? "s" : ""} ago`}. Write 2 sentences describing what has continued to develop since their last visit. Be specific about the current market regime (${input.currentRegime}) and pressure level (${input.currentPressureScore.toFixed(1)}/10). Reference the topics they were discussing: ${topics}${symbols ? `. Symbols they were watching: ${symbols}` : ""}${lastUserMsg ? `. Their last question was: "${lastUserMsg.content.slice(0, 150)}"` : ""}. Start with "Since we last spoke..."`;
+        const prompt = `You are PLATO, the continuously active intelligence layer of FAULTLINE. The user last spoke with you ${daysSince === 0 ? "earlier today" : `${daysSince} day${daysSince > 1 ? "s" : ""} ago`}. Write 2 sentences describing what has continued to develop since their last visit. Be specific about the current market regime (${input.currentRegime}) and pressure level (${input.currentPressureScore.toFixed(1)}/10). Reference the topics they were discussing: ${topics}${symbols ? `. Symbols they were watching: ${symbols}` : ""}${lastUserMsg ? `. Their last question was: "${lastUserMsg.content.slice(0, 150)}"` : ""}. Start with "Since we last spoke..."`;
 
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "You are ASHA. Write a 2-sentence update on what has developed since the user's last visit. Be specific and institutional." },
+            { role: "system", content: "You are PLATO. Write a 2-sentence update on what has developed since the user's last visit. Be specific and institutional." },
             { role: "user", content: prompt },
           ],
         });

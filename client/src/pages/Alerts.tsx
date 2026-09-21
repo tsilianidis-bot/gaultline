@@ -302,7 +302,7 @@ function ThresholdCard({ rule, indicators }: { rule: typeof THRESHOLD_RULES[0]; 
 // ── Main Alerts page ──────────────────────────────────────────
 function AlertsInner() {
   useSEO(PAGE_SEO.alerts);
-  const { output, indicators, isLive } = useEngine();
+  const { output, indicators, integrityLabel } = useEngine();
   const { overall, domains, regime, alertPressure } = output;
   const [archiveSeverity, setArchiveSeverity] = useState<"all" | ArchivedEvent["severity"]>("all");
   const [archiveDirection, setArchiveDirection] = useState<"all" | ArchivedEvent["direction"]>("all");
@@ -322,8 +322,8 @@ function AlertsInner() {
     eventType: archiveType === "all" ? undefined : archiveType,
   });
   const archiveEvents = (archiveQuery.data?.events ?? []) as ArchivedEvent[];
-  const archiveSources = useMemo(() => [...new Set(archiveEvents.map(event => event.sourceEngine))].sort(), [archiveEvents]);
-  const archiveTypes = useMemo(() => [...new Set(archiveEvents.map(event => event.eventType))].sort(), [archiveEvents]);
+  const archiveSources = useMemo(() => Array.from(new Set(archiveEvents.map(event => event.sourceEngine))).sort(), [archiveEvents]);
+  const archiveTypes = useMemo(() => Array.from(new Set(archiveEvents.map(event => event.eventType))).sort(), [archiveEvents]);
   const filteredArchiveEvents = archiveEvents.filter(event =>
     (!archiveSearch.trim() || `${event.headline} ${event.explanation} ${event.eventType} ${event.sourceEngine}`.toLowerCase().includes(archiveSearch.trim().toLowerCase()))
   );
@@ -423,8 +423,8 @@ function AlertsInner() {
       <PageHeader
         title="Alert Monitor"
         subtitle="Regime shift alerts fire automatically when macro stress thresholds are crossed. Unread alerts are highlighted in real time."
-        badge={isLive ? 'LIVE' : 'SIMULATED'}
-        badgeColor={isLive ? 'green' : 'amber'}
+        badge={integrityLabel}
+        badgeColor={integrityLabel === 'LIVE' ? 'green' : integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={
           unreadCount > 0 ? (
             <div style={{

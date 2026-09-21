@@ -33,7 +33,7 @@ export default function AshaDailyGreeting() {
 
   useEffect(() => {
     if (dismissed || fetched || isLoading || !canonicalState || !user) return;
-    const score = canonicalState.pressureIndex / 10;
+    const score = (canonicalState.pressureIndex ?? 0) / 10;
     if (score === undefined || isNaN(score)) return;
 
     setFetched(true);
@@ -41,9 +41,9 @@ export default function AshaDailyGreeting() {
       userName: user?.name ?? undefined,
       engineContext: {
         pressureScore: score * 10,
-        regime: canonicalState.regime,
+        regime: canonicalState.regime ?? "Unavailable",
         regimeConfidence: 0.75,
-        narrative: `Canonical state ${canonicalState.stateId} · ${canonicalState.quality}`,
+        narrative: `Current evidence quality: ${canonicalState.confidenceOrEvidenceQuality === "HEALTHY" ? "healthy" : canonicalState.confidenceOrEvidenceQuality === "DEGRADED" ? "limited" : canonicalState.confidenceOrEvidenceQuality === "PARTIAL" ? "partial" : "unavailable"}`,
         trend: output.regime?.sublabel ?? "",
         keyDrivers: output.narrative?.keyRisks ?? [],
       },
@@ -123,7 +123,7 @@ export default function AshaDailyGreeting() {
             textTransform: "uppercase",
             fontWeight: 700,
           }}>
-            ASHA · DAILY BRIEFING
+            PLATO · DAILY BRIEFING
           </span>
           {/* Pressure status pill */}
           <span style={{

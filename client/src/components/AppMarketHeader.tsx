@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useMemo } from "react";
+import { hideBlankTickerDuplicates } from "@shared/customerIntegrityLabels";
 
 export type MarketTickerDirection = "up" | "down" | "flat";
 
@@ -39,6 +40,7 @@ function directionGlyph(direction: MarketTickerDirection) {
 }
 
 export default function AppMarketHeader({ items, intelligence, isMobile }: AppMarketHeaderProps) {
+  const visibleItems = useMemo(() => hideBlankTickerDuplicates(items), [items]);
   return (
     <>
       <div style={{
@@ -50,7 +52,7 @@ export default function AppMarketHeader({ items, intelligence, isMobile }: AppMa
         alignItems: "center",
       }}>
         <div style={{ display: "flex", gap: 0, animation: "ticker-scroll 55s linear infinite", whiteSpace: "nowrap", willChange: "transform" }}>
-          {[...items, ...items].map((item, index) => {
+          {[...visibleItems, ...visibleItems].map((item, index) => {
             const color = directionColor(item.direction);
             return (
               <span key={`${item.label}-${index}`} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.1em", paddingRight: "48px" }}>

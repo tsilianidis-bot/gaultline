@@ -16,6 +16,9 @@ import { calculateFaultlinePressure, type FaultlinePressureOutput, type RiskVect
 import { invokeLLM } from "./_core/llm";
 import { log } from "./logger";
 import { scanOpportunities, type TradeOpportunity } from "./ownerSimulation";
+import { evaluateDecisionLight } from "./decisionLight";
+import type { DecisionLightOutput } from "../shared/decisionLight";
+import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -259,6 +262,8 @@ export interface TradeSimulationOutput {
   portfolioImpact?: PortfolioImpactOutput;
   explanation: string;
   generatedAt: string;
+  /** Action-specific Decision-Light. GRAY/UNAVAILABLE when evidence is missing or stale. */
+  decisionLight: DecisionLightOutput;
 }
 
 // ── Recommended Moves types ───────────────────────────────────
@@ -609,8 +614,18 @@ function buildThreatBoard(pressure: FaultlinePressureOutput): ThreatBoardItem[] 
   return threats.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 }
 
+function regimeLabel(pressure: FaultlinePressureOutput | { regime?: unknown }): string | null {
+  const regime = (pressure as { regime?: unknown }).regime;
+  if (typeof regime === "string" && regime.trim()) return regime;
+  if (regime && typeof regime === "object" && "label" in regime && typeof (regime as { label?: unknown }).label === "string") {
+    return (regime as { label: string }).label;
+  }
+  return null;
+}
+
 function buildMarketCondition(pressure: FaultlinePressureOutput): MarketConditionSnapshot {
-  const { overallPressure, regime, level, vectors } = pressure;
+  const { overallPressure, level, vectors } = pressure;
+  const regime = regimeLabel(pressure) ?? "Unknown";
 
   const liquidityScore  = getVectorScore(vectors, "liquidity-stress");
   const creditScore     = getVectorScore(vectors, "credit-contagion");
@@ -664,6 +679,7 @@ function computeFavorabilityScore(
   switch (moveType) {
     case "add_risk":
     case "buy_specific_asset":
+    case "deploy_cash":
       rawFavorability = Math.round(
         invertScore(p) * 0.40 +
         invertScore(creditScore) * 0.25 +
@@ -673,6 +689,7 @@ function computeFavorabilityScore(
       break;
 
     case "sell_specific_asset":
+    case "reduce_risk":
       rawFavorability = Math.round(
         p * 0.40 +
         creditScore * 0.30 +
@@ -681,29 +698,12 @@ function computeFavorabilityScore(
       );
       break;
 
-    case "raise_cash": {
+    case "raise_cash":
+    case "hold": {
       const extremeness = Math.abs(p - 50) / 50;
       rawFavorability = Math.round(70 - extremeness * 30);
       break;
     }
-
-    case "reduce_risk":
-      rawFavorability = Math.round(
-        p * 0.35 +
-        creditScore * 0.25 +
-        volatilityScore * 0.20 +
-        breadthScore * 0.20
-      );
-      break;
-
-    case "sell_specific_asset":
-      rawFavorability = Math.round(
-        p * 0.40 +
-        creditScore * 0.30 +
-        liquidityScore * 0.15 +
-        breadthScore * 0.15
-      );
-      break;
 
     case "hedge":
       rawFavorability = Math.round(
@@ -711,15 +711,6 @@ function computeFavorabilityScore(
         p * 0.30 +
         creditScore * 0.20 +
         liquidityScore * 0.10
-      );
-      break;
-
-    case "raise_cash":
-      rawFavorability = Math.round(
-        p * 0.35 +
-        breadthScore * 0.25 +
-        creditScore * 0.25 +
-        liquidityScore * 0.15
       );
       break;
 
@@ -732,24 +723,6 @@ function computeFavorabilityScore(
       );
       break;
     }
-
-    case "add_risk":
-      rawFavorability = Math.round(
-        invertScore(p) * 0.35 +
-        invertScore(creditScore) * 0.30 +
-        invertScore(aiScore) * 0.20 +
-        invertScore(macroScore) * 0.15
-      );
-      break;
-
-    case "reduce_risk":
-      rawFavorability = Math.round(
-        p * 0.30 +
-        aiScore * 0.35 +
-        creditScore * 0.20 +
-        volatilityScore * 0.15
-      );
-      break;
 
     default:
       rawFavorability = 50;
@@ -791,16 +764,19 @@ function computeGreenLights(
   switch (moveType) {
     case "add_risk":
     case "buy_specific_asset":
+    case "deploy_cash":
       if (p < 45) lights.push(`Macro regime supports risk-on positioning${tickerRef}${tfRef}`);
       if (breadthScore < 45) lights.push("Broad market participation — not a narrow-leadership rally");
       if (creditScore < 40) lights.push(`Credit market stability supports equity risk-taking${tickerRef}`);
+      if (aiScore < 55) lights.push("AI/speculation pressure not at extreme levels");
       break;
     case "raise_cash":
-      if (p < 55) lights.push("No acute systemic trigger requiring defensive action");
+      if (p > 50) lights.push("Pressure regime supports cash as a risk-adjusted position");
+      else if (p < 55) lights.push("No acute systemic trigger requiring defensive action");
+      if (liquidityScore > 45) lights.push("Liquidity stress building — cash preserves optionality");
       if (creditScore < 50) lights.push("Credit conditions not signaling forced selling");
       break;
     case "reduce_risk":
-    case "sell_specific_asset":
     case "sell_specific_asset":
       if (p > 55) lights.push(`Elevated pressure (${p}/100) supports reducing exposure${tickerRef}`);
       if (creditScore > 50) lights.push("Credit stress rising — defensive posture historically rewarded");
@@ -811,21 +787,13 @@ function computeGreenLights(
       if (volatilityScore > 45) lights.push("Volatility regime elevated — hedging cost justified by risk");
       if (p > 50) lights.push("Systemic pressure rising — asymmetric hedge payoff favorable");
       break;
-    case "raise_cash":
-      if (p > 50) lights.push("Pressure regime supports cash as a risk-adjusted position");
-      if (liquidityScore > 45) lights.push("Liquidity stress building — cash preserves optionality");
-      break;
     case "rotate":
       if (breadthScore > 40 && breadthScore < 70) lights.push("Sector divergence creating rotation opportunities");
       if (p < 65) lights.push("Systemic risk not at crisis levels — rotation feasible");
       break;
-    case "add_risk":
-      if (p < 40) lights.push(`Low macro pressure supports speculative allocation${tickerRef}`);
-      if (aiScore < 55) lights.push("AI/speculation pressure not at extreme levels");
-      break;
-    case "reduce_risk":
-      if (aiScore > 55) lights.push("AI/speculation pressure elevated — crypto risk premium rising");
-      if (p > 50) lights.push("Macro pressure rising — speculative assets historically underperform");
+    case "hold":
+      if (p < 55) lights.push("No acute systemic trigger requiring a forced exit");
+      if (creditScore < 50) lights.push("Credit conditions not signaling forced selling");
       break;
   }
 
@@ -860,17 +828,19 @@ function computeRedFlags(
   switch (moveType) {
     case "add_risk":
     case "buy_specific_asset":
+    case "deploy_cash":
       if (p >= 55) flags.push(`Macro regime does not support aggressive risk-on positioning${tickerRef}`);
       if (creditScore >= 50) flags.push(`Credit stress present — leveraged and growth names at risk${tickerRef}`);
       if (breadthScore >= 55) flags.push("Breadth narrowing — rally concentrated in fewer names");
       if (aiScore >= 65) flags.push("AI/mega-cap concentration extreme — index-level risk elevated");
+      if (macroScore >= 55) flags.push("Restrictive macro environment — speculative assets face headwinds");
       break;
     case "raise_cash":
       if (p >= 65) flags.push("Elevated pressure — holding without a stop plan carries tail risk");
+      else if (p < 35) flags.push("Low pressure environment — cash drag may underperform staying invested");
       if (creditScore >= 60) flags.push("Credit deterioration may accelerate — review position sizing");
       break;
     case "reduce_risk":
-    case "sell_specific_asset":
     case "sell_specific_asset":
       if (p < 35) flags.push(`Low pressure environment — exiting${tickerRef} into strength may be premature`);
       if (breadthScore < 35) flags.push("Broad market healthy — selling may mean missing continuation");
@@ -880,20 +850,13 @@ function computeRedFlags(
       if (p < 35) flags.push("Low pressure environment — hedging cost may not be justified");
       if (volatilityScore < 35) flags.push("Volatility contained — hedge premiums may be expensive relative to risk");
       break;
-    case "raise_cash":
-      if (p < 35) flags.push("Low pressure environment — cash drag may underperform staying invested");
-      break;
     case "rotate":
       if (p >= 70) flags.push("Crisis-level pressure — sector correlations converge, reducing rotation benefit");
       if (volatilityScore >= 65) flags.push("High volatility — rotation timing risk elevated");
       break;
-    case "add_risk":
-      if (p >= 55) flags.push(`Elevated macro pressure — crypto historically amplifies drawdowns${tickerRef}`);
-      if (aiScore >= 65) flags.push("AI/speculation pressure extreme — crypto risk premium at cycle highs");
-      if (macroScore >= 55) flags.push("Restrictive macro environment — speculative assets face headwinds");
-      break;
-    case "reduce_risk":
-      if (p < 35) flags.push("Low pressure environment — reducing crypto may miss upside");
+    case "hold":
+      if (p >= 65) flags.push("Elevated pressure — holding without a stop plan carries tail risk");
+      if (creditScore >= 60) flags.push("Credit deterioration may accelerate — review position sizing");
       break;
   }
 
@@ -927,24 +890,22 @@ function computeInvalidationTriggers(
   switch (moveType) {
     case "add_risk":
     case "buy_specific_asset":
+    case "deploy_cash":
       triggers.push(`Earnings guidance cuts in key sectors — fundamental deterioration${tickerRef}`);
       triggers.push("Fed hawkish surprise — rate path repricing");
       break;
     case "sell_specific_asset":
-      triggers.push(`${ticker ? ticker.toUpperCase() + " reports strong earnings" : "Ticker reports strong earnings"} — fundamental reversal invalidates exit thesis`);
-      triggers.push("Unexpected positive macro data — pressure reversal reduces exit urgency");
-      break;
-    case "sell_specific_asset":
     case "reduce_risk":
-      triggers.push("Unexpected positive macro data — pressure reversal");
+      triggers.push(`${ticker ? ticker.toUpperCase() + " reports strong earnings" : "Unexpected positive earnings"} — fundamental reversal invalidates the exit thesis`);
+      triggers.push("Unexpected positive macro data — pressure reversal reduces exit urgency");
       triggers.push("Fed pivot signal — liquidity conditions improving");
       break;
     case "hedge":
       triggers.push("Volatility compression — VIX drops below 15, hedge cost increases");
       break;
-    case "add_risk":
-      triggers.push(`Regulatory action or exchange failure — crypto-specific systemic risk${tickerRef}`);
-      triggers.push("Bitcoin dominance breakdown — altcoin contagion risk");
+    case "raise_cash":
+    case "hold":
+      triggers.push("Credit spreads compressing while breadth expands — defensive cash thesis weakens");
       break;
     case "rotate":
       triggers.push("Sector correlation spike — all sectors moving together (crisis mode)");
@@ -974,26 +935,24 @@ function computeWatchNext(
   switch (moveType) {
     case "add_risk":
     case "buy_specific_asset":
+    case "deploy_cash":
       watches.push(`S&P 500 advance/decline line — breadth confirmation${tickerRef}`);
       watches.push("Fed Funds futures — rate path expectations");
       break;
     case "sell_specific_asset":
+    case "reduce_risk":
       watches.push(`${ticker ? ticker.toUpperCase() + " earnings calendar" : "Ticker earnings calendar"} — catalyst risk before exit`);
       watches.push("Relative strength vs sector peers — confirm underperformance thesis");
-      break;
-    case "sell_specific_asset":
-    case "reduce_risk":
       watches.push("SOFR rate — short-term funding stress");
-      watches.push("Investment grade vs HY spread differential");
       break;
     case "hedge":
       watches.push("SKEW index — tail risk pricing in options market");
       watches.push("Put/call ratio — sentiment and positioning extremes");
       break;
-    case "add_risk":
-    case "reduce_risk":
-      watches.push(`Bitcoin dominance — crypto risk appetite indicator${tickerRef}`);
-      watches.push("Stablecoin market cap — on-chain liquidity signal");
+    case "raise_cash":
+    case "hold":
+      watches.push("Unemployment rate (UNRATE) — labor market health");
+      watches.push("CPI YoY — inflation trajectory and Fed response");
       break;
     case "rotate":
       watches.push("Sector relative strength — XLF, XLK, XLE, XLV rotations");
@@ -1025,15 +984,13 @@ function computeActionBias(
     switch (moveType) {
       case "add_risk": return `Conditions support selective risk-on positioning${tfRef}. Prioritize quality names with strong balance sheets and regime alignment.`;
       case "buy_specific_asset": return `Macro regime is constructive for${tickerRef}${tfRef}. Confirm ticker-level technicals align with regime before entry.`;
+      case "deploy_cash": return `Conditions support deploying cash${tickerRef}${tfRef}. Size to quality names with regime alignment.`;
       case "sell_specific_asset": return `Conditions support exiting${tickerRef}${tfRef}. Elevated pressure and credit stress historically reward disciplined exits in specific names.`;
-      case "raise_cash": return `Current regime supports holding${tickerRef}${tfRef}. No systemic trigger requiring defensive action.`;
-      case "reduce_risk": return `Regime supports reducing${tickerRef} at current levels${tfRef}. Consider staged trimming to preserve optionality.`;
-      case "sell_specific_asset": return `Defensive posture is well-supported by current pressure readings. Systematic exit of${tickerRef}${tfRef} over 2–3 sessions reduces slippage risk.`;
-      case "hedge": return `Hedging conditions are favorable${tfRef}. Tail protection is cost-effective relative to current volatility regime.`;
       case "raise_cash": return `Raising cash is well-aligned with current regime${tfRef}. Cash preserves optionality for re-entry at better risk-adjusted levels.`;
+      case "reduce_risk": return `Regime supports reducing${tickerRef} at current levels${tfRef}. Consider staged trimming to preserve optionality.`;
+      case "hedge": return `Hedging conditions are favorable${tfRef}. Tail protection is cost-effective relative to current volatility regime.`;
       case "rotate": return `Sector rotation conditions are favorable${tfRef}. Defensive and quality sectors are outperforming in this regime.`;
-      case "add_risk": return `Macro conditions support speculative allocation${tickerRef}${tfRef}. Size appropriately given crypto's volatility amplification.`;
-      case "reduce_risk": return `Reducing${tickerRef} is well-supported${tfRef}. Macro headwinds historically compress speculative asset premiums.`;
+      case "hold": return `Current regime supports holding${tickerRef}${tfRef}. No systemic trigger requiring defensive action.`;
     }
   }
 
@@ -1041,30 +998,26 @@ function computeActionBias(
     switch (moveType) {
       case "add_risk": return `Mixed regime — selective exposure only${tfRef}. Avoid overextended names and concentrate in quality with defensive characteristics.`;
       case "buy_specific_asset": return `${ticker ? ticker.toUpperCase() + "-specific" : "Ticker-specific"} opportunity may exist, but macro regime is mixed${tfRef}. Staged entry with defined stop-loss recommended.`;
+      case "deploy_cash": return `Mixed regime — deploy cash selectively${tfRef}. Staged deployment with defined invalidation is required.`;
       case "sell_specific_asset": return `Mixed signals${tickerRef}${tfRef}. Consider partial exit rather than full position close. Monitor for regime confirmation before completing the exit.`;
-      case "raise_cash": return `Hold with active monitoring${tfRef}. Regime is transitional — review stop levels and position sizing.`;
-      case "reduce_risk": return `Partial trim is reasonable given current conditions${tfRef}. Maintain core position but reduce tail risk exposure.`;
-      case "sell_specific_asset": return `Selling into mixed conditions carries opportunity cost risk${tfRef}. Consider staged reduction rather than full exit.`;
-      case "hedge": return `Partial hedge is warranted${tfRef}. Full hedge may be premature — monitor for regime confirmation.`;
       case "raise_cash": return `Modest cash raise is prudent${tfRef}. Avoid full de-risking — regime does not yet confirm systemic deterioration.`;
+      case "reduce_risk": return `Partial trim is reasonable given current conditions${tfRef}. Maintain core position but reduce tail risk exposure.`;
+      case "hedge": return `Partial hedge is warranted${tfRef}. Full hedge may be premature — monitor for regime confirmation.`;
       case "rotate": return `Rotation is feasible but timing is uncertain${tfRef}. Focus on relative strength within sectors rather than wholesale rotation.`;
-      case "add_risk": return `${ticker ? ticker.toUpperCase() + " allocation" : "Crypto allocation"} increase carries elevated risk in current regime${tfRef}. Small position sizing recommended.`;
-      case "reduce_risk": return `Partial${tickerRef} reduction is reasonable${tfRef}. Full exit may be premature if macro conditions stabilize.`;
+      case "hold": return `Hold with active monitoring${tfRef}. Regime is transitional — review stop levels and position sizing.`;
     }
   }
 
   switch (moveType) {
     case "add_risk": return `Current regime is not supportive of adding risk${tfRef}. Wait for pressure to normalize before increasing exposure.`;
     case "buy_specific_asset": return `Macro headwinds are significant${tfRef}. ${ticker ? ticker.toUpperCase() + " thesis" : "Ticker-specific thesis"} must be very strong to overcome regime pressure.`;
+    case "deploy_cash": return `Macro regime does not support deploying cash${tickerRef}${tfRef}. Wait for pressure to normalize.`;
     case "sell_specific_asset": return `Low-pressure regime reduces urgency to exit${tickerRef}${tfRef}. Confirm fundamental deterioration before completing the exit — opportunity cost of early exit is elevated.`;
-    case "raise_cash": return `Holding${tickerRef} in this regime requires active risk management${tfRef}. Review stop-loss levels and consider partial reduction.`;
-    case "reduce_risk": return `Trimming${tickerRef} in a low-pressure environment may be premature${tfRef}. Ensure thesis has changed before reducing.`;
-    case "sell_specific_asset": return `Selling${tickerRef} into low-pressure conditions carries high opportunity cost${tfRef}. Confirm fundamental deterioration before exiting.`;
-    case "hedge": return `Hedging in low-volatility conditions is expensive${tfRef}. Consider lighter hedge or wait for better entry.`;
     case "raise_cash": return `Cash drag is significant in low-pressure environments${tfRef}. Maintain invested posture unless specific risk identified.`;
+    case "reduce_risk": return `Trimming${tickerRef} in a low-pressure environment may be premature${tfRef}. Ensure thesis has changed before reducing.`;
+    case "hedge": return `Hedging in low-volatility conditions is expensive${tfRef}. Consider lighter hedge or wait for better entry.`;
     case "rotate": return `Low-pressure regime favors staying in current sector leaders${tfRef}. Rotation may underperform in this environment.`;
-    case "add_risk": return `Macro regime does not support${tickerRef} increase${tfRef}. Wait for pressure to normalize.`;
-    case "reduce_risk": return `Reducing${tickerRef} in a supportive macro environment may miss upside${tfRef}. Ensure conviction is high before reducing.`;
+    case "hold": return `Holding${tickerRef} in this regime requires active risk management${tfRef}. Review stop-loss levels and consider partial reduction.`;
   }
 
   return `Monitor conditions before acting${tfRef}. Current regime is transitional.`;
@@ -1086,33 +1039,27 @@ function computeBestVersion(
     case "buy_specific_asset":
       if (favorability >= 60) return "Full position entry is supportable. Confirm technical setup (above key moving averages, volume confirmation). Set stop-loss at 7–10% below entry.";
       return "Starter position only (25–33% of target size). Wait for price confirmation before adding. Define invalidation level before entry.";
+    case "deploy_cash":
+      if (favorability >= 60) return "Deploy cash in stages into quality names aligned with the current regime. Keep a residual cash buffer.";
+      return "Deploy only a starter sleeve. Keep the majority of cash until confirmation arrives.";
     case "sell_specific_asset":
       if (favorability >= 60) return "Full position exit is supportable. Sell systematically over 2–3 sessions to minimize market impact. Confirm no upcoming earnings or catalysts before exiting.";
       return "Partial exit only (25–50% of position). Retain core exposure until regime confirms the exit thesis. Set a price or pressure trigger for completing the exit.";
     case "raise_cash":
-      if (p < 50) return "Hold with standard position sizing. Review stop-loss levels quarterly. No action required unless thesis changes.";
-      return "Hold with tighter stops. Reduce position size if risk tolerance is exceeded. Set clear exit criteria before conditions deteriorate further.";
+      if (favorability >= 60) return "Move 15–25% of portfolio to cash or short-term Treasuries. Maintain dry powder for re-entry at better risk-adjusted levels.";
+      return "Modest cash raise of 5–10%. Avoid full de-risking — maintain core positions in quality names.";
     case "reduce_risk":
       if (favorability >= 60) return "Trim 20–30% of position at current levels. Retain core exposure for potential continuation. Re-evaluate in 2–4 weeks.";
       return "Trim 10–15% as a precautionary measure. Avoid full exit unless fundamental thesis has broken down.";
-    case "sell_specific_asset":
-      if (favorability >= 60) return "Systematic exit over 2–3 sessions to minimize market impact. Prioritize highest-risk, most-leveraged positions first.";
-      return "Partial exit only. Sell the most vulnerable positions (high beta, leveraged, speculative) while retaining quality core holdings.";
     case "hedge":
       if (favorability >= 60) return "Buy put spreads on index (SPY/QQQ) for 30–60 day protection. Size hedge to cover 50–75% of equity exposure. Avoid over-hedging.";
       return "Light tail hedge only — 1–2% of portfolio in protective puts. Focus on cheap out-of-the-money options for asymmetric payoff.";
-    case "raise_cash":
-      if (favorability >= 60) return "Move 15–25% of portfolio to cash or short-term Treasuries. Maintain dry powder for re-entry at better risk-adjusted levels.";
-      return "Modest cash raise of 5–10%. Avoid full de-risking — maintain core positions in quality names.";
     case "rotate":
       if (favorability >= 60) return "Rotate from high-beta cyclicals (tech, consumer discretionary) into defensive sectors (utilities, healthcare, consumer staples). Maintain sector diversification.";
       return "Modest tilt toward quality and defensives. Avoid wholesale rotation — maintain exposure to current sector leaders.";
-    case "add_risk":
-      if (favorability >= 60) return "Add to Bitcoin and Ethereum as core crypto positions. Limit speculative altcoin exposure to 10–15% of crypto allocation. Use dollar-cost averaging over 2–4 weeks.";
-      return "Starter position only — 1–2% of total portfolio. Bitcoin only for regime-aligned crypto exposure. No altcoin allocation in current conditions.";
-    case "reduce_risk":
-      if (favorability >= 60) return "Reduce crypto allocation by 30–50%. Prioritize exiting speculative altcoins and maintaining only Bitcoin/Ethereum core positions.";
-      return "Trim 15–20% of crypto exposure. Focus on reducing highest-risk altcoin positions while maintaining core Bitcoin/Ethereum allocation.";
+    case "hold":
+      if (p < 50) return "Hold with standard position sizing. Review stop-loss levels quarterly. No action required unless thesis changes.";
+      return "Hold with tighter stops. Reduce position size if risk tolerance is exceeded. Set clear exit criteria before conditions deteriorate further.";
   }
 
   return "Proceed with caution and reduced position sizing relative to your normal approach.";
@@ -1132,6 +1079,7 @@ function computeAvoidAreas(
   switch (moveType) {
     case "add_risk":
     case "buy_specific_asset":
+    case "deploy_cash":
       avoids.push("Highly leveraged companies with debt-to-equity above 3x");
       avoids.push("Unprofitable growth names trading at extreme revenue multiples");
       if (aiScore >= 55) avoids.push("Overextended AI/mega-cap names at all-time highs with stretched valuations");
@@ -1142,12 +1090,7 @@ function computeAvoidAreas(
     case "sell_specific_asset":
       avoids.push("Panic selling of quality positions with intact fundamentals");
       avoids.push("Selling into extreme volatility spikes — wait for stabilization");
-      avoids.push("Exiting positions with upcoming catalysts that could reverse the move");
-      break;
-    case "sell_specific_asset":
       avoids.push("Exiting without confirming the fundamental thesis has changed — not just price action");
-      avoids.push("Selling into extreme volatility spikes — wait for stabilization before executing");
-      avoids.push("Full position exit before checking upcoming earnings, dividends, or catalyst dates");
       if (p < 40) avoids.push("Forced exit in low-pressure regime — opportunity cost of early exit is high");
       break;
     case "hedge":
@@ -1164,14 +1107,9 @@ function computeAvoidAreas(
       avoids.push("Chasing recent sector momentum without regime alignment");
       if (p >= 60) avoids.push("Sector rotation during crisis-level pressure — correlations converge");
       break;
-    case "add_risk":
-      avoids.push("Speculative altcoins with no fundamental use case or liquidity");
-      avoids.push("Leveraged crypto positions — volatility amplification is extreme");
-      avoids.push("Exchanges or protocols with unaudited smart contracts");
-      break;
-    case "reduce_risk":
-      avoids.push("Selling at extreme lows during capitulation — wait for stabilization");
-      avoids.push("Exiting Bitcoin/Ethereum core positions unless macro thesis has fundamentally changed");
+    case "hold":
+      avoids.push("Holding without a stop plan while pressure is rising");
+      avoids.push("Treating a hold as a forecast rather than a bounded posture");
       break;
     default:
       avoids.push("Acting on short-term noise rather than regime-level signals");
@@ -1309,7 +1247,7 @@ function computeEntryQuality(
   const volatilityScore = getVectorScore(pressure.vectors, "volatility-regime");
   const breadthScore    = getVectorScore(pressure.vectors, "market-breadth");
   const macroScore      = getVectorScore(pressure.vectors, "macro-sensitivity");
-  const isRiskOn = ["add_risk", "buy_specific_asset", "add_risk"].includes(moveType);
+  const isRiskOn = ["add_risk", "buy_specific_asset", "deploy_cash"].includes(moveType);
 
   // Market Environment: how well does the macro regime support this move?
   const envScore = isRiskOn ? invertScore(p) : p;
@@ -2708,12 +2646,39 @@ function computePortfolioImpact(
 
 // ── Main Entry Point ──────────────────────────────────────────
 
+export interface TradePreflightCanonicalBinding {
+  stateId: string | null;
+  qualityStatus?: string | null;
+  coherenceStatus?: string | null;
+}
+
+async function resolveCanonicalBinding(
+  provided?: TradePreflightCanonicalBinding | null,
+  skipLookup = false,
+): Promise<TradePreflightCanonicalBinding | null> {
+  if (provided !== undefined) return provided;
+  if (skipLookup) return null;
+  try {
+    const state = await getAuthoritativeCanonicalIntelligenceState();
+    if (!state) return null;
+    return {
+      stateId: state.stateId,
+      qualityStatus: state.confidenceOrEvidenceQuality,
+      coherenceStatus: state.provenance.coherenceStatus,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Exported for testing: accepts an optional pre-computed pressure object
 export async function runTradePreflightSimulation(
   input: TradeSimulationInput,
-  _pressureOverride?: any
+  _pressureOverride?: any,
+  canonicalBinding?: TradePreflightCanonicalBinding | null,
 ): Promise<TradeSimulationOutput> {
   const pressure = _pressureOverride ?? await calculateFaultlinePressure();
+  const canonical = await resolveCanonicalBinding(canonicalBinding, Boolean(_pressureOverride));
 
   const marketCondition = buildMarketCondition(pressure);
   const { favorability, favorable, adverse } = computeFavorabilityScore(
@@ -2781,6 +2746,30 @@ export async function runTradePreflightSimulation(
 
   const recommendedVehicles = computeRecommendedVehicles(input, oppByTickerMap, pressure);
   const portfolioImpact = computePortfolioImpact(input, favorability, pressure);
+  const generatedAt = new Date().toISOString();
+  const decisionLight = evaluateDecisionLight({
+    moveType: input.moveType,
+    proposedAction: input.ticker
+      ? `${MOVE_LABELS[input.moveType]} ${input.ticker.toUpperCase()}`
+      : MOVE_LABELS[input.moveType],
+    favorability,
+    pressureIndex: typeof pressure.overallPressure === "number" ? pressure.overallPressure : null,
+    regime: regimeLabel(pressure),
+    dataSource: _pressureOverride && !pressure.dataSource ? "live" : pressure.dataSource,
+    creditScore: getVectorScore(pressure.vectors ?? [], "credit-contagion"),
+    liquidityScore: getVectorScore(pressure.vectors ?? [], "liquidity-stress"),
+    greenLights,
+    confirmationTriggers: watchNext,
+    invalidationTriggers,
+    bullContinuationProbability: marketCondition.bullProbability,
+    crashDrawdownProbability: marketCondition.crashProbability,
+    timestamp: generatedAt,
+    canonicalStateId: canonical?.stateId ?? null,
+    evidenceQuality: canonical?.qualityStatus ?? (pressure.dataSource === "fallback" ? "UNAVAILABLE" : "HEALTHY"),
+    coherenceStatus: canonical?.coherenceStatus ?? null,
+    requiredSourcesUnavailable: pressure.dataSource === "fallback" && !canonical?.stateId,
+    freshnessStale: canonical?.qualityStatus === "UNAVAILABLE" || /STALE/i.test(String(canonical?.qualityStatus ?? "")),
+  });
 
   const partial: Omit<TradeSimulationOutput, "explanation"> = {
     marketStatus: marketCondition.marketStatus,
@@ -2814,7 +2803,8 @@ export async function runTradePreflightSimulation(
     hotSectorPicks,
     recommendedVehicles,
     portfolioImpact,
-    generatedAt: new Date().toISOString(),
+    generatedAt,
+    decisionLight,
   };
 
   const explanation = await generateExplanation(input, partial, pressure);

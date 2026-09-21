@@ -160,7 +160,7 @@ export function evaluateImportanceQualification(contexts: CandidateScoringContex
   records.filter(item => item.qualificationStatus === "QUALIFIED").sort(compareImportance).forEach(item => {
     if (!bestPerFamily.has(item.relationshipFamily)) bestPerFamily.set(item.relationshipFamily, item);
   });
-  const qualified = [...bestPerFamily.values()].sort(compareImportance);
+  const qualified = Array.from(bestPerFamily.values()).sort(compareImportance);
   const selected = qualified.slice(0, 1 + IMPORTANCE_SCORING_CONFIG.thresholds.maximumSecondaryQualifiedCandidates).map((item, index) => ({ ...item, rank: index + 1, isPrimary: index === 0 }));
   const selectedById = new Map(selected.map(item => [item.qualificationId, item]));
   const scoredCandidates = records.map(item => selectedById.get(item.qualificationId) ?? item);

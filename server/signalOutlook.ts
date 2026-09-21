@@ -29,7 +29,8 @@ import { getDailyBars as getYahooDailyBars, getQuote } from "./yahooProxy";
 import { getCoinMarketData, getCoinOHLC } from "./coingeckoProxy";
 import { computeCalculatedLevels, type CalculatedLevels } from "./priceLevels";
 import { getCachedVerifiedSocialSnapshot } from "./socialIntelligence";
-import { scoreRisingStar, type RisingStarResult } from "./risingStars";
+import { scoreRisingStar, type ConfidenceBand, type RisingStarResult } from "./risingStars";
+import { fetchDailyBars } from "./signalsProxy";
 import { MAGNIFICENT_SEVEN, classifyListingAge, classifyMarketCap, deriveFaultlineThemes, deriveSector, getPublicCompanyProfile, marketCapLabel, type ListingAgeCategory, type MarketCapCategory } from "./risingStarsDiscovery";
 import { recordRisingStarObservation } from "./risingStarsHistory";
 
@@ -2413,9 +2414,7 @@ async function buildRisingStars(pressure: FaultlinePressureOutput): Promise<Risi
   }));
 
   return attempts
-    .filter((attempt): attempt is PromiseFulfilledResult<RisingStarItem | null> => attempt.status === "fulfilled")
-    .map(attempt => attempt.value)
-    .filter((item): item is RisingStarItem => item !== null)
+    .flatMap(attempt => attempt.status === "fulfilled" && attempt.value ? [attempt.value] : [])
     .sort((a, b) => b.risingStarScore - a.risingStarScore);
 }
 

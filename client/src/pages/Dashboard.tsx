@@ -531,7 +531,7 @@ function DashboardAwarenessSection() {
 
 export default function Dashboard() {
   useSEO(PAGE_SEO.home);
-  const { output, rawFred, indicators, isLoading, isLive, lastUpdated, isSimulating } = useEngine();
+  const { output, rawFred, indicators, isLoading, isLive, integrityLabel, lastUpdated, isSimulating } = useEngine();
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -617,7 +617,7 @@ export default function Dashboard() {
         { label: 'TOP THREAT', value: topThreat?.label?.split(' ')[0] ?? '—', color: '#FF2D55' },
         { label: 'ANALOG', value: analogs[0]?.era?.split(' ').slice(0, 2).join(' ') ?? '—', color: '#00E5FF' },
         { label: 'DELTA', value: `${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)}`, color },
-        { label: 'STATUS', value: isLive ? 'LIVE FEED' : 'SIMULATED', color: isLive ? '#00FF88' : '#FF9500' },
+        { label: 'STATUS', value: integrityLabel === 'LIVE' ? 'LIVE FEED' : integrityLabel, color: integrityLabel === 'LIVE' ? '#00FF88' : integrityLabel === 'UNAVAILABLE' ? '#94A3B8' : '#FF9500' },
       ]} />
 
       {/* Onboarding */}
@@ -682,7 +682,7 @@ export default function Dashboard() {
               <AshaOrb regimeState={ashaRegimeState} size={56} isListening={heroInputFocused} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.25em', color: 'rgba(0,229,255,0.55)', marginBottom: '3px' }}>ASHA · FAULTLINE INTELLIGENCE LAYER</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.25em', color: 'rgba(0,229,255,0.55)', marginBottom: '3px' }}>PLATO · FAULTLINE INTELLIGENCE LAYER</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: 'clamp(28px, 7vw, 40px)', lineHeight: 1, color, textShadow: `0 0 30px ${color}70`, letterSpacing: '-0.01em' }}>
                 {overall.score.toFixed(1)}<span style={{ fontSize: '0.45em', color: 'rgba(255,255,255,0.3)', fontWeight: 400 }}>/10</span>
               </div>
@@ -713,7 +713,7 @@ export default function Dashboard() {
                     window.location.href = `/app/discover?q=${encodeURIComponent(heroInputValue.trim())}`;
                   }
                 }}
-                placeholder="Ask ASHA..."
+                placeholder="Ask PLATO..."
                 style={{
                   flex: 1, background: 'transparent', border: 'none', outline: 'none',
                   fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px',
@@ -797,7 +797,7 @@ export default function Dashboard() {
             lineHeight: 1.65,
             margin: 0,
           }}>
-            <span style={{ color, fontWeight: 600 }}>ASHA:</span>{' '}
+            <span style={{ color, fontWeight: 600 }}>PLATO:</span>{' '}
             {overall.riskLevel === 'low'
               ? `Systemic pressure is low at ${overall.score.toFixed(1)}/10 — conditions favor risk-taking with bull probability at ${probability.bullProbability}%. The closest historical analog is ${analogs[0]?.era ?? 'a low-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
               : overall.riskLevel === 'moderate'
@@ -976,10 +976,10 @@ export default function Dashboard() {
             {/* ── 1. ASHA Intelligence First — Greeting + Market Brief above the fold ── */}
       <div style={{ padding: '14px 16px 0', maxWidth: '800px', margin: '0 auto' }}>
         {/* ASHA Daily Greeting — first thing the user sees on every session */}
-        <SectionErrorBoundary label="ASHA Greeting"><AshaDailyGreeting /></SectionErrorBoundary>
+        <SectionErrorBoundary label="PLATO Greeting"><AshaDailyGreeting /></SectionErrorBoundary>
         {/* ASHA Market Brief — 30-60 second synthesis from all 10 engines */}
         <div style={{ marginBottom: '16px', animation: 'cinematic-reveal 0.5s cubic-bezier(0.23,1,0.32,1) 80ms both' }}>
-          <SectionErrorBoundary label="ASHA Intelligence"><AshaIntelligenceBrief variant="market-brief" /></SectionErrorBoundary>
+          <SectionErrorBoundary label="PLATO Intelligence"><AshaIntelligenceBrief variant="market-brief" /></SectionErrorBoundary>
         </div>
         {/* Inline upgrade prompt (free/core tier only) */}
         <DashboardUpgradePrompt />
@@ -1295,12 +1295,12 @@ export default function Dashboard() {
         <div style={{ marginBottom: '10px', animation: 'cinematic-reveal 0.7s cubic-bezier(0.23,1,0.32,1) 460ms both' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.15em' }}>Market Stress Indicators</span>
-            {isLive && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.15)', borderRadius: '2px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 6px', background: integrityLabel === 'LIVE' ? 'rgba(0,255,136,0.06)' : 'rgba(255,149,0,0.06)', border: `1px solid ${integrityLabel === 'LIVE' ? 'rgba(0,255,136,0.15)' : 'rgba(255,149,0,0.15)'}`, borderRadius: '2px' }}>
+              {integrityLabel === 'LIVE' && (
                 <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#00FF88', animation: 'pulse-gold 2s ease-in-out infinite' }} />
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#00FF88', letterSpacing: '0.1em' }}>FRED LIVE</span>
-              </div>
-            )}
+              )}
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: integrityLabel === 'LIVE' ? '#00FF88' : '#FF9500', letterSpacing: '0.1em' }}>FRED {integrityLabel}</span>
+            </div>
           </div>
           {/* What Changed — Market Stress */}
           {indicators.hySpread > 400 && (

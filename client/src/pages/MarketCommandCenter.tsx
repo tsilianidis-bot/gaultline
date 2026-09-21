@@ -296,7 +296,7 @@ function TodaysStoryPanel({ regime, domains, probability, analogs }: {
 // ── Main page ─────────────────────────────────────────────────
 function MarketCommandCenterInner() {
   const [, navigate] = useLocation();
-  const { output, isLoading, isLive, lastUpdated, forceRefresh, isRefreshing } = useEngine();
+  const { output, isLoading, integrityLabel, lastUpdated, forceRefresh, isRefreshing } = useEngine();
   const { overall, domains, regime, probability, analogs, narrative } = output;
   const { user } = useAuth();
 
@@ -498,8 +498,8 @@ function MarketCommandCenterInner() {
         {/* Right: Status + Refresh */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: isLive ? "#00FF88" : "#FF9500", boxShadow: isLive ? "0 0 8px #00FF88" : "0 0 8px #FF9500" }} />
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em" }}>{isLive ? "LIVE" : "CACHED"} · {updatedAgo}</span>
+            <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: integrityLabel === "LIVE" ? "#00FF88" : "#FF9500", boxShadow: integrityLabel === "LIVE" ? "0 0 8px #00FF88" : "0 0 8px #FF9500" }} />
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "rgba(100,116,139,0.6)", letterSpacing: "0.12em" }}>{integrityLabel} · {updatedAgo}</span>
           </div>
           <button
             onClick={() => forceRefresh()}

@@ -39,16 +39,23 @@ export async function getSignalVisualDetailPayload(symbol: string) {
     ? bars.slice(-20).reduce((sum, bar) => sum + bar.volume, 0) / 20
     : null;
 
-  const quoteFieldsAvailable = Boolean(
-    quote &&
+  const quotePrice = quote?.price;
+  const quoteOpen = quote?.open;
+  const quoteHigh = quote?.high;
+  const quoteLow = quote?.low;
+  const quoteChangePercent = quote?.changePercent;
+  const quoteVolume = quote?.volume;
+  const observedQuote = quote &&
     quote.source !== "error" &&
-    isObservedNumber(quote.price) &&
-    isObservedNumber(quote.open) &&
-    isObservedNumber(quote.high) &&
-    isObservedNumber(quote.low) &&
-    isObservedNumber(quote.changePercent) &&
-    isObservedNumber(quote.volume)
-  );
+    isObservedNumber(quotePrice) &&
+    isObservedNumber(quoteOpen) &&
+    isObservedNumber(quoteHigh) &&
+    isObservedNumber(quoteLow) &&
+    isObservedNumber(quoteChangePercent) &&
+    isObservedNumber(quoteVolume)
+    ? { price: quotePrice, open: quoteOpen, high: quoteHigh, low: quoteLow, changePercent: quoteChangePercent, volume: quoteVolume }
+    : null;
+  const quoteFieldsAvailable = Boolean(observedQuote);
   const regimeAvailable = Boolean(
     seismograph &&
     typeof seismograph.regime === "string" &&
@@ -64,8 +71,8 @@ export async function getSignalVisualDetailPayload(symbol: string) {
         computedAt: seismograph.computedAt,
       }
     : null;
-  const relativeStrength = quoteFieldsAvailable && quote
-    ? buildRelativeStrength(quote.price, closes)
+  const relativeStrength = observedQuote
+    ? buildRelativeStrength(observedQuote.price, closes)
     : null;
   const sparklineBars = bars.slice(-5);
   const sparklineBase = sparklineBars[0]?.close;
@@ -73,15 +80,15 @@ export async function getSignalVisualDetailPayload(symbol: string) {
     ? sparklineBars.map(bar => Number((((bar.close - sparklineBase) / sparklineBase) * 100).toFixed(4)))
     : [];
 
-  const signal = quoteFieldsAvailable && quote && bars.length >= 15 && regime && relativeStrength !== null && avgVolume !== null
+  const signal = observedQuote && bars.length >= 15 && regime && relativeStrength !== null && avgVolume !== null
     ? computeTradingSignal({
         ticker: symbol,
-        price: quote.price,
-        open: quote.open,
-        high: quote.high,
-        low: quote.low,
-        changePercent: quote.changePercent,
-        volumeMillions: quote.volume / 1_000_000,
+        price: observedQuote.price,
+        open: observedQuote.open,
+        high: observedQuote.high,
+        low: observedQuote.low,
+        changePercent: observedQuote.changePercent,
+        volumeMillions: observedQuote.volume / 1_000_000,
         avgVolume: avgVolume / 1_000_000,
         sparkline,
         relativeStrength,

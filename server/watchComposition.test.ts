@@ -35,6 +35,14 @@ describe("WATCH destination composition", () => {
     }
   });
 
+  it("registers the document.title effect before any conditional return", () => {
+    const effectIdx = watchSource.indexOf('document.title = "WATCH — FAULTLINE"');
+    const loadingReturnIdx = watchSource.indexOf("if (isLoading && !canonicalState) return");
+    expect(effectIdx, "WATCH must set document.title in a useEffect").toBeGreaterThan(-1);
+    expect(loadingReturnIdx, "WATCH loading early-return must exist").toBeGreaterThan(-1);
+    expect(effectIdx, "document.title useEffect must run before conditional returns (Rules of Hooks)").toBeLessThan(loadingReturnIdx);
+  });
+
   it("binds WATCH to the canonical destination and preserves AI Watch as its deep view", () => {
     expect(appSource).toContain('import Watch from "./pages/Watch"');
     expect(appSource).toContain('const WATCH_DEEP_PATH = "/app/watch/deep"');
@@ -56,7 +64,8 @@ describe("WATCH destination composition", () => {
     expect(watchSource).toContain("marketState?.watch.activePatterns ?? []");
     expect(watchSource).toContain("marketState?.watch.whatToWatch");
     expect(watchSource).toContain("marketState?.why.evidenceFamilies");
-    expect(watchSource).toContain('marketMode === "canonical" && Boolean(marketState)');
+    expect(watchSource).toContain("customerChromeModeLabel(integrityLabel)");
+    expect(watchSource).toContain("customerIntegrityChipLevel(integrityLabel)");
     expect(watchSource).toContain("Canonical refresh is degraded");
     expect(watchSource).toContain("trpc.marketState.canonicalCurrent.useQuery");
     expect(watchSource).not.toContain("aiWatchItems");

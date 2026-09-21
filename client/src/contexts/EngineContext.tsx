@@ -26,6 +26,10 @@ import {
   createCanonicalConsumerEnvelope,
   type CanonicalConsumerEnvelope,
 } from '@shared/canonicalConsumerEnvelope';
+import {
+  customerIntegrityFromEngine,
+  type CustomerIntegrityLabel,
+} from '@shared/customerIntegrityLabels';
 
 export interface EngineContextValue {
   // Reactive engine output
@@ -50,6 +54,8 @@ export interface EngineContextValue {
   // Live data state
   isLoading: boolean;
   isLive: boolean;
+  /** Customer-facing integrity label. LIVE only when FRED and Pressure are truly live. */
+  integrityLabel: CustomerIntegrityLabel;
   isRefreshing: boolean; // cinematic transition flag
   lastUpdated: Date | null;
   dataError: string | null;
@@ -98,7 +104,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
         regime,
         direction: canonicalState.pressureDirection === 'Unknown' ? legacy.now.direction : canonicalState.pressureDirection,
       },
-      warnings: [...new Set([...legacy.warnings, ...canonicalState.warnings])],
+      warnings: Array.from(new Set([...legacy.warnings, ...canonicalState.warnings])),
     };
   }, [canonicalState, legacyProjectionQuery.data]);
   const canonicalEnvelope = useMemo<CanonicalConsumerEnvelope<CanonicalMarketState> | null>(() => {
@@ -166,6 +172,12 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     ? { ...projected.output, canonicalEnvelope }
     : projected.output, [canonicalEnvelope, projected.output]);
   const marketMode = projected.mode;
+  const integrityLabel = customerIntegrityFromEngine({
+    canonicalState,
+    marketState,
+    sourceHealth,
+    marketMode,
+  });
 
   // Simulate Pressure controls
   const setSimulateOverride = useCallback((key: keyof RawIndicators, value: number) => {
@@ -217,6 +229,7 @@ export function EngineProvider({ children }: { children: ReactNode }) {
       failCount,
       isLoading,
       isLive,
+      integrityLabel,
       isRefreshing,
       lastUpdated,
       dataError,

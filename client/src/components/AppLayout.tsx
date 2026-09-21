@@ -24,8 +24,8 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import AshaIntroModal from "@/components/AshaIntroModal";
 import AshaPanel from "@/components/AshaPanel";
-import { BuildBadge } from "@/components/BuildBadge";
 import { formatCanonicalScore } from "@shared/marketMetrics";
+import { customerIntegrityColor, hideBlankTickerDuplicates } from "@shared/customerIntegrityLabels";
 import { DrawerProvider } from "@/contexts/DrawerContext";
 import LeftNavDrawer from "@/components/LeftNavDrawer";
 import RightActionDrawer from "@/components/RightActionDrawer";
@@ -78,7 +78,7 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
   { id: "owner-simulation", label: "Owner Simulation", shortLabel: "Simulation",icon: Trophy,    path: "/owner/simulation" },
   { id: "seo-optimizer",    label: "SEO Optimizer",    shortLabel: "SEO",       icon: Search,    path: "/app/seo-optimizer" },
   { id: "analytics",        label: "Site Analytics",   shortLabel: "Analytics", icon: BarChart2, path: "/app/analytics" },
-  { id: "chat-inbox",       label: "ASHA Intelligence", shortLabel: "ASHA Intel", icon: BrainCircuit, path: "/app/asha-intelligence" },
+  { id: "chat-inbox",       label: "PLATO Intelligence", shortLabel: "PLATO Intel", icon: BrainCircuit, path: "/app/asha-intelligence" },
   { id: "engineering",      label: "Engineering Diagnostics", shortLabel: "Eng. Diag", icon: FlaskConical,  path: "/app/admin/engineering" },
   { id: "conv-intelligence", label: "Conversation Intelligence", shortLabel: "Conv. Intel", icon: BrainCircuit, path: "/app/admin/conversation-intelligence" },
 ];
@@ -106,7 +106,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { output, rawFred, isLoading, isLive, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators, sourceHealth } = useEngine();
+  const { output, rawFred, isLoading, isLive, integrityLabel, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators } = useEngine();
   const { user: authUser, logout } = useAuth();
   const isAdmin = authUser?.role === "admin";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -207,7 +207,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Fear & Greed proxy from overall score
   const fearGreed = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
   const fearGreedLabel = fearGreed > 75 ? 'Extreme Greed' : fearGreed > 55 ? 'Greed' : fearGreed > 45 ? 'Neutral' : fearGreed > 25 ? 'Fear' : 'Extreme Fear';
-  const liveTickerItems: MarketTickerItem[] = [
+  const liveTickerItems: MarketTickerItem[] = hideBlankTickerDuplicates([
     { label: 'Regime', value: regimeShort, direction: overall.score > 6 ? 'up' : overall.score > 4 ? 'flat' : 'down' },
     { label: 'Pressure Index', value: formatCanonicalScore(overall.score * 10), direction: overall.delta > 0 ? 'up' : 'down' },
     { label: 'Liquidity', value: liquidityLabel, direction: liquidityDir },
@@ -224,7 +224,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     // Legacy items for backward compat
     ...tickerValues.filter(t => !['10Y','HY SPREAD','VIX','AI CONC.','SYSTEMIC RISK'].includes(t.label))
       .map(item => ({ ...item, direction: item.direction as 'up' | 'down' | 'flat' })),
-  ];
+  ]);
 
   const isActive = useCallback((path: string) => {
     if (path === "/app") return location === "/app";
@@ -306,12 +306,12 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <div style={{
                 width: '6px', height: '6px', borderRadius: '50%',
-                background: isLoading ? '#4B5563' : isLive ? (sourceHealth.some(s => s.status === 'degraded') ? '#ffaa00' : '#00FF88') : regime.color,
-                boxShadow: isLoading ? 'none' : `0 0 8px ${isLive ? (sourceHealth.some(s => s.status === 'degraded') ? '#ffaa00' : '#00FF88') : regime.color}cc`,
+                background: isLoading ? '#4B5563' : customerIntegrityColor(integrityLabel),
+                boxShadow: isLoading ? 'none' : `0 0 8px ${customerIntegrityColor(integrityLabel)}cc`,
                 animation: isLoading ? 'none' : 'pulse-gold 5s ease-in-out infinite',
               }} />
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: isLoading ? '#4B5563' : isLive ? (sourceHealth.some(s => s.status === 'degraded') ? '#ffaa00' : '#00FF88') : regime.color, letterSpacing: '0.1em' }}>
-                {isLoading ? 'LOADING' : isRefreshing ? 'UPDATING' : isLive ? (sourceHealth.some(s => s.status === 'degraded') ? 'DEGRADED' : 'LIVE') : 'SIM'}
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: isLoading ? '#4B5563' : customerIntegrityColor(integrityLabel), letterSpacing: '0.1em' }}>
+                {isLoading ? 'LOADING' : isRefreshing ? 'UPDATING' : integrityLabel}
               </span>
             </div>
             {/* ── Cmd+K search button ── */}
@@ -818,12 +818,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* ── Universal Command Search (Cmd+K) ── */}
       <CommandSearch isOpen={cmdOpen} onClose={closeCmd} />
 
-      {/* ── ASHA — Spirit of FAULTLINE ── */}
+      {/* ── PLATO — Spirit of FAULTLINE ── */}
       <AshaIntroModal />
       <AshaPanel />
 
-      {/* ── Build Badge — deployment verification ── */}
-      <BuildBadge />
     </div>
     </DrawerProvider>
   );

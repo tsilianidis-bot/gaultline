@@ -27,6 +27,7 @@ import {
 } from "@shared/routeRegistry";
 import { formatCanonicalScore, normalizeCanonicalMetric } from "@shared/marketMetrics";
 import type { CanonicalMarketState } from "@shared/marketState";
+import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 
@@ -239,13 +240,13 @@ export default function Why() {
   const {
     output,
     marketState,
-    marketMode,
     sourceHealth,
     isLoading,
     isRefreshing,
     lastUpdated,
     dataError,
     refresh,
+    integrityLabel,
   } = useEngine();
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
@@ -280,11 +281,8 @@ export default function Why() {
   const evidenceConsensus = marketState?.why.evidenceConsensus ?? "fallback";
   const pressureColor = pressure >= 75 ? "#ff4d6d" : pressure >= 50 ? "#ffaa00" : pressure >= 30 ? "#00e5ff" : "#00e599";
 
-  // Sort evidence families by strength descending for driver bars
-  const sortedFamilies = useMemo(
-    () => [...evidenceFamilies].sort((a, b) => b.strength - a.strength),
-    [evidenceFamilies],
-  );
+  // Plain sort (not useMemo): must not call hooks after the early returns above.
+  const sortedFamilies = [...evidenceFamilies].sort((a, b) => b.strength - a.strength);
 
   return (
     <main className="min-h-screen bg-[#04070b] text-slate-200">
@@ -300,13 +298,13 @@ export default function Why() {
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-mono text-[10px] uppercase tracking-[0.23em] text-amber-300">WHY · Causal interpretation</p>
                 <DataFreshnessChip
-                  freshness={marketState?.freshness ?? (marketMode === "canonical" ? "live" : "stale")}
+                  freshness={customerIntegrityChipLevel(integrityLabel)}
                   tooltip={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : undefined}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-sm border border-white/10 bg-black/30 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-slate-400">
-                  {marketMode === "canonical" ? "Canonical state" : "Deterministic fallback"}
+                  {customerChromeModeLabel(integrityLabel)}
                 </span>
                 <Link href="/app/tools" className="flex items-center gap-1.5 rounded-sm border border-white/10 px-3 py-1.5 font-mono text-[9px] uppercase tracking-[0.13em] text-slate-400 transition hover:border-cyan-300/30 hover:text-cyan-300">
                   <ArrowRight size={11} /> Tools & Features
@@ -492,10 +490,10 @@ export default function Why() {
           {marketState?.warnings.length ? <div className="mt-4 rounded-sm border border-amber-300/15 bg-amber-300/[0.03] p-5"><p className="font-mono text-[9px] uppercase tracking-[0.13em] text-amber-300/75">Warnings</p>{marketState.warnings.map(warning => <p key={warning} className="mt-2 text-sm leading-6 text-slate-400">{warning}</p>)}</div> : null}
         </Section>
 
-        <Section id="asha" index="09" eyebrow="ASHA" title="Continue the causal analysis with ASHA" description="Open the advisor with the same destination and canonical market context so the conversation begins from the evidence already on screen.">
+        <Section id="asha" index="09" eyebrow="PLATO" title="Continue the causal analysis with PLATO" description="Open the advisor with the same destination and canonical market context so the conversation begins from the evidence already on screen.">
           <div className="rounded-sm border border-cyan-300/20 bg-cyan-300/[0.035] p-6 md:flex md:items-center md:justify-between md:gap-8">
-            <div className="flex gap-4"><BrainCircuit size={24} className="shrink-0 text-cyan-300" /><div><p className="font-['Rajdhani'] text-xl font-semibold text-white">Ask what is driving the current regime</p><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">ASHA can trace one driver, compare evidence families, or challenge the invalidation thesis without changing the canonical source.</p></div></div>
-            <Link href={`${ashaPath}?from=why`} className="mt-5 inline-flex shrink-0 items-center gap-2 rounded-sm border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.13em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.97] md:mt-0">Open ASHA <ArrowRight size={13} /></Link>
+            <div className="flex gap-4"><BrainCircuit size={24} className="shrink-0 text-cyan-300" /><div><p className="font-['Rajdhani'] text-xl font-semibold text-white">Ask what is driving the current regime</p><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">PLATO can trace one driver, compare evidence families, or challenge the invalidation thesis without changing the canonical source.</p></div></div>
+            <Link href={`${ashaPath}?from=why`} className="mt-5 inline-flex shrink-0 items-center gap-2 rounded-sm border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.13em] text-cyan-100 transition hover:bg-cyan-300/15 active:scale-[0.97] md:mt-0">Open PLATO <ArrowRight size={13} /></Link>
           </div>
         </Section>
 

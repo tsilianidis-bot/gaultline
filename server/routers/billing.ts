@@ -9,9 +9,15 @@ import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { stripe } from "../stripe/client";
 import { PLANS, verifyStripePlanConfiguration } from "../stripe/products";
 import { getLifetimeMemberCount } from "../db";
+import { PRICING_PLANS, type StripePlanId } from "../../shared/tiers";
 
 /** Maximum founding lifetime spots available at the $299 promotional price. */
 const LIFETIME_FOUNDING_LIMIT = 100;
+
+/** Public/checkout availability: product lock AND a configured Stripe price. */
+export function isPlanAvailableForPurchase(planId: StripePlanId, priceId: string | null | undefined): boolean {
+  return PRICING_PLANS[planId].available && !!priceId;
+}
 
 export const billingRouter = router({
   getPlans: publicProcedure.query(() => {
@@ -21,7 +27,7 @@ export const billingRouter = router({
       description: p.description,
       amount: p.amount,
       interval: p.interval,
-      available: !!p.priceId,
+      available: isPlanAvailableForPurchase(p.id, p.priceId),
     }));
   }),
 
@@ -32,7 +38,7 @@ export const billingRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const plan = PLANS[input.planId];
-      if (!plan.priceId) {
+      if (!isPlanAvailableForPurchase(input.planId, plan.priceId)) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "This plan is not yet available for purchase. Please contact us." });
       }
       const verification = await verifyStripePlanConfiguration(plan);
@@ -42,16 +48,24 @@ export const billingRouter = router({
           message: `Checkout is unavailable until Stripe configuration is verified. ${verification.reason}`,
         });
       }
+      if (!stripe) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Checkout is unavailable because Stripe is not configured." });
+      }
+      const priceId = plan.priceId;
+      if (!priceId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "This plan is not yet available for purchase. Please contact us." });
+      }
+      const customerEmail = ctx.user.email ?? undefined;
       const session = await stripe.checkout.sessions.create({
         mode: plan.interval === "one_time" ? "payment" : "subscription",
         payment_method_types: ["card"],
-        customer_email: ctx.user.email ?? undefined,
+        ...(customerEmail ? { customer_email: customerEmail } : {}),
         allow_promotion_codes: true,
-        line_items: [{ price: plan.priceId, quantity: 1 }],
+        line_items: [{ price: priceId, quantity: 1 }],
         client_reference_id: ctx.user.id.toString(),
         metadata: {
           user_id: ctx.user.id.toString(),
-          customer_email: ctx.user.email ?? "",
+          customer_email: customerEmail ?? "",
           customer_name: ctx.user.name ?? "",
           plan_id: input.planId,
         },
@@ -64,6 +78,9 @@ export const billingRouter = router({
   verifyCheckoutSession: publicProcedure
     .input(z.object({ sessionId: z.string() }))
     .query(async ({ input }) => {
+      if (!stripe) {
+        return null;
+      }
       try {
         const session = await stripe.checkout.sessions.retrieve(input.sessionId, {
           expand: ['line_items'],
@@ -87,6 +104,9 @@ export const billingRouter = router({
       const user = ctx.user as any;
       if (!user.stripeCustomerId) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "No billing account found. Please make a purchase first." });
+      }
+      if (!stripe) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Billing portal is unavailable because Stripe is not configured." });
       }
       const session = await stripe.billingPortal.sessions.create({
         customer: user.stripeCustomerId,

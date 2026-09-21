@@ -32,7 +32,7 @@ export const CANONICAL_DESTINATIONS: readonly CanonicalDestination[] = [
 
 export interface PersistentUtility { id: PersistentUtilityId; label: string; icon: RouteIconKey; kind: "route" | "action"; path?: string; analyticsId: string; searchKeywords: readonly string[]; access: "authenticated"; surface: "utility"; }
 export const PERSISTENT_UTILITIES: readonly PersistentUtility[] = [
-  { id: "asha", label: "ASHA", icon: "message", kind: "route", path: "/app/asha", analyticsId: "utility_asha", searchKeywords: ["asha", "ask", "advisor", "conversation"], access: "authenticated", surface: "utility" },
+  { id: "asha", label: "PLATO", icon: "message", kind: "route", path: "/app/asha", analyticsId: "utility_asha", searchKeywords: ["asha", "plato", "ask", "advisor", "conversation"], access: "authenticated", surface: "utility" },
   { id: "search", label: "Search", icon: "search", kind: "action", analyticsId: "utility_search", searchKeywords: ["search", "command", "symbol"], access: "authenticated", surface: "utility" },
   { id: "alerts", label: "Alerts", icon: "bell", kind: "route", path: "/app/alerts", analyticsId: "utility_alerts", searchKeywords: ["alerts", "thresholds"], access: "authenticated", surface: "utility" },
   { id: "help", label: "Help", icon: "help", kind: "route", path: "/app/guide", analyticsId: "utility_help", searchKeywords: ["help", "guide", "methodology"], access: "authenticated", surface: "utility" },
@@ -60,7 +60,7 @@ export const ANALYTICAL_LEGACY_ALIASES: Readonly<Record<string, string>> = {
   "/app/command": "/app/now/deep",
   "/app/command-center": "/app/now/deep",
   "/app/crypto-regime": "/app/outlook/deep",
-  "/app/daily-briefing": "/app/now/deep",
+  "/app/daily-briefing": "/app/now",
   "/app/dashboard": "/app/now",
   "/app/diagnostic": "/app/now/deep",
   "/app/intelligence-hub": "/app/now/deep",
@@ -79,6 +79,9 @@ export const ANALYTICAL_LEGACY_ALIASES: Readonly<Record<string, string>> = {
   "/app/stock-heatmap": "/app/now/deep",
   "/app/todays-story": "/app/now",
   "/app/trade-preflight": "/app/decision-engine#trade-preflight",
+  "/pricing": "/#access",
+  "/mobile": "/app/now",
+  "/mobile/": "/app/now",
   "/mobile/brief": "/app/now",
   "/mobile/crypto": "/app/now?view=markets",
   "/mobile/rotation": "/app/why?view=transmission",
@@ -99,7 +102,12 @@ export function preserveRouteContext(target: string, currentSearch = "", current
   const hash = currentHash || (targetHash ? `#${targetHash}` : "");
   return `${targetPath}${query ? `?${query}` : ""}${hash}`;
 }
-export function getLegacyAliasTarget(pathname: string): string | undefined { return ANALYTICAL_LEGACY_ALIASES[stripRouteContext(pathname)]; }
+export function getLegacyAliasTarget(pathname: string): string | undefined {
+  const clean = stripRouteContext(pathname);
+  if (ANALYTICAL_LEGACY_ALIASES[clean]) return ANALYTICAL_LEGACY_ALIASES[clean];
+  const withoutTrailingSlash = clean.replace(/\/+$/, "") || "/";
+  return ANALYTICAL_LEGACY_ALIASES[withoutTrailingSlash];
+}
 export function resolveCanonicalDestination(pathname: string): CanonicalDestination | undefined {
   const clean = stripRouteContext(pathname);
   const direct = CANONICAL_DESTINATIONS.find(item => item.path === clean);

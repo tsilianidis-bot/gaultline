@@ -36,7 +36,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/manus-storage/icon-192x192_fa4085a5.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.ico" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#050608" />
     <meta name="mobile-web-app-capable" content="yes" />
@@ -63,42 +63,34 @@
           "price": "0",
           "priceCurrency": "USD",
           "availability": "https://schema.org/InStock",
-          "description": "Free access to the Pressure Index and limited signal previews"
+          "description": "Free access to the market environment, Pressure Index, and limited signal previews"
         },
         {
           "@type": "Offer",
-          "name": "Core",
-          "price": "9.99",
-          "priceCurrency": "USD",
-          "billingIncrement": "P1M",
-          "availability": "https://schema.org/InStock",
-          "description": "Full signals engine, portfolio tracker, and push alerts — $9.99/month"
-        },
-        {
-          "@type": "Offer",
-          "name": "Pro",
+          "name": "Trader",
           "price": "59.00",
           "priceCurrency": "USD",
           "billingIncrement": "P1M",
           "availability": "https://schema.org/InStock",
-          "description": "Full intelligence platform — every engine, every signal, fully unlocked — $59/month"
+          "description": "Core market intelligence, monitoring, signals, watch tools, and decision support — $59/month"
         },
         {
           "@type": "Offer",
-          "name": "Founding Member",
+          "name": "Power",
+          "price": "99.00",
+          "priceCurrency": "USD",
+          "billingIncrement": "P1M",
+          "availability": "https://schema.org/InStock",
+          "description": "Advanced analysis, institutional dashboards, and the full professional toolset — $99/month"
+        },
+        {
+          "@type": "Offer",
+          "name": "Founding",
           "price": "49.00",
           "priceCurrency": "USD",
           "billingIncrement": "P1M",
           "availability": "https://schema.org/LimitedAvailability",
           "description": "Founding member rate locked for life — $49/month, never increases"
-        },
-        {
-          "@type": "Offer",
-          "name": "Founding Lifetime",
-          "price": "299.00",
-          "priceCurrency": "USD",
-          "availability": "https://schema.org/LimitedAvailability",
-          "description": "One-time lifetime access — no recurring charges, limited quantity"
         }
       ],
       "featureList": [
@@ -183,8 +175,6 @@
 
     <!-- GA4 and Microsoft Clarity initialize client-side only after stored analytics consent. -->
 
-    <!-- ── LCP Preload: hero background image ─────────────────── -->
-    <link rel="preload" as="image" href="/manus-storage/faultline_hero_bg_7d6aaf14.jpg" fetchpriority="high" />
     <!-- ── Fonts ───────────────────────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -240,9 +230,19 @@
     </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+    <script>
+      (function () {
+        var endpoint = "%VITE_ANALYTICS_ENDPOINT%";
+        var websiteId = "%VITE_ANALYTICS_WEBSITE_ID%";
+        if (!endpoint || endpoint.indexOf("%VITE_") !== -1 || !/^https?:\/\//i.test(endpoint)) return;
+        var script = document.createElement("script");
+        script.defer = true;
+        script.src = endpoint + "/umami";
+        if (websiteId && websiteId.indexOf("%VITE_") === -1) {
+          script.setAttribute("data-website-id", websiteId);
+        }
+        document.body.appendChild(script);
+      })();
+    </script>
   </body>
 </html>

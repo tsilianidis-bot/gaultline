@@ -21,6 +21,17 @@ describe("canonical route registry", () => {
     expect(getLegacyAliasTarget("/app/pressure-index")).toBe("/app/now?view=pressure");
     expect(resolveCanonicalDestination("/app/alt-rotation")?.id).toBe("why");
   });
+  it("sends Daily Brief to the canonical NOW brief, not the simulated deep dashboard", () => {
+    expect(getLegacyAliasTarget("/app/daily-briefing")).toBe("/app/now");
+    expect(getLegacyAliasTarget("/app/daily-briefing")).not.toBe("/app/now/deep");
+    expect(resolveCanonicalDestination("/app/daily-briefing")?.id).toBe("now");
+    expect(resolveCanonicalDestination("/app/daily-briefing")?.defaultView).toBe("brief");
+    expect(getLegacyAliasTarget("/mobile/brief")).toBe("/app/now");
+    expect(getLegacyAliasTarget("/mobile")).toBe("/app/now");
+    expect(getLegacyAliasTarget("/mobile/")).toBe("/app/now");
+    expect(getLegacyAliasTarget("/pricing")).toBe("/#access");
+    expect(getLegacyAliasTarget("/pricing/")).toBe("/#access");
+  });
   it("provides typed lookup maps for every route surface", () => { expect(CANONICAL_DESTINATION_BY_ID.now.path).toBe("/app/now"); expect(PERSISTENT_UTILITY_BY_ID.alerts.path).toBe("/app/alerts"); expect(EXPERT_WORKSPACE_BY_ID["decision-engine"].owner).toBe("act"); });
   it("preserves route context", () => {
     expect(preserveRouteContext("/app/act?view=analyze", "?symbol=NVDA&conversationId=conv-7&view=old", "#evidence")).toBe("/app/act?symbol=NVDA&conversationId=conv-7&view=analyze#evidence");

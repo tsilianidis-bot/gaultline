@@ -18,6 +18,8 @@ import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import { useEngine } from "@/contexts/EngineContext";
+import { customerIntegrityChipLevel, customerIntegrityColor } from "@shared/customerIntegrityLabels";
 
 // ── Types (mirrors SeismographOutput from server) ─────────────
 interface SeismographAnalog {
@@ -135,9 +137,9 @@ const NEXT_STEPS: Record<string, { label: string; path: string }> = {
   pressure:     { label: "See the Regime Analysis →", path: "/app/market-intelligence" },
   regime:       { label: "Check the Situation Room →", path: "/app/situation-room" },
   signals:      { label: "Run a Pre-Flight Check →", path: "/app/pre-flight" },
-  situation:    { label: "Ask ASHA about this environment →", path: "/app/discover" },
+  situation:    { label: "Ask PLATO about this environment →", path: "/app/discover" },
   "daily-brief":{ label: "See what signals are active →", path: "/app/signals" },
-  seismograph:  { label: "Ask ASHA about this reading →", path: "/app/discover" },
+  seismograph:  { label: "Ask PLATO about this reading →", path: "/app/discover" },
   default:      { label: "View the full Seismograph →", path: "/app/seismograph-command-center" },
 };
 
@@ -149,6 +151,8 @@ export default function SeismographNarrativeBanner({
 }: SeismographNarrativeBannerProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const toggle = useCallback(() => setExpanded(v => !v), []);
+  const { integrityLabel } = useEngine();
+  const integrityFreshness = customerIntegrityChipLevel(integrityLabel);
 
   const { data: output, isLoading, refetch, isRefetching } = trpc.seismograph.getAssembledOutput.useQuery(undefined, {
     refetchOnWindowFocus: false,
@@ -205,7 +209,7 @@ export default function SeismographNarrativeBanner({
     );
   }
 
-  if (!canonicalState) return null;
+  if (!output) return null;
 
   const stressColor = getStressColor(output.stressLevel);
   const dirColor = getDirectionColor(output.direction);
@@ -260,13 +264,13 @@ export default function SeismographNarrativeBanner({
       {/* Spacer */}
       <span style={{ flex: 1 }} />
 
-      {/* Freshness */}
+      {/* Freshness — bound to customer integrity so LIVE never appears with fallback/stale/unavailable */}
       <span style={{
         fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px",
-        color: output.dataFreshness === "live" ? "#22C55E" : output.dataFreshness === "recent" ? "#FF9500" : "#FF2D55",
+        color: customerIntegrityColor(integrityLabel),
         letterSpacing: "0.1em", flexShrink: 0,
       }}>
-        {output.dataFreshness.toUpperCase()}
+        {integrityFreshness.toUpperCase()}
       </span>
 
       {/* Expand toggle */}

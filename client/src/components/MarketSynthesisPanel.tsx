@@ -81,7 +81,7 @@ function getSynthesis(
       body: isStressed
         ? `${pageInsight ? pageInsight + " " : ""}In the current ${regime} environment, compare opportunity-specific evidence and risk controls rather than assigning probability from the market context alone.`
         : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is uncalibrated context. Evaluate each asset on its own evidence, liquidity, and risk controls.`,
-      nextLabel: "Ask ASHA about a specific opportunity →",
+      nextLabel: "Ask PLATO about a specific opportunity →",
       nextPath: "/app/discover",
     },
     dashboard: {
@@ -93,7 +93,7 @@ function getSynthesis(
     "daily-brief": {
       headline: `Today's briefing in context: ${regime}`,
       body: `${pageInsight ? pageInsight + " " : ""}The current ${regime} environment provides context for today's news and events. ${isStressed ? "Review elevated-stress contributors and source quality." : `The ${bullProb}% bull scenario score is not evidence that positive catalysts will sustain moves.`}`,
-      nextLabel: "Ask ASHA about today's market →",
+      nextLabel: "Ask PLATO about today's market →",
       nextPath: "/app/discover",
     },
     diagnostic: {
@@ -109,7 +109,7 @@ function getSynthesis(
       body: isStressed
         ? `${pageInsight ? pageInsight + " " : ""}Use the macro stress context as one input when evaluating crypto-specific evidence; it does not establish a typical crypto outcome or leading indicator.`
         : `${pageInsight ? pageInsight + " " : ""}The ${bullProb}% bull scenario score is not evidence of institutional appetite or a crypto breakout forecast.`,
-      nextLabel: "Ask ASHA about crypto opportunities →",
+      nextLabel: "Ask PLATO about crypto opportunities →",
       nextPath: "/app/discover",
     },
     situation: {
@@ -165,7 +165,7 @@ export default function MarketSynthesisPanel({
   const synthesis = getSynthesis(
     context,
     canonicalRiskLevel,
-    canonicalState.regime,
+    canonicalState.regime ?? "Unavailable",
     probability.bullProbability,
     probability.crashProbability,
     narrative.keyRisks ?? [],
@@ -205,7 +205,7 @@ export default function MarketSynthesisPanel({
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "4px", flexShrink: 0 }}>
           <SentimentIcon size={12} color={pressureColor} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{formatCanonicalScore(canonicalState.pressureIndex)}</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: pressureColor, fontWeight: 600 }}>{formatCanonicalScore(canonicalState.pressureIndex ?? 0)}</span>
         </div>
       </div>
 
