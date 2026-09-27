@@ -13,6 +13,7 @@ import {
   type SystemicRegimeHistoryPoint,
   type SystemicRegimeReading,
 } from "../../shared/systemicRegime";
+import { hasApprovedSystemicRegimeIdentity } from "./identity";
 
 export async function getLatestSystemicRegimeReading(
   historyClass: HistoryClass = "LIVE_INFERENCE",
@@ -26,7 +27,9 @@ export async function getLatestSystemicRegimeReading(
     .orderBy(desc(systemicRegimeReadings.computedAt))
     .limit(1);
   if (!row) return null;
-  return parseReading(row.payloadJson);
+  const reading = parseReading(row.payloadJson);
+  // LIVE output is never served from an altered, missing, or unapproved bundle.
+  return hasApprovedSystemicRegimeIdentity(reading) ? reading : null;
 }
 
 export async function getSystemicRegimeHistory(

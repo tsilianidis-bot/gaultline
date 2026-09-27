@@ -57,7 +57,7 @@ function A2HSBanner() {
 
 // ── Nav items (6 tabs) ────────────────────────────────────────
 const NAV_ITEMS = [
-  { path: "/mobile",           label: "Pulse",    Icon: Activity },
+  { path: "/mobile/pulse",     label: "Pulse",    Icon: Activity },
   { path: "/mobile/signals",   label: "Signals",  Icon: TrendingUp },
   { path: "/mobile/crypto",    label: "Crypto",   Icon: Bitcoin },
   { path: "/mobile/rotation",  label: "Rotation", Icon: RotateCcw },
@@ -219,8 +219,8 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
         }}
       >
         {NAV_ITEMS.map(({ path, label, Icon }) => {
-          const isActive = path === "/mobile"
-            ? location === "/mobile"
+          const isActive = path === "/mobile/pulse"
+            ? location === "/mobile/pulse"
             : location.startsWith(path);
           return (
             <Link key={path} href={path} className="flex-1">

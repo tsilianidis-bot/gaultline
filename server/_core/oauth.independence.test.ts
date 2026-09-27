@@ -32,6 +32,7 @@ const ORIGINAL = {
   NODE_ENV: process.env.NODE_ENV,
   FAULTLINE_MANAGED_PREVIEW: process.env.FAULTLINE_MANAGED_PREVIEW,
   QA_ACCESS_SECRET: process.env.QA_ACCESS_SECRET,
+  QA_ACCESS_HOST: process.env.QA_ACCESS_HOST,
 };
 
 function restoreEnv() {
@@ -47,6 +48,8 @@ function restoreEnv() {
   }
   if (ORIGINAL.QA_ACCESS_SECRET === undefined) delete process.env.QA_ACCESS_SECRET;
   else process.env.QA_ACCESS_SECRET = ORIGINAL.QA_ACCESS_SECRET;
+  if (ORIGINAL.QA_ACCESS_HOST === undefined) delete process.env.QA_ACCESS_HOST;
+  else process.env.QA_ACCESS_HOST = ORIGINAL.QA_ACCESS_HOST;
 }
 
 function describeRequest(input: unknown): string {
@@ -403,6 +406,7 @@ describe("OAuth independence Option 1+2", () => {
     process.env.NODE_ENV = "production";
     delete process.env.FAULTLINE_MANAGED_PREVIEW;
     process.env.QA_ACCESS_SECRET = "independent-staging-qa-secret";
+    process.env.QA_ACCESS_HOST = "staging.up.railway.app";
     const resState: {
       status?: number;
       body?: unknown;

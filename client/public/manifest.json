@@ -2,7 +2,7 @@
   "name": "FAULTLINE — Market Intelligence",
   "short_name": "FAULTLINE",
   "description": "Real-time macroeconomic risk intelligence. Pressure Index, signals, portfolio, and rotation — in your pocket.",
-  "start_url": "/mobile",
+  "start_url": "/mobile/pulse",
   "display": "standalone",
   "background_color": "#050608",
   "theme_color": "#050608",

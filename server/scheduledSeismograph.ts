@@ -13,6 +13,7 @@
  * Registered at: POST /api/scheduled/seismograph-daily
  * Cron: "0 0 18 * * *" (18:00 UTC / 2pm ET daily, after market close)
  */
+import { randomUUID } from "node:crypto";
 import type { Request, Response } from "express";
 import { calculateFaultlinePressure, type PressureAlert } from "./pressure/engine";
 import { runFMOSPipeline } from "./fmos/pipeline";
@@ -72,6 +73,7 @@ export async function getLatestSeismographOutput(): Promise<SeismographOutput | 
  */
 export async function runSeismographPipeline(): Promise<SeismographOutput> {
   const today = new Date().toISOString().split("T")[0];
+  const originatingRunId = `seismograph:${randomUUID()}`;
   console.log(`[Seismograph] Pipeline starting for ${today}`);
 
   // Step 1: Collect evidence from all contributors in parallel
@@ -178,6 +180,7 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
     const governanceState = buildAtomicIntelligenceStateManifest({
       pressure: pressureOutput,
       seismograph: seismographOutput,
+      originatingRunId,
       generatedAt: new Date().toISOString(),
       persistedHooks: await import("./systemicRegime/hooks").then(mod => mod.getPersistedRegimeHooks(seismographOutput)).catch(() => undefined),
     });

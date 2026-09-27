@@ -33,10 +33,11 @@ import { handleDripEmail } from "../scheduledDripEmail";
 import { handleScheduledSeismograph } from "../scheduledSeismograph";
 import { handleShadowForwardOutcomes, handleShadowDailySummary } from "../scheduledShadowModel";
 import { handleScheduledRisingStarsContinuity } from "../scheduledRisingStarsHistory";
-import { handleScheduledSystemicRegimeInfer, handleScheduledSystemicRegimeTrain } from "../systemicRegime/scheduled";
+import { handleScheduledSystemicRegimeInfer } from "../systemicRegime/scheduled";
 import { appRouter } from "../routers.ts";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { requireCron } from "./cronGuard";
 import { captureError, flushErrorTracking } from "../errorTracking";
 import { handleQaAccess, handleQaAccessLogout } from "../qaAccess";
 import { resolveBuildIdentity } from "../buildIdentity";
@@ -178,20 +179,8 @@ async function startServer() {
   registerSEORoutes(app);
   app.use("/api/analytics", analyticsRoutes);
 
-  // Cron authentication helper — all scheduled endpoints must use this
-  const CRON_SECRET = process.env.CRON_SECRET ?? process.env.HEARTBEAT_SECRET ?? '';
-  function requireCron(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const auth = req.headers['authorization'] ?? '';
-    const token = typeof auth === 'string' ? auth.replace(/^Bearer\s+/i, '') : '';
-    // Allow if token matches CRON_SECRET, or if request is from localhost (dev)
-    const isLocalhost = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1';
-    if (!CRON_SECRET || (CRON_SECRET && token === CRON_SECRET) || (isLocalhost && process.env.NODE_ENV === 'development')) {
-      return next();
-    }
-    res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  // Scheduled cron endpoints — must be before tRPC / Vite fallthrough
+  // Scheduled cron endpoints — all use the canonical exact-bearer guard and
+  // are registered before tRPC / Vite fallthrough.
   app.post("/api/scheduled/ping", requireCron, (_req, res) => res.json({ ok: true }));
   app.post("/api/scheduled/daily-snapshot", requireCron, handleScheduledDailySnapshot);
   app.post("/api/scheduled/publish-blog", requireCron, handleScheduledPublishBlog);
@@ -209,7 +198,6 @@ async function startServer() {
   app.post("/api/scheduled/shadow-daily-summary", requireCron, handleShadowDailySummary);
   app.post("/api/scheduled/rising-stars-continuity", requireCron, handleScheduledRisingStarsContinuity);
   app.post("/api/scheduled/systemic-regime-infer", requireCron, handleScheduledSystemicRegimeInfer);
-  app.post("/api/scheduled/systemic-regime-train", requireCron, handleScheduledSystemicRegimeTrain);
   // Autonomous publishing pipeline
   app.post("/api/scheduled/daily-brief", requireCron, handleDailyBrief);
   app.post("/api/scheduled/weekly-review", requireCron, handleWeeklyReview);

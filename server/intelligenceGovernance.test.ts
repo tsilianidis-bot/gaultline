@@ -56,16 +56,18 @@ describe("Phase 1B intelligence governance", () => {
   });
 
   it("creates a deterministic coherent manifest for an identical input snapshot", () => {
-    const first = buildAtomicIntelligenceStateManifest({ pressure, seismograph, generatedAt: "2026-08-20T16:00:00.000Z" });
-    const second = buildAtomicIntelligenceStateManifest({ pressure, seismograph, generatedAt: "2026-08-20T16:00:00.000Z" });
+    const originatingRunId = "seismograph:test-run";
+    const first = buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt: "2026-08-20T16:00:00.000Z" });
+    const second = buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt: "2026-08-20T16:00:00.000Z" });
     expect(first.manifest.coherenceStatus).toBe("COHERENT");
+    expect(first.manifest.originatingRunId).toBe(originatingRunId);
     expect(first.manifest.stateHash).toBe(second.manifest.stateHash);
     expect(first.manifest.inputSnapshotId).toBe(second.manifest.inputSnapshotId);
     expect(first.manifest.probabilityClaimIds).toEqual(expect.arrayContaining(["seismograph.scenario.bull"]));
   });
 
   it("records a score disagreement as an explicit mismatch rather than silently mixing outputs", () => {
-    const mismatched = buildAtomicIntelligenceStateManifest({ pressure, seismograph: { ...seismograph, pressureScore: 31 }, generatedAt: "2026-08-20T16:00:00.000Z" });
+    const mismatched = buildAtomicIntelligenceStateManifest({ pressure, seismograph: { ...seismograph, pressureScore: 31 }, originatingRunId: "seismograph:mismatch", generatedAt: "2026-08-20T16:00:00.000Z" });
     expect(mismatched.manifest.coherenceStatus).toBe("EXPLICIT_MISMATCH");
     expect(mismatched.manifest.coherenceNotes.join(" ")).toContain("pressure-score-mismatch");
   });

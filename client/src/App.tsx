@@ -375,10 +375,9 @@ function Router() {
           </Suspense>
         </ErrorBoundary>
       </Route>
-      {/* Bare /mobile and /mobile/ 404'd because /mobile/:tab* requires a tab.
-          Redirect to NOW so Pulse nav and typed URLs never dead-end. */}
-      <Route path="/mobile"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
-      <Route path="/mobile/"><Redirect to={CANONICAL_DESTINATION_BY_ID.now.path} /></Route>
+      {/* Bare mobile entrypoints redirect to the canonical standalone PWA Pulse route. */}
+      <Route path="/mobile"><Redirect to="/mobile/pulse" /></Route>
+      <Route path="/mobile/"><Redirect to="/mobile/pulse" /></Route>
       {/* Mobile PWA routes — standalone, no AppLayout */}
       <Route path="/mobile/:tab*">
         <ErrorBoundary>
@@ -386,6 +385,7 @@ function Router() {
             <MobileLayout>
               <Suspense fallback={<PageLoader />}>
                 <Switch>
+                  <Route path="/mobile/pulse" component={MobilePulse} />
                   <Route path="/mobile/signals" component={MobileSignals} />
                   <Route path="/mobile/watchlist" component={MobileWatchlist} />
                   <Route path="/mobile/rotation" component={MobileRotation} />

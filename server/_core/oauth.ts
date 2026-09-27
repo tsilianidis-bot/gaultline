@@ -3,7 +3,6 @@ import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { isOAuthConfigured, OAuthInactiveError, sdk } from "./sdk";
-import { sendEmail, buildWelcomeEmail } from "../email";
 
 export const OAUTH_CALLBACK_ERROR_CODES = [
   "token_exchange_failed",
@@ -105,12 +104,6 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
-      // Check if this is a brand-new user before upserting
-      const existingUser = await runOAuthStep("db_failed", () =>
-        db.getUserByOpenId(userInfo.openId),
-      );
-      const isNewUser = !existingUser;
-
       await runOAuthStep("db_failed", () =>
         db.upsertUser({
           openId: userInfo.openId,
@@ -120,21 +113,6 @@ export function registerOAuthRoutes(app: Express) {
           lastSignedIn: new Date(),
         }),
       );
-
-      // Send welcome email on first login (best-effort, non-blocking)
-      if (isNewUser && userInfo.email) {
-        const newUserRow = await db.getUserByOpenId(userInfo.openId);
-        sendEmail(buildWelcomeEmail({
-          name: userInfo.name || "",
-          email: userInfo.email,
-        })).then(() => {
-          if (newUserRow) {
-            db.recordOnboardingEmailSent(newUserRow.id, 0).catch(() => {});
-          }
-        }).catch((err) => {
-          console.warn('[OAuth] Welcome email failed (non-fatal):', err);
-        });
-      }
 
       // Auto-grant founding tier if this email has an approved founding access request
       if (userInfo.email) {

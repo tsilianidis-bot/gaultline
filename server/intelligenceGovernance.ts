@@ -61,6 +61,7 @@ export interface GovernedClaimRecord {
 
 export interface AtomicIntelligenceStateManifest {
   stateId: string;
+  originatingRunId: string;
   generatedAt: string;
   championVersion: string;
   modelVersion: string;
@@ -265,7 +266,10 @@ export function buildGovernedClaims(seismograph: SeismographOutput | null, gener
   return [...scenarioClaims, ...transitionClaims, ...analogClaims, ...patternClaims];
 }
 
-export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, generatedAt = new Date().toISOString(), persistedHooks }: { pressure: FaultlinePressureOutput; seismograph: SeismographOutput | null; generatedAt?: string; persistedHooks?: { systemicRegime?: unknown; signalConvergence?: unknown } }): { manifest: AtomicIntelligenceStateManifest; claims: GovernedClaimRecord[]; inputQuality: LiveInputQualityManifestEntry[] } {
+export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, originatingRunId, generatedAt = new Date().toISOString(), persistedHooks }: { pressure: FaultlinePressureOutput; seismograph: SeismographOutput | null; originatingRunId: string; generatedAt?: string; persistedHooks?: { systemicRegime?: unknown; signalConvergence?: unknown } }): { manifest: AtomicIntelligenceStateManifest; claims: GovernedClaimRecord[]; inputQuality: LiveInputQualityManifestEntry[] } {
+  if (!originatingRunId.trim()) {
+    throw new Error("Canonical intelligence manifests require an originatingRunId");
+  }
   const inputQuality = buildLiveInputQualityManifest(pressure);
   const inputSnapshotId = `input:${sha256(inputQuality).slice(0, 32)}`;
   const claims = buildGovernedClaims(seismograph, generatedAt);
@@ -282,6 +286,7 @@ export function buildAtomicIntelligenceStateManifest({ pressure, seismograph, ge
   const engineDirections = Object.fromEntries(pressure.vectors.map(vector => [vector.id, vector.trend]));
   const scenarioOutputs: Record<string, number> = seismograph ? { bull: seismograph.probabilities.bull, neutral: seismograph.probabilities.neutral, bear: seismograph.probabilities.bear } : {};
   const core = {
+    originatingRunId,
     championVersion: CHAMPION_V1_GOVERNANCE_VERSION,
     modelVersion: seismograph?.version ?? "seismograph-unavailable",
     scoringVersion: "faultline-pressure-v1-frozen",
@@ -337,6 +342,7 @@ export async function persistAtomicIntelligenceStateManifest(result: ReturnType<
   if (existing[0]) return { stateId: result.manifest.stateId, created: false, claimsCreated: 0 };
   await db.insert(intelligenceStateManifests).values({
     stateId: result.manifest.stateId,
+    originatingRunId: result.manifest.originatingRunId,
     generatedAt: new Date(result.manifest.generatedAt),
     championVersion: result.manifest.championVersion,
     modelVersion: result.manifest.modelVersion,

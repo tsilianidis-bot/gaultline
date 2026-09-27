@@ -3,7 +3,7 @@
  * Exposes the FAULTLINE Seismograph Intelligence Engine to the frontend.
  */
 
-import { publicProcedure, router } from "../_core/trpc";
+import { adminProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -118,7 +118,7 @@ export const seismographRouter = router({
    * Use this when no daily readings exist yet (first run / new deployment).
    * This is the same pipeline the Heartbeat job runs daily at market close.
    */
-  seedNow: publicProcedure.mutation(async () => {
+  seedNow: adminProcedure.mutation(async () => {
     const output = await runSeismographPipeline();
     return {
       success: true,
@@ -135,7 +135,7 @@ export const seismographRouter = router({
    * Backfill seismograph readings from pressureHistory (317 months of data).
    * Safe to call multiple times — uses ON DUPLICATE KEY UPDATE.
    */
-  backfillHistory: publicProcedure.mutation(async () => {
+  backfillHistory: adminProcedure.mutation(async () => {
     const result = await runSeismographBackfill();
     return result;
   }),
@@ -160,7 +160,7 @@ export const seismographRouter = router({
   /**
    * Manually trigger a pattern analysis run (admin use).
    */
-  triggerPatternAnalysis: publicProcedure.mutation(async () => {
+  triggerPatternAnalysis: adminProcedure.mutation(async () => {
     try {
       await runPatternAnalysis();
       return { success: true };

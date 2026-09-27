@@ -29,18 +29,17 @@ describe("P1 launch QA — public pricing and mobile routes", () => {
     expect(getLegacyAliasTarget("/pricing")).toBe("/#access");
   });
 
-  it("redirects bare /mobile and /mobile/ to NOW so Pulse nav is not a 404", () => {
+  it("redirects bare /mobile and /mobile/ to the canonical PWA Pulse entrypoint", () => {
     expect(app).toContain('path="/mobile"');
     expect(app).toContain('path="/mobile/"');
-    expect(app).toContain("CANONICAL_DESTINATION_BY_ID.now.path");
+    expect(app).toContain('to="/mobile/pulse"');
+    expect(app).toContain('path="/mobile/pulse" component={MobilePulse}');
     const mobileBare = app.indexOf('<Route path="/mobile">');
     const mobileWildcard = app.indexOf('path="/mobile/:tab*"');
     const catchAll404 = app.indexOf('<Route><Redirect to="/404" /></Route>');
     expect(mobileBare).toBeGreaterThanOrEqual(0);
     expect(mobileWildcard).toBeGreaterThan(mobileBare);
     expect(catchAll404).toBeGreaterThan(mobileBare);
-    expect(getLegacyAliasTarget("/mobile")).toBe(CANONICAL_DESTINATION_BY_ID.now.path);
-    expect(getLegacyAliasTarget("/mobile/")).toBe(CANONICAL_DESTINATION_BY_ID.now.path);
   });
 });
 

@@ -43,7 +43,7 @@ export default function DailyBriefPost() {
 
   useSEO({
     title: item ? `${item.title} | FAULTLINE Daily Brief` : "Daily Intelligence Brief | FAULTLINE",
-    description: item?.metaDescription ?? "FAULTLINE Daily Intelligence Brief — institutional-grade macro analysis from live engine data.",
+    description: item?.metaDescription ?? "FAULTLINE Daily Intelligence Brief — institutional-grade macro analysis with explicit evidence and freshness context.",
     canonical: `https://getfaultline.live/daily-brief/${slug}`,
   });
 
@@ -92,6 +92,8 @@ export default function DailyBriefPost() {
   try {
     if (item.schemaJson) schemaData = JSON.parse(item.schemaJson);
   } catch { /* ignore */ }
+
+  const isStaleSnapshot = item.briefSnapshot?.isStale === true;
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -147,6 +149,15 @@ export default function DailyBriefPost() {
             >
               Daily Intelligence Brief
             </Badge>
+            {isStaleSnapshot && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-2 py-0.5 font-mono uppercase tracking-wider"
+                style={{ borderColor: 'rgba(251,191,36,0.45)', color: '#FBBF24', background: 'rgba(251,191,36,0.08)' }}
+              >
+                STALE SNAPSHOT
+              </Badge>
+            )}
             {item.regime && (
               <Badge
                 variant="outline"
@@ -306,10 +317,10 @@ export default function DailyBriefPost() {
             FAULTLINE Intelligence Platform
           </div>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#F1F5F9', marginBottom: '0.5rem' }}>
-            Access Live Market Intelligence
+            Access Market Intelligence
           </h3>
           <p style={{ color: '#94A3B8', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.25rem', maxWidth: 400, margin: '0 auto 1.25rem' }}>
-            Get real-time pressure scores, regime analysis, and AI-powered market intelligence — updated continuously.
+            Review current pressure context, regime analysis, and integrity status with explicit source freshness.
           </p>
           <Link href="/app/discover">
             <button style={{

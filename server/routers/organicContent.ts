@@ -84,12 +84,22 @@ export const organicContentRouter = router({
         .where(eq(dailyBriefSnapshots.snapshotId, item.briefSnapshotId))
         .limit(1);
 
+      const inputFreshness = snapshot
+        ? JSON.parse(snapshot.inputFreshnessJson) as Array<{ freshness?: string }>
+        : [];
+      const validation = snapshot
+        ? JSON.parse(snapshot.validationJson) as { errors?: string[] }
+        : null;
+      const isStaleSnapshot = inputFreshness.some(input => input.freshness === "stale")
+        || Boolean(validation?.errors?.includes("canonical-snapshot-unexpectedly-stale"));
+
       return {
         ...item,
         briefSnapshot: snapshot ? {
           ...snapshot,
-          inputFreshness: JSON.parse(snapshot.inputFreshnessJson),
-          validation: JSON.parse(snapshot.validationJson),
+          inputFreshness,
+          validation,
+          isStale: isStaleSnapshot,
           archiveSemantics: "ARCHIVED_GENERATED_SNAPSHOT",
           canonicalOriginStatus: snapshot.originatingStateId ? "linked" : "unavailable",
         } : null,
