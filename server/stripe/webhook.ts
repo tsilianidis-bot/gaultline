@@ -67,19 +67,6 @@ function tierToPlanName(tier: string): string {
 export async function handleStripeWebhook(req: Request, res: Response) {
   const sig = req.headers['stripe-signature'] as string;
 
-  // Stripe/Manus webhook verification events use the evt_test_ prefix and must
-  // short-circuit before signature construction.
-  try {
-    const rawBody = req.body instanceof Buffer ? req.body.toString('utf8') : String(req.body);
-    const testEvent = JSON.parse(rawBody) as { id?: unknown };
-    if (typeof testEvent.id === 'string' && testEvent.id.startsWith('evt_test_')) {
-      console.log('[Webhook] Test event detected, returning verification response');
-      return res.json({ verified: true });
-    }
-  } catch {
-    // Let the normal signature-verification path handle malformed live payloads.
-  }
-
   // ── Signature verification bypass (dev/test only) ───────────────────────────
   const skipVerification = process.env.STRIPE_SKIP_VERIFICATION === 'true' && process.env.NODE_ENV !== 'production';
   if (skipVerification) {
@@ -104,7 +91,7 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     event = stripe.webhooks.constructEvent(req.body, sig, ENV.stripeWebhookSecret);
   } catch (err: any) {
     console.error('[Stripe Webhook] Signature verification failed:', err.message);
-    return res.status(200).json({ error: 'Signature verification failed', verified: false });
+    return res.status(400).json({ error: 'Signature verification failed', verified: false });
   }
 
   console.log(`[Stripe Webhook] Event: ${event.type} | ID: ${event.id}`);
