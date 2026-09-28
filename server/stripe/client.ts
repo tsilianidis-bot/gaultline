@@ -14,7 +14,7 @@ if (configuredStripeSecretKey && !stripeSecretKey) {
 
 export const stripe: Stripe | null = stripeSecretKey
   ? new Stripe(stripeSecretKey, {
-      apiVersion: '2026-04-22.dahlia' as Stripe.LatestApiVersion,
+      apiVersion: '2026-04-22.dahlia' as string as NonNullable<ConstructorParameters<typeof Stripe>[1]>['apiVersion'],
       typescript: true,
     })
   : null;
