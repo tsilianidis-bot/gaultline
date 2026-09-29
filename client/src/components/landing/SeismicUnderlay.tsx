@@ -1,15 +1,76 @@
 /**
- * Landing-only seismic underlay.
- * Canvas traces sit behind hero and closing content.
- * Decorative: aria-hidden. Static when the user prefers reduced motion.
+ * Landing-only seismograph underlay.
+ * A calm baseline with fine jitter and tight bursts, scrolled in layers.
+ * Decorative: aria-hidden. One static frame when reduced motion is requested.
  * The loop pauses off-screen and while the tab is hidden.
  */
 import { useEffect, useRef } from "react";
 
 interface SeismicUnderlayProps {
   className?: string;
-  /** 0–1 visual strength. Footer uses a quieter trace. */
+  /** 0–1 visual strength. The closing section uses a quieter trace. */
   intensity?: number;
+}
+
+function hash01(n: number): number {
+  let x = Math.imul(n | 0, 374761393) + 668265263;
+  x = Math.imul(x ^ (x >>> 13), 1274126177);
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+}
+
+/** Stepped value noise. Held across ~1.2px so the baseline ticks instead of curving. */
+function micro(cssX: number, seed: number): number {
+  const i = Math.floor(cssX / 1.2);
+  const fine = hash01(i + seed) - 0.5;
+  const grain = hash01(Math.floor(cssX / 2.8) * 11 + seed) - 0.5;
+  return fine * 0.82 + grain * 0.28;
+}
+
+/** Triangle spike. Corners stay sharp; there is no curved lobe. */
+function spike(dx: number, center: number, half: number, amp: number): number {
+  const d = Math.abs(dx - center);
+  if (d >= half) return 0;
+  return (1 - d / half) * amp;
+}
+
+/**
+ * A fault-line packet: a few clean triangular peaks and valleys,
+ * then a short jagged ring, then silence.
+ */
+function packet(cssX: number, seed: number, spacing: number): number {
+  const k = Math.floor(cssX / spacing);
+  let y = 0;
+  for (let n = k - 1; n <= k + 1; n += 1) {
+    const center = (n + 0.2 + hash01(n * 17 + seed) * 0.6) * spacing;
+    const dx = cssX - center;
+    if (dx < -16 || dx > 52) continue;
+    const flip = hash01(n * 19 + seed) > 0.5 ? -1 : 1;
+    const gain = 0.78 + hash01(n * 3 + seed) * 0.4;
+    for (let i = 0; i < 6; i += 1) {
+      const at = -8 + i * 5.4 + (hash01(n * 31 + i * 7 + seed) - 0.5) * 1.2;
+      const half = 1.55 + hash01(n * 11 + i + seed) * 0.7;
+      const amp = (1 - i * 0.13) * (i % 2 === 0 ? 1 : -1) * flip * gain;
+      y += spike(dx, at, half, amp);
+    }
+    if (dx > 22 && dx < 50) {
+      const step = Math.floor(dx / 1.6);
+      const env = Math.exp(-(dx - 22) / 9);
+      y += (hash01(step * 13 + n * 53 + seed) - 0.5) * 1.35 * env * flip;
+    }
+  }
+  return y;
+}
+
+interface TraceSpec {
+  seed: number;
+  speed: number;
+  spacing: number;
+  jitterAmp: number;
+  burstAmp: number;
+  yPx: number;
+  color: string;
+  glow: string | null;
+  width: number;
 }
 
 export default function SeismicUnderlay({ className, intensity = 1 }: SeismicUnderlayProps) {
@@ -29,97 +90,117 @@ export default function SeismicUnderlay({ className, intensity = 1 }: SeismicUnd
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let step = 1;
+    let narrow = false;
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const narrow = rect.width < 760;
-      dpr = Math.min(narrow ? 1.5 : 2, window.devicePixelRatio || 1);
-      step = narrow ? 2 : 1;
+      narrow = rect.width < 760;
+      dpr = Math.min(2, window.devicePixelRatio || 1);
       width = Math.max(1, Math.floor(rect.width * dpr));
       height = Math.max(1, Math.floor(rect.height * dpr));
       canvas.width = width;
       canvas.height = height;
     };
 
-    const sample = (x: number, t: number, freq: number, speed: number, phase: number) => {
-      const u = x / Math.max(width, 1);
-      const travel = u * Math.PI * 2 * freq - t * speed + phase;
-      const packet = Math.exp(-Math.pow(((u * 5.5 + phase) % 5.5) - 2.4, 2));
-      const swell = 0.62 + 0.38 * Math.sin(u * Math.PI * 2 * 1.4 + phase);
-      return (
-        Math.sin(travel) * swell +
-        Math.sin(travel * 2.35 + 0.6) * 0.22 * (0.45 + packet) +
-        Math.sin(travel * 0.47 + phase) * 0.28
-      );
-    };
-
-    const strokeTrace = (
-      t: number,
-      amp: number,
-      freq: number,
-      speed: number,
-      phase: number,
-      yShift: number,
-      color: string,
-      lineWidth: number,
-    ) => {
+    const strokeTrace = (spec: TraceSpec, scrollTime: number, mid: number) => {
       ctx.beginPath();
-      const mid = height * (0.56 + yShift);
-      for (let x = 0; x <= width; x += step) {
-        const y = mid + sample(x, t, freq, speed, phase) * amp * intensity;
+      for (let x = 0; x <= width; x += 1) {
+        const cssX = x / dpr;
+        const world = cssX + scrollTime * spec.speed;
+        const amp =
+          micro(world, spec.seed) * spec.jitterAmp +
+          packet(world, spec.seed, spec.spacing) * spec.burstAmp;
+        const y = Math.round(mid + spec.yPx * dpr + amp * dpr * intensity);
         if (x === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
-      ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth * dpr;
-      ctx.lineJoin = "round";
-      ctx.lineCap = "round";
+      ctx.lineJoin = "miter";
+      ctx.miterLimit = 2;
+      ctx.lineCap = "butt";
+      if (spec.glow) {
+        ctx.strokeStyle = spec.glow;
+        ctx.lineWidth = 1.6 * dpr;
+        ctx.stroke();
+      }
+      ctx.strokeStyle = spec.color;
+      ctx.lineWidth = spec.width * dpr;
       ctx.stroke();
     };
 
     const draw = (time: number) => {
-      const t = reduced ? 1.4 : time / 1000;
+      const t = reduced ? 0 : time / 1000;
       ctx.clearRect(0, 0, width, height);
+      ctx.imageSmoothingEnabled = false;
 
-      ctx.beginPath();
-      ctx.moveTo(0, height * 0.56);
-      ctx.lineTo(width, height * 0.56);
-      ctx.strokeStyle = "rgba(232,244,255,0.08)";
-      ctx.lineWidth = 1 * dpr;
-      ctx.stroke();
+      const mid = (narrow ? 0.8 : 0.57) * height;
+      ctx.strokeStyle = "rgba(0,212,255,0.08)";
+      ctx.lineWidth = Math.max(1, dpr);
+      for (const offset of [-72, 0, 72]) {
+        const y = Math.round(mid + offset * dpr);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
 
-      const tick = 72 * dpr;
-      ctx.strokeStyle = "rgba(0,212,255,0.05)";
-      ctx.lineWidth = 1;
+      const tick = Math.round(48 * dpr);
+      ctx.strokeStyle = "rgba(186,244,255,0.18)";
+      ctx.lineWidth = Math.max(1, dpr);
       for (let x = tick; x < width; x += tick) {
         ctx.beginPath();
-        ctx.moveTo(x, height * 0.72);
-        ctx.lineTo(x, height * 0.78);
+        ctx.moveTo(x, Math.round(mid - 4 * dpr));
+        ctx.lineTo(x, Math.round(mid + 4 * dpr));
         ctx.stroke();
       }
 
-      const amp = height * (width < 760 * dpr ? 0.11 : 0.145);
-      strokeTrace(t, amp * 1.15, 3.2, 0.33, 0.4, 0.03, "rgba(0,212,255,0.16)", 7);
-      strokeTrace(t, amp * 0.72, 4.6, 0.22, 2.1, -0.06, "rgba(0,255,136,0.22)", 1.4);
-      strokeTrace(t, amp, 3.2, 0.33, 0.4, 0.0, "rgba(186,244,255,0.88)", 1.35);
-      if (step === 1) {
-        strokeTrace(t, amp * 0.28, 9.5, 0.55, 1.1, 0.01, "rgba(0,212,255,0.35)", 0.7);
+      const spacing = narrow ? 420 : 268;
+      const traces: TraceSpec[] = [
+        {
+          seed: 19,
+          speed: 16,
+          spacing: spacing + 140,
+          jitterAmp: narrow ? 0.9 : 1.15,
+          burstAmp: narrow ? 14 : 22,
+          yPx: -18,
+          color: "rgba(0,212,255,0.30)",
+          glow: null,
+          width: 1,
+        },
+        {
+          seed: 4,
+          speed: 26,
+          spacing,
+          jitterAmp: narrow ? 2.1 : 2.6,
+          burstAmp: narrow ? 44 : 108,
+          yPx: 0,
+          color: "rgba(236,252,255,0.96)",
+          glow: "rgba(0,212,255,0.10)",
+          width: 1.35,
+        },
+      ];
+      if (!narrow) {
+        traces.splice(1, 0, {
+          seed: 41,
+          speed: 38,
+          spacing: spacing + 40,
+          jitterAmp: 1.05,
+          burstAmp: 18,
+          yPx: 16,
+          color: "rgba(120,255,196,0.24)",
+          glow: null,
+          width: 1,
+        });
       }
 
-      if (!reduced) {
-        const scan = ((t * 0.045) % 1) * width;
-        const grad = ctx.createLinearGradient(scan, 0, scan, height);
-        grad.addColorStop(0, "rgba(0,212,255,0)");
-        grad.addColorStop(0.45, "rgba(0,212,255,0.28)");
-        grad.addColorStop(1, "rgba(0,212,255,0)");
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 1.25 * dpr;
-        ctx.beginPath();
-        ctx.moveTo(scan, height * 0.12);
-        ctx.lineTo(scan, height * 0.9);
-        ctx.stroke();
-      }
+      for (const spec of traces) strokeTrace(spec, t, mid);
+
+      const scan = (reduced ? 0.72 : (t * 0.028) % 1) * width;
+      ctx.strokeStyle = "rgba(0,212,255,0.18)";
+      ctx.lineWidth = Math.max(1, dpr);
+      ctx.beginPath();
+      ctx.moveTo(Math.round(scan), Math.round(mid - (narrow ? 48 : 92) * dpr));
+      ctx.lineTo(Math.round(scan), Math.round(mid + (narrow ? 48 : 92) * dpr));
+      ctx.stroke();
     };
 
     const kick = () => {
@@ -129,9 +210,9 @@ export default function SeismicUnderlay({ className, intensity = 1 }: SeismicUnd
         draw(0);
         return;
       }
-      const frame = (time: number) => {
+      const frame = (now: number) => {
         if (!alive || reduced || !onScreen || document.hidden) return;
-        draw(time);
+        draw(now);
         raf = requestAnimationFrame(frame);
       };
       raf = requestAnimationFrame(frame);
