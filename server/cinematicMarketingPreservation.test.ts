@@ -56,11 +56,12 @@ describe("cinematic + marketing preservation plan", () => {
     expect(power?.price).toBe("$99/mo");
     expect(founding?.price).toContain("$49/mo");
 
-    expect(TOUCHED.marketing).toContain("MARKETING_TIER_CARDS");
-    expect(TOUCHED.marketing).toContain("TIER_META.free");
-    expect(TOUCHED.marketing).toContain("trader.marketingName");
-    expect(TOUCHED.marketing).toContain("power.marketingName");
-    expect(TOUCHED.marketing).toContain("founding.marketingName");
+    expect(TOUCHED.marketing).toContain("Checkout is not offered on this page.");
+    expect(TOUCHED.marketing).not.toContain("MARKETING_TIER_CARDS");
+    expect(TOUCHED.marketing).not.toContain("TIER_META.free");
+    expect(TOUCHED.marketing).not.toContain("trader.marketingName");
+    expect(TOUCHED.marketing).not.toContain("power.marketingName");
+    expect(TOUCHED.marketing).not.toContain("founding.marketingName");
     expect(TOUCHED.marketing).not.toContain("Observer");
     expect(TOUCHED.marketing).not.toContain("Everything in Pro");
     expect(TOUCHED.productExperience).toContain("id: 'free'");

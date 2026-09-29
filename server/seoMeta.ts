@@ -23,8 +23,8 @@ interface PageMeta {
 // Keys are exact URL paths. Dynamic routes use prefix matching (see getPageMeta).
 const PAGE_META: Record<string, PageMeta> = {
   "/": {
-    title: "FAULTLINE | Market Risk Intelligence, Systemic Risk & Early Warning Signals",
-    description: "Market risk intelligence for understanding systemic market stress, early warning signals, macroeconomic risk, and changing market regimes with actionable context.",
+    title: "FAULTLINE | Systemic Risk Intelligence for Financial Markets",
+    description: "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.",
   },
   "/blog": {
     title: "FAULTLINE Blog — Market Intelligence & Macro Analysis",
@@ -179,8 +179,8 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   // ── Static pages ──────────────────────────────────────────────────────────
   "/methodology": {
-    title: "Methodology — How FAULTLINE Works | FAULTLINE",
-    description: "FAULTLINE's methodology: how the Pressure Index™, regime engine, and signal classification system work. Full transparency on our analytical framework.",
+    title: "Methodology | FAULTLINE Systemic Risk",
+    description: "How the Faultline Pressure Index is calculated, which series it uses, and what the score does not mean.",
   },
   "/contact": {
     title: "Contact FAULTLINE — Get in Touch",
