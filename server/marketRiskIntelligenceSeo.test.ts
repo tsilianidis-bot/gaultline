@@ -10,7 +10,7 @@ const robots = readFileSync(resolve(root, "client/public/robots.txt"), "utf8");
 const sitemap = readFileSync(resolve(root, "client/public/sitemap.xml"), "utf8");
 
 describe("Market Risk Intelligence SEO positioning", () => {
-  const homepageTitle = "FAULTLINE | Market Risk Intelligence, Systemic Risk & Early Warning Signals";
+  const homepageTitle = "FAULTLINE | Systemic Risk Intelligence for Financial Markets";
 
   it("keeps FAULTLINE as the master brand while applying the approved homepage category descriptor", () => {
     expect(getPageMeta("/").title).toBe(homepageTitle);
@@ -22,8 +22,8 @@ describe("Market Risk Intelligence SEO positioning", () => {
   it("uses matching primary, Open Graph, Twitter, canonical, and indexability metadata on the homepage", () => {
     const html = injectPageMeta(homepage, "/");
     expect((html.match(/<title>/g) ?? [])).toHaveLength(1);
-    expect(html).toContain('property="og:title" content="FAULTLINE | Market Risk Intelligence, Systemic Risk &amp; Early Warning Signals"');
-    expect(html).toContain('name="twitter:title" content="FAULTLINE | Market Risk Intelligence, Systemic Risk &amp; Early Warning Signals"');
+    expect(html).toContain('property="og:title" content="FAULTLINE | Systemic Risk Intelligence for Financial Markets"');
+    expect(html).toContain('name="twitter:title" content="FAULTLINE | Systemic Risk Intelligence for Financial Markets"');
     expect(html).toContain('rel="canonical" href="https://getfaultline.live"');
     expect(html).not.toContain('name="robots" content="noindex,follow"');
   });
