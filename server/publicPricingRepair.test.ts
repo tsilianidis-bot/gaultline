@@ -23,20 +23,22 @@ describe('surgical public FAULTLINE brand and pricing repair', () => {
     expect(publicPricing).toBeGreaterThan(goldConstant);
   });
 
-  it('keeps marketing JSON-LD on the public ladder and does not advertise Lifetime $299', () => {
+  it('keeps landing JSON-LD free of offers and prices while checkout is off', () => {
     const homepage = read('client/index.html');
     const softwareApp = homepage.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
     expect(softwareApp?.[1]).toBeTruthy();
     const schema = JSON.parse(softwareApp![1]);
     expect(schema['@type']).toBe('SoftwareApplication');
-    const offerNames = schema.offers.map((offer: { name: string }) => offer.name);
-    const offerPrices = schema.offers.map((offer: { price: string }) => offer.price);
-    expect(offerNames).toEqual(['Free', 'Trader', 'Power', 'Founding']);
-    expect(offerPrices).toEqual(['0', '59.00', '99.00', '49.00']);
+    expect(schema.offers).toBeUndefined();
+    expect(schema.aggregateRating).toBeUndefined();
+    expect(homepage).not.toContain('"@type": "Offer"');
     expect(homepage).not.toContain('Founding Lifetime');
     expect(homepage).not.toContain('299.00');
     expect(homepage).not.toContain('$299');
     expect(homepage).not.toContain('"9.99"');
+    expect(homepage).not.toContain('"59.00"');
+    expect(homepage).not.toContain('"99.00"');
+    expect(homepage).not.toContain('"49.00"');
   });
 
   it('keeps annual checkout unavailable and does not advertise Lifetime publicly', () => {

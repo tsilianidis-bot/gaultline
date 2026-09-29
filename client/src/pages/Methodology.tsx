@@ -43,7 +43,7 @@ export default function Methodology() {
         <div className="mt-10 grid gap-3 sm:grid-cols-3">
           <article className="rounded-xl border border-white/10 p-4">
             <h2 className="font-mono text-[10px] tracking-[0.16em] text-[#00D4FF]">METHODOLOGY VERSION</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#C9D4E0]">No single version string is published for this page. Live weights are Champion V1. Audit label: v1-observed-2026-08-18. FMOS pipeline: 1.0.0. Systemic-regime model: sre-hmm2-v1.0.0, and it does not feed the index.</p>
+            <p className="mt-2 text-sm leading-relaxed text-[#C9D4E0]">No single version string is published for this page. Live weights are 20%, 20%, 15%, 20%, 10%, and 15%. An audit-only module records that contract as Champion V1, label v1-observed-2026-08-18, and does not score the live index. FMOS pipeline: 1.0.0. Systemic-regime model: sre-hmm2-v1.0.0, and it does not feed the index.</p>
           </article>
           <article className="rounded-xl border border-white/10 p-4">
             <h2 className="font-mono text-[10px] tracking-[0.16em] text-[#00D4FF]">LAST UPDATED</h2>
@@ -75,12 +75,12 @@ export default function Methodology() {
         <section className="mt-14">
           <h2 className="text-2xl font-semibold text-white">What each vector actually uses</h2>
           <ul className="mt-4 list-disc space-y-3 pl-5 leading-relaxed text-[#C9D4E0]">
-            <li>Liquidity stress: high-yield option-adjusted spread (BAMLH0A0HYM2) and SOFR. Treated as latest published daily data when FRED responds.</li>
-            <li>Credit contagion: the same high-yield spread, the 10-year yield (DGS10), and unemployment (UNRATE).</li>
-            <li>Volatility regime, inside this index: DGS10 minus DGS2, plus the level of DGS10. This vector does not read VIX.</li>
-            <li>Macro sensitivity: CPI and PPI year-over-year, and the effective federal funds rate. Monthly, with publication lag. Marked delayed when the fetch succeeds.</li>
-            <li>Market breadth, inside this index: unemployment and DGS10. It is not advance/decline breadth.</li>
-            <li>AI / speculative bubble: a static 32.4% concentration baseline, adjusted by the 10-year yield and the high-yield spread. The baseline is not a live market-cap feed.</li>
+            <li>High-yield OAS and SOFR. The engine labels this Liquidity Stress. Latest published daily data when FRED responds. Not an order-book liquidity measure.</li>
+            <li>High-yield OAS, the 10-year yield (DGS10), and unemployment (UNRATE). The engine labels this Credit Contagion Risk. It is that blend, not a cross-sector contagion map.</li>
+            <li>DGS10 minus DGS2, plus the level of DGS10. The engine labels this Volatility Regime. It does not read VIX or realized volatility.</li>
+            <li>CPI and PPI year-over-year, and the effective federal funds rate. The engine labels this Macro Sensitivity. Monthly, with publication lag. Marked delayed when the fetch succeeds.</li>
+            <li>Unemployment and DGS10. The engine labels this Market Breadth. It is not advance/decline breadth.</li>
+            <li>A fixed 32.4% concentration baseline, adjusted by the 10-year yield and the high-yield spread. The engine labels this AI / speculative bubble. The baseline is not a live market-cap feed.</li>
           </ul>
         </section>
 

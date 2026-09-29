@@ -34,14 +34,18 @@ describe("Market Risk Intelligence SEO positioning", () => {
     expect(homepage).toContain('"description": "FAULTLINE is a market risk intelligence platform');
   });
 
-  it("advertises only the public pricing ladder in SoftwareApplication JSON-LD", () => {
-    expect(homepage).toContain('"name": "Trader"');
-    expect(homepage).toContain('"name": "Power"');
-    expect(homepage).toContain('"name": "Founding"');
-    expect(homepage).toContain('"price": "59.00"');
-    expect(homepage).toContain('"price": "99.00"');
-    expect(homepage).toContain('"price": "49.00"');
+  it("keeps SoftwareApplication structured data free of prices, offers, and ratings", () => {
+    const softwareApp = homepage.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    expect(softwareApp?.[1]).toBeTruthy();
+    const schema = JSON.parse(softwareApp![1]);
+    expect(schema["@type"]).toBe("SoftwareApplication");
+    expect(schema.offers).toBeUndefined();
+    expect(schema.aggregateRating).toBeUndefined();
+    expect(homepage).not.toContain('"@type": "Offer"');
     expect(homepage).not.toContain('"name": "Founding Lifetime"');
+    expect(homepage).not.toContain('"price": "59.00"');
+    expect(homepage).not.toContain('"price": "99.00"');
+    expect(homepage).not.toContain('"price": "49.00"');
     expect(homepage).not.toContain('"price": "299.00"');
     expect(homepage).not.toContain('"price": "9.99"');
   });

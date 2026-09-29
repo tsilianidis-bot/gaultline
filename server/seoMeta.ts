@@ -24,7 +24,7 @@ interface PageMeta {
 const PAGE_META: Record<string, PageMeta> = {
   "/": {
     title: "FAULTLINE | Systemic Risk Intelligence for Financial Markets",
-    description: "FAULTLINE reads credit stress, liquidity, the yield curve, volatility regime, macro conditions, equities, and crypto to show where systemic pressure is building.",
+    description: "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.",
   },
   "/blog": {
     title: "FAULTLINE Blog — Market Intelligence & Macro Analysis",

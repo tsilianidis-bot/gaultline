@@ -10,7 +10,7 @@ const METHOD_HREF = "#methodology";
 
 const PAGE_TITLE = "FAULTLINE | Systemic Risk Intelligence for Financial Markets";
 const PAGE_DESCRIPTION =
-  "FAULTLINE reads credit stress, liquidity, the yield curve, volatility regime, macro conditions, equities, and crypto to show where systemic pressure is building.";
+  "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.";
 
 const navItems = [
   { label: "Intelligence", href: "#stack" },
@@ -36,7 +36,7 @@ const stack = [
     label: "Core risk engine",
     items: [
       ["Faultline Pressure Index™", "0–100 weighted composite of the six live vectors."],
-      ["Six stress vectors", "Liquidity, credit contagion, yield-curve volatility proxy, macro sensitivity, labor-and-rates breadth, and a static AI-concentration baseline."],
+      ["Six stress vectors", "High-yield OAS with SOFR; high-yield OAS with the 10-year and unemployment; the 10-year minus 2-year curve with the 10-year level; CPI, PPI, and federal funds; unemployment with the 10-year; and a fixed 32.4% concentration baseline adjusted by the 10-year and the high-yield spread. The engine still names three of those vectors Volatility Regime, Market Breadth, and AI bubble. Those names are not extra measurements."],
       ["Risk regime bands", "Low, Moderate, Elevated, High Stress, and Systemic Crisis, from fixed score thresholds."],
       ["Systemic Regime Engine", "Two-state Gaussian HMM on a PCA factor. Model sre-hmm2-v1.0.0. It does not feed the Pressure Index."],
       ["Signal convergence", "An n-of-m vote across independent engines, not an average."],
@@ -186,12 +186,12 @@ const bands = [
 ];
 
 const weights = [
-  ["Liquidity stress", "20%", "High-yield OAS and SOFR"],
-  ["Credit contagion", "20%", "High-yield OAS, 10-year yield, unemployment"],
-  ["Volatility regime", "15%", "10-year minus 2-year, and the 10-year level. Not the VIX."],
-  ["Macro sensitivity", "20%", "CPI, PPI, and federal funds. Monthly series are lagged."],
-  ["Market breadth", "10%", "Unemployment and the 10-year yield. Not advance/decline breadth."],
-  ["AI / speculative bubble", "15%", "Static 32.4% concentration baseline, adjusted by yields and spreads."],
+  ["High-yield OAS and SOFR", "20%", "Engine label: Liquidity Stress. A blend of the high-yield spread and SOFR, not an order-book liquidity measure."],
+  ["High-yield OAS, 10-year, unemployment", "20%", "Engine label: Credit Contagion Risk. That blend only. Not a map of credit moving across named sectors."],
+  ["10-year minus 2-year, plus the 10-year", "15%", "Engine label: Volatility Regime. Curve bands blended with the 10-year level. Not VIX and not realized volatility."],
+  ["CPI, PPI, and federal funds", "20%", "Engine label: Macro Sensitivity. CPI and PPI are year-over-year. Monthly series are lagged."],
+  ["Unemployment and the 10-year", "10%", "Engine label: Market Breadth. Not advance/decline and not exchange breadth."],
+  ["Static 32.4% baseline", "15%", "Engine label: AI / speculative bubble. The 32.4% figure is fixed, then adjusted by the 10-year yield and the high-yield spread. Not a live market-cap feed."],
 ];
 
 const sources = [
@@ -560,13 +560,13 @@ function CrossMarket() {
           Stress often appears first as a relationship changing between markets.
         </h2>
         <p className="mt-6 max-w-3xl text-lg leading-relaxed text-[#C9D4E0]">
-          The cross-market engine compares the equity regime with the crypto regime and states whether they are aligned risk-on, aligned risk-off, diverging, or neutral. Separately, the pressure composite is itself a relationship: credit, funding, the curve, inflation, policy rates, and unemployment are scored together.
+          The cross-market engine compares the equity regime with the crypto regime. Its statuses are strongly aligned risk-on, aligned risk-on, aligned risk-off, strongly aligned risk-off, diverging with stocks leading, diverging with crypto leading, diverging with conflicting signals, or neutral. Separately, the pressure composite scores high-yield credit, SOFR, the Treasury curve, inflation, federal funds, and unemployment together.
         </p>
         <div className="mt-10 grid gap-4 lg:grid-cols-2">
           <article className="rounded-2xl border border-[#00D4FF]/20 bg-[#071018] p-6">
             <h3 className="text-lg font-semibold text-white">Equity regime and crypto regime</h3>
             <p className="mt-3 text-sm leading-relaxed text-[#A8B8CC]">
-              Equity labels include bull, expansion, consolidation, correction, distribution, bear, recovery, and recession risk. Crypto labels follow the cycle vocabulary in the crypto regime engine, from accumulation through expansion to capitulation. Alignment is a comparison of those two reads.
+              Equity labels are Bull Market, Expansion, Consolidation, Correction, Distribution, Bear Market, Recovery, and Recession Risk. Crypto labels are Bull Market, Expansion, Late Bull / Euphoria, Distribution, Bear Market, Capitulation, Bear Market → Accumulation Phase, Accumulation, and Early Recovery. Alignment compares those two reads.
             </p>
             <p className="mt-4 font-mono text-[11px] leading-relaxed tracking-wide text-[#00D4FF]">
               EQUITY REGIME <span aria-hidden="true">——</span> CRYPTO REGIME <span aria-hidden="true">——</span> ALIGNED OR DIVERGING
@@ -575,7 +575,7 @@ function CrossMarket() {
           <article className="rounded-2xl border border-white/[0.08] bg-[#0A1018] p-6">
             <h3 className="text-lg font-semibold text-white">What is quoted, and what is scored</h3>
             <p className="mt-3 text-sm leading-relaxed text-[#A8B8CC]">
-              The markets board quotes equity indexes, VIX, the dollar, major FX pairs, gold, silver, crude, natural gas, Bitcoin, and Ethereum. Those quotes are context. The Pressure Index does not take a weight from FX or commodities. VIX enters the separate systemic-regime model as a daily close, not the pressure composite. Inside the composite, “volatility regime” means the yield curve.
+              The markets board quotes equity indexes, VIX, the dollar, EUR/USD, USD/JPY, GBP/USD, gold, silver, WTI, Brent, natural gas, Bitcoin, and Ethereum. Those quotes are context. The Pressure Index does not take a weight from FX, commodities, or VIX. VIX enters the separate systemic-regime model as a daily close. Inside the composite, the vector named Volatility Regime is the 10-year minus 2-year curve plus the 10-year level.
             </p>
           </article>
         </div>
@@ -654,7 +654,7 @@ function Methodology() {
         <div className="mt-8 grid gap-3 sm:grid-cols-3">
           <article className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
             <h3 className="text-[11px] font-mono tracking-[0.16em] text-[#00D4FF]">METHODOLOGY VERSION</h3>
-            <p className="mt-3 text-sm leading-relaxed text-[#E4EAF2]">There is no single published methodology version for this page. The live Pressure Index uses the Champion V1 weights. The audit label on that weight table is v1-observed-2026-08-18. FMOS pipeline version is 1.0.0. The separate systemic-regime model is sre-hmm2-v1.0.0.</p>
+            <p className="mt-3 text-sm leading-relaxed text-[#E4EAF2]">There is no single published methodology version for this page. The live index uses fixed weights of 20%, 20%, 15%, 20%, 10%, and 15%. An audit-only module records that same contract as Champion V1, label v1-observed-2026-08-18, and does not score the live index. FMOS pipeline version is 1.0.0. The separate systemic-regime model is sre-hmm2-v1.0.0.</p>
           </article>
           <article className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-5">
             <h3 className="text-[11px] font-mono tracking-[0.16em] text-[#00D4FF]">LAST UPDATED</h3>
@@ -732,7 +732,7 @@ function Validation() {
             </li>
           ))}
         </ul>
-        <p className="mt-6 text-sm leading-relaxed text-[#A8B8CC]">Past resemblance does not guarantee future outcomes. Elevated, in the pressure engine, means a composite of 45 or higher.</p>
+        <p className="mt-6 text-sm leading-relaxed text-[#A8B8CC]">Past resemblance does not guarantee future outcomes. In the pressure engine, 45–64 is Elevated Risk, 65–79 is High Stress, and 80–100 is Systemic Crisis.</p>
       </div>
     </section>
   );
@@ -751,7 +751,7 @@ function Limitations() {
             "Historical relationships can change. A fingerprint that resembled the past can stop resembling it.",
             "Economic series are revised. Monthly series arrive with a reporting lag. Daily FRED series are not intraday.",
             "The model can read stress when a break does not follow, and it can stay quiet when one does. Those are false positives and false negatives.",
-            "The AI-concentration input is a static baseline. The breadth vector is not exchange breadth. The volatility vector inside the index is the yield curve.",
+            "The concentration input is a fixed 32.4% baseline, not a live market-cap feed. The vector named Market Breadth is unemployment and the 10-year, not advance/decline. The vector named Volatility Regime is the 10-year minus 2-year curve and the 10-year level, not VIX.",
             "Nothing on this page is a solicitation or a personal recommendation.",
           ].map((item) => (
             <li key={item} className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-5 py-4 text-sm leading-relaxed text-[#E4EAF2] sm:text-base">{item}</li>
