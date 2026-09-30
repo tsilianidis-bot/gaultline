@@ -250,6 +250,10 @@ describe("/app header strip has no hard-coded placeholder values", () => {
     expect(fredObservationState("2026-09-29", "daily", NOW)).toBe("DELAYED");
     expect(fredObservationState("2026-06-01", "monthly", NOW)).toBe("STALE");
     expect(cpiYoY(cpi.slice(0, 12))).toBeNull();
+    // A missing month (".") elsewhere in the window does not block YoY; a missing base month does.
+    const withGap = cpi.map((obs, i) => (i === 5 ? { ...obs, value: "." } : obs));
+    expect(cpiYoY(withGap)?.value).toBeCloseTo(3.127, 2);
+    expect(cpiYoY(cpi.map((obs, i) => (i === 12 ? { ...obs, value: "." } : obs)))).toBeNull();
   });
 
   it("AppLayout no longer reads DEFAULT_INDICATORS or labels the FRED index as DXY", () => {

@@ -48,7 +48,7 @@ export const APP_HEADER_FRED_SERIES = [
   // Daily observations, released weekly (Fed H.10), so staleness follows the weekly release cadence.
   { id: "DTWEXBGS", limit: 2, cadence: "weekly" },
   { id: "FEDFUNDS", limit: 2, cadence: "monthly" },
-  { id: "CPIAUCSL", limit: 13, cadence: "monthly" },
+  { id: "CPIAUCSL", limit: 14, cadence: "monthly" },
 ] as const satisfies ReadonlyArray<{ id: string; limit: number; cadence: FredCadence }>;
 
 export type AppHeaderFredSeriesId = (typeof APP_HEADER_FRED_SERIES)[number]["id"];
@@ -102,10 +102,11 @@ function fredItem(
   };
 }
 
-/** CPI YoY from 13 monthly CPIAUCSL levels; unavailable unless the base month is exactly 12 months earlier. */
+/** CPI YoY from monthly CPIAUCSL levels; unavailable unless the base month exactly 12 months earlier is published. */
 export function cpiYoY(observations: readonly FredObservation[] | null | undefined): { date: string; value: number } | null {
+  // FRED can publish "." for a missing month, so look for the exact 12-month base rather than index 12.
   const obs = validObservations(observations);
-  if (obs.length < 13) return null;
+  if (obs.length < 2) return null;
   const latest = obs[0];
   const base = obs.find(item => {
     const [y, m] = latest.date.split("-").map(Number);
