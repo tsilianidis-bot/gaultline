@@ -249,7 +249,7 @@ function TrackRecordSnippet() {
         <div className="flex items-center gap-2">
           <Shield size={12} style={{ color: "#00FF88" }} />
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, letterSpacing: "0.3em", color: "rgba(100,116,139,0.6)" }}>
-            METHODOLOGY VALIDATED
+            RETROSPECTIVE RECONSTRUCTION
           </span>
         </div>
         <button
@@ -295,7 +295,7 @@ function TrackRecordSnippet() {
           style={{ background: "rgba(0,255,136,0.04)", border: "1px solid rgba(0,255,136,0.12)" }}
         >
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "rgba(0,255,136,0.6)", letterSpacing: "0.15em" }}>
-            25 YEARS · 300+ READINGS · SAME ENGINE
+            ARCHIVED 2000–2026 · NOT LIVE · NOT INDEPENDENTLY VALIDATED
           </span>
         </div>
       </div>

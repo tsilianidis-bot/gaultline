@@ -415,23 +415,23 @@ p{font-size:14px;line-height:1.7;color:#94A3B8;margin:0 0 16px;}
 <p>It's called the <span class="hl">Pressure Index</span>. Here's what it is and why it matters.</p>
 <h2>What is the Pressure Index?</h2>
 <p>Most market tools show you price. FAULTLINE shows you <em>pressure</em> &mdash; the systemic forces building beneath the surface before they become price moves.</p>
-<p>The Pressure Index is a composite score from <span class="hl">0 to 100</span> that aggregates 8 independent risk vectors in real time. Think of it as a seismograph for the financial system.</p>
+<p>The Pressure Index is a composite score from <span class="hl">0 to 100</span> that combines six weighted risk vectors using published FRED observations and a static AI concentration baseline. Several vectors share inputs. Think of it as a seismograph for the financial system.</p>
 <div class="gauge"></div>
-<div class="glabel"><span>0 &mdash; CALM</span><span>50 &mdash; BUILDING</span><span>100 &mdash; CRITICAL</span></div>
-<h2>The 8 Vectors</h2>
-<div class="vrow"><div class="vnum">1</div><div><div class="vtitle">Credit Stress</div><div class="vdesc">Corporate bond spreads, HY/IG ratio, credit default swap activity.</div></div></div>
-<div class="vrow"><div class="vnum">2</div><div><div class="vtitle">Liquidity Pressure</div><div class="vdesc">Fed balance sheet, bank reserves, repo market stress.</div></div></div>
-<div class="vrow"><div class="vnum">3</div><div><div class="vtitle">Volatility Regime</div><div class="vdesc">VIX level and trend, vol-of-vol, term structure.</div></div></div>
-<div class="vrow"><div class="vnum">4</div><div><div class="vtitle">Dollar Pressure</div><div class="vdesc">DXY trend, EM currency stress, dollar funding.</div></div></div>
-<div class="vrow"><div class="vnum">5</div><div><div class="vtitle">Yield Curve Stress</div><div class="vdesc">2s10s spread, inversion depth, real yield level.</div></div></div>
-<div class="vrow"><div class="vnum">6</div><div><div class="vtitle">Equity Breadth</div><div class="vdesc">% of stocks above 200-day MA, advance/decline, new highs vs lows.</div></div></div>
-<div class="vrow"><div class="vnum">7</div><div><div class="vtitle">Macro Momentum</div><div class="vdesc">ISM, PMI, jobs data, consumer confidence.</div></div></div>
-<div class="vrow"><div class="vnum">8</div><div><div class="vtitle">Systemic Risk</div><div class="vdesc">Bank CDS, financial sector stress, cross-asset correlation spikes.</div></div></div>
+<div class="glabel"><span>0 &mdash; CALM</span><span>50 &mdash; ELEVATED</span><span>100 &mdash; CRITICAL</span></div>
+<h2>The Six Vectors</h2>
+<div class="vrow"><div class="vnum">1</div><div><div class="vtitle">Liquidity Stress</div><div class="vdesc">HY credit spread and SOFR.</div></div></div>
+<div class="vrow"><div class="vnum">2</div><div><div class="vtitle">Credit Contagion Risk</div><div class="vdesc">HY spread, 10Y Treasury yield, and unemployment.</div></div></div>
+<div class="vrow"><div class="vnum">3</div><div><div class="vtitle">Yield Curve &amp; 10Y Level</div><div class="vdesc">10Y minus 2Y Treasury spread blended with the 10Y yield level.</div></div></div>
+<div class="vrow"><div class="vnum">4</div><div><div class="vtitle">Macro Sensitivity</div><div class="vdesc">CPI and PPI year-over-year changes plus the effective federal funds rate.</div></div></div>
+<div class="vrow"><div class="vnum">5</div><div><div class="vtitle">Labor &amp; Rates</div><div class="vdesc">Unemployment blended with the 10Y Treasury yield.</div></div></div>
+<div class="vrow"><div class="vnum">6</div><div><div class="vtitle">AI / Speculation (Static Baseline)</div><div class="vdesc">A fixed concentration score of 65 adjusted by the 10Y yield and HY spread; not a live concentration measurement.</div></div></div>
 <h2>How to read it</h2>
-<p><span class="hl">0&ndash;30:</span> Low pressure. Risk assets can trend. Momentum strategies work.<br/>
-<span class="hl">30&ndash;55:</span> Building pressure. Watch for regime shifts. Reduce leverage.<br/>
-<span class="hl">55&ndash;75:</span> Elevated. Defensive positioning. Hedge exposure.<br/>
-<span class="hl">75&ndash;100:</span> Critical. Capital preservation mode. Cash is a position.</p>
+<p><span class="hl">0 to below 25:</span> Low.<br/>
+<span class="hl">25 to below 45:</span> Moderate.<br/>
+<span class="hl">45 to below 65:</span> Elevated.<br/>
+<span class="hl">65 to below 80:</span> High.<br/>
+<span class="hl">80 to 100:</span> Critical.</p>
+<p>These are pressure bands, not validated crash probabilities. Check input freshness and fallback labels alongside the score.</p>
 <p>Open the Pressure Index now and check today's reading.</p>
 <a href="${siteUrl}/app/pressure" class="cta">View Today's Pressure Index &#x2192;</a>
 </div>
