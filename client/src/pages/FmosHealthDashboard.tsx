@@ -72,7 +72,7 @@ const VALIDATION_FINDINGS = [
     severity: "high",
     engine: "Regime (Engine 4)",
     title: "HIGH RISK and CRITICAL RISK Never Triggered",
-    detail: "In 36 years of backtesting (1990–2026), the HIGH RISK and CRITICAL RISK regimes were never triggered. The pressure score maximum was 51.5, just below the HIGH RISK threshold of 52.",
+    detail: "In the static Phase-2 demo snapshot, the HIGH RISK and CRITICAL RISK regimes were never triggered. The pressure score maximum was 51.5, just below the HIGH RISK threshold of 52.",
     fix: "Lower the ELEVATED/HIGH boundary from 52 to 45, and HIGH/CRITICAL from 68 to 60. Alternatively, recalibrate component weights to produce higher scores during known crisis periods (2008, 2020).",
   },
   {
@@ -165,7 +165,7 @@ const PIPELINE_STAGES = [
   { id: 6,  name: 'Evidence Engine',     description: 'Weights 14 independent evidence families and computes domain scores',   category: 'Weighting',      categoryColor: '#06b6d4', status: 'completed', latency: '41ms' },
   { id: 7,  name: 'Probability Engine',  description: 'Derives bull/bear/neutral probability distribution from evidence',      category: 'Prediction',     categoryColor: '#f97316', status: 'completed', latency: '15ms' },
   { id: 8,  name: 'Confidence Engine',   description: 'Calculates conviction score and uncertainty bounds for each output',    category: 'Meta',           categoryColor: '#6b7280', status: 'completed', latency: '12ms' },
-  { id: 9,  name: 'Historical Analog',   description: 'Matches current conditions to 36 years of historical analogs',          category: 'Analysis',       categoryColor: '#a855f7', status: 'completed', latency: '67ms' },
+  { id: 9,  name: 'Historical Analog',   description: 'Illustrates historical reference matching in the static Phase-2 demo',          category: 'Analysis',       categoryColor: '#a855f7', status: 'completed', latency: '67ms' },
   { id: 10, name: 'Decision Engine',     description: 'Synthesizes all signals into a final directional recommendation',       category: 'Output',         categoryColor: '#22c55e', status: 'completed', latency: '8ms'  },
   { id: 11, name: 'Calibration',         description: 'Applies Brier score corrections and historical accuracy adjustments',   category: 'Meta',           categoryColor: '#6b7280', status: 'completed', latency: '11ms' },
   { id: 12, name: 'Learning Loop',       description: 'Updates model weights based on recent prediction outcomes',             category: 'Meta',           categoryColor: '#6b7280', status: 'completed', latency: '14ms' },
@@ -263,7 +263,7 @@ export default function FmosHealthDashboard() {
           {/* STATIC DEMO banner — Phase 2 research snapshot, not live */}
           <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
             <span className="font-semibold text-amber-300">STATIC DEMO</span>
-            {" — "}Phase 2 research snapshot. Not live FMOS output and not governed MODEL_PROBABILITY.
+            {" — "}Phase 2 research snapshot. Not live FMOS output, not independently validated backtesting, and not governed MODEL_PROBABILITY.
             Data class: {BACKTEST_SUMMARY_DATA_CLASS}.
           </div>
           {/* KPI Row */}
@@ -295,7 +295,7 @@ export default function FmosHealthDashboard() {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-slate-300 flex items-center gap-2">
                 <Layers className="w-4 h-4 text-cyan-400" />
-                Regime Distribution (1990–2026, n=1,902 weeks)
+                Static Demo Regime Distribution (n=1,902)
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -315,7 +315,7 @@ export default function FmosHealthDashboard() {
               ))}
               <p className="text-xs text-yellow-400 mt-3 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
-                HIGH RISK and CRITICAL RISK never triggered in 36 years — thresholds need recalibration
+                HIGH RISK and CRITICAL RISK not triggered in the static demo — not a live-engine validation result
               </p>
             </CardContent>
           </Card>

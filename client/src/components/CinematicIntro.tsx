@@ -468,7 +468,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
               color: "rgba(0,212,255,0.72)",
               animation: "ci-fade-up 0.8s ease-out 1.1s both",
             }}>
-              MACROECONOMIC RISK INTELLIGENCE
+              STRUCTURAL MARKET INTELLIGENCE
             </div>
           </div>
         )}

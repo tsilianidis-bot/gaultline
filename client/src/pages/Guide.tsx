@@ -117,7 +117,7 @@ const SECTIONS: Section[] = [
           {[
             { icon: Database, label: "Live FRED Data", desc: "10+ Federal Reserve economic series updated in real-time: yields, spreads, inflation, unemployment, SOFR, and more." },
             { icon: Cpu, label: "AI Regime Engine", desc: "A proprietary macro regime classifier that continuously evaluates systemic risk across 6 stress domains and assigns a 0–10 pressure score." },
-            { icon: Target, label: "S.O.B.™ Framework", desc: "Signals of Breakdown — FAULTLINE's proprietary framework measuring the accumulation of market stress across 6 independent pillars. Not a crash prediction system. A structured awareness tool." },
+            { icon: Target, label: "S.O.B.™ Framework", desc: "Signals of Breakdown — FAULTLINE's proprietary framework measuring the accumulation of market stress across 6 weighted pillars with shared inputs. Not a crash prediction system. A structured awareness tool." },
           ].map(({ icon: Icon, label, desc }) => (
             <Panel key={label} accentColor="rgba(0,212,255,0.2)">
               <Icon className="w-4 h-4 text-cyan-400 mb-2" />
@@ -144,7 +144,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel accentColor="rgba(255,68,68,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-red-400">Pressure Tab</span> is the core heart of FAULTLINE. It displays the <strong className="text-white">FAULTLINE Pressure Index</strong> — a composite 0–100 score representing the current level of systemic financial stress. The score is derived from 6 independent risk vectors, each weighted and normalised from live FRED economic data.
+            The <span className="text-red-400">Pressure Tab</span> is the core heart of FAULTLINE. It displays the <strong className="text-white">FAULTLINE Pressure Index</strong> — a composite 0–100 score representing the current level of systemic financial stress. The score is derived from 6 weighted risk vectors built from FRED economic data and a static AI concentration baseline; several vectors share inputs.
           </p>
         </Panel>
 
@@ -171,12 +171,12 @@ const SECTIONS: Section[] = [
           <p className="text-[10px] font-mono text-white/40 tracking-widest uppercase">Risk Vectors</p>
           <div className="space-y-1">
             {[
-              { name: "Liquidity Stress", desc: "Measures tightness in short-term funding markets. Derived from SOFR rate, HY credit spread (BAMLH0A0HYM2), and NFCI (National Financial Conditions Index). High values indicate banks and funds are struggling to access cash." },
-              { name: "Credit Contagion Risk", desc: "Tracks the risk of credit stress spreading across the financial system. Uses HY spread, 10Y Treasury yield (DGS10), and the yield curve slope. Elevated when credit markets price in widespread default risk." },
-              { name: "Volatility Regime", desc: "Assesses whether markets are in a calm or turbulent volatility regime. Derived from the VIX proxy (VIXCLS) and recent equity market behaviour. High values signal fear and uncertainty are dominant." },
-              { name: "Macro Sensitivity", desc: "How sensitive the current environment is to macro surprises. Uses CPI inflation (CPIAUCSL), unemployment (UNRATE), and the 10Y yield. High sensitivity means small data misses can cause outsized market moves." },
-              { name: "Market Breadth", desc: "Measures the health of market participation. Derived from equity market conditions and the spread between growth and value. Narrow breadth (few stocks leading) is a classic late-cycle warning sign." },
-              { name: "AI / Speculative Bubble Exposure", desc: "Tracks the degree to which speculative and AI-driven assets are inflating systemic risk. Uses equity valuations and sector concentration data. High values indicate bubble dynamics are contributing to overall pressure." },
+              { name: "Liquidity Stress", desc: "Measures tightness in short-term funding markets. Uses SOFR and the HY credit spread (BAMLH0A0HYM2). These are funding and credit proxies; they do not establish that banks or funds cannot access cash." },
+              { name: "Credit Contagion Risk", desc: "Tracks the risk of credit stress spreading across the financial system. Uses HY spread, 10Y Treasury yield (DGS10), and unemployment (UNRATE). Elevated when credit markets price in widespread default risk." },
+              { name: "Yield Curve (10Y–2Y) & 10Y Level", desc: "Scores the shape of the Treasury curve: the 10Y minus 2Y spread (DGS10 − DGS2) in inversion and flatness bands, blended with the 10Y yield level. Formerly labelled Volatility Regime; it does not read VIX or realized volatility." },
+              { name: "Macro Sensitivity", desc: "How sensitive the current environment is to macro surprises. Uses CPI (CPIAUCSL) and PPI (PPIACO) year-over-year changes plus the effective federal funds rate (FEDFUNDS)." },
+              { name: "Labor & Rates (Unemployment, 10Y)", desc: "Blends the unemployment rate (UNRATE) with the 10Y Treasury yield (DGS10). Formerly labelled Market Breadth; it is not an advance/decline or market-participation measure." },
+              { name: "AI / Speculation (Static Baseline)", desc: "Starts from a static reference value for AI mega-cap concentration (~32.4% of the S&P 500) — not a live measurement — and adjusts it with the live 10Y yield and high-yield spread. It does not read live valuations or market-cap data." },
             ].map(({ name, desc }) => (
               <Panel key={name} className="!p-3">
                 <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>
@@ -902,7 +902,7 @@ const SECTIONS: Section[] = [
               { name: "Historical Analog Engine", role: "Matches the current environment to historical crisis eras. Feeds the best-match analog and similarity score." },
               { name: "Aftershock Engine", role: "Analyses post-transition market behaviour. Feeds recovery and continuation patterns." },
               { name: "Cross-Market Intelligence", role: "Monitors correlations and divergences across equities, bonds, crypto, and commodities." },
-              { name: "SOB Framework", role: "Signals of Breakdown — tracks accumulation of stress across 6 independent pillars." },
+              { name: "SOB Framework", role: "Signals of Breakdown — tracks accumulation of stress across 6 weighted pillars with shared inputs." },
             ].map(({ name, role }) => (
               <Panel key={name} className="!p-3">
                 <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>

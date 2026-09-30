@@ -221,7 +221,7 @@ export default function DailyReport() {
           </div>
 
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '6px' }}>
-            FAULTLINE · Systemic Risk Intelligence
+            FAULTLINE · Structural Market Intelligence
           </div>
           <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '22px', color: '#F0F4FF', lineHeight: 1.1, marginBottom: '10px' }}>
             Macro Intelligence Briefing

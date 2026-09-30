@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
-import { injectPageMeta, injectPageMetaAsync } from "../seoMeta";
+import { renderSpaPage } from "../publicContentSsr";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -41,9 +41,10 @@ export async function setupVite(app: Express, server: Server) {
       );
       const page = await vite.transformIndexHtml(url, template);
       // Inject per-page metadata so crawlers get unique titles/descriptions
-      // without requiring JavaScript execution
-      const pageWithMeta = await injectPageMetaAsync(page, url);
-      res.status(200).set({ "Content-Type": "text/html" }).end(pageWithMeta);
+      // without requiring JavaScript execution. Published articles and Daily
+      // Briefs get their own metadata/content; missing slugs return 404.
+      const rendered = await renderSpaPage(page, url);
+      res.status(rendered.status).set({ "Content-Type": "text/html", ...rendered.headers }).end(rendered.html);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
@@ -71,9 +72,11 @@ export function serveStatic(app: Express) {
     try {
       const indexPath = path.resolve(distPath, "index.html");
       const html = await fs.promises.readFile(indexPath, "utf-8");
-      const htmlWithMeta = await injectPageMetaAsync(html, req.originalUrl);
+      const rendered = await renderSpaPage(html, req.originalUrl);
+      res.status(rendered.status);
+      res.set(rendered.headers);
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(htmlWithMeta);
+      res.send(rendered.html);
     } catch (err) {
       res.status(500).send("Internal Server Error");
     }

@@ -207,7 +207,8 @@ function PressureInstrument({
   historicalPercentile: number | null; confidence?: number; lastUpdated?: Date | null; phase: number;
   scoreChange?: number | null;
 }) {
-  const displayScore = useCountUp(score, 1400, phase >= 3);
+  // Number and ring render the same published score; no count-up from 0.
+  const displayScore = Math.round(score);
   const r = 110;
   const cx = 160;
   const cy = 155;

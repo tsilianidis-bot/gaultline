@@ -290,7 +290,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </div>
               {!isMobile && (
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#8A9AB0', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-                  Systemic Risk Intelligence
+                  Structural Market Intelligence
                 </div>
               )}
             </div>

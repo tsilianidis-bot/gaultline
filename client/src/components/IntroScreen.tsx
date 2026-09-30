@@ -301,7 +301,7 @@ export default function IntroScreen({ onComplete }: IntroScreenProps) {
               textTransform: 'uppercase',
               animation: 'fl-fade-up 0.8s ease-out 1s both',
             }}>
-              MACROECONOMIC RISK INTELLIGENCE
+              STRUCTURAL MARKET INTELLIGENCE
             </div>
           </div>
         )}

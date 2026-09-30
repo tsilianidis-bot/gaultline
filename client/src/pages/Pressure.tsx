@@ -22,6 +22,7 @@ import HistoricalContextEngine from "./HistoricalContextEngine";
 import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUnavailableCopy, humanizeConflictType, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
+import { pressureVectorLabel } from "@shared/pressureVectorLabels";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -555,10 +556,10 @@ function LiquidityStressMeter({ vectors, integrityLabel }: { vectors: RiskVector
 const CONTAGION_ORDER = [
   { id: "liquidity-stress",   label: "LIQUIDITY",    icon: "💧" },
   { id: "credit-contagion",   label: "CREDIT",       icon: "📉" },
-  { id: "volatility-regime", label: "VOLATILITY",   icon: "⚡" },
+  { id: "volatility-regime", label: "YIELD CURVE",  icon: "⚡" },
   { id: "macro-sensitivity", label: "MACRO",         icon: "🏛" },
-  { id: "market-breadth",    label: "BREADTH",       icon: "📊" },
-  { id: "ai-bubble",         label: "SPECULATIVE",   icon: "🤖" },
+  { id: "market-breadth",    label: "LABOR/RATES",   icon: "📊" },
+  { id: "ai-bubble",         label: "AI BASELINE",   icon: "🤖" },
 ];
 
 function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVector[]; overallPressure: number }) {
@@ -995,7 +996,7 @@ export default function Pressure() {
     ];
     const vectors: RiskVector[] = canonicalState.engines.map(engine => ({
       id: engine.engineId,
-      label: engine.engineName,
+      label: pressureVectorLabel(engine.engineId, engine.engineName),
       description: `Canonical engine ${engine.engineId}.`,
       score: engine.value ?? 0,
       level: pressureLevel,

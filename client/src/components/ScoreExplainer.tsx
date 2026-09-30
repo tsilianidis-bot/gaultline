@@ -118,7 +118,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
       if (v >= 25) return "Market conditions show moderate stress. Some fault lines are active but systemic risk remains contained. Normal risk management applies.";
       return "Market conditions are calm. Systemic pressure is low, liquidity is healthy, and no major fault lines are currently active.";
     },
-    measures: "The FAULTLINE Pressure Index is a 0–100 systemic-pressure composite of six fixed vectors: liquidity, credit, volatility, macro, breadth, and AI/speculation. It is a current stress-context measure, not a calibrated crash forecast.",
+    measures: "The FAULTLINE Pressure Index is a 0–100 systemic-pressure composite of six fixed vectors: liquidity, credit, yield curve (10Y–2Y) and 10Y level, macro, labor and rates, and AI/speculation (static baseline). It is a current stress-context measure, not a calibrated crash forecast.",
     howCalculated: "Each vector is scored on a 0–100 scale and combined with frozen Champion V1 weights. Data include daily and monthly FRED series; the AI/speculation vector includes a disclosed static baseline. Higher scores indicate more modeled stress.",
     whyItMatters: "The index organizes the current model inputs into one stress context. Historical early-warning performance remains research-only and inconclusive; use the vector evidence rather than treating the index as a prediction.",
     ranges: [
