@@ -30,7 +30,7 @@ import { blogPosts, dailyBriefSnapshots, organicContent } from "../drizzle/schem
 import type { BlogPost, OrganicContent } from "../drizzle/schema";
 import { getDb } from "./db";
 import { injectPageMeta, injectPageMetaAsync, type PageMeta } from "./seoMeta";
-import { getSoroArticles, type SoroArticle } from "./soroBlogFeed";
+import { getSoroArticles, isSoroSlug, type SoroArticle } from "./soroBlogFeed";
 import {
   PUBLIC_SITE_URL,
   buildDailyBriefStructuredData,
@@ -628,7 +628,7 @@ export function matchPublicContentRoute(originalUrl: string): MatchedRoute | nul
   }
   if (pathPart === "/blog" || pathPart === "/blog/") {
     const post = new URLSearchParams(query).get("post");
-    if (post && post.length <= MAX_SLUG_LENGTH) return { kind: "soro", slug: post };
+    if (post) return { kind: "soro", slug: post };
   }
   return null;
 }
@@ -653,10 +653,14 @@ export async function renderPublicContentPage(
   }
 
   if (route.kind === "soro") {
+    // A slug that can never be a Soro slug is a 404 without consulting the feed.
+    if (!isSoroSlug(route.slug)) return { html: renderNotFoundPage(template, "/blog", "blog"), status: 404, headers: NOT_FOUND_HEADERS };
     const articles = await loaders.loadSoroArticles();
-    const article = articles?.find((a) => a.slug === route.slug);
-    // Unknown or unreadable Soro post: keep the normal /blog page (canonical /blog).
-    if (!article) return null;
+    // Feed unreadable: existence cannot be confirmed, keep the normal /blog page (canonical /blog).
+    if (!articles) return null;
+    const article = articles.find((a) => a.slug === route.slug);
+    // Feed read and the slug is not a published article: 404 + noindex, not a 200 blog index.
+    if (!article) return { html: renderNotFoundPage(template, "/blog", "blog"), status: 404, headers: NOT_FOUND_HEADERS };
     return { html: renderSoroArticlePage(template, article), status: 200, headers: {} };
   }
 

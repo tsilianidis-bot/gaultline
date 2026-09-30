@@ -36,8 +36,10 @@ export interface CanonicalMarketState {
   now: {
     pressureScore: number;
     regime: string;
-    stressLevel: "Low" | "Elevated" | "High" | "Crisis";
-    direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating";
+    /** Legacy seismograph labels, or the engine band level ("Moderate", "Critical") once projected from canonical state. */
+    stressLevel: "Low" | "Moderate" | "Elevated" | "High" | "Critical" | "Crisis";
+    /** "Unavailable" when the canonical composite direction cannot be derived (no prior comparable reading). */
+    direction: "Improving" | "Stable" | "Deteriorating" | "Accelerating" | "Unavailable";
     historicalPercentile: number;
     headline: string;
     topDrivers: string[];

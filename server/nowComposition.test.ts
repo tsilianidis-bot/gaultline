@@ -64,7 +64,7 @@ describe("NOW destination composition", () => {
     const contextStrip = source("client/src/components/MarketContextStrip.tsx");
     const synthesis = source("client/src/components/MarketSynthesisPanel.tsx");
     const narrativeBanner = source("client/src/components/SeismographNarrativeBanner.tsx");
-    const appLayout = source("client/src/components/AppLayout.tsx");
+    const appHeaderStrip = source("client/src/lib/appHeaderStrip.ts");
 
     expect(nowSource).toContain("formatCanonicalScore(pressure)");
     expect(hero).toContain("formatCanonicalScore(score * 10)");
@@ -72,7 +72,8 @@ describe("NOW destination composition", () => {
     expect(contextStrip).toContain("formatCanonicalScore(canonicalPressure ?? overall.score * 10)");
     expect(synthesis).toContain("formatCanonicalScore(canonicalState.pressureIndex ?? 0)");
     expect(narrativeBanner).toContain("formatCanonicalScore(output.pressureScore)");
-    expect(appLayout).toContain("value: formatCanonicalScore(overall.score * 10)");
+    // Header strip Pressure Index reads the canonical snapshot score (0–100), not the legacy 0–10 engine.
+    expect(appHeaderStrip).toContain("value: formatCanonicalScore(score as number)");
 
     expect(hero).not.toContain("/10</span>");
     expect(briefing).not.toContain("`${overall.score.toFixed(1)}/10`");

@@ -15,7 +15,7 @@ import {
   type PublicContentLoaders,
   type PublicDailyBrief,
 } from "./publicContentSsr";
-import { SORO_BLOG_EMBED_SRC, extractSoroArticlesLiteral, parseSoroEmbedArticles, type SoroArticle } from "./soroBlogFeed";
+import { SORO_BLOG_EMBED_SRC, SORO_FEATURED_IMAGE_CSP_SOURCE, extractSoroArticlesLiteral, parseSoroEmbedArticles, type SoroArticle } from "./soroBlogFeed";
 
 const root = process.cwd();
 const template = readFileSync(resolve(root, "client/index.html"), "utf8");
@@ -373,9 +373,36 @@ describe("Soro blog article (/blog?post=:slug)", () => {
     expect(bodyFallback(page.html)).toContain(`<h1>${soroArticle.title}</h1>`);
   });
 
-  it("unknown or unreadable Soro posts fall back to the normal /blog page", async () => {
-    expect(await renderPublicContentPage(template, "/blog?post=unknown-post", loaders())).toBeNull();
+  it("unknown Soro slugs return 404 + noindex instead of the 200 blog index", async () => {
+    for (const url of ["/blog?post=unknown-post", "/blog?post=Bad%20Slug!", `/blog?post=${"a".repeat(260)}`]) {
+      const page = await renderPublicContentPage(template, url, loaders());
+      expect(page, url).not.toBeNull();
+      expect(page!.status, url).toBe(404);
+      expect(page!.headers["X-Robots-Tag"], url).toBe("noindex");
+      const h = head(page!.html);
+      expect(h.robots, url).toEqual(["noindex, follow"]);
+      expect(h.canonical, url).toBeUndefined();
+      expect(h.title, url).toBe("Article not found | FAULTLINE");
+    }
+    // Through the SPA entry point too (what the prod catch-all serves).
+    const spa = await renderSpaPage(template, "/blog?post=unknown-post", loaders());
+    expect(spa.status).toBe(404);
+  });
+
+  it("an unreadable Soro feed keeps the normal /blog page (existence cannot be confirmed)", async () => {
     expect(await renderPublicContentPage(template, `/blog?post=${soroArticle.slug}`, loaders({ soro: null }))).toBeNull();
+    expect(await renderPublicContentPage(template, "/blog", loaders())).toBeNull();
+  });
+
+  it("CSP img-src allows only the Soro featured-image folder, not all of supabase.co", () => {
+    const serverIndex = readFileSync(resolve(root, "server/_core/index.ts"), "utf8");
+    const imgSrc = serverIndex.split("\n").find((line) => line.includes("img-src"))!;
+    expect(imgSrc).toContain("${SORO_FEATURED_IMAGE_CSP_SOURCE}");
+    expect(serverIndex).not.toMatch(/\*\.supabase\.co|https:\/\/[a-z0-9]+\.supabase\.co["' ;`]/);
+    expect(SORO_FEATURED_IMAGE_CSP_SOURCE).toMatch(/^https:\/\/afocirmbqdxnkyescnev\.supabase\.co\/storage\/v1\/object\/public\/featured-images\/[0-9a-f-]{36}\/$/);
+    // The live Soro featured image is covered by that source (CSP path-prefix match).
+    const liveImage = "https://afocirmbqdxnkyescnev.supabase.co/storage/v1/object/public/featured-images/59987b54-3140-4228-a59a-2acbbc63c959/workflows/d02a3ef8-dbe3-4db1-a832-2339834fc28a.webp";
+    expect(liveImage.startsWith(SORO_FEATURED_IMAGE_CSP_SOURCE)).toBe(true);
   });
 
   it("the server reads the same embed the client mounts", () => {

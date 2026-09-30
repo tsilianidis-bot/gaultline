@@ -26,6 +26,19 @@ export interface SoroArticle {
 }
 
 const SORO_SLUG_RE = /^[a-z0-9][a-z0-9-]{0,199}$/;
+
+/** True when `slug` has the shape of a Soro article slug (the feed only ever publishes these). */
+export function isSoroSlug(slug: string): boolean {
+  return SORO_SLUG_RE.test(slug);
+}
+
+/**
+ * CSP img-src source for Soro featured images: Soro's Supabase storage host, scoped
+ * to this blog's public featured-images folder (CSP path matching). Narrowest source
+ * that covers the images the Soro feed publishes (asserted in tests).
+ */
+export const SORO_FEATURED_IMAGE_CSP_SOURCE =
+  "https://afocirmbqdxnkyescnev.supabase.co/storage/v1/object/public/featured-images/59987b54-3140-4228-a59a-2acbbc63c959/";
 const SUCCESS_TTL_MS = 10 * 60 * 1000;
 const FAILURE_TTL_MS = 60 * 1000;
 const FETCH_TIMEOUT_MS = 2000;

@@ -8,7 +8,7 @@
  * the engine labels (LOW RISK … SYSTEMIC CRISIS). A missing, withheld or
  * invalid score is "unavailable"; it is never replaced with 0.
  */
-import { customerIntegrityLabel, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
+import { customerIntegrityFromCanonical, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID, PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
 import type { PressureSnapshotView } from "@/lib/pressureSnapshot";
 
@@ -63,13 +63,7 @@ export function landingFromSnapshot(view: PressureSnapshotView): LandingPressure
   if (view.status === "unavailable") return { status: "unavailable", reason: UNAVAILABLE_REASON[view.reason] };
 
   const state = view.state;
-  const integrity = customerIntegrityLabel({
-    hasState: true,
-    quality: state.confidenceOrEvidenceQuality,
-    coherence: state.provenance?.coherenceStatus,
-    fallbackInputCount: state.dataQualitySummary?.fallbackInputCount,
-    staleInputCount: state.dataQualitySummary?.staleInputCount,
-  });
+  const integrity = customerIntegrityFromCanonical(state);
 
   const vectors = PRESSURE_VECTOR_ORDER.map(([id, weight]) => {
     const engine = state.engines.find((item) => item.engineId === id);
@@ -112,6 +106,7 @@ export function formatReadingAge(iso: string, now = Date.now()): string | null {
 export const INTEGRITY_COPY: Record<CustomerIntegrityLabel, string> = {
   LIVE: "Live canonical evidence.",
   CACHED: "Latest persisted canonical snapshot. Monthly FRED series carry publication lag.",
+  DELAYED: "Latest canonical snapshot. Some inputs carry publication lag (monthly FRED series); none are stale or on fallback.",
   STALE: "Some inputs are stale. Treat the reading with care.",
   FALLBACK: "Some inputs are on a governed fallback. Treat the reading with care.",
   UNAVAILABLE: "Evidence is unavailable.",

@@ -8,6 +8,7 @@ import { canonicalBrowserHost } from "./canonicalHost";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerFredProxy } from "../fredProxy";
+import { SORO_FEATURED_IMAGE_CSP_SOURCE } from "../soroBlogFeed";
 import { registerSignalsProxy } from "../signalsProxy";
 import { registerCoinGeckoProxy } from "../coingeckoProxy";
 import { registerSEORoutes } from "../seoRoutes";
@@ -137,7 +138,8 @@ async function startServer() {
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://manus-analytics.com https://us.umami.is https://www.googletagmanager.com https://www.google-analytics.com https://ssl.google-analytics.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:",
-        "img-src 'self' data: blob: https://assets.coingecko.com https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com",
+        // Soro featured images: one Supabase storage folder only (SORO_FEATURED_IMAGE_CSP_SOURCE)
+        `img-src 'self' data: blob: https://assets.coingecko.com https://*.cloudfront.net https://www.google-analytics.com https://www.googletagmanager.com ${SORO_FEATURED_IMAGE_CSP_SOURCE}`,
         "media-src 'self' blob:",
         // Allow connections to first-party analytics, GA4 collect endpoints, and the approved Soro Blog feed
         "connect-src 'self' https://manus-analytics.com https://us.umami.is https://www.google-analytics.com https://analytics.google.com https://stats.g.doubleclick.net https://region1.google-analytics.com https://www.googletagmanager.com https://www.clarity.ms https://*.clarity.ms https://app.trysoro.com",

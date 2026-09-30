@@ -88,7 +88,9 @@ export function projectPressureFromCanonical(
             ? "stale"
             : engine.fallbackStatus === "ACTIVE"
               ? "fallback"
-              : "cached",
+              : engine.freshnessStatus === "DELAYED"
+                ? "delayed"
+                : "cached",
         source: "canonical-intelligence-state",
       } satisfies RiskVector;
     });

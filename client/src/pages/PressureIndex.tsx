@@ -3,6 +3,7 @@
    Cinematic acquisition funnel. No login required.
    Viral, shareable, institutional.
    ============================================================ */
+import { canonicalEngineEvidence } from "@shared/snapshotEvidence";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useEffect, useState } from "react";
 import { useMemo } from "react";
@@ -102,6 +103,9 @@ export default function PressureIndex() {
     canonical: "/pressure-index",
   });
 
+  // Same fallback / stale / delayed definition as every other surface (shared/snapshotEvidence.ts).
+  const evidenceDataStatus = (status: string) => (status === "CURRENT" ? "live" : status.toLowerCase());
+
   // One canonical snapshot drives the ring, number, band, regime, timestamp and interpretation.
   const snapshot = usePressureSnapshot();
   const isLoading = snapshot.status === "loading";
@@ -122,7 +126,7 @@ export default function PressureIndex() {
           // The AI vector's concentration input is a static reference value, not a live measurement.
           dataStatus: engine.sourceInputIds.includes(AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID)
             ? "static"
-            : engine.freshnessStatus === "CURRENT" ? "live" : engine.freshnessStatus.toLowerCase(),
+            : evidenceDataStatus(canonicalEngineEvidence(engine, snapshot.state)),
           fallbackReason: engine.fallbackStatus === "ACTIVE" ? "Governed fallback" : undefined,
           source: "canonical-state",
         }));
