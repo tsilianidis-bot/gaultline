@@ -45,7 +45,8 @@ export const FRED_MAX_OBSERVATION_AGE_DAYS: Record<FredCadence, number> = { dail
 
 export const APP_HEADER_FRED_SERIES = [
   { id: "BAMLH0A0HYM2", limit: 2, cadence: "daily" },
-  { id: "DTWEXBGS", limit: 2, cadence: "daily" },
+  // Daily observations, released weekly (Fed H.10), so staleness follows the weekly release cadence.
+  { id: "DTWEXBGS", limit: 2, cadence: "weekly" },
   { id: "FEDFUNDS", limit: 2, cadence: "monthly" },
   { id: "CPIAUCSL", limit: 13, cadence: "monthly" },
 ] as const satisfies ReadonlyArray<{ id: string; limit: number; cadence: FredCadence }>;
@@ -169,7 +170,7 @@ export function buildAppHeaderStrip(input: {
     quoteItem("10Y Treasury", "FRED:DGS10", input.quotes),
     quoteItem("2Y10Y", "DERIVED:2Y10Y", input.quotes),
     fredItem("HY Spread", "BAMLH0A0HYM2", "daily", fred.BAMLH0A0HYM2, now, value => `${Math.round(value * 100)}bps`, 0.005),
-    fredItem("USD Broad (FRED)", "DTWEXBGS", "daily", fred.DTWEXBGS, now, value => value.toFixed(2), 0.1),
+    fredItem("USD Broad (FRED)", "DTWEXBGS", "weekly", fred.DTWEXBGS, now, value => value.toFixed(2), 0.1),
     fredItem("Fed Funds (EFFR, mo. avg)", "FEDFUNDS", "monthly", fred.FEDFUNDS, now, value => `${value.toFixed(2)}%`, 0.005),
     cpi
       ? { label: "CPI YoY", value: `${cpi.value.toFixed(1)}%`, direction: null, stateLabel: fredObservationState(cpi.date, "monthly", now), title: `FRED CPIAUCSL · observation ${cpi.date}` }

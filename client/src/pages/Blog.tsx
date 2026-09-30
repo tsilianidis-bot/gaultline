@@ -283,11 +283,18 @@ export default function Blog() {
   // Soro deep links (/blog?post=<slug>) are server-rendered with a self-referencing
   // canonical; keep it so hydration does not point the article back at /blog.
   const soroPostSlug = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("post") : null;
+  // An unknown Soro slug is served as 404 + noindex by the server (publicContentSsr.ts);
+  // keep that title and do not re-add a self-referencing canonical on hydration.
+  const [soroPostNotFound] = useState(() =>
+    Boolean(soroPostSlug) && typeof document !== "undefined"
+      && /noindex/i.test(document.querySelector<HTMLMetaElement>('meta[name="robots"]')?.content ?? "")
+      && /not found/i.test(document.title),
+  );
   useSEO({
-    title: "Intelligence Briefings — Macro Commentary & Market Analysis",
+    title: soroPostNotFound ? "Article not found | FAULTLINE" : "Intelligence Briefings — Macro Commentary & Market Analysis",
     description:
       "FAULTLINE Intelligence Briefings: institutional macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
-    canonical: soroPostSlug ? `/blog?post=${encodeURIComponent(soroPostSlug)}` : "/blog",
+    canonical: soroPostSlug && !soroPostNotFound ? `/blog?post=${encodeURIComponent(soroPostSlug)}` : "/blog",
   });
 
   // Inject CollectionPage + Blog JSON-LD structured data for Googlebot
@@ -443,6 +450,11 @@ export default function Blog() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-12">
+        {soroPostNotFound && (
+          <div role="status" data-soro-not-found className="mb-6 rounded border border-amber-400/30 bg-amber-400/5 px-4 py-3 text-sm text-amber-200">
+            Article not found. It may have been removed or the link is incorrect — the latest briefings are below.
+          </div>
+        )}
         {/* Page title */}
         <PageHeader
           title="Intelligence Briefings"

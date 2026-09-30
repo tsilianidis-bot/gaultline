@@ -73,7 +73,7 @@ describe("P1 launch QA — signals and crypto never infinite-load", () => {
 });
 
 describe("P1 launch QA — no LIVE chrome when integrity is FALLBACK", () => {
-  it("maps PARTIAL + live freshness to FALLBACK chrome, never Canonical/LIVE", () => {
+  it("maps PARTIAL + live freshness (no fallback input) to DELAYED chrome, never FALLBACK/Canonical/LIVE", () => {
     const label = customerIntegrityLabel({
       hasState: true,
       freshness: "live",
@@ -82,9 +82,9 @@ describe("P1 launch QA — no LIVE chrome when integrity is FALLBACK", () => {
       fallbackInputCount: 0,
       fredStatus: "healthy",
     });
-    expect(label).toBe("FALLBACK");
-    expect(customerChromeModeLabel(label)).toBe("FALLBACK");
-    expect(customerIntegrityChipLevel(label)).toBe("fallback");
+    expect(label).toBe("DELAYED");
+    expect(customerChromeModeLabel(label)).toBe("DELAYED");
+    expect(customerIntegrityChipLevel(label)).toBe("delayed");
     expect(customerChromeModeLabel(label)).not.toMatch(/LIVE|Canonical/i);
   });
 });
