@@ -1,3 +1,5 @@
+import { canonicalAuthOrigin } from "@shared/authOrigin";
+
 export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 
 function isNonEmptyString(value: unknown): value is string {
@@ -29,7 +31,7 @@ export function buildLoginUrl(
     return "";
   }
 
-  const redirectUri = `${origin}/api/oauth/callback`;
+  const redirectUri = `${canonicalAuthOrigin(origin)}/api/oauth/callback`;
   const state = btoa(redirectUri);
 
   try {
