@@ -2,8 +2,10 @@
  * Public methodology note. Claims match the live engines.
  * Last updated 30 September 2026 — the date of this copy, not a data vintage.
  */
+import { useEffect } from "react";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
+import FullInventory from "@/components/methodology/FullInventory";
 
 const bands = [
   ["0–24", "Low Risk", "LOW RISK"],
@@ -20,15 +22,26 @@ export default function Methodology() {
     canonical: "/methodology",
   });
 
+  // Landing-page links point at anchors in the full inventory (for example
+  // /methodology#sources). The page is lazy-loaded, so scroll after mount.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (!id) return;
+    const timer = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: "start" }), 50);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#080A10] text-[#E4EAF2]">
-      <nav className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+      <nav className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-4">
         <Link href="/" className="font-mono text-sm font-black tracking-[0.22em] text-[#00D4FF] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00D4FF]">
           FAULTLINE
         </Link>
-        <div className="flex gap-5 text-[12px] text-[#A8B8CC]">
+        <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 text-[12px] text-[#A8B8CC]">
           <Link href="/#methodology" className="hover:text-white">Landing note</Link>
           <Link href="/pressure-index" className="hover:text-white">Pressure Index</Link>
+          <a href="#inventory" className="hover:text-white">Full inventory</a>
+          <Link href="/trust" className="hover:text-white">Trust Center</Link>
           <Link href="/contact" className="hover:text-white">Contact</Link>
         </div>
       </nav>
@@ -118,6 +131,8 @@ export default function Methodology() {
             <li>This is not investment advice and not a solicitation to buy or sell any security.</li>
           </ul>
         </section>
+
+        <FullInventory />
       </main>
     </div>
   );
