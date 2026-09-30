@@ -4,6 +4,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import rateLimit from "express-rate-limit";
+import { canonicalBrowserHost } from "./canonicalHost";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { registerFredProxy } from "../fredProxy";
@@ -155,6 +156,8 @@ async function startServer() {
     delete req.headers['x-internal'];
     next();
   });
+
+  app.use(canonicalBrowserHost);
 
   // Stripe webhook MUST use raw body BEFORE express.json() for signature verification
   app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
