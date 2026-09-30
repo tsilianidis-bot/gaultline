@@ -173,10 +173,10 @@ const SECTIONS: Section[] = [
             {[
               { name: "Liquidity Stress", desc: "Measures tightness in short-term funding markets. Derived from SOFR rate, HY credit spread (BAMLH0A0HYM2), and NFCI (National Financial Conditions Index). High values indicate banks and funds are struggling to access cash." },
               { name: "Credit Contagion Risk", desc: "Tracks the risk of credit stress spreading across the financial system. Uses HY spread, 10Y Treasury yield (DGS10), and the yield curve slope. Elevated when credit markets price in widespread default risk." },
-              { name: "Volatility Regime", desc: "Assesses whether markets are in a calm or turbulent volatility regime. Derived from the VIX proxy (VIXCLS) and recent equity market behaviour. High values signal fear and uncertainty are dominant." },
+              { name: "Yield Curve (10Y–2Y) & 10Y Level", desc: "Scores the shape of the Treasury curve: the 10Y minus 2Y spread (DGS10 − DGS2) in inversion and flatness bands, blended with the 10Y yield level. Formerly labelled Volatility Regime; it does not read VIX or realized volatility." },
               { name: "Macro Sensitivity", desc: "How sensitive the current environment is to macro surprises. Uses CPI inflation (CPIAUCSL), unemployment (UNRATE), and the 10Y yield. High sensitivity means small data misses can cause outsized market moves." },
-              { name: "Market Breadth", desc: "Measures the health of market participation. Derived from equity market conditions and the spread between growth and value. Narrow breadth (few stocks leading) is a classic late-cycle warning sign." },
-              { name: "AI / Speculative Bubble Exposure", desc: "Tracks the degree to which speculative and AI-driven assets are inflating systemic risk. Uses equity valuations and sector concentration data. High values indicate bubble dynamics are contributing to overall pressure." },
+              { name: "Labor & Rates (Unemployment, 10Y)", desc: "Blends the unemployment rate (UNRATE) with the 10Y Treasury yield (DGS10). Formerly labelled Market Breadth; it is not an advance/decline or market-participation measure." },
+              { name: "AI / Speculation (Static Baseline)", desc: "Starts from a static reference value for AI mega-cap concentration (~32.4% of the S&P 500) — not a live measurement — and adjusts it with the live 10Y yield and high-yield spread. It does not read live valuations or market-cap data." },
             ].map(({ name, desc }) => (
               <Panel key={name} className="!p-3">
                 <p className="text-[11px] font-mono text-cyan-400 font-bold mb-1">{name}</p>

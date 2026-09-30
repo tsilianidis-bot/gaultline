@@ -74,7 +74,7 @@ const stack = [
     label: "Rates and fixed income",
     items: [
       ["Treasury yields", "2-year, 10-year, and, on the markets board, 30-year constant-maturity rates from FRED."],
-      ["Curve inversion and steepening", "Threshold bands on the 10-year minus 2-year spread inside the volatility vector."],
+      ["Curve inversion and steepening", "Threshold bands on the 10-year minus 2-year spread inside the yield-curve vector."],
       ["Curve on the markets board", "A derived 2-year/10-year spread in basis points."],
     ],
   },
@@ -115,7 +115,7 @@ const futureItems = [
   "Lending-standards or bank loan-officer surveys.",
   "Money supply as a pressure-index input. M2 appears in unused client metadata, not in the live composite.",
   "Direct BLS, BEA, or Treasury.gov clients. Those statistics are read only where FRED republishes them.",
-  "Advance/decline market breadth. The vector named Market Breadth uses unemployment and the 10-year yield.",
+  "Advance/decline market breadth. The Labor & Rates vector (formerly labelled Market Breadth) uses unemployment and the 10-year yield.",
   "A live market-cap concentration feed. The AI vector uses a static 32.4% baseline.",
   "Duration stress as its own model.",
   "A named credit/liquidity divergence module.",
@@ -188,10 +188,10 @@ const bands = [
 const weights = [
   ["High-yield OAS and SOFR", "20%", "Engine label: Liquidity Stress. A blend of the high-yield spread and SOFR, not an order-book liquidity measure."],
   ["High-yield OAS, 10-year, unemployment", "20%", "Engine label: Credit Contagion Risk. That blend only. Not a map of credit moving across named sectors."],
-  ["10-year minus 2-year, plus the 10-year", "15%", "Engine label: Volatility Regime. Curve bands blended with the 10-year level. Not VIX and not realized volatility."],
+  ["10-year minus 2-year, plus the 10-year", "15%", "Label: Yield Curve (10Y–2Y) & 10Y Level (formerly Volatility Regime). Curve bands blended with the 10-year level. Not VIX and not realized volatility."],
   ["CPI, PPI, and federal funds", "20%", "Engine label: Macro Sensitivity. CPI and PPI are year-over-year. Monthly series are lagged."],
-  ["Unemployment and the 10-year", "10%", "Engine label: Market Breadth. Not advance/decline and not exchange breadth."],
-  ["Static 32.4% baseline", "15%", "Engine label: AI / speculative bubble. The 32.4% figure is fixed, then adjusted by the 10-year yield and the high-yield spread. Not a live market-cap feed."],
+  ["Unemployment and the 10-year", "10%", "Label: Labor & Rates (formerly Market Breadth). Not advance/decline and not exchange breadth."],
+  ["Static 32.4% baseline", "15%", "Label: AI / Speculation (Static Baseline). The 32.4% figure is a fixed reference value, then adjusted by the 10-year yield and the high-yield spread. Not a live market-cap feed."],
 ];
 
 const sources = [
@@ -751,7 +751,7 @@ function Limitations() {
             "Historical relationships can change. A fingerprint that resembled the past can stop resembling it.",
             "Economic series are revised. Monthly series arrive with a reporting lag. Daily FRED series are not intraday.",
             "The model can read stress when a break does not follow, and it can stay quiet when one does. Those are false positives and false negatives.",
-            "The concentration input is a fixed 32.4% baseline, not a live market-cap feed. The vector named Market Breadth is unemployment and the 10-year, not advance/decline. The vector named Volatility Regime is the 10-year minus 2-year curve and the 10-year level, not VIX.",
+            "The concentration input is a fixed 32.4% baseline, not a live market-cap feed. The Labor & Rates vector (formerly Market Breadth) is unemployment and the 10-year, not advance/decline. The Yield Curve vector (formerly Volatility Regime) is the 10-year minus 2-year curve and the 10-year level, not VIX.",
             "Nothing on this page is a solicitation or a personal recommendation.",
           ].map((item) => (
             <li key={item} className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-5 py-4 text-base leading-[1.75] text-[#E3E5E8] sm:text-base">{item}</li>

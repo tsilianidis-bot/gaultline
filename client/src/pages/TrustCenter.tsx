@@ -80,14 +80,12 @@ function P({ children }: { children: React.ReactNode }) {
 
 function MethodologyTab() {
   const VECTORS = [
-    { name: "Credit Stress", weight: "18%", desc: "Corporate credit spreads (Moody's Baa–Treasury), high-yield spreads, and financial conditions indices. Credit markets historically lead equity markets by 2–6 weeks." },
-    { name: "Liquidity Conditions", weight: "16%", desc: "Federal Reserve balance sheet, M2 money supply growth, and bank lending standards. Liquidity is the fuel that drives asset prices." },
-    { name: "Yield Curve", weight: "14%", desc: "10Y–2Y Treasury spread, 10Y–3M spread. Inversions have preceded every U.S. recession since 1955 with a median lead time of 12–18 months." },
-    { name: "Inflation Regime", weight: "12%", desc: "CPI, PCE, and core inflation trends. Elevated inflation constrains Fed policy and compresses equity multiples." },
-    { name: "Labor Market", weight: "10%", desc: "Unemployment rate, initial jobless claims, and JOLTS data. Labor market deterioration is a lagging but confirming recession signal." },
-    { name: "Volatility & Sentiment", weight: "10%", desc: "VIX levels and trend, put/call ratios, and AAII sentiment surveys. Extreme readings identify turning points." },
-    { name: "Earnings Momentum", weight: "10%", desc: "Forward earnings revisions, earnings surprise rates, and profit margin trends. Earnings drive long-term equity returns." },
-    { name: "Macro Momentum", weight: "10%", desc: "Leading Economic Index (LEI), ISM Manufacturing PMI, and industrial production. These composite indicators capture broad economic direction." },
+    { name: "Liquidity Stress", weight: "20%", desc: "High-yield credit spread (ICE BofA HY OAS, FRED BAMLH0A0HYM2) and SOFR." },
+    { name: "Credit Contagion Risk", weight: "20%", desc: "High-yield spread, the 10-year Treasury yield (DGS10), and the unemployment rate (UNRATE)." },
+    { name: "Yield Curve (10Y–2Y) & 10Y Level", weight: "15%", desc: "The 10-year minus 2-year Treasury spread (DGS10 − DGS2) in inversion and flatness bands, blended with the 10-year yield level. Previously labelled “Volatility Regime”; it does not read VIX or realized volatility." },
+    { name: "Macro Sensitivity", weight: "20%", desc: "CPI and PPI year-over-year and the effective federal funds rate. Monthly series with publication lag." },
+    { name: "Labor & Rates (Unemployment, 10Y)", weight: "10%", desc: "The unemployment rate blended with the 10-year Treasury yield. Previously labelled “Market Breadth”; it is not an advance/decline or market-participation measure." },
+    { name: "AI / Speculation (Static Baseline)", weight: "15%", desc: "A static reference value for AI mega-cap concentration (~32.4% of the S&P 500) — not a live measurement — adjusted by the live 10-year yield and high-yield spread." },
   ];
 
   const SCORE_SCALE = [
@@ -103,10 +101,10 @@ function MethodologyTab() {
       <SectionLabel>How it works</SectionLabel>
       <H2>Pressure Index Methodology</H2>
       <P>
-        The FAULTLINE Pressure Index is a composite risk score that synthesizes eight independent categories of macroeconomic and market stress into a single 0–100 reading. Higher scores indicate greater systemic pressure. The engine is designed to identify building risk <em>before</em> it becomes obvious in price action.
+        The FAULTLINE Pressure Index is a composite risk score that combines six weighted vectors, built from FRED macroeconomic series and one static reference value, into a single 0–100 reading. Higher scores indicate greater systemic pressure. The engine is designed to identify building risk <em>before</em> it becomes obvious in price action.
       </P>
       <P>
-        All inputs are sourced from publicly available, time-stamped economic releases. The engine uses only data that was available at the time of each reading — no hindsight, no curve-fitting.
+        Live inputs are publicly available FRED series; the AI-concentration input is a static reference value, not a live measurement. Each live reading uses the latest observations available when it is calculated. Historical figures elsewhere on the site are retrospective reconstructions, not readings recorded at the time.
       </P>
 
       <H3>Score Scale</H3>
@@ -122,8 +120,8 @@ function MethodologyTab() {
         ))}
       </div>
 
-      <H3>Eight Measurement Vectors</H3>
-      <P>The Pressure Index weights eight independent measurement categories. No single indicator dominates the score — this multi-factor approach reduces false signals and improves robustness across different market regimes.</P>
+      <H3>Six Measurement Vectors</H3>
+      <P>The Pressure Index is a fixed-weight sum of six vectors. Several vectors share inputs — the 10-year yield feeds four of them — so they are not fully independent. Vectors are named by what they compute; internal identifiers are unchanged.</P>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "32px" }}>
         {VECTORS.map(v => (
           <div key={v.name} style={{ padding: "16px 20px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", display: "grid", gridTemplateColumns: "180px 60px 1fr", gap: "16px", alignItems: "start" }}>
@@ -144,7 +142,8 @@ function MethodologyTab() {
           <li>The model was designed for U.S. macro conditions and may be less reliable in non-U.S. contexts.</li>
           <li>Sudden exogenous shocks (pandemics, geopolitical events) may not be captured until data releases confirm them.</li>
           <li>The Pressure Index measures systemic risk, not individual stock performance. A high score does not guarantee a market decline.</li>
-          <li>Back-test results reflect what the model would have produced using data available at the time — not what it would have predicted in advance.</li>
+          <li>The AI / Speculation vector uses a static concentration baseline. It is a reference value, not a live market-cap measurement.</li>
+          <li>Historical figures (Track Record) are retrospective reconstructions that use revised data and a crisis amplifier calibrated against known historical stress episodes. They are not a point-in-time or independently validated predictive backtest.</li>
         </ul>
       </Card>
 
@@ -288,7 +287,7 @@ function DisclaimersTab() {
       <P>FAULTLINE is not a registered investment advisor, broker-dealer, or financial planner. No content on this platform should be construed as a recommendation to buy, sell, or hold any security, cryptocurrency, or other financial instrument.</P>
 
       <H3>Investing Involves Risk</H3>
-      <P>All investing involves risk, including the possible loss of principal. Past performance — including historical Pressure Index readings and back-tested results — does not guarantee future results. Market conditions can and do change rapidly in ways that cannot be predicted by any model.</P>
+      <P>All investing involves risk, including the possible loss of principal. Past performance — including historical Pressure Index readings and retrospective reconstructions — does not guarantee future results. Market conditions can and do change rapidly in ways that cannot be predicted by any model.</P>
       <P>The Pressure Index and related signals are probabilistic tools, not certainties. A high Pressure Index reading does not guarantee a market decline. A low reading does not guarantee continued appreciation.</P>
 
       <H3>You Are Responsible for Your Decisions</H3>
@@ -320,7 +319,7 @@ function FAQTab() {
   const FAQS = [
     {
       q: "What is the FAULTLINE Pressure Index?",
-      a: "The Pressure Index is a composite 0–100 score that measures systemic market stress across eight categories: credit markets, liquidity, yield curve, inflation, labor market, volatility, earnings momentum, and macro momentum. Higher scores indicate greater systemic pressure. It is designed to identify building risk before it becomes obvious in price action.",
+      a: "The Pressure Index is a composite 0–100 score that measures systemic market stress across six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity (inflation and policy rates), labor and rates (unemployment and the 10Y yield), and AI / speculation (a static concentration baseline adjusted by rates and credit). Higher scores indicate greater systemic pressure. It is designed to identify building risk before it becomes obvious in price action.",
     },
     {
       q: "Is FAULTLINE investment advice?",
@@ -328,7 +327,7 @@ function FAQTab() {
     },
     {
       q: "How accurate is the Pressure Index?",
-      a: "The Pressure Index was back-tested against 25 years of FRED macroeconomic data. In every major market crisis since 2000 — the dot-com bust, the 2008 financial crisis, the COVID crash, and the 2022 bear market — the Pressure Index was elevated before the peak. However, past performance does not guarantee future results. The index is a probabilistic tool, not a certainty.",
+      a: "The Pressure Index has not been independently validated as a predictive backtest. Its historical analogs compare current vector scores with fixed reference profiles for past stress episodes (1973, 1998, 2000, 2008, 2020, and 2022). The Track Record page shows an archived retrospective reconstruction from 2000 onward that was calibrated against known historical stress episodes; its formula was not versioned and the current live formula does not reproduce it. A separate, reproducible research reconstruction of the live formula was rated inconclusive: it reached the Elevated band before 10 of 26 registered 10% S&P 500 drawdowns and never reached High Stress. Past readings do not guarantee future results. The index is a probabilistic tool, not a certainty.",
     },
     {
       q: "Where does FAULTLINE get its data?",

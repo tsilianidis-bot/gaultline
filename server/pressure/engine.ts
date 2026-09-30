@@ -315,10 +315,10 @@ function scoreMarketBreadth(
 
   const score = Math.round(laborScore * 0.6 + rateScore * 0.4);
 
-  let driver = "Broad market conditions supportive";
+  let driver = "Labor and rate conditions supportive";
   if (unemployment !== null) {
-    if (unemployment > 5.5) driver = `Unemployment ${unemployment.toFixed(1)}% — Sahm Rule triggered, breadth deteriorating`;
-    else if (unemployment > 4.5) driver = `Unemployment rising at ${unemployment.toFixed(1)}% — breadth narrowing`;
+    if (unemployment > 5.5) driver = `Unemployment ${unemployment.toFixed(1)}% — Sahm Rule triggered, labor-market stress high`;
+    else if (unemployment > 4.5) driver = `Unemployment rising at ${unemployment.toFixed(1)}% — labor market softening`;
     else driver = `Unemployment ${unemployment.toFixed(1)}% — labor market still supportive`;
   }
 
@@ -350,11 +350,11 @@ function scoreAIBubble(
 
   const score = Math.round(concentrationScore * 0.5 + rateScore * 0.3 + spreadScore * 0.2);
 
-  let driver = "AI/tech concentration at elevated levels";
+  let driver = "Static AI-concentration baseline (reference value, not live)";
   if (tsy10y !== null) {
-    if (tsy10y > 5) driver = `AI bubble risk high: 32.4% S&P concentration + 10Y at ${tsy10y.toFixed(2)}% compressing multiples`;
-    else if (tsy10y > 4) driver = `AI/mega-cap concentration 32.4% — rate sensitivity elevated at ${tsy10y.toFixed(2)}%`;
-    else driver = `AI concentration 32.4% of S&P 500 — bubble dynamics present but rates supportive`;
+    if (tsy10y > 5) driver = `Static 32.4% AI-concentration baseline + 10Y at ${tsy10y.toFixed(2)}% compressing multiples`;
+    else if (tsy10y > 4) driver = `Static 32.4% AI-concentration baseline — rate sensitivity elevated at ${tsy10y.toFixed(2)}%`;
+    else driver = `Static 32.4% AI-concentration baseline (not live) — rates supportive`;
   }
 
   const trend: "rising" | "falling" | "stable" = "rising"; // secular trend
@@ -602,8 +602,8 @@ export async function calculateFaultlinePressure(): Promise<FaultlinePressureOut
     },
     {
       id: "volatility-regime",
-      label: "Volatility Regime",
-      description: "Yield curve shape and rate level as a proxy for macro volatility and recession risk",
+      label: "Yield Curve (10Y–2Y) & 10Y Level",
+      description: "10Y–2Y Treasury curve shape blended with the 10Y yield level. Does not read VIX or realized volatility.",
       score: volatilityResult.score,
       level: scoreToLevel(volatilityResult.score),
       driver: volatilityResult.driver,
@@ -630,8 +630,8 @@ export async function calculateFaultlinePressure(): Promise<FaultlinePressureOut
     },
     {
       id: "market-breadth",
-      label: "Market Breadth",
-      description: "Labor market health and rate environment as indicators of broad market participation",
+      label: "Labor & Rates (Unemployment, 10Y)",
+      description: "Unemployment rate blended with the 10Y Treasury yield. Not an advance/decline or market-participation breadth measure.",
       score: breadthResult.score,
       level: scoreToLevel(breadthResult.score),
       driver: breadthResult.driver,
@@ -644,8 +644,8 @@ export async function calculateFaultlinePressure(): Promise<FaultlinePressureOut
     },
     {
       id: "ai-bubble",
-      label: "AI / Speculative Bubble",
-      description: "AI mega-cap concentration and speculative excess in growth assets",
+      label: "AI / Speculation (Static Baseline)",
+      description: "Static reference value for AI mega-cap concentration (~32.4% of the S&P 500; not a live measurement), adjusted by the live 10Y yield and HY spread.",
       score: aiResult.score,
       level: scoreToLevel(aiResult.score),
       driver: aiResult.driver,

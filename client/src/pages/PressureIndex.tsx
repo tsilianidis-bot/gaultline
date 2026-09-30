@@ -14,6 +14,7 @@ import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import { PRICING_PLANS } from '../../../shared/tiers';
+import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID, pressureVectorLabel } from "@shared/pressureVectorLabels";
 
 const PLATFORM_URL = "/app";
 
@@ -204,9 +205,12 @@ export default function PressureIndex() {
         .slice(0, 5)
         .map(engine => ({
           id: engine.engineId,
-          label: engine.engineName,
+          label: pressureVectorLabel(engine.engineId, engine.engineName),
           score: engine.value ?? 0,
-          dataStatus: engine.freshnessStatus === "CURRENT" ? "live" : engine.freshnessStatus.toLowerCase(),
+          // The AI vector's concentration input is a static reference value, not a live measurement.
+          dataStatus: engine.sourceInputIds.includes(AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID)
+            ? "static"
+            : engine.freshnessStatus === "CURRENT" ? "live" : engine.freshnessStatus.toLowerCase(),
           fallbackReason: engine.fallbackStatus === "ACTIVE" ? "Governed fallback" : undefined,
           source: "canonical-state",
         }));
@@ -283,8 +287,8 @@ export default function PressureIndex() {
               <span style={{ color }}>Pressure Intelligence</span>
             </h1>
             <p className="text-white/35 text-sm max-w-lg mx-auto leading-relaxed">
-              Real-time composite of macro stress, liquidity conditions, Treasury yield shocks,
-              credit spreads, and volatility regimes. Updated every 60 seconds.
+              Composite of credit spreads, funding rates, the Treasury yield curve, inflation,
+              policy rates and unemployment, plus a static AI-concentration baseline. Updated every 60 seconds.
             </p>
           </div>
 
@@ -372,7 +376,7 @@ export default function PressureIndex() {
                             style={{ color: v.dataStatus === "static" ? "rgba(251,191,36,0.6)" : "rgba(255,255,255,0.3)" }}
                             title={v.fallbackReason ?? v.dataStatus}
                           >
-                            {v.dataStatus === "static" ? "⚠ STATIC ESTIMATE" : v.dataStatus === "fallback" ? "⚠ FALLBACK" : v.dataStatus === "delayed" ? "⏱ DELAYED" : v.dataStatus.toUpperCase()}
+                            {v.dataStatus === "static" ? "⚠ STATIC BASELINE" : v.dataStatus === "fallback" ? "⚠ FALLBACK" : v.dataStatus === "delayed" ? "⏱ DELAYED" : v.dataStatus.toUpperCase()}
                             {v.source ? ` · ${v.source}` : ""}
                           </div>
                         )}
@@ -399,7 +403,7 @@ export default function PressureIndex() {
                 {
                   icon: "◈",
                   title: "Multi-Vector Composite",
-                  desc: "Aggregates 12+ macro risk signals including credit spreads, yield curve dynamics, VIX regimes, and liquidity conditions into a single 0–100 score.",
+                  desc: "Combines eight FRED series (HY spread, SOFR, 10Y and 2Y Treasury yields, CPI, PPI, Fed Funds, unemployment) and one static AI-concentration baseline into six weighted vectors and a single 0–100 score. It does not read VIX.",
                   color: "#00E5FF",
                 },
                 {
@@ -411,7 +415,7 @@ export default function PressureIndex() {
                 {
                   icon: "◎",
                   title: "Real-Time Intelligence",
-                  desc: "Powered by live FRED data, Treasury yields, and volatility surfaces. Refreshes every 60 seconds with institutional-grade data sources.",
+                  desc: "Powered by FRED data, including daily Treasury yields and credit spreads. Monthly series carry publication lag, and the AI-concentration input is a static reference value, not a live measurement. The page refreshes every 60 seconds.",
                   color: "#64748B",
                 },
               ].map((item) => (
