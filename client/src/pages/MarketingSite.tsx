@@ -277,13 +277,13 @@ function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/[0.07] bg-[#0A0D12]/95 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" className={`flex items-center gap-3 ${focusRing}`} onClick={close}>
+        <Link href="/" className={`flex shrink-0 items-center gap-3 ${focusRing}`} onClick={close}>
           <span className="h-2 w-2 rounded-full bg-[#65D6E5]" aria-hidden="true" />
           <span className="font-[inherit] text-sm font-semibold tracking-[0.06em] text-white">FAULTLINE</span>
-          <span className="hidden border-l border-white/10 pl-3 text-[12px] font-[inherit] tracking-[0.06em] text-[#B7C1CD] lg:inline">MARKET RISK INTELLIGENCE</span>
+          <span className="hidden whitespace-nowrap border-l border-white/10 pl-3 text-[12px] font-[inherit] tracking-[0.06em] text-[#B7C1CD] min-[1180px]:inline">MARKET RISK INTELLIGENCE</span>
         </Link>
 
-        <nav className="hidden items-center gap-5 lg:flex" aria-label="Landing navigation">
+        <nav className="hidden items-center gap-5 whitespace-nowrap lg:flex" aria-label="Landing navigation">
           {navItems.map((item) => (
             <a key={item.href} href={item.href} className={`text-[12px] font-[inherit] tracking-[0.06em] text-[#C5D0DC] transition-colors hover:text-[#65D6E5] ${focusRing}`}>
               {item.label.toUpperCase()}
@@ -291,7 +291,7 @@ function Header() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden shrink-0 items-center gap-3 whitespace-nowrap lg:flex">
           <SignInCta className={`rounded-lg border border-white/15 px-3 py-2 text-[12px] font-[inherit] tracking-[0.06em] text-[#C5D0DC] transition-colors hover:border-[#00D4FF]/50 hover:text-white ${focusRing}`} />
           <a href={EXPLORE_HREF} onClick={() => trackStartFreeClicked("marketing_rebuild_hero")} className={`rounded-lg bg-[#65D6E5] px-3 py-2 text-[12px] font-[inherit] font-semibold tracking-[0.06em] text-[#050608] transition-colors hover:bg-[#6EE7FF] ${focusRing}`}>
             EXPLORE FAULTLINE
