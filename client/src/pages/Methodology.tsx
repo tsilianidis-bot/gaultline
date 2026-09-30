@@ -1,6 +1,6 @@
 /**
  * Public methodology note. Claims match the live engines.
- * Last updated 29 September 2026 — the date of this copy, not a data vintage.
+ * Last updated 30 September 2026 — the date of this copy, not a data vintage.
  */
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
@@ -47,7 +47,7 @@ export default function Methodology() {
           </article>
           <article className="rounded-xl border border-white/10 p-4">
             <h2 className="font-mono text-[10px] tracking-[0.16em] text-[#00D4FF]">LAST UPDATED</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#C9D4E0]">29 September 2026. This dates the copy, not the vintage of any series.</p>
+            <p className="mt-2 text-sm leading-relaxed text-[#C9D4E0]">30 September 2026. This dates the copy, not the vintage of any series.</p>
           </article>
           <article className="rounded-xl border border-white/10 p-4">
             <h2 className="font-mono text-[10px] tracking-[0.16em] text-[#00D4FF]">DATA COVERAGE</h2>
@@ -58,7 +58,7 @@ export default function Methodology() {
         <section className="mt-14">
           <h2 className="text-2xl font-semibold text-white">Score and bands</h2>
           <p className="mt-4 leading-relaxed text-[#C9D4E0]">
-            Each vector is scored from 0 to 100. Most inputs are linearly mapped from a calm range to a stressed range and clamped. The curve vector uses inversion and flatness bands, then blends that result with the 10-year yield. The index is the rounded weighted sum. Weights: liquidity 20%, credit contagion 20%, volatility-regime proxy 15%, macro sensitivity 20%, market breadth 10%, AI/speculative baseline 15%.
+            Each vector is scored from 0 to 100. Most inputs are linearly mapped from a calm range to a stressed range and clamped. The curve vector uses inversion and flatness bands, then blends that result with the 10-year yield. The index is the rounded weighted sum. Weights: liquidity 20%, credit contagion 20%, yield curve (10Y–2Y) and 10Y level 15%, macro sensitivity 20%, labor and rates 10%, AI/speculation static baseline 15%.
           </p>
           <ul className="mt-6 grid gap-2">
             {bands.map(([range, level, regime]) => (
@@ -77,10 +77,10 @@ export default function Methodology() {
           <ul className="mt-4 list-disc space-y-3 pl-5 leading-relaxed text-[#C9D4E0]">
             <li>High-yield OAS and SOFR. The engine labels this Liquidity Stress. Latest published daily data when FRED responds. Not an order-book liquidity measure.</li>
             <li>High-yield OAS, the 10-year yield (DGS10), and unemployment (UNRATE). The engine labels this Credit Contagion Risk. It is that blend, not a cross-sector contagion map.</li>
-            <li>DGS10 minus DGS2, plus the level of DGS10. The engine labels this Volatility Regime. It does not read VIX or realized volatility.</li>
+            <li>DGS10 minus DGS2, plus the level of DGS10. Shown as Yield Curve (10Y–2Y) &amp; 10Y Level (internal id volatility-regime; formerly labelled Volatility Regime). It does not read VIX or realized volatility.</li>
             <li>CPI and PPI year-over-year, and the effective federal funds rate. The engine labels this Macro Sensitivity. Monthly, with publication lag. Marked delayed when the fetch succeeds.</li>
-            <li>Unemployment and DGS10. The engine labels this Market Breadth. It is not advance/decline breadth.</li>
-            <li>A fixed 32.4% concentration baseline, adjusted by the 10-year yield and the high-yield spread. The engine labels this AI / speculative bubble. The baseline is not a live market-cap feed.</li>
+            <li>Unemployment and DGS10. Shown as Labor &amp; Rates (internal id market-breadth; formerly labelled Market Breadth). It is not advance/decline breadth.</li>
+            <li>A fixed 32.4% concentration baseline, adjusted by the 10-year yield and the high-yield spread. Shown as AI / Speculation (Static Baseline) (internal id ai-bubble). The baseline is a static reference value, not a live market-cap measurement.</li>
           </ul>
         </section>
 
@@ -104,7 +104,7 @@ export default function Methodology() {
         <section className="mt-14">
           <h2 className="text-2xl font-semibold text-white">Historical comparison</h2>
           <p className="mt-4 leading-relaxed text-[#C9D4E0]">
-            The pressure analog library contains fingerprints labeled 1973, 1998, 2000, 2008, 2020, and 2022. The broader library adds 2011, 2015, 2019, and 2023. Similarity is not an outcome. An audit helper can rebuild the weighted sum from stored vector scores and explicitly refuses a raw-input backtest, because legacy months do not carry SOFR, PPI, or vintages. Research stress windows used around the regime model are validation labels. They are not used to fit that model, and they are not a live warning record.
+            The pressure analog library contains fixed, hand-set reference fingerprints labeled 1973, 1998, 2000, 2008, 2020, and 2022; they are reference profiles for historical stress episodes, not fitted or independently validated. The broader library adds 2011, 2015, 2019, and 2023. Similarity is not an outcome. An audit helper can rebuild the weighted sum from stored vector scores and explicitly refuses a raw-input backtest, because legacy months do not carry SOFR, PPI, or vintages. Research stress windows used around the regime model are validation labels. They are not used to fit that model, and they are not a live warning record.
           </p>
         </section>
 

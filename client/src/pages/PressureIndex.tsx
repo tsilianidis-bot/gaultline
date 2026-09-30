@@ -14,6 +14,9 @@ import { getLoginUrl } from "@/const";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import { PRICING_PLANS } from '../../../shared/tiers';
+import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID, pressureVectorLabel } from "@shared/pressureVectorLabels";
+
+import { PRESSURE_SCALE, pressureDisplayBand } from "@shared/pressureScale";
 
 const PLATFORM_URL = "/app";
 
@@ -36,10 +39,7 @@ function AnimatedNumber({ target, duration = 1200 }: { target: number; duration?
 
 // ── Pressure color helper ─────────────────────────────────────
 function pressureColor(score: number) {
-  if (score >= 75) return "#FF4444";
-  if (score >= 50) return "#FF9500";
-  if (score >= 30) return "#FFD700";
-  return "#00E5FF";
+  return pressureDisplayBand(score).color;
 }
 
 // ── Circular gauge ────────────────────────────────────────────
@@ -204,9 +204,12 @@ export default function PressureIndex() {
         .slice(0, 5)
         .map(engine => ({
           id: engine.engineId,
-          label: engine.engineName,
+          label: pressureVectorLabel(engine.engineId, engine.engineName),
           score: engine.value ?? 0,
-          dataStatus: engine.freshnessStatus === "CURRENT" ? "live" : engine.freshnessStatus.toLowerCase(),
+          // The AI vector's concentration input is a static reference value, not a live measurement.
+          dataStatus: engine.sourceInputIds.includes(AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID)
+            ? "static"
+            : engine.freshnessStatus === "CURRENT" ? "live" : engine.freshnessStatus.toLowerCase(),
           fallbackReason: engine.fallbackStatus === "ACTIVE" ? "Governed fallback" : undefined,
           source: "canonical-state",
         }));
@@ -283,8 +286,8 @@ export default function PressureIndex() {
               <span style={{ color }}>Pressure Intelligence</span>
             </h1>
             <p className="text-white/35 text-sm max-w-lg mx-auto leading-relaxed">
-              Real-time composite of macro stress, liquidity conditions, Treasury yield shocks,
-              credit spreads, and volatility regimes. Updated every 60 seconds.
+              Composite of credit spreads, funding rates, the Treasury yield curve, inflation,
+              policy rates and unemployment, plus a static AI-concentration baseline. Updated every 60 seconds.
             </p>
           </div>
 
@@ -303,13 +306,8 @@ export default function PressureIndex() {
               )}
 
               {/* Scale legend */}
-              <div className="grid grid-cols-4 gap-2 mt-8 w-full max-w-xs">
-                {[
-                  { range: "0–30", label: "LOW", color: "#00E5FF" },
-                  { range: "30–50", label: "MOD", color: "#FFD700" },
-                  { range: "50–75", label: "HIGH", color: "#FF9500" },
-                  { range: "75+", label: "CRIT", color: "#FF4444" },
-                ].map((s) => (
+              <div className="grid grid-cols-5 gap-1 mt-8 w-full max-w-xs">
+                {PRESSURE_SCALE.map((s) => (
                   <div
                     key={s.label}
                     className="rounded-lg px-2 py-2 text-center"
@@ -338,13 +336,7 @@ export default function PressureIndex() {
                 <p className="text-white/40 text-xs leading-relaxed">
                   {withheld || score == null
                     ? "Canonical pressure evidence is withheld. This page will not manufacture a live score, regime story, or placeholder vectors."
-                    : score >= 75
-                    ? "Multiple systemic stress vectors are converging. Elevated probability of cascade events. Risk management protocols should be active."
-                    : score >= 50
-                    ? "Significant macro stress detected across credit, rates, and volatility dimensions. Heightened vigilance warranted."
-                    : score >= 30
-                    ? "Moderate pressure building across key risk vectors. Markets are navigating macro uncertainty with some resilience."
-                    : "Systemic risk indicators are contained. Macro environment supports measured risk-taking with appropriate position sizing."}
+                    : pressureDisplayBand(score).desc}
                 </p>
               </div>
 
@@ -372,7 +364,7 @@ export default function PressureIndex() {
                             style={{ color: v.dataStatus === "static" ? "rgba(251,191,36,0.6)" : "rgba(255,255,255,0.3)" }}
                             title={v.fallbackReason ?? v.dataStatus}
                           >
-                            {v.dataStatus === "static" ? "⚠ STATIC ESTIMATE" : v.dataStatus === "fallback" ? "⚠ FALLBACK" : v.dataStatus === "delayed" ? "⏱ DELAYED" : v.dataStatus.toUpperCase()}
+                            {v.dataStatus === "static" ? "⚠ STATIC BASELINE" : v.dataStatus === "fallback" ? "⚠ FALLBACK" : v.dataStatus === "delayed" ? "⏱ DELAYED" : v.dataStatus.toUpperCase()}
                             {v.source ? ` · ${v.source}` : ""}
                           </div>
                         )}
@@ -399,7 +391,7 @@ export default function PressureIndex() {
                 {
                   icon: "◈",
                   title: "Multi-Vector Composite",
-                  desc: "Aggregates 12+ macro risk signals including credit spreads, yield curve dynamics, VIX regimes, and liquidity conditions into a single 0–100 score.",
+                  desc: "Combines eight FRED series (HY spread, SOFR, 10Y and 2Y Treasury yields, CPI, PPI, Fed Funds, unemployment) and one static AI-concentration baseline into six weighted vectors and a single 0–100 score. It does not read VIX.",
                   color: "#00E5FF",
                 },
                 {
@@ -411,7 +403,7 @@ export default function PressureIndex() {
                 {
                   icon: "◎",
                   title: "Real-Time Intelligence",
-                  desc: "Powered by live FRED data, Treasury yields, and volatility surfaces. Refreshes every 60 seconds with institutional-grade data sources.",
+                  desc: "Powered by FRED data, including daily Treasury yields and credit spreads. Monthly series carry publication lag, and the AI-concentration input is a static reference value, not a live measurement. The page refreshes every 60 seconds.",
                   color: "#64748B",
                 },
               ].map((item) => (

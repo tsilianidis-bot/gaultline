@@ -19,13 +19,15 @@ const ENGINE_WEIGHTS: Record<string, number> = {
   "ai-bubble": 0.15,
 };
 
+// Display labels only — keep in sync with shared/pressureVectorLabels.ts.
+// Engine ids (keys) are internal and must not change.
 const ENGINE_LABELS: Record<string, string> = {
   "liquidity-stress": "Liquidity Stress",
   "credit-contagion": "Credit Contagion Risk",
-  "volatility-regime": "Volatility Regime",
+  "volatility-regime": "Yield Curve (10Y–2Y) & 10Y Level",
   "macro-sensitivity": "Macro Sensitivity",
-  "market-breadth": "Market Breadth",
-  "ai-bubble": "AI / Speculative Bubble",
+  "market-breadth": "Labor & Rates (Unemployment, 10Y)",
+  "ai-bubble": "AI / Speculation (Static Baseline)",
 };
 
 export const CANONICAL_CRYPTO_VECTOR_IDS = [

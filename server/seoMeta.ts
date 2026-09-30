@@ -45,7 +45,7 @@ const PAGE_META: Record<string, PageMeta> = {
 
   "/pressure-index": {
     title: "FAULTLINE Pressure Index™ — Live Systemic Market Risk Score",
-    description: "The FAULTLINE Pressure Index™ aggregates volatility, credit spreads, liquidity, and breadth into a single real-time systemic risk score (0–100).",
+    description: "The FAULTLINE Pressure Index™ combines credit spreads, funding rates, the Treasury yield curve, inflation, unemployment, and a static AI-concentration baseline into a single systemic risk score (0–100).",
   },
   "/signals": {
     title: "Stock Signals — Macro-Regime Intelligence | FAULTLINE",
@@ -216,7 +216,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/track-record": {
     title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
-    description: "FAULTLINE retrospective Pressure Index from 2000 to present. See how the indicators scored the 2008 GFC (82/CRITICAL), COVID crash (72/HIGH RISK), and dot-com bust. Retrospective analysis only — not live predictions.",
+    description: "FAULTLINE archived retrospective Pressure Index reconstruction from 2000. See how the stored reconstruction scored the 2008 GFC (82/CRITICAL), COVID crash (72/HIGH RISK), and dot-com bust. Retrospective only — not live predictions and not an independently validated backtest.",
   },
 };
 
@@ -335,8 +335,8 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
     let result = injectPageMeta(html, urlPath);
     const trackRecordNoscript = `<noscript><section aria-label="FAULTLINE Track Record — Historical Pressure Index">
 <h1>FAULTLINE Track Record — Historical Pressure Index 2000–Present</h1>
-<p><strong>RETROSPECTIVE ANALYSIS ONLY.</strong> The following scores were computed by applying the current FAULTLINE Pressure Index methodology to historical FRED macroeconomic data. These readings were not generated live at the time. They represent a retrospective audit of how the model would have scored historical conditions.</p>
-<h2>Historical Validation Events</h2>
+<p><strong>RETROSPECTIVE RECONSTRUCTION ONLY.</strong> The following scores come from an archived historical batch built from FRED macroeconomic data and calibrated against known historical stress episodes. These readings were not generated live at the time. The batch formula was not versioned, the current live formula does not reproduce it, and it has not been independently validated as a predictive backtest.</p>
+<h2>Reconstructed Crisis Periods</h2>
 <ul>
 <li><strong>2000–2002 Dot-com Bust:</strong> Retrospective analysis shows HIGH RISK readings from Sep 2001 through Feb 2003 — 18 consecutive months. Credit contagion and liquidity stress spiked as tech valuations collapsed and post-9/11 uncertainty froze capital markets. S&amp;P 500 fell ~49% over 30 months.</li>
 <li><strong>October 2008 Lehman Collapse:</strong> Retrospective analysis shows CRITICAL (82/100) in October 2008 — the month Lehman Brothers collapsed. Baa credit spreads hit 5.53% (HY proxy ~11.45%), with CRITICAL readings sustained for 8 consecutive months through May 2009. S&amp;P 500 fell ~57% peak-to-trough.</li>
@@ -345,10 +345,10 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
 <li><strong>2022 Fed Rate Shock:</strong> Retrospective analysis shows ELEVATED RISK as the Fed raised rates from 0% to 5.25% in 18 months — the fastest tightening cycle since 1980. S&amp;P 500 fell ~25%, Nasdaq ~35%.</li>
 </ul>
 <h2>Methodology</h2>
-<p>The FAULTLINE Pressure Index™ is a composite of six weighted vectors: Liquidity Stress (20%), Credit Contagion (20%), Macro Sensitivity (20%), Volatility Regime (15%), AI Bubble Risk (15%), and Market Breadth (10%). Each vector is scored 0–100 using FRED macroeconomic data. The composite is a weighted average producing a final score of 0–100.</p>
+<p>The live FAULTLINE Pressure Index™ is a composite of six weighted vectors: Liquidity Stress (20%), Credit Contagion (20%), Macro Sensitivity (20%), Yield Curve (10Y–2Y) &amp; 10Y Level (15%), AI / Speculation — a static concentration baseline adjusted by rates and credit (15%), and Labor &amp; Rates — unemployment and the 10Y yield (10%). Each vector is scored 0–100. The archived historical batch also applied a crisis amplifier whose formula was not preserved.</p>
 <p>Regime thresholds: 0–25 MINIMAL RISK, 26–45 MODERATE RISK, 46–60 ELEVATED RISK, 61–75 HIGH RISK, 76–100 CRITICAL.</p>
 <h2>Important Limitations</h2>
-<p>This is retrospective analysis. FAULTLINE did not exist during the 2000, 2008, or 2020 crises. These scores represent what the current methodology would have produced using the data available at those times. Past performance of the methodology does not guarantee future accuracy. Not investment advice.</p>
+<p>This is a retrospective reconstruction. FAULTLINE did not exist during the 2000, 2008, or 2020 crises. These scores use revised historical data rather than point-in-time vintages and do not show what the current live methodology would have produced at the time. Past readings do not guarantee future accuracy. Not investment advice.</p>
 </section></noscript>`;
     result = result.replace("</body>", `${trackRecordNoscript}</body>`);
     return result;
