@@ -347,7 +347,7 @@ function Hero() {
       <SeismicUnderlay className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(180deg,transparent_0%,transparent_42%,#000_68%)] lg:[mask-image:linear-gradient(90deg,transparent_0%,transparent_38%,rgba(0,0,0,0.4)_54%,#000_72%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.94)_0%,rgba(5,6,8,0.9)_48%,rgba(5,6,8,0.45)_72%,rgba(5,6,8,0.12)_100%)] lg:bg-[linear-gradient(90deg,rgba(5,6,8,0.96)_0%,rgba(5,6,8,0.92)_42%,rgba(5,6,8,0.55)_62%,rgba(5,6,8,0.08)_100%)]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0A0D12] to-transparent" aria-hidden="true" />
-      <div className="relative mx-auto flex min-h-[calc(100svh-88px)] max-w-7xl items-center px-5 py-16 sm:px-8 lg:py-24">
+      <div className="relative mx-auto flex min-h-[calc(100svh-88px)] max-w-7xl items-center px-5 pb-16 pt-10 sm:px-8 sm:pt-16 lg:py-24">
         <div className="max-w-4xl">
           <h1 className="max-w-5xl">
             <span className="block font-[inherit] text-[2.65rem] font-semibold leading-[1] tracking-[0.06em] text-white sm:text-7xl sm:tracking-[0.06em] lg:text-[6.25rem]">
@@ -364,7 +364,7 @@ function Hero() {
           <p className="mt-4 max-w-2xl text-base leading-[1.75] text-[#B7C1CD] sm:text-base">
             A systemic-risk intelligence and interpretation engine. It connects those domains into a pressure reading and a written explanation. It does not claim to know that a crash will happen.
           </p>
-          <div className="mt-9">
+          <div className="mt-7 sm:mt-9">
             <Ctas primaryTrack />
           </div>
           <p className="mt-4 text-[12px] leading-[1.75] text-[#A8B4C2]">
