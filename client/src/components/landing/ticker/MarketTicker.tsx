@@ -32,7 +32,7 @@ function Quote({ quote, duplicate }: { quote: TickerQuoteView; duplicate?: boole
       <span style={{ color: "#C8D8E8" }}>{quote.price ?? "—"}</span>
       {quote.change && quote.direction && (
         <span style={{ color: DIRECTION_COLOR[quote.direction] }}>
-          {quote.direction === "up" ? "▲" : quote.direction === "down" ? "▼" : "—"}{quote.change}
+          {quote.direction === "up" ? "▲" : quote.direction === "down" ? "▼" : ""}{quote.change}
         </span>
       )}
       {quote.stateLabel && (
@@ -104,14 +104,16 @@ export default function MarketTicker() {
             </p>
           )}
         </div>
-        <p
-          role="status"
-          className="hidden h-full shrink-0 items-center border-l border-[rgba(0,212,255,0.1)] px-3 sm:flex"
-          style={{ fontFamily: MONO, fontSize: 8, letterSpacing: "0.1em", color: "rgba(148,163,184,0.7)" }}
-        >
-          <span className="uppercase">{view.status === "available" && !view.allUnavailable ? `QUOTES AS OF ${asOf(view.fetchedAt)}` : status}</span>
-        </p>
-        <span className="sr-only sm:hidden" role="status">{status}</span>
+        {view.status === "available" && !view.allUnavailable && (
+          <p
+            aria-hidden="true"
+            className="hidden h-full shrink-0 items-center border-l border-[rgba(0,212,255,0.1)] px-3 uppercase sm:flex"
+            style={{ fontFamily: MONO, fontSize: 8, letterSpacing: "0.1em", color: "rgba(148,163,184,0.7)" }}
+          >
+            {`QUOTES AS OF ${asOf(view.fetchedAt)}`}
+          </p>
+        )}
+        <span className="sr-only" role="status">{status}</span>
       </div>
     </section>
   );
