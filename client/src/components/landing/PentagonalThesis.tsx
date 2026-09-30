@@ -84,7 +84,7 @@ function ring(scale: number) {
 }
 
 function PentagonGraphic({ active, withLabels, idSuffix }: { active: ThesisId | null; withLabels: boolean; idSuffix: string }) {
-  const viewBox = withLabels ? "30 40 640 450" : "150 52 420 420";
+  const viewBox = withLabels ? "30 18 640 460" : "150 52 420 420";
   const titleId = `pentagon-title-${idSuffix}`;
   const descId = `pentagon-desc-${idSuffix}`;
   return (
