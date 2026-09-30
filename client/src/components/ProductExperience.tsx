@@ -541,7 +541,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                 cursor: 'pointer', padding: '16px 36px', borderRadius: '8px',
                 transition: 'all 0.15s ease-out',
               }}
-              aria-label="See 25-year historical track record"
+              aria-label="See archived retrospective reconstruction"
             >See the Proof ↓</button>
           </div>
         </div>

@@ -308,7 +308,7 @@ function scoreMarketBreadth(
   unemployment: number | null,
   tsy10y: number | null
 ): { score: number; driver: string; trend: "rising" | "falling" | "stable" } {
-  // Unemployment: Sahm Rule triggers around 4.5%+
+  // Unemployment level scoring; this is not the change-based Sahm Rule.
   const laborScore = unemployment !== null ? linearMap(unemployment, 3.5, 7, 0, 80) : 30;
   // High rates compress valuations and narrow breadth
   const rateScore = tsy10y !== null ? linearMap(tsy10y, 2, 6, 0, 60) : 25;
@@ -317,7 +317,7 @@ function scoreMarketBreadth(
 
   let driver = "Labor and rate conditions supportive";
   if (unemployment !== null) {
-    if (unemployment > 5.5) driver = `Unemployment ${unemployment.toFixed(1)}% — Sahm Rule triggered, labor-market stress high`;
+    if (unemployment > 5.5) driver = `Unemployment ${unemployment.toFixed(1)}% — unemployment above 5.5%, labor-market stress high`;
     else if (unemployment > 4.5) driver = `Unemployment rising at ${unemployment.toFixed(1)}% — labor market softening`;
     else driver = `Unemployment ${unemployment.toFixed(1)}% — labor market still supportive`;
   }

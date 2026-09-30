@@ -1,3 +1,4 @@
+import { PRESSURE_SCALE } from "@shared/pressureScale";
 /* ============================================================
    FAULTLINE — Trust Center
    Unified transparency page: Methodology, Data Sources, Privacy,
@@ -88,13 +89,7 @@ function MethodologyTab() {
     { name: "AI / Speculation (Static Baseline)", weight: "15%", desc: "A static reference value for AI mega-cap concentration (~32.4% of the S&P 500) — not a live measurement — adjusted by the live 10-year yield and high-yield spread." },
   ];
 
-  const SCORE_SCALE = [
-    { range: "0–20",  label: "Calm",           color: "#22C55E", desc: "Systemic risk is minimal. Credit markets stable, liquidity ample, no recession signals." },
-    { range: "20–40", label: "Normal",          color: "#84CC16", desc: "Routine market conditions. Some indicators elevated but no systemic concern." },
-    { range: "40–60", label: "Elevated",        color: "#EAB308", desc: "Multiple stress indicators building. Increased caution warranted. Historical median." },
-    { range: "60–80", label: "High Risk",       color: "#F97316", desc: "Significant systemic pressure. Conditions consistent with pre-recession or pre-correction environments." },
-    { range: "80–100",label: "Systemic Stress", color: "#EF4444", desc: "Crisis-level conditions. Consistent with 2008 GFC peak, COVID crash, or dot-com bust." },
-  ];
+  const SCORE_SCALE = PRESSURE_SCALE;
 
   return (
     <div>
@@ -164,66 +159,34 @@ function DataSourcesTab() {
     {
       name: "Federal Reserve / FRED",
       url: "https://fred.stlouisfed.org",
-      category: "Macroeconomic Data",
-      inputs: ["Federal Funds Rate", "M2 Money Supply", "Bank Lending Standards", "Balance Sheet Data"],
-      updateFreq: "Weekly / Monthly",
-      notes: "Primary macroeconomic data source. All FRED series are publicly available and time-stamped.",
+      category: "Pressure Index macroeconomic inputs",
+      inputs: ["HY spread (BAMLH0A0HYM2)", "10Y yield (DGS10)", "2Y yield (DGS2)", "SOFR", "CPI (CPIAUCSL)", "PPI (PPIACO)", "Federal funds rate (FEDFUNDS)", "Unemployment (UNRATE)"],
+      updateFreq: "Daily / Monthly, by series",
+      notes: "The eight FRED series requested by the current Pressure Index engine. CPI and PPI are converted to year-over-year changes. Published observations may be delayed or revised; unavailable inputs can use fallback values.",
     },
     {
-      name: "U.S. Treasury",
-      url: "https://home.treasury.gov",
-      category: "Fixed Income",
-      inputs: ["Treasury Yield Curve (2Y, 10Y, 30Y)", "Yield Spread Data"],
-      updateFreq: "Daily",
-      notes: "Daily yield curve data used for yield spread calculations and inversion detection.",
-    },
-    {
-      name: "Bureau of Labor Statistics",
-      url: "https://www.bls.gov",
-      category: "Labor Market",
-      inputs: ["Unemployment Rate", "Initial Jobless Claims", "JOLTS Job Openings"],
-      updateFreq: "Weekly / Monthly",
-      notes: "Official U.S. government labor market statistics.",
-    },
-    {
-      name: "Moody's / FRED",
-      url: "https://fred.stlouisfed.org/series/BAA10Y",
-      category: "Credit Markets",
-      inputs: ["Baa Corporate Bond Spread", "High-Yield Spread Proxies"],
-      updateFreq: "Daily",
-      notes: "Credit spread data is the highest-weighted input in the Pressure Index. Moody's Baa spreads are available via FRED.",
-    },
-    {
-      name: "Bureau of Economic Analysis",
-      url: "https://www.bea.gov",
-      category: "Economic Output",
-      inputs: ["GDP Growth Rate", "PCE Inflation", "Personal Income"],
-      updateFreq: "Monthly / Quarterly",
-      notes: "Official U.S. national accounts data.",
+      name: "Static AI concentration baseline",
+      url: "/methodology",
+      category: "Pressure Index reference input",
+      inputs: ["Fixed concentration score: 65"],
+      updateFreq: "Static — not a live feed",
+      notes: "A fixed reference supplies half of the AI / speculation vector; the remaining components use the 10Y yield and HY spread. It is not current market concentration data.",
     },
     {
       name: "Polygon.io",
       url: "https://polygon.io",
-      category: "Market Data",
-      inputs: ["Equity Prices (OHLCV)", "Daily Bar Data", "Ticker Reference Data"],
-      updateFreq: "Real-time / Daily",
-      notes: "Used for stock signal calculations, technical indicators (RSI, MACD, SMA), and sparkline data.",
+      category: "Equity market data — separate from Pressure Index scoring",
+      inputs: ["Equity prices", "Historical bars", "Ticker reference data"],
+      updateFreq: "By endpoint and cache",
+      notes: "Used by equity features; these data are not inputs to the six-vector Pressure Index formula.",
     },
     {
       name: "CoinGecko",
       url: "https://www.coingecko.com",
-      category: "Cryptocurrency",
-      inputs: ["Crypto Prices", "Market Caps", "Global Crypto Market Data"],
-      updateFreq: "Real-time",
-      notes: "Used for cryptocurrency intelligence and crypto market regime analysis.",
-    },
-    {
-      name: "Conference Board / FRED",
-      url: "https://fred.stlouisfed.org/series/USSLIND",
-      category: "Leading Indicators",
-      inputs: ["Leading Economic Index (LEI)", "ISM Manufacturing PMI"],
-      updateFreq: "Monthly",
-      notes: "Composite leading indicators used for macro momentum scoring.",
+      category: "Crypto market data — separate from Pressure Index scoring",
+      inputs: ["Crypto prices", "Market caps", "Global crypto market data"],
+      updateFreq: "By endpoint and cache",
+      notes: "Used by crypto features; these data are not inputs to the six-vector Pressure Index formula.",
     },
   ];
 
@@ -235,7 +198,7 @@ function DataSourcesTab() {
         FAULTLINE synthesizes data from multiple publicly available, institutional-grade sources into a unified risk framework. We do not expose proprietary processing logic, but we are fully transparent about where our data originates.
       </P>
       <P>
-        All data sources listed below are publicly accessible. FAULTLINE does not manufacture or estimate data — every input is sourced from a named provider with a documented update frequency.
+        The Pressure Index uses the FRED series listed below plus a static AI concentration baseline. Live observations, delayed releases, static references, and fallback values have different evidence limits; check the reading’s timestamp and data-quality labels.
       </P>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px" }}>
@@ -331,7 +294,7 @@ function FAQTab() {
     },
     {
       q: "Where does FAULTLINE get its data?",
-      a: "FAULTLINE sources data from publicly available, institutional-grade providers including the Federal Reserve (FRED), U.S. Treasury, Bureau of Labor Statistics, Bureau of Economic Analysis, Moody's (via FRED), Polygon.io (market data), and CoinGecko (crypto). See the Data Sources tab for the complete list.",
+      a: "The current Pressure Index requests eight FRED series: HY spread, 10Y and 2Y yields, SOFR, CPI, PPI, federal funds rate, and unemployment. Its AI concentration baseline is static. Equity and crypto features separately use Polygon.io and CoinGecko. See the Data Sources tab for the distinction.",
     },
     {
       q: "How often is the Pressure Index updated?",

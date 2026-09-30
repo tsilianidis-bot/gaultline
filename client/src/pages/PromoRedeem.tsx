@@ -205,7 +205,7 @@ export default function PromoRedeem() {
               "Signals Screener — Institutional-grade stock and crypto signals",
               "Situation Room — Macro stress simulation",
               "Market Seismograph — Structural fault detection",
-              "Historical Analogs — Pattern matching across 25 years",
+              "Historical Analogs — Comparison with fixed historical reference profiles",
             ].map((item) => (
               <div key={item} className="flex items-start gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 flex-shrink-0" />
@@ -268,7 +268,7 @@ export default function PromoRedeem() {
             ["Signals Screener", "Stock and crypto signals with regime-aware context"],
             ["Situation Room", "Macro stress simulation and portfolio scenario analysis"],
             ["Market Seismograph", "Structural fault detection before markets move"],
-            ["Historical Analogs", "Pattern matching across 25 years of macro history"],
+            ["Historical Analogs", "Comparison with fixed historical reference profiles"],
           ].map(([title, desc]) => (
             <div key={title} className="flex items-start gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 flex-shrink-0" />
