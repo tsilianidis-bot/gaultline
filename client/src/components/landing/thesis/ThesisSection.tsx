@@ -10,6 +10,7 @@
  * sticky), so the pentagon sits beside the intro.
  */
 import React from "react";
+import AmberSeismograph from "../AmberSeismograph";
 import { THESIS_CLOSING, THESIS_INTRO, THESIS_QUESTIONS, THESIS_SUPPORTING_NOTE, type ThesisQuestion } from "./thesisContent";
 
 type ThesisId = ThesisQuestion["id"];
@@ -150,8 +151,9 @@ function QuestionArticle({ item, index }: { item: ThesisQuestion; index: number 
 
 export default function ThesisSection() {
   return (
-    <section id="thesis" aria-labelledby="thesis-title" data-thesis-section className="relative scroll-mt-24 border-b border-white/[0.06] bg-[#070A0F] py-24 sm:py-32">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
+    <section id="thesis" aria-labelledby="thesis-title" data-thesis-section className="relative isolate scroll-mt-24 overflow-hidden border-b border-white/[0.06] bg-[#070A0F] py-24 sm:py-32">
+      <AmberSeismograph className="absolute inset-x-0 top-6 -z-10 h-24 sm:top-10 sm:h-28" opacity={0.22} />
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16">
           <div>
             <p className="mb-5 text-[12px] font-semibold tracking-[0.08em] text-[#65D6E5]">{THESIS_INTRO.eyebrow}</p>

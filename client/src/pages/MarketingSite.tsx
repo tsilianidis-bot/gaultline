@@ -4,6 +4,8 @@ import { getLoginUrl, handleLoginCtaClick } from "@/const";
 import { useSEO } from "@/hooks/useSEO";
 import { trackStartFreeClicked } from "@/hooks/useAnalytics";
 import SeismicUnderlay from "@/components/landing/SeismicUnderlay";
+import AmberSeismograph from "@/components/landing/AmberSeismograph";
+import MarketTicker from "@/components/landing/ticker/MarketTicker";
 import HeroProof from "@/components/landing/HeroProof";
 import PentagonalThesis from "@/components/landing/PentagonalThesis";
 import HistoricalContext from "@/components/landing/HistoricalContext";
@@ -151,6 +153,7 @@ function Hero() {
       <SeismicUnderlay className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(180deg,transparent_0%,transparent_42%,#000_68%)] lg:[mask-image:linear-gradient(90deg,transparent_0%,transparent_38%,rgba(0,0,0,0.4)_54%,#000_72%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.94)_0%,rgba(5,6,8,0.9)_48%,rgba(5,6,8,0.45)_72%,rgba(5,6,8,0.12)_100%)] lg:bg-[linear-gradient(90deg,rgba(5,6,8,0.96)_0%,rgba(5,6,8,0.92)_42%,rgba(5,6,8,0.55)_62%,rgba(5,6,8,0.08)_100%)]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0A0D12] to-transparent" aria-hidden="true" />
+      <AmberSeismograph className="absolute inset-x-0 bottom-10 h-28 sm:bottom-16 sm:h-36" />
       <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pt-16 lg:min-h-[calc(100svh-88px)] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:gap-12 lg:py-12 xl:py-24">
         <div className="max-w-4xl">
           <h1 className="max-w-5xl">
@@ -470,6 +473,7 @@ export default function MarketingSite({ initialSection }: { initialSection?: Mar
       <a href="#main" className={`absolute left-4 top-4 z-[60] -translate-y-24 rounded bg-[#65D6E5] px-3 py-2 text-sm font-semibold text-[#050608] focus:translate-y-0 ${focusRing}`}>
         Skip to content
       </a>
+      <MarketTicker />
       <div className="border-b border-[#00D4FF]/15 bg-[#0A0D12] px-4 py-2 text-center">
         <p className="text-[12px] font-[inherit] tracking-[0.06em] text-[#65D6E5] sm:text-[12px] sm:tracking-[0.06em]">
           FAULTLINE STRUCTURAL MARKET INTELLIGENCE <span className="mx-2 text-white/30">/</span> SYSTEMIC PRESSURE AND INTERPRETATION
