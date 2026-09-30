@@ -19,6 +19,8 @@ export interface PressureBand {
   regime: PressureBandRegime;
   /** Short legend label, e.g. "MODERATE" or "HIGH STRESS". */
   label: string;
+  /** Engine level for this band, e.g. "Moderate" (CHAMPION_REGIME_THRESHOLDS). */
+  level: (typeof CHAMPION_REGIME_THRESHOLDS)[number]["level"];
   /** Inclusive lower bound, from the engine thresholds. */
   min: number;
   /** Exclusive upper bound (null for the top band). */
@@ -70,6 +72,7 @@ export const PRESSURE_BANDS: readonly PressureBand[] = [...CHAMPION_REGIME_THRES
     return {
       regime: threshold.regime,
       label: threshold.regime.replace(/ RISK$/, ""),
+      level: threshold.level,
       min: threshold.minimum,
       maxExclusive,
       range,

@@ -24,8 +24,8 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import AshaIntroModal from "@/components/AshaIntroModal";
 import AshaPanel from "@/components/AshaPanel";
-import { formatCanonicalScore } from "@shared/marketMetrics";
-import { customerIntegrityColor, hideBlankTickerDuplicates } from "@shared/customerIntegrityLabels";
+import { customerIntegrityColor } from "@shared/customerIntegrityLabels";
+import { APP_HEADER_FRED_SERIES, buildAppHeaderStrip, type AppHeaderFredSeriesId, type FredObservation } from "@/lib/appHeaderStrip";
 import { DrawerProvider } from "@/contexts/DrawerContext";
 import LeftNavDrawer from "@/components/LeftNavDrawer";
 import RightActionDrawer from "@/components/RightActionDrawer";
@@ -106,7 +106,7 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
-  const { output, rawFred, isLoading, isLive, integrityLabel, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators } = useEngine();
+  const { output, isLoading, isLive, integrityLabel, isRefreshing, lastUpdated, isSimulating, forceRefresh, indicators, canonicalState } = useEngine();
   const { user: authUser, logout } = useAuth();
   const isAdmin = authUser?.role === "admin";
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -137,94 +137,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return count;
   }, [output, indicators]);
 
-  const { tickerValues, regime, domains, overall } = output;
-  // Build enriched smart market intelligence ticker (13 items from spec)
-  const liquidityDomain = domains.find(d => d.id === 'liquidity');
-  const creditDomain = domains.find(d => d.id === 'credit-stress');
-  const liquidityScore = liquidityDomain?.score ?? 5;
-  const liquidityLabel = liquidityScore < 4 ? 'Improving' : liquidityScore < 7 ? 'Neutral' : 'Tightening';
-  const liquidityDir = liquidityScore < 4 ? 'down' as const : liquidityScore < 7 ? 'flat' as const : 'up' as const;
-  const creditScore = creditDomain?.score ?? 5;
-  const creditLabel = creditScore < 4 ? 'Stable' : creditScore < 7 ? 'Elevated' : 'Stressed';
-  const creditDir = creditScore < 4 ? 'flat' as const : 'up' as const;
-  const aiConc = indicators.aiConcentration;
-  const aiConcLabel = aiConc > 35 ? 'Extreme' : aiConc > 28 ? 'Elevated' : 'Moderate';
-  const vix = indicators.vix;
-  const hySpread = rawFred['BAMLH0A0HYM2'] != null
-    ? (rawFred['BAMLH0A0HYM2']! > 20 ? Math.round(rawFred['BAMLH0A0HYM2']!) : Math.round(rawFred['BAMLH0A0HYM2']! * 100))
-    : indicators.hySpread;
-  const yield10Y = rawFred['DGS10'] != null ? rawFred['DGS10']! : indicators.yield10Y;
-  // Regime label from engine
-  const regimeShort = regime.label.length > 18 ? regime.label.split(' ').slice(0, 2).join(' ') : regime.label;
-  // Fed cut probability derived from fed funds rate vs CPI
-  const fedCutProb = Math.max(0, Math.min(99, Math.round(100 - (indicators.fedFundsRate - indicators.cpi) * 15)));
-  // Market breadth proxy: inverse of overall risk score
-  const breadthScore = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
-  const breadthLabel = breadthScore > 65 ? 'Broad' : breadthScore > 40 ? 'Mixed' : 'Narrow';
-  // BTC dominance — live from /api/crypto/global (5-min cache)
-  const [btcDom, setBtcDom] = useState<number>(54.2);
-  const [btcDomPrev, setBtcDomPrev] = useState<number>(54.2);
-  useEffect(() => {
-    let cancelled = false;
-    const fetchBtcDom = async () => {
-      try {
-        const res = await fetch('/api/crypto/global');
-        if (!res.ok) return;
-        const d = await res.json();
-        if (!cancelled && typeof d.btcDominance === 'number') {
-          setBtcDomPrev(d.btcDominance); // will be stale on first render, that's fine
-          setBtcDom(d.btcDominance);
-        }
-      } catch { /* silent */ }
-    };
-    fetchBtcDom();
-    const iv = setInterval(fetchBtcDom, 5 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(iv); };
-  }, []);
-
-  // DXY — live from FRED DTWEXBGS (Broad Dollar Index, weekly)
-  const [dxy, setDxy] = useState<{ value: string; direction: 'up' | 'down' | 'flat' }>({ value: '—', direction: 'flat' });
-  useEffect(() => {
-    let cancelled = false;
-    const fetchDxy = async () => {
-      try {
-        const res = await fetch('/api/fred?series_id=DTWEXBGS&limit=2');
-        if (!res.ok) return;
-        const d = await res.json();
-        const obs: Array<{ value: string }> = d.observations ?? [];
-        if (!cancelled && obs.length >= 1 && obs[0].value !== '.') {
-          const current = parseFloat(obs[0].value);
-          const prev = obs.length >= 2 && obs[1].value !== '.' ? parseFloat(obs[1].value) : current;
-          const dir: 'up' | 'down' | 'flat' = current > prev + 0.1 ? 'up' : current < prev - 0.1 ? 'down' : 'flat';
-          setDxy({ value: current.toFixed(1), direction: dir });
-        }
-      } catch { /* silent */ }
-    };
-    fetchDxy();
-    const iv = setInterval(fetchDxy, 15 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(iv); };
-  }, []);
-  // Fear & Greed proxy from overall score
-  const fearGreed = Math.max(0, Math.min(100, Math.round(100 - overall.score * 10)));
-  const fearGreedLabel = fearGreed > 75 ? 'Extreme Greed' : fearGreed > 55 ? 'Greed' : fearGreed > 45 ? 'Neutral' : fearGreed > 25 ? 'Fear' : 'Extreme Fear';
-  const liveTickerItems: MarketTickerItem[] = hideBlankTickerDuplicates([
-    { label: 'Regime', value: regimeShort, direction: overall.score > 6 ? 'up' : overall.score > 4 ? 'flat' : 'down' },
-    { label: 'Pressure Index', value: formatCanonicalScore(overall.score * 10), direction: overall.delta > 0 ? 'up' : 'down' },
-    { label: 'Liquidity', value: liquidityLabel, direction: liquidityDir },
-    { label: 'AI Concentration', value: aiConcLabel, direction: aiConc > 28 ? 'up' : 'flat' },
-    { label: 'Credit Stress', value: creditLabel, direction: creditDir },
-    { label: 'VIX', value: vix.toFixed(1), direction: vix > 20 ? 'up' : 'down' },
-    { label: 'DXY', value: dxy.value, direction: dxy.direction },
-    { label: 'Fed Cut Prob', value: `${fedCutProb}%`, direction: fedCutProb > 50 ? 'down' : 'up' },
-    { label: '10Y Treasury', value: `${yield10Y.toFixed(2)}%`, direction: yield10Y > 4.5 ? 'up' : 'flat' },
-    { label: 'HY Spread', value: `${hySpread}bps`, direction: hySpread > 350 ? 'up' : 'flat' },
-    { label: 'BTC Dominance', value: `${btcDom.toFixed(1)}%`, direction: btcDom > btcDomPrev + 0.2 ? 'up' : btcDom < btcDomPrev - 0.2 ? 'down' : 'flat' },
-    { label: 'Market Breadth', value: breadthLabel, direction: breadthScore > 55 ? 'down' : 'up' },
-    { label: 'Fear & Greed', value: fearGreedLabel, direction: fearGreed > 55 ? 'down' : fearGreed < 45 ? 'up' : 'flat' },
-    // Legacy items for backward compat
-    ...tickerValues.filter(t => !['10Y','HY SPREAD','VIX','AI CONC.','SYSTEMIC RISK'].includes(t.label))
-      .map(item => ({ ...item, direction: item.direction as 'up' | 'down' | 'flat' })),
-  ]);
+  // Header strip: every value from a real source (canonical snapshot, markets.getGlobalSnapshot,
+  // FRED via /api/fred), tagged DELAYED / LAST CLOSE / STALE / UNAVAILABLE like the landing ticker.
+  const { data: marketSnapshot } = trpc.markets.getGlobalSnapshot.useQuery(undefined, { refetchInterval: 90_000, staleTime: 60_000, retry: 2 });
+  const headerFred = useAppHeaderFred();
+  const liveTickerItems: MarketTickerItem[] = useMemo(() => buildAppHeaderStrip({
+    canonical: canonicalState,
+    integrity: integrityLabel,
+    quotes: marketSnapshot?.items ?? null,
+    fred: headerFred,
+    now: Date.now(),
+  }), [canonicalState, integrityLabel, marketSnapshot?.items, headerFred]);
 
   const isActive = useCallback((path: string) => {
     if (path === "/app") return location === "/app";
@@ -825,4 +748,29 @@ export default function AppLayout({ children }: AppLayoutProps) {
     </div>
     </DrawerProvider>
   );
+}
+
+/** FRED observations for the header strip (public /api/fred proxy, server-cached). Missing series stay null → UNAVAILABLE. */
+function useAppHeaderFred(): Partial<Record<AppHeaderFredSeriesId, FredObservation[] | null>> {
+  const [series, setSeries] = useState<Partial<Record<AppHeaderFredSeriesId, FredObservation[] | null>>>({});
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const entries = await Promise.all(APP_HEADER_FRED_SERIES.map(async ({ id, limit }) => {
+        try {
+          const res = await fetch(`/api/fred?series_id=${id}&limit=${limit}`);
+          if (!res.ok) return [id, null] as const;
+          const body = await res.json();
+          return [id, Array.isArray(body?.observations) ? body.observations as FredObservation[] : null] as const;
+        } catch {
+          return [id, null] as const;
+        }
+      }));
+      if (!cancelled) setSeries(Object.fromEntries(entries));
+    };
+    load();
+    const interval = setInterval(load, 15 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+  return series;
 }

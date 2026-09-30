@@ -20,7 +20,8 @@
  * live value and cannot contradict the live one.
  */
 import { formatPressureAsOf, PRESSURE_BANDS, type PressureSnapshotView } from "@/lib/pressureSnapshot";
-import { customerIntegrityLabel, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
+import { snapshotEvidenceCounts } from "@shared/snapshotEvidence";
+import { customerIntegrityFromCanonical, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID, PRESSURE_VECTOR_DISPLAY } from "@shared/pressureVectorLabels";
 import type { SystemicRegimeReading } from "@shared/systemicRegime";
 import { PRESSURE_VECTOR_ORDER } from "../landingPressure";
@@ -182,13 +183,7 @@ export function buildWorkedExample(view: PressureSnapshotView, analog: AnalogInp
   }
 
   const state = view.state;
-  const integrity = customerIntegrityLabel({
-    hasState: true,
-    quality: state.confidenceOrEvidenceQuality,
-    coherence: state.provenance?.coherenceStatus,
-    fallbackInputCount: state.dataQualitySummary?.fallbackInputCount,
-    staleInputCount: state.dataQualitySummary?.staleInputCount,
-  });
+  const integrity = customerIntegrityFromCanonical(state);
 
   const raw = PRESSURE_VECTOR_ORDER.flatMap(([id, weight]) => {
     const engine = state.engines.find((item) => item.engineId === id);
@@ -211,7 +206,7 @@ export function buildWorkedExample(view: PressureSnapshotView, analog: AnalogInp
     .sort((a, b) => b.sortKey - a.sortKey)
     .map(({ sortKey: _sortKey, ...item }) => item);
 
-  const summary = state.dataQualitySummary;
+  const evidence = snapshotEvidenceCounts(state);
   const steps = thresholdSteps(view.score);
 
   return {
@@ -235,10 +230,10 @@ export function buildWorkedExample(view: PressureSnapshotView, analog: AnalogInp
       reconciles,
       evidenceQuality: state.confidenceOrEvidenceQuality,
       coherence: state.provenance?.coherenceStatus ?? "UNAVAILABLE",
-      staleInputs: summary?.staleInputCount ?? state.staleInputs.length,
-      delayedInputs: summary?.delayedInputCount ?? state.delayedInputs.length,
-      fallbackInputs: summary?.fallbackInputCount ?? state.fallbackInputs.length,
-      unavailableInputs: summary?.unavailableInputCount ?? state.unavailableInputs.length,
+      staleInputs: evidence.stale,
+      delayedInputs: evidence.delayed,
+      fallbackInputs: evidence.fallback,
+      unavailableInputs: evidence.unavailable,
       unresolvedConflicts: state.conflicts.filter((conflict) => conflict.resolutionStatus === "UNRESOLVED").length,
     },
     next: { analog: analogOf(analog, view.provenance.stateId), model },

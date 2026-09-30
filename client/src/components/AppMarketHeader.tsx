@@ -6,7 +6,12 @@ export type MarketTickerDirection = "up" | "down" | "flat";
 export interface MarketTickerItem {
   label: string;
   value: string;
-  direction: MarketTickerDirection;
+  /** null when no truthful direction is available (no glyph is drawn). */
+  direction: MarketTickerDirection | null;
+  /** Freshness tag (DELAYED / LAST CLOSE / STALE / UNAVAILABLE …); null only for a current reading. */
+  stateLabel?: string | null;
+  /** Source / as-of note shown on hover. */
+  title?: string;
 }
 
 interface RegimeSummary {
@@ -27,16 +32,17 @@ interface AppMarketHeaderProps {
   isMobile: boolean;
 }
 
-function directionColor(direction: MarketTickerDirection) {
+function directionColor(direction: MarketTickerDirection | null) {
   if (direction === "up") return "#FF9500";
   if (direction === "down") return "#00FF88";
   return "#B0C4D8";
 }
 
-function directionGlyph(direction: MarketTickerDirection) {
+function directionGlyph(direction: MarketTickerDirection | null) {
   if (direction === "up") return "▲";
   if (direction === "down") return "▼";
-  return "—";
+  if (direction === "flat") return "—";
+  return "";
 }
 
 export default function AppMarketHeader({ items, intelligence, isMobile }: AppMarketHeaderProps) {
@@ -55,10 +61,15 @@ export default function AppMarketHeader({ items, intelligence, isMobile }: AppMa
           {[...visibleItems, ...visibleItems].map((item, index) => {
             const color = directionColor(item.direction);
             return (
-              <span key={`${item.label}-${index}`} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.1em", paddingRight: "48px" }}>
+              <span key={`${item.label}-${index}`} data-header-item={item.label} title={item.title} aria-hidden={index >= visibleItems.length ? true : undefined} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", letterSpacing: "0.1em", paddingRight: "48px" }}>
                 <span style={{ color: "#8A9AB0" }}>{item.label} </span>
-                <span style={{ color }}>{item.value}</span>
-                <span style={{ color, marginLeft: "2px" }}>{directionGlyph(item.direction)}</span>
+                <span style={{ color: item.stateLabel === "UNAVAILABLE" ? "#64748B" : color }}>{item.value}</span>
+                {directionGlyph(item.direction) && <span style={{ color, marginLeft: "2px" }}>{directionGlyph(item.direction)}</span>}
+                {item.stateLabel && (
+                  <span style={{ marginLeft: "5px", fontSize: "8px", letterSpacing: "0.12em", color: item.stateLabel === "STALE" || item.stateLabel === "UNAVAILABLE" ? "#94A3B8" : "#7DD3FC", border: "1px solid rgba(148,163,184,0.25)", borderRadius: "2px", padding: "0 3px" }}>
+                    {item.stateLabel}
+                  </span>
+                )}
               </span>
             );
           })}

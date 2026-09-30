@@ -20,6 +20,7 @@ import { RawIndicators, DEFAULT_INDICATORS, EngineOutput } from '@/lib/engine';
 import type { FetchStatus } from '@/lib/useLiveData';
 import { selectBrowserMarketOutput, type BrowserMarketMode } from '@/lib/marketStateProjection';
 import { trpc } from '@/lib/trpc';
+import { canonicalStoryLead, projectCanonicalNow } from '@/lib/canonicalNowProjection';
 import type { CanonicalMarketState, MarketStateSourceHealth } from '@shared/marketState';
 import type { PublicCanonicalIntelligenceState } from '@shared/canonicalIntelligenceState';
 import {
@@ -94,6 +95,9 @@ export function EngineProvider({ children }: { children: ReactNode }) {
     if (!legacy) return null;
     const pressureScore = canonicalState.pressureIndex ?? legacy.now.pressureScore;
     const regime = canonicalState.regime ?? legacy.now.regime;
+    // Band, direction and headline come from the canonical snapshot and the engine
+    // thresholds; the seismograph's own direction/stress labels are not used here.
+    const now = projectCanonicalNow(canonicalState, legacy.now);
     return {
       ...legacy,
       generatedAt: canonicalState.generatedAt,
@@ -102,8 +106,11 @@ export function EngineProvider({ children }: { children: ReactNode }) {
         ...legacy.now,
         pressureScore,
         regime,
-        direction: canonicalState.pressureDirection === 'Unknown' ? legacy.now.direction : canonicalState.pressureDirection,
+        stressLevel: now.stressLevel,
+        direction: now.direction,
+        headline: now.headline,
       },
+      why: { ...legacy.why, story: canonicalStoryLead(legacy.why.story, canonicalState) },
       warnings: Array.from(new Set([...legacy.warnings, ...canonicalState.warnings])),
     };
   }, [canonicalState, legacyProjectionQuery.data]);
