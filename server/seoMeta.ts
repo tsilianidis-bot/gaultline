@@ -9,14 +9,21 @@
  * Used by both setupVite (dev) and serveStatic (prod) catch-alls.
  */
 
+import { getBlogPosts } from "./db";
+import { getSoroArticles } from "./soroBlogFeed";
+
 const BASE_URL = "https://getfaultline.live";
 const DEFAULT_OG_IMAGE = "https://getfaultline.live/og-image.jpg";
 
-interface PageMeta {
+export interface PageMeta {
   title: string;
   description: string;
   ogImage?: string;
   ogType?: string;
+  /** Absolute canonical URL override (defaults to BASE_URL + path without query). */
+  canonicalUrl?: string;
+  /** Replaces the template's robots directive when set (e.g. "noindex, follow"). */
+  robots?: string;
 }
 
 // ── Per-page metadata map ──────────────────────────────────────────────────
@@ -254,7 +261,8 @@ export function getPageMeta(urlPath: string): PageMeta {
     };
   }
 
-  // Blog post pages: /blog/:slug
+  // Blog post pages: /blog/:slug — generic fallback only. Published posts are
+  // rendered with their own metadata by server/publicContentSsr.ts.
   if (cleanPath.startsWith("/blog/")) {
     return {
       title: "FAULTLINE Blog — Market Intelligence & Macro Analysis",
@@ -267,64 +275,40 @@ export function getPageMeta(urlPath: string): PageMeta {
   return PAGE_META["/"];
 }
 
-/**
- * Inject per-page metadata into the HTML template.
- * Replaces title, description, OG, Twitter, and canonical tags.
- */
-import { getBlogPostBySlug, getBlogPosts } from "./db";
+function escapeText(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
 
 /**
- * Async version: resolves blog post metadata from DB for /blog/:slug routes.
+ * Async version: adds crawlable content for the blog index and track record.
+ * Individual published articles (/blog/:slug, /daily-brief/:slug, /blog?post=:slug)
+ * are rendered by server/publicContentSsr.ts before this fallback runs.
  */
 export async function injectPageMetaAsync(html: string, urlPath: string): Promise<string> {
   const cleanPath = urlPath.split("?")[0].split("#")[0];
 
-  // Blog post: inject post-specific title/description from DB
-  const blogSlugMatch = cleanPath.match(/^\/blog\/([^/]+)$/);
-  if (blogSlugMatch) {
-    try {
-      const post = await getBlogPostBySlug(blogSlugMatch[1]);
-      if (post && post.published) {
-        const postTitle = (post as any).metaTitle ?? post.title;
-        const postDesc = (post as any).metaDescription ?? post.subtitle ?? post.title;
-        const postMeta: PageMeta = {
-          title: `${postTitle} | FAULTLINE`,
-          description: postDesc,
-          ogType: "article",
-        };
-        // Also inject Article JSON-LD into the HTML
-        let result = injectPageMeta(html, urlPath, postMeta);
-        const canonicalUrl = `${BASE_URL}/blog/${blogSlugMatch[1]}`;
-        const articleLd = {
-          "@context": "https://schema.org",
-          "@type": "BlogPosting",
-          "headline": post.title,
-          "description": postDesc,
-          "url": canonicalUrl,
-          "author": { "@type": "Person", "name": post.author ?? "FAULTLINE" },
-          "publisher": { "@type": "Organization", "name": "FAULTLINE", "url": BASE_URL },
-          "datePublished": post.publishedAt ?? post.createdAt,
-          "dateModified": post.updatedAt ?? post.publishedAt ?? post.createdAt,
-        };
-        const ldScript = `<script type="application/ld+json">${JSON.stringify(articleLd)}</script>`;
-        result = result.replace("</head>", `${ldScript}</head>`);
-        return result;
-      }
-    } catch { /* fall through to generic blog meta */ }
-  }
-
-  // Blog index: inject article list as noscript content for crawlers
+  // Blog index: inject article list (DB posts + published Soro feed) as noscript content for crawlers
   if (cleanPath === "/blog") {
     try {
-      const posts = await getBlogPosts({ publishedOnly: true, limit: 20 });
+      const [posts, soroArticles] = await Promise.all([
+        getBlogPosts({ publishedOnly: true, limit: 20 }).catch(() => []),
+        getSoroArticles().catch(() => null),
+      ]);
       let result = injectPageMeta(html, urlPath);
-      if (posts.length > 0) {
-        const articleLinks = posts.map(p => {
+      const articleLinks = [
+        ...(soroArticles ?? []).map(a => {
+          const excerpt = a.excerpt.slice(0, 160);
+          return `<article><h2><a href="${BASE_URL}/blog?post=${encodeURIComponent(a.slug)}">${escapeText(a.title)}</a></h2>${excerpt ? `<p>${escapeText(excerpt)}</p>` : ""}<time datetime="${escapeText(a.isoDate)}">${new Date(a.isoDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "America/New_York" })}</time></article>`;
+        }),
+        ...posts.map(p => {
           const excerpt = (p.subtitle ?? "").slice(0, 160);
-          return `<article><h2><a href="${BASE_URL}/blog/${p.slug}">${p.title}</a></h2>${excerpt ? `<p>${excerpt}</p>` : ""}<time datetime="${p.publishedAt ?? p.createdAt}">${new Date(p.publishedAt ?? p.createdAt ?? Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</time></article>`;
-        }).join("\n");
-        const noscriptBlock = `<noscript><section aria-label="FAULTLINE Intelligence Briefings"><h1>FAULTLINE Intelligence Briefings</h1><p>Institutional macro commentary, market risk analysis, and systemic pressure updates.</p>${articleLinks}</section></noscript>`;
-        result = result.replace("</body>", `${noscriptBlock}</body>`);
+          const date = p.publishedAt ?? p.createdAt;
+          return `<article><h2><a href="${BASE_URL}/blog/${encodeURIComponent(p.slug)}">${escapeText(p.title)}</a></h2>${excerpt ? `<p>${escapeText(excerpt)}</p>` : ""}<time datetime="${date ? new Date(date).toISOString() : ""}">${new Date(date ?? Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "America/New_York" })}</time></article>`;
+        }),
+      ];
+      if (articleLinks.length > 0) {
+        const noscriptBlock = `<noscript><section aria-label="FAULTLINE Intelligence Briefings"><h1>FAULTLINE Intelligence Briefings</h1><p>Institutional macro commentary, market risk analysis, and systemic pressure updates.</p>${articleLinks.join("\n")}</section></noscript>`;
+        result = result.replace("</body>", () => `${noscriptBlock}</body>`);
       }
       return result;
     } catch { /* fall through */ }
@@ -350,7 +334,7 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
 <h2>Important Limitations</h2>
 <p>This is retrospective analysis. FAULTLINE did not exist during the 2000, 2008, or 2020 crises. These scores represent what the current methodology would have produced using the data available at those times. Past performance of the methodology does not guarantee future accuracy. Not investment advice.</p>
 </section></noscript>`;
-    result = result.replace("</body>", `${trackRecordNoscript}</body>`);
+    result = result.replace("</body>", () => `${trackRecordNoscript}</body>`);
     return result;
   }
 
@@ -359,92 +343,56 @@ export async function injectPageMetaAsync(html: string, urlPath: string): Promis
 
 export function injectPageMeta(html: string, urlPath: string, overrideMeta?: PageMeta): string {
   const meta = overrideMeta ?? getPageMeta(urlPath);
-  const canonicalUrl = `${BASE_URL}${urlPath === "/" ? "" : urlPath.split("?")[0]}`;
-  const ogImage = meta.ogImage || DEFAULT_OG_IMAGE;
+  const canonicalUrl = meta.canonicalUrl ?? `${BASE_URL}${urlPath === "/" ? "" : urlPath.split("?")[0]}`;
+  const ogImage = escapeText(meta.ogImage || DEFAULT_OG_IMAGE);
   const ogType = meta.ogType || "website";
 
-  // Escape HTML entities in title/description
-  const safeTitle = meta.title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const safeDesc = meta.description.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const safeCanonical = canonicalUrl.replace(/&/g, "&amp;");
+  // Escape HTML entities in title/description (including quotes: they land in attributes)
+  const safeTitle = escapeText(meta.title);
+  const safeDesc = escapeText(meta.description);
+  const safeCanonical = canonicalUrl.replace(/&/g, "&amp;").replace(/"/g, "%22");
 
   let result = html;
+  // Function replacers: record-supplied text must never be interpreted as `$&`-style patterns.
+  const set = (pattern: RegExp, replacement: string) => {
+    result = result.replace(pattern, () => replacement);
+  };
 
   // Replace <title>
-  result = result.replace(
-    /<title>[^<]*<\/title>/,
-    `<title>${safeTitle}</title>`
-  );
+  set(/<title>[^<]*<\/title>/, `<title>${safeTitle}</title>`);
 
   // Replace meta description
-  result = result.replace(
-    /<meta name="description" content="[^"]*"/,
-    `<meta name="description" content="${safeDesc}"`
-  );
+  set(/<meta name="description" content="[^"]*"/, `<meta name="description" content="${safeDesc}"`);
+
+  // Per-page robots directive (e.g. noindex for intel records and 404s)
+  if (meta.robots) {
+    set(/<meta name="robots" content="[^"]*"/, `<meta name="robots" content="${escapeText(meta.robots)}"`);
+  }
 
   // Add noindex for authenticated app routes
   const isAppRoute = urlPath.startsWith("/app/") || urlPath === "/app";
   if (isAppRoute) {
     // Insert noindex meta after the canonical link
-    result = result.replace(
+    set(
       /<link rel="canonical" href="[^"]*"/,
       `<link rel="canonical" href="${safeCanonical}"><meta name="robots" content="noindex,follow"`
     );
   } else {
     // Replace canonical
-    result = result.replace(
-      /<link rel="canonical" href="[^"]*"/,
-      `<link rel="canonical" href="${safeCanonical}"`
-    );
+    set(/<link rel="canonical" href="[^"]*"/, `<link rel="canonical" href="${safeCanonical}"`);
   }
 
-  // Replace OG title
-  result = result.replace(
-    /<meta property="og:title" content="[^"]*"/,
-    `<meta property="og:title" content="${safeTitle}"`
-  );
+  // Open Graph
+  set(/<meta property="og:title" content="[^"]*"/, `<meta property="og:title" content="${safeTitle}"`);
+  set(/<meta property="og:description" content="[^"]*"/, `<meta property="og:description" content="${safeDesc}"`);
+  set(/<meta property="og:url" content="[^"]*"/, `<meta property="og:url" content="${safeCanonical}"`);
+  set(/<meta property="og:type" content="[^"]*"/, `<meta property="og:type" content="${ogType}"`);
+  set(/<meta property="og:image" content="[^"]*"/, `<meta property="og:image" content="${ogImage}"`);
 
-  // Replace OG description
-  result = result.replace(
-    /<meta property="og:description" content="[^"]*"/,
-    `<meta property="og:description" content="${safeDesc}"`
-  );
-
-  // Replace OG URL
-  result = result.replace(
-    /<meta property="og:url" content="[^"]*"/,
-    `<meta property="og:url" content="${safeCanonical}"`
-  );
-
-  // Replace OG type
-  result = result.replace(
-    /<meta property="og:type" content="[^"]*"/,
-    `<meta property="og:type" content="${ogType}"`
-  );
-
-  // Replace OG image
-  result = result.replace(
-    /<meta property="og:image" content="[^"]*"/,
-    `<meta property="og:image" content="${ogImage}"`
-  );
-
-  // Replace Twitter title
-  result = result.replace(
-    /<meta name="twitter:title" content="[^"]*"/,
-    `<meta name="twitter:title" content="${safeTitle}"`
-  );
-
-  // Replace Twitter description
-  result = result.replace(
-    /<meta name="twitter:description" content="[^"]*"/,
-    `<meta name="twitter:description" content="${safeDesc}"`
-  );
-
-  // Replace Twitter image
-  result = result.replace(
-    /<meta name="twitter:image" content="[^"]*"/,
-    `<meta name="twitter:image" content="${ogImage}"`
-  );
+  // Twitter
+  set(/<meta name="twitter:title" content="[^"]*"/, `<meta name="twitter:title" content="${safeTitle}"`);
+  set(/<meta name="twitter:description" content="[^"]*"/, `<meta name="twitter:description" content="${safeDesc}"`);
+  set(/<meta name="twitter:image" content="[^"]*"/, `<meta name="twitter:image" content="${ogImage}"`);
 
   return result;
 }

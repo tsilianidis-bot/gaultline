@@ -11,6 +11,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, ChevronLeft, ChevronRight, Shield, Rss, ExternalLink } from "lucide-react";
+import { buildDailyBriefStructuredData, serializeJsonLd } from "@shared/articleStructuredData";
 
 function formatDate(d: Date | string | null | undefined): string {
   if (!d) return "—";
@@ -44,7 +45,8 @@ export default function DailyBriefPost() {
   useSEO({
     title: item ? `${item.title} | FAULTLINE Daily Brief` : "Daily Intelligence Brief | FAULTLINE",
     description: item?.metaDescription ?? "FAULTLINE Daily Intelligence Brief — institutional-grade macro analysis with explicit evidence and freshness context.",
-    canonical: `https://getfaultline.live/daily-brief/${slug}`,
+    // useSEO prefixes the site origin, so pass the path (matches the server-rendered canonical).
+    canonical: `/daily-brief/${encodeURIComponent(slug)}`,
   });
 
   if (isLoading) {
@@ -87,36 +89,18 @@ export default function DailyBriefPost() {
     }
   } catch { /* ignore */ }
 
-  // Parse schema JSON for Article structured data
-  let schemaData: Record<string, unknown> = {};
-  try {
-    if (item.schemaJson) schemaData = JSON.parse(item.schemaJson);
-  } catch { /* ignore */ }
-
   const isStaleSnapshot = item.briefSnapshot?.isStale === true;
 
-  const articleSchema = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": item.title,
-    "description": item.metaDescription,
-    "datePublished": item.publishedAt,
-    "author": { "@type": "Organization", "name": "FAULTLINE" },
-    "publisher": {
-      "@type": "Organization",
-      "name": "FAULTLINE",
-      "url": "https://getfaultline.live",
-    },
-    "url": `https://getfaultline.live/daily-brief/${item.slug}`,
-    ...schemaData,
-  };
+  // Same Article JSON-LD the server renders for this URL. Legacy stored schemaJson is not
+  // merged: it is an array and points at the unrouted /intelligence/ path.
+  const articleSchema = buildDailyBriefStructuredData(item);
 
   return (
     <div className="min-h-screen" style={{ background: '#050608', color: '#F1F5F9' }}>
       {/* Structured data */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleSchema) }}
       />
 
       {/* ── Breadcrumb nav ──────────────────────────────────────── */}

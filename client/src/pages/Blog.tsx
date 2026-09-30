@@ -280,11 +280,14 @@ function PostModal({
 }
 
 export default function Blog() {
+  // Soro deep links (/blog?post=<slug>) are server-rendered with a self-referencing
+  // canonical; keep it so hydration does not point the article back at /blog.
+  const soroPostSlug = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("post") : null;
   useSEO({
     title: "Intelligence Briefings — Macro Commentary & Market Analysis",
     description:
       "FAULTLINE Intelligence Briefings: institutional macro commentary, market risk analysis, systemic pressure updates, and fault line reports from the FAULTLINE intelligence team.",
-    canonical: "/blog",
+    canonical: soroPostSlug ? `/blog?post=${encodeURIComponent(soroPostSlug)}` : "/blog",
   });
 
   // Inject CollectionPage + Blog JSON-LD structured data for Googlebot
