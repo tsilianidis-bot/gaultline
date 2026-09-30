@@ -4,6 +4,12 @@ import path from "node:path";
 import { landingFromSnapshot } from "../client/src/components/landing/landingPressure";
 import { selectPressureSnapshot } from "../client/src/lib/pressureSnapshot";
 import * as inventory from "../client/src/content/methodologyInventory";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import ThesisSection from "../client/src/components/landing/thesis/ThesisSection";
+import WorkedExampleView from "../client/src/components/landing/thesis/WorkedExampleView";
+import { THESIS_CLOSING, THESIS_INTRO, THESIS_QUESTIONS } from "../client/src/components/landing/thesis/thesisContent";
+import { buildWorkedExample, ILLUSTRATIVE, ILLUSTRATIVE_LABEL } from "../client/src/components/landing/thesis/workedExample";
 
 const read = (relativePath: string) => fs.readFileSync(path.resolve(process.cwd(), relativePath), "utf8");
 
@@ -11,6 +17,11 @@ const page = read("client/src/pages/MarketingSite.tsx");
 const landingComponents = [
   "client/src/components/landing/HeroProof.tsx",
   "client/src/components/landing/PentagonalThesis.tsx",
+  "client/src/components/landing/thesis/thesisContent.ts",
+  "client/src/components/landing/thesis/ThesisSection.tsx",
+  "client/src/components/landing/thesis/workedExample.ts",
+  "client/src/components/landing/thesis/WorkedExampleView.tsx",
+  "client/src/components/landing/thesis/WorkedExample.tsx",
   "client/src/components/landing/HistoricalContext.tsx",
   "client/src/components/landing/landingPressure.ts",
   "client/src/components/landing/useLandingPressure.ts",
@@ -98,45 +109,174 @@ describe("Landing page structure", () => {
 });
 
 describe("Pentagonal Thesis section", () => {
-  const thesis = read("client/src/components/landing/PentagonalThesis.tsx");
+  const section = read("client/src/components/landing/thesis/ThesisSection.tsx");
+  const composition = read("client/src/components/landing/PentagonalThesis.tsx");
+  const html = renderToStaticMarkup(createElement(ThesisSection));
+  const text = html.replace(/<[^>]+>/g, " ").replace(/&#x27;|&apos;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ");
 
-  it("asks exactly the five questions, in order", () => {
-    const questions = [...thesis.matchAll(/question: "([^"]+)"/g)].map((m) => m[1]);
-    expect(questions).toEqual([
-      "What's happening?",
-      "Why is it happening?",
-      "What's next?",
-      "What should I watch?",
-      "What should I do?",
+  it("uses James's intro, five headings with their taglines, and the closing line", () => {
+    expect(THESIS_INTRO.heading).toBe("Five questions. A clearer way to read the market.");
+    expect(THESIS_INTRO.body).toBe("Market data tells you what moved. FAULTLINE connects the conditions, drivers, possible outcomes, and signals that matter—so you can make a more informed decision.");
+    expect(THESIS_QUESTIONS.map((q) => [q.question, q.tagline])).toEqual([
+      ["What's happening?", "Understand the market you're in."],
+      ["Why?", "Understand what's driving it."],
+      ["What's next?", "Understand the possible paths ahead."],
+      ["What should I watch?", "Know what would change the outlook."],
+      ["What should I do?", "Turn the outlook into a risk-aware decision."],
     ]);
+    expect(THESIS_CLOSING).toBe("Each answer informs the next. Together, they form the Pentagonal Thesis™—FAULTLINE's framework for connecting market pressure to informed decisions.");
     expect(landing).not.toMatch(/four questions|four-question|4 questions/i);
-    expect(thesis).toContain("THE PENTAGONAL THESIS™");
   });
 
-  it("ties each question to implemented capabilities", () => {
-    expect(thesis).toContain("Faultline Pressure Index™: a 0–100 composite");
-    expect(thesis).toContain("sre-hmm2");
-    expect(thesis).toContain("Vector drivers");
-    expect(thesis).toContain("PLATO interpretation");
-    expect(thesis).toContain("Regime transitions");
-    expect(thesis).toContain("Aftershock and contagion map");
-    expect(thesis).toContain("Development timelines");
-    expect(thesis).toContain("Cross-market alignment: equity regime versus crypto regime.");
-    expect(thesis).toContain("watchlist and the daily intelligence brief");
-    expect(thesis).toContain("A decision framework");
+  it("renders every heading, tagline, body, mapping, option and note as visible text", () => {
+    expect(text).toContain(THESIS_INTRO.heading);
+    expect(text).toContain(THESIS_INTRO.body);
+    expect(text).toContain(THESIS_CLOSING);
+    for (const q of THESIS_QUESTIONS) {
+      expect(text, q.id).toContain(q.question);
+      expect(text, q.id).toContain(q.tagline);
+      expect(text, q.id).toContain(q.body);
+      for (const line of q.shows) expect(text, line).toContain(line);
+      for (const option of q.options ?? []) expect(text).toContain(option.tradeoff);
+      if (q.note) expect(text).toContain(q.note);
+    }
+    expect((html.match(/<h3\b/g) ?? [])).toHaveLength(5);
+    expect(html).toContain('id="thesis"');
   });
 
-  it("frames 'what next' as scenario context and 'what to do' as not advice", () => {
-    expect(thesis).toContain("scenario context, not a forecast or a probability");
-    expect(thesis).toContain("Not investment advice.");
-    expect(thesis).toMatch(/does not give personalised recommendations/);
+  it("hides no core copy behind tooltips, accordions or disclosure widgets", () => {
+    for (const source of [section, composition, read("client/src/components/landing/thesis/WorkedExampleView.tsx")]) {
+      expect(source).not.toMatch(/<details|<summary|Tooltip|Popover|Accordion|Collapsible|HoverCard|aria-expanded|data-state=|line-clamp|truncate\b/);
+    }
+    // No title-attribute tooltips in the rendered markup (the SVG <title> element is the graphic's accessible name).
+    const exampleHtml = renderToStaticMarkup(createElement(WorkedExampleView, { model: buildWorkedExample({ status: "loading" }, { status: "loading" }, { status: "loading" }) }));
+    for (const markup of [html, exampleHtml]) expect(markup).not.toMatch(/\stitle="/);
+    // Hover only highlights the pentagon; it never gates copy.
+    expect(section).not.toMatch(/active\s*&&\s*\(?\s*<p|active\s*\?\s*<p/);
   });
 
-  it("is accessible: the SVG has a title and description and the questions are real text", () => {
-    expect(thesis).toMatch(/role="img"/);
-    expect(thesis).toContain("<title id={titleId}>The Pentagonal Thesis™</title>");
-    expect(thesis).toContain("<desc id={descId}>");
-    expect(thesis).toContain('<h3 className="text-xl font-semibold text-white">{item.question}</h3>');
+  it("matches product claims to what the code implements", () => {
+    const all = THESIS_QUESTIONS.map((q) => [q.body, ...q.shows, q.note ?? ""].join(" ")).join(" ");
+    // No positioning input exists (Why.tsx states it); it is replaced by real inputs.
+    expect(all).not.toMatch(/investor positioning/i);
+    expect(THESIS_QUESTIONS[1].body).toContain("liquidity, funding rates, interest rates, credit stress, inflation, or the labor market");
+    // Scenario scores are arithmetic; HMM probabilities are labelled as model-internal.
+    expect(all).toContain("not calibrated probabilities");
+    expect(all).toContain("They describe the model, not the odds of a crash.");
+    expect(all).not.toMatch(/evidence-backed scenarios|crash probability/i);
+    expect(all).toContain("sre-hmm2");
+    // ACT options and boundaries.
+    expect(THESIS_QUESTIONS[4].body).toContain("maintaining exposure, keeping participation conditional, reducing risk, or waiting for confirmation");
+    expect(all).toContain("DEFENSIVE, BALANCED or OPPORTUNISTIC");
+    expect(all).toContain("Not investment advice.");
+    expect(all).toMatch(/does not give personalised recommendations/);
+  });
+
+  it("keeps the pentagon, accessibly labelled", () => {
+    expect(section).toMatch(/role="img"/);
+    expect(section).toContain("<title id={titleId}>The Pentagonal Thesis™</title>");
+    expect(section).toContain("<desc id={descId}>");
+    expect(html).toContain('data-pentagon="full"');
+    expect(html).toContain('data-pentagon="compact"');
+  });
+
+  it("is self-contained and leaves the seismic underlay to the page", () => {
+    expect(composition).toContain('import ThesisSection from "./thesis/ThesisSection"');
+    expect(composition).toContain('import WorkedExample from "./thesis/WorkedExample"');
+    expect(landingComponents.slice(1, 7).join("\n")).not.toContain("SeismicUnderlay");
+    expect(page).toContain("<SeismicUnderlay");
+  });
+});
+
+describe("Worked example: live where public, illustrative where not", () => {
+  const view = read("client/src/components/landing/thesis/WorkedExampleView.tsx");
+  const state = {
+    schemaVersion: "phase2-canonical-state-v1",
+    stateId: "state:example-test",
+    stateHash: "hash:example-test",
+    generatedAt: "2026-09-30T08:05:00.000Z",
+    effectiveAt: "2026-09-30T08:00:00.000Z",
+    pressureIndex: 51,
+    regime: "ELEVATED RISK",
+    confidenceOrEvidenceQuality: "HEALTHY",
+    provenance: { coherenceStatus: "COHERENT" },
+    dataQualitySummary: { status: "HEALTHY", fallbackInputCount: 0, staleInputCount: 1, delayedInputCount: 0, unavailableInputCount: 0 },
+    staleInputs: ["x"], delayedInputs: [], fallbackInputs: [], unavailableInputs: [], warnings: [], conflicts: [],
+    engines: [
+      ["liquidity-stress", 48], ["credit-contagion", 44], ["volatility-regime", 57],
+      ["macro-sensitivity", 55], ["market-breadth", 41], ["ai-bubble", 62],
+    ].map(([engineId, value]) => ({ engineId, value, qualityStatus: "HEALTHY", direction: "Improving", sourceInputIds: engineId === "ai-bubble" ? ["ai_concentration_static_baseline"] : [] })),
+  };
+  const snap = (data: unknown, isLoading = false, error: unknown = null) => selectPressureSnapshot({ data: data as any, isLoading, error });
+  const hmm = { currentRegime: "NORMAL", regimeConfidence: 0.91, transitionProbability: 0.02, freshnessStatus: "CURRENT", dataAsOf: "2026-09-29", modelVersion: "sre-hmm2-v1.0.0" } as any;
+  const analog = (canonicalStateId: string) => ({ status: "available" as const, canonicalStateId, timestamp: "2026-09-30T08:00:00.000Z", matches: [{ year: "2022", label: "Rates Shock", similarity: 71.4 }] });
+
+  it("fills live blocks from the one snapshot and derives only arithmetic", () => {
+    const model = buildWorkedExample(snap(state), analog("state:example-test"), { status: "available", reading: hmm });
+    expect(model.status).toBe("ready");
+    expect(model.happening).toMatchObject({ score: 51, band: "ELEVATED RISK", bandRange: "45–64", regime: "ELEVATED RISK" });
+    // value × fixed weight reconciles with the published score.
+    expect(model.why?.reconciles).toBe(true);
+    expect(model.why?.contributors[0]).toMatchObject({ id: "macro-sensitivity", points: 11 });
+    expect(model.why?.contributors.find((c) => c.id === "ai-bubble")?.staticBaseline).toBe(true);
+    expect(model.why?.staleInputs).toBe(1);
+    expect(model.watch?.up).toEqual({ regime: "HIGH STRESS", threshold: 65, distance: 14 });
+    expect(model.watch?.down).toEqual({ regime: "MODERATE RISK", threshold: 45, distance: 6 });
+    expect(model.next.analog).toMatchObject({ status: "ready", match: { period: "2022", label: "Rates Shock", similarity: 71 } });
+    expect(model.next.model).toMatchObject({ status: "ready", regime: "NORMAL", stateProbability: 0.91, leaveProbability: 0.02 });
+  });
+
+  it("does not publish the snapshot's vector direction field", () => {
+    expect(JSON.stringify(buildWorkedExample(snap(state), { status: "unavailable" }, { status: "unavailable" }))).not.toContain("Improving");
+    expect(view).not.toMatch(/\.direction\b/);
+  });
+
+  it("drops analog output that belongs to a different state, and withholds an empty model reading", () => {
+    const model = buildWorkedExample(snap(state), analog("state:other"), { status: "available", reading: { ...hmm, freshnessStatus: "UNAVAILABLE" } });
+    expect(model.next.analog.status).toBe("unavailable");
+    expect(model.next.model.status).toBe("unavailable");
+    expect(model.next.model.stateProbability).toBeNull();
+  });
+
+  it("withholds the breakdown when vector values do not reconcile with the score", () => {
+    const model = buildWorkedExample(snap({ ...state, pressureIndex: 80 }), { status: "unavailable" }, { status: "unavailable" });
+    expect(model.why?.reconciles).toBe(false);
+    expect(model.why?.contributors.every((c) => c.points === null)).toBe(true);
+  });
+
+  it("shows unavailable states, never numbers, when there is no reading", () => {
+    for (const s of [snap(null), snap(undefined, false, new Error("down")), snap({ ...state, pressureIndex: null })]) {
+      const model = buildWorkedExample(s, { status: "unavailable" }, { status: "unavailable" });
+      expect(model.status).toBe("unavailable");
+      expect(model.happening).toBeNull();
+      expect(model.why).toBeNull();
+      expect(model.watch).toBeNull();
+      const html = renderToStaticMarkup(createElement(WorkedExampleView, { model }));
+      expect(html).toContain('data-example-status="unavailable"');
+      expect(html).not.toMatch(/\/ 100|pts<|points up/);
+      expect((html.match(/data-live-status="unavailable"/g) ?? []).length).toBe(5);
+    }
+    expect(buildWorkedExample(snap(undefined, true), { status: "loading" }, { status: "loading" }).status).toBe("loading");
+  });
+
+  it("labels every illustrative block and keeps numbers out of them", () => {
+    expect(ILLUSTRATIVE_LABEL).toBe("Illustrative example — not live output");
+    const illustrative = JSON.stringify(ILLUSTRATIVE);
+    expect(illustrative).not.toMatch(/\d/);
+    const model = buildWorkedExample(snap(state), analog("state:example-test"), { status: "available", reading: hmm });
+    const html = renderToStaticMarkup(createElement(WorkedExampleView, { model }));
+    const blocks = [...html.matchAll(/data-example-illustrative="([a-z]+)"[^>]*>([\s\S]*?)<\/div><\/div>/g)];
+    expect(blocks.map((b) => b[1])).toEqual(["why", "next", "watch", "do"]);
+    for (const [, , inner] of blocks) {
+      expect(inner).toContain("ILLUSTRATIVE EXAMPLE — NOT LIVE OUTPUT");
+      expect(inner.replace(/<[^>]+>/g, "")).not.toMatch(/\d/);
+    }
+    // PLATO output is not public, so the example never presents text as PLATO's.
+    expect(illustrative).not.toMatch(/PLATO/);
+    expect(html).toContain("marketState.canonicalCurrent");
+    expect(html).toContain("systemicRegime.current");
+    expect(html).toContain("Neither is the chance of a crash.");
+    expect(html).toContain("NOT INVESTMENT ADVICE");
   });
 });
 
