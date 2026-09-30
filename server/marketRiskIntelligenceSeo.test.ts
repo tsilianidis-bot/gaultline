@@ -10,20 +10,23 @@ const robots = readFileSync(resolve(root, "client/public/robots.txt"), "utf8");
 const sitemap = readFileSync(resolve(root, "client/public/sitemap.xml"), "utf8");
 
 describe("Market Risk Intelligence SEO positioning", () => {
-  const homepageTitle = "FAULTLINE | Systemic Risk Intelligence for Financial Markets";
+  const homepageTitle = "FAULTLINE | Structural Market Intelligence";
 
   it("keeps FAULTLINE as the master brand while applying the approved homepage category descriptor", () => {
     expect(getPageMeta("/").title).toBe(homepageTitle);
     expect(homepage).toContain(`<title>${homepageTitle.replace("&", "&amp;")}</title>`);
-    expect(marketingPage).toContain("FAULTLINE MARKET RISK INTELLIGENCE");
-    expect(marketingPage).toContain("MARKET RISK INTELLIGENCE");
+    expect(marketingPage).toContain("FAULTLINE STRUCTURAL MARKET INTELLIGENCE");
+    expect(marketingPage).toContain(">STRUCTURAL MARKET INTELLIGENCE<");
+    expect(marketingPage).toContain("See the pressure before the break.");
+    expect(marketingPage).not.toMatch(/see the fault before the break/i);
+    expect(homepage).not.toMatch(/see the fault before the break/i);
   });
 
   it("uses matching primary, Open Graph, Twitter, canonical, and indexability metadata on the homepage", () => {
     const html = injectPageMeta(homepage, "/");
     expect((html.match(/<title>/g) ?? [])).toHaveLength(1);
-    expect(html).toContain('property="og:title" content="FAULTLINE | Systemic Risk Intelligence for Financial Markets"');
-    expect(html).toContain('name="twitter:title" content="FAULTLINE | Systemic Risk Intelligence for Financial Markets"');
+    expect(html).toContain('property="og:title" content="FAULTLINE | Structural Market Intelligence"');
+    expect(html).toContain('name="twitter:title" content="FAULTLINE | Structural Market Intelligence"');
     expect(html).toContain('rel="canonical" href="https://getfaultline.live"');
     expect(html).not.toContain('name="robots" content="noindex,follow"');
   });

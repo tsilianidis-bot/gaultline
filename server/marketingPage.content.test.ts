@@ -37,7 +37,7 @@ describe("Marketing page positioning guardrails", () => {
   it("contains one canonical hero and the systemic-risk positioning", () => {
     expect((page.match(/function Hero\(/g) ?? [])).toHaveLength(1);
     expect((landing.match(/<h1\b/g) ?? [])).toHaveLength(1);
-    expect(page).toContain("See the fault before the break.");
+    expect(page).toContain("See the pressure before the break.");
     expect(page).toContain("EXPLORE FAULTLINE");
     expect(page).toContain("VIEW METHODOLOGY");
     expect(page).toContain('const EXPLORE_HREF = "/pressure-index"');

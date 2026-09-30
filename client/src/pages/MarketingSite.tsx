@@ -16,7 +16,7 @@ const TRUST_HREF = "/trust";
 const DAILY_BRIEF_HREF = "/daily-brief";
 const BLOG_HREF = "/blog";
 
-const PAGE_TITLE = "FAULTLINE | Systemic Risk Intelligence for Financial Markets";
+const PAGE_TITLE = "FAULTLINE | Structural Market Intelligence";
 const PAGE_DESCRIPTION =
   "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.";
 
@@ -82,7 +82,7 @@ function Header() {
         <Link href="/" className={`flex shrink-0 items-center gap-3 ${focusRing}`} onClick={close}>
           <span className="h-2 w-2 rounded-full bg-[#65D6E5]" aria-hidden="true" />
           <span className="font-[inherit] text-sm font-semibold tracking-[0.06em] text-white">FAULTLINE</span>
-          <span className="hidden whitespace-nowrap border-l border-white/10 pl-3 text-[12px] font-[inherit] tracking-[0.06em] text-[#B7C1CD] min-[1180px]:inline">MARKET RISK INTELLIGENCE</span>
+          <span className="hidden whitespace-nowrap border-l border-white/10 pl-3 text-[12px] font-[inherit] tracking-[0.06em] text-[#B7C1CD] min-[1180px]:inline">STRUCTURAL MARKET INTELLIGENCE</span>
         </Link>
 
         <nav className="hidden items-center gap-5 whitespace-nowrap lg:flex" aria-label="Landing navigation">
@@ -159,7 +159,7 @@ function Hero() {
             </span>
             <span className="mt-4 block h-px w-16 bg-[#65D6E5] sm:mt-6 sm:w-24" aria-hidden="true" />
             <span className="mt-4 block max-w-4xl text-[1.85rem] font-bold leading-[1.08] tracking-[-0.04em] text-white sm:mt-6 sm:text-5xl lg:text-[2.75rem] xl:text-6xl">
-              See the fault before the break.
+              See the pressure before the break.
             </span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-[1.75] text-[#E3E5E8] sm:text-xl lg:mt-5 lg:text-lg xl:text-xl">
@@ -390,7 +390,7 @@ function TrustTeaser() {
               <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
-          <p className="mt-6 text-sm font-semibold tracking-[0.06em] text-white">SEE THE FAULT BEFORE THE BREAK.</p>
+          <p className="mt-6 text-sm font-semibold tracking-[0.06em] text-white">SEE THE PRESSURE BEFORE THE BREAK.</p>
           <p className="mt-4 text-base text-[#C9D4E0]">— JT</p>
         </aside>
       </div>
@@ -428,7 +428,7 @@ function Footer() {
         <div className="flex flex-col justify-between gap-6 sm:flex-row">
           <div>
             <p className="font-[inherit] text-lg font-semibold tracking-[0.06em] text-white">FAULTLINE</p>
-            <p className="mt-3 max-w-md text-base leading-[1.75] text-[#B7C1CD]">Systemic-risk intelligence. See the fault before the break.</p>
+            <p className="mt-3 max-w-md text-base leading-[1.75] text-[#B7C1CD]">Structural Market Intelligence. See the pressure before the break.</p>
           </div>
           <nav className="flex flex-wrap gap-x-5 gap-y-3 text-[12px] font-[inherit] tracking-[0.06em] text-[#C5D0DC]" aria-label="Footer">
             <a href={EXPLORE_HREF} className={`hover:text-[#65D6E5] ${focusRing}`}>PRESSURE INDEX</a>
@@ -472,7 +472,7 @@ export default function MarketingSite({ initialSection }: { initialSection?: Mar
       </a>
       <div className="border-b border-[#00D4FF]/15 bg-[#0A0D12] px-4 py-2 text-center">
         <p className="text-[12px] font-[inherit] tracking-[0.06em] text-[#65D6E5] sm:text-[12px] sm:tracking-[0.06em]">
-          FAULTLINE MARKET RISK INTELLIGENCE <span className="mx-2 text-white/30">/</span> SYSTEMIC PRESSURE AND INTERPRETATION
+          FAULTLINE STRUCTURAL MARKET INTELLIGENCE <span className="mx-2 text-white/30">/</span> SYSTEMIC PRESSURE AND INTERPRETATION
         </p>
       </div>
       <Header />

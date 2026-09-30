@@ -50,7 +50,7 @@ export function useSEO({ title, description, canonical }: SEOOptions) {
     if (twDesc) twDesc.setAttribute("content", desc);
 
     return () => {
-      document.title = "FAULTLINE — Market Risk Intelligence";
+      document.title = "FAULTLINE — Structural Market Intelligence";
     };
   }, [title, description, canonical]);
 }
@@ -61,7 +61,7 @@ export function useSEO({ title, description, canonical }: SEOOptions) {
 export const PAGE_SEO = {
   // 47 chars ✓
   home: {
-    title: "FAULTLINE — Market Risk Intelligence Platform",
+    title: "FAULTLINE — Structural Market Intelligence",
     description:
       "Real-time macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.",
     canonical: "/",

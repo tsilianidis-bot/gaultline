@@ -30,7 +30,7 @@ export interface PageMeta {
 // Keys are exact URL paths. Dynamic routes use prefix matching (see getPageMeta).
 const PAGE_META: Record<string, PageMeta> = {
   "/": {
-    title: "FAULTLINE | Systemic Risk Intelligence for Financial Markets",
+    title: "FAULTLINE | Structural Market Intelligence",
     description: "FAULTLINE reads high-yield credit, SOFR, the Treasury curve, macro conditions, equities, and crypto to show where systemic pressure is building.",
   },
   "/blog": {

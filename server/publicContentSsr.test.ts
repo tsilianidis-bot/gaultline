@@ -19,7 +19,7 @@ import { SORO_BLOG_EMBED_SRC, extractSoroArticlesLiteral, parseSoroEmbedArticles
 
 const root = process.cwd();
 const template = readFileSync(resolve(root, "client/index.html"), "utf8");
-const HOMEPAGE_H1 = "See the fault before the break.";
+const HOMEPAGE_H1 = "See the pressure before the break.";
 const NOW = new Date("2026-09-30T12:00:00.000Z");
 
 // ── In-memory fixtures (test data only; not production records) ────────────
@@ -289,7 +289,7 @@ describe("unpublished and missing records never leak", () => {
       const h = head(page.html);
       expect(h.robots).toEqual(["noindex, follow"]);
       expect(h.title).toMatch(/not found \| FAULTLINE$/);
-      expect(h.title).not.toBe("FAULTLINE | Systemic Risk Intelligence for Financial Markets");
+      expect(h.title).not.toBe("FAULTLINE | Structural Market Intelligence");
       expect(bodyFallback(page.html)).not.toContain(HOMEPAGE_H1);
       const types = jsonLdBlocks(page.html).map((b) => b["@type"]);
       expect(types).not.toContain("FAQPage");
