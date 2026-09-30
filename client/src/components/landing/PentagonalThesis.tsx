@@ -84,7 +84,7 @@ function ring(scale: number) {
 }
 
 function PentagonGraphic({ active, withLabels, idSuffix }: { active: ThesisId | null; withLabels: boolean; idSuffix: string }) {
-  const viewBox = withLabels ? "0 0 720 520" : "150 52 420 420";
+  const viewBox = withLabels ? "30 40 640 450" : "150 52 420 420";
   const titleId = `pentagon-title-${idSuffix}`;
   const descId = `pentagon-desc-${idSuffix}`;
   return (
@@ -137,7 +137,7 @@ function PentagonGraphic({ active, withLabels, idSuffix }: { active: ThesisId | 
           const anchor = Math.abs(p.x - CX) < 4 ? "middle" : p.x > CX ? "start" : "end";
           const dy = i === 0 ? -6 : i === 2 || i === 3 ? 14 : 5;
           return (
-            <text key={item.id} x={p.x} y={p.y + dy} textAnchor={anchor} fill={active === item.id ? "#8BE6F0" : "#E3E5E8"} fontSize="14" fontWeight="600" letterSpacing="0.8">
+            <text key={item.id} x={p.x} y={p.y + dy} textAnchor={anchor} fill={active === item.id ? "#8BE6F0" : "#E3E5E8"} fontSize="15" fontWeight="600" letterSpacing="0.8">
               {item.short}
             </text>
           );

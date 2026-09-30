@@ -3,11 +3,13 @@
  * Analogs are resemblance tests against hand-set reference profiles, not
  * forecasts. Current analog output is shown only when the public
  * pressure.getHistoricalContext endpoint returns it; otherwise the section is
- * descriptive text only. The query starts when the section nears the viewport.
+ * descriptive text only. The query starts when the section nears the viewport
+ * and only when the shared pressure snapshot is ready.
  */
 import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatPressureAsOf } from "@/lib/pressureSnapshot";
+import { usePressureSnapshot } from "@/hooks/usePressureSnapshot";
 
 const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00D4FF]";
 
@@ -39,7 +41,12 @@ function useNearViewport<T extends Element>() {
   return { ref, near };
 }
 
-function LiveAnalogs({ enabled }: { enabled: boolean }) {
+function LiveAnalogs({ near }: { near: boolean }) {
+  // The endpoint needs a bound canonical state; do not call it when the shared
+  // pressure snapshot already says there is none.
+  const snapshot = usePressureSnapshot();
+  const enabled = near && snapshot.status === "ready";
+  const skipped = snapshot.status === "unavailable";
   const { data, isLoading, error } = trpc.pressure.getHistoricalContext.useQuery(undefined, {
     enabled,
     retry: false,
@@ -48,7 +55,7 @@ function LiveAnalogs({ enabled }: { enabled: boolean }) {
   });
   const matches = (data?.analogMatches ?? []).filter((match) => typeof match.similarity === "number" && Number.isFinite(match.similarity)).slice(0, 3);
 
-  if (!enabled || isLoading) {
+  if (!skipped && (!enabled || isLoading)) {
     return (
       <div role="status" data-analogs-status="loading">
         <p className="text-sm font-semibold text-white">Checking current analog output…</p>
@@ -57,7 +64,7 @@ function LiveAnalogs({ enabled }: { enabled: boolean }) {
     );
   }
 
-  if (error || !data || matches.length === 0) {
+  if (skipped || error || !data || matches.length === 0) {
     return (
       <div role="status" data-analogs-status="unavailable">
         <p className="text-sm font-semibold text-white">Current analog output unavailable</p>
@@ -114,7 +121,7 @@ export default function HistoricalContext() {
           </a>
         </div>
         <div className="rounded-2xl border border-white/[0.08] bg-[#0A1018] p-5 sm:p-6">
-          <LiveAnalogs enabled={near} />
+          <LiveAnalogs near={near} />
         </div>
       </div>
     </section>

@@ -110,11 +110,13 @@ function Header() {
       {open && (
         <nav className="border-t border-white/[0.07] bg-[#080B10] px-5 py-4 lg:hidden" aria-label="Mobile landing navigation">
           <div className="mx-auto grid max-w-7xl gap-1">
-            {navItems.map((item) => (
-              <a key={item.href} href={item.href} onClick={close} className={`rounded-lg px-3 py-3 text-[12px] font-[inherit] tracking-[0.06em] text-white ${focusRing}`}>
-                {item.label.toUpperCase()}
-              </a>
-            ))}
+            <div className="grid grid-cols-2 gap-1">
+              {navItems.map((item) => (
+                <a key={item.href} href={item.href} onClick={close} className={`rounded-lg px-3 py-3 text-[12px] font-[inherit] tracking-[0.06em] text-white ${focusRing}`}>
+                  {item.label.toUpperCase()}
+                </a>
+              ))}
+            </div>
             <SignInCta className={`rounded-lg px-3 py-3 text-left text-[12px] font-[inherit] tracking-[0.06em] text-white ${focusRing}`} />
             <a href={EXPLORE_HREF} onClick={close} className={`mt-2 rounded-lg bg-[#65D6E5] px-3 py-3 text-center text-[12px] font-[inherit] font-semibold tracking-[0.06em] text-[#050608] ${focusRing}`}>
               EXPLORE FAULTLINE
@@ -149,24 +151,24 @@ function Hero() {
       <SeismicUnderlay className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(180deg,transparent_0%,transparent_42%,#000_68%)] lg:[mask-image:linear-gradient(90deg,transparent_0%,transparent_38%,rgba(0,0,0,0.4)_54%,#000_72%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(5,6,8,0.94)_0%,rgba(5,6,8,0.9)_48%,rgba(5,6,8,0.45)_72%,rgba(5,6,8,0.12)_100%)] lg:bg-[linear-gradient(90deg,rgba(5,6,8,0.96)_0%,rgba(5,6,8,0.92)_42%,rgba(5,6,8,0.55)_62%,rgba(5,6,8,0.08)_100%)]" aria-hidden="true" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#0A0D12] to-transparent" aria-hidden="true" />
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pt-16 lg:min-h-[calc(100svh-88px)] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:gap-12 lg:py-24">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-5 pb-16 pt-10 sm:px-8 sm:pt-16 lg:min-h-[calc(100svh-88px)] lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)] lg:gap-12 lg:py-12 xl:py-24">
         <div className="max-w-4xl">
           <h1 className="max-w-5xl">
-            <span className="block font-[inherit] text-[2.65rem] font-semibold leading-[1] tracking-[0.06em] text-white sm:text-7xl sm:tracking-[0.06em] lg:text-[5.5rem] xl:text-[6.25rem]">
+            <span className="block font-[inherit] text-[2.65rem] font-semibold leading-[1] tracking-[0.06em] text-white sm:text-7xl sm:tracking-[0.06em] lg:text-[4.5rem] xl:text-[6.25rem]">
               FAULTLINE
             </span>
             <span className="mt-4 block h-px w-16 bg-[#65D6E5] sm:mt-6 sm:w-24" aria-hidden="true" />
-            <span className="mt-4 block max-w-4xl text-[1.85rem] font-bold leading-[1.08] tracking-[-0.04em] text-white sm:mt-6 sm:text-5xl lg:text-[3.4rem] xl:text-6xl">
+            <span className="mt-4 block max-w-4xl text-[1.85rem] font-bold leading-[1.08] tracking-[-0.04em] text-white sm:mt-6 sm:text-5xl lg:text-[2.75rem] xl:text-6xl">
               See the fault before the break.
             </span>
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-[1.75] text-[#E3E5E8] sm:text-xl">
+          <p className="mt-6 max-w-2xl text-lg leading-[1.75] text-[#E3E5E8] sm:text-xl lg:mt-5 lg:text-lg xl:text-xl">
             FAULTLINE monitors credit, liquidity, rates, macro conditions, equities and crypto together to show where systemic pressure is building.
           </p>
           <p className="mt-4 max-w-2xl text-base leading-[1.75] text-[#B7C1CD]">
             Built on the <a href="#thesis" className={`font-semibold text-white underline decoration-[#65D6E5]/60 underline-offset-4 hover:decoration-[#65D6E5] ${focusRing}`}>Pentagonal Thesis™</a>: what is happening, why, what could come next, what to watch, and how to frame a decision. It does not claim to know that a crash will happen.
           </p>
-          <div className="mt-7 sm:mt-9">
+          <div className="mt-7 sm:mt-9 lg:mt-7 xl:mt-9">
             <Ctas primaryTrack />
           </div>
           <p className="mt-4 text-[12px] leading-[1.75] text-[#A8B4C2]">
