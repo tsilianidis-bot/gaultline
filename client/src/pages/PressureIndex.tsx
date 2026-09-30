@@ -5,7 +5,6 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useEffect, useState } from "react";
-import { trpc } from "@/lib/trpc";
 import { useMemo } from "react";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
@@ -15,100 +14,16 @@ import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
 import { PRICING_PLANS } from '../../../shared/tiers';
 import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID, pressureVectorLabel } from "@shared/pressureVectorLabels";
-
-import { PRESSURE_SCALE, pressureDisplayBand } from "@shared/pressureScale";
+import { pressureDisplayBand } from "@shared/pressureScale";
+import { usePressureSnapshot } from "@/hooks/usePressureSnapshot";
+import { PressureBandLegend, PressureSnapshotGauge } from "@/components/PressureSnapshotGauge";
+import { PRESSURE_UNAVAILABLE_COLOR, pressureBandFor } from "@/lib/pressureSnapshot";
 
 const PLATFORM_URL = "/app";
 
-// ── Animated number counter ───────────────────────────────────
-function AnimatedNumber({ target, duration = 1200 }: { target: number; duration?: number }) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    const start = performance.now();
-    const tick = (now: number) => {
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setVal(Math.round(eased * target));
-      if (progress < 1) requestAnimationFrame(tick);
-    };
-    const id = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(id);
-  }, [target, duration]);
-  return <>{val}</>;
-}
-
 // ── Pressure color helper ─────────────────────────────────────
 function pressureColor(score: number) {
-  return pressureDisplayBand(score).color;
-}
-
-// ── Circular gauge ────────────────────────────────────────────
-function PressureGauge({ score, regime }: { score: number; regime: string }) {
-  const [animated, setAnimated] = useState(0);
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(score), 400);
-    return () => clearTimeout(t);
-  }, [score]);
-
-  const color = pressureColor(score);
-  const glow = `0 0 60px ${color}50, 0 0 120px ${color}20`;
-  const circumference = 2 * Math.PI * 52;
-  const offset = circumference * (1 - animated / 100);
-
-  return (
-    <div className="flex flex-col items-center gap-5">
-      <div className="relative w-52 h-52">
-        {/* Outer ambient ring */}
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{ boxShadow: `0 0 60px ${color}20, 0 0 120px ${color}08` }}
-        />
-        <svg viewBox="0 0 120 120" className="w-full h-full -rotate-90">
-          {/* Background track */}
-          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="6" />
-          {/* Glow track */}
-          <circle cx="60" cy="60" r="52" fill="none" stroke={`${color}20`} strokeWidth="10" />
-          {/* Progress arc */}
-          <circle
-            cx="60" cy="60" r="52"
-            fill="none"
-            stroke={color}
-            strokeWidth="6"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            style={{
-              transition: "stroke-dashoffset 1.4s cubic-bezier(0.23,1,0.32,1), stroke 0.6s ease",
-              filter: `drop-shadow(0 0 8px ${color}) drop-shadow(0 0 16px ${color}80)`,
-            }}
-          />
-        </svg>
-        {/* Center score */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div
-            className="text-6xl font-bold font-mono tabular-nums leading-none"
-            style={{ color, textShadow: glow, transition: "color 0.6s ease" }}
-          >
-            <AnimatedNumber target={Math.round(animated)} />
-          </div>
-          <div className="text-[10px] font-mono text-white/25 tracking-[0.3em] mt-1">/ 100</div>
-        </div>
-      </div>
-
-      {/* Regime badge */}
-      <div
-        className="px-6 py-2.5 rounded-full text-xs font-mono tracking-[0.25em] font-bold uppercase"
-        style={{
-          color,
-          background: `${color}12`,
-          border: `1px solid ${color}35`,
-          boxShadow: `0 0 24px ${color}20`,
-        }}
-      >
-        {regime}
-      </div>
-    </div>
-  );
+  return pressureBandFor(score).color;
 }
 
 // ── Locked premium card ───────────────────────────────────────
@@ -187,19 +102,17 @@ export default function PressureIndex() {
     canonical: "/pressure-index",
   });
 
-  const { data, isLoading, error } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
-    refetchInterval: 60_000,
-    staleTime: 30_000,
-  });
+  // One canonical snapshot drives the ring, number, band, regime, timestamp and interpretation.
+  const snapshot = usePressureSnapshot();
+  const isLoading = snapshot.status === "loading";
+  const score = snapshot.status === "ready" ? snapshot.score : null;
+  const regime = snapshot.status === "ready" ? snapshot.regime : "UNAVAILABLE";
+  const withheld = snapshot.status !== "ready";
+  const color = snapshot.status === "ready" ? snapshot.band.color : PRESSURE_UNAVAILABLE_COLOR;
 
-  const score = data?.pressureIndex ?? null;
-  const regime = data?.regime ?? (data ? "UNAVAILABLE" : "UNAVAILABLE");
-  const withheld = !data || data.confidenceOrEvidenceQuality === "UNAVAILABLE" || score == null;
-  const color = withheld ? "#64748B" : pressureColor(score);
-
-  const vectors = withheld
+  const vectors = snapshot.status !== "ready"
     ? []
-    : data.engines
+    : snapshot.state.engines
         .filter(engine => engine.value != null && engine.qualityStatus !== "UNAVAILABLE")
         .slice(0, 5)
         .map(engine => ({
@@ -279,7 +192,7 @@ export default function PressureIndex() {
               className="inline-block text-[9px] font-mono tracking-[0.35em] px-4 py-1.5 rounded-full mb-6"
               style={{ color: `${color}`, background: `${color}10`, border: `1px solid ${color}30` }}
             >
-              {withheld ? "FAULTLINE PRESSURE INDEX™ — UNAVAILABLE" : "FAULTLINE PRESSURE INDEX™ — CANONICAL"}
+              {isLoading ? "FAULTLINE PRESSURE INDEX™ — LOADING" : withheld ? "FAULTLINE PRESSURE INDEX™ — UNAVAILABLE" : "FAULTLINE PRESSURE INDEX™ — CANONICAL"}
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 tracking-tight leading-tight">
               Systemic Market<br />
@@ -295,29 +208,10 @@ export default function PressureIndex() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
             {/* Left: gauge */}
             <div className="flex flex-col items-center">
-              {isLoading ? (
-                <div className="w-52 h-52 flex items-center justify-center">
-                  <div className="w-10 h-10 border-2 border-cyan-500/20 border-t-cyan-400/60 rounded-full animate-spin" />
-                </div>
-              ) : error || withheld || score == null ? (
-                <div className="text-red-400/50 text-sm font-mono">DATA UNAVAILABLE</div>
-              ) : (
-                <PressureGauge score={score} regime={regime} />
-              )}
+              <PressureSnapshotGauge snapshot={snapshot} />
 
-              {/* Scale legend */}
-              <div className="grid grid-cols-5 gap-1 mt-8 w-full max-w-xs">
-                {PRESSURE_SCALE.map((s) => (
-                  <div
-                    key={s.label}
-                    className="rounded-lg px-2 py-2 text-center"
-                    style={{ background: `${s.color}06`, border: `1px solid ${s.color}20` }}
-                  >
-                    <div className="text-[8px] font-mono tracking-widest mb-0.5" style={{ color: s.color }}>{s.label}</div>
-                    <div className="text-[8px] font-mono text-white/20">{s.range}</div>
-                  </div>
-                ))}
-              </div>
+              {/* Scale legend — engine bands */}
+              <PressureBandLegend snapshot={snapshot} />
             </div>
 
             {/* Right: regime summary + vectors */}
@@ -334,9 +228,11 @@ export default function PressureIndex() {
                 <div className="text-[9px] font-mono tracking-[0.3em] text-white/30 mb-3">CURRENT REGIME</div>
                 <div className="text-lg font-bold mb-2" style={{ color }}>{regime}</div>
                 <p className="text-white/40 text-xs leading-relaxed">
-                  {withheld || score == null
+                  {snapshot.status === "loading"
+                    ? "Loading the canonical pressure snapshot."
+                    : snapshot.status !== "ready"
                     ? "Canonical pressure evidence is withheld. This page will not manufacture a live score, regime story, or placeholder vectors."
-                    : pressureDisplayBand(score).desc}
+                    : pressureDisplayBand(snapshot.score).desc}
                 </p>
               </div>
 
