@@ -74,6 +74,8 @@ import { getTradeJournalEntries, insertTradeJournalEntry, updateTradeJournalEntr
 import { analyzeSeoUrl, generateMetaTags, generateAutoFix } from './seoOptimizer';
 import { computeSOB } from './sobEngine';
 import { askAsha, generateAshaDailyGreeting, ASHA_FIRST_INTRODUCTION } from './ashaEngine';
+import { ashaAskInputSchema } from './ashaAskInput';
+import { mapAshaProcedureError } from './ashaProcedureError';
 import { generateBotResponse, detectIntent, aggregateLeadScore } from './chatbotEngine';
 import {
   createChatbotSession, updateChatbotSession, addChatbotMessage, getChatbotMessages,
@@ -3344,32 +3346,23 @@ export const appRouter = router({
   asha: router({
     // Ask ASHA a question with page context
     ask: protectedProcedure
-      .input(z.object({
-        userMessage: z.string().min(1).max(2000),
-        history: z.array(z.object({
-          role: z.enum(["user", "assistant"]),
-          content: z.string(),
-        })).max(20).default([]),
-        pageContext: z.object({
-          page: z.string(),
-          pressureScore: z.number().optional(),
-          regime: z.string().optional(),
-          regimeConfidence: z.number().optional(),
-          narrative: z.string().optional(),
-          trend: z.string().optional(),
-          keyDrivers: z.array(z.string()).optional(),
-          historicalAnalog: z.string().optional(),
-          transitionProbability: z.number().optional(),
-          additionalContext: z.record(z.string(), z.unknown()).optional(),
-        }),
-      }))
+      .input(ashaAskInputSchema)
       .mutation(async ({ input }) => {
-        const response = await askAsha({
-          userMessage: input.userMessage,
-          history: input.history,
-          pageContext: input.pageContext,
-        });
-        return response;
+        try {
+          return await askAsha({
+            userMessage: input.userMessage,
+            history: input.history,
+            pageContext: input.pageContext,
+          });
+        } catch (error) {
+          const mapped = mapAshaProcedureError(error);
+          if (mapped.code === "INTERNAL_SERVER_ERROR") {
+            log.error("[ASHA] ask failed", { err: error instanceof Error ? error : new Error(String(error)) });
+          } else {
+            log.warn("[ASHA] ask rejected", { code: mapped.code, message: mapped.message });
+          }
+          throw mapped;
+        }
       }),
 
     // Generate personalized daily greeting
@@ -3387,11 +3380,21 @@ export const appRouter = router({
         }),
       }))
       .mutation(async ({ input }) => {
-        const greeting = await generateAshaDailyGreeting({
-          userName: input.userName,
-          engineContext: input.engineContext,
-        });
-        return { greeting };
+        try {
+          const greeting = await generateAshaDailyGreeting({
+            userName: input.userName,
+            engineContext: input.engineContext,
+          });
+          return { greeting };
+        } catch (error) {
+          const mapped = mapAshaProcedureError(error);
+          if (mapped.code === "INTERNAL_SERVER_ERROR") {
+            log.error("[ASHA] daily greeting failed", { err: error instanceof Error ? error : new Error(String(error)) });
+          } else {
+            log.warn("[ASHA] daily greeting rejected", { code: mapped.code, message: mapped.message });
+          }
+          throw mapped;
+        }
       }),
 
     // Get ASHA's first-login introduction text

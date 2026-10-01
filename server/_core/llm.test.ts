@@ -107,11 +107,25 @@ describe("listLLMModels", () => {
 
   it("rejects malformed catalog responses instead of inventing model availability", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(
-      JSON.stringify({ models: [] }),
+      JSON.stringify({ object: "list" }),
       { status: 200, headers: { "content-type": "application/json" } },
     )));
 
     await expect(listLLMModels()).rejects.toThrow("invalid response");
+  });
+
+  it("reads Gemini native models.list names without dropping the OpenAI data shape", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      models: [{ name: "models/gemini-3-flash-preview" }, { name: "models/gemini-embedding-001" }],
+    }), { status: 200, headers: { "content-type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await listLLMModels();
+
+    expect(result.data.map(model => model.id)).toEqual([
+      "models/gemini-3-flash-preview",
+      "models/gemini-embedding-001",
+    ]);
   });
 });
 
