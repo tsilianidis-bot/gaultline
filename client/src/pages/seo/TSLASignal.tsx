@@ -8,7 +8,7 @@ export default function TSLASignal() {
       sector="Electric Vehicles / AI & Robotics"
       description="Tesla stock signal analysis"
       seoTitle="TSLA Signal — Tesla Stock Analysis, Risk Score & Key Levels | FAULTLINE"
-      seoDescription="Real-time TSLA signal analysis: Tesla's macro alignment score, AI and EV exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
+      seoDescription="TSLA signal analysis: Tesla's macro alignment score, AI and EV exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/tsla"
       accentColor="#E31937"
       badge="TSLA SIGNAL INTELLIGENCE"

@@ -97,7 +97,7 @@ function VectorBar({ label, value, color }: { label: string; value: number; colo
 // ── Main page ─────────────────────────────────────────────────
 export default function PressureIndex() {
   useSEO({
-    title: "FAULTLINE Pressure Index™ — Live Systemic Market Risk Score",
+    title: "FAULTLINE Pressure Index: Systemic Market Risk Score",
     description: "The FAULTLINE Pressure Index™ combines credit spreads, funding rates, the Treasury yield curve, inflation, unemployment, and a static AI-concentration baseline into a single systemic risk score (0–100).",
     canonical: "/pressure-index",
   });
@@ -283,7 +283,7 @@ export default function PressureIndex() {
           <div className="mb-20">
             <div className="text-center mb-8">
               <div className="text-[9px] font-mono tracking-[0.3em] text-white/25 mb-2">WHAT IS THE PRESSURE INDEX?</div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white/80">Institutional-grade systemic risk, quantified.</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-white/80">Structural market pressure, measured from public data.</h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[

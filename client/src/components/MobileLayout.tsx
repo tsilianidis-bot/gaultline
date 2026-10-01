@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
-import { PRICING_PLANS } from "../../../shared/tiers";
+import { PAID_PLANS_NOT_ON_SALE_COPY } from "../../../shared/tiers";
 
 // ── iOS Add-to-Home-Screen banner ─────────────────────────────
 function iOSSafari(): boolean {
@@ -116,11 +116,11 @@ function CoreGate() {
           <Activity size={28} className="text-[#22D3EE]" />
         </div>
         <div className="text-[10px] font-mono tracking-[0.3em] text-[#22D3EE]/60 mb-2">CORE ACCESS REQUIRED</div>
-        <h2 className="text-xl font-bold text-white mb-3">Upgrade to Core</h2>
+        <h2 className="text-xl font-bold text-white mb-3">Core access required</h2>
         <p className="text-[#A8B8CC] text-sm mb-2 leading-relaxed">
           The FAULTLINE Core mobile app requires a Core subscription.
         </p>
-        <p className="text-[#22D3EE] text-sm font-mono font-bold mb-8">{PRICING_PLANS.core.priceLabel}</p>
+        <p className="text-[#64748B] text-sm font-mono mb-8">{PAID_PLANS_NOT_ON_SALE_COPY}</p>
         <div className="w-full max-w-xs space-y-3">
           <a
             href="/mobile/upgrade"

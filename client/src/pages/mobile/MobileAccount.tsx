@@ -7,7 +7,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
-import { PRICING_PLANS, TIER_META } from "../../../../shared/tiers";
+import { PAID_PLANS_ON_SALE, PAID_PLANS_NOT_ON_SALE_COPY, TIER_META } from "../../../../shared/tiers";
 import {
   User, Crown, Zap, TrendingUp, BarChart2, LogOut, ExternalLink,
   ChevronRight, RefreshCw, Shield, Star, Activity, Lock,
@@ -175,9 +175,9 @@ export default function MobileAccount() {
 
         {/* Plan name */}
         <div className="text-[10px] font-mono text-[#64748B]">
-          {tier === "founding" && "Founding Member — Rate locked for life"}
-          {tier === "premium"  && `FAULTLINE Power — ${PRICING_PLANS.premium.priceLabel}`}
-          {tier === "core"     && `FAULTLINE Trader — ${PRICING_PLANS.core.priceLabel}`}
+          {tier === "founding" && "FAULTLINE Founding Member"}
+          {tier === "premium"  && "FAULTLINE Power"}
+          {tier === "core"     && "FAULTLINE Trader"}
           {tier === "free"     && "Observer — Free access"}
         </div>
       </div>
@@ -220,8 +220,19 @@ export default function MobileAccount() {
         </div>
       </div>
 
-      {/* ── Upgrade CTA (non-pro users) ───────────────────── */}
-      {!isPro && (
+      {/* ── Paid plans not on sale: neutral note instead of the upgrade CTA ── */}
+      {!PAID_PLANS_ON_SALE && !isPro && (
+        <div
+          data-paid-plans-not-on-sale
+          className="rounded-xl p-4 text-center text-[11px] font-mono text-[#64748B]"
+          style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+        >
+          {PAID_PLANS_NOT_ON_SALE_COPY}
+        </div>
+      )}
+
+      {/* ── Upgrade CTA (non-pro users, only while paid plans are on sale) ── */}
+      {PAID_PLANS_ON_SALE && !isPro && (
         <a
           href="/mobile/upgrade"
           className="block rounded-xl p-4 text-center"
@@ -238,8 +249,8 @@ export default function MobileAccount() {
           </div>
           <div className="text-[11px] font-mono text-[#00D4FF]">
             {isPaid
-              ? `${PRICING_PLANS.premium.priceLabel} — Full intelligence suite (Power)`
-              : `${PRICING_PLANS.core.priceLabel} — Signals, Crypto, Watchlist`}
+              ? "Full intelligence suite (Power)"
+              : "Signals, Crypto, Watchlist"}
           </div>
           <div className="flex items-center justify-center gap-1 mt-2 text-[10px] font-mono text-[#00D4FF]/60">
             VIEW PLANS <ChevronRight size={12} />

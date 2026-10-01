@@ -8,7 +8,7 @@ export default function PLTRSignal() {
       sector="AI Software / Government & Enterprise Analytics"
       description="Palantir AI stock signal analysis"
       seoTitle="PLTR Signal — Palantir Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
-      seoDescription="Real-time PLTR signal analysis: Palantir's macro alignment score, AI software exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
+      seoDescription="PLTR signal analysis: Palantir's macro alignment score, AI software exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/pltr"
       accentColor="#00D4FF"
       badge="PLTR SIGNAL INTELLIGENCE"

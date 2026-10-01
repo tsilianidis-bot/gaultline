@@ -4,12 +4,12 @@ export default function QQQSignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "QQQ Outlook: FAULTLINE's Real-Time Signal for Nasdaq-100 ETF",
-        description: "Get FAULTLINE's real-time outlook for QQQ (Nasdaq-100 ETF), including current signal, regime fit, AI concentration risk, macro sensitivity, and key risk factors.",
+        title: "QQQ Outlook: FAULTLINE's Signal for Nasdaq-100 ETF",
+        description: "Get FAULTLINE's current outlook for QQQ (Nasdaq-100 ETF), including current signal, regime fit, AI concentration risk, macro sensitivity, and key risk factors.",
         canonical: "/stock/qqq",
       }}
       badge="STOCK"
-      headline="QQQ Outlook: FAULTLINE's Real-Time Signal for Nasdaq-100 ETF"
+      headline="QQQ Outlook: FAULTLINE's Signal for Nasdaq-100 ETF"
       subheadline="Understand the current signal, regime fit, AI concentration risk, macro sensitivity, and key risk factors impacting the Invesco QQQ Trust (Nasdaq-100 ETF)."
       ctaLabel="Explore QQQ on FAULTLINE"
       ctaHref="/app"

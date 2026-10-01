@@ -97,3 +97,59 @@ describe("public landing CTAs do not imply a purchasable upgrade", () => {
     });
   }
 });
+
+describe("paid plans are not on sale: no prices in app, email or chat copy", () => {
+  const appFiles = [
+    "client/src/pages/Watchlist.tsx",
+    "client/src/pages/UserAccount.tsx",
+    "client/src/pages/mobile/MobileUpgrade.tsx",
+    "client/src/pages/mobile/MobileAccount.tsx",
+    "client/src/components/MobileLayout.tsx",
+    "client/src/components/PremiumGate.tsx",
+    "client/src/components/ProductExperience.tsx",
+    "server/email.ts",
+  ];
+  for (const f of appFiles) {
+    it(`${f} shows no $9.99/$49/$59/$99/$299 plan prices`, () => {
+      const s = read(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+      expect(s).not.toMatch(/\$(9\.99|49|59|99|299)(?![\d])/);
+    });
+  }
+  it("shared tiers display labels are neutral while amounts stay configured", async () => {
+    const t = await import("../shared/tiers");
+    expect(t.PAID_PLANS_ON_SALE).toBe(false);
+    for (const id of ["core", "premium", "founding", "lifetime"] as const) {
+      expect(t.PRICING_PLANS[id].priceLabel).toBe(t.PLAN_NOT_ON_SALE_LABEL);
+    }
+    expect(t.PRICING_PLANS.core.amountCents).toBe(5900);
+    expect(t.PRICING_PLANS.premium.amountCents).toBe(9900);
+    expect(t.PRICING_PLANS.founding.amountCents).toBe(4900);
+  });
+  it("drip emails carry no prices, scarcity counts or buy CTAs", async () => {
+    const e = await import("./email");
+    for (const m of [e.buildDay2UpgradeEmail({ name: "A B", email: "a@b.c" }), e.buildDay3FoundingEmail({ name: "A B", email: "a@b.c" })]) {
+      expect(m.html + m.subject).not.toMatch(/\$\d/);
+      expect(m.html + m.subject).not.toMatch(/spots|rate goes up|Lock In|Upgrade to Core/i);
+      expect(m.html).toContain("Paid plans");
+    }
+  });
+});
+
+describe("accurate public titles and copy", () => {
+  it("/pressure-index title is not 'Live …'", () => {
+    for (const f of ["server/seoMeta.ts", "client/src/pages/PressureIndex.tsx"]) {
+      expect(read(f)).toContain("FAULTLINE Pressure Index: Systemic Market Risk Score");
+      expect(read(f)).not.toContain("Live Systemic Market Risk Score");
+    }
+    expect(read("client/src/pages/PressureIndex.tsx")).not.toContain("Institutional-grade systemic risk, quantified.");
+  });
+  it("SSR meta descriptions do not claim real-time data", () => {
+    const lines = read("server/seoMeta.ts").split("\n").filter((l) => /^\s*(title|description):/.test(l));
+    for (const l of lines) expect(l).not.toMatch(/real-?time/i);
+  });
+  it("/trust tab row wraps on narrow screens and the vector grid collapses", () => {
+    const s = read("client/src/pages/TrustCenter.tsx");
+    expect(s).toContain('className="flex flex-wrap sm:flex-nowrap sm:overflow-x-auto"');
+    expect(s).not.toContain('gridTemplateColumns: "180px 60px 1fr"');
+  });
+});

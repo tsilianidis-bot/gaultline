@@ -5,7 +5,7 @@ export default function BitcoinRiskDashboard() {
     <SEOLandingPage
       seo={{
         title: "Bitcoin Risk Dashboard — BTC Risk Score, Key Levels & Macro Analysis | FAULTLINE",
-        description: "Real-time Bitcoin risk dashboard: BTC macro alignment score, key support and resistance levels, on-chain risk signals, liquidity sensitivity, and regime-based bull/bear case analysis.",
+        description: "Bitcoin risk dashboard: BTC macro alignment score, key support and resistance levels, on-chain risk signals, liquidity sensitivity, and regime-based bull/bear case analysis.",
         canonical: "/bitcoin-risk-dashboard",
       }}
       badge="BITCOIN RISK INTELLIGENCE"

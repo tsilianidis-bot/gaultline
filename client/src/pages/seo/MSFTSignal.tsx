@@ -7,8 +7,8 @@ const MSFTSignal = () => {
   return (
     <SEOLandingPage
       seo={{
-        title: "MSFT Stock Outlook: FAULTLINE's Real-Time Signal for Microsoft",
-        description: "Get FAULTLINE's real-time outlook for Microsoft (MSFT) stock. Understand current signal, regime fit, macro sensitivity, AI/cloud exposure, and key risk factors.",
+        title: "MSFT Stock Outlook: FAULTLINE's Signal for Microsoft",
+        description: "Get FAULTLINE's current outlook for Microsoft (MSFT) stock. Understand current signal, regime fit, macro sensitivity, AI/cloud exposure, and key risk factors.",
         canonical: "/stock/msft",
       }}
       badge="STOCK"

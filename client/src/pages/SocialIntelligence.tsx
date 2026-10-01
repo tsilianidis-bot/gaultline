@@ -1126,7 +1126,7 @@ function TickerSearchPanel() {
 function SocialIntelligenceInner() {
   useSEO({
     title: "Social Intelligence | FAULTLINE",
-    description: "Real-time market narrative tracking, sentiment analysis, and social buzz monitoring.",
+    description: "Market narrative tracking, sentiment analysis, and social buzz monitoring.",
   });
 
   const [activeTab, setActiveTab] = useState<"trending" | "sentiment" | "news" | "narratives" | "active" | "search">("search");

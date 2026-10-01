@@ -4,7 +4,7 @@ export default function MarketCrashIndicator() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Market Crash Indicator — Real-Time Systemic Risk Detection | FAULTLINE",
+        title: "Market Crash Indicator — Systemic Risk Detection | FAULTLINE",
         description: "Systemic market stress indicator tracking credit spreads, funding rates, the Treasury yield curve, inflation, and unemployment. See when systemic pressure is building.",
         canonical: "/market-crash-indicator",
       }}

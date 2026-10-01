@@ -43,7 +43,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/intelligence": {
     title: "Intelligence Feed — FAULTLINE Daily Market Briefings",
-    description: "Real-time intelligence feed with daily market briefings, regime updates, and systemic risk alerts from FAULTLINE.",
+    description: "Intelligence feed with daily market briefings, regime updates, and systemic risk alerts from FAULTLINE.",
   },
   "/intel-archive": {
     title: "Intelligence Archive — FAULTLINE Historical Market Records",
@@ -51,7 +51,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
 
   "/pressure-index": {
-    title: "FAULTLINE Pressure Index™ — Live Systemic Market Risk Score",
+    title: "FAULTLINE Pressure Index: Systemic Market Risk Score",
     description: "The FAULTLINE Pressure Index™ combines credit spreads, funding rates, the Treasury yield curve, inflation, unemployment, and a static AI-concentration baseline into a single systemic risk score (0–100).",
   },
   "/signals": {
@@ -68,7 +68,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/crypto-market-risk-dashboard": {
     title: "Crypto Market Risk Dashboard — Digital Asset Risk | FAULTLINE",
-    description: "Real-time crypto market risk dashboard tracking Bitcoin dominance, altcoin risk, liquidity conditions, and systemic pressure for digital assets.",
+    description: "Crypto market risk dashboard tracking Bitcoin dominance, altcoin risk, liquidity conditions, and systemic pressure for digital assets.",
   },
   "/situation-room": {
     title: "Situation Room — Pre-Trade Stress Test | FAULTLINE",
@@ -94,7 +94,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/market-crash-indicator": {
     title: "Market Crash Indicator — Live Systemic Risk Score | FAULTLINE",
-    description: "The FAULTLINE Market Crash Indicator aggregates 12 systemic risk signals into a real-time crash probability score. Know when risk is building before markets break.",
+    description: "The FAULTLINE Market Crash Indicator aggregates 12 systemic risk signals into a crash probability score. Know when risk is building before markets break.",
     ogType: "article",
   },
   "/recession-probability": {
@@ -114,7 +114,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/ethereum-risk-dashboard": {
     title: "Ethereum Risk Dashboard — ETH Risk Score & Analysis | FAULTLINE",
-    description: "Real-time Ethereum risk dashboard tracking ETH macro regime, network activity, liquidity conditions, and systemic risk score. FAULTLINE ETH intelligence.",
+    description: "Ethereum risk dashboard tracking ETH macro regime, network activity, liquidity conditions, and systemic risk score. FAULTLINE ETH intelligence.",
     ogType: "article",
   },
   "/federal-reserve-tracker": {
@@ -123,13 +123,13 @@ const PAGE_META: Record<string, PageMeta> = {
     ogType: "article",
   },
   "/liquidity-monitor": {
-    title: "Liquidity Monitor — Real-Time Market Liquidity Conditions | FAULTLINE",
-    description: "Real-time market liquidity monitor tracking Fed balance sheet, repo markets, credit conditions, and global liquidity flows. FAULTLINE liquidity intelligence.",
+    title: "Liquidity Monitor — Market Liquidity Conditions | FAULTLINE",
+    description: "Market liquidity monitor tracking Fed balance sheet, repo markets, credit conditions, and global liquidity flows. FAULTLINE liquidity intelligence.",
     ogType: "article",
   },
   "/volatility-dashboard": {
     title: "Volatility Dashboard — VIX Regime & Market Volatility | FAULTLINE",
-    description: "Real-time volatility dashboard tracking VIX regime, implied volatility, term structure, and volatility risk premium. FAULTLINE volatility intelligence.",
+    description: "Volatility dashboard tracking VIX regime, implied volatility, term structure, and volatility risk premium. FAULTLINE volatility intelligence.",
     ogType: "article",
   },
   "/ai-stocks-dashboard": {
@@ -155,33 +155,33 @@ const PAGE_META: Record<string, PageMeta> = {
   // ── Stock signal pages ────────────────────────────────────────────────────
   "/stock/nvda": {
     title: "NVDA Signal — NVIDIA AI Risk Score & Analysis | FAULTLINE",
-    description: "Real-time NVIDIA (NVDA) signal analysis. FAULTLINE tracks NVDA macro regime fit, AI bubble exposure, momentum score, and key price levels.",
+    description: "NVIDIA (NVDA) signal analysis. FAULTLINE tracks NVDA macro regime fit, AI bubble exposure, momentum score, and key price levels.",
     ogType: "article",
   },
   "/stock/pltr": {
     title: "PLTR Signal — Palantir Risk Score & Analysis | FAULTLINE",
-    description: "Real-time Palantir (PLTR) signal analysis. FAULTLINE tracks PLTR macro regime fit, AI exposure, momentum score, and key price levels.",
+    description: "Palantir (PLTR) signal analysis. FAULTLINE tracks PLTR macro regime fit, AI exposure, momentum score, and key price levels.",
     ogType: "article",
   },
   "/stock/tsla": {
     title: "TSLA Signal — Tesla Risk Score & Analysis | FAULTLINE",
-    description: "Real-time Tesla (TSLA) signal analysis. FAULTLINE tracks TSLA macro regime fit, momentum score, volatility risk, and key price levels.",
+    description: "Tesla (TSLA) signal analysis. FAULTLINE tracks TSLA macro regime fit, momentum score, volatility risk, and key price levels.",
     ogType: "article",
   },
   "/stock/meta": {
     title: "META Signal — Meta Platforms Risk & Analysis | FAULTLINE",
-    description: "Real-time Meta Platforms (META) signal analysis. FAULTLINE tracks META macro regime fit, AI exposure, momentum score, and key price levels.",
+    description: "Meta Platforms (META) signal analysis. FAULTLINE tracks META macro regime fit, AI exposure, momentum score, and key price levels.",
     ogType: "article",
   },
   "/stock/amd": {
     title: "AMD Signal — AMD AI Chip Risk & Analysis | FAULTLINE",
-    description: "Real-time AMD signal analysis. FAULTLINE tracks AMD macro regime fit, AI chip exposure, momentum score, and key price levels.",
+    description: "AMD signal analysis. FAULTLINE tracks AMD macro regime fit, AI chip exposure, momentum score, and key price levels.",
     ogType: "article",
   },
   // ── Crypto signal pages ───────────────────────────────────────────────────
   "/crypto/tao": {
     title: "TAO Signal — Bittensor Risk Score & Analysis | FAULTLINE",
-    description: "Real-time Bittensor (TAO) signal analysis. FAULTLINE tracks TAO macro regime fit, AI network risk, momentum score, and key price levels.",
+    description: "Bittensor (TAO) signal analysis. FAULTLINE tracks TAO macro regime fit, AI network risk, momentum score, and key price levels.",
     ogType: "article",
   },
   // ── Static pages ──────────────────────────────────────────────────────────
@@ -219,7 +219,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/daily-brief": {
     title: "Daily Intelligence Brief — FAULTLINE Market Briefings",
-    description: "FAULTLINE Daily Intelligence Brief: real-time market briefings, regime updates, and systemic risk alerts. Published daily from live FRED and market data.",
+    description: "FAULTLINE Daily Intelligence Brief: market briefings, regime updates, and systemic risk alerts. Published daily from FRED and market data.",
   },
   "/track-record": {
     title: "Track Record | FAULTLINE — Historical Pressure Index 2000–Present",
@@ -245,7 +245,7 @@ export function getPageMeta(urlPath: string): PageMeta {
     const sym = stockMatch[1].toUpperCase();
     return {
       title: `${sym} Signal — Stock Risk Score & Analysis | FAULTLINE`,
-      description: `Real-time ${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, momentum score, volatility risk, and key price levels.`,
+      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, momentum score, volatility risk, and key price levels.`,
       ogType: "article",
     };
   }
@@ -256,7 +256,7 @@ export function getPageMeta(urlPath: string): PageMeta {
     const sym = cryptoMatch[1].toUpperCase();
     return {
       title: `${sym} Signal — Crypto Risk Score & Analysis | FAULTLINE`,
-      description: `Real-time ${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, liquidity conditions, momentum score, and key price levels.`,
+      description: `${sym} signal analysis. FAULTLINE tracks ${sym} macro regime fit, liquidity conditions, momentum score, and key price levels.`,
       ogType: "article",
     };
   }

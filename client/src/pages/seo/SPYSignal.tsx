@@ -4,8 +4,8 @@ export default function SPYSignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "SPY Outlook: Real-time Signal & S&P 500 ETF Analysis | FAULTLINE",
-        description: "Get FAULTLINE's real-time outlook for SPY (S&P 500 ETF), including current signal, macro conditions, systemic risk, and historical context. Not financial advice.",
+        title: "SPY Outlook: Signal & S&P 500 ETF Analysis | FAULTLINE",
+        description: "Get FAULTLINE's current outlook for SPY (S&P 500 ETF), including current signal, macro conditions, systemic risk, and historical context. Not financial advice.",
         canonical: "/stock/spy",
       }}
       badge="STOCK"
@@ -16,7 +16,7 @@ export default function SPYSignal() {
       accentColor="#00D4FF"
       features={[
         { icon: "◈",
-          title: "Real-time Signal",
+          title: "Current Signal",
           desc: "Access FAULTLINE's immediate, data-backed signal for SPY, indicating current market sentiment and momentum.",
         },
         { icon: "◈", title: "Macro Conditions", desc: "Understand how prevailing macroeconomic factors are influencing the broader S&P 500 index and its ETF." },

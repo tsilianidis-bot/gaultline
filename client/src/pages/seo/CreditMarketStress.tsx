@@ -4,8 +4,8 @@ const CreditMarketStress = () => {
   return (
     <SEOLandingPage
       seo={{
-        title: "Credit Market Stress Index: Real-time Monitoring & Analysis",
-        description: "Monitor real-time credit market stress with FAULTLINE. Analyze high-yield spreads, investment grade spreads, and credit conditions. Understand historical equity market dislocations.",
+        title: "Credit Market Stress Index: Monitoring & Analysis",
+        description: "Monitor credit market stress with FAULTLINE. Analyze high-yield spreads, investment grade spreads, and credit conditions. Understand historical equity market dislocations.",
         canonical: "/credit-market-stress",
       }}
       badge="Market Intelligence"

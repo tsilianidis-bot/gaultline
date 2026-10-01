@@ -7,7 +7,7 @@ const StockMarketRiskToday = () => {
     <SEOLandingPage
       seo={{
         title: "Stock Market Risk Today: FAULTLINE's Pressure Index",
-        description: "Real-time assessment of stock market risk levels using FAULTLINE's Pressure Index. Covers systemic risk vectors, regime analysis, and what elevated risk means for investors.",
+        description: "Assessment of stock market risk levels using FAULTLINE's Pressure Index. Covers systemic risk vectors, regime analysis, and what elevated risk means for investors.",
         canonical: "/stock-market-risk-today",
       }}
       badge="Market Intelligence"

@@ -4,12 +4,12 @@ export default function AAPLSignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "AAPL Stock Outlook: FAULTLINE's Real-time Signal & Analysis",
-        description: "Get FAULTLINE's real-time outlook for Apple (AAPL) stock, including current signal, macro sensitivity, AI exposure, and key risk factors. For market intelligence, not advice.",
+        title: "AAPL Stock Outlook: FAULTLINE's Signal & Analysis",
+        description: "Get FAULTLINE's current outlook for Apple (AAPL) stock, including current signal, macro sensitivity, AI exposure, and key risk factors. For market intelligence, not advice.",
         canonical: "/stock/aapl",
       }}
       badge="Stock Outlook"
-      headline="AAPL Stock Outlook: FAULTLINE's Real-time Signal & Analysis"
+      headline="AAPL Stock Outlook: FAULTLINE's Signal & Analysis"
       subheadline="Discover FAULTLINE's current signal for Apple (AAPL) stock, understand its macro sensitivity, AI exposure, and the factors that could shift its outlook. FAULTLINE provides market intelligence and education, not personalized financial advice."
       ctaLabel="Explore FAULTLINE for AAPL"
       ctaHref="/app"
