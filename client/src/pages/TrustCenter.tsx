@@ -305,8 +305,8 @@ function FAQTab() {
       a: "PLATO (Spirit of FAULTLINE) is FAULTLINE's AI intelligence layer. PLATO synthesizes the current Pressure Index reading, regime classification, and market conditions into natural-language briefings and answers questions about market conditions. PLATO does not provide investment advice.",
     },
     {
-      q: "What is the difference between the plans?",
-      a: "The Free plan provides access to the live Pressure Index, a daily intelligence summary, and limited signals. The Trader plan ($59/mo) provides core market intelligence. The Power plan ($99/mo) provides the full professional toolset. The Founding Member plan ($49/mo) locks in a rate while membership remains active.",
+      q: "What does access cost?",
+      a: "The public Pressure Index and methodology are free to read without an account. Signing in with a free account opens the signed-in app. Paid plans are not on sale, and no payment details are requested.",
     },
     {
       q: "Is my data secure?",

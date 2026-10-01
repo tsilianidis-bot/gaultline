@@ -10,10 +10,9 @@ import { useMemo } from "react";
 import { useRegisterAshaContext } from "@/contexts/AshaContext";
 import { AshaIntelligenceBrief } from "@/components/AshaIntelligenceBrief";
 import { SectionErrorBoundary } from "@/components/ErrorBoundary";
-import { getLoginUrl } from "@/const";
+import { getLoginUrl, handleLoginCtaClick } from "@/const";
 import { Link } from "wouter";
 import { useSEO } from "@/hooks/useSEO";
-import { PRICING_PLANS } from '../../../shared/tiers';
 import { AI_CONCENTRATION_STATIC_BASELINE_INPUT_ID, pressureVectorLabel } from "@shared/pressureVectorLabels";
 import { pressureDisplayBand } from "@shared/pressureScale";
 import { usePressureSnapshot } from "@/hooks/usePressureSnapshot";
@@ -99,7 +98,7 @@ function VectorBar({ label, value, color }: { label: string; value: number; colo
 export default function PressureIndex() {
   useSEO({
     title: "FAULTLINE Pressure Index™ — Live Systemic Market Risk Score",
-    description: "The FAULTLINE Pressure Index™ tracks systemic market risk in real-time. See the current macro pressure score, regime classification, and key risk vectors driving market conditions.",
+    description: "The FAULTLINE Pressure Index™ combines credit spreads, funding rates, the Treasury yield curve, inflation, unemployment, and a static AI-concentration baseline into a single systemic risk score (0–100).",
     canonical: "/pressure-index",
   });
 
@@ -204,7 +203,7 @@ export default function PressureIndex() {
             </h1>
             <p className="text-white/35 text-sm max-w-lg mx-auto leading-relaxed">
               Composite of credit spreads, funding rates, the Treasury yield curve, inflation,
-              policy rates and unemployment, plus a static AI-concentration baseline. Updated every 60 seconds.
+              policy rates and unemployment, plus a static AI-concentration baseline. Each published reading shows its as-of time.
             </p>
           </div>
 
@@ -302,8 +301,8 @@ export default function PressureIndex() {
                 },
                 {
                   icon: "◎",
-                  title: "Real-Time Intelligence",
-                  desc: "Powered by FRED data, including daily Treasury yields and credit spreads. Monthly series carry publication lag, and the AI-concentration input is a static reference value, not a live measurement. The page refreshes every 60 seconds.",
+                  title: "Data Freshness",
+                  desc: "Powered by FRED data, including daily Treasury yields and credit spreads. Monthly series carry publication lag, and the AI-concentration input is a static reference value, not a live measurement. This page checks for a newly published reading every 60 seconds; each reading shows its as-of time.",
                   color: "#64748B",
                 },
               ].map((item) => (
@@ -328,7 +327,7 @@ export default function PressureIndex() {
             <div className="text-center mb-8">
               <div className="text-[9px] font-mono tracking-[0.3em] text-white/25 mb-2">PREMIUM INTELLIGENCE</div>
               <h2 className="text-xl sm:text-2xl font-bold text-white/80">What's inside the full platform.</h2>
-              <p className="text-white/30 text-xs mt-2">Available to Core and Pro subscribers.</p>
+              <p className="text-white/30 text-xs mt-2">Shown inside the signed-in app. Paid plans are not on sale.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <LockedCard
@@ -380,68 +379,37 @@ export default function PressureIndex() {
           >
             <div className="absolute top-0 left-0 right-0 h-px" style={{ background: `linear-gradient(90deg, transparent, ${color}40, transparent)` }} />
             <div className="text-[9px] font-mono tracking-[0.3em] mb-4" style={{ color: `${color}80` }}>
-              START FREE — NO CREDIT CARD REQUIRED
+              FREE ACCOUNT · NO PAYMENT DETAILS
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
-              Unlock Full Intelligence
+              Open the full reading
             </h2>
             <p className="text-white/40 text-sm max-w-md mx-auto mb-8 leading-relaxed">
-              Join thousands of traders who've upgraded from retail noise to institutional signal.
-              Start free, upgrade when you're ready.
+              Sign in or create a free account to see NOW, WHY, OUTLOOK, WATCH and ACT for this reading.
+              The Pressure Index and methodology stay free to read without an account. Paid plans are not on sale.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href={getLoginUrl()}
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm tracking-widest transition-all active:scale-[0.97]"
+                href={getLoginUrl() || undefined}
+                onClick={handleLoginCtaClick}
+                data-cta="pressure-index-sign-in"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm tracking-widest transition-all active:scale-[0.97] cursor-pointer"
                 style={{
                   background: color,
                   color: "#050608",
                   boxShadow: `0 0 30px ${color}40`,
                 }}
               >
-                START FREE — NO CARD NEEDED
+                SIGN IN / CREATE FREE ACCOUNT
               </a>
-              <a
-                href="/#access"
-                className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm tracking-widest text-white/50 hover:text-white transition-all"
-                style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.14)" }}
-              >
-                VIEW ALL PLANS
-              </a>
-            </div>
-
-            {/* Tier mini-cards */}
-            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto text-left">
-              {[
-                { tier: "TRADER", price: PRICING_PLANS.core.priceLabel, tagline: "Professional trading intelligence", color: "#22D3EE", features: ["Signals screener", "Portfolio tracker", "Alt Rotation"] },
-                { tier: "POWER", price: PRICING_PLANS.premium.priceLabel, tagline: "Institutional-grade intelligence", color: "#00E5FF", features: ["AI Diagnostic™", "Crypto intelligence", "Aftershock Engine™"], badge: "RECOMMENDED" },
-                { tier: "FOUNDING", price: PRICING_PLANS.founding.priceLabel, tagline: "Rate locked for life", color: "#FFD700", features: ["Everything in Pro", "Founder badge", "Early beta access"], badge: "LIMITED" },
-              ].map((t) => (
-                <div
-                  key={t.tier}
-                  className="relative rounded-xl p-4"
-                  style={{ background: `${t.color}08`, border: `1px solid ${t.color}20` }}
+              <Link href="/methodology">
+                <span
+                  className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm tracking-widest text-white/50 hover:text-white transition-all cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.14)" }}
                 >
-                  {t.badge && (
-                    <div
-                      className="absolute -top-2.5 right-3 text-[8px] font-mono font-bold tracking-widest px-2.5 py-0.5 rounded-full"
-                      style={{ background: `${t.color}20`, border: `1px solid ${t.color}40`, color: t.color }}
-                    >
-                      {t.badge}
-                    </div>
-                  )}
-                  <div className="text-[9px] font-mono tracking-widest mb-0.5" style={{ color: t.color }}>{t.tier}</div>
-                  <div className="text-sm font-bold text-white mb-0.5">{t.price}</div>
-                  <div className="text-[10px] text-white/30 mb-3">{t.tagline}</div>
-                  <ul className="space-y-1">
-                    {t.features.map((f) => (
-                      <li key={f} className="flex items-center gap-1.5 text-[10px] text-white/40">
-                        <span style={{ color: t.color }}>→</span>{f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                  READ THE METHODOLOGY
+                </span>
+              </Link>
             </div>
           </div>
         </div>
