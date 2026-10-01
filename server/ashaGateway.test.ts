@@ -6,6 +6,7 @@ import {
   getAshaContextProvenance,
   invokeAshaGateway,
 } from "./ashaGateway";
+import { log } from "./logger";
 
 const marketState = {
   version: "1.0",
@@ -158,6 +159,59 @@ describe("ASHA canonical context gateway", () => {
       "claude-sonnet-4-6",
       "gpt-5",
     ]);
+  });
+
+  it("logs the model and status for a provider 429 and marks the gateway error rate limited", async () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => {});
+    const invokeModel = vi.fn().mockRejectedValue(
+      new Error("LLM invoke failed: 429 Too Many Requests – RESOURCE_EXHAUSTED"),
+    );
+
+    await expect(invokeAshaGateway(
+      { messages: [{ role: "user", content: "What is happening?" }] },
+      {
+        resolveModels: async () => ({
+          candidates: ["gemini-3-flash-preview"],
+          source: "live-catalog",
+          resolvedAt: "2026-07-23T13:00:00.000Z",
+        }),
+        invokeModel,
+      },
+    )).rejects.toMatchObject({
+      name: "AshaProviderError",
+      rateLimited: true,
+      httpStatus: 429,
+      attemptedModels: ["gemini-3-flash-preview"],
+    });
+
+    expect(warn).toHaveBeenCalledWith("[ASHA] model attempt failed", expect.objectContaining({
+      model: "gemini-3-flash-preview",
+      status: 429,
+    }));
+    warn.mockRestore();
+  });
+
+  it("records a provider 500 without treating it as a rate limit", async () => {
+    const warn = vi.spyOn(log, "warn").mockImplementation(() => {});
+    const invokeModel = vi.fn().mockRejectedValue(
+      new Error("LLM invoke failed: 500 Internal Server Error – upstream"),
+    );
+
+    await expect(invokeAshaGateway(
+      { messages: [{ role: "user", content: "What is happening?" }] },
+      {
+        resolveModels: async () => ({
+          candidates: ["claude-sonnet-4-6"],
+          source: "live-catalog",
+          resolvedAt: "2026-07-23T13:00:00.000Z",
+        }),
+        invokeModel,
+      },
+    )).rejects.toMatchObject({
+      rateLimited: false,
+      httpStatus: 500,
+    });
+    warn.mockRestore();
   });
 
   it("propagates canonical MarketState acquisition failures before invoking a model", async () => {

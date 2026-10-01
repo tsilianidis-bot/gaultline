@@ -16,6 +16,7 @@
    Motion: Apple VisionOS quality — heavy, deliberate, premium
    ============================================================ */
 import { useEffect, useRef, useState, useCallback } from "react";
+import { ASHA_USER_MESSAGE_MAX_CHARS } from "@shared/ashaLimits";
 import AshaOrb, { AshaRegimeState } from "./AshaOrb";
 
 export interface AshaSummonProps {
@@ -495,7 +496,8 @@ export default function AshaSummon({
               <input
                 ref={inputRef}
                 value={input}
-                onChange={e => setInput(e.target.value)}
+                maxLength={ASHA_USER_MESSAGE_MAX_CHARS}
+                onChange={e => setInput(e.target.value.slice(0, ASHA_USER_MESSAGE_MAX_CHARS))}
                 onKeyDown={e => {
                   if (e.key === "Enter" && !e.shiftKey && input.trim()) {
                     e.preventDefault();

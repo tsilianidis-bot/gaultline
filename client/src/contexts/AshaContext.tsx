@@ -13,9 +13,13 @@
    ctx object with useMemo to prevent unnecessary re-runs.
    ============================================================ */
 import { createContext, useContext, useState, ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  ASHA_THREAD_STORAGE_LIMIT,
+  toAshaGatewayHistory,
+} from "@shared/ashaLimits";
 
 const ASHA_THREAD_STORAGE_KEY = "faultline:asha-thread:v1";
-const MAX_ASHA_THREAD_MESSAGES = 24;
+const MAX_ASHA_THREAD_MESSAGES = ASHA_THREAD_STORAGE_LIMIT;
 
 export interface AshaPageContextValue {
   page: string;
@@ -150,7 +154,7 @@ export function AshaProvider({ children }: { children: ReactNode }) {
 
   const clearThread = useCallback(() => setThreadMessages([]), []);
   const threadHistory = useMemo(
-    () => threadMessages.map(({ role, content }) => ({ role, content })),
+    () => toAshaGatewayHistory(threadMessages),
     [threadMessages],
   );
 

@@ -13,7 +13,7 @@
 // ============================================================
 
 import { calculateFaultlinePressure, type FaultlinePressureOutput, type RiskVector } from "./pressure/engine";
-import { invokeLLM } from "./_core/llm";
+import { invokeBackgroundLLM } from "./llmCapacity";
 import { log } from "./logger";
 import { scanOpportunities, type TradeOpportunity } from "./ownerSimulation";
 import { evaluateDecisionLight } from "./decisionLight";
@@ -1906,7 +1906,7 @@ Write a concise 3-4 sentence institutional-grade explanation of this simulation 
 - Keep it under 100 words`;
 
   try {
-    const response = await invokeLLM({
+    const response = await invokeBackgroundLLM({
       messages: [
         { role: "system", content: "You are FAULTLINE, an institutional macroeconomic risk intelligence system. Provide concise, authoritative market-regime analysis. Never give personalized financial advice or guaranteed predictions." },
         { role: "user", content: prompt },
