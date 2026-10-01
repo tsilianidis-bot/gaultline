@@ -84,7 +84,7 @@ const PRESS_RELEASE = `FOR IMMEDIATE RELEASE
 
 PHOENIX SYSTEMS INTRODUCES PLATO — THE AI INTELLIGENCE LAYER POWERING FAULTLINE'S TEN-ENGINE MARKET SYNTHESIS
 
-PLATO synthesises ten live market engines in real time, delivering institutional-grade macro intelligence to individual investors before conditions reprice.
+PLATO synthesises ten live market engines as new data is published, delivering institutional-grade macro intelligence to individual investors before conditions reprice.
 
 [Mentor, Ohio — July 2026] — Phoenix Systems today announced PLATO, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. PLATO — Spirit of FAULTLINE — continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before they become visible in price action.
 
@@ -179,7 +179,7 @@ CORE CAPABILITIES
    A structured decision-support framework that evaluates trade ideas against the current macro regime, pressure environment, and signal consensus.
 
 7. Day Trade Intelligence
-   Intraday intelligence layer for active traders. Regime-aware setups, pre-market context, and real-time PLATO synthesis.
+   Intraday intelligence layer for active traders. Regime-aware setups, pre-market context, and regularly refreshed PLATO synthesis.
 
 8. Pre-Flight Briefing
    A structured pre-session intelligence briefing covering macro conditions, key risk factors, and PLATO's read on the current environment before each trading session.
@@ -259,7 +259,7 @@ THE PROBLEM
 Markets have become increasingly complex. Information has become abundant. Understanding has become scarce. Most individual investors are making consequential financial decisions with fundamentally incomplete situational awareness. They can see price action. They can access earnings data. What they cannot easily access is a continuous, integrated view of the underlying structural conditions that drive markets — the systemic pressures, regime shifts, and macroeconomic fault lines that institutional investors monitor as a matter of course. FAULTLINE was created to close that gap.
 
 WHY NOW
-The convergence of AI capability, real-time data infrastructure, and growing retail investor sophistication has created a unique moment. For the first time, it is technically feasible to deliver institutional-quality systemic intelligence to individual investors at scale — not as a simplified summary, but as a genuine intelligence layer that synthesises multiple data streams, identifies structural patterns, and communicates what is building beneath the surface before it becomes obvious.
+The convergence of AI capability, modern data infrastructure, and growing retail investor sophistication has created a unique moment. For the first time, it is technically feasible to deliver institutional-quality systemic intelligence to individual investors at scale — not as a simplified summary, but as a genuine intelligence layer that synthesises multiple data streams, identifies structural patterns, and communicates what is building beneath the surface before it becomes obvious.
 
 KEY DIFFERENTIATORS
 • Risk-first architecture: FAULTLINE begins with the state of the system, not a stock pick
@@ -448,7 +448,7 @@ export default function Press() {
             Not "what should I buy?" — that question has a thousand answers, most of them wrong. The question I kept asking was simpler and more important: <em style={{ color: "#CBD5E1" }}>what is actually happening right now, beneath the surface of the market?</em>
           </p>
           <p style={prose}>
-            Markets communicate long before they move. Pressure builds in credit markets before it appears in equity prices. Liquidity deteriorates before volatility spikes. Yield curves invert months before recessions arrive. The signals are there. They have always been there. The problem is that synthesising them — across dozens of data sources, in real time, with the historical context needed to understand what they mean — has historically required an institutional research desk, not a retail account.
+            Markets communicate long before they move. Pressure builds in credit markets before it appears in equity prices. Liquidity deteriorates before volatility spikes. Yield curves invert months before recessions arrive. The signals are there. They have always been there. The problem is that synthesising them — across dozens of data sources, as new data is published, with the historical context needed to understand what they mean — has historically required an institutional research desk, not a retail account.
           </p>
           <p style={prose}>
             That asymmetry is not a feature of markets. It is a failure of infrastructure. And it is the problem FAULTLINE was built to solve.
@@ -479,7 +479,7 @@ export default function Press() {
           {[
             { label: "WHAT IT IS", body: "An AI Market Intelligence Operating System that detects regime shifts, systemic pressure, and structural risk before markets reprice them." },
             { label: "THE PROBLEM", body: "Information is abundant. Understanding is scarce. Individual investors lack the structural situational awareness that institutional risk managers use as a matter of course." },
-            { label: "WHY NOW", body: "The convergence of AI capability, real-time data infrastructure, and retail investor sophistication has made institutional-quality intelligence deliverable at scale for the first time." },
+            { label: "WHY NOW", body: "The convergence of AI capability, modern data infrastructure, and retail investor sophistication has made institutional-quality intelligence deliverable at scale for the first time." },
             { label: "KEY DIFFERENTIATOR", body: "FAULTLINE begins with the state of the system — not a stock pick. PLATO synthesises ten live engines before every response. No other platform does this." },
             { label: "CORE TECHNOLOGY", body: "Seismograph™ · Pressure Index™ · Ten-engine synthesis · Historical Analog Engine · Probability Engine · PLATO intelligence layer." },
             { label: "LONG-TERM VISION", body: "To become the world's most trusted AI Market Intelligence Operating System — the platform serious investors rely on to understand what markets are communicating before they move." },
@@ -600,7 +600,7 @@ export default function Press() {
             { name: "Probability Engine", role: "Assigns regime transition probabilities across 1M, 3M, 6M, and 12M horizons." },
             { name: "Signal Intelligence", role: "Institutional-grade directional signals across equities, crypto, and macro. Always contextualised against the current regime." },
             { name: "Decision Engine", role: "Evaluates trade ideas against the current macro regime, pressure environment, and signal consensus." },
-            { name: "Day Trade Intelligence", role: "Intraday intelligence layer for active traders. Regime-aware setups and real-time PLATO synthesis." },
+            { name: "Day Trade Intelligence", role: "Intraday intelligence layer for active traders. Regime-aware setups and regularly refreshed PLATO synthesis." },
             { name: "Pre-Flight Briefing", role: "Structured pre-session intelligence briefing. PLATO's read on the current environment before each trading session." },
             { name: "Symbol Intelligence", role: "Deep-dive analysis for individual stocks and crypto assets. Pressure context, regime overlay, and PLATO synthesis." },
             { name: "Crypto Hub", role: "Dedicated crypto intelligence layer. On-chain data, crypto regime classification, and PLATO crypto synthesis." },
@@ -695,7 +695,7 @@ export default function Press() {
             Phoenix Systems Introduces PLATO — The AI Intelligence Layer Powering FAULTLINE's Ten-Engine Market Synthesis
           </h3>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "13px", color: "rgba(0,212,255,0.7)", fontStyle: "italic", marginBottom: "28px", lineHeight: 1.6 }}>
-            PLATO synthesises ten live market engines in real time, delivering institutional-grade macro intelligence to individual investors before conditions reprice
+            PLATO synthesises ten live market engines as new data is published, delivering institutional-grade macro intelligence to individual investors before conditions reprice
           </p>
           <p style={prose}>
             Phoenix Systems, an AI-first technology company focused on decision intelligence, today announced PLATO, the AI intelligence layer at the core of FAULTLINE, its macroeconomic risk intelligence platform. PLATO — Spirit of FAULTLINE — continuously synthesises ten live market engines to detect regime shifts, systemic pressure, and structural risk before they become visible in price action.
@@ -750,7 +750,7 @@ export default function Press() {
             },
             {
               q: "How often is intelligence updated?",
-              a: "The Seismograph™, Pressure Index™, and underlying data feeds update continuously throughout the trading day. PLATO's Daily Intelligence Brief is generated each morning before market open. Signal Intelligence updates in real time as market conditions change. Historical Analog and Probability Engine outputs update as new data is incorporated.",
+              a: "The Seismograph™, Pressure Index™, and underlying data feeds refresh regularly as new data is published; macro series follow their official publication schedules. PLATO's Daily Intelligence Brief is generated each morning before market open. Signal Intelligence updates as new data is published as market conditions change. Historical Analog and Probability Engine outputs update as new data is incorporated.",
             },
             {
               q: "What data powers the platform?",

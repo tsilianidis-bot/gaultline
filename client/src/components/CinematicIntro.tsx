@@ -310,7 +310,7 @@ export default function CinematicIntro({ onComplete }: CinematicIntroProps) {
   }, [onComplete]);
 
   // Tagline typewriter during FAULTLINE phase
-  const tagline = "DETECTING HIDDEN SYSTEMIC PRESSURE IN REAL TIME";
+  const tagline = "DETECTING HIDDEN SYSTEMIC PRESSURE";
   const { displayed: taglineText, done: taglineDone } = useTypewriter(
     tagline, 30,
     phase === "faultline" || phase === "converge"

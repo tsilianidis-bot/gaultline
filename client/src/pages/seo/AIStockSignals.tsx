@@ -20,7 +20,7 @@ export default function AIStockSignals() {
         { icon: "⬡", title: "Momentum Breakout Detection", desc: "Surface pre-move setups using momentum, volume, and macro confirmation. No lagging indicators." },
         { icon: "◈", title: "Liquidity Sensitivity Ranking", desc: "Identify which equities are most vulnerable to liquidity withdrawal — the first to break when conditions tighten." },
         { icon: "◎", title: "Recession-Defensive Classification", desc: "Separate true defensive names from false safety. Regime analysis identifies which equities hold in contraction." },
-        { icon: "⬡", title: "Real-Time Signal Updates", desc: "Signal labels refresh as macro conditions shift. No end-of-day lag. No headline dependency." },
+        { icon: "⬡", title: "Regular Signal Refreshes", desc: "Signal labels refresh as macro conditions shift. Each reading shows its as-of time. No headline dependency." },
       ]}
       contentSections={[
         {
@@ -53,7 +53,7 @@ First, they are regime-aware. The same equity can be a BULLISH signal in a LOW S
 
 Second, they incorporate systemic risk. Credit spread deterioration, liquidity withdrawal, and AI concentration risk are all factored into each signal. A stock can look technically strong while being fundamentally exposed to the next macro shock.
 
-Third, they update continuously. As macro conditions shift, signal classifications update in real time — not at end of day, not weekly. If the regime changes mid-session, your signals reflect it.`,
+Third, they refresh regularly. As macro conditions shift, signal classifications refresh regularly, and each one shows its as-of time. If the regime changes mid-session, your signals reflect it.`,
         },
         {
           heading: "Which Stocks Does FAULTLINE Track?",
@@ -78,7 +78,7 @@ Each category is designed to surface different types of opportunities across dif
         },
         {
           question: "How often do AI stock signals update?",
-          answer: "Signal classifications update continuously as macro conditions change. The underlying data — live prices, macro indicators, credit spreads — refreshes throughout the trading day. Signal labels reflect the most recent macro regime and market conditions.",
+          answer: "Signal classifications refresh as macro conditions change. The underlying data — delayed price quotes, macro indicators, credit spreads — refreshes on each source's own schedule, and macro series carry official publication lag. Signal labels reflect the most recent macro regime and market conditions.",
         },
         {
           question: "What is the difference between a BULLISH and a WATCH signal?",
@@ -86,7 +86,7 @@ Each category is designed to surface different types of opportunities across dif
         },
         {
           question: "Do I need to be a paid subscriber to see AI stock signals?",
-          answer: "FAULTLINE offers free access to a limited set of signals. Full access to all 100+ tracked equities, asymmetry analysis, and real-time regime-aligned signals requires a Trader or Power subscription.",
+          answer: "FAULTLINE offers free access to a limited set of signals. Full access to all 100+ tracked equities, asymmetry analysis, and regularly refreshed regime-aligned signals requires a Trader or Power subscription.",
         },
         {
           question: "How does FAULTLINE handle AI bubble risk in stock signals?",
@@ -98,9 +98,9 @@ Each category is designed to surface different types of opportunities across dif
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Live systemic market stress score — the macro foundation behind every signal." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic market stress score — the macro foundation behind every signal." },
         { label: "CRYPTO SIGNALS", href: "/crypto-signals", desc: "Macro-aligned signals for digital assets across all market regimes." },
-        { label: "MARKET RISK DASHBOARD", href: "/stock-market-risk-dashboard", desc: "Real-time equity risk monitoring: credit spreads, volatility, liquidity." },
+        { label: "MARKET RISK DASHBOARD", href: "/stock-market-risk-dashboard", desc: "Regularly refreshed equity risk monitoring: credit spreads, volatility, liquidity." },
         { label: "SITUATION ROOM", href: "/situation-room", desc: "Stress-test your next trade against current macro conditions." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "See which historical market fracture today's regime most resembles." },
         { label: "ANALYSIS HUB", href: "/analysis", desc: "Deep-dive research on AI investing, macro cycles, and market risk." },

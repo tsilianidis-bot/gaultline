@@ -115,7 +115,7 @@ const SECTIONS: Section[] = [
         </Panel>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {[
-            { icon: Database, label: "Live FRED Data", desc: "10+ Federal Reserve economic series updated in real-time: yields, spreads, inflation, unemployment, SOFR, and more." },
+            { icon: Database, label: "Live FRED Data", desc: "10+ Federal Reserve economic series, updated as FRED publishes them: yields, spreads, inflation, unemployment, SOFR, and more." },
             { icon: Cpu, label: "AI Regime Engine", desc: "A proprietary macro regime classifier that continuously evaluates systemic risk across 6 stress domains and assigns a 0–10 pressure score." },
             { icon: Target, label: "S.O.B.™ Framework", desc: "Signals of Breakdown — FAULTLINE's proprietary framework measuring the accumulation of market stress across 6 weighted pillars with shared inputs. Not a crash prediction system. A structured awareness tool." },
           ].map(({ icon: Icon, label, desc }) => (
@@ -207,7 +207,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-cyan-400">Dashboard</span> is the primary macro overview screen. It shows the current regime, live FRED data, probability distributions, and a risk domain heatmap — all updating in real-time as new data arrives from the Federal Reserve.
+            The <span className="text-cyan-400">Dashboard</span> is the primary macro overview screen. It shows the current regime, live FRED data, probability distributions, and a risk domain heatmap — all updating as new data is published as new data arrives from the Federal Reserve.
           </p>
         </Panel>
         <div className="space-y-2">
@@ -215,7 +215,7 @@ const SECTIONS: Section[] = [
           <div className="space-y-1">
             {[
               { name: "Regime Banner", desc: "Shows the current macro regime label (e.g. 'Late Cycle Stress', 'Expansion', 'Crisis Mode') with a 0–10 systemic risk score and a colour-coded severity indicator. The regime is recalculated every time FRED data refreshes." },
-              { name: "Live FRED Ticker", desc: "A scrolling marquee at the top of the screen showing real-time values for 10Y yield, 30Y yield, HY spread, CPI, SOFR, and unemployment rate. Values update automatically." },
+              { name: "Live FRED Ticker", desc: "A scrolling marquee at the top of the screen showing the latest available values for 10Y yield, 30Y yield, HY spread, CPI, SOFR, and unemployment rate. Values update automatically." },
               { name: "Bull vs Crash Probability", desc: "A probability gauge showing the engine's current estimate of bullish continuation vs systemic crash risk, expressed as a percentage split. Derived from the composite regime score." },
               { name: "Risk Domain Heatmap", desc: "A 6-cell grid showing the stress level for each domain: Treasury Stress, Inflation Pressure, Credit Risk, AI Bubble Risk, Liquidity Stress, and Recession Risk. Each cell is colour-coded from green (low) to red (critical)." },
               { name: "AI Intelligence Narrative", desc: "A live AI-generated paragraph summarising the current macro environment in institutional language. Updates with the regime engine on each data refresh." },
@@ -305,13 +305,13 @@ const SECTIONS: Section[] = [
     id: "ai-watch",
     icon: Brain,
     title: "AI Watch Tab",
-    subtitle: "Real-time AI surveillance of macro and market intelligence",
+    subtitle: "Regularly refreshed AI, macro and market intelligence",
     color: "#F472B6",
     content: (
       <div className="space-y-4">
         <Panel accentColor="rgba(244,114,182,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-pink-400">AI Watch Tab</span> is FAULTLINE's live intelligence feed. It monitors AI and technology sector risk in real-time, tracking AI capital expenditure, bubble risk indicators, and curated macro news — all synthesised through the regime engine.
+            The <span className="text-pink-400">AI Watch Tab</span> is FAULTLINE's live intelligence feed. It monitors AI and technology sector risk as new data is published, tracking AI capital expenditure, bubble risk indicators, and curated macro news — all synthesised through the regime engine.
           </p>
         </Panel>
         <div className="space-y-1">
@@ -354,7 +354,7 @@ const SECTIONS: Section[] = [
             <div className="space-y-2">
               {[
                 { step: 1, title: "Enter any ticker symbol", desc: "Type any valid US stock ticker (e.g. NVDA, TSLA, BRK.B, SPY) into the search bar at the top of the Signals tab. Press Enter or click ANALYZE." },
-                { step: 2, title: "Live data fetch", desc: "FAULTLINE fetches real-time intraday prices from Yahoo Finance (during market hours) and 5-day sparklines from Polygon.io. This takes 1–3 seconds." },
+                { step: 2, title: "Live data fetch", desc: "FAULTLINE fetches 15-minute delayed intraday prices from Yahoo Finance (during market hours) and 5-day sparklines from Polygon.io. This takes 1–3 seconds." },
                 { step: 3, title: "AI classification", desc: "The LLM classifier receives the ticker profile and current macro regime context, then assigns FAULTLINE signal labels, a regime fit score, and a full intelligence briefing. This takes 5–15 seconds." },
                 { step: 4, title: "Stock Intelligence Card", desc: "The full card renders with all data sections. You can save the ticker to your watchlist or expand the 'Why This Signal?' panel for the AI's full reasoning." },
               ].map(({ step, title, desc }) => (
@@ -559,7 +559,7 @@ const SECTIONS: Section[] = [
       <div className="space-y-4">
         <Panel accentColor="rgba(234,179,8,0.3)">
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-yellow-400">Simulate Tab</span> is FAULTLINE's flagship interactive feature. Drag sliders to manually override any FRED indicator and watch the entire engine — regime score, domain scores, probability gauges, and radar chart — react in real-time.
+            The <span className="text-yellow-400">Simulate Tab</span> is FAULTLINE's flagship interactive feature. Drag sliders to manually override any FRED indicator and watch the entire engine — regime score, domain scores, probability gauges, and radar chart — react instantly.
           </p>
         </Panel>
         <div className="space-y-2">
@@ -1027,19 +1027,19 @@ const SECTIONS: Section[] = [
     id: "command-center",
     icon: Command,
     title: "Command Center",
-    subtitle: "Real-time macro command view — all critical indicators in one screen",
+    subtitle: "Macro command view — all critical indicators in one screen",
     color: "#00D4FF",
-    keywords: ["command", "command center", "macro", "live", "real-time", "indicators"],
+    keywords: ["command", "command center", "macro", "live", "refresh", "indicators"],
     content: (
       <div className="space-y-4">
         <Panel>
           <p className="text-[11px] text-white/70 leading-relaxed font-mono">
-            The <span className="text-cyan-400 font-bold">Command Center</span> is a dense, real-time macro overview designed for users who want all critical indicators visible simultaneously without navigating between sections. It is the operator's view of the market — everything important on one screen.
+            The <span className="text-cyan-400 font-bold">Command Center</span> is a dense, regularly refreshed macro overview designed for users who want all critical indicators visible simultaneously without navigating between sections. It is the operator's view of the market — everything important on one screen.
           </p>
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "Live Ticker Strip", desc: "A scrolling marquee showing real-time values for 10Y yield, HY spread, VIX, DXY, BTC dominance, Fed cut probability, market breadth, and Fear & Greed Index." },
+            { name: "Live Ticker Strip", desc: "A scrolling marquee showing the latest available values for 10Y yield, HY spread, VIX, DXY, BTC dominance, Fed cut probability, market breadth, and Fear & Greed Index." },
             { name: "Regime & Pressure Panel", desc: "Current regime label, pressure score, and probability distribution — the three core outputs of the FMOS pipeline." },
             { name: "Risk Domain Grid", desc: "All 6 risk domains displayed simultaneously with colour-coded severity and trend direction." },
             { name: "Cross-Market Snapshot", desc: "Key readings across equities, bonds, crypto, and commodities — showing whether markets are moving in concert or diverging." },

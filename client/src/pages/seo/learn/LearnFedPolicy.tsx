@@ -23,7 +23,7 @@ const LearnFedPolicy = () => {
         { icon: "⬡", title: "Track Quantitative Tightening", desc: "Track Quantitative Tightening" },
         { icon: "◈", title: "Analyze Forward Guidance", desc: "Analyze Forward Guidance" },
         { icon: "◎", title: "Historical Policy Comparisons", desc: "Historical Policy Comparisons" },
-        { icon: "⬡", title: "Real-time Market Intelligence", desc: "Real-time Market Intelligence" }
+        { icon: "⬡", title: "Regularly refreshed Market Intelligence", desc: "Regularly refreshed Market Intelligence" }
       ]}
       contentSections={[
         {

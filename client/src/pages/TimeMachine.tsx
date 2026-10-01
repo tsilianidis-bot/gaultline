@@ -548,7 +548,7 @@ export default function TimeMachine() {
             </h3>
             <p className="text-white/50 max-w-xl mx-auto mb-6 text-sm leading-relaxed">
               The same methodology that identified these historical regimes is running live today.
-              The current Pressure Index is updated continuously using real-time FRED data.
+              The current Pressure Index is recalculated as new FRED data is published.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button

@@ -153,3 +153,55 @@ describe("accurate public titles and copy", () => {
     expect(s).not.toContain('gridTemplateColumns: "180px 60px 1fr"');
   });
 });
+
+describe("no 'real-time' / 'Live' freshness claims in visible copy", () => {
+  // Strip comments so only shipped strings/JSX are checked.
+  const visible = (p: string) =>
+    read(p)
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n")
+      .filter(l => !/^\s*\/\//.test(l))
+      .join("\n");
+  it("/market-crash-indicator SSR title does not say Live", () => {
+    const seo = read("server/seoMeta.ts");
+    expect(seo).toContain("Market Crash Indicator — Systemic Risk Score | FAULTLINE");
+    expect(seo).not.toMatch(/Live Systemic Risk Score/);
+    expect(seo).not.toMatch(/real[- ]?time/i);
+  });
+  it.each([
+    "client/src/pages/Pressure.tsx",
+    "client/src/components/Onboarding.tsx",
+    "client/src/pages/Guide.tsx",
+    "client/src/pages/SocialIntelligence.tsx",
+    "client/src/pages/Portfolio.tsx",
+    "client/src/pages/PublicSignals.tsx",
+    "client/src/pages/PublicCryptoSignals.tsx",
+    "client/src/components/PremiumGate.tsx",
+    "client/src/hooks/useSEO.ts",
+    "client/src/pages/Press.tsx",
+  ])("%s has no real-time / end-of-day-lag claim", p => {
+    const s = visible(p);
+    expect(s).not.toMatch(/real[- ]?time/i);
+    expect(s).not.toMatch(/end-of-day lag/i);
+  });
+  it("Portfolio subtitle states the quote delay", () => {
+    expect(read("client/src/pages/Portfolio.tsx")).toContain("Quotes are delayed up to 15 minutes and refresh every 60 seconds.");
+  });
+});
+
+describe("founding access request form", () => {
+  const acct = read("client/src/pages/UserAccount.tsx");
+  it("is rendered outside the PAID_PLANS_ON_SALE-gated upgrade section", () => {
+    const i = acct.indexOf("data-founding-request");
+    expect(i).toBeGreaterThan(-1);
+    const block = acct.slice(acct.lastIndexOf("{!PAID_PLANS_ON_SALE", i), acct.indexOf(")}", acct.indexOf("<FoundingAccessForm", i)));
+    expect(block).toContain("<FoundingAccessForm");
+    expect(block).not.toMatch(/checkout|priceLabel|\$\d/i);
+  });
+  it("the form itself only submits a request (no checkout, no prices)", () => {
+    const start = acct.indexOf("function FoundingAccessForm");
+    const form = acct.slice(start, acct.indexOf("// ── Startup Page Preference Card", start));
+    expect(form).toContain("trpc.user.requestFoundingAccess.useMutation");
+    expect(form).not.toMatch(/checkout|stripe|priceLabel|\$\d/i);
+  });
+});

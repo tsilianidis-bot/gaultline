@@ -200,7 +200,7 @@ export default function PromoRedeem() {
           <div className="bg-[#0d1520] border border-[#1e3a5f]/50 rounded-xl p-6 text-left space-y-3">
             <p className="text-xs text-[#8899aa] font-mono tracking-widest uppercase mb-4">Your Access Includes</p>
             {[
-              "Pressure Index™ — Real-time systemic risk scoring",
+              "Pressure Index™ — Regularly refreshed systemic risk scoring",
               "PLATO Intelligence Engine — Ask anything about the markets",
               "Signals Screener — Institutional-grade stock and crypto signals",
               "Situation Room — Macro stress simulation",
@@ -263,7 +263,7 @@ export default function PromoRedeem() {
         <div className="bg-[#0d1520] border border-[#1e3a5f]/50 rounded-xl p-6 space-y-3">
           <p className="text-xs text-[#8899aa] font-mono tracking-widest uppercase mb-4">30 Days of Full Access</p>
           {[
-            ["Pressure Index™", "Real-time systemic risk scoring across 6 macro vectors"],
+            ["Pressure Index™", "Regularly refreshed systemic risk scoring across 6 macro vectors"],
             ["PLATO Intelligence", "Ask any market question — get an institutional-grade briefing"],
             ["Signals Screener", "Stock and crypto signals with regime-aware context"],
             ["Situation Room", "Macro stress simulation and portfolio scenario analysis"],

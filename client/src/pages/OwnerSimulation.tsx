@@ -1388,7 +1388,7 @@ export default function OwnerSimulation() {
             {!objective ? (
               <div className="text-center py-16 text-[#64748B]">
                 <Target className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p className="font-mono text-sm">Set your objective to unlock real-time opportunities</p>
+                <p className="font-mono text-sm">Set your objective to unlock regularly refreshed opportunities</p>
               </div>
             ) : opportunitiesQuery.isLoading ? (
               <div className="text-center py-16 text-[#00D4FF] font-mono text-sm animate-pulse">

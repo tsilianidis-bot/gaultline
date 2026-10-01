@@ -10,12 +10,12 @@ const LearnWhatIsMarketRegime = () => {
       }}
       badge="EDUCATIONAL GUIDE"
       headline="What Is a Market Regime?"
-      subheadline="A comprehensive guide to understanding market cycles, their definitions, transitions, and how FAULTLINE provides real-time classification."
+      subheadline="A comprehensive guide to understanding market cycles, their definitions, transitions, and how FAULTLINE provides regularly refreshed classification."
       ctaLabel="Explore FAULTLINE Market Intelligence"
       ctaHref="/app"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Real-time market regime classification", desc: "Real-time market regime classification" },
+        { icon: "◈", title: "Regularly refreshed market regime classification", desc: "Regularly refreshed market regime classification" },
         { icon: "◎", title: "Historical market cycle analysis", desc: "Historical market cycle analysis" },
         { icon: "⬡", title: "Actionable insights for investors", desc: "Actionable insights for investors" },
         { icon: "◈", title: "Understand bull, bear, risk-on, risk-off", desc: "Understand bull, bear, risk-on, risk-off dynamics" },
@@ -29,7 +29,7 @@ const LearnWhatIsMarketRegime = () => {
         },
         {
           heading: "Why Understanding Market Regimes Matters for Investors",
-          body: `For investors, recognizing the prevailing market regime is not merely an academic exercise; it's a critical component of effective portfolio management and risk assessment. Different asset classes and investment strategies perform optimally under specific regimes. For instance, growth stocks may thrive in bull markets, while defensive assets or commodities might offer better protection during bear or late-cycle phases. Ignoring the current regime can lead to suboptimal asset allocation, increased volatility exposure, and missed opportunities. By understanding the characteristics of each regime, investors can anticipate potential shifts, adjust their portfolios proactively, and mitigate downside risks. Faultline's real-time regime classification provides a vital context, helping users align their investment decisions with the market's current reality, rather than relying on outdated assumptions or reactive measures. This proactive stance is key to navigating complex market environments successfully.`, 
+          body: `For investors, recognizing the prevailing market regime is not merely an academic exercise; it's a critical component of effective portfolio management and risk assessment. Different asset classes and investment strategies perform optimally under specific regimes. For instance, growth stocks may thrive in bull markets, while defensive assets or commodities might offer better protection during bear or late-cycle phases. Ignoring the current regime can lead to suboptimal asset allocation, increased volatility exposure, and missed opportunities. By understanding the characteristics of each regime, investors can anticipate potential shifts, adjust their portfolios proactively, and mitigate downside risks. Faultline's regularly refreshed regime classification provides a vital context, helping users align their investment decisions with the market's current reality, rather than relying on outdated assumptions or reactive measures. This proactive stance is key to navigating complex market environments successfully.`, 
         },
         {
           heading: "Common Misconceptions and How Investors Misinterpret Regimes",
@@ -55,7 +55,7 @@ const LearnWhatIsMarketRegime = () => {
         },
         {
           question: "How does FAULTLINE determine the current market regime?",
-          answer: "FAULTLINE uses a proprietary, multi-factor model that analyzes macroeconomic data, market sentiment, liquidity, and technical indicators to provide a real-time classification of the prevailing market regime.",
+          answer: "FAULTLINE uses a proprietary, multi-factor model that analyzes macroeconomic data, market sentiment, liquidity, and technical indicators to provide a regularly refreshed classification of the prevailing market regime.",
         },
         {
           question: "Is understanding market regimes a form of market timing?",

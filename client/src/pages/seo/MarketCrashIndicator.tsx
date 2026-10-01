@@ -15,7 +15,7 @@ export default function MarketCrashIndicator() {
       ctaHref="/pressure-index"
       accentColor="#FF4444"
       features={[
-        { icon: "◈", title: "Credit Spread Monitoring", desc: "High-yield credit spreads are the earliest warning system for systemic stress. FAULTLINE tracks them in real time." },
+        { icon: "◈", title: "Credit Spread Monitoring", desc: "High-yield credit spreads are the earliest warning system for systemic stress. FAULTLINE tracks them as new data is published." },
         { icon: "◎", title: "Yield Curve Monitoring", desc: "The 10Y–2Y Treasury spread in inversion and flatness bands, blended with the 10Y yield level. The Pressure Index does not read VIX." },
         { icon: "⬡", title: "Liquidity Withdrawal Signals", desc: "Identify when institutional liquidity is being pulled from markets — the precursor to every major crash." },
         { icon: "◈", title: "Labor & Rates Vector", desc: "The unemployment rate blended with the 10Y Treasury yield. It is not an advance/decline or market-breadth measure." },
@@ -81,11 +81,11 @@ Note: Past readings do not guarantee future results. The Pressure Index is a ris
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Live systemic market stress score — the core crash indicator." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic market stress score — the core crash indicator." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Pattern-match today's conditions against 2000, 2008, 2020, and 2022." },
         { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading indicators of recession risk and economic contraction." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy signals and their impact on market stress." },
-        { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Real-time volatility regime monitoring and VIX analysis." },
+        { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Regularly refreshed volatility regime monitoring and VIX analysis." },
         { label: "MARKET RISK DASHBOARD", href: "/stock-market-risk-dashboard", desc: "Comprehensive equity risk monitoring dashboard." },
       ]}
       schemaType="Article"

@@ -24,7 +24,7 @@ const LearnTreasuryYields = () => {
         { icon: "◎", title: "Yields and Stock Returns", desc: "Understand the impact of rising and falling yields on stock market performance and valuations." },
         { icon: "⬡", title: "Inflation and Fed Policy", desc: "Learn how inflation and Fed policy influence bond markets and the yield curve shape." },
         { icon: "◈", title: "FAULTLINE Yield Tracking", desc: "Discover how FAULTLINE tracks treasury yield dynamics as part of the Pressure Index." },
-        { icon: "◎", title: "2yr/10yr Spread Monitor", desc: "The 2-year/10-year spread is one of FAULTLINE's seven core risk vectors — tracked in real time." },
+        { icon: "◎", title: "2yr/10yr Spread Monitor", desc: "The 2-year/10-year spread is one of FAULTLINE's seven core risk vectors — tracked as new data is published." },
         { icon: "⬡", title: "Historical Yield Regimes", desc: "Compare current yield conditions against historical periods and what typically happened next." },
       ]}
       contentSections={[
@@ -42,7 +42,7 @@ const LearnTreasuryYields = () => {
         },
         {
           heading: "How FAULTLINE Tracks and Interprets Treasury Yield Dynamics",
-          body: "FAULTLINE provides sophisticated tools to help investors cut through the noise and accurately interpret treasury yield dynamics. Our platform integrates real-time yield data with proprietary analytics, offering a comprehensive view of the yield curve's shape, historical context, and predictive signals. We track key metrics such as the 2s10s spread, 3m10s spread, and various yield stress indicators, allowing users to identify potential inversions or steepening trends early. FAULTLINE's dashboards highlight \"what changed\" in yield behavior, providing context on recent shifts and their potential implications for different asset classes. By combining quantitative analysis with macro-economic insights, FAULTLINE empowers users to understand not just what yields are doing, but why they are doing it, and what it means for their portfolios. Please note: FAULTLINE provides market intelligence and education, not personalized financial advice."
+          body: "FAULTLINE provides sophisticated tools to help investors cut through the noise and accurately interpret treasury yield dynamics. Our platform integrates regularly refreshed yield data with proprietary analytics, offering a comprehensive view of the yield curve's shape, historical context, and predictive signals. We track key metrics such as the 2s10s spread, 3m10s spread, and various yield stress indicators, allowing users to identify potential inversions or steepening trends early. FAULTLINE's dashboards highlight \"what changed\" in yield behavior, providing context on recent shifts and their potential implications for different asset classes. By combining quantitative analysis with macro-economic insights, FAULTLINE empowers users to understand not just what yields are doing, but why they are doing it, and what it means for their portfolios. Please note: FAULTLINE provides market intelligence and education, not personalized financial advice."
         },
       ]}
       faqs={[
@@ -64,7 +64,7 @@ const LearnTreasuryYields = () => {
         },
         {
           question: "How does FAULTLINE help me understand treasury yields?",
-          answer: "FAULTLINE provides comprehensive analytics and educational content on treasury yields. Our platform offers real-time data, historical comparisons, and proprietary indicators to help you interpret yield curve movements, understand their economic implications, and assess their impact on various asset classes. We aim to provide clarity and context for informed decision-making."
+          answer: "FAULTLINE provides comprehensive analytics and educational content on treasury yields. Our platform offers regularly refreshed data, historical comparisons, and proprietary indicators to help you interpret yield curve movements, understand their economic implications, and assess their impact on various asset classes. We aim to provide clarity and context for informed decision-making."
         },
       ]}
       internalLinks={[

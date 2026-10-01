@@ -1404,7 +1404,7 @@ export default function Dashboard() {
           </summary>
           <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.09)', paddingTop: '12px' }}>
             <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#B0C4D8', lineHeight: 1.7, marginBottom: '10px' }}>
-              FAULTLINE monitors six distinct sources of systemic stress and converts them into a real-time Pressure Index designed to identify elevated market risk before broader instability becomes obvious.
+              FAULTLINE monitors six distinct sources of systemic stress and converts them into a regularly refreshed Pressure Index designed to identify elevated market risk before broader instability becomes obvious.
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
               {[
@@ -1465,7 +1465,7 @@ export default function Dashboard() {
                 FAULTLINE Pressure Index™
               </h3>
               <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '12px', color: 'rgba(148,163,184,0.7)', lineHeight: 1.7, margin: 0 }}>
-                A composite macroeconomic risk intelligence score synthesizing credit spreads, volatility regimes, liquidity conditions, and systemic market pressure across equity, bond, and credit markets. Updated in real time.
+                A composite macroeconomic risk intelligence score synthesizing credit spreads, volatility regimes, liquidity conditions, and systemic market pressure across equity, bond, and credit markets. Updated regularly.
               </p>
             </article>
             {/* Aftershock Engine */}

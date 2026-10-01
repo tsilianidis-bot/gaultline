@@ -13,12 +13,12 @@ const LearnRiskOnRiskOff = () => {
       }}
       badge="EDUCATIONAL GUIDE"
       headline="How to Tell If the Market Is Risk-On or Risk-Off"
-      subheadline="Understanding whether the market is risk-on or risk-off is crucial for investors. FAULTLINE tracks regime shifts in real time — from risk-on rallies to risk-off flight-to-safety environments — so you always know which way the tide is turning."
+      subheadline="Understanding whether the market is risk-on or risk-off is crucial for investors. FAULTLINE tracks regime shifts as new data is published — from risk-on rallies to risk-off flight-to-safety environments — so you always know which way the tide is turning."
       ctaLabel="Explore FAULTLINE"
       ctaHref="/app"
       accentColor="#00FF88"
       features={[
-        { icon: "◈", title: "Identify current market sentiment with", desc: "Identify current market sentiment with real-time indicators" },
+        { icon: "◈", title: "Identify current market sentiment with", desc: "Identify current market sentiment with regularly refreshed indicators" },
         { icon: "◎", title: "Analyze asset class performance across", desc: "Analyze asset class performance across different regimes" },
         { icon: "⬡", title: "Understand the macroeconomic drivers of", desc: "Understand the macroeconomic drivers of risk-on/risk-off shifts" },
         { icon: "◈", title: "Access historical comparisons to contextualize", desc: "Access historical comparisons to contextualize current trends" },

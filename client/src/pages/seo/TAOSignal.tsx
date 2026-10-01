@@ -10,7 +10,7 @@ export default function TAOSignal() {
       }}
       badge="TAO SIGNAL INTELLIGENCE"
       headline={"TAO Signal\nBittensor AI Crypto Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides real-time macro-aligned signal analysis for Bittensor (TAO) — the leading decentralized AI network. Track TAO's regime fit score, AI crypto exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Bittensor (TAO) — the leading decentralized AI network. Track TAO's regime fit score, AI crypto exposure, key price levels, and bull/bear case scenarios."
       ctaLabel="ANALYZE TAO NOW"
       ctaHref="/app/crypto"
       accentColor="#E6007A"

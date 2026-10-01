@@ -27,13 +27,13 @@ export default function VsTradingView() {
           desc: "Identify and navigate different market regimes with FAULTLINE's proprietary indicators and frameworks.",
         },
         { icon: "◈", title: "Educational & Contextual", desc: "Gain a comprehensive understanding of market dynamics with educational content and actionable context, not just signals." },
-        { icon: "◈", title: "Data-Driven Insights", desc: "Leverage unique data sets and analytical models to uncover hidden risks and opportunities in real-time." },
+        { icon: "◈", title: "Data-Driven Insights", desc: "Leverage unique data sets and analytical models to uncover hidden risks and opportunities as new data is published." },
         { icon: "◈", title: "Strategic Investment Focus", desc: "Designed for macro investors, hedge funds, and institutional allocators seeking strategic advantage." },
       ]}
       contentSections={[
         {
           heading: "What Each Platform Does",
-          body: `TradingView is widely recognized as a powerful charting and technical analysis platform, offering an extensive suite of tools for visualizing price data, applying indicators, and backtesting strategies. It caters primarily to traders and technical analysts who rely on price patterns and historical data to make decisions across various asset classes. Users can access real-time market data, create custom scripts, and engage with a large community. In contrast, FAULTLINE is a specialized macro risk intelligence platform. It does not offer charting or technical analysis tools in the traditional sense. Instead, FAULTLINE focuses on identifying and quantifying systemic risks, tracking macro regime shifts, and providing deep contextual analysis that explains the underlying forces driving market behavior. It's designed for investors who need to understand the 'why' behind market movements, rather than just the 'what'.`,
+          body: `TradingView is widely recognized as a powerful charting and technical analysis platform, offering an extensive suite of tools for visualizing price data, applying indicators, and backtesting strategies. It caters primarily to traders and technical analysts who rely on price patterns and historical data to make decisions across various asset classes. Users can access regularly refreshed market data, create custom scripts, and engage with a large community. In contrast, FAULTLINE is a specialized macro risk intelligence platform. It does not offer charting or technical analysis tools in the traditional sense. Instead, FAULTLINE focuses on identifying and quantifying systemic risks, tracking macro regime shifts, and providing deep contextual analysis that explains the underlying forces driving market behavior. It's designed for investors who need to understand the 'why' behind market movements, rather than just the 'what'.`,
         },
         {
           heading: "Key Differences in Approach and Focus",

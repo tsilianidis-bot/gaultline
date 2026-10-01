@@ -422,7 +422,7 @@ function AlertsInner() {
     <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '100px' }}>
       <PageHeader
         title="Alert Monitor"
-        subtitle="Regime shift alerts fire automatically when macro stress thresholds are crossed. Unread alerts are highlighted in real time."
+        subtitle="Regime shift alerts fire automatically when macro stress thresholds are crossed. Unread alerts are highlighted as they arrive."
         badge={integrityLabel}
         badgeColor={integrityLabel === 'LIVE' ? 'green' : integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={

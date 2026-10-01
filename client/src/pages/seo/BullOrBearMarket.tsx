@@ -15,7 +15,7 @@ export default function BullOrBearMarket() {
       ctaHref="/platform"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Real-time Market Regime Classification", desc: "Real-time Market Regime Classification" },
+        { icon: "◈", title: "Regularly refreshed Market Regime Classification", desc: "Regularly refreshed Market Regime Classification" },
         { icon: "◎", title: "Drivers of Market Transitions Identified", desc: "Drivers of Market Transitions Identified" },
         { icon: "⬡", title: "Historical Performance Comparison Tools", desc: "Historical Performance Comparison Tools" },
         { icon: "◈", title: "Actionable Portfolio Positioning Strategies", desc: "Actionable Portfolio Positioning Strategies" },

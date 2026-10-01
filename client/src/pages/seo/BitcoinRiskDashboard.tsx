@@ -9,7 +9,7 @@ export default function BitcoinRiskDashboard() {
         canonical: "/bitcoin-risk-dashboard",
       }}
       badge="BITCOIN RISK INTELLIGENCE"
-      headline={"Bitcoin Risk Dashboard\nBTC Macro Analysis in Real Time"}
+      headline={"Bitcoin Risk Dashboard\nBTC Macro Analysis"}
       subheadline="FAULTLINE's Bitcoin Risk Dashboard provides a comprehensive macro-aligned risk assessment for BTC — covering key price levels, liquidity sensitivity, macro regime alignment, bull and bear case scenarios, and systemic risk exposure."
       ctaLabel="VIEW BTC RISK DATA"
       ctaHref="/app/crypto"
@@ -79,7 +79,7 @@ The relationship between current price and these key levels determines the risk/
         },
         {
           question: "Is Bitcoin a good hedge against inflation?",
-          answer: "Bitcoin's inflation hedging properties are contested. In the short term, BTC has shown high correlation with risk assets and has declined during periods of rising inflation (2022) when the Fed tightened aggressively. In the long term, Bitcoin's fixed supply (21 million BTC maximum) provides a theoretical hedge against monetary debasement. FAULTLINE tracks BTC's real-time macro alignment rather than making long-term inflation hedging claims.",
+          answer: "Bitcoin's inflation hedging properties are contested. In the short term, BTC has shown high correlation with risk assets and has declined during periods of rising inflation (2022) when the Fed tightened aggressively. In the long term, Bitcoin's fixed supply (21 million BTC maximum) provides a theoretical hedge against monetary debasement. FAULTLINE tracks BTC's regularly refreshed macro alignment rather than making long-term inflation hedging claims.",
         },
       ]}
       internalLinks={[

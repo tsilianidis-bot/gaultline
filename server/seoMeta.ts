@@ -93,7 +93,7 @@ const PAGE_META: Record<string, PageMeta> = {
     ogType: "article",
   },
   "/market-crash-indicator": {
-    title: "Market Crash Indicator — Live Systemic Risk Score | FAULTLINE",
+    title: "Market Crash Indicator — Systemic Risk Score | FAULTLINE",
     description: "The FAULTLINE Market Crash Indicator aggregates 12 systemic risk signals into a crash probability score. Know when risk is building before markets break.",
     ogType: "article",
   },
@@ -104,7 +104,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/alt-season-indicator": {
     title: "Alt Season Indicator — Is Alt Season Here? | FAULTLINE",
-    description: "Track alt season probability in real time. FAULTLINE's Alt Season Indicator monitors Bitcoin dominance, altcoin momentum, and liquidity rotation signals.",
+    description: "Track alt season probability as new data is published. FAULTLINE's Alt Season Indicator monitors Bitcoin dominance, altcoin momentum, and liquidity rotation signals.",
     ogType: "article",
   },
   "/bitcoin-risk-dashboard": {
@@ -119,7 +119,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/federal-reserve-tracker": {
     title: "Federal Reserve Tracker — Fed Policy Impact on Markets | FAULTLINE",
-    description: "Track Federal Reserve policy in real time. FAULTLINE monitors Fed funds rate, balance sheet, forward guidance, and market impact across equities and crypto.",
+    description: "Track Federal Reserve policy as new data is published. FAULTLINE monitors Fed funds rate, balance sheet, forward guidance, and market impact across equities and crypto.",
     ogType: "article",
   },
   "/liquidity-monitor": {
@@ -134,7 +134,7 @@ const PAGE_META: Record<string, PageMeta> = {
   },
   "/ai-stocks-dashboard": {
     title: "AI Stocks Dashboard — AI Sector Risk & Signals | FAULTLINE",
-    description: "Track AI sector stocks in real time. FAULTLINE's AI Stocks Dashboard monitors NVDA, MSFT, GOOGL, META, and the full AI complex for concentration and bubble risk.",
+    description: "Track AI sector stocks with regularly refreshed data. FAULTLINE's AI Stocks Dashboard monitors NVDA, MSFT, GOOGL, META, and the full AI complex for concentration and bubble risk.",
     ogType: "article",
   },
   "/ai-stock-signals": {

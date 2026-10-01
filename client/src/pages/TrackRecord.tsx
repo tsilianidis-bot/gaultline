@@ -553,7 +553,7 @@ export default function TrackRecord() {
         <div className="border border-zinc-800 rounded-xl p-8 bg-zinc-900/40 text-center">
           <h2 className="text-2xl font-bold text-white mb-3">See Today's Reading</h2>
           <p className="text-zinc-400 mb-6 max-w-lg mx-auto">
-            The live Pressure Index updates daily with real-time market data. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
+            The live Pressure Index updates daily with the latest published data. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/pressure-index" className="px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-colors text-sm">

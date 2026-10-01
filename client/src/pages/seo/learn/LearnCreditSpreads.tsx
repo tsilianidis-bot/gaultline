@@ -29,7 +29,7 @@ export default function LearnCreditSpreads() {
         },
         {
           heading: 'Why Credit Spreads Matter as a Leading Indicator',
-          body: `Credit spreads are often considered a potent leading indicator because they reflect the collective wisdom and fear of the bond market, which is typically less prone to speculative bubbles than equity markets. A sudden widening of credit spreads signals that investors are becoming more risk-averse, anticipating potential defaults or a general economic slowdown. This shift in sentiment often precedes broader economic contractions or equity market corrections. For instance, a sharp increase in the spread between corporate bonds and Treasuries suggests that companies may face tougher borrowing conditions, impacting investment and growth. FAULTLINE's analysis integrates these real-time movements, providing context on how current credit spread behavior compares to historical patterns during periods of market stress, such as the 2008 financial crisis or the dot-com bust. This historical perspective helps to contextualize the current FAULTLINE rating and what might change the outlook.`, 
+          body: `Credit spreads are often considered a potent leading indicator because they reflect the collective wisdom and fear of the bond market, which is typically less prone to speculative bubbles than equity markets. A sudden widening of credit spreads signals that investors are becoming more risk-averse, anticipating potential defaults or a general economic slowdown. This shift in sentiment often precedes broader economic contractions or equity market corrections. For instance, a sharp increase in the spread between corporate bonds and Treasuries suggests that companies may face tougher borrowing conditions, impacting investment and growth. FAULTLINE's analysis integrates these regularly refreshed movements, providing context on how current credit spread behavior compares to historical patterns during periods of market stress, such as the 2008 financial crisis or the dot-com bust. This historical perspective helps to contextualize the current FAULTLINE rating and what might change the outlook.`, 
         },
         {
           heading: 'How Investors Often Misunderstand Credit Spreads',
@@ -55,11 +55,11 @@ export default function LearnCreditSpreads() {
         },
         {
           question: 'What is the FAULTLINE Pressure Index?',
-          answer: 'The FAULTLINE Pressure Index is a proprietary indicator that synthesizes various market metrics, including credit spreads, to provide a real-time assessment of market stress and potential turning points.',
+          answer: 'The FAULTLINE Pressure Index is a proprietary indicator that synthesizes various market metrics, including credit spreads, to provide a regularly refreshed assessment of market stress and potential turning points.',
         },
         {
           question: 'How can I use FAULTLINE to monitor credit spreads?',
-          answer: 'FAULTLINE provides real-time analysis and context on credit spread movements within its Pressure Index, helping you understand their implications for the broader market outlook.',
+          answer: 'FAULTLINE provides regularly refreshed analysis and context on credit spread movements within its Pressure Index, helping you understand their implications for the broader market outlook.',
         },
         {
           question: 'Are credit spreads only relevant for bond investors?',
