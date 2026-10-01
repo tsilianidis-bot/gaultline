@@ -7,19 +7,19 @@ const AMZNSignal = () => {
   return (
     <SEOLandingPage
       seo={{
-        title: "AMZN Stock Outlook: FAULTLINE's Real-Time Signal & Analysis",
-        description: "Get FAULTLINE's real-time outlook for Amazon (AMZN) stock, including current signal, regime fit, macro sensitivity, AWS/AI exposure, and consumer spending risk.",
+        title: "AMZN Stock Outlook: FAULTLINE's Signal & Analysis",
+        description: "Get FAULTLINE's current outlook for Amazon (AMZN) stock, including current signal, regime fit, macro sensitivity, AWS/AI exposure, and consumer spending risk.",
         canonical: "/stock/amzn",
       }}
       badge="STOCK"
-      headline="AMZN Stock Outlook: FAULTLINE's Real-Time Signal & Analysis"
+      headline="AMZN Stock Outlook: FAULTLINE's Signal & Analysis"
       subheadline="Uncover the forces driving Amazon (AMZN) stock with FAULTLINE's comprehensive market intelligence. Understand current signals, macro sensitivities, and key risks."
       ctaLabel="Explore AMZN on FAULTLINE"
       ctaHref="/app"
       accentColor="#FF9900"
       features={[
         { icon: "◈",
-          title: "Real-Time Signal",
+          title: "Current Signal",
           desc: "Instantaneous insights into AMZN's current market posture based on proprietary FAULTLINE algorithms."
         },
         { icon: "◎",

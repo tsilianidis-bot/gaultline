@@ -8,11 +8,11 @@ const IWMSignal = () => {
     <SEOLandingPage
       seo={{
         title: "IWM Outlook & Signal | Russell 2000 ETF Analysis - FAULTLINE",
-        description: "Get FAULTLINE's real-time outlook for IWM (Russell 2000 ETF). Analyze current signal, regime fit, credit sensitivity, and recession risk impact on small caps.",
+        description: "Get FAULTLINE's current outlook for IWM (Russell 2000 ETF). Analyze current signal, regime fit, credit sensitivity, and recession risk impact on small caps.",
         canonical: "/stock/iwm",
       }}
       badge="STOCK"
-      headline="IWM Outlook: FAULTLINE's Real-Time Signal for Russell 2000 Small Caps"
+      headline="IWM Outlook: FAULTLINE's Signal for Russell 2000 Small Caps"
       subheadline="Uncover the current signal, regime fit, credit sensitivity, and recession risk impact on the iShares Russell 2000 ETF (IWM)."
       ctaLabel="Explore IWM on FAULTLINE"
       ctaHref="/app"
@@ -31,7 +31,7 @@ const IWMSignal = () => {
           body: `The iShares Russell 2000 ETF (IWM) is a widely followed benchmark for small-capitalization U.S. equities. It tracks the Russell 2000 Index, which comprises the smallest 2,000 companies in the broader Russell 3000 Index. Small-cap stocks are often seen as a bellwether for the domestic economy, as they tend to be more sensitive to U.S. economic conditions than their large-cap counterparts. Their performance can offer insights into investor sentiment regarding growth prospects, inflation, and interest rates. FAULTLINE provides a dynamic outlook for IWM, integrating various market intelligence factors to assess its current trajectory and potential risks. This includes analyzing its sensitivity to credit conditions, its fit within prevailing market regimes, and the specific impact of recessionary pressures on this crucial segment of the market. Understanding these dynamics is key for investors seeking to navigate the complexities of small-cap investing.`,
         },
         {
-          heading: "FAULTLINE's Real-Time Signal for IWM",
+          heading: "FAULTLINE's Signal for IWM",
           body: `FAULTLINE's proprietary system generates a real-time signal for IWM, offering a data-driven perspective on its current market positioning. This signal is not a static recommendation but a dynamic assessment derived from a confluence of macroeconomic indicators, technical analysis, and behavioral finance metrics. We evaluate how well IWM's current performance aligns with the prevailing market regime – whether it's a growth, inflation, or deflationary environment. Furthermore, given small caps' inherent sensitivity to credit markets, FAULTLINE meticulously tracks credit spreads and liquidity conditions to gauge potential headwinds or tailwinds. This comprehensive approach helps users understand the 'why' behind the signal, providing context beyond simple price movements and enabling more informed decision-making in a rapidly evolving market landscape.`,
         },
         {

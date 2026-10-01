@@ -5,7 +5,7 @@ export default function MarketRegimeTracker() {
     <SEOLandingPage
       seo={{
         title: "Market Regime Tracker — Current Macro Regime Classification | FAULTLINE",
-        description: "Real-time market regime classification: Risk-On, Risk-Off, Transition, or Crisis. Track the current macro regime using FAULTLINE's seven-vector Pressure Index and understand what it means for your portfolio.",
+        description: "Market regime classification: Risk-On, Risk-Off, Transition, or Crisis. Track the current macro regime using FAULTLINE's seven-vector Pressure Index and understand what it means for your portfolio.",
         canonical: "/market-regime-tracker",
       }}
       badge="REGIME INTELLIGENCE"

@@ -4,8 +4,8 @@ export default function LiquidityMonitor() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Liquidity Monitor — Real-Time Market Liquidity Conditions | FAULTLINE",
-        description: "Track real-time market liquidity conditions: Fed balance sheet, repo market stress, bank lending standards, and liquidity withdrawal signals. Know when liquidity is tightening before it hits prices.",
+        title: "Liquidity Monitor — Market Liquidity Conditions | FAULTLINE",
+        description: "Track market liquidity conditions: Fed balance sheet, repo market stress, bank lending standards, and liquidity withdrawal signals. Know when liquidity is tightening before it hits prices.",
         canonical: "/liquidity-monitor",
       }}
       badge="LIQUIDITY INTELLIGENCE"

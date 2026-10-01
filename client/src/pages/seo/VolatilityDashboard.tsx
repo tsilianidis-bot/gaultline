@@ -4,8 +4,8 @@ export default function VolatilityDashboard() {
   return (
     <SEOLandingPage
       seo={{
-        title: "Volatility Dashboard — Real-Time VIX Regime Analysis | FAULTLINE",
-        description: "Real-time volatility dashboard tracking VIX regime, implied vs realized volatility, volatility term structure, and equity risk premium. Know when volatility is signaling a regime shift.",
+        title: "Volatility Dashboard — VIX Regime Analysis | FAULTLINE",
+        description: "Volatility dashboard tracking VIX regime, implied vs realized volatility, volatility term structure, and equity risk premium. Know when volatility is signaling a regime shift.",
         canonical: "/volatility-dashboard",
       }}
       badge="VOLATILITY INTELLIGENCE"

@@ -48,13 +48,13 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.app).not.toContain("createCheckout");
   });
 
-  it("presents Free / Trader $59 / Power $99 / Founding $49/mo from shared cards", () => {
+  it("shared plan cards show no prices while paid plans are not on sale", () => {
     const trader = MARKETING_TIER_CARDS.find((card) => card.tier === "core");
     const power = MARKETING_TIER_CARDS.find((card) => card.tier === "premium");
     const founding = MARKETING_TIER_CARDS.find((card) => card.tier === "founding");
-    expect(trader?.price).toBe("$59/mo");
-    expect(power?.price).toBe("$99/mo");
-    expect(founding?.price).toContain("$49/mo");
+    expect(trader?.price).toBe("Not on sale yet");
+    expect(power?.price).toBe("Not on sale yet");
+    expect(founding?.price).toBe("Not on sale yet");
 
     expect(TOUCHED.marketing).toContain("Checkout is not offered on this page.");
     expect(TOUCHED.marketing).not.toContain("MARKETING_TIER_CARDS");
@@ -68,9 +68,8 @@ describe("cinematic + marketing preservation plan", () => {
     expect(TOUCHED.productExperience).toContain("id: 'trader'");
     expect(TOUCHED.productExperience).toContain("id: 'power'");
     expect(TOUCHED.productExperience).toContain("id: 'founding'");
-    expect(TOUCHED.productExperience).toContain("price: '$59'");
-    expect(TOUCHED.productExperience).toContain("price: '$99'");
-    expect(TOUCHED.productExperience).toContain("price: '$49'");
+    expect(TOUCHED.productExperience).not.toMatch(/price: '\$(49|59|99)'/);
+    expect(TOUCHED.productExperience).toContain("price: 'Not on sale yet'");
   });
 
   it("does not mount ProductExperience on first-run and preserves the source module", () => {

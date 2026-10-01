@@ -19,7 +19,7 @@ Each section contains pre-work tasks, launch tasks, and post-launch maintenance 
 
 These items apply across all five channels and must be completed once before the first channel goes live.
 
-- [ ] Register `@FAULTLINE` handle on all platforms: TradingView, Discord, Product Hunt, RapidAPI, Slack App Directory, Twitter/X, LinkedIn
+- [ ] Register `@GetFAULTline` handle on all platforms: TradingView, Discord, Product Hunt, RapidAPI, Slack App Directory, Twitter/X, LinkedIn
 - [ ] Create a brand asset kit: logo (SVG + PNG), dark background version, light background version, 1:1 square crop for avatars, 16:9 banner crop for channel headers
 - [ ] Write the master brand bio (150 words): "FAULTLINE is a macro risk intelligence terminal for traders. It monitors systemic liquidity stress, late-cycle instability, AI bubble conditions, and crypto regime shifts — synthesizing them into a real-time Pressure Index and actionable intelligence. Built for traders who understand that price is the last thing to move. → getfaultline.live"
 - [ ] Prepare a short-form bio (50 words) and ultra-short bio (15 words) from the master bio

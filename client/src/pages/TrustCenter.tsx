@@ -103,7 +103,7 @@ function MethodologyTab() {
       </P>
 
       <H3>Score Scale</H3>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "12px", marginBottom: "32px" }}>
         {SCORE_SCALE.map(s => (
           <div key={s.range} style={{ padding: "16px 20px", background: "rgba(255,255,255,0.02)", border: `1px solid ${s.color}30`, borderRadius: "6px", display: "flex", gap: "16px", alignItems: "flex-start" }}>
             <div style={{ textAlign: "center", flexShrink: 0 }}>
@@ -119,10 +119,10 @@ function MethodologyTab() {
       <P>The Pressure Index is a fixed-weight sum of six vectors. Several vectors share inputs — the 10-year yield feeds four of them — so they are not fully independent. Vectors are named by what they compute; internal identifiers are unchanged.</P>
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "32px" }}>
         {VECTORS.map(v => (
-          <div key={v.name} style={{ padding: "16px 20px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", display: "grid", gridTemplateColumns: "180px 60px 1fr", gap: "16px", alignItems: "start" }}>
+          <div key={v.name} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 sm:grid-cols-[180px_60px_minmax(0,1fr)] sm:gap-4" style={{ padding: "16px 20px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "6px", alignItems: "start" }}>
             <div style={{ fontFamily: MONO, fontSize: "12px", color: "#00D4FF", letterSpacing: "0.06em" }}>{v.name}</div>
             <div style={{ fontFamily: MONO, fontSize: "13px", fontWeight: 700, color: "#F0F4FF" }}>{v.weight}</div>
-            <p style={{ fontFamily: SANS, fontSize: "0.85rem", color: "#94A3B8", lineHeight: 1.6, margin: 0 }}>{v.desc}</p>
+            <p className="col-span-2 sm:col-span-1" style={{ fontFamily: SANS, fontSize: "0.85rem", color: "#94A3B8", lineHeight: 1.6, margin: 0, overflowWrap: "anywhere" }}>{v.desc}</p>
           </div>
         ))}
       </div>
@@ -418,7 +418,7 @@ function SecurityTab() {
       <H2>Security Practices</H2>
       <P>FAULTLINE takes the security of user data seriously. The following measures are in place to protect your information.</P>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px", marginBottom: "28px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: "12px", marginBottom: "28px" }}>
         {MEASURES.map(m => (
           <div key={m.title} style={{ padding: "20px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "8px" }}>
             <div style={{ fontFamily: HEADING, fontWeight: 600, fontSize: "0.95rem", color: "#E2E8F0", marginBottom: "8px" }}>{m.title}</div>
@@ -440,7 +440,7 @@ function ContactTab() {
       <H2>Contact</H2>
       <P>We respond to all inquiries within 1–2 business days.</P>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: "16px", marginBottom: "32px" }}>
         {[
           { label: "General Inquiries", email: "hello@getfaultline.live", desc: "Questions about FAULTLINE, the platform, or our methodology." },
           { label: "Support", email: "support@getfaultline.live", desc: "Technical issues, billing questions, or account help." },
@@ -504,11 +504,14 @@ export default function TrustCenter() {
             Transparency about how FAULTLINE works, where data comes from, and how we protect your information.
           </p>
 
-          {/* Tab bar */}
-          <div style={{ display: "flex", gap: "0", overflowX: "auto", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Tab bar: wraps onto multiple rows on narrow screens, scrolls horizontally from sm up */}
+          <div role="tablist" aria-label="Trust Center sections" className="flex flex-wrap sm:flex-nowrap sm:overflow-x-auto" style={{ maxWidth: "100%", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             {TABS.map(tab => (
               <button
                 key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className="px-3 sm:px-5"
                 onClick={() => setActiveTab(tab.id)}
                 style={{
                   fontFamily: MONO,
@@ -519,7 +522,8 @@ export default function TrustCenter() {
                   background: "none",
                   border: "none",
                   borderBottom: activeTab === tab.id ? "2px solid #00D4FF" : "2px solid transparent",
-                  padding: "12px 20px",
+                  paddingTop: "12px",
+                  paddingBottom: "12px",
                   cursor: "pointer",
                   whiteSpace: "nowrap",
                   transition: "color 0.15s",

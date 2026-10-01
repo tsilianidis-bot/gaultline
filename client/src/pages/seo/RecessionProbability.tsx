@@ -5,7 +5,7 @@ export default function RecessionProbability() {
     <SEOLandingPage
       seo={{
         title: "Recession Probability Indicator — Leading Economic Risk Signals | FAULTLINE",
-        description: "Real-time recession probability tracking using yield curve inversion, PMI, unemployment claims, credit spreads, and leading economic indicators. Know when recession risk is rising.",
+        description: "Recession probability tracking using yield curve inversion, PMI, unemployment claims, credit spreads, and leading economic indicators. Know when recession risk is rising.",
         canonical: "/recession-probability",
       }}
       badge="RECESSION RISK INTELLIGENCE"

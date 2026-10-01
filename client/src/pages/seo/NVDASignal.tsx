@@ -8,7 +8,7 @@ export default function NVDASignal() {
       sector="Semiconductors / AI Infrastructure"
       description="NVIDIA AI stock signal analysis"
       seoTitle="NVDA Signal — NVIDIA Stock Analysis, AI Risk Score & Key Levels | FAULTLINE"
-      seoDescription="Real-time NVDA signal analysis: NVIDIA's macro alignment score, AI bubble exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
+      seoDescription="NVDA signal analysis: NVIDIA's macro alignment score, AI bubble exposure rating, key support and resistance levels, bull and bear case scenarios, and regime-based signal classification."
       canonical="/stock/nvda"
       accentColor="#76B900"
       badge="NVDA SIGNAL INTELLIGENCE"

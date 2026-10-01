@@ -5,7 +5,7 @@ export default function CryptoMarketRegime() {
     <SEOLandingPage
       seo={{
         title: 'Crypto Market Regime Tracker | FAULTLINE',
-        description: 'Track real-time crypto market regimes: bull, bear, accumulation, distribution. FAULTLINE uses on-chain data, Bitcoin dominance, and macro conditions.',
+        description: 'Track crypto market regimes: bull, bear, accumulation, distribution. FAULTLINE uses on-chain data, Bitcoin dominance, and macro conditions.',
         canonical: '/crypto-market-regime',
       }}
       badge="CRYPTO"

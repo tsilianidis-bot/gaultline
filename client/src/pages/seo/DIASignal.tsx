@@ -7,12 +7,12 @@ export default function DIASignal() {
   return (
     <SEOLandingPage
       seo={{
-        title: "DIA Outlook: FAULTLINE's Real-Time Signal & Analysis",
-        description: "Get FAULTLINE's real-time outlook for DIA (Dow Jones ETF), including current signal, regime fit, industrial/cyclical exposure, macro sensitivity, and what conditions would change the outlook.",
+        title: "DIA Outlook: FAULTLINE's Signal & Analysis",
+        description: "Get FAULTLINE's current outlook for DIA (Dow Jones ETF), including current signal, regime fit, industrial/cyclical exposure, macro sensitivity, and what conditions would change the outlook.",
         canonical: "/stock/dia",
       }}
       badge="STOCK"
-      headline="DIA Outlook: FAULTLINE's Real-Time Signal & Analysis"
+      headline="DIA Outlook: FAULTLINE's Signal & Analysis"
       subheadline="Understand the current signal, regime fit, industrial/cyclical exposure, macro sensitivity, and what conditions would change the outlook for the SPDR Dow Jones Industrial Average ETF."
       ctaLabel="Explore DIA on FAULTLINE"
       ctaHref="/app"

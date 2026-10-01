@@ -2,7 +2,7 @@
    FAULTLINE — Product Experience Gate
    Preserved product-experience source. Not mounted on first-run
    (cinematic → MarketingSite). If reached later, pricing and claims
-   must match MarketingSite: Free / Trader $59 / Power $99 / Founding $49.
+   paid plans are not on sale yet, so no prices are shown.
 
    Sections:
    1.  Hero — full-viewport atmospheric opener with "See the Proof" CTA
@@ -43,22 +43,22 @@ const PUBLIC_PRICING = [
     features: ['Live FAULTLINE Pressure Index™', 'Current market regime context', 'Daily intelligence summary'],
   },
   {
-    id: 'trader', name: 'TRADER', price: '$59', period: '/ month', color: CYAN,
+    id: 'trader', name: 'TRADER', price: 'Not on sale yet', period: '', color: CYAN,
     badge: 'PRIMARY EXPERIENCE', cta: 'GET TRADER',
     tagline: 'For serious investors who want FAULTLINE’s core market intelligence, monitoring, signals, watch tools, interpretation, and decision support.',
     features: ['Core market intelligence and monitoring', 'Signals, watch tools, and market interpretation', 'Decision support for active investors'],
   },
   {
-    id: 'power', name: 'POWER', price: '$99', period: '/ month', color: PURPLE,
+    id: 'power', name: 'POWER', price: 'Not on sale yet', period: '', color: PURPLE,
     badge: 'FULL PROFESSIONAL TOOLSET', cta: 'GET POWER',
     tagline: 'For users who want the deepest FAULTLINE intelligence experience, advanced analysis, expanded research capabilities, and the full professional toolset.',
     features: ['Everything in Trader', 'Advanced analysis and expanded research', 'Full professional intelligence toolset'],
   },
   {
-    id: 'founding', name: 'FOUNDING MEMBER', price: '$49', period: '/ month', color: GOLD,
+    id: 'founding', name: 'FOUNDING MEMBER', price: 'Not on sale yet', period: '', color: GOLD,
     badge: 'FOUNDING RATE — LOCKED', cta: 'LOCK IN FOUNDER RATE',
-    tagline: 'Join FAULTLINE during the founding period and keep your $49 monthly rate locked as long as your membership remains active.',
-    features: ['Everything in Power', 'Locked $49 monthly rate while membership remains active', 'Founding member recognition'],
+    tagline: 'Founding membership. Paid plans are not on sale yet.',
+    features: ['Everything in Power', 'Founding member recognition'],
   },
 ] as const;
 
@@ -517,7 +517,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             borderRadius: '8px', padding: '10px 20px', marginBottom: '40px',
           }}>
             <span style={{ fontFamily: MONO, fontSize: '10px', color: GOLD, letterSpacing: '0.15em' }}>
-              ◆ FOUNDING MEMBER · $49 / MONTH · RATE LOCKED
+              ◆ FOUNDING MEMBER · NOT ON SALE YET
             </span>
           </div>
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>

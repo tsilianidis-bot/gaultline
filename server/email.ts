@@ -512,15 +512,13 @@ td.yes{color:#FFA500;font-family:'IBM Plex Mono',monospace;}
 <tr><td class="feat">Ask FAULTLINE (daily)</td><td class="no">10 questions</td><td class="yes">Unlimited</td></tr>
 </table>
 <div class="price">
-<div class="pamount">$9.99</div>
-<div class="pperiod">per month &mdash; cancel anytime</div>
-<div class="pnote">No contracts. No annual commitment required. Upgrade in 30 seconds.</div>
+<div class="pperiod">Paid plans are not on sale yet.</div>
+<div class="pnote">Your free account stays active, and nothing will charge you..</div>
 </div>
-<a href="${siteUrl}/app/account" class="cta1">Upgrade to Core &#x2192;</a>
-<a href="${siteUrl}/app/pressure" class="cta2">Stay on Free</a>
+<a href="${siteUrl}/app/pressure" class="cta1">Open the Pressure Index &#x2192;</a>
 </div>
 <div class="card" style="background:rgba(0,0,0,.2);">
-<p style="margin:0;font-size:13px;color:#64748B;"><span style="color:#FFA500;font-weight:700;">Not ready yet?</span> No pressure. The Free tier stays free forever. When the market gets volatile and you need the full picture, you'll know where to find it.</p>
+<p style="margin:0;font-size:13px;color:#64748B;">The public Pressure Index and methodology stay free to read at getfaultline.live.</p>
 </div>
 <hr class="divider"/>
 <div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${siteUrl}/app/account" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a><br/><br/><span style="color:rgba(100,116,139,.4);">This is not financial advice. FAULTLINE provides market intelligence tools for informational purposes only.</span></div>
@@ -528,7 +526,7 @@ td.yes{color:#FFA500;font-family:'IBM Plex Mono',monospace;}
   return { to: email, subject: `You're using 20% of FAULTLINE`, html };
 }
 
-// ── Day 3 Drip: Founding Member Urgency (sent ~72h after signup) ─────────────
+// ── Day 3 Drip: Founding brief, no prices while paid plans are not on sale ───
 export function buildDay3FoundingEmail(opts: {
   name: string;
   email: string;
@@ -567,44 +565,16 @@ p{font-size:14px;color:#94A3B8;line-height:1.65;margin:0 0 14px;}
 <div class="logo">FAULT<span>LINE</span></div>
 <div class="card">
 <div class="badge">&#x25C6; Day 3 &mdash; Founding Brief</div>
-<h1>47 founding spots. Then the rate goes up.</h1>
+<h1>Where FAULTLINE goes from here.</h1>
 <p>Hey ${displayName} &mdash; three days in. You've seen the Pressure Index, the regime engine, and the daily briefing.</p>
-<p>Here's the thing: the Founding Member rate locks your price forever. When we raise prices (and we will), you pay $49/mo regardless. That's the deal.</p>
-<div class="scarcity">
-<div class="scarcity-label">Founding spots remaining</div>
-<div class="scarcity-count">47</div>
-<div class="scarcity-sub">Rate locks at $49/mo forever &mdash; never increases</div>
-</div>
-<h2>Founding vs Core vs Pro</h2>
-<div class="compare">
-<div class="cbox">
-<div class="ctier" style="color:#94A3B8;">Core</div>
-<div class="cprice" style="color:#22D3EE;">$9.99</div>
-<div class="csub">/month</div>
-<div class="cfeature">Core signals &amp; watchlist. Good entry point.</div>
-</div>
-<div class="cbox">
-<div class="ctier" style="color:#00D4FF;">Pro</div>
-<div class="cprice" style="color:#00D4FF;">$59</div>
-<div class="csub">/month</div>
-<div class="cfeature">Full platform. Every engine unlocked.</div>
-</div>
-<div class="cbox gold">
-<div class="ctier" style="color:#FFD700;">Founding</div>
-<div class="cprice" style="color:#FFD700;">$49</div>
-<div class="csub">/month &mdash; locked forever</div>
-<div class="cfeature">Everything in Pro. Rate never increases. Limited spots.</div>
-</div>
-</div>
-<p>The Founding rate is $10/mo cheaper than Pro &mdash; and it never changes. If you're going to use FAULTLINE long-term, this is the only time you can lock in at this price.</p>
-<a href="${siteUrl}/#access" class="cta1">Lock In Founding &mdash; $49/mo &#x2192;</a>
-<a href="${siteUrl}/app/pressure" class="cta2">Stay on Free</a>
-</div>
-<div class="card" style="background:rgba(0,0,0,.2);">
-<p style="margin:0;font-size:13px;color:#64748B;"><span style="color:#FFA500;font-weight:700;">No pressure.</span> The Free tier is free forever. If you upgrade later, the Founding rate will be gone &mdash; but Core and Pro will still be available at their standard prices.</p>
+<p>Paid plans, including Founding membership, are not on sale yet. Your free account stays active, and nothing will charge you..</p>
+<h2>What to use in the meantime</h2>
+<p>The Pressure Index shows where systemic pressure is building across credit, funding, the Treasury curve and macro conditions. The methodology page explains every input and its as-of time.</p>
+<a href="${siteUrl}/app/pressure" class="cta1">Open the Pressure Index &#x2192;</a>
+<a href="${siteUrl}/methodology" class="cta2">Read the methodology</a>
 </div>
 <hr class="divider"/>
 <div class="footer">FAULTLINE &mdash; Macroeconomic Risk Intelligence<br/><a href="${siteUrl}" style="color:rgba(0,212,255,.5);text-decoration:none;">getfaultline.live</a><br/><br/>You received this because you signed up for FAULTLINE. <a href="${siteUrl}/app/account" style="color:rgba(0,212,255,.3);text-decoration:none;">Manage preferences</a><br/><br/><span style="color:rgba(100,116,139,.4);">This is not financial advice. FAULTLINE provides market intelligence tools for informational purposes only.</span></div>
 </div></body></html>`;
-  return { to: email, subject: `47 founding spots left — then the rate goes up`, html };
+  return { to: email, subject: `FAULTLINE: where things go from here`, html };
 }

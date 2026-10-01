@@ -5,7 +5,7 @@ export default function EthereumRiskDashboard() {
     <SEOLandingPage
       seo={{
         title: "Ethereum Risk Dashboard — ETH Risk Score, Key Levels & Macro Analysis | FAULTLINE",
-        description: "Real-time Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, key support and resistance levels, DeFi ecosystem risk, and regime-based bull/bear case analysis.",
+        description: "Ethereum risk dashboard: ETH macro alignment score, ETH/BTC ratio tracking, key support and resistance levels, DeFi ecosystem risk, and regime-based bull/bear case analysis.",
         canonical: "/ethereum-risk-dashboard",
       }}
       badge="ETHEREUM RISK INTELLIGENCE"

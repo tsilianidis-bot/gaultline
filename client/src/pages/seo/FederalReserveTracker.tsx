@@ -5,7 +5,7 @@ export default function FederalReserveTracker() {
     <SEOLandingPage
       seo={{
         title: "Federal Reserve Tracker — Fed Policy Impact on Markets | FAULTLINE",
-        description: "Track Federal Reserve policy signals, rate decisions, and their real-time impact on market stress, credit spreads, liquidity, and equity risk. Know what the Fed means for your portfolio.",
+        description: "Track Federal Reserve policy signals, rate decisions, and their impact on market stress, credit spreads, liquidity, and equity risk. Know what the Fed means for your portfolio.",
         canonical: "/federal-reserve-tracker",
       }}
       badge="FED POLICY INTELLIGENCE"
