@@ -316,7 +316,7 @@ export default function SEOLandingPage({
             Move before the market does.
           </h2>
           <p className="text-[#A8B8CC] mb-8">
-            Free access. No credit card required. Upgrade when you need more.
+            Free account. No credit card required. Paid plans are not on sale.
           </p>
           <a
             href={ctaHref}
