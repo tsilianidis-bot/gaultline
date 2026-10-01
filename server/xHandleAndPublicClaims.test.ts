@@ -87,3 +87,13 @@ describe("static asset paths never fall through to the SPA shell", () => {
     }
   });
 });
+
+describe("public landing CTAs do not imply a purchasable upgrade", () => {
+  for (const f of ["client/src/pages/PublicLandingPage.tsx", "client/src/pages/SEOLandingPage.tsx"]) {
+    it(`${f} has no 'Upgrade when you need more'`, () => {
+      const s = read(f);
+      expect(s).not.toMatch(/Upgrade when you need more/i);
+      expect(s).toContain("Paid plans are not on sale.");
+    });
+  }
+});
