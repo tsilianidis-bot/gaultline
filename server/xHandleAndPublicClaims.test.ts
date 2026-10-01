@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { STATIC_ASSET_PATH } from "./_core/vite";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -52,5 +53,37 @@ describe("public marketing pages carry no prices or unverifiable social proof", 
     expect(s).not.toContain("PRICING_PLANS");
     expect(s).not.toMatch(/priceLabel|checkout|VIEW ALL PLANS/i);
     expect(s).toContain("SIGN IN / CREATE FREE ACCOUNT");
+  });
+});
+
+describe("brand image assets ship as real images", () => {
+  const isPng = (b: Buffer) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47;
+  it("favicons, apple-touch-icon and JSON-LD logo exist as PNG/ICO", () => {
+    for (const f of ["favicon-16x16.png", "favicon-32x32.png", "apple-touch-icon.png", "logo.png"]) {
+      expect(isPng(readFileSync(path.join(root, "client/public", f)))).toBe(true);
+    }
+    const ico = readFileSync(path.join(root, "client/public/favicon.ico"));
+    expect([ico[0], ico[1], ico[2], ico[3]]).toEqual([0, 0, 1, 0]);
+  });
+  it("index.html references only assets that exist", () => {
+    const html = read("client/index.html");
+    for (const href of ["/favicon.ico", "/favicon-32x32.png", "/favicon-16x16.png", "/apple-touch-icon.png"]) {
+      expect(html).toContain(`href="${href}"`);
+    }
+    expect(html).toContain('"logo": "https://getfaultline.live/logo.png"');
+    expect(html).not.toContain("og-image-bdEKVbA3WK3ezH3oYRjdJP");
+  });
+});
+
+describe("static asset paths never fall through to the SPA shell", () => {
+  it("matches image/icon/font/script paths", () => {
+    for (const p of ["/og-image.jpg", "/favicon.ico", "/apple-touch-icon.png", "/x.svg", "/assets/a-1.js", "/a.css", "/f.woff2"]) {
+      expect(STATIC_ASSET_PATH.test(p)).toBe(true);
+    }
+  });
+  it("does not match SPA routes or server text routes", () => {
+    for (const p of ["/", "/pressure-index", "/press", "/robots.txt", "/sitemap.xml", "/manifest.json", "/app/signals"]) {
+      expect(STATIC_ASSET_PATH.test(p)).toBe(false);
+    }
   });
 });
