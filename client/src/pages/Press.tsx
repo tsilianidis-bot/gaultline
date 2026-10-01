@@ -38,7 +38,7 @@ The platform's primary instrument is the Seismograph™ — a continuous composi
 
 All FAULTLINE outputs are probabilistic rather than deterministic. The platform does not generate buy or sell signals. It generates probability-weighted assessments of current conditions, historical analog distributions, and scenario likelihoods — designed to support informed judgment, not to replace it.
 
-FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four public access tiers: Free, Trader ($59/mo), Power ($99/mo), and Founding Member ($49/mo locked while active).
+FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
 
 Press contact: press@getfaultline.live
 Website: getfaultline.live`;
@@ -73,11 +73,10 @@ Platform capabilities: PLATO AI Intelligence, Seismograph™, Pressure Index™,
 
 Availability: Web (getfaultline.live) + Progressive Web App (iOS/Android)
 
-Pricing tiers:
-  Free — Live Pressure Index, limited signal previews
-  Trader — $59/mo — Full intelligence platform
-  Power — $99/mo — Advanced traders & advisors
-  Founding Member — $49/mo (rate locked while membership remains active)
+Access:
+  Public — Pressure Index and methodology, no account required
+  Free account — sign in to open the signed-in app
+  Paid plans — not on sale
 
 Press contact: press@getfaultline.live`;
 
@@ -95,7 +94,7 @@ Unlike AI assistants that answer questions in isolation, PLATO evaluates all ten
 
 FAULTLINE's Seismograph™ — the platform's primary intelligence instrument — tracks systemic pressure across macroeconomic, financial, and market systems and feeds PLATO's continuous situational awareness. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
-FAULTLINE is available at getfaultline.live with tiered access for individual investors, active traders, and institutional users. The Founding Member tier ($49/mo, rate locked while membership remains active) is the current founding offer.
+FAULTLINE is available at getfaultline.live. The public Pressure Index and methodology are free to read, and signed-in access starts with a free account. Paid plans are not on sale.
 
 About Phoenix Systems
 Phoenix Systems is an AI-first technology company building intelligent platforms that transform complex information into actionable understanding. FAULTLINE is its flagship product.
@@ -203,7 +202,7 @@ CORE CAPABILITIES
 AVAILABILITY
 Web: getfaultline.live
 PWA: Available on iOS and Android
-Tiers: Free · Founding Member ($49/mo locked) · Trader ($59/mo) · Power ($99/mo)
+Access: public Pressure Index (no account) · free account for the signed-in app · paid plans not on sale
 
 DISCLAIMER
 FAULTLINE provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice.
@@ -709,7 +708,7 @@ export default function Press() {
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
           <p style={prose}>
-            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The platform offers four public access tiers: Free, Trader ($59/mo), Power ($99/mo), and Founding Member ($49/mo locked while active).
+            FAULTLINE is available at getfaultline.live via web browser and as a Progressive Web App (PWA) on iOS and Android. The public Pressure Index and methodology are free to read; signed-in access starts with a free account. Paid plans are not on sale.
           </p>
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "12px", color: "#64748B", lineHeight: 1.7, margin: 0, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
             FAULTLINE is a macroeconomic risk intelligence platform. It provides educational analysis and market awareness tools. It is not a financial adviser and does not provide personalised investment advice. Past performance of any indicator or signal does not guarantee future results. All content is for informational purposes only.
