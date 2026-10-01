@@ -5,18 +5,18 @@ export default function AltSeasonIndicator() {
     <SEOLandingPage
       seo={{
         title: "Alt Season Indicator — Is Alt Season Here? Live Probability | FAULTLINE",
-        description: "Track alt season probability in real time. Monitor BTC dominance, ETH/BTC ratio, altcoin momentum, and capital rotation signals to know when alt season is building — before the move is obvious.",
+        description: "Track alt season probability as new data is published. Monitor BTC dominance, ETH/BTC ratio, altcoin momentum, and capital rotation signals to know when alt season is building — before the move is obvious.",
         canonical: "/alt-season-indicator",
       }}
       badge="ALT SEASON INTELLIGENCE"
       headline={"Alt Season Indicator\nIs the Rotation Here?"}
-      subheadline="FAULTLINE's Alt Season Indicator tracks BTC dominance, ETH/BTC ratio, altcoin sector momentum, and capital rotation signals in real time — giving you advance warning when alt season conditions are building across the crypto market."
+      subheadline="FAULTLINE's Alt Season Indicator tracks BTC dominance, ETH/BTC ratio, altcoin sector momentum, and capital rotation signals as new data is published — giving you advance warning when alt season conditions are building across the crypto market."
       ctaLabel="VIEW ALT SEASON DATA"
       ctaHref="/app/crypto"
       accentColor="#F7931A"
       features={[
         { icon: "◈", title: "BTC Dominance Cycle Tracking", desc: "BTC dominance falling below key thresholds is the primary alt season signal. FAULTLINE tracks dominance levels, trend, and rate of change." },
-        { icon: "◎", title: "ETH/BTC Ratio Monitor", desc: "The ETH/BTC ratio rising is the first confirmation that capital is rotating from Bitcoin into altcoins. FAULTLINE tracks this ratio in real time." },
+        { icon: "◎", title: "ETH/BTC Ratio Monitor", desc: "The ETH/BTC ratio rising is the first confirmation that capital is rotating from Bitcoin into altcoins. FAULTLINE tracks this ratio as new data is published." },
         { icon: "⬡", title: "Altcoin Sector Momentum", desc: "Track momentum across DeFi, Layer-2, AI tokens, gaming, and meme coins simultaneously to identify which sectors are leading the rotation." },
         { icon: "◈", title: "Macro Regime Alignment", desc: "Alt season requires a risk-on macro environment. FAULTLINE checks whether the macro regime supports altcoin outperformance." },
         { icon: "◎", title: "Social Sentiment Surge Detection", desc: "Retail capital floods into altcoins during alt season. FAULTLINE tracks social sentiment across Reddit, StockTwits, and crypto news." },
@@ -43,7 +43,7 @@ FAULTLINE's Alt Season Indicator synthesizes five signals into a single alt seas
         },
         {
           heading: "The Four Phases of the Crypto Rotation Cycle",
-          body: `The crypto market follows a rotation cycle that FAULTLINE tracks in real time. Understanding where the market is in this cycle is essential for positioning correctly.
+          body: `The crypto market follows a rotation cycle that FAULTLINE tracks as new data is published. Understanding where the market is in this cycle is essential for positioning correctly.
 
 Phase 1 — Bitcoin Accumulation: Following a macro stress event or crypto-specific shock, capital concentrates in Bitcoin as the safest crypto asset. BTC dominance rises. Altcoins underperform significantly. This phase is characterized by "Bitcoin season" — a period when holding BTC outperforms holding altcoins.
 
@@ -67,7 +67,7 @@ Second, AI token concentration risk is real. The AI crypto sector attracted sign
 
 Third, the rotation from BTC to altcoins is not guaranteed. In some cycles, BTC dominance rises throughout the entire cycle without a meaningful alt season. The conditions for alt season — falling BTC dominance, rising ETH/BTC, broad altcoin momentum, supportive macro — must all align simultaneously.
 
-FAULTLINE's Alt Season Indicator tracks all of these conditions in real time, giving you a data-driven assessment of whether alt season conditions are present, building, or absent.`,
+FAULTLINE's Alt Season Indicator tracks all of these conditions as new data is published, giving you a data-driven assessment of whether alt season conditions are present, building, or absent.`,
         },
       ]}
       faqs={[

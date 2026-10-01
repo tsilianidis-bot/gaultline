@@ -57,8 +57,8 @@ const VsKoyfin = () => {
           answer: 'Yes, FAULTLINE is highly valuable for long-term investors who seek to understand and navigate major market cycles and systemic risks that can impact long-term portfolio performance. It helps in strategic asset allocation and risk management.',
         },
         {
-          question: 'Does FAULTLINE offer real-time data?',
-          answer: 'FAULTLINE provides timely updates on its proprietary indices and market regime classifications, reflecting the most current systemic risk environment. While not a real-time tick data provider like some trading platforms, its macro signals are designed to be forward-looking and actionable.',
+          question: 'How fresh is FAULTLINE data?',
+          answer: 'FAULTLINE provides timely updates on its proprietary indices and market regime classifications, reflecting the most current systemic risk environment. While not a regularly refreshed tick data provider like some trading platforms, its macro signals are designed to be forward-looking and actionable.',
         },
         {
           question: 'How does FAULTLINE help with risk management?',

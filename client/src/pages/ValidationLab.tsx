@@ -518,7 +518,7 @@ export default function ValidationLab() {
                   <Shield className="w-4 h-4 text-primary" />
                   FRED Data Feed Status
                 </CardTitle>
-                <CardDescription className="text-xs">Real-time status of all macro data feeds powering FMOS</CardDescription>
+                <CardDescription className="text-xs">Current status of all macro data feeds powering FMOS</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">

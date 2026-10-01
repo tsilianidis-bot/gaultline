@@ -5,17 +5,17 @@ export default function LearnWhatIsLiquidity() {
     <SEOLandingPage
       seo={{
         title: "What Is Liquidity in the Stock Market? | FAULTLINE",
-        description: "Understand market liquidity — what it means, why it matters, how the Fed affects it, and how FAULTLINE's Liquidity Monitor tracks liquidity conditions in real time.",
+        description: "Understand market liquidity — what it means, why it matters, how the Fed affects it, and how FAULTLINE's Liquidity Monitor tracks liquidity conditions as new data is published.",
         canonical: "/learn/what-is-liquidity-in-the-stock-market",
       }}
       badge="MARKET EDUCATION"
       headline={"What Is Liquidity\nin the Stock Market?"}
-      subheadline="Market liquidity is one of the most misunderstood concepts in investing — and one of the most important. When liquidity dries up, even fundamentally sound assets can fall sharply. FAULTLINE tracks liquidity conditions in real time."
+      subheadline="Market liquidity is one of the most misunderstood concepts in investing — and one of the most important. When liquidity dries up, even fundamentally sound assets can fall sharply. FAULTLINE tracks liquidity conditions as new data is published."
       ctaLabel="VIEW LIQUIDITY CONDITIONS"
       ctaHref="/liquidity-monitor"
       accentColor="#00FF88"
       features={[
-        { icon: "◈", title: "Liquidity Monitor", desc: "FAULTLINE tracks Fed QT, bank lending conditions, and global liquidity flows in real time." },
+        { icon: "◈", title: "Liquidity Monitor", desc: "FAULTLINE tracks Fed QT, bank lending conditions, and global liquidity flows as new data is published." },
         { icon: "◎", title: "Pressure Index Integration", desc: "Liquidity conditions are one of seven risk vectors in the FAULTLINE Pressure Index." },
         { icon: "⬡", title: "Historical Context", desc: "Every major market dislocation since 2000 was preceded by liquidity withdrawal. FAULTLINE tracks the same signals." },
         { icon: "◈", title: "Fed Policy Tracking", desc: "Quantitative tightening and rate hikes reduce market liquidity. FAULTLINE monitors Fed policy signals continuously." },
@@ -79,11 +79,11 @@ FAULTLINE also provides historical context for current liquidity conditions, com
         },
       ]}
       internalLinks={[
-        { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Real-time tracking of market liquidity conditions and Fed policy signals." },
+        { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Regularly refreshed tracking of market liquidity conditions and Fed policy signals." },
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — liquidity is one of 7 risk vectors." },
         { label: "DAILY BRIEF", href: "/daily-brief", desc: "Today's market conditions, including liquidity assessment." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Track Fed policy signals and their impact on market liquidity." },
-        { label: "CREDIT MARKET STRESS", href: "/credit-market-stress", desc: "Credit spreads widen when liquidity is scarce — track them in real time." },
+        { label: "CREDIT MARKET STRESS", href: "/credit-market-stress", desc: "Credit spreads widen when liquidity is scarce — track them as new data is published." },
         { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Liquidity conditions determine whether the current regime is sustainable." },
       ]}
       schemaType="Article"

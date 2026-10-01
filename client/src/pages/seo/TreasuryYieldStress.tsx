@@ -8,17 +8,17 @@ const TreasuryYieldStress = () => {
       seo={{
         title: "Treasury Yield Stress Tracker - FAULTLINE Market Intelligence",
         description:
-          "Real-time tracking of treasury yield stress: yield curve inversion, 2yr/10yr spread dynamics, Fed policy impact, and implications for stock and bond markets.",
+          "Regularly refreshed tracking of treasury yield stress: yield curve inversion, 2yr/10yr spread dynamics, Fed policy impact, and implications for stock and bond markets.",
         canonical: "/treasury-yield-stress",
       }}
       badge="Market Intelligence"
-      headline="Treasury Yield Stress Tracker: Real-time Insights into Yield Curve Dynamics"
+      headline="Treasury Yield Stress Tracker: Insights into Yield Curve Dynamics"
       subheadline="Monitor yield curve inversion, 2yr/10yr spread, and Fed policy impact to understand implications for stock and bond markets."
       ctaLabel="Explore FAULTLINE Platform"
       ctaHref="/signup"
       accentColor="#FFD700"
       features={[
-        { icon: "◈", title: "Real-time monitoring of key treasury", desc: "Real-time monitoring of key treasury yield metrics" },
+        { icon: "◈", title: "Regularly refreshed monitoring of key treasury", desc: "Regularly refreshed monitoring of key treasury yield metrics" },
         { icon: "◎", title: "Analysis of yield curve inversion", desc: "Analysis of yield curve inversion and its economic signals" },
         { icon: "⬡", title: "Impact assessment of Federal Reserve", desc: "Impact assessment of Federal Reserve policy on bond yields" },
         { icon: "◈", title: "Historical comparisons of yield stress", desc: "Historical comparisons of yield stress events" },
@@ -28,7 +28,7 @@ const TreasuryYieldStress = () => {
       contentSections={[
         {
           heading: "Treasury Yield Stress Tracker: Understanding Market Signals",
-          body: "The Treasury Yield Stress Tracker provides a comprehensive, real-time view of the U.S. Treasury market, a critical barometer for economic health and financial stability. At its core, treasury yield stress refers to unusual or extreme movements and relationships within the yield curve, such as significant inversions or rapid shifts in yield levels. These dynamics often signal underlying economic pressures or shifts in market sentiment regarding inflation, growth, and monetary policy. FAULTLINE's tracker distills complex bond market data into clear, actionable insights, helping investors and analysts interpret these crucial signals. We focus on key indicators like the 2-year/10-year spread, which has historically been a reliable predictor of economic downturns, alongside other segments of the curve to provide a holistic picture of market expectations. This tool is designed to cut through the noise, offering a data-driven perspective on what rising or falling yields truly mean for the broader financial landscape.",
+          body: "The Treasury Yield Stress Tracker provides a comprehensive, regularly refreshed view of the U.S. Treasury market, a critical barometer for economic health and financial stability. At its core, treasury yield stress refers to unusual or extreme movements and relationships within the yield curve, such as significant inversions or rapid shifts in yield levels. These dynamics often signal underlying economic pressures or shifts in market sentiment regarding inflation, growth, and monetary policy. FAULTLINE's tracker distills complex bond market data into clear, actionable insights, helping investors and analysts interpret these crucial signals. We focus on key indicators like the 2-year/10-year spread, which has historically been a reliable predictor of economic downturns, alongside other segments of the curve to provide a holistic picture of market expectations. This tool is designed to cut through the noise, offering a data-driven perspective on what rising or falling yields truly mean for the broader financial landscape.",
         },
         {
           heading: "Current FAULTLINE Rating and Historical Context",

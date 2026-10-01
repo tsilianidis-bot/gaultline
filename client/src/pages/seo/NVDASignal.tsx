@@ -13,7 +13,7 @@ export default function NVDASignal() {
       accentColor="#76B900"
       badge="NVDA SIGNAL INTELLIGENCE"
       headline={"NVDA Signal\nNVIDIA AI Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides real-time macro-aligned signal analysis for NVIDIA (NVDA) — the central node of the AI infrastructure buildout. Track NVDA's regime fit score, AI bubble exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for NVIDIA (NVDA) — the central node of the AI infrastructure buildout. Track NVDA's regime fit score, AI bubble exposure, key price levels, and bull/bear case scenarios."
       whatIsIt={`NVIDIA Corporation (NASDAQ: NVDA) is the dominant supplier of graphics processing units (GPUs) for artificial intelligence training and inference workloads. Founded in 1993 and headquartered in Santa Clara, California, NVIDIA has transformed from a gaming GPU company into the central infrastructure provider for the AI revolution.
 
 NVIDIA operates in the Semiconductors sector, specifically in the AI Infrastructure sub-sector. Its products — particularly the H100, H200, and Blackwell GPU architectures — are the primary compute substrate for training large language models (LLMs) and running AI inference at scale. Customers include Microsoft (Azure), Amazon (AWS), Google (GCP), Meta, and virtually every major AI research organization globally.
@@ -29,7 +29,7 @@ AI Narrative Momentum: NVDA's revenue and valuation are directly tied to AI infr
 
 Technical Structure: FAULTLINE tracks NVDA's position relative to key moving averages (50-day, 200-day), support and resistance levels, and momentum indicators (RSI, MACD) to classify the technical signal as BUY, SELL, HOLD, or WATCH.
 
-The combination of these three inputs produces FAULTLINE's NVDA regime fit score (0-10) and signal classification, updated continuously throughout the trading day.`}
+The combination of these three inputs produces FAULTLINE's NVDA regime fit score (0-10) and signal classification, recalculated as new data is published.`}
       keyLevels={`FAULTLINE tracks the following key NVDA price levels as part of the signal analysis:
 
 Major Support Zones: The 200-day moving average is the primary long-term support for NVDA. Previous all-time highs that became support after being broken are secondary support levels. Major round numbers ($100, $150, $200) attract significant options positioning.
@@ -53,7 +53,7 @@ Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical struc
       faqs={[
         {
           question: "Is NVDA a buy or sell right now?",
-          answer: "FAULTLINE's NVDA signal classification (BUY, SELL, HOLD, or WATCH) is available in real time on the Signals tab. The classification is based on macro regime alignment, AI narrative momentum, and technical structure — updated continuously. This is not investment advice; it is a data-driven signal classification.",
+          answer: "FAULTLINE's NVDA signal classification (BUY, SELL, HOLD, or WATCH) is available on the Signals tab. The classification is based on macro regime alignment, AI narrative momentum, and technical structure — updated continuously. This is not investment advice; it is a data-driven signal classification.",
         },
         {
           question: "What is NVDA's AI bubble exposure rating?",
@@ -61,7 +61,7 @@ Stop-Loss Levels: FAULTLINE identifies stop-loss levels based on technical struc
         },
         {
           question: "What are NVDA's key support levels?",
-          answer: "FAULTLINE tracks NVDA's key support levels in real time, including the 200-day moving average, previous all-time highs that became support, and major round numbers. These levels are updated continuously as new price data arrives from Polygon.io. Access the live levels on the FAULTLINE Signals tab.",
+          answer: "FAULTLINE tracks NVDA's key support levels as new data is published, including the 200-day moving average, previous all-time highs that became support, and major round numbers. These levels are updated continuously as new price data arrives from Polygon.io. Access the live levels on the FAULTLINE Signals tab.",
         },
         {
           question: "How does the Federal Reserve affect NVDA's stock price?",

@@ -21,7 +21,7 @@ const LearnInflationAndStocks = () => {
         { icon: "◎", title: "Fed Policy Connection", desc: "The Fed's critical role in managing inflation through rate hikes and balance sheet operations." },
         { icon: "⬡", title: "Sector Rotation Patterns", desc: "Identify key sectors that perform differently during inflationary vs deflationary periods." },
         { icon: "◈", title: "Real vs Nominal Returns", desc: "How inflation erodes nominal returns and why real return tracking matters for investors." },
-        { icon: "◎", title: "FAULTLINE Inflation Tracking", desc: "FAULTLINE provides real-time insights into inflation dynamics and their market impact." },
+        { icon: "◎", title: "FAULTLINE Inflation Tracking", desc: "FAULTLINE provides regularly refreshed insights into inflation dynamics and their market impact." },
         { icon: "⬡", title: "Historical Inflation Regimes", desc: "Compare current inflation conditions against historical periods — 1970s, 2022, and beyond." },
       ]}
       contentSections={[
@@ -39,7 +39,7 @@ const LearnInflationAndStocks = () => {
         },
         {
           heading: 'How FAULTLINE Monitors and Measures Inflation\'s Market Impact',
-          body: `FAULTLINE offers a sophisticated suite of tools designed to monitor inflation's impact on financial markets. Our platform integrates real-time economic data, including CPI, PPI, and wage growth, with market sentiment indicators and Federal Reserve communications. We provide proprietary metrics, such as the Pressure Index and Market Regime Tracker, which help identify periods of rising inflationary pressure and their potential effects on different asset classes. By analyzing historical data and current trends, FAULTLINE helps users understand 'what would change the outlook' for inflation and its implications for their portfolios. Our goal is to equip investors with the market intelligence needed to make informed decisions, offering a clear disclaimer that FAULTLINE is for market intelligence and education, not personalized financial advice. We provide the context to understand 'why it matters' for your investment strategy.`, 
+          body: `FAULTLINE offers a sophisticated suite of tools designed to monitor inflation's impact on financial markets. Our platform integrates regularly refreshed economic data, including CPI, PPI, and wage growth, with market sentiment indicators and Federal Reserve communications. We provide proprietary metrics, such as the Pressure Index and Market Regime Tracker, which help identify periods of rising inflationary pressure and their potential effects on different asset classes. By analyzing historical data and current trends, FAULTLINE helps users understand 'what would change the outlook' for inflation and its implications for their portfolios. Our goal is to equip investors with the market intelligence needed to make informed decisions, offering a clear disclaimer that FAULTLINE is for market intelligence and education, not personalized financial advice. We provide the context to understand 'why it matters' for your investment strategy.`, 
         },
       ]}
       faqs={[

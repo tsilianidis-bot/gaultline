@@ -9,7 +9,7 @@ export default function RecessionProbability() {
         canonical: "/recession-probability",
       }}
       badge="RECESSION RISK INTELLIGENCE"
-      headline={"Recession Probability\nLeading Indicators in Real Time"}
+      headline={"Recession Probability\nLeading Indicators, As Published"}
       subheadline="FAULTLINE tracks the leading economic indicators that historically precede recessions — yield curve inversion, PMI deterioration, unemployment claims, credit spreads, and consumer confidence — and synthesizes them into a live recession probability score."
       ctaLabel="VIEW RECESSION RISK"
       ctaHref="/pressure-index"
@@ -79,12 +79,12 @@ FAULTLINE's recession probability score helps you distinguish between the two sc
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Live systemic market stress score incorporating recession probability." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic market stress score incorporating recession probability." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy signals and their impact on recession risk." },
-        { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Real-time crash risk detection and systemic stress monitoring." },
+        { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Regularly refreshed crash risk detection and systemic stress monitoring." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track liquidity conditions — the mechanism behind recessions." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare today's conditions against historical recession periods." },
-        { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Real-time volatility regime monitoring and risk analysis." },
+        { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "Regularly refreshed volatility regime monitoring and risk analysis." },
       ]}
       schemaType="Article"
       datePublished="2024-06-01"

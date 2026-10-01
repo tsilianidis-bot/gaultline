@@ -13,7 +13,7 @@ export default function PLTRSignal() {
       accentColor="#00D4FF"
       badge="PLTR SIGNAL INTELLIGENCE"
       headline={"PLTR Signal\nPalantir AI Software Risk & Macro Analysis"}
-      subheadline="FAULTLINE provides real-time macro-aligned signal analysis for Palantir Technologies (PLTR) — the leading AI software platform for government and enterprise. Track PLTR's regime fit score, AI software exposure, key price levels, and bull/bear case scenarios."
+      subheadline="FAULTLINE provides regularly refreshed macro-aligned signal analysis for Palantir Technologies (PLTR) — the leading AI software platform for government and enterprise. Track PLTR's regime fit score, AI software exposure, key price levels, and bull/bear case scenarios."
       whatIsIt={`Palantir Technologies (NYSE: PLTR) is an American software company specializing in big data analytics, artificial intelligence, and decision intelligence platforms. Founded in 2003 by Peter Thiel, Alex Karp, and others, Palantir is headquartered in Denver, Colorado.
 
 Palantir operates in the AI Software sector, specifically in the Government & Enterprise Analytics sub-sector. The company's primary products are Gotham (government intelligence and defense), Foundry (enterprise data operations), and AIP (Artificial Intelligence Platform) — its newest and fastest-growing product that enables organizations to deploy large language models on proprietary data.
@@ -51,7 +51,7 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
       faqs={[
         {
           question: "Is PLTR a buy or sell right now?",
-          answer: "FAULTLINE's PLTR signal classification (BUY, SELL, HOLD, or WATCH) is available in real time on the Signals tab. The classification is based on macro regime alignment, government AI spending momentum, AIP commercial adoption, and technical structure — updated continuously. This is not investment advice.",
+          answer: "FAULTLINE's PLTR signal classification (BUY, SELL, HOLD, or WATCH) is available on the Signals tab. The classification is based on macro regime alignment, government AI spending momentum, AIP commercial adoption, and technical structure — updated continuously. This is not investment advice.",
         },
         {
           question: "What makes Palantir different from other AI stocks?",

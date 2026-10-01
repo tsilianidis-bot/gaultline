@@ -102,7 +102,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     ctaSecondary: "Pro Access",
     features: [
       "Live P&L tracking",
-      "Real-time price quotes",
+      "Delayed price quotes (up to 15 minutes)",
       "Regime-aware risk scoring",
       "AI guidance (Pro tier)",
     ],
@@ -128,10 +128,10 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     requiredTier: 'core',
   },
   risk: {
-    title: "Real-Time Risk Engine Locked",
+    title: "Risk Engine Locked",
     subtitle: "SYSTEMIC RISK INTELLIGENCE",
     description:
-      "The FAULTLINE Pressure Index™ and systemic risk engine analyze macro conditions, liquidity, Treasury stress, and volatility regimes in real time.",
+      "The FAULTLINE Pressure Index™ and systemic risk engine analyze macro conditions, liquidity, Treasury stress, and volatility regimes as new data is published.",
     icon: <Zap className="w-8 h-8" />,
     accentColor: "text-orange-400",
     accentHex: "#FB923C",
@@ -399,7 +399,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
     title: "Day Trade Intelligence Locked",
     subtitle: "INTRADAY INTELLIGENCE",
     description:
-      "Institutional intraday intelligence — session bias, opening range analysis, key levels, and real-time regime shifts for active traders.",
+      "Institutional intraday intelligence — session bias, opening range analysis, key levels, and regularly refreshed regime shifts for active traders.",
     icon: <BarChart2 className="w-8 h-8" />,
     accentColor: "text-cyan-400",
     accentHex: "#00D4FF",
@@ -410,7 +410,7 @@ const GATE_CONFIGS: Record<PremiumGateVariant, PremiumGateConfig> = {
       "Session bias analysis",
       "Opening range intelligence",
       "Key intraday levels",
-      "Real-time regime shifts",
+      "Regularly refreshed regime shifts",
     ],
     requiredTier: 'premium',
   },

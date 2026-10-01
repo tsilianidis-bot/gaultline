@@ -9,8 +9,8 @@ export default function FederalReserveTracker() {
         canonical: "/federal-reserve-tracker",
       }}
       badge="FED POLICY INTELLIGENCE"
-      headline={"Federal Reserve Tracker\nPolicy Signals in Real Time"}
-      subheadline="The Federal Reserve is the single most important driver of market conditions. FAULTLINE tracks Fed policy signals, rate expectations, balance sheet dynamics, and their real-time impact on credit spreads, liquidity, and systemic market stress."
+      headline={"Federal Reserve Tracker\nPolicy Signals, As Published"}
+      subheadline="The Federal Reserve is the single most important driver of market conditions. FAULTLINE tracks Fed policy signals, rate expectations, balance sheet dynamics, and their regularly refreshed impact on credit spreads, liquidity, and systemic market stress."
       ctaLabel="VIEW FED IMPACT"
       ctaHref="/pressure-index"
       accentColor="#7C3AED"
@@ -87,10 +87,10 @@ Dollar: Fed rate hikes strengthen the dollar relative to other currencies. A str
         },
       ]}
       internalLinks={[
-        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Live systemic stress score incorporating Fed policy impact." },
+        { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic stress score incorporating Fed policy impact." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track liquidity conditions driven by Fed balance sheet policy." },
         { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading indicators of recession risk — the outcome of Fed policy." },
-        { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Real-time crash risk detection and systemic stress monitoring." },
+        { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Regularly refreshed crash risk detection and systemic stress monitoring." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "VIX regime monitoring and volatility analysis." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare current Fed cycle to historical tightening and easing periods." },
       ]}

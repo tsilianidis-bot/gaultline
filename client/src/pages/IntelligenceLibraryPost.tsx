@@ -366,7 +366,7 @@ export default function IntelligenceLibraryPost() {
             Ask PLATO About {catLabel}
           </h3>
           <p style={{ color: '#94A3B8', fontSize: '0.875rem', lineHeight: 1.6, marginBottom: '1.25rem', maxWidth: 400, margin: '0 auto 1.25rem' }}>
-            Get real-time analysis grounded in live engine data and this research library.
+            Get regularly refreshed analysis grounded in live engine data and this research library.
           </p>
           <Link href="/app/discover">
             <button style={{

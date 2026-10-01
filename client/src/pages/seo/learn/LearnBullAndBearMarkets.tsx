@@ -5,12 +5,12 @@ export default function LearnBullAndBearMarkets() {
     <SEOLandingPage
       seo={{
         title: "Bull and Bear Markets Explained | FAULTLINE",
-        description: "Understand bull and bear markets — definitions, historical examples, what drives transitions, how long they last, and how FAULTLINE tracks regime changes in real time.",
+        description: "Understand bull and bear markets — definitions, historical examples, what drives transitions, how long they last, and how FAULTLINE tracks regime changes as new data is published.",
         canonical: "/learn/bull-and-bear-markets-explained",
       }}
       badge="MARKET EDUCATION"
       headline={"Bull and Bear Markets\nExplained"}
-      subheadline="Bull and bear markets are the two fundamental regimes that define the investment environment. Understanding what drives them, how they transition, and how to identify them in real time is foundational to market intelligence."
+      subheadline="Bull and bear markets are the two fundamental regimes that define the investment environment. Understanding what drives them, how they transition, and how to identify them as new data is published is foundational to market intelligence."
       ctaLabel="SEE CURRENT REGIME"
       ctaHref="/market-regime-tracker"
       accentColor="#00D4FF"
@@ -37,7 +37,7 @@ The distinction matters because the investment environment is fundamentally diff
 
 The most common mistake investors make is extrapolating the current regime indefinitely. Bull markets create complacency — investors assume the environment will continue indefinitely and take on excessive risk near the top. Bear markets create panic — investors sell at the bottom, locking in losses just before the recovery begins.
 
-FAULTLINE's regime classification system is designed to help investors understand where they are in the cycle without relying on hindsight. By tracking credit spreads, market breadth, liquidity conditions, and the Pressure Index in real time, FAULTLINE provides early warning of regime transitions — not after they have already happened.`,
+FAULTLINE's regime classification system is designed to help investors understand where they are in the cycle without relying on hindsight. By tracking credit spreads, market breadth, liquidity conditions, and the Pressure Index as new data is published, FAULTLINE provides early warning of regime transitions — not after they have already happened.`,
         },
         {
           heading: "How Investors Misunderstand Bull and Bear Markets",
@@ -45,7 +45,7 @@ FAULTLINE's regime classification system is designed to help investors understan
 
 A second common misunderstanding is that bear markets are caused by unexpected events. In most cases, the structural vulnerabilities that make a market susceptible to a sharp decline are visible in advance. The 2000 crash was preceded by historically extreme valuations and AI/tech concentration. The 2008 crash was preceded by credit spread widening and liquidity stress. The 2022 decline was preceded by the most aggressive Fed tightening cycle in decades.
 
-FAULTLINE's Pressure Index is designed to measure these structural vulnerabilities in real time — not to predict crashes, but to quantify how structurally vulnerable the market is to a rapid decline.`,
+FAULTLINE's Pressure Index is designed to measure these structural vulnerabilities as new data is published — not to predict crashes, but to quantify how structurally vulnerable the market is to a rapid decline.`,
         },
         {
           heading: "How FAULTLINE Tracks Market Regimes",
@@ -71,7 +71,7 @@ FAULTLINE is not a prediction tool. It is a risk assessment framework that provi
         },
         {
           question: "What causes a bull market to end?",
-          answer: "Bull markets typically end when one or more of the following conditions develop: Fed tightening into slowing growth, credit spread widening, deteriorating market breadth, recession probability rising, or an external shock that triggers a liquidity event. FAULTLINE's Pressure Index tracks all of these in real time.",
+          answer: "Bull markets typically end when one or more of the following conditions develop: Fed tightening into slowing growth, credit spread widening, deteriorating market breadth, recession probability rising, or an external shock that triggers a liquidity event. FAULTLINE's Pressure Index tracks all of these as new data is published.",
         },
         {
           question: "Is FAULTLINE financial advice?",
@@ -79,7 +79,7 @@ FAULTLINE is not a prediction tool. It is a risk assessment framework that provi
         },
       ]}
       internalLinks={[
-        { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Real-time classification of the current market regime." },
+        { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Regularly refreshed classification of the current market regime." },
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — 7 vectors aggregated into a single 0-100 reading." },
         { label: "DAILY BRIEF", href: "/daily-brief", desc: "Today's market conditions, key drivers, and risk assessment." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare current conditions against historical bull and bear environments." },

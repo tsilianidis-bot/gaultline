@@ -159,7 +159,7 @@ const BACKTEST_SUMMARY = {
 const PIPELINE_STAGES = [
   { id: 1,  name: 'Data Acquisition',    description: 'Ingests FRED macro data, market feeds, and alternative data sources', category: 'Infrastructure', categoryColor: '#3b82f6', status: 'completed', latency: '85ms' },
   { id: 2,  name: 'Market DNA',          description: 'Extracts structural market characteristics and baseline fingerprint',     category: 'Analysis',       categoryColor: '#a855f7', status: 'completed', latency: '32ms' },
-  { id: 3,  name: 'Market Weather',      description: 'Computes real-time stress conditions across 7 weather dimensions',       category: 'Analysis',       categoryColor: '#a855f7', status: 'completed', latency: '28ms' },
+  { id: 3,  name: 'Market Weather',      description: 'Computes regularly refreshed stress conditions across 7 weather dimensions',       category: 'Analysis',       categoryColor: '#a855f7', status: 'completed', latency: '28ms' },
   { id: 4,  name: 'Regime Detection',    description: 'Classifies current market regime from 5 macro states',                  category: 'Classification', categoryColor: '#eab308', status: 'completed', latency: '18ms' },
   { id: 5,  name: 'Transition Analysis', description: 'Detects early signals of regime change with lead time estimation',      category: 'Prediction',     categoryColor: '#f97316', status: 'completed', latency: '22ms' },
   { id: 6,  name: 'Evidence Engine',     description: 'Weights 14 independent evidence families and computes domain scores',   category: 'Weighting',      categoryColor: '#06b6d4', status: 'completed', latency: '41ms' },

@@ -752,6 +752,25 @@ export default function UserAccount() {
         </div>
       )}
 
+      {/* ── Founding access request (no prices, no checkout — only submits a request for manual review) ── */}
+      {!PAID_PLANS_ON_SALE && !isPremium && !isCore && (
+        <div id="founding-form" data-founding-request style={{
+          marginTop: '16px',
+          background: 'rgba(255,255,255,0.02)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: '12px',
+          padding: '20px 24px',
+        }}>
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', color: '#9CA3AF', letterSpacing: '0.12em', marginBottom: '6px' }}>
+            REQUEST FOUNDING ACCESS
+          </div>
+          <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '13px', color: '#9CA3AF', lineHeight: 1.6, margin: '0 0 16px' }}>
+            Interested in founding access? Send a request and we review each one manually. Submitting a request does not start a purchase or charge you.
+          </p>
+          <FoundingAccessForm userEmail={profile?.email ?? user?.email} />
+        </div>
+      )}
+
       {/* ── Upgrade section (only for free tier, only while paid plans are on sale) ── */}
       {PAID_PLANS_ON_SALE && !isPremium && !isCore && (
         <div style={{

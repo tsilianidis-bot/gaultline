@@ -1079,7 +1079,7 @@ export default function Pressure() {
       <div style={{ position: "relative", zIndex: 2, maxWidth: "1400px", margin: "0 auto" }}>
         <PageHeader
           title="Market Stress"
-          subtitle="Real-time systemic risk pressure across credit, rates, liquidity, and macro domains. A higher score means more stress in the system."
+          subtitle="Systemic risk pressure across credit, rates, liquidity, and macro domains, built from published FRED data. Each reading shows its as-of time; a higher score means more stress in the system."
           badge={customerPressureBadge(integrityLabel)}
           badgeColor={customerIntegrityBadgeColor(integrityLabel)}
           rightSlot={<PreflightTrigger currentPage="pressure" regimeLabel={data.regime} actionKey="viewed_pressure" />}

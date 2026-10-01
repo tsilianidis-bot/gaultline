@@ -193,7 +193,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     unit: 'bps',
     category: 'credit',
     color: '#FF9500',
-    description: 'High-yield spreads are the primary real-time credit stress signal.',
+    description: 'High-yield spreads are the primary regularly refreshed credit stress signal.',
     defaultThreshold: 500,
     defaultCondition: 'above',
     min: 100, max: 1200, step: 10,

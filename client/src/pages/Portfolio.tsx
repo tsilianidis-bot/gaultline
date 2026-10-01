@@ -1,6 +1,6 @@
 /* ============================================================
    FAULTLINE — Portfolio Monitor
-   Real-time P&L tracking with AI-powered position guidance.
+   Regularly refreshed P&L tracking with AI-powered position guidance.
    Yahoo Finance 15-min delayed quotes + FAULTLINE pressure engine.
    Design: Palantir Noir — void black, neon accents.
    ============================================================ */
@@ -781,7 +781,7 @@ function PortfolioInner() {
     <div style={{ minHeight: "100vh", background: "#050608" }}>
       <PageHeader
         title="Portfolio Monitor"
-        subtitle="Track real-time P&L across your positions with AI-powered guidance and FAULTLINE pressure context."
+        subtitle="Track P&L across your positions with AI-powered guidance and FAULTLINE pressure context. Quotes are delayed up to 15 minutes and refresh every 60 seconds."
         badge="LIVE"
         badgeColor="green"
         rightSlot={

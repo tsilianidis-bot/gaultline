@@ -20,7 +20,7 @@ const BitcoinVsStockMarket = () => {
         { icon: "⬡", title: "Macro Sensitivity Comparison", desc: "How do interest rates, Fed policy, and liquidity affect BTC vs equities differently?" },
         { icon: "◈", title: "FAULTLINE Risk Scores", desc: "FAULTLINE's proprietary risk scores for Bitcoin and equities side by side." },
         { icon: "◎", title: "Historical Analog Matching", desc: "Historical comparisons of BTC and stock market regimes to identify recurring patterns." },
-        { icon: "⬡", title: "Regime Fit Assessment", desc: "Which macro regime favors Bitcoin? Which favors equities? FAULTLINE classifies both in real time." },
+        { icon: "⬡", title: "Regime Fit Assessment", desc: "Which macro regime favors Bitcoin? Which favors equities? FAULTLINE classifies both as new data is published." },
       ]}
       contentSections={[
         {
@@ -29,7 +29,7 @@ const BitcoinVsStockMarket = () => {
         },
         {
           heading: 'Key Differences in Risk Dynamics and Correlation',
-          body: `The correlation between Bitcoin and the stock market is not static; it evolves with market conditions. Historically, Bitcoin often exhibited low correlation with traditional assets, appealing to investors seeking uncorrelated returns. However, in recent years, particularly during periods of heightened market stress, Bitcoin\'s correlation with tech stocks and broader equity markets has increased, suggesting a growing integration into the global financial system. This shift means that during significant risk-off events, both assets may experience simultaneous downturns. Conversely, there are times when Bitcoin\'s unique supply-demand dynamics or specific crypto-related news can cause its price and risk profile to diverge sharply from equities. FAULTLINE\'s advanced analytics track these correlation dynamics in real-time, helping investors identify periods of convergence and divergence and understand the underlying catalysts driving these shifts. This granular insight is vital for effective risk management and strategic asset allocation.`,
+          body: `The correlation between Bitcoin and the stock market is not static; it evolves with market conditions. Historically, Bitcoin often exhibited low correlation with traditional assets, appealing to investors seeking uncorrelated returns. However, in recent years, particularly during periods of heightened market stress, Bitcoin\'s correlation with tech stocks and broader equity markets has increased, suggesting a growing integration into the global financial system. This shift means that during significant risk-off events, both assets may experience simultaneous downturns. Conversely, there are times when Bitcoin\'s unique supply-demand dynamics or specific crypto-related news can cause its price and risk profile to diverge sharply from equities. FAULTLINE\'s advanced analytics track these correlation dynamics as new data is published, helping investors identify periods of convergence and divergence and understand the underlying catalysts driving these shifts. This granular insight is vital for effective risk management and strategic asset allocation.`,
         },
         {
           heading: 'Who FAULTLINE Is For: Navigating Complex Market Risks',

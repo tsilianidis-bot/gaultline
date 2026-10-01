@@ -1334,7 +1334,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       </div>
       <div style={{ ...MONO_SM, color: "#94A3B8", lineHeight: 1.6 }}>
         {isDataFail
-          ? "Live market data pipelines are temporarily offline. FAULTLINE requires real-time data to generate reliable intraday setups — no analysis will be shown until data is restored."
+          ? "Live market data pipelines are temporarily offline. FAULTLINE requires current market data to generate reliable intraday setups — no analysis will be shown until data is restored."
           : "The intelligence engine encountered an issue. This is typically resolved within seconds."}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -1437,7 +1437,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
     { rule: "Wait for data confirmation", detail: "Never enter a position without confirmed live price and volume data." },
     { rule: "Reduce position size by 50%", detail: "During data outages, cut all position sizes in half to manage unknown risk." },
     { rule: "Widen stops by 1.5x",         detail: "Spread widens during data gaps. Use 1.5x normal stop distance." },
-    { rule: "Avoid momentum setups",        detail: "Momentum trades require real-time tape reading. Skip until data restores." },
+    { rule: "Avoid momentum setups",        detail: "Momentum trades require live tape reading. Skip until data restores." },
     { rule: "Focus on mean-reversion",      detail: "If you must trade, mean-reversion setups are less data-dependent." },
     { rule: "Check pre-market levels",      detail: "Use last known support/resistance levels from prior session as reference." },
   ];
@@ -1476,7 +1476,7 @@ function InstitutionalFallback({ message, onRetry }: { message: string; onRetry:
             <WifiOff size={16} style={{ color: "#FFA500", flexShrink: 0 }} />
             <div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "15px", color: "#FFA500" }}>LIVE DAY TRADE DATA TEMPORARILY UNAVAILABLE</div>
-              <div style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px", marginTop: "2px" }}>FAULTLINE requires real-time market data to generate reliable intraday setups. Institutional guidance below remains valid.</div>
+              <div style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px", marginTop: "2px" }}>FAULTLINE requires current market data to generate reliable intraday setups. Institutional guidance below remains valid.</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>

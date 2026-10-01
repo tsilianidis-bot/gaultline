@@ -110,7 +110,7 @@ function getPersonalizationPriorities(
       "Market breadth and liquidity changes",
       "Short-term opportunity signals",
       "Faster invalidation triggers",
-      "Real-time pressure index changes",
+      "Regularly refreshed pressure index changes",
     ];
   }
   if (type === "financial_advisor" || type === "wealth_manager") {

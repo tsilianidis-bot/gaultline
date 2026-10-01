@@ -284,7 +284,7 @@ export default function DynamicStockPage() {
       {
         "@type": "Article",
         "headline": `${upper} Signal — Stock Risk Score & Analysis | FAULTLINE`,
-        "description": `Real-time ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, volatility risk, and key price levels.`,
+        "description": `Regularly refreshed ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, momentum score, volatility risk, and key price levels.`,
         "author": { "@type": "Organization", "name": "FAULTLINE" },
         "publisher": { "@type": "Organization", "name": "FAULTLINE", "url": "https://getfaultline.live" },
         "url": `https://getfaultline.live/stock/${symbol}`,
@@ -349,7 +349,7 @@ export default function DynamicStockPage() {
             {upper} Signal Analysis
           </h1>
           <p className="text-lg text-[#A8B8CC] leading-relaxed max-w-2xl">
-            Real-time {data.name} signal intelligence. FAULTLINE tracks {upper}'s macro regime fit, momentum score, and systemic risk alignment — updated daily.
+            Regularly refreshed {data.name} signal intelligence. FAULTLINE tracks {upper}'s macro regime fit, momentum score, and systemic risk alignment — updated daily.
           </p>
           {liveSignal && (
             <div className="flex items-center gap-4 mt-4">
@@ -485,7 +485,7 @@ export default function DynamicStockPage() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#A8B8CC]/60 mb-1">FAULTLINE DEMO</div>
-              <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} in real-time</p>
+              <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} as new data is published</p>
             </div>
             <a href={getLoginUrl()} onClick={() => handleCtaClick("demo")} className="text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 hover:bg-[#00D4FF]/10 px-5 py-2.5 rounded font-bold transition-colors whitespace-nowrap">
               VIEW DEMO →
@@ -534,7 +534,7 @@ export default function DynamicStockPage() {
           <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-3">FAULTLINE INTELLIGENCE</div>
           <h2 className="text-2xl font-bold text-white mb-3">Get the Live {upper} Signal</h2>
           <p className="text-[#A8B8CC] text-sm mb-6 max-w-md mx-auto">
-            Access real-time {upper} signals, macro regime classification, and systemic risk scores. Updated daily by FAULTLINE's intelligence engine.
+            Access regularly refreshed {upper} signals, macro regime classification, and systemic risk scores. Updated daily by FAULTLINE's intelligence engine.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <a href={getLoginUrl()} onClick={() => handleCtaClick("start_free")} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">

@@ -48,7 +48,7 @@ interface Tool {
 
 const ALL_TOOLS: Tool[] = [
   // Market Intelligence
-  { id: "now", label: "NOW — What Is Happening", description: "Real-time market regime and pressure synthesis", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "Market Intelligence", icon: Activity },
+  { id: "now", label: "NOW — What Is Happening", description: "Regularly refreshed market regime and pressure synthesis", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "Market Intelligence", icon: Activity },
   { id: "why", label: "WHY — Why It Is Happening", description: "Macro driver analysis and causal intelligence", path: CANONICAL_DESTINATION_BY_ID.why.path, category: "Market Intelligence", icon: Brain },
   { id: "outlook", label: "OUTLOOK — What Is Likely Next", description: "Probabilistic scenario and regime forecasting", path: CANONICAL_DESTINATION_BY_ID.outlook.path, category: "Market Intelligence", icon: Telescope },
   { id: "watch", label: "WATCH — What To Monitor", description: "Key indicators and threshold alerts", path: CANONICAL_DESTINATION_BY_ID.watch.path, category: "Market Intelligence", icon: Eye },
@@ -98,7 +98,7 @@ const ALL_TOOLS: Tool[] = [
   // ASHA Intelligence
   { id: "asha-center", label: "PLATO Intelligence Center", description: "Full conversational intelligence with PLATO", path: "/app/asha", category: "PLATO Intelligence", icon: Sparkles },
   { id: "fmos", label: "FMOS Health Dashboard", description: "FAULTLINE Market Operating System diagnostics", path: "/app/fmos", category: "PLATO Intelligence", icon: Activity, isNew: true },
-  { id: "situation-room", label: "Situation Room", description: "Real-time crisis monitoring and systemic risk alerts", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "PLATO Intelligence", icon: Shield },
+  { id: "situation-room", label: "Situation Room", description: "Regularly refreshed crisis monitoring and systemic risk alerts", path: CANONICAL_DESTINATION_BY_ID.now.path, category: "PLATO Intelligence", icon: Shield },
 ];
 
 const CATEGORIES = [

@@ -12,13 +12,13 @@ const MSFTSignal = () => {
         canonical: "/stock/msft",
       }}
       badge="STOCK"
-      headline="FAULTLINE's Real-Time Outlook for Microsoft (MSFT) Stock"
+      headline="FAULTLINE's Current Outlook for Microsoft (MSFT) Stock"
       subheadline="Understand the current signal, regime fit, macro sensitivity, AI/cloud exposure, key risk factors, and what conditions would change the outlook for Microsoft."
       ctaLabel="Explore MSFT on FAULTLINE"
       ctaHref="/app"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Real-time signal for Microsoft (MSFT)", desc: "Real-time signal for Microsoft (MSFT) stock" },
+        { icon: "◈", title: "Regularly refreshed signal for Microsoft (MSFT)", desc: "Regularly refreshed signal for Microsoft (MSFT) stock" },
         { icon: "◎", title: "Regime fit analysis", desc: "how MSFT performs in current market conditions" },
         { icon: "⬡", title: "Macro sensitivity", desc: "impact of economic trends on MSFT" },
         { icon: "◈", title: "AI & Cloud exposure", desc: "assessing growth drivers and risks" },
@@ -46,7 +46,7 @@ const MSFTSignal = () => {
       faqs={[
         {
           question: "What is FAULTLINE's current outlook for Microsoft (MSFT) stock?",
-          answer: "FAULTLINE provides a real-time, data-driven signal for MSFT, reflecting its performance in cloud computing (Azure) and AI advancements. Our signal is a comprehensive assessment of market forces and fundamental drivers, not a buy/sell recommendation.",
+          answer: "FAULTLINE provides a regularly refreshed, data-driven signal for MSFT, reflecting its performance in cloud computing (Azure) and AI advancements. Our signal is a comprehensive assessment of market forces and fundamental drivers, not a buy/sell recommendation.",
         },
         {
           question: "How does FAULTLINE analyze MSFT's macro sensitivity?",
@@ -62,7 +62,7 @@ const MSFTSignal = () => {
         },
         {
           question: "How often is FAULTLINE's MSFT outlook updated?",
-          answer: "Our outlooks are dynamic and updated in real-time as new data, market events, and company-specific developments emerge. This ensures our users have the most current intelligence available.",
+          answer: "Our outlooks are dynamic and updated regularly as new data, market events, and company-specific developments emerge. This ensures our users have the most current intelligence available.",
         },
       ]}
       internalLinks={[

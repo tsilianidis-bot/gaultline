@@ -1,5 +1,5 @@
 /* ============================================================
-   FAULTLINE — Home: Real-Time Market & Stock Intelligence Section
+   FAULTLINE — Home: Regularly Refreshed Market & Stock Intelligence Section
    Cinematic institutional preview of the Signals engine.
    ============================================================ */
 import { useState, useEffect } from 'react';
@@ -345,7 +345,7 @@ export default function HomeStockIntelSection() {
           letterSpacing: '0.03em', lineHeight: 1.1,
           margin: '0 0 8px', textAlign: 'center',
         }}>
-          Real-Time Market &amp; Stock Intelligence
+          Market &amp; Stock Intelligence
         </h2>
 
         {/* Subtitle */}

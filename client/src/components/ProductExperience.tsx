@@ -319,7 +319,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       accent: CYAN,
       bullets: [
         'Understand whether the macro backdrop supports or contradicts your setup',
-        'See real-time pressure readings before entering positions',
+        'See regularly refreshed pressure readings before entering positions',
         'Get AI-synthesized briefings that explain what is driving the market today',
         'Access day trade intelligence with current regime context and source-quality disclosures',
       ],
@@ -401,7 +401,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
       event: 'Tariff Shock & AI Bubble Pressure',
       drawdown: '−19%',
       duration: 'Ongoing',
-      signal: 'Live forward tracking (ongoing): AI sector concentration risk, macro regime deterioration, and trade policy uncertainty are currently monitored in real time across all five FAULTLINE engines. This is not a completed forecast.',
+      signal: 'Live forward tracking (ongoing): AI sector concentration risk, macro regime deterioration, and trade policy uncertainty are currently monitored as new data is published across all five FAULTLINE engines. This is not a completed forecast.',
       accent: CYAN,
       delay: 400,
     },
@@ -501,7 +501,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
             maxWidth: '640px', margin: '0 auto 16px',
           }}>
             The systemic pressure that precedes market crashes is measurable.<br />
-            FAULTLINE measures it — in real time.
+            FAULTLINE measures it — as new data is published.
           </p>
           <p style={{
             fontFamily: SANS, fontSize: 'clamp(13px, 1.8vw, 16px)',
@@ -657,7 +657,7 @@ export default function ProductExperience({ onEnter }: ProductExperienceProps) {
                   Retrospective testing shows how FAULTLINE's current framework would have interpreted systemic pressure conditions across major historical dislocations from 2000 to 2025.
                 </p>
                 <p style={{ fontFamily: MONO, fontSize: '11px', color: 'rgba(255,255,255,0.25)', lineHeight: 1.6, maxWidth: '640px', margin: '0 auto 32px', letterSpacing: '0.05em' }}>
-                  BACKTEST DISCLAIMER: The analysis below is retrospective. It applies FAULTLINE's current methodology to historical data. It does not represent live forward performance or a real-time prediction record. Past indicator behavior does not guarantee future results.
+                  BACKTEST DISCLAIMER: The analysis below is retrospective. It applies FAULTLINE's current methodology to historical data. It does not represent live forward performance or a regularly refreshed prediction record. Past indicator behavior does not guarantee future results.
                 </p>
                 {/* Trust strip */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(20px,4vw,48px)', flexWrap: 'wrap', marginBottom: '16px' }}>

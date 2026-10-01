@@ -15,7 +15,7 @@ export default function QQQSignal() {
       ctaHref="/app"
       accentColor="#00D4FF"
       features={[
-        { icon: "◈", title: "Real-time Signal for QQQ Performance", desc: "Real-time Signal for QQQ Performance" },
+        { icon: "◈", title: "Regularly refreshed Signal for QQQ Performance", desc: "Regularly refreshed Signal for QQQ Performance" },
         { icon: "◎", title: "AI Concentration Risk Analysis for", desc: "AI Concentration Risk Analysis for Tech Exposure" },
         { icon: "⬡", title: "Macro Sensitivity Insights for Market", desc: "Macro Sensitivity Insights for Market Shifts" },
         { icon: "◈", title: "Regime Fit Assessment for Optimal", desc: "Regime Fit Assessment for Optimal Strategy" },
@@ -25,11 +25,11 @@ export default function QQQSignal() {
       contentSections={[
         {
           heading: "FAULTLINE's Current Outlook for QQQ: Why It Matters Now",
-          body: "The Invesco QQQ Trust (Nasdaq-100 ETF) is a bellwether for growth and technology stocks, often reflecting broader market sentiment towards innovation and future earnings potential. FAULTLINE's current outlook for QQQ provides a real-time signal, synthesizing complex data points into an actionable assessment. This isn't just about price movements; it's about understanding the underlying forces driving the Nasdaq-100. Our analysis considers everything from liquidity flows to investor sentiment, offering a nuanced perspective beyond conventional metrics. For investors, knowing FAULTLINE's current signal for QQQ is crucial for positioning portfolios, identifying potential inflection points, and mitigating risks in a rapidly evolving market landscape. A clear, data-driven outlook helps cut through the noise and focus on what truly impacts performance.",
+          body: "The Invesco QQQ Trust (Nasdaq-100 ETF) is a bellwether for growth and technology stocks, often reflecting broader market sentiment towards innovation and future earnings potential. FAULTLINE's current outlook for QQQ provides a regularly refreshed signal, synthesizing complex data points into an actionable assessment. This isn't just about price movements; it's about understanding the underlying forces driving the Nasdaq-100. Our analysis considers everything from liquidity flows to investor sentiment, offering a nuanced perspective beyond conventional metrics. For investors, knowing FAULTLINE's current signal for QQQ is crucial for positioning portfolios, identifying potential inflection points, and mitigating risks in a rapidly evolving market landscape. A clear, data-driven outlook helps cut through the noise and focus on what truly impacts performance.",
         },
         {
           heading: "Historical Context and What's Changed for QQQ",
-          body: "QQQ has experienced significant volatility and growth cycles throughout its history, driven by technological advancements and shifting economic paradigms. Understanding its historical performance in various market regimes provides critical context for the present. FAULTLINE continuously monitors how QQQ's behavior aligns with past patterns and, more importantly, identifies what has fundamentally changed. Factors such as the unprecedented rise of AI, evolving monetary policy, and geopolitical shifts can alter traditional correlations and risk profiles. Our 'what changed' context highlights these divergences, ensuring that our real-time outlook is not just a reflection of the past, but an adaptation to the current, unique market environment. This dynamic assessment is vital for informed decision-making.",
+          body: "QQQ has experienced significant volatility and growth cycles throughout its history, driven by technological advancements and shifting economic paradigms. Understanding its historical performance in various market regimes provides critical context for the present. FAULTLINE continuously monitors how QQQ's behavior aligns with past patterns and, more importantly, identifies what has fundamentally changed. Factors such as the unprecedented rise of AI, evolving monetary policy, and geopolitical shifts can alter traditional correlations and risk profiles. Our 'what changed' context highlights these divergences, ensuring that our regularly refreshed outlook is not just a reflection of the past, but an adaptation to the current, unique market environment. This dynamic assessment is vital for informed decision-making.",
         },
         {
           heading: "Key Risk Factors and Conditions for a Shift in QQQ's Outlook",
@@ -37,7 +37,7 @@ export default function QQQSignal() {
         },
         {
           heading: "How FAULTLINE Measures QQQ's Outlook and Important Disclaimers",
-          body: "FAULTLINE employs a proprietary blend of quantitative models, machine learning algorithms, and macro-economic indicators to generate its real-time QQQ outlook. Our methodology assesses regime fit, AI concentration risk, and macro sensitivity to provide a comprehensive signal. This rigorous approach aims to offer deep market intelligence and educational insights into the forces shaping QQQ's performance. It is important to note that FAULTLINE provides market intelligence and educational content only. Our analysis is not, and should not be construed as, personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Investing in ETFs like QQQ involves risks, including the potential loss of principal. Users should conduct their own due diligence and consult with a qualified financial advisor before making any investment decisions.",
+          body: "FAULTLINE employs a proprietary blend of quantitative models, machine learning algorithms, and macro-economic indicators to generate its regularly refreshed QQQ outlook. Our methodology assesses regime fit, AI concentration risk, and macro sensitivity to provide a comprehensive signal. This rigorous approach aims to offer deep market intelligence and educational insights into the forces shaping QQQ's performance. It is important to note that FAULTLINE provides market intelligence and educational content only. Our analysis is not, and should not be construed as, personalized financial advice, investment recommendations, or an offer to buy or sell any securities. Investing in ETFs like QQQ involves risks, including the potential loss of principal. Users should conduct their own due diligence and consult with a qualified financial advisor before making any investment decisions.",
         },
       ]}
       faqs={[
@@ -55,11 +55,11 @@ export default function QQQSignal() {
         },
         {
           question: "Can FAULTLINE predict future QQQ price movements?",
-          answer: "FAULTLINE provides a real-time outlook and signal based on current market conditions and proprietary models. While it offers insights into potential future trends and risks, it does not provide explicit price predictions or guarantees of future performance. Our focus is on intelligence and risk assessment.",
+          answer: "FAULTLINE provides a regularly refreshed outlook and signal based on current market conditions and proprietary models. While it offers insights into potential future trends and risks, it does not provide explicit price predictions or guarantees of future performance. Our focus is on intelligence and risk assessment.",
         },
         {
           question: "How often is FAULTLINE's QQQ outlook updated?",
-          answer: "FAULTLINE's QQQ outlook is updated in real-time, reflecting the continuous flow of market data and changes in underlying indicators. This ensures that our signal is always current and responsive to evolving market dynamics.",
+          answer: "FAULTLINE's QQQ outlook is updated regularly, reflecting the continuous flow of market data and changes in underlying indicators. This ensures that our signal is always current and responsive to evolving market dynamics.",
         },
       ]}
       internalLinks={[

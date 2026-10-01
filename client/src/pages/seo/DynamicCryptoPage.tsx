@@ -45,7 +45,7 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     relatedCrypto: ["eth", "sol", "tao"],
     relatedStocks: ["nvda", "pltr"],
     faqs: [
-      { q: "Is Bitcoin in a bull market in 2025?", a: "FAULTLINE's Bitcoin Risk Dashboard tracks BTC's macro regime in real time. The current regime classification — Bull, Bear, or Crash — is updated daily based on on-chain signals, liquidity conditions, and systemic pressure." },
+      { q: "Is Bitcoin in a bull market in 2025?", a: "FAULTLINE's Bitcoin Risk Dashboard tracks BTC's macro regime as new data is published. The current regime classification — Bull, Bear, or Crash — is updated daily based on on-chain signals, liquidity conditions, and systemic pressure." },
       { q: "What drives Bitcoin's price?", a: "Bitcoin is driven by macro liquidity conditions, institutional demand (ETF flows), halving supply dynamics, regulatory developments, and correlation with broader risk assets during stress events." },
       { q: "How does Bitcoin perform in a market crash?", a: "Bitcoin initially correlates with risk assets during systemic stress events (as seen in COVID crash, 2022 bear market). However, Bitcoin often recovers faster than traditional assets once liquidity conditions stabilize." },
       { q: "What is Bitcoin's risk score?", a: "FAULTLINE's Bitcoin Risk Dashboard generates a daily risk score incorporating macro regime, on-chain signals, liquidity conditions, and systemic pressure. Access the live score at FAULTLINE." },
@@ -157,7 +157,7 @@ export default function DynamicCryptoPage() {
       {
         "@type": "Article",
         "headline": `${upper} Signal — Crypto Risk Score & Analysis | FAULTLINE`,
-        "description": `Real-time ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, liquidity conditions, momentum score, and key price levels.`,
+        "description": `Regularly refreshed ${upper} signal analysis. FAULTLINE tracks ${upper} macro regime fit, liquidity conditions, momentum score, and key price levels.`,
         "author": { "@type": "Organization", "name": "FAULTLINE" },
         "publisher": { "@type": "Organization", "name": "FAULTLINE", "url": "https://getfaultline.live" },
         "url": `https://getfaultline.live/crypto/${symbol}`,
@@ -215,7 +215,7 @@ export default function DynamicCryptoPage() {
             {upper} Signal Analysis
           </h1>
           <p className="text-lg text-[#A8B8CC] leading-relaxed max-w-2xl">
-            Real-time {data.name} ({upper}) signal intelligence. FAULTLINE tracks {upper}'s macro regime fit, liquidity conditions, and systemic risk alignment — updated daily.
+            Regularly refreshed {data.name} ({upper}) signal intelligence. FAULTLINE tracks {upper}'s macro regime fit, liquidity conditions, and systemic risk alignment — updated daily.
           </p>
           {liveSignal && (
             <div className="flex items-center gap-4 mt-4">
@@ -335,7 +335,7 @@ export default function DynamicCryptoPage() {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
               <div className="text-[10px] font-mono tracking-[0.3em] text-[#A8B8CC]/60 mb-1">FAULTLINE DEMO</div>
-              <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} in real-time</p>
+              <p className="text-white font-semibold text-sm">See how FAULTLINE tracks {upper} as new data is published</p>
             </div>
             <a href={getLoginUrl()} onClick={() => handleCtaClick("demo")} className="text-[11px] font-mono tracking-widest text-[#00D4FF] border border-[#00D4FF]/30 hover:bg-[#00D4FF]/10 px-5 py-2.5 rounded font-bold transition-colors whitespace-nowrap">
               VIEW DEMO →
@@ -387,7 +387,7 @@ export default function DynamicCryptoPage() {
           <div className="text-[10px] font-mono tracking-[0.3em] text-[#00D4FF]/60 mb-3">FAULTLINE INTELLIGENCE</div>
           <h2 className="text-2xl font-bold text-white mb-3">Get the Live {upper} Signal</h2>
           <p className="text-[#A8B8CC] text-sm mb-6 max-w-md mx-auto">
-            Access real-time {upper} signals, macro regime classification, and systemic risk scores. Updated daily by FAULTLINE's intelligence engine.
+            Access regularly refreshed {upper} signals, macro regime classification, and systemic risk scores. Updated daily by FAULTLINE's intelligence engine.
           </p>
           <a href={getLoginUrl()} className="inline-flex items-center gap-2 text-[12px] font-mono tracking-widest text-[#050608] bg-[#00D4FF] hover:bg-[#00D4FF]/90 px-8 py-4 rounded font-bold transition-colors">
             START FREE ACCESS →

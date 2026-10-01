@@ -10,7 +10,7 @@ export default function AIStocksDashboard() {
       }}
       badge="AI STOCKS INTELLIGENCE"
       headline={"AI Stocks Dashboard\nAll AI Stocks. One Signal View."}
-      subheadline="FAULTLINE's AI Stocks Dashboard tracks every major AI-exposed equity in real time — from AI infrastructure (NVDA, AMD) to AI software (PLTR, MSFT) to AI-powered platforms (META, GOOGL, AMZN). One dashboard. All signals. Macro-aligned."
+      subheadline="FAULTLINE's AI Stocks Dashboard tracks every major AI-exposed equity as new data is published — from AI infrastructure (NVDA, AMD) to AI software (PLTR, MSFT) to AI-powered platforms (META, GOOGL, AMZN). One dashboard. All signals. Macro-aligned."
       ctaLabel="VIEW AI STOCK SIGNALS"
       ctaHref="/app/signals"
       accentColor="#00D4FF"
@@ -41,7 +41,7 @@ AI-Adjacent (Moderate AI Exposure): Companies that benefit from AI adoption with
 
 When concentrated positions unwind, the cascade effect on index-level returns is severe. The 2000 dot-com bubble provides the historical precedent: the top 10 S&P 500 stocks in March 2000 represented approximately 25% of the index. When technology stocks began to fall, the concentration amplified the index-level decline.
 
-FAULTLINE's AI Bubble Monitor tracks this concentration risk in real time, measuring the degree to which the current market concentration resembles historical bubble periods. The AI Stocks Dashboard provides the stock-level view of this systemic risk — showing which individual stocks are most exposed and how their signals are evolving.
+FAULTLINE's AI Bubble Monitor tracks this concentration risk as new data is published, measuring the degree to which the current market concentration resembles historical bubble periods. The AI Stocks Dashboard provides the stock-level view of this systemic risk — showing which individual stocks are most exposed and how their signals are evolving.
 
 The key insight is that AI stock analysis cannot be done in isolation from the systemic concentration risk. A stock that looks attractive on individual metrics may still be a poor risk-adjusted investment if it is part of a highly concentrated sector that is vulnerable to a systemic unwind.`,
         },
@@ -61,11 +61,11 @@ Sector Rotation Signals: Monitor capital flows between AI infrastructure, AI sof
       faqs={[
         {
           question: "What are the best AI stocks to buy in 2026?",
-          answer: "FAULTLINE does not provide investment advice or stock recommendations. The AI Stocks Dashboard provides real-time macro-aligned signal classifications (BUY, SELL, HOLD, WATCH) for all tracked AI stocks based on macro regime alignment, momentum, and technical structure. Access the live signals on the FAULTLINE Signals tab.",
+          answer: "FAULTLINE does not provide investment advice or stock recommendations. The AI Stocks Dashboard provides regularly refreshed macro-aligned signal classifications (BUY, SELL, HOLD, WATCH) for all tracked AI stocks based on macro regime alignment, momentum, and technical structure. Access the live signals on the FAULTLINE Signals tab.",
         },
         {
           question: "Is the AI stock bubble going to burst?",
-          answer: "FAULTLINE's AI Bubble Monitor tracks the degree to which current AI stock valuations and concentration resemble historical bubble periods. The monitor provides a real-time risk assessment, not a prediction. Bubbles are only definitively identified in retrospect — the question is whether current conditions are creating structural vulnerability to a rapid valuation reset.",
+          answer: "FAULTLINE's AI Bubble Monitor tracks the degree to which current AI stock valuations and concentration resemble historical bubble periods. The monitor provides a regularly refreshed risk assessment, not a prediction. Bubbles are only definitively identified in retrospect — the question is whether current conditions are creating structural vulnerability to a rapid valuation reset.",
         },
         {
           question: "Which AI stocks are most at risk in a market crash?",

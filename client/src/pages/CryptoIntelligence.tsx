@@ -513,7 +513,7 @@ function CryptoIntelligenceInner() {
           <p className="text-sm text-slate-400 max-w-2xl mb-6">
             Track digital asset risk, liquidity, momentum, and macro correlation before the crowd reacts.
             FAULTLINE connects crypto signals to Federal Reserve policy, interest rates, dollar strength,
-            and liquidity cycles — in real time.
+            and liquidity cycles — as new data is published.
           </p>
 
           {/* Tagline strip */}

@@ -8,7 +8,7 @@ interface SEOOptions {
 
 const BASE_TITLE = "FAULTLINE";
 const BASE_DESCRIPTION =
-  "Real-time macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.";
+  "Regularly refreshed macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.";
 const BASE_CANONICAL = "https://getfaultline.live";
 
 /**
@@ -63,7 +63,7 @@ export const PAGE_SEO = {
   home: {
     title: "FAULTLINE — Structural Market Intelligence",
     description:
-      "Real-time macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.",
+      "Regularly refreshed macroeconomic risk intelligence. Monitor systemic market pressure, stock & crypto signals, and AI-powered macro analytics before markets break.",
     canonical: "/",
   },
   // 52 chars ✓
@@ -112,7 +112,7 @@ export const PAGE_SEO = {
   alerts: {
     title: "Market Alerts — Risk & Regime Change Signals",
     description:
-      "Real-time market risk alerts, regime change notifications, and systemic pressure triggers. FAULTLINE alert system — be notified when macro conditions shift.",
+      "Regularly refreshed market risk alerts, regime change notifications, and systemic pressure triggers. FAULTLINE alert system — be notified when macro conditions shift.",
     canonical: "/app/alerts",
   },
   // 53 chars ✓
@@ -126,7 +126,7 @@ export const PAGE_SEO = {
   watchlist: {
     title: "Watchlist — Asset Risk & Signal Monitoring",
     description:
-      "Track your personalized asset watchlist with FAULTLINE risk scores, signal labels, and macro regime alignment. Real-time monitoring for the assets that matter.",
+      "Track your personalized asset watchlist with FAULTLINE risk scores, signal labels, and macro regime alignment. Regularly refreshed monitoring for the assets that matter.",
     canonical: "/app/watchlist",
   },
   // 48 chars ✓
@@ -275,7 +275,7 @@ export const PAGE_SEO = {
   pressureIndex: {
     title: "FAULTLINE Pressure Index™ — Live Market Stress",
     description:
-      "Track the FAULTLINE Pressure Index™ live. Real-time systemic market stress score aggregating volatility, credit spreads, liquidity, and breadth deterioration.",
+      "Track the FAULTLINE Pressure Index™: a regularly refreshed systemic market stress score aggregating volatility, credit spreads, liquidity, and breadth deterioration.",
     canonical: "/pressure-index",
   },
   // ── Public SEO landing pages ──────────────────────────────────
@@ -300,7 +300,7 @@ export const PAGE_SEO = {
   publicCryptoMarketRisk: {
     title: "Crypto Market Risk Dashboard — Digital Asset Risk",
     description:
-      "Live crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Monitor crypto systemic risk in real time.",
+      "Live crypto market risk dashboard: BTC dominance, altcoin risk, systemic crypto pressure, contagion risk, and digital asset macro alignment. Monitor crypto systemic risk as new data is published.",
     canonical: "/crypto-market-risk-dashboard",
   },
   publicSituationRoom: {
