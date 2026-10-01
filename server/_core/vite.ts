@@ -52,6 +52,10 @@ export async function setupVite(app: Express, server: Server) {
   });
 }
 
+/** Paths that look like static files; never served the SPA shell. */
+export const STATIC_ASSET_PATH =
+  /\.(?:png|jpe?g|gif|webp|avif|svg|ico|bmp|woff2?|ttf|otf|eot|css|js|mjs|map)$/i;
+
 export function serveStatic(app: Express) {
   const distPath =
     process.env.NODE_ENV === "development"
@@ -64,6 +68,15 @@ export function serveStatic(app: Express) {
   }
 
   app.use(express.static(distPath));
+
+  // A request for a static asset (image, icon, font, script, stylesheet)
+  // that express.static did not find must not fall through to the SPA
+  // shell: returning index.html as text/html under an image URL breaks
+  // link-preview cards and favicons. Answer with a plain 404 instead.
+  app.use((req, res, next) => {
+    if (!STATIC_ASSET_PATH.test(req.path)) return next();
+    res.status(404).type("text/plain").send("Not Found");
+  });
 
   // fall through to index.html if the file doesn't exist
   // Inject per-page metadata server-side so every public SEO page returns
