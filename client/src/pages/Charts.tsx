@@ -20,7 +20,6 @@ import {
   macroChartCards,
   MacroChartCard,
   historicalOverlayScenarios,
-  currentTrajectoryData,
   correlationNodes,
   correlationEdges,
 } from "@/lib/chartData";
@@ -29,7 +28,7 @@ import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Info } from "l
 import { useEngine } from "@/contexts/EngineContext";
 import { trpc } from "@/lib/trpc";
 import { useAppHeaderFred } from "@/hooks/useAppHeaderFred";
-import { buildChartsInstruments } from "@/lib/chartsInstrumentReadings";
+import { buildChartsInstruments, macroCardSourceText } from "@/lib/chartsInstrumentReadings";
 import { usePressureSnapshot } from "@/hooks/usePressureSnapshot";
 import { PRESSURE_BANDS, PRESSURE_UNAVAILABLE_COLOR } from "@/lib/pressureSnapshot";
 import { formatEt } from "@shared/credibilityLabels";
@@ -301,7 +300,7 @@ function MacroCard({ card, index }: { card: MacroChartCard; index: number }) {
             background: 'rgba(255,255,255,0.02)', borderRadius: '3px', padding: '5px 8px',
             borderLeft: `2px solid ${color}30`,
           }}>
-            API: {card.apiSource}
+            {macroCardSourceText(card.apiSource)}
           </div>
         </div>
       )}
@@ -309,82 +308,21 @@ function MacroCard({ card, index }: { card: MacroChartCard; index: number }) {
   );
 }
 
-// ── 3. Historical Overlay Mode ────────────────────────────────
+// ── 3. Historical Crisis Reference ────────────────────────────
+// The former overlay plotted seeded crisis "paths" and a seeded "current
+// trajectory" on recent calendar dates. No indexed historical series is
+// connected, so nothing is plotted: the episodes are listed as reference only.
 function HistoricalOverlay() {
-  const [active, setActive] = useState<string[]>(['dotcom', 'gfc']);
-
-  const toggle = (id: string) => {
-    setActive(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
-  // Build merged dataset with all active series
-  const mergedData = useMemo(() => {
-    const len = currentTrajectoryData.length;
-    return currentTrajectoryData.map((pt, i) => {
-      const row: Record<string, number | string> = { date: pt.date, current: pt.value };
-      historicalOverlayScenarios.forEach(s => {
-        if (active.includes(s.id)) row[s.id] = s.data[i]?.value ?? 100;
-      });
-      return row;
-    });
-  }, [active]);
-
   return (
     <SectionCard delay={0} accentColor="rgba(192,132,252,0.2)">
       <SectionHeader
-        eyebrow="Pattern Recognition · Indexed to 100"
-        title="Historical Overlay Mode"
-        subtitle="Current trajectory vs historical crisis paths"
+        eyebrow="Historical Reference · Not a data overlay"
+        title="Historical Crisis Reference"
+        subtitle="Past stress episodes for context. No current trajectory or crisis path is plotted: no indexed historical series is connected."
         color="#C084FC"
       />
-
-      {/* Scenario toggles */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
+      <div data-historical-reference style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
         {historicalOverlayScenarios.map(s => (
-          <button
-            key={s.id}
-            onClick={() => toggle(s.id)}
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.06em',
-              padding: '4px 10px', borderRadius: '2px',
-              border: `1px solid ${active.includes(s.id) ? s.color + '60' : 'rgba(255,255,255,0.07)'}`,
-              background: active.includes(s.id) ? `${s.color}18` : 'transparent',
-              color: active.includes(s.id) ? s.color : '#6B7280',
-              cursor: 'pointer', transition: 'all 0.15s ease',
-            }}
-          >
-            {s.shortLabel}
-          </button>
-        ))}
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563', display: 'flex', alignItems: 'center', gap: '3px', marginLeft: 'auto' }}>
-          <div style={{ width: '8px', height: '2px', background: '#00D4FF', borderRadius: '1px' }} />
-          Current
-        </div>
-      </div>
-
-      {/* Overlay chart */}
-      <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={mergedData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-          <XAxis dataKey="date" tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, fill: '#4B5563' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-          <YAxis domain={[25, 135]} tick={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 7, fill: '#4B5563' }} tickLine={false} axisLine={false} width={32} />
-          <Tooltip contentStyle={TT} labelStyle={{ color: '#6B7280' }} formatter={(v: number, name: string) => {
-            const s = historicalOverlayScenarios.find(x => x.id === name);
-            return [`${v.toFixed(1)}`, s ? s.shortLabel : 'Current'];
-          }} />
-          <ReferenceLine y={100} stroke="rgba(255,255,255,0.1)" strokeDasharray="2 4" />
-          {/* Current trajectory */}
-          <Line type="monotone" dataKey="current" stroke="#00D4FF" strokeWidth={2.5} dot={false} name="current" style={{ filter: 'drop-shadow(0 0 6px rgba(0,212,255,0.6))' }} />
-          {/* Historical lines */}
-          {historicalOverlayScenarios.map(s => active.includes(s.id) && (
-            <Line key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={1.5} dot={false} name={s.id} strokeDasharray="5 3" style={{ filter: `drop-shadow(0 0 4px ${s.color}50)` }} />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
-
-      {/* Scenario detail cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '12px' }}>
-        {historicalOverlayScenarios.filter(s => active.includes(s.id)).map(s => (
           <div key={s.id} style={{
             background: `${s.color}08`, border: `1px solid ${s.color}20`,
             borderLeft: `3px solid ${s.color}`, borderRadius: '4px', padding: '10px',
@@ -400,30 +338,17 @@ function HistoricalOverlay() {
               </div>
               <div style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: s.color, lineHeight: 1 }}>
-                    {s.peakDrawdown}
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Peak DD
-                  </div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: s.color, lineHeight: 1 }}>{s.peakDrawdown}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Peak DD (approx.)</div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#94A3B8', lineHeight: 1 }}>
-                    {s.duration}
-                  </div>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    Duration
-                  </div>
+                  <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: '#94A3B8', lineHeight: 1 }}>{s.duration}</div>
+                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '7px', color: '#4B5563', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Duration</div>
                 </div>
               </div>
             </div>
           </div>
         ))}
-        {active.length === 0 && (
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#4B5563', textAlign: 'center', padding: '12px' }}>
-            Select a scenario above to overlay
-          </div>
-        )}
       </div>
     </SectionCard>
   );
@@ -460,9 +385,9 @@ function CorrelationRiskMap() {
   return (
     <SectionCard delay={0} accentColor="rgba(0,212,255,0.15)">
       <SectionHeader
-        eyebrow="Cross-Asset Relationships"
+        eyebrow="Cross-Asset Relationships · Illustrative"
         title="Correlation / Risk Map"
-        subtitle="Node size = stress level · Edge color = correlation direction · Dashed = breakdown"
+        subtitle="Illustrative layout of how stress can travel between asset classes. Node sizes, edges and links are static, not computed from market data."
       />
 
       <div ref={containerRef} style={{ width: '100%' }}>
@@ -506,18 +431,7 @@ function CorrelationRiskMap() {
                   strokeDasharray={edge.stressed ? '5 3' : undefined}
                   opacity={0.7}
                 />
-                {/* Correlation label at midpoint */}
-                <text
-                  x={(fp.cx + tp.cx) / 2}
-                  y={(fp.cy + tp.cy) / 2 - 3}
-                  fill={edgeColor}
-                  fontSize="7"
-                  fontFamily="'IBM Plex Mono', monospace"
-                  textAnchor="middle"
-                  opacity={0.8}
-                >
-                  {edge.correlation > 0 ? '+' : ''}{edge.correlation.toFixed(2)}
-                </text>
+                {/* No correlation figure: the edge values are static, not measured. */}
               </g>
             );
           })}
@@ -525,7 +439,7 @@ function CorrelationRiskMap() {
           {/* Nodes */}
           {correlationNodes.map(node => {
             const pos = nodePos(node.x, node.y);
-            const r = 10 + (node.value / 100) * 14;
+            const r = 16; // uniform: node values are static, so size encodes nothing
             return (
               <g key={node.id}>
                 {/* Outer glow ring */}
@@ -547,18 +461,7 @@ function CorrelationRiskMap() {
                   cx={pos.cx} cy={pos.cy} r={r * 0.55}
                   fill={`${node.color}35`}
                 />
-                {/* Value label */}
-                <text
-                  x={pos.cx} y={pos.cy + 1}
-                  fill={node.color}
-                  fontSize="9"
-                  fontFamily="'Rajdhani', sans-serif"
-                  fontWeight="700"
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                >
-                  {node.value}
-                </text>
+                {/* No stress figure: node values are static, not current readings. */}
                 {/* Name label */}
                 <text
                   x={pos.cx}
@@ -579,7 +482,7 @@ function CorrelationRiskMap() {
       {/* Legend */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
         {[
-          { color: 'rgba(255,45,85,0.7)', label: 'Stress contagion (dashed)', dashed: true },
+          { color: 'rgba(255,45,85,0.7)', label: 'Stress channel (dashed, illustrative)', dashed: true },
           { color: 'rgba(255,149,0,0.6)', label: 'Positive correlation', dashed: false },
           { color: 'rgba(0,212,255,0.6)', label: 'Negative correlation', dashed: false },
         ].map(l => (
@@ -592,7 +495,7 @@ function CorrelationRiskMap() {
         ))}
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
           <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'rgba(255,149,0,0.3)', border: '1px solid rgba(255,149,0,0.6)' }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>Node size = stress level</span>
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#4B5563' }}>Illustrative · static layout, not market data</span>
         </div>
       </div>
 
@@ -605,7 +508,7 @@ function CorrelationRiskMap() {
         <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
           <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF2D55', boxShadow: '0 0 6px rgba(255,45,85,0.8)', flexShrink: 0, marginTop: '3px', animation: 'blink-alert 5s ease-in-out infinite' }} />
           <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.5 }}>
-            <strong style={{ color: '#FF2D55' }}>Stress contagion detected</strong> across Credit ↔ Liquidity ↔ Bonds ↔ Equities. Correlation breakdown between Equities and Bonds (traditional hedge) signals late-cycle regime shift. Cross-asset diversification effectiveness reduced.
+            <strong style={{ color: '#94A3B8' }}>Illustrative.</strong> The dashed links show the channels (Credit ↔ Liquidity ↔ Bonds ↔ Equities) the Pressure Index watches; they are not a detected or measured contagion reading.
           </p>
         </div>
       </div>
@@ -664,7 +567,7 @@ export default function Charts() {
     <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
       <PageHeader
         title="Charts"
-        subtitle="Systemic pressure timeline and macro chart suite — FRED live data where available, cached or fallback otherwise."
+        subtitle="Canonical Pressure Index and market readings with source and as-of — Unavailable where no feed is connected."
         badge={integrityLabel === 'LIVE' ? 'FRED LIVE' : `FRED ${integrityLabel}`}
         badgeColor={integrityLabel === 'LIVE' ? 'green' : integrityLabel === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={<PreflightTrigger currentPage="charts" actionKey="viewed_charts" />}
@@ -729,8 +632,8 @@ export default function Charts() {
       }}>
         <Info size={12} style={{ color: '#4B5563', flexShrink: 0, marginTop: '1px' }} />
         <p style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#4B5563', lineHeight: 1.5, letterSpacing: '0.04em' }}>
-          <strong style={{ color: '#FF9500' }}>MODEL DATA — Not financial advice.</strong>{' '}
-          Chart lines are calibrated baseline models, not live market feeds. The Systemic Pressure score and regime labels update from live FRED data when available. Full live integration (FRED, Polygon.io, Alpha Vantage) is in development. Risk scores are composite models, not guarantees of future outcomes. Consult a qualified financial professional before making investment decisions.
+          <strong style={{ color: '#94A3B8' }}>Not financial advice.</strong>{' '}
+          Systemic Pressure is the canonical Pressure Index with its as-of time. The Market Intelligence Ribbon shows readings from the app's market snapshot and FRED, each with its source and as-of. Macro cards without a connected feed show Unavailable. The historical episodes and the correlation map are reference and illustrative content, not data. Risk scores are composite models, not guarantees of future outcomes.
         </p>
       </div>
       </div>{/* /padding div */}

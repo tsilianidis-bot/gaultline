@@ -113,3 +113,13 @@ export function buildChartsInstruments(input: {
   }
   return ORDER.map(id => views.get(id)!);
 }
+
+/**
+ * Source line for a Charts macro card: "API: <source>" only when a source is
+ * wired; with no feed the note stands alone (never "API: No live data feed…").
+ */
+export function macroCardSourceText(apiSource: string | null | undefined): string {
+  const text = (apiSource ?? "").trim();
+  if (!text || /^no live data feed/i.test(text)) return text || "No live data feed is connected to this card.";
+  return `API: ${text}`;
+}
