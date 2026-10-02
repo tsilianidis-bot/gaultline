@@ -539,7 +539,10 @@ describe("Signals footer = header feed state", () => {
     expect(s).not.toMatch(/>LIVE DATA<\/span>/);
     expect(s).not.toMatch(/\/42 tickers/);
     expect(s).not.toMatch(/quotesData\?\.source === 'live' \? \(/);
-    expect(s).toMatch(/signalsFooter\(signalsFeedLabel\(\{ source: quotesData\?\.source \?\? null, quotes: catalogQuoteList, tickerCount: SIGNAL_STOCKS\.length \}\)\)/);
+    // One feedLabel (same catalog-scoped inputs) drives footer and subtitle.
+    expect(s).toMatch(/signalsFeedLabel\(\{ source: quotesData\?\.source \?\? null, quotes: catalogQuoteList, tickerCount: SIGNAL_STOCKS\.length \}\)/);
+    expect(s).toMatch(/signalsFooter\(feedLabel\)/);
+    expect(s).toMatch(/signalsSubtitle\(feedLabel/);
     expect(s).toMatch(/quotes=\{catalogQuoteList\}/);
     expect(s).toMatch(/tickerCount=\{SIGNAL_STOCKS\.length\}/);
   });

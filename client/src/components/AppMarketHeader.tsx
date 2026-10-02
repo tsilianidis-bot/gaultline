@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { hideBlankTickerDuplicates } from "@shared/customerIntegrityLabels";
+import { headerRegimeChip } from "@shared/credibilityLabels";
 
 export type MarketTickerDirection = "up" | "down" | "flat";
 
@@ -16,7 +17,9 @@ export interface MarketTickerItem {
 
 interface RegimeSummary {
   regime?: string | null;
+  /** Engine heuristic score, not a probability. Never rendered (see headerRegimeChip). */
   confidence?: number | null;
+  fetchedAt?: number | null;
 }
 
 export interface MarketIntelligenceHeaderData {
@@ -47,6 +50,8 @@ function directionGlyph(direction: MarketTickerDirection | null) {
 
 export default function AppMarketHeader({ items, intelligence, isMobile }: AppMarketHeaderProps) {
   const visibleItems = useMemo(() => hideBlankTickerDuplicates(items), [items]);
+  const eqChip = headerRegimeChip("EQ", intelligence?.stockRegime);
+  const btcChip = headerRegimeChip("BTC", intelligence?.cryptoRegime);
   return (
     <>
       <div style={{
@@ -87,15 +92,15 @@ export default function AppMarketHeader({ items, intelligence, isMobile }: AppMa
           overflowX: "auto",
         }}>
           <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151", letterSpacing: "0.12em", textTransform: "uppercase", flexShrink: 0 }}>REGIME</span>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "1px 7px", borderRadius: "3px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", flexShrink: 0 }}>
+          <div data-header-regime="EQ" title={eqChip.title} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "1px 7px", borderRadius: "3px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", flexShrink: 0 }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#8A9AB0", letterSpacing: "0.08em" }}>EQ</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#93C5FD", letterSpacing: "0.06em" }}>{intelligence.stockRegime?.regime ?? "—"}</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151" }}>{intelligence.stockRegime?.confidence ? `${intelligence.stockRegime.confidence}%` : ""}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: eqChip.regime === "UNAVAILABLE" ? "#64748B" : "#93C5FD", letterSpacing: "0.06em" }}>{eqChip.regime}</span>
+            {eqChip.tag && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#64748B", letterSpacing: "0.12em" }}>{eqChip.tag}</span>}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "1px 7px", borderRadius: "3px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", flexShrink: 0 }}>
+          <div data-header-regime="BTC" title={btcChip.title} style={{ display: "flex", alignItems: "center", gap: "4px", padding: "1px 7px", borderRadius: "3px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", flexShrink: 0 }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#8A9AB0", letterSpacing: "0.08em" }}>BTC</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FCD34D", letterSpacing: "0.06em" }}>{intelligence.cryptoRegime?.regime ?? "—"}</span>
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#374151" }}>{intelligence.cryptoRegime?.confidence ? `${intelligence.cryptoRegime.confidence}%` : ""}</span>
+            <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: btcChip.regime === "UNAVAILABLE" ? "#64748B" : "#FCD34D", letterSpacing: "0.06em" }}>{btcChip.regime}</span>
+            {btcChip.tag && <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "#64748B", letterSpacing: "0.12em" }}>{btcChip.tag}</span>}
           </div>
           {intelligence.alignmentStatus && (
             <div style={{

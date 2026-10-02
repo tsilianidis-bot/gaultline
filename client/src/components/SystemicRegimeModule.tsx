@@ -1,4 +1,5 @@
 import type { FactorArrow, SignalConvergenceSnapshot, SystemicRegimeReading } from "@shared/systemicRegime";
+import { regimeModelScoreDisplay } from "@shared/credibilityLabels";
 
 function regimeColor(regime: string | null | undefined) {
   if (!regime) return "#64748b";
@@ -27,6 +28,8 @@ export default function SystemicRegimeModule({
 }) {
   const unavailable = !reading || reading.freshnessStatus === "UNAVAILABLE" || !reading.currentRegime;
   const accent = unavailable ? "#64748b" : regimeColor(reading.currentRegime);
+  // HMM state posterior: shown as an uncalibrated model score (not "confidence").
+  const score = regimeModelScoreDisplay(reading, unavailable);
   return (
     <div className="mt-5 rounded border border-white/10 bg-white/[0.03] p-4" data-testid="systemic-regime-module">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -48,9 +51,10 @@ export default function SystemicRegimeModule({
             <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Crisis p</p>
             <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : pct(reading.crisisProbability)}</p>
           </div>
-          <div>
-            <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Confidence</p>
-            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{unavailable ? "—" : pct(reading.regimeConfidence)}</p>
+          <div data-testid="systemic-regime-model-score" title={`${score.explanation} ${score.asOf}.`}>
+            <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-500">Model score</p>
+            <p className="mt-1 font-['Rajdhani'] text-xl font-semibold text-white">{score.value}</p>
+            <p className="font-mono text-[7px] uppercase tracking-[0.1em] text-slate-500">uncalibrated</p>
           </div>
         </div>
       </div>
@@ -65,6 +69,9 @@ export default function SystemicRegimeModule({
         </span>
         <span className="rounded border border-white/10 bg-black/20 px-2 py-1">{unavailable ? "no live inference" : reading.freshnessStatus}</span>
       </div>
+      <p className="mt-3 font-mono text-[9px] leading-4 text-slate-500" data-testid="systemic-regime-model-score-note">
+        {score.label}: {score.explanation} {unavailable ? "" : `(${score.asOf})`}
+      </p>
       {convergence && (
         <p className="mt-3 border-l-2 border-cyan-300/40 bg-cyan-300/[0.04] px-3 py-2 font-mono text-[10px] leading-5 text-slate-300">
           Signal Convergence {convergence.level}: {convergence.summary}
