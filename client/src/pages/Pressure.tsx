@@ -30,6 +30,7 @@ import { canonicalVectorScore, contagionSummary, pressureVectorLevel, pressureVe
 import { canonicalDirectionTrend, canonicalHistoricalPercentile } from "@shared/canonicalReadout";
 import { directionDisplay } from "@shared/snapshotEvidence";
 import { canonicalRunBasisNote } from "@shared/dataIntegrityReadout";
+import { knownDelta, vsBaselineText } from "@/lib/deltaAvailability";
 
 // ── Market Stress sub-nav tabs ──────────────────────────────────
 // All stress-related analysis lives under one roof — in-page state, no navigation
@@ -75,7 +76,8 @@ interface RiskVector {
   /** Own level from its own score; null when there is no score (no level shown). */
   level: PressureLevel | null;
   driver: string;
-  trend: "rising" | "falling" | "stable";
+  /** "unavailable" when the engine published no direction (Unknown / missing): no icon, never "stable". */
+  trend: "rising" | "falling" | "stable" | "unavailable";
   /** Composite weight (0–1); null when the source does not publish one. */
   weight: number | null;
   rawInputs: Record<string, number | null>;
@@ -282,10 +284,11 @@ function ScoreBar({ score, level }: { score: number | null; level: PressureLevel
 }
 
 // ── Trend icon ────────────────────────────────────────────────
-function TrendIcon({ trend }: { trend: "rising" | "falling" | "stable" }) {
+function TrendIcon({ trend }: { trend: "rising" | "falling" | "stable" | "unavailable" }) {
   if (trend === "rising") return <TrendingUp size={12} style={{ color: "#FF6B00" }} />;
   if (trend === "falling") return <TrendingDown size={12} style={{ color: "#00FF88" }} />;
-  return <Minus size={12} style={{ color: "#6B7280" }} />;
+  if (trend === "stable") return <Minus size={12} style={{ color: "#6B7280" }} />;
+  return <span data-trend="unavailable" title="Direction unavailable" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>—</span>;
 }
 
 // ── Risk Vector Card ──────────────────────────────────────────
@@ -585,7 +588,7 @@ function ContagionVisualization({ vectors, overallPressure }: { vectors: RiskVec
   const nodes = CONTAGION_ORDER.map(o => {
     const v = vectors.find(v2 => v2.id === o.id);
     // A missing vector stays null (shown "—", no level), never 0 / "Low".
-    return { ...o, score: v?.score ?? null, level: v?.level ?? null, trend: v?.trend ?? "stable" as const };
+    return { ...o, score: v?.score ?? null, level: v?.level ?? null, trend: v?.trend ?? "unavailable" as const };
   });
 
   // Contagion threshold: a node "fires" if score > 35. Only scored vectors count.
@@ -951,24 +954,31 @@ function DomainAnalysisTab() {
                   <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '14px', color: '#E2E8F0', letterSpacing: '0.06em' }}>{domain.label.toUpperCase()}</div>
                 </div>
                 <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 900, fontSize: '28px', color: colors.primary, textShadow: `0 0 12px ${colors.glow}`, lineHeight: 1 }}>
-                  {domain.score.toFixed(1)}
+                  {/* Display only: the 0–10 domain score on the canonical 0–100 scale. */}
+                  <span data-domain-score100={Number.isFinite(domain.score) ? Math.round(domain.score * 10) : 'unavailable'}>{Number.isFinite(domain.score) ? Math.round(domain.score * 10) : '—'}</span>
+                  <span style={{ fontSize: '11px', color: '#4B5563', marginLeft: '2px' }}>/100</span>
                 </div>
               </div>
               <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.06)', borderRadius: '2px', overflow: 'hidden', marginBottom: '10px' }}>
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${(domain.score / 10) * 100}%` }}
+                  animate={{ width: `${Number.isFinite(domain.score) ? Math.max(0, Math.min(100, domain.score * 10)) : 0}%` }}
                   transition={{ duration: 1.1, ease: [0.23, 1, 0.32, 1], delay: 0.2 + i * 0.06 }}
                   style={{ height: '100%', background: colors.primary, borderRadius: '2px', boxShadow: `0 0 6px ${colors.glow}` }}
                 />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: colors.text, background: colors.bg, border: `1px solid ${colors.primary}33`, borderRadius: '3px', padding: '2px 6px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{domain.riskLevel}</div>
-                {domain.delta !== 0 && (
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: domain.delta > 0 ? '#FF6B00' : '#00FF88', letterSpacing: '0.06em' }}>
-                    {domain.delta > 0 ? '+' : ''}{domain.delta.toFixed(2)} vs baseline
-                  </div>
-                )}
+                {(() => {
+                  // Unknown delta (#60 deltaAvailable: false, or non-finite) → "Δ unavailable", never "0 vs baseline".
+                  const d = knownDelta(domain);
+                  if (d === 0) return null;
+                  return (
+                    <div data-domain-delta={d === null ? 'unavailable' : d} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: d === null ? '#6B7280' : d > 0 ? '#FF6B00' : '#00FF88', letterSpacing: '0.06em' }}>
+                      {vsBaselineText(domain)}
+                    </div>
+                  );
+                })()}
               </div>
               {domain.description && (
                 <div style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#6B7280', lineHeight: 1.5, marginBottom: '8px' }}>{domain.description}</div>
@@ -1032,7 +1042,7 @@ export default function Pressure() {
       // The vector's own level from its own score (engine thresholds), not the composite's; null when no score.
       level: pressureVectorLevel(engine.value),
       driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
-      trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
+      trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : engine.direction === "Stable" ? "stable" : "unavailable",
       // The canonical contract publishes only whether a vector contributes; the
       // weight is the engine's own composite weight for that vector id (never "WT 0%").
       weight: pressureVectorWeight(engine.engineId, engine.contributionToComposite),
