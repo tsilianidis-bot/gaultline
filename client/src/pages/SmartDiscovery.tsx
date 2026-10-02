@@ -5,7 +5,7 @@
  * V2.0 Upgrades:
  *   - Primary Driver sentence (Section 5)
  *   - Evidence Engine grid — 14 categories with signal bars (Section 6)
- *   - Bull/Bear with probabilities and key drivers (Sections 7-8)
+ *   - Bull/Bear qualitative balance (contract scenario text) and key drivers (Sections 7-8)
  *   - Why Not Buy/Sell for WAIT/HOLD verdicts (Section 10)
  *   - What Changes Our View — 4-5 specific catalysts (Section 11)
  *   - Confidence breakdown with reasons
@@ -34,6 +34,7 @@ import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { HistoricalContextPanel } from "@/components/HistoricalContextPanel";
 import type { HistoricalIntelligenceData } from "@/components/HistoricalContextPanel";
 import { engineProbabilityText } from "@/lib/marketStateProjection";
+import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -69,9 +70,7 @@ interface FaultlineAnswer {
   // V2.0 fields
   primaryDriver: string;
   evidenceScores: EvidenceScore[];
-  bullProbability: number;
   bullKeyDrivers: string[];
-  bearProbability: number;
   bearKeyDrivers: string[];
   whyNotBuy: string[] | null;
   whyNotSell: string[] | null;
@@ -150,7 +149,6 @@ interface FaultlineAnswer {
   historicalIntelligence?: HistoricalIntelligenceData | null;
   // ── NEW V3 FIELDS — Final Verdict + Institutional Intelligence ──────────────────────────────
   finalVerdictAction?: "BUY" | "ACCUMULATE" | "HOLD" | "WATCH" | "REDUCE" | "SELL" | "AVOID";
-  finalVerdictProbability?: number;
   finalVerdictConfidence?: number;
   finalVerdictRiskLevel?: "LOW" | "MODERATE" | "HIGH" | "EXTREME";
   finalVerdictTimeHorizon?: string;
@@ -261,7 +259,7 @@ const EXECUTION_STEPS = [
   "Evaluating liquidity environment...",
   "Comparing historical analogs...",
   "Running Evidence Engine (14 categories)...",
-  "Calculating bull/bear probability distribution...",
+  "Weighing the bull / bear balance...",
   "Assessing invalidation conditions...",
   "Scoring opportunity and conviction...",
   "Stress-testing the thesis...",
@@ -540,34 +538,34 @@ function ConfidenceBreakdown({ confidence, label, reasons }: {
   );
 }
 
-// ── Bull/Bear with Probabilities (V2.0) ──────────────────────
+// ── Bull/Bear cases (V2.0) ──────────────────────────────────
+// The model gives a qualitative balance only. Scenario text comes from the
+// canonical probability contract (engineProbabilityText), never from the model
+// and never a defaulted number (James's rule).
+
+export function ContractScenarioStrip({ compact = false }: { compact?: boolean }) {
+  const { output } = useEngine();
+  return (
+    <div style={{
+      marginTop: compact ? "12px" : 0,
+      padding: compact ? "10px 12px" : "10px 14px",
+      background: "rgba(255,255,255,0.02)",
+      border: "1px solid rgba(255,255,255,0.05)",
+      borderRadius: compact ? "5px" : "6px",
+    }}>
+      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "6px", fontSize: "9px", letterSpacing: "0.1em" }}>CANONICAL SCENARIO CONTRACT</div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+        <span style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px" }}>BULL SCENARIO {engineProbabilityText(output, "bullProbability")}</span>
+        <span style={{ ...MONO_SM, color: "#94A3B8", fontSize: "10px" }}>CRASH RISK {engineProbabilityText(output, "crashProbability")}</span>
+      </div>
+    </div>
+  );
+}
 
 function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
-  const bullPct = answer.bullProbability ?? 50;
-  const bearPct = answer.bearProbability ?? 50;
-  const neutralPct = Math.max(0, 100 - bullPct - bearPct);
-
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {/* Probability bar */}
-      <div style={{
-        padding: "10px 14px",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.05)",
-        borderRadius: "6px",
-      }}>
-        <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "8px", fontSize: "9px", letterSpacing: "0.1em" }}>PROBABILITY DISTRIBUTION</div>
-        <div style={{ display: "flex", height: "6px", borderRadius: "3px", overflow: "hidden", gap: "1px" }}>
-          <div style={{ width: `${bullPct}%`, background: "#00FF88", transition: "width 0.5s ease" }} />
-          {neutralPct > 0 && <div style={{ width: `${neutralPct}%`, background: "#FFD700", transition: "width 0.5s ease" }} />}
-          <div style={{ width: `${bearPct}%`, background: "#FF4444", transition: "width 0.5s ease" }} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "5px" }}>
-          <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>BULL {bullPct}%</span>
-          {neutralPct > 0 && <span style={{ ...MONO_SM, color: "#FFD700", fontSize: "10px" }}>NEUTRAL {neutralPct}%</span>}
-          <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "10px" }}>BEAR {bearPct}%</span>
-        </div>
-      </div>
+      <ContractScenarioStrip />
 
       {/* Bull / Bear cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "8px" }}>
@@ -578,7 +576,6 @@ function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
               <TrendingUp size={11} style={{ color: "#00FF88" }} />
               <span style={{ ...MONO_SM, color: "#00FF88", letterSpacing: "0.1em" }}>BULL CASE</span>
             </div>
-            <span style={{ ...MONO, fontSize: "12px", fontWeight: 700, color: "#00FF88" }}>{bullPct}%</span>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: "0 0 8px" }}>
             {answer.bullCase}
@@ -602,7 +599,6 @@ function BullBearSection({ answer }: { answer: FaultlineAnswer }) {
               <TrendingDown size={11} style={{ color: "#FF4444" }} />
               <span style={{ ...MONO_SM, color: "#FF4444", letterSpacing: "0.1em" }}>BEAR CASE</span>
             </div>
-            <span style={{ ...MONO, fontSize: "12px", fontWeight: 700, color: "#FF4444" }}>{bearPct}%</span>
           </div>
           <p style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "#C8D0DC", lineHeight: 1.6, margin: "0 0 8px" }}>
             {answer.bearCase}
@@ -766,26 +762,6 @@ function WatchCatalysts({ catalysts }: { catalysts: string[] }) {
 
 // ── Direct Answer Panel ───────────────────────────────────────
 // Renders the exact answer to the user's specific question BEFORE the full report
-
-// ── Inline Bull/Bear Probability Bar (used inside DirectAnswerPanel) ────────
-function InlineProbBar({ bull, bear }: { bull: number; bear: number }) {
-  const neutral = Math.max(0, 100 - bull - bear);
-  return (
-    <div style={{ marginTop: "12px", padding: "10px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: "5px" }}>
-      <div style={{ ...MONO_SM, color: "rgba(255,255,255,0.3)", marginBottom: "6px", fontSize: "9px", letterSpacing: "0.1em" }}>PROBABILITY DISTRIBUTION</div>
-      <div style={{ display: "flex", height: "5px", borderRadius: "3px", overflow: "hidden", gap: "1px" }}>
-        <div style={{ width: `${bull}%`, background: "#00FF88" }} />
-        {neutral > 0 && <div style={{ width: `${neutral}%`, background: "#FFD700" }} />}
-        <div style={{ width: `${bear}%`, background: "#FF4444" }} />
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "4px" }}>
-        <span style={{ ...MONO_SM, color: "#00FF88", fontSize: "10px" }}>BULL {bull}%</span>
-        {neutral > 0 && <span style={{ ...MONO_SM, color: "#FFD700", fontSize: "10px" }}>NEUTRAL {neutral}%</span>}
-        <span style={{ ...MONO_SM, color: "#FF4444", fontSize: "10px" }}>BEAR {bear}%</span>
-      </div>
-    </div>
-  );
-}
 
 function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
   const intent = answer.questionIntent;
@@ -1074,8 +1050,6 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
       "HIGH RISK": "#FF4444", "MACRO ANSWER": ACCENT,
     };
     const vc = verdictColors[answer.verdict] ?? "#E8EDF5";
-    const bull = answer.bullProbability ?? 50;
-    const bear = answer.bearProbability ?? 50;
     return (
       <div style={{ ...panelStyle, border: `1px solid ${vc}33`, background: `${vc}06` }}>
         <div style={{ ...labelStyle, color: vc }}>DIRECT ANSWER</div>
@@ -1086,7 +1060,7 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
         {answer.executiveSummary && (
           <div style={{ fontFamily: "'Inter', sans-serif", fontSize: "13px", color: "rgba(255,255,255,0.65)", lineHeight: 1.6, marginBottom: "4px" }}>{answer.executiveSummary}</div>
         )}
-        <InlineProbBar bull={bull} bear={bear} />
+        <ContractScenarioStrip compact />
       </div>
     );
   }
@@ -1097,8 +1071,6 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
       "LOW": "#00FF88", "MODERATE": "#FFD700", "HIGH": "#FF8C00", "EXTREME": "#FF4444",
     };
     const rc = answer.riskRating ? (riskColors[answer.riskRating] ?? "#E8EDF5") : "#FFD700";
-    const bull = answer.bullProbability ?? 50;
-    const bear = answer.bearProbability ?? 50;
     return (
       <div style={{ ...panelStyle, border: `1px solid ${rc}33`, background: `${rc}08` }}>
         <div style={{ ...labelStyle, color: rc }}>DIRECT ANSWER — RISK ASSESSMENT</div>
@@ -1128,7 +1100,7 @@ function DirectAnswerPanel({ answer }: { answer: FaultlineAnswer }) {
             ))}
           </div>
         )}
-        <InlineProbBar bull={bull} bear={bear} />
+        <ContractScenarioStrip compact />
       </div>
     );
   }
@@ -1171,7 +1143,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
       {/* ── DIRECT ANSWER PANEL (renders first for ALL question types) ── */}
       <DirectAnswerPanel answer={answer} />
 
-      {/* ── Bull / Bear with Probabilities — always visible, immediately after direct answer ── */}
+      {/* ── Bull / Bear balance (contract text, no model numbers) — always visible, immediately after direct answer ── */}
       {!isGeneralAnalysis && <BullBearSection answer={answer} />}
 
       {/* ── BOTTOM LINE card (verdict + scores + action) ── */}
@@ -1299,7 +1271,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
         <EvidenceEngineGrid scores={answer.evidenceScores} />
       )}
 
-      {/* ── Bull / Bear (shown here for general_analysis since InlineProbBar is already in DirectAnswerPanel) ── */}
+      {/* ── Bull / Bear (shown here for general_analysis since ContractScenarioStrip is already in DirectAnswerPanel) ── */}
       {isGeneralAnalysis && <BullBearSection answer={answer} />}
 
       {/* ── Why Not Buy/Sell (only for WAIT/HOLD) ── */}
@@ -1474,7 +1446,7 @@ function InstitutionalAnswer({ answer, onDeepDive, onAskFollowUp }: { answer: Fa
             {/* Probability + Confidence + Risk grid */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px", marginBottom: "12px" }}>
               {[
-                { label: "PROBABILITY", value: `${answer.finalVerdictProbability ?? 0}%`, color: fvColor },
+                { label: "PROBABILITY", value: PROBABILITY_DISPLAY_TEXT.NOT_OFFERED, color: "#94A3B8" },
                 { label: "CONFIDENCE", value: `${answer.finalVerdictConfidence ?? 0}%`, color: confidenceColor },
                 { label: "RISK LEVEL", value: answer.finalVerdictRiskLevel ?? "—", color: rlColor },
               ].map(({ label, value, color }) => (

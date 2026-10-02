@@ -93,7 +93,7 @@ export const THRESHOLD_RULES: ThresholdRule[] = [
     direction: 'below',
     severity: 'high',
     category: 'threshold_breach',
-    message: (v) => `10Y-2Y yield curve at ${v.toFixed(0)}bps — deep inversion. 12-month recession probability elevated significantly.`,
+    message: (v) => `10Y-2Y yield curve at ${v.toFixed(0)}bps — deep inversion; historically a recession warning sign (context, not a recession probability).`,
     color: '#FF9500',
   },
   {

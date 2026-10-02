@@ -31,8 +31,8 @@ export default function ShareCard({ onClose }: ShareCardProps) {
     `${regime.sublabel}`,
     ``,
     `Bull Scenario: ${pText('bullProbability')}`,
-    `Crash Probability: ${pText('crashProbability')}`,
-    `Recession Probability: ${pText('recessionProbability')}`,
+    `Crash risk: ${pText('crashProbability')}`,
+    `Recession risk: ${pText('recessionProbability')}`,
     ``,
     topAnalog ? `Closest Historical Analog: ${topAnalog.era} ${topAnalog.year} (${topAnalog.similarity}% match)` : `Closest Historical Analog: Unavailable`,
     ``,
@@ -167,7 +167,7 @@ export default function ShareCard({ onClose }: ShareCardProps) {
           {/* Key metrics row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
             {[
-              { label: 'Recession Probability', value: pText('recessionProbability'), color: '#94A3B8' },
+              { label: 'Recession risk', value: pText('recessionProbability'), color: '#94A3B8' },
               { label: 'Stagflation Probability', value: pText('stagflationProbability'), color: '#94A3B8' },
               { label: 'Soft Landing Probability', value: pText('softLandingProbability'), color: '#94A3B8' },
             ].map(m => (
