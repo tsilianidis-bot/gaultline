@@ -18,8 +18,8 @@ const SEARCH_INTENT_OVERRIDES: Record<string, Pick<SEOLandingPageProps["seo"], "
     description: "Market Crash Risk 2026: systemic-pressure context from credit spreads, funding rates, the Treasury curve, inflation, and labor data. FAULTLINE does not offer a crash probability.",
   },
   "/recession-probability": {
-    title: "Recession Probability | FAULTLINE",
-    description: "Recession probability intelligence using yield curves, credit conditions, leading indicators, policy context, and market-regime evidence.",
+    title: "Recession Risk Context | FAULTLINE",
+    description: "Recession-risk context from yield curves, credit spreads, labor data, inflation, and policy rates. FAULTLINE does not offer a recession probability.",
   },
   "/bitcoin-risk-dashboard": {
     title: "Bitcoin Risk Indicator | FAULTLINE",

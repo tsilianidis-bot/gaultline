@@ -270,7 +270,7 @@ function Plato() {
               PLATO is the interpretation layer. The quantitative measurements come from the FAULTLINE engines. PLATO market explanation synthesizes those measurements into context: what changed, and why it matters. It does not replace the score.
             </p>
             <p className="mt-5 text-base leading-[1.75] text-[#B7C1CD]">
-              When a persisted systemic-regime reading is available, PLATO is instructed to read that contract as-is and not to invent a regime, a crisis probability, or a factor. If the reading is missing, the instruction is to say it is unavailable.
+              When a persisted systemic-regime reading is available, PLATO is instructed to read that contract as-is and not to invent a regime, a factor, or a likelihood of crisis. If the reading is missing, the instruction is to say it is unavailable.
             </p>
           </div>
           <article className="rounded-2xl border border-[#00D4FF]/20 bg-[#071018] p-5 sm:p-6" aria-labelledby="plato-how-title">

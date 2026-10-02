@@ -99,13 +99,13 @@ const PAGE_META: Record<string, PageMeta> = {
     ogType: "article",
   },
   "/recession-probability": {
-    title: "Recession Probability | FAULTLINE",
-    description: "Recession probability intelligence using yield curves, credit conditions, leading indicators, policy context, and market-regime evidence.",
+    title: "Recession Risk Context | FAULTLINE",
+    description: "Recession-risk context from yield curves, credit spreads, labor data, inflation, and policy rates. FAULTLINE does not offer a recession probability.",
     ogType: "article",
   },
   "/alt-season-indicator": {
     title: "Alt Season Indicator — Is Alt Season Here? | FAULTLINE",
-    description: "Track alt season probability as new data is published. FAULTLINE's Alt Season Indicator monitors Bitcoin dominance, altcoin momentum, and liquidity rotation signals.",
+    description: "Alt season context as new data is published. FAULTLINE's Alt Season Indicator monitors Bitcoin dominance, altcoin momentum, and liquidity rotation signals.",
     ogType: "article",
   },
   "/bitcoin-risk-dashboard": {

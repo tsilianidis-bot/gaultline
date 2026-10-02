@@ -18,7 +18,7 @@ export default function IsNowGoodTimeToBuyStocks() {
         { icon: "◈", title: "Pressure Index Score", desc: "A 0-100 systemic risk score combining credit spreads, funding rates, the yield curve, inflation, labor, and a static AI-concentration baseline." },
         { icon: "◎", title: "Market Regime Classification", desc: "Classification of the current regime from the Pressure Index bands — Low Risk, Moderate Risk, Elevated Risk, High Stress, Systemic Crisis — refreshed as new data is published." },
         { icon: "⬡", title: "Historical Analog Matching", desc: "Compare current conditions against historical periods to understand which past environment today most resembles." },
-        { icon: "◈", title: "Recession Probability", desc: "Leading economic indicators of recession risk — the single biggest driver of sustained bear markets." },
+        { icon: "◈", title: "Recession Risk", desc: "Leading economic indicators of recession risk — the single biggest driver of sustained bear markets." },
         { icon: "◎", title: "Liquidity Conditions", desc: "Funding stress — read through high-yield credit spreads and SOFR — is a common mechanism behind major market dislocations." },
         { icon: "⬡", title: "Credit Spread Monitor", desc: "High-yield credit spreads are one of the clearest public signals of systemic stress, and they often widen before equity prices fully reflect it." },
       ]}
@@ -82,7 +82,7 @@ Understanding which historical environment today most resembles is useful contex
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The core systemic risk score — 6 weighted vectors combined into a single 0-100 reading." },
         { label: "MARKET REGIME TRACKER", href: "/market-regime-tracker", desc: "Regularly refreshed classification of the current market regime." },
         { label: "DAILY BRIEF", href: "/daily-brief", desc: "Today's market conditions, key drivers, and risk assessment." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading economic indicators of recession risk — the biggest driver of sustained bear markets." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Leading economic indicators of recession risk — the biggest driver of sustained bear markets." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare today's vector profile with reference profiles of past stress episodes." },
         { label: "BULL OR BEAR MARKET?", href: "/bull-or-bear-market", desc: "Is the stock market currently in a bull or bear market? FAULTLINE's regime classification." },
       ]}

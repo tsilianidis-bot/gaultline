@@ -50,14 +50,14 @@ Historical Context: META experienced one of the most dramatic large-cap drawdown
         { question: "Is META a buy or sell right now?", answer: "FAULTLINE's META signal classification is available on the Signals tab, based on macro regime alignment, advertising cycle conditions, AI capex ROI assessment, and technical structure. This is not investment advice." },
         { question: "How does Meta make money?", answer: "Meta generates the overwhelming majority of its revenue from digital advertising across Facebook, Instagram, WhatsApp, and Threads. Advertisers pay to show targeted ads to Meta's billions of daily users. AI-powered ad targeting systems have significantly improved revenue per user over time." },
         { question: "What is Meta's AI strategy?", answer: "Meta's AI strategy has three pillars: (1) AI-powered advertising — using AI to improve ad targeting and measurement; (2) AI-powered products — Llama open-source models, Meta AI assistant, AI-generated content; (3) AI infrastructure — massive data center and GPU investment to support both internal AI development and Llama deployment." },
-        { question: "How does the economy affect META's stock?", answer: "META's revenue is almost entirely advertising-based, making it highly sensitive to the economic cycle. In recessions or economic slowdowns, corporate advertising budgets are cut, directly reducing META's revenue. FAULTLINE's recession probability indicator and Pressure Index are key inputs to the META macro alignment score." },
+        { question: "How does the economy affect META's stock?", answer: "META's revenue is almost entirely advertising-based, making it highly sensitive to the economic cycle. In recessions or economic slowdowns, corporate advertising budgets are cut, directly reducing META's revenue. The Pressure Index is an input to the META macro alignment score; FAULTLINE does not offer a recession probability." },
         { question: "What is META's biggest risk in 2026?", answer: "Based on FAULTLINE's analysis, META's biggest risks in 2026 are advertising recession risk (economic slowdown reducing ad budgets), AI capex ROI concerns (market questioning the return on its heavy AI investment), and regulatory/antitrust risk (FTC case seeking Instagram and WhatsApp divestiture)." },
       ]}
       internalLinks={[
         { label: "NVDA SIGNAL", href: "/stock/nvda", desc: "NVIDIA — META's primary GPU supplier." },
         { label: "PLTR SIGNAL", href: "/stock/pltr", desc: "Palantir AI software signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Recession risk that could compress META's ad revenue." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Recession risk that could compress META's ad revenue." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy impact on META's valuation multiple." },
         { label: "STOCK SIGNALS", href: "/signals", desc: "All FAULTLINE stock signals in one view." },
       ]}

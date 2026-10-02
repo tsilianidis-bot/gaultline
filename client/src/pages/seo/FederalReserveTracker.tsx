@@ -89,7 +89,7 @@ Dollar: Fed rate hikes strengthen the dollar relative to other currencies. A str
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "Systemic stress score incorporating Fed policy impact." },
         { label: "LIQUIDITY MONITOR", href: "/liquidity-monitor", desc: "Track funding conditions through credit spreads and SOFR." },
-        { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Leading indicators of recession risk — the outcome of Fed policy." },
+        { label: "RECESSION RISK CONTEXT", href: "/recession-probability", desc: "Leading indicators of recession risk — the outcome of Fed policy." },
         { label: "MARKET CRASH INDICATOR", href: "/market-crash-indicator", desc: "Regularly refreshed crash risk detection and systemic stress monitoring." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "VIX context and volatility analysis." },
         { label: "HISTORICAL ANALOGS", href: "/analogs", desc: "Compare current Fed cycle to historical tightening and easing periods." },

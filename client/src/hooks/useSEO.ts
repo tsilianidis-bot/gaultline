@@ -237,7 +237,7 @@ export const PAGE_SEO = {
   preFlight: {
     title: "FAULTLINE Pre-Flight — Market Awareness Command Center",
     description:
-      "Understand current market conditions before risking capital. Awareness Score, Pressure Index, Bull/Bear Probability, Threat Board, Credit, Liquidity, AI Risk, and Daily Intelligence Brief.",
+      "Understand current market conditions before risking capital. Awareness Score, Pressure Index, Bull/Bear Balance, Threat Board, Credit, Liquidity, AI Risk, and Daily Intelligence Brief.",
     canonical: "/app/pre-flight",
   },
   // 52 chars ✓
