@@ -9,7 +9,9 @@
  * - Each month in pressureHistory becomes a daily reading for the 15th of that month.
  * - Sub-scores are derived from the existing domain columns.
  * - Direction, delta, streak, and percentile are computed from the series.
- * - Existing readings are preserved (ON DUPLICATE KEY UPDATE is a no-op for older dates).
+ * - Existing readings are never modified (duplicate key is a no-op).
+ * - Rows are tagged RECONSTRUCTED_FROM_MONTHLY_PRESSURE_HISTORY in subScoresJson,
+ *   carry no bull/crash probability and no synthesised sub-scores.
  * - Also seeds regime transitions from significant month-to-month regime changes.
  */
 import { getDb } from "./db";
@@ -19,7 +21,7 @@ import {
   seismographTransitions,
   marketMemory,
 } from "../drizzle/schema";
-import { desc, asc } from "drizzle-orm";
+import { asc, sql } from "drizzle-orm";
 import { Request, Response } from "express";
 
 interface PressureRow {
@@ -76,27 +78,40 @@ function buildPressureDrivers(row: PressureRow): string[] {
   return drivers;
 }
 
-function buildSubScores(row: PressureRow): Record<string, number> {
-  return {
-    treasury: row.macroSensitivity ?? Math.round(row.overallPressure * 0.9),
-    credit: row.creditContagion ?? Math.round(row.overallPressure * 1.1),
-    liquidity: row.liquidityStress ?? Math.round(row.overallPressure * 0.95),
-    volatility: row.volatilityRegime ?? Math.round(row.overallPressure * 1.05),
-    breadth: row.marketBreadth ?? Math.round(row.overallPressure * 0.85),
-    concentration: row.aiBubble ?? Math.round(row.overallPressure * 0.8),
-    macro: row.macroSensitivity ?? Math.round(row.overallPressure * 0.9),
-  };
+/**
+ * Provenance marker for rows written by this backfill. These are historical
+ * RECONSTRUCTIONS from the monthly pressureHistory table, not readings or
+ * predictions made at the time. Stored inside the existing subScoresJson
+ * column (no migration) so readers can exclude them from live history.
+ */
+export const RECONSTRUCTED_RECORD_CLASS = "RECONSTRUCTED_FROM_MONTHLY_PRESSURE_HISTORY";
+
+/**
+ * Sub-scores for a reconstructed row: only domain values that actually exist
+ * in pressureHistory. Missing domains are omitted, never synthesised as a
+ * multiple of the overall score.
+ */
+export function buildSubScores(row: PressureRow): Record<string, number | string> {
+  const domains: Array<[string, number | null]> = [
+    ["treasury", row.macroSensitivity],
+    ["credit", row.creditContagion],
+    ["liquidity", row.liquidityStress],
+    ["volatility", row.volatilityRegime],
+    ["breadth", row.marketBreadth],
+    ["concentration", row.aiBubble],
+    ["macro", row.macroSensitivity],
+  ];
+  const out: Record<string, number | string> = { recordClass: RECONSTRUCTED_RECORD_CLASS };
+  for (const [key, value] of domains) {
+    if (typeof value === "number" && Number.isFinite(value)) out[key] = value;
+  }
+  return out;
 }
 
-// Derive bull/crash probabilities from pressure score and regime
-function deriveProbabilities(score: number, regime: string): { bull: number; crash: number } {
-  const regimeLower = regime.toLowerCase();
-  let bull = Math.max(5, Math.round(100 - score * 0.9));
-  let crash = Math.max(1, Math.round(score * 0.15));
-  if (regimeLower.includes("bull")) { bull = Math.min(95, bull + 15); crash = Math.max(1, crash - 5); }
-  if (regimeLower.includes("bear") || regimeLower.includes("crash")) { bull = Math.max(5, bull - 20); crash = Math.min(60, crash + 20); }
-  if (regimeLower.includes("recession")) { bull = Math.max(5, bull - 10); crash = Math.min(50, crash + 10); }
-  return { bull: Math.min(95, Math.max(5, bull)), crash: Math.min(60, Math.max(1, crash)) };
+/** True when an insert actually created a row (MySQL affectedRows 1; a no-op duplicate is 0). */
+function rowCreated(result: unknown): boolean {
+  const header = Array.isArray(result) ? result[0] : result;
+  return Number((header as { affectedRows?: number } | undefined)?.affectedRows ?? 0) === 1;
 }
 
 export async function runSeismographBackfill(): Promise<{
@@ -148,7 +163,6 @@ export async function runSeismographBackfill(): Promise<{
       const historicalPercentile = computePercentile(score, allScores);
       const pressureDrivers = buildPressureDrivers(row as PressureRow);
       const subScores = buildSubScores(row as PressureRow);
-      const { bull, crash } = deriveProbabilities(score, row.regime);
 
       // Streak tracking
       if (direction === streakDir && direction !== "stable") {
@@ -159,7 +173,7 @@ export async function runSeismographBackfill(): Promise<{
       }
 
       try {
-        await db
+        const result = await db
           .insert(seismographReadings)
           .values({
             readingDate,
@@ -167,8 +181,9 @@ export async function runSeismographBackfill(): Promise<{
             stressLevel,
             regime: row.regime,
             subScoresJson: JSON.stringify(subScores),
-            bullProbability: bull,
-            crashProbability: crash,
+            // A reconstruction carries no retrospective bull/crash "probability".
+            bullProbability: null,
+            crashProbability: null,
             direction,
             deltaFromPrior: delta,
             streakDays,
@@ -176,23 +191,19 @@ export async function runSeismographBackfill(): Promise<{
             pressureDriversJson: JSON.stringify(pressureDrivers),
             activeAlertsJson: "[]",
           })
-          .onDuplicateKeyUpdate({
-            set: {
-              // Only update if the existing row has no sub-scores (i.e., was a minimal seed)
-              stressLevel,
-              historicalPercentile,
-              pressureDriversJson: JSON.stringify(pressureDrivers),
-            },
-          });
-        inserted++;
+          // Never modify an existing (original) reading: duplicate key is a no-op.
+          .onDuplicateKeyUpdate({ set: { readingDate: sql`readingDate` } });
+        if (rowCreated(result)) inserted++;
+        else skipped++;
       } catch {
         skipped++;
       }
 
       // Record regime transitions
       if (prevRegime !== null && prevRegime !== row.regime) {
-        const confidence = Math.min(95, Math.max(40, 100 - Math.abs(delta) * 2));
-        const explanation = `Regime shifted from ${prevRegime} to ${row.regime} in ${row.month}. Pressure ${delta > 0 ? "rose" : "fell"} by ${Math.abs(delta)} points.`;
+        // Reconstructed, not detected at the time: no detection confidence is claimed.
+        const confidence = 0;
+        const explanation = `Reconstructed from monthly pressure history (not detected at the time): regime ${prevRegime} → ${row.regime} in ${row.month}; pressure ${delta > 0 ? "rose" : "fell"} by ${Math.abs(delta)} points.`;
         try {
           await db
             .insert(seismographTransitions)
@@ -205,9 +216,7 @@ export async function runSeismographBackfill(): Promise<{
               pressureAtTransition: score,
               driversJson: JSON.stringify(pressureDrivers.slice(0, 3)),
             })
-            .onDuplicateKeyUpdate({
-              set: { confidence },
-            });
+            .onDuplicateKeyUpdate({ set: { transitionDate: sql`transitionDate` } });
           transitionCount++;
         } catch {
           // ignore duplicate transitions

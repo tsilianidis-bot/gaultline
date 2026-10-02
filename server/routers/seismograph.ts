@@ -20,9 +20,9 @@ import {
   seismographTransitions,
   marketMemory,
 } from "../../drizzle/schema";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, eq, and, notLike } from "drizzle-orm";
 import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
-import { runSeismographBackfill } from "../seismographBackfill";
+import { runSeismographBackfill, RECONSTRUCTED_RECORD_CLASS } from "../seismographBackfill";
 import { getUnifiedSeismographIntelligence } from "../seismographUnified";
 
 export const seismographRouter = router({
@@ -42,9 +42,12 @@ export const seismographRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
+      // Live daily readings only: rows reconstructed by the admin backfill are
+      // tagged in subScoresJson and never presented as readings made at the time.
       return db
         .select()
         .from(seismographReadings)
+        .where(notLike(seismographReadings.subScoresJson, `%${RECONSTRUCTED_RECORD_CLASS}%`))
         .orderBy(desc(seismographReadings.readingDate))
         .limit(input.days);
     }),

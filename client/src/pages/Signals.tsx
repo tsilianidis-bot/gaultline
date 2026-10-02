@@ -5,7 +5,7 @@
    ============================================================ */
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { signalQuoteView, signalsFeedLabel, hasUsableSignalQuote, signalsPriceBadge, catalogQuotes, signalsFooter } from "@/lib/signalQuoteView";
+import { signalQuoteView, signalsFeedLabel, hasUsableSignalQuote, signalsPriceBadge, catalogQuotes, signalsFooter, signalsSubtitle } from "@/lib/signalQuoteView";
 import { useEngine } from '@/contexts/EngineContext';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { trpc } from '@/lib/trpc';
@@ -1625,9 +1625,15 @@ function SignalsInner() {
     () => catalogQuotes(quotesData?.quotes, SIGNAL_STOCKS.map(s => s.ticker)),
     [quotesData?.quotes],
   );
-  const footer = useMemo(
-    () => signalsFooter(signalsFeedLabel({ source: quotesData?.source ?? null, quotes: catalogQuoteList, tickerCount: SIGNAL_STOCKS.length })),
+  const feedLabel = useMemo(
+    () => signalsFeedLabel({ source: quotesData?.source ?? null, quotes: catalogQuoteList, tickerCount: SIGNAL_STOCKS.length }),
     [quotesData?.source, catalogQuoteList],
+  );
+  const footer = useMemo(() => signalsFooter(feedLabel), [feedLabel]);
+  // Subtitle wording follows the same feed label (never "live prices" unless a quote is live).
+  const subtitle = useMemo(
+    () => signalsSubtitle(feedLabel, { loading: quotesLoading && !quotesData }),
+    [feedLabel, quotesLoading, quotesData],
   );
 
   // Header badge reflects quote freshness, never the pressure-engine integrity.
@@ -1649,7 +1655,7 @@ function SignalsInner() {
 
       <PageHeader
         title="Signals"
-        subtitle="Macro-regime-aware market scanner — live prices, trading signals, and regime-fit scores for 30+ tickers."
+        subtitle={subtitle}
         badge={pricesBadge.label}
         badgeColor={pricesBadge.color}
         rightSlot={

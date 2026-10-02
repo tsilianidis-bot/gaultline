@@ -54,6 +54,7 @@ import { evaluateAndPersistCandidateDetections } from "./candidateDetection";
 import { evaluateAndPersistImportanceQualification } from "./importanceQualification";
 import { evaluateAndPersistLifecycle } from "./earlyWarningLifecycle";
 import { evaluateAndPersistPhase9ForCurrentStream } from "./confirmationInvalidation";
+import { resolveBuildIdentity } from "./buildIdentity";
 
 /** Cache key for the latest assembled SeismographOutput in Market Memory */
 export const SEISMOGRAPH_OUTPUT_KEY = "seismograph:latest_output";
@@ -183,6 +184,8 @@ export async function runSeismographPipeline(): Promise<SeismographOutput> {
       originatingRunId,
       generatedAt: new Date().toISOString(),
       persistedHooks: await import("./systemicRegime/hooks").then(mod => mod.getPersistedRegimeHooks(seismographOutput)).catch(() => undefined),
+      // Code version of the build that produced this forward record (provenance only).
+      codeVersion: (() => { try { return resolveBuildIdentity().commit; } catch { return null; } })(),
     });
     const persisted = await persistAtomicIntelligenceStateManifest(governanceState);
     console.log(`[Seismograph] Governance manifest ${persisted.created ? "recorded" : "already present"}: ${persisted.stateId} (${governanceState.manifest.coherenceStatus})`);

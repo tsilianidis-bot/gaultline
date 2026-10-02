@@ -131,3 +131,26 @@ export function signalsFooter(feed: { label: string; coverage: string }): {
       return { title: "QUOTES UNAVAILABLE", detail: "No current server quotes. Unquoted tickers show — / UNAVAILABLE; no catalog prices are shown as market data.", coverage, tone: "alert" };
   }
 }
+
+/**
+ * Page subtitle derived from the SAME signalsFeedLabel() result as the header
+ * badge and footer, so it never claims "live prices" when quotes are last
+ * close, delayed, stale or unavailable.
+ */
+export function signalsSubtitle(feed: { label: string } | null, opts: { loading?: boolean } = {}): string {
+  const prefix = "Macro-regime-aware market scanner — ";
+  const suffix = ", trading signals, and regime-fit scores for 30+ tickers.";
+  if (opts.loading) return `${prefix}checking quote freshness${suffix}`;
+  switch (feed?.label) {
+    case "YAHOO FINANCE LIVE":
+      return `${prefix}live intraday prices (market open)${suffix}`;
+    case "YAHOO FINANCE · LAST CLOSE":
+      return `${prefix}last-close prices (not live)${suffix}`;
+    case "YAHOO FINANCE · DELAYED":
+      return `${prefix}delayed prices (not live)${suffix}`;
+    case "STALE CACHE":
+      return `${prefix}stale cached prices (not current)${suffix}`;
+    default:
+      return `${prefix}prices currently unavailable${suffix}`;
+  }
+}
