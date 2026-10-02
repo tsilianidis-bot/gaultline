@@ -14,12 +14,12 @@ const PLATFORM_URL = "/app";
 
 const SEARCH_INTENT_OVERRIDES: Record<string, Pick<SEOLandingPageProps["seo"], "title" | "description">> = {
   "/market-crash-probability-2026": {
-    title: "Market Crash Probability | FAULTLINE",
-    description: "Market crash probability context using systemic market stress, credit conditions, volatility, liquidity, and market-regime evidence.",
+    title: "Market Risk Context 2026 | FAULTLINE",
+    description: "Systemic-pressure context from credit spreads, funding rates, the Treasury curve, inflation, and labor data. FAULTLINE does not offer a crash probability.",
   },
   "/recession-probability": {
-    title: "Recession Probability | FAULTLINE",
-    description: "Recession probability intelligence using yield curves, credit conditions, leading indicators, policy context, and market-regime evidence.",
+    title: "Recession Risk Context | FAULTLINE",
+    description: "Recession-risk context from FRED: the 10Y–2Y Treasury curve, high-yield spreads, unemployment, inflation, policy rates, and SOFR. FAULTLINE does not offer a recession probability.",
   },
   "/bitcoin-risk-dashboard": {
     title: "Bitcoin Risk Indicator | FAULTLINE",

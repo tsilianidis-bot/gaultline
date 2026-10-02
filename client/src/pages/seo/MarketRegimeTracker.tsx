@@ -102,7 +102,7 @@ This is educational and informational context, not investment advice.`,
       ]}
       internalLinks={[
         { label: "PRESSURE INDEX", href: "/pressure-index", desc: "The regime classification engine — six weighted vectors in one score." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Crash risk assessment based on current regime conditions." },
+        { label: "MARKET RISK CONTEXT 2026", href: "/market-crash-probability-2026", desc: "Systemic-pressure context based on current regime conditions." },
         { label: "RECESSION PROBABILITY", href: "/recession-probability", desc: "Economic recession risk — a key regime driver." },
         { label: "FEDERAL RESERVE TRACKER", href: "/federal-reserve-tracker", desc: "Fed policy — the primary regime-setting force." },
         { label: "VOLATILITY DASHBOARD", href: "/volatility-dashboard", desc: "VIX context — read alongside the Pressure Index, not an input to it." },
