@@ -33,6 +33,7 @@ import FaultlineTerm from "@/components/FaultlineTerm";
 import MarketSynthesisPanel from "@/components/MarketSynthesisPanel";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import RisingStarsPanel, { type RisingStarItem } from "@/components/RisingStarsPanel";
+import { formatEt } from "@shared/credibilityLabels";
 
 // ── Live Quote Types ──────────────────────────────────────────
 interface LiveQuote {
@@ -131,6 +132,16 @@ function fmtTimestamp(ts: string | null): string {
     const d = new Date(ts);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } catch { return '—'; }
+}
+
+/**
+ * Source + as-of line for computed price levels. Levels exist only as the
+ * server signal engine's ATR-based output over the card's own current/delayed
+ * quote; there is no static fallback.
+ */
+export function priceLevelsBasis(quote: LiveQuote | undefined, badge: string): string {
+  const asOf = quote ? formatEt(quote.timestamp) : null;
+  return `Computed from ${badge} Signals quote · as of ${asOf ?? '—'}`;
 }
 
 // ── Trading Action Colors ─────────────────────────────────────
@@ -540,6 +551,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', fontWeight: 700, color }}>{value}</div>
             </div>
           ))}
+          <div data-price-levels-basis style={{ gridColumn: '1 / -1', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>{priceLevelsBasis(liveQuote, quote.badge)}</div>
         </div>
       )}
 
@@ -611,6 +623,15 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               </a>
             </div>
           )}
+          {/* No computed signal (guest, no quote, no canonical regime): levels are Unavailable — never a static value. */}
+          {!tradingSignal && !signalBlocked && (
+            <div data-price-levels-unavailable style={{ marginBottom: '10px', padding: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '3px' }}>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '11px', letterSpacing: '0.15em', color: 'rgba(100,116,139,0.75)', marginBottom: '4px' }}>KEY PRICE LEVELS · UNAVAILABLE</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: 'rgba(148,163,184,0.75)', lineHeight: 1.5 }}>
+                Support, resistance, entry, stop and target are shown only when they are computed from a current or delayed quote for {stock.ticker}.
+              </div>
+            </div>
+          )}
           {/* Key Price Levels (only when trading signal available) */}
           {tradingSignal && (
             <div style={{
@@ -653,6 +674,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                   </div>
                 ))}
               </div>
+              <div data-price-levels-basis style={{ marginTop: '6px', fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em' }}>{priceLevelsBasis(liveQuote, quote.badge)} · ATR-based</div>
             </div>
           )}
 
@@ -913,22 +935,17 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           )}
 
           {/* ── Institutional Signal Data (Phase 3.5) ─────────────────────── */}
-          {(stock.opportunityScore !== undefined || stock.entryZone || stock.support || stock.catalysts?.length) && (
+          {(stock.opportunityScore !== undefined || stock.catalysts?.length) && (
             <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px' }}>
-              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '8px' }}>INSTITUTIONAL SIGNAL DATA</div>
+              <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.2em', color: 'rgba(100,116,139,0.6)', marginBottom: '8px' }}>CATALOG NOTES · STATIC REFERENCE, NOT MARKET DATA</div>
 
-              {/* Row 1: Opportunity Score + R:R + Confidence + Macro Alignment */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
+              {/* Row 1: Opportunity Score + Confidence + Macro Alignment (static catalog notes).
+                  No static R:R, entry, support, resistance, stop or targets: price levels live only in KEY PRICE LEVELS. */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '6px' }}>
                 {stock.opportunityScore !== undefined && (
                   <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(0,212,255,0.05)', border: '1px solid rgba(0,212,255,0.12)', borderRadius: '3px' }}>
                     <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>OPP SCORE</div>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '18px', color: stock.opportunityScore >= 80 ? '#00FF88' : stock.opportunityScore >= 60 ? '#00D4FF' : '#FF9500', lineHeight: 1 }}>{stock.opportunityScore}</div>
-                  </div>
-                )}
-                {stock.riskReward && (
-                  <div style={{ textAlign: 'center', padding: '6px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '3px' }}>
-                    <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.1em', marginBottom: '2px' }}>R:R RATIO</div>
-                    <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: '#00FF88', lineHeight: 1 }}>{stock.riskReward}</div>
                   </div>
                 )}
                 {stock.confidence !== undefined && (
@@ -944,50 +961,6 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
                   </div>
                 )}
               </div>
-
-              {/* Row 2: Entry Zone + Support + Resistance + Stop Loss */}
-              {(stock.entryZone || stock.support || stock.resistance || stock.stopLoss) && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px', marginBottom: '6px' }}>
-                  {stock.entryZone && (
-                    <div style={{ padding: '5px 7px', background: 'rgba(0,212,255,0.04)', border: '1px solid rgba(0,212,255,0.1)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,212,255,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>ENTRY ZONE</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.entryZone}</div>
-                    </div>
-                  )}
-                  {stock.support && (
-                    <div style={{ padding: '5px 7px', background: 'rgba(0,255,136,0.03)', border: '1px solid rgba(0,255,136,0.08)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>SUPPORT</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.support}</div>
-                    </div>
-                  )}
-                  {stock.resistance && (
-                    <div style={{ padding: '5px 7px', background: 'rgba(255,45,85,0.03)', border: '1px solid rgba(255,45,85,0.08)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(255,45,85,0.5)', letterSpacing: '0.08em', marginBottom: '2px' }}>RESISTANCE</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(148,163,184,0.8)', lineHeight: 1.3 }}>{stock.resistance}</div>
-                    </div>
-                  )}
-                  {stock.stopLoss && (
-                    <div style={{ padding: '5px 7px', background: 'rgba(255,45,85,0.04)', border: '1px solid rgba(255,45,85,0.12)', borderRadius: '3px' }}>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(255,45,85,0.6)', letterSpacing: '0.08em', marginBottom: '2px' }}>STOP LOSS</div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(255,45,85,0.8)', fontWeight: 700, lineHeight: 1.3 }}>{stock.stopLoss}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Row 3: Profit Targets */}
-              {stock.profitTargets && stock.profitTargets.length > 0 && (
-                <div style={{ marginBottom: '6px', padding: '6px 8px', background: 'rgba(0,255,136,0.04)', border: '1px solid rgba(0,255,136,0.1)', borderRadius: '3px' }}>
-                  <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: 'rgba(0,255,136,0.5)', letterSpacing: '0.1em', marginBottom: '4px' }}>PROFIT TARGETS</div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {stock.profitTargets.map((t, i) => (
-                      <span key={t} style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: '#00FF88', fontWeight: 700, padding: '2px 6px', background: 'rgba(0,255,136,0.08)', borderRadius: '2px', border: '1px solid rgba(0,255,136,0.2)' }}>
-                        T{i + 1}: {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Row 4: Catalysts + Threats */}
               {(stock.catalysts?.length || stock.threats?.length) && (
