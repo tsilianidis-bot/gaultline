@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { canonicalScoreText, finiteOrNull } from "@/lib/displayFallbacks";
 import { probabilityText } from "@shared/probabilityContract";
 import { Link } from "wouter";
 import {
@@ -24,7 +25,6 @@ import {
 } from "@shared/routeRegistry";
 import {
   formatCanonicalPercent,
-  formatCanonicalScore,
   normalizeCanonicalMetric,
 } from "@shared/marketMetrics";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
@@ -266,7 +266,8 @@ export default function Act() {
   if (isLoading && !canonicalState) return <PageLoadingState eyebrow="ACT · Decision state" message="Loading authoritative canonical decision state…" />;
   if (!canonicalState) return <PageDegradedBanner message="Current canonical state is unavailable." detail="ACT withholds current decision interpretation until one authoritative state is available." />;
 
-  const pressure = canonicalState.pressureIndex ?? 0;
+  // Missing pressure stays null and renders "—" (never 0, no band or action from 0).
+  const pressure = finiteOrNull(canonicalState.pressureIndex);
   const posture = marketState?.act.marketPosture ?? null;
   const postureView = posture ? postureConfig[posture] : unavailablePostureView;
   // Display gate: a % only with HEALTHY canonical evidence AND a verified analog
@@ -406,7 +407,7 @@ export default function Act() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-sm border border-white/10 bg-white/[0.025] p-4">
                     <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-slate-600">Pressure</p>
-                    <p className="mt-1 font-mono text-sm text-emerald-200">{formatCanonicalScore(pressure)}</p>
+                    <p className="mt-1 font-mono text-sm text-emerald-200">{canonicalScoreText(pressure)}</p>
                   </div>
                   <div className="rounded-sm border border-white/10 bg-white/[0.025] p-4">
                     <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-slate-600">Confidence</p>

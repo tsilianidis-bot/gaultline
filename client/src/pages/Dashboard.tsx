@@ -34,6 +34,7 @@ import SOBPanel from "@/components/SOBPanel";
 import FaultlineTerm from "@/components/FaultlineTerm";
 import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
 import { formatCanonicalScore } from "@shared/marketMetrics";
+import { finiteOrNull, similarityText } from "@/lib/displayFallbacks";
 import type { ProbabilityDisplay } from "@shared/probabilityContract";
 
 /** Engine 0–10 domain/overall score shown on the canonical 0–100 scale. */
@@ -909,7 +910,7 @@ export default function Dashboard() {
           {
             label: 'TOP CATALYST',
             value: topAnalog?.era?.split(' ').slice(0, 2).join(' ') ?? 'FED POLICY',
-            sub: topAnalog ? `${topAnalog.similarity}% analog match · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'Watch FOMC + CPI',
+            sub: topAnalog ? `${similarityText(topAnalog.similarity)} analog match · ${topAnalog.year?.slice(0, 4) ?? ''}` : 'Watch FOMC + CPI',
             color: '#C084FC',
             href: '/app/pre-flight',
           },
@@ -1290,7 +1291,7 @@ export default function Dashboard() {
           {analogs[0] && (
             <div style={{ padding: '7px 10px', background: 'rgba(0,212,255,0.04)', borderLeft: '2px solid rgba(0,229,255,0.32)', borderRadius: '3px', marginBottom: '10px' }}>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '10px', color: '#B0C4D8', fontStyle: 'italic', lineHeight: 1.5 }}>
-                Structural alignment with {analogs[0].era} ({analogs[0].year.slice(0, 4)}) at {analogs[0].similarity}% similarity. {analogs[0].matchReasons?.[0] ?? 'Pattern overlap across multiple pressure domains.'}
+                Structural alignment with {analogs[0].era} ({analogs[0].year.slice(0, 4)}) at {similarityText(analogs[0].similarity)} similarity. {analogs[0].matchReasons?.[0] ?? 'Pattern overlap across multiple pressure domains.'}
               </span>
             </div>
           )}
@@ -1305,10 +1306,10 @@ export default function Dashboard() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '13px', color: '#D1D5DB', marginBottom: '4px' }}>{analog.era}</div>
                     <div style={{ position: 'relative', height: '3px', background: 'rgba(255,255,255,0.11)', borderRadius: '2px' }}>
-                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${analog.similarity}%`, background: `linear-gradient(90deg, ${aColor}60, ${aColor})`, borderRadius: '2px', boxShadow: `0 0 6px ${aColor}60`, transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
+                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${finiteOrNull(analog.similarity) ?? 0}%`, background: `linear-gradient(90deg, ${aColor}60, ${aColor})`, borderRadius: '2px', boxShadow: `0 0 6px ${aColor}60`, transition: 'width 1.4s cubic-bezier(0.23,1,0.32,1)' }} />
                     </div>
                   </div>
-                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: aColor, fontWeight: 600, flexShrink: 0 }}>{analog.similarity}%</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '13px', color: aColor, fontWeight: 600, flexShrink: 0 }}>{similarityText(analog.similarity)}</span>
                 </div>
               );
             })}
