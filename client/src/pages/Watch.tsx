@@ -28,6 +28,7 @@ import {
   normalizeCanonicalMetric,
 } from "@shared/marketMetrics";
 import { customerChromeModeLabel, customerIntegrityChipLevel } from "@shared/customerIntegrityLabels";
+import { canonicalFreshnessReadout, monthlyRecordBasisNote } from "@shared/dataIntegrityReadout";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
@@ -266,6 +267,9 @@ export default function Watch() {
     topAnalog: marketState?.outlook.topAnalog,
   });
   const modeLabel = customerChromeModeLabel(integrityLabel);
+  // Same integrity label as the header chip + the snapshot's own input lists
+  // (never the legacy marketState.freshness cache-age "live").
+  const freshnessReadout = canonicalFreshnessReadout({ integrityLabel, canonical: canonicalState });
   const watchAcceleration = marketState?.watch.accelerating ?? false;
   const buildingPressure = marketState?.watch.buildingPressure ?? developingConditions.some(condition => condition.trend === "building");
 
@@ -437,7 +441,7 @@ export default function Watch() {
           )}
         </Section>
 
-        <Section id="leading-indicators" index="04" eyebrow="Leading indicators" title="Evidence families to monitor before conditions change" description="Strength, direction, current observation, and historical context remain attached so a signal cannot outrun its evidence.">
+        <Section id="leading-indicators" index="04" eyebrow="Leading indicators" title="Evidence families to monitor before conditions change" description={`Strength, direction, current observation, and historical context remain attached so a signal cannot outrun its evidence. ${monthlyRecordBasisNote(marketState?.why.evidenceAsOfMonth)}`}>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {leadingIndicators.map(indicator => (
               <article key={indicator.name} className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
@@ -537,10 +541,8 @@ export default function Watch() {
             </div>
             <div className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
               <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-slate-600">Freshness</div>
-              <div className="mt-3 text-sm font-semibold text-slate-100">{marketState?.freshness ?? "Fallback"}</div>
-              <div className="mt-2 text-xs text-slate-500">
-                {marketState ? `Canonical source state is ${marketState.freshness}.` : "Live canonical freshness unavailable."}
-              </div>
+              <div className="mt-3 text-sm font-semibold text-slate-100" data-canonical-freshness={freshnessReadout.label}>{freshnessReadout.label}</div>
+              <div className="mt-2 text-xs text-slate-500">{freshnessReadout.detail}</div>
             </div>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">

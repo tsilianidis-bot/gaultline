@@ -28,6 +28,8 @@ import { formatScenarioPercent } from "@shared/canonicalReadout";
 import { customerIntegrityChipLevel, customerIntegrityColor, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import DataFreshnessChip from "@/components/DataFreshnessChip";
 import { PageLoadingState, PageDegradedBanner } from "@/components/PageStateViews";
+import { monthlyRecordBasisNote } from "@shared/dataIntegrityReadout";
+import { formatEt } from "@shared/credibilityLabels";
 import SystemicRegimeModule from "@/components/SystemicRegimeModule";
 import { trpc } from "@/lib/trpc";
 
@@ -877,6 +879,12 @@ export default function Now() {
   if (isLoading && !marketState) {
     return <PageLoadingState eyebrow="NOW · Current market state" message="Loading canonical market state…" />;
   }
+  // Fail closed: without the canonical state NOW shows nothing current. The
+  // browser's deterministic engine runs on fixed DEFAULT_INDICATORS (demo
+  // inputs), so it must never stand in for the market state.
+  if (!marketState || !canonicalState) {
+    return <PageDegradedBanner message="Current canonical state is unavailable." detail="NOW withholds the current market reading until one authoritative state is available." />;
+  }
 
   return (
     <main className="min-h-screen bg-[#05080d] text-white">
@@ -1074,7 +1082,8 @@ export default function Now() {
                 transition: "opacity 0.5s ease",
               }}
             >
-              <p className="mb-3 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Active Pressure Channels</p>
+              <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">Active Pressure Channels</p>
+              <p className="mb-3 text-[10px] leading-4 text-slate-600" data-evidence-basis="monthly-record">{monthlyRecordBasisNote(marketState.why.evidenceAsOfMonth)}</p>
               <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
                 {topDriversWithStrength.map((driver, i) => (
                   <ActiveDriverChannel
@@ -1181,7 +1190,7 @@ export default function Now() {
           </div>
         </Section>
 
-        <Section id="breadth" index="03" eyebrow="Domains" title="Where pressure is concentrated" description="Every domain is normalized to the same 0–100 scale so concentration across domains can be compared directly.">
+        <Section id="breadth" index="03" eyebrow="Domains" title="Where pressure is concentrated" description={`Every domain is normalized to the same 0–100 scale so concentration across domains can be compared directly. ${monthlyRecordBasisNote(marketState.why.evidenceAsOfMonth)}`}>
           <div className="grid gap-3 md:grid-cols-2">
             {evidenceFamilies.map(family => (
               <div key={family.name} className="rounded border border-white/10 bg-white/[0.025] p-4">
@@ -1281,7 +1290,7 @@ export default function Now() {
             <DestinationLink href={EXPERT_WORKSPACE_BY_ID["signal-outlook"].path} label="Signal Outlook" detail="Open scenario and transition analysis." />
             <DestinationLink href={EXPERT_WORKSPACE_BY_ID["decision-engine"].path} label="Decision Engine" detail="Stress-test a response against the regime." />
             <DestinationLink href={EXPERT_WORKSPACE_BY_ID["symbol-intelligence"].path} label="Symbol Intelligence" detail="Analyze a specific asset in context." />
-            <DestinationLink href="/app/seismograph-command-center" label="Seismograph Intelligence" detail="Live pressure across all 10 engines with historical context." />
+            <DestinationLink href="/app/seismograph-command-center" label="Seismograph Intelligence" detail="Seismograph pressure engines with historical context; each reading shows its as-of time." />
           </div>
         </Section>
 
@@ -1290,12 +1299,12 @@ export default function Now() {
             {(sourceHealth.length ? sourceHealth : [{ id: "fallback", label: "Deterministic fallback", status: "degraded", required: true, asOf: lastUpdated?.toISOString() ?? "Unavailable", detail: "Canonical source health is not currently available." }]).map(source => (
               <div key={source.id} className="flex gap-3 rounded border border-white/10 bg-white/[0.025] p-4">
                 {source.status === "healthy" ? <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-300" size={16} /> : <ShieldCheck className="mt-0.5 shrink-0 text-amber-300" size={16} />}
-                <div><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-white">{source.label}</p><span className="font-mono text-[8px] uppercase tracking-[0.13em] text-slate-500">{source.status}</span></div><p className="mt-2 text-xs leading-5 text-slate-400">{source.detail}</p><p className="mt-2 font-mono text-[8px] uppercase tracking-[0.12em] text-slate-600">As of {source.asOf}</p></div>
+                <div><div className="flex flex-wrap items-center gap-2"><p className="text-sm font-semibold text-white">{source.label}</p><span className="font-mono text-[8px] uppercase tracking-[0.13em] text-slate-500">{source.status}</span></div><p className="mt-2 text-xs leading-5 text-slate-400">{source.detail}</p><p className="mt-2 font-mono text-[8px] uppercase tracking-[0.12em] text-slate-600">As of {formatEt(source.asOf) ?? "unavailable"}</p></div>
               </div>
             ))}
           </div>
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-slate-500">Mode: {marketMode} · Updated {lastUpdated ? lastUpdated.toLocaleString() : "unavailable"}</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.13em] text-slate-500">Mode: {marketMode} · Updated {formatEt(lastUpdated?.getTime() ?? null) ?? "unavailable"}</p>
             <Link href={NOW_DEEP_PATH} className="font-mono text-[9px] uppercase tracking-[0.13em] text-cyan-300 hover:text-cyan-200">Inspect every legacy dashboard module →</Link>
           </div>
         </Section>

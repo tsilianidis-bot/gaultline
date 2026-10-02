@@ -15,7 +15,6 @@ import {
 import { useLocation } from 'wouter';
 import { useEngine } from '@/contexts/EngineContext';
 import { getRiskColor } from '@/components/RiskBadge';
-import { LineChart, Line, ResponsiveContainer, ReferenceLine, Tooltip } from 'recharts';
 import {
   WatchlistItem, IndicatorDef, INDICATOR_CATALOG, INDICATOR_MAP,
   loadWatchlist, saveWatchlist, evaluateBreach, getBreachDistance,
@@ -28,6 +27,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { WatchlistEditModal } from '@/components/watchlist/WatchlistEditModal';
 import { CATEGORY_COLORS, SEVERITY_CONFIG } from '@/components/watchlist/watchlistPresentation';
+import { useLiveIndicatorReadings } from '@/hooks/useLiveIndicatorReadings';
+import type { LiveIndicatorReadings } from '@/lib/liveIndicatorReadings';
 
 // ── Watchlist tab type ─────────────────────────────────────────
 type WatchlistTab = 'macro' | 'crypto' | 'daytrade';
@@ -38,57 +39,54 @@ const WATCHLIST_TABS: { id: WatchlistTab; label: string; icon: React.ElementType
 ];
 
 // ── Helpers ───────────────────────────────────────────────────
-function seededRand(seed: number) {
-  let s = seed;
-  return () => { s = (s * 1664525 + 1013904223) & 0xffffffff; return (s >>> 0) / 0xffffffff; };
+// Values come from real sources only (FRED / markets snapshot via
+// useLiveIndicatorReadings, and the canonical Pressure Index). The engine's
+// DEFAULT_INDICATORS demo baseline is never shown, and no synthetic sparkline
+// history is drawn. Missing → "—" UNAVAILABLE; STALE values never trip a breach.
+interface WatchlistReading {
+  value: number | null;
+  /** Visible freshness tag: DELAYED / LAST CLOSE / STALE / UNAVAILABLE, null = live. */
+  stateLabel: string | null;
+  /** Usable for threshold evaluation (present and not STALE). */
+  evaluable: boolean;
+  source?: string;
 }
 
-function buildSparkline(seed: number, n: number, base: number, vol: number) {
-  const r = seededRand(seed);
-  let v = base;
-  return Array.from({ length: n }, (_, i) => {
-    v = Math.max(0, v + (r() - 0.48) * vol);
-    return { i, v: parseFloat(v.toFixed(3)) };
-  });
-}
-
-function getLiveValue(
+function getWatchlistReading(
   indicatorKey: string,
-  indicators: Record<string, number>,
-  output: { overall: { score: number }; domains: { id: string; score: number }[] }
-): number | null {
-  // Domain scores
-  if (indicatorKey === 'score_overall') return output.overall.score;
-  if (indicatorKey === 'score_credit') return output.domains.find(d => d.id === 'credit-stress')?.score ?? null;
-  if (indicatorKey === 'score_ai') return output.domains.find(d => d.id === 'ai-bubble')?.score ?? null;
-  if (indicatorKey === 'score_treasury') return output.domains.find(d => d.id === 'treasury-debt')?.score ?? null;
-  if (indicatorKey === 'score_recession') return output.domains.find(d => d.id === 'recession')?.score ?? null;
-  // Raw indicators
-  const v = indicators[indicatorKey as keyof typeof indicators];
-  return typeof v === 'number' ? v : null;
+  readings: LiveIndicatorReadings,
+  canonical: { overallScore10: number | null; integrityLabel: string },
+): WatchlistReading {
+  if (indicatorKey === 'score_overall') {
+    const value = canonical.overallScore10;
+    if (value == null || !Number.isFinite(value)) return { value: null, stateLabel: 'UNAVAILABLE', evaluable: false };
+    const tag = canonical.integrityLabel === 'LIVE' ? null : canonical.integrityLabel;
+    return { value, stateLabel: tag, evaluable: tag !== 'STALE' && tag !== 'UNAVAILABLE', source: 'Canonical Pressure Index ÷ 10' };
+  }
+  // Credit / AI / Treasury / Recession domain scores have no canonical source.
+  if (indicatorKey.startsWith('score_')) return { value: null, stateLabel: 'UNAVAILABLE', evaluable: false };
+  const reading = readings[indicatorKey as keyof LiveIndicatorReadings];
+  if (!reading) return { value: null, stateLabel: 'UNAVAILABLE', evaluable: false };
+  return { value: reading.value, stateLabel: reading.stateLabel, evaluable: reading.stateLabel !== 'STALE', source: reading.source };
 }
 
 // ── Watchlist card ────────────────────────────────────────────
 interface WatchlistCardProps {
   item: WatchlistItem;
-  liveValue: number | null;
+  reading: WatchlistReading;
   def: IndicatorDef;
   onEdit: () => void;
   onDelete: () => void;
   index: number;
 }
 
-function WatchlistCard({ item, liveValue, def, onEdit, onDelete, index }: WatchlistCardProps) {
+function WatchlistCard({ item, reading, def, onEdit, onDelete, index }: WatchlistCardProps) {
   const [showDetail, setShowDetail] = useState(false);
-  const isBreached = liveValue != null && evaluateBreach(item, liveValue);
-  const proximity = liveValue != null ? getBreachDistance(item, liveValue, def) : 0;
+  const liveValue = reading.value;
+  const isBreached = reading.evaluable && liveValue != null && evaluateBreach(item, liveValue);
+  const proximity = reading.evaluable && liveValue != null ? getBreachDistance(item, liveValue, def) : 0;
   const sevCfg = SEVERITY_CONFIG[item.severity];
   const catColor = CATEGORY_COLORS[def.category] ?? '#00D4FF';
-
-  // Sparkline — stable seed from item id
-  const seed = item.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
-  const sparkBase = liveValue ?? def.defaultThreshold;
-  const sparkData = useMemo(() => buildSparkline(seed, 28, sparkBase, sparkBase * 0.04), [seed, sparkBase]);
 
   const borderColor = isBreached ? sevCfg.color : proximity > 0.6 ? sevCfg.color + '60' : 'rgba(255,255,255,0.06)';
   const bgColor = isBreached ? sevCfg.bg : proximity > 0.6 ? `${sevCfg.color}04` : 'rgba(10,12,16,0.9)';
@@ -158,14 +156,12 @@ function WatchlistCard({ item, liveValue, def, onEdit, onDelete, index }: Watchl
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '26px', color: isBreached ? sevCfg.color : catColor, textShadow: isBreached ? `0 0 20px ${sevCfg.color}80` : `0 0 12px ${catColor}60`, lineHeight: 1 }}>
               {liveValue != null ? def.format(liveValue) : '—'}
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151' }}>LIVE</div>
-            <div style={{ width: '70px', height: '24px' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={sparkData} margin={{ top: 1, right: 1, left: 1, bottom: 1 }}>
-                  <Line type="monotone" dataKey="v" stroke={isBreached ? sevCfg.color : catColor} strokeWidth={1.5} dot={false} style={{ filter: `drop-shadow(0 0 3px ${isBreached ? sevCfg.color : catColor}60)` }} />
-                  <ReferenceLine y={item.thresholdValue} stroke={sevCfg.color} strokeDasharray="3 2" strokeWidth={1} strokeOpacity={0.6} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div
+              data-watchlist-state={reading.stateLabel ?? 'LIVE'}
+              title={reading.source}
+              style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: reading.stateLabel ? '#FF9500' : '#374151', letterSpacing: '0.08em' }}
+            >
+              {reading.stateLabel ?? 'LIVE'}
             </div>
           </div>
         </div>
@@ -341,7 +337,8 @@ const FREE_WATCHLIST_LIMIT = 3;
 export default function Watchlist() {
   useSEO(PAGE_SEO.watchlist);
   const { user } = useAuth();
-  const { indicators, output } = useEngine();
+  const { output, canonicalState, integrityLabel } = useEngine();
+  const { readings } = useLiveIndicatorReadings();
   const isFreeUser = !user || ((user as { accessTier?: string }).accessTier ?? 'free') === 'free';
   const [items, setItems] = useState<WatchlistItem[]>(() => loadWatchlist());
   const [editingItem, setEditingItem] = useState<WatchlistItem | null | undefined>(undefined);
@@ -351,14 +348,30 @@ export default function Watchlist() {
   // Persist on change
   useEffect(() => { saveWatchlist(items); }, [items]);
 
-  // Build live values map
-  const liveValues = useMemo<Record<string, number | null>>(() => {
-    const map: Record<string, number | null> = {};
+  // Real readings per indicator; liveValues holds only values usable for
+  // threshold evaluation (present and not STALE).
+  const pressureIndex = canonicalState?.pressureIndex;
+  const watchlistReadings = useMemo<Record<string, WatchlistReading>>(() => {
+    const overallScore10 = typeof pressureIndex === 'number' && Number.isFinite(pressureIndex) ? pressureIndex / 10 : null;
+    const map: Record<string, WatchlistReading> = {};
     INDICATOR_CATALOG.forEach(def => {
-      map[def.key] = getLiveValue(def.key, indicators as unknown as Record<string, number>, output);
+      map[def.key] = getWatchlistReading(def.key, readings, { overallScore10, integrityLabel });
     });
     return map;
-  }, [indicators, output]);
+  }, [readings, pressureIndex, integrityLabel]);
+  const liveValues = useMemo<Record<string, number | null>>(() => {
+    const map: Record<string, number | null> = {};
+    for (const [key, reading] of Object.entries(watchlistReadings)) map[key] = reading.evaluable ? reading.value : null;
+    return map;
+  }, [watchlistReadings]);
+  const pageBadge = useMemo(() => {
+    const states = items.map(item => watchlistReadings[item.indicatorKey]).filter((r): r is WatchlistReading => Boolean(r));
+    const present = states.filter(r => r.value != null);
+    if (present.length === 0) return 'UNAVAILABLE';
+    if (present.some(r => r.stateLabel === 'STALE')) return 'STALE';
+    if (present.some(r => r.stateLabel != null) || present.length < states.length) return 'DELAYED';
+    return 'LIVE';
+  }, [items, watchlistReadings]);
 
   // Update breach counts when values change
   useEffect(() => {
@@ -439,8 +452,8 @@ export default function Watchlist() {
       <PageHeader
         title="Watchlist"
         subtitle="Pin any macro indicator, set a custom threshold, and get a live visual alert when it’s breached."
-        badge="LIVE"
-        badgeColor="green"
+        badge={pageBadge}
+        badgeColor={pageBadge === 'LIVE' ? 'green' : pageBadge === 'UNAVAILABLE' ? 'gray' : 'amber'}
         rightSlot={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <PreflightTrigger
@@ -591,7 +604,7 @@ export default function Watchlist() {
               <WatchlistCard
                 key={item.id}
                 item={item}
-                liveValue={liveValues[item.indicatorKey]}
+                reading={watchlistReadings[item.indicatorKey] ?? { value: null, stateLabel: 'UNAVAILABLE', evaluable: false }}
                 def={def}
                 onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item.id)}
@@ -609,7 +622,7 @@ export default function Watchlist() {
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '8px', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.12em' }}>How Watchlist Works</span>
             </div>
             <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#374151', lineHeight: 1.6, margin: 0 }}>
-              Thresholds are evaluated against live FRED data (refreshed every 15 minutes) and the reactive engine scores. Breached alerts are highlighted with a severity-colored banner. Sparklines show the last 28 data points with a dashed reference line at your threshold. All settings are saved locally to your device.
+              Thresholds are evaluated against the latest published FRED observations and delayed market quotes (refreshed every 15 minutes), and the overall score against the canonical Pressure Index. Each value shows its freshness (DELAYED, LAST CLOSE, STALE); STALE values do not trigger a breach and indicators without a source show — UNAVAILABLE. Breached alerts are highlighted with a severity-colored banner. All settings are saved locally to your device.
             </p>
           </div>
         )}
