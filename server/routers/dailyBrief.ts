@@ -38,7 +38,7 @@ const PreferencesInputSchema = z.object({
 });
 
 // ── Engine snapshot shape (subset of EngineOutput for diff) ──────────────────
-const EngineSnapshotSchema = z.object({
+export const EngineSnapshotSchema = z.object({
   overallPressure:  z.number(),
   regime:           z.string(),
   liquidity:        z.number(),
