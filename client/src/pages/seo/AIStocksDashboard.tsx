@@ -37,7 +37,7 @@ AI-Adjacent (Moderate AI Exposure): Companies that benefit from AI adoption with
         },
         {
           heading: "AI Concentration Risk — The Systemic Dimension",
-          body: `The 2026 S&P 500 is historically concentrated in AI-exposed equities. The top 10 stocks — the majority of which are AI-exposed — represent over 35% of the index by market cap. This concentration creates a systemic risk dimension that goes beyond individual stock analysis.
+          body: `The 2026 S&P 500 is historically concentrated in AI-exposed equities. The largest stocks — the majority of which are AI-exposed — make up a large share of the index by market cap. This concentration creates a systemic risk dimension that goes beyond individual stock analysis.
 
 When concentrated positions unwind, the cascade effect on index-level returns is severe. The 2000 dot-com bubble provides the historical precedent: the top 10 S&P 500 stocks in March 2000 represented approximately 25% of the index. When technology stocks began to fall, the concentration amplified the index-level decline.
 

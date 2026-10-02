@@ -31,7 +31,7 @@ Bitcoin is primarily a store of value and monetary asset. Its price is driven by
 
 This dual nature means Ethereum has higher beta than Bitcoin — it tends to outperform BTC in bull markets and underperform in bear markets. The ETH/BTC ratio is the primary measure of this relative performance, and FAULTLINE tracks it as a core indicator of the crypto rotation cycle.
 
-The introduction of ETH staking (through Ethereum's transition to Proof of Stake in September 2022) added a new dimension to ETH's risk/reward profile. Staked ETH earns a yield — roughly 3-4% a year in recent years — which can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides a fundamental support for ETH demand from institutional investors.`,
+The introduction of ETH staking (through Ethereum's transition to Proof of Stake in September 2022) added a new dimension to ETH's risk/reward profile. Staked ETH earns a yield, which can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides a fundamental support for ETH demand from institutional investors.`,
         },
         {
           heading: "Ethereum's Key Risk Factors in 2026",
@@ -51,9 +51,9 @@ The introduction of ETH staking (through Ethereum's transition to Proof of Stake
           heading: "ETH Bull Case and Bear Case Scenarios",
           body: `FAULTLINE's structured scenario analysis for Ethereum in 2026:
 
-Bull Case Conditions: Expanding global liquidity (Fed rate cuts, QE restart), rising ETH/BTC ratio, strong L2 ecosystem growth, ETH staking yield above risk-free rates, continued institutional ETF inflows, and a LOW RISK macro regime. In this scenario, ETH has historically outperformed BTC by 2-5x.
+Bull Case Conditions: Expanding global liquidity (Fed rate cuts, QE restart), rising ETH/BTC ratio, strong L2 ecosystem growth, ETH staking yield above risk-free rates, continued institutional ETF inflows, and a LOW RISK macro regime. In this scenario, ETH has historically outperformed BTC.
 
-Bear Case Conditions: Fed QT acceleration or rate hikes, falling ETH/BTC ratio (capital concentration in BTC), DeFi TVL decline, major protocol exploit or stablecoin de-peg, regulatory action against ETH or DeFi, and HIGH STRESS macro regime. In this scenario, ETH has historically fallen 60-80% from cycle highs.
+Bear Case Conditions: Fed QT acceleration or rate hikes, falling ETH/BTC ratio (capital concentration in BTC), DeFi TVL decline, major protocol exploit or stablecoin de-peg, regulatory action against ETH or DeFi, and HIGH STRESS macro regime. In this scenario, ETH has historically fallen sharply from cycle highs.
 
 Base Case: Moderate macro conditions with ETH tracking BTC performance, L2 ecosystem growing steadily, staking yield providing fundamental support, and ETH/BTC ratio consolidating in a range. This scenario is associated with ETH delivering positive but not exceptional returns relative to BTC.
 
@@ -67,7 +67,7 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
         },
         {
           question: "How does Ethereum staking affect ETH's risk profile?",
-          answer: "ETH staking (Proof of Stake) allows ETH holders to earn yield by validating transactions. In recent years roughly a quarter or more of total ETH supply has been staked, earning roughly 3-4% a year. This staking yield can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides fundamental support for institutional ETH demand. When risk-free rates are significantly higher than staking yield, the relative attractiveness of ETH decreases.",
+          answer: "ETH staking (Proof of Stake) allows ETH holders to earn yield by validating transactions. A substantial share of total ETH supply is staked, earning a yield. This staking yield can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides fundamental support for institutional ETH demand. When risk-free rates are significantly higher than staking yield, the relative attractiveness of ETH decreases.",
         },
         {
           question: "What is the biggest risk to Ethereum in 2026?",
