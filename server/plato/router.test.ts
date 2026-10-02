@@ -249,6 +249,32 @@ describe("PLATO router: telemetry", () => {
     expect(logged).not.toContain("{\\\"reply\\\"");
   });
 
+  it("logs only class and status on failure: no upstream body, redacted or not", async () => {
+    const { inspect } = await import("node:util");
+    const spies = (["info", "warn", "error", "debug"] as const).map(level => vi.spyOn(log, level).mockImplementation(() => {}));
+    const consoleSpies = (["log", "info", "warn", "error"] as const).map(level => vi.spyOn(console, level).mockImplementation(() => {}));
+    const sentinel = "SENTINEL-UPSTREAM-BODY quota details for project 1234";
+    const { invoke } = scripted({
+      "gemini-3-flash-preview": [err(429, sentinel)],
+      "gemini-3.1-flash-lite": [err(503, sentinel), err(503, sentinel)],
+      "gemini-3.5-flash-lite": [err(400, sentinel)],
+    });
+    await routePlatoCompletion(request, { config: config(), invoke }).catch(() => undefined);
+
+    const modelCalls = spies.flatMap(spy => spy.mock.calls).filter(call => call[0] === "[PLATO] model call");
+    expect(modelCalls.length).toBeGreaterThanOrEqual(4);
+    for (const [, payload] of modelCalls) {
+      expect(payload).not.toHaveProperty("detail");
+      expect(Object.keys(payload as object).sort()).toEqual([
+        "attempt", "completionTokens", "errorClass", "fallbackReason", "fallbackUsed", "httpStatus", "latencyMs",
+        "model", "promptTokens", "provider", "success", "taskType", "timestamp", "totalTokens",
+      ]);
+    }
+    const everything = inspect([...spies, ...consoleSpies].map(spy => spy.mock.calls), { depth: 10 });
+    expect(everything).not.toContain("SENTINEL-UPSTREAM-BODY");
+    expect(everything).not.toContain("project 1234");
+  });
+
   it("redacts key-like strings from upstream detail", () => {
     expect(redactProviderMessage("x?key=AIzaSyA1234567890abcdefghijklmnopq&y Bearer abc.def")).not.toMatch(/AIza|abc\.def/);
   });

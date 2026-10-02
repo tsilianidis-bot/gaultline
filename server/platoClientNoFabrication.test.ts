@@ -24,14 +24,25 @@ describe("guest ASK PLATO", () => {
     const state = ashaSignInRequiredState();
     expect(state).toMatchObject({ title: "Sign in to use PLATO", showSignIn: true, showRetry: false });
     expect(reduceAshaAskFailure({ data: { code: "UNAUTHORIZED" } })).toEqual(state);
-    expect(panel).toMatch(/onClick=\{\(\) => \{ navigateToLogin\(\); \}\}/);
+    expect(panel).toMatch(/onClick=\{\(\) => \{ setSignInUnavailable\(!navigateToLogin\(\)\); \}\}/);
     // navigateToLogin is only referenced inside the click handler.
     expect(panel.match(/navigateToLogin\(/g)).toHaveLength(1);
+  });
+
+  it("says sign-in is unavailable when navigateToLogin() returns false (mirrors #59)", () => {
+    expect(panel).toContain("setSignInUnavailable(!navigateToLogin())");
+    expect(panel).toContain("Sign-in is unavailable right now. Please try again later.");
+    expect(panel).toMatch(/askFailure\.showSignIn && signInUnavailable &&/);
   });
 
   it("keeps the PLATO card above a bottom banner instead of under it", () => {
     expect(panel).toContain("useBottomObstructionPx");
     expect(panel).toMatch(/\$\{24 \+ bottomObstructionPx\}px/);
+  });
+
+  it("leaves both screen edges clear for the side NAV and ACTIONS tabs", () => {
+    expect(panel).toContain('width: "min(440px, calc(100vw - 88px))"');
+    expect(panel).not.toContain("calc(100vw - 32px)");
   });
 });
 
@@ -39,6 +50,19 @@ describe("no invented briefing fields or greeting claims", () => {
   it("AshaPanel no longer fills missing model fields with ELEVATED / Moderate / NEUTRAL / WATCH / 50", () => {
     expect(panel).not.toMatch(/\|\| "ELEVATED"|\|\| "Moderate"|\|\| "NEUTRAL"|\|\| "WATCH"/);
     expect(panel).not.toMatch(/Probability \?\? 50|pressureScore \?\? 50/);
+  });
+
+  it("AshaPanel shows no response confidence: no keyword-guessed 82/65/45% mapping", () => {
+    expect(panel).not.toMatch(/\? 82|\? 65|: 45;/);
+    expect(panel).toMatch(/confidence: undefined,/);
+  });
+
+  it("AshaPanel never sends the demo engine output as page context", () => {
+    expect(panel).toContain('const canonicalEngine = marketMode === "canonical" ? output : null;');
+    const start = panel.indexOf("const fullPageContext = {");
+    const block = panel.slice(start, panel.indexOf("};", start));
+    expect(block).not.toMatch(/\boutput\?\./);
+    expect(block).toContain("canonicalEngine?.overall?.score");
   });
 
   it("AshaLiveBriefing fallback is an honest unavailable line", () => {

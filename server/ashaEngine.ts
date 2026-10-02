@@ -155,7 +155,8 @@ export interface AshaRequest {
 
 export interface AshaResponse {
   reply: string;
-  confidence: "high" | "moderate" | "low";
+  /** Not established by the model contract; never keyword-guessed or defaulted. */
+  confidence?: "high" | "moderate" | "low";
   sources: string[];
   enginesConsulted: string[];
   lastUpdated: string;
@@ -218,14 +219,6 @@ export interface AshaResponse {
     generationAttempts: number;
     synthesis: { synthesisId: string; originatingStateId: string } | null;
   };
-}
-
-// ── Determine confidence from response ───────────────────────
-function inferConfidence(reply: string): "high" | "moderate" | "low" {
-  const lower = reply.toLowerCase();
-  if (lower.includes("high confidence") || lower.includes("strongly suggests") || lower.includes("clearly")) return "high";
-  if (lower.includes("uncertain") || lower.includes("unclear") || lower.includes("insufficient data") || lower.includes("low confidence")) return "low";
-  return "moderate";
 }
 
 function readString(value: unknown): string | undefined {
@@ -757,7 +750,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
 
   return {
     reply,
-    confidence: inferConfidence(reply),
+    // No response confidence is established: it is never guessed from keywords or defaulted.
+    confidence: undefined,
     sources: packetSources,
     enginesConsulted: packetEngines,
     enginesAvailableCount: packetEngines.length,
@@ -809,35 +803,34 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
 // ── Daily greeting generator ──────────────────────────────────
 export interface AshaDailyGreetingRequest {
   userName?: string;
+  /** Optional readings: only values the client actually has (canonical) are sent. */
   engineContext: {
-    pressureScore: number;
-    regime: string;
-    regimeConfidence: number;
-    narrative: string;
-    trend: string;
-    keyDrivers: string[];
+    pressureScore?: number;
+    regime?: string;
+    regimeConfidence?: number;
+    narrative?: string;
+    trend?: string;
+    keyDrivers?: string[];
     previousPressureScore?: number;
   };
 }
 
 export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): Promise<string> {
   const { engineContext, userName } = req;
-  const pressureChange = engineContext.previousPressureScore !== undefined
+  const pressureChange = engineContext.previousPressureScore !== undefined && engineContext.pressureScore !== undefined
     ? engineContext.pressureScore - engineContext.previousPressureScore
-    : null;
+    : undefined;
 
-  const gatewayContext = await createAshaGatewayContext({
-    page: "daily-greeting",
-    pressureScore: engineContext.pressureScore,
-    regime: engineContext.regime,
-    regimeConfidence: engineContext.regimeConfidence,
-    narrative: engineContext.narrative,
-    trend: engineContext.trend,
-    keyDrivers: engineContext.keyDrivers,
-    additionalContext: {
-      pressureChangeSinceLastSession: pressureChange,
-    },
-  });
+  // Page supplement carries only the readings the client supplied; nothing is defaulted.
+  const page: AshaPageContext = { page: "daily-greeting" };
+  if (engineContext.pressureScore !== undefined) page.pressureScore = engineContext.pressureScore;
+  if (engineContext.regime) page.regime = engineContext.regime;
+  if (engineContext.regimeConfidence !== undefined) page.regimeConfidence = engineContext.regimeConfidence;
+  if (engineContext.narrative) page.narrative = engineContext.narrative;
+  if (engineContext.trend) page.trend = engineContext.trend;
+  if (engineContext.keyDrivers && engineContext.keyDrivers.length > 0) page.keyDrivers = engineContext.keyDrivers;
+  if (pressureChange !== undefined) page.additionalContext = { pressureChangeSinceLastSession: pressureChange };
+  const gatewayContext = await createAshaGatewayContext(page);
   const contextBlock = buildAshaCanonicalContextBlock(gatewayContext);
   const authoritativeState = await getAuthoritativeCanonicalIntelligenceState();
   const evidencePacket = authoritativeState ? buildCanonicalEvidencePacket(toPublicCanonicalIntelligenceState(authoritativeState)) : null;

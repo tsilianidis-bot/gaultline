@@ -647,7 +647,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
             <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", marginBottom: "3px" }}>CONFIDENCE</div>
-                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#E2E8F0" }}>{data.confidence}%</div>
+                <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "16px", color: "#E2E8F0" }}>{data.confidence === undefined ? "NOT ESTABLISHED" : `${data.confidence}%`}</div>
               </div>
               <div>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", textTransform: "uppercase", marginBottom: "3px" }}>TIME HORIZON</div>

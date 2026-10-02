@@ -5,8 +5,8 @@ import type { PlatoTaskType } from "./config";
 /**
  * One structured log line per provider attempt. Contains routing metadata only:
  * never the prompt, the user's question, history, page context, the answer,
- * API keys or the gateway URL. `detail` is a redacted, bounded upstream status
- * summary and is present only on failures.
+ * API keys, the gateway URL or any upstream error body. Failures carry only the
+ * error class and HTTP status.
  */
 export interface PlatoTelemetry {
   provider: string;
@@ -24,7 +24,6 @@ export interface PlatoTelemetry {
   completionTokens: number | null;
   totalTokens: number | null;
   timestamp: string;
-  detail?: string;
 }
 
 export function logPlatoCall(event: PlatoTelemetry): void {
@@ -44,7 +43,6 @@ export function logPlatoCall(event: PlatoTelemetry): void {
     totalTokens: event.totalTokens,
     timestamp: event.timestamp,
   };
-  if (event.detail) payload.detail = event.detail;
   if (event.success) log.info("[PLATO] model call", payload);
   else log.warn("[PLATO] model call", payload);
 }

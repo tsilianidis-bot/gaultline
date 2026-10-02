@@ -20,6 +20,8 @@ vi.mock("./ashaGateway", async importOriginal => ({
   getAshaContextProvenance: gateway.getProvenance,
 }));
 
+import { inspect } from "node:util";
+import { log } from "./logger";
 import { askAsha, generateAshaDailyGreeting } from "./ashaEngine";
 import { mapAshaProcedureError } from "./ashaProcedureError";
 import { PlatoUnavailableError } from "./plato/errors";
@@ -155,18 +157,43 @@ describe("one question, one budget", () => {
   });
 
   it("a failed correction logs only class and status, never the upstream body", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const spies = [
+      ...(["log", "info", "warn", "error"] as const).map(level => vi.spyOn(console, level).mockImplementation(() => {})),
+      ...(["info", "warn", "error", "debug"] as const).map(level => vi.spyOn(log, level).mockImplementation(() => {})),
+    ];
     script([result(replyOnly("Credit is calm.")), http(400, "SECRET-UPSTREAM-BODY prompt echo")]);
     await ask();
-    const logged = JSON.stringify([...warn.mock.calls, ...error.mock.calls]);
+    // util.inspect expands Error objects (message and stack), so logging the raw error would be caught;
+    // JSON.stringify alone would print "{}" for an Error and miss it.
+    const logged = inspect(spies.map(spy => spy.mock.calls), { depth: 10 });
     expect(logged).toContain("Correction failed");
     expect(logged).toContain("bad_request");
     expect(logged).not.toContain("SECRET-UPSTREAM-BODY");
+    expect(logged).not.toContain("prompt echo");
+  });
+});
+
+describe("response confidence", () => {
+  it("is never keyword-guessed or defaulted to moderate", async () => {
+    script([result(fullBriefing("Credit is calm. This clearly suggests stability with high confidence."))]);
+    const response = await ask();
+    expect(response.confidence).toBeUndefined();
+    script([result(fullBriefing("Credit is calm."))]);
+    expect((await ask()).confidence).toBeUndefined();
   });
 });
 
 describe("daily greeting", () => {
+  it("passes only the readings the client supplied: no default pressure or confidence", async () => {
+    script([result("Welcome back. Credit is calm.")]);
+    await generateAshaDailyGreeting({ engineContext: {} }).catch(() => undefined);
+    expect(gateway.createContext).toHaveBeenCalledWith({ page: "daily-greeting" });
+
+    script([result("Welcome back. Credit is calm.")]);
+    await generateAshaDailyGreeting({ engineContext: { pressureScore: 33, regime: "Moderate Risk" } }).catch(() => undefined);
+    expect(gateway.createContext).toHaveBeenLastCalledWith({ page: "daily-greeting", pressureScore: 33, regime: "Moderate Risk" });
+  });
+
   it("an answerless 200 on every model is a typed failure, never the canned greeting", async () => {
     script([result(""), result(null), result(null, "stop", false)]);
     const failure = await generateAshaDailyGreeting({ engineContext: { pressureScore: 33, regime: "Moderate", regimeConfidence: 0.7, narrative: "n", trend: "stable", keyDrivers: [] } }).catch(e => e);

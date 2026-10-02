@@ -60,7 +60,8 @@ describe("NOW destination composition", () => {
 
   it("renders every identified NOW pressure surface on the canonical 0–100 scale", () => {
     const hero = source("client/src/components/AshaHeroSection.tsx");
-    const briefing = source("client/src/components/AshaLiveBriefing.tsx");
+    // The briefing tiles are built by the canonical-gated helper (PR #58 r3).
+    const briefing = source("client/src/components/AshaLiveBriefing.tsx") + source("client/src/lib/ashaBriefingContext.ts");
     const contextStrip = source("client/src/components/MarketContextStrip.tsx");
     const synthesis = source("client/src/components/MarketSynthesisPanel.tsx");
     const narrativeBanner = source("client/src/components/SeismographNarrativeBanner.tsx");

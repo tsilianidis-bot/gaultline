@@ -138,7 +138,9 @@ function generateMissionId(): string {
 }
 
 export default function AshaPanel() {
-  const { output } = useEngine();
+  const { output, marketMode } = useEngine();
+  // The engine output is the demo baseline unless the market mode is canonical: never send it as context.
+  const canonicalEngine = marketMode === "canonical" ? output : null;
   const { data: canonicalState } = trpc.marketState.canonicalCurrent.useQuery(undefined, {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
@@ -149,6 +151,7 @@ export default function AshaPanel() {
   const [synthSteps, setSynthSteps] = useState<SynthesisStep[]>([]);
   const [briefingData, setBriefingData] = useState<OracleBriefingData | null>(null);
   const [askFailure, setAskFailure] = useState<AshaAskFailureState | null>(null);
+  const [signInUnavailable, setSignInUnavailable] = useState(false);
   const isMobile = useIsMobile();
   const synthTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -171,12 +174,12 @@ export default function AshaPanel() {
   // ── Build full page context ───────────────────────────────
   const fullPageContext = {
     page: pageContext?.page ?? "dashboard",
-    pressureScore: pageContext?.pressureScore ?? canonicalState?.pressureIndex ?? (output?.overall?.score !== undefined ? output.overall.score * 10 : undefined),
-    regime: pageContext?.regime ?? canonicalState?.regime ?? output?.regime?.label,
+    pressureScore: pageContext?.pressureScore ?? canonicalState?.pressureIndex ?? (canonicalEngine?.overall?.score !== undefined ? canonicalEngine.overall.score * 10 : undefined),
+    regime: pageContext?.regime ?? canonicalState?.regime ?? canonicalEngine?.regime?.label,
     regimeConfidence: pageContext?.regimeConfidence,
-    narrative: pageContext?.narrative ?? output?.narrative?.summary,
+    narrative: pageContext?.narrative ?? canonicalEngine?.narrative?.summary,
     trend: pageContext?.trend,
-    keyDrivers: pageContext?.keyDrivers ?? output?.narrative?.keyRisks,
+    keyDrivers: pageContext?.keyDrivers ?? canonicalEngine?.narrative?.keyRisks,
     historicalAnalog: pageContext?.historicalAnalog,
     transitionProbability: pageContext?.transitionProbability,
     additionalContext: {
@@ -249,11 +252,13 @@ export default function AshaPanel() {
     const question = text.trim();
     setCurrentQuestion(question);
     if (!authLoading && !user) {
+      setSignInUnavailable(false);
       setAskFailure(ashaSignInRequiredState());
       setPanelState("unavailable");
       return;
     }
     setAskFailure(null);
+    setSignInUnavailable(false);
     setPanelState("synthesizing");
 
     // Initialize synthesis steps
@@ -286,9 +291,6 @@ export default function AshaPanel() {
       await new Promise(resolve => setTimeout(resolve, 650));
 
       // Map to OracleBriefingData
-      const confidenceNum = response.confidence === "high" ? 82
-        : response.confidence === "moderate" ? 65
-        : 45;
 
       const data: OracleBriefingData = {
         question,
@@ -299,7 +301,8 @@ export default function AshaPanel() {
         coreThesis: response.coreThesis || response.executiveSummary || response.reply.split("\n")[0],
         // Missing model fields are shown as not stated, never filled with invented values.
         marketBias: response.marketBias ?? "NOT STATED",
-        confidence: confidenceNum,
+        // No response confidence is established; OracleBriefing renders NOT ESTABLISHED.
+        confidence: undefined,
         marketRegime: response.marketRegime || fullPageContext.regime || "Unknown",
         threatLevel: response.threatLevel ?? "NOT STATED",
         pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? null,
@@ -352,6 +355,7 @@ export default function AshaPanel() {
     setPanelState("idle");
     setCurrentQuestion("");
     setAskFailure(null);
+    setSignInUnavailable(false);
     setSynthSteps([]);
     setBriefingData(null);
   }, []);
@@ -434,7 +438,9 @@ export default function AshaPanel() {
               ? `calc(${72 + bottomObstructionPx}px + env(safe-area-inset-bottom, 0px))`
               : `${24 + bottomObstructionPx}px`,
             transform: "translateX(-50%)",
-            width: "min(440px, calc(100vw - 32px))",
+            // Leave both screen edges clear so the side NAV and ACTIONS tabs (about 34px wide,
+            // vertically centred) stay visible and clickable when the card is raised above the cookie banner.
+            width: "min(440px, calc(100vw - 88px))",
             zIndex: 1100,
             background: "rgba(6,10,20,0.96)",
             border: "1px solid rgba(0,229,255,0.38)",
@@ -508,7 +514,7 @@ export default function AshaPanel() {
             {askFailure.showSignIn && (
               <button
                 type="button"
-                onClick={() => { navigateToLogin(); }}
+                onClick={() => { setSignInUnavailable(!navigateToLogin()); }}
                 style={{
                   fontFamily: "'IBM Plex Mono', monospace",
                   fontSize: "10px",
@@ -545,6 +551,16 @@ export default function AshaPanel() {
               Close
             </button>
           </div>
+          {askFailure.showSignIn && signInUnavailable && (
+            <p role="status" data-plato-signin-unavailable style={{
+              margin: "10px 0 0",
+              fontFamily: "'IBM Plex Sans', sans-serif",
+              fontSize: "12px",
+              color: "#F59E0B",
+            }}>
+              Sign-in is unavailable right now. Please try again later.
+            </p>
+          )}
         </div>
       )}
 

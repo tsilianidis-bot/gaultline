@@ -17,7 +17,11 @@ import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
 import AshaOrb from "@/components/AshaOrb";
 import type { AshaRegimeState } from "@/components/AshaOrb";
-import { formatCanonicalScore } from "@shared/marketMetrics";
+import {
+  buildBriefingDisplay,
+  buildBriefingGreetingContext,
+  isCanonicalMarketMode,
+} from "@/lib/ashaBriefingContext";
 
 // ── Inline SeismicWave (canvas-based animated waveform) ───────
 // idleCalm: slows animation speed to 50% for ambient idle state
@@ -134,20 +138,6 @@ function useTypewriter(text: string, speed = 22, active = true) {
   return { displayed, done };
 }
 
-// ── Pressure color helper ─────────────────────────────────────
-function getPressureColor(score: number): string {
-  if (score >= 7) return "#FF3B5C";
-  if (score >= 5.5) return "#FF9500";
-  if (score >= 4) return "#FFD700";
-  return "#00FF99";
-}
-function getPressureLabel(score: number): string {
-  if (score >= 7) return "CRITICAL";
-  if (score >= 5.5) return "ELEVATED";
-  if (score >= 4) return "MODERATE RISK";
-  return "STABLE";
-}
-
 /** Strip markdown bold/italic asterisks from LLM-generated text — v87870e50 */
 function stripMarkdown(text: string): string {
   return text
@@ -159,23 +149,24 @@ function stripMarkdown(text: string): string {
 
 export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) {
   const [, navigate] = useLocation();
-  const { output, isLoading } = useEngine();
+  const { output, isLoading, marketMode } = useEngine();
   const { user } = useAuth();
-  const { overall, regime, domains, analogs, narrative } = output;
+  const { overall } = output;
+  // Only canonical MarketState binds. The deterministic fallback is the demo baseline, not data.
+  const canonical = isCanonicalMarketMode(marketMode);
+  const display = buildBriefingDisplay(output, marketMode);
   const [greeting, setGreeting] = useState("");
   const [greetingReady, setGreetingReady] = useState(false);
   const [actionsVisible, setActionsVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [idleCalm, setIdleCalm] = useState(false);
   const [greetingExpanded, setGreetingExpanded] = useState(false);
-  const color = regime.color;
-  const ashaRegimeState: AshaRegimeState =
-    overall.score >= 7 ? "critical" : overall.score >= 4.5 ? "rising" : "calm";
-  const pressureColor = getPressureColor(overall.score);
-  const pressureLabel = getPressureLabel(overall.score);
-
-  // Analog
-  const analog = analogs[0];
+  const color = canonical ? output.regime.color : "#00E5FF";
+  const ashaRegimeState: AshaRegimeState = !canonical
+    ? "calm"
+    : overall.score >= 7 ? "critical" : overall.score >= 4.5 ? "rising" : "calm";
+  const pressureColor = display.badgeColor;
+  const pressureLabel = display.badgeLabel;
 
   // User first name
   const firstName = user?.name?.split(" ")[0] ?? "there";
@@ -184,21 +175,11 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
   const greetingMutation = trpc.asha.dailyGreeting.useMutation();
   useEffect(() => {
     if (isLoading || greetingReady) return;
-    const keyDrivers = domains
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-      .map((d) => d.label);
     greetingMutation.mutate(
       {
         userName: firstName !== "there" ? firstName : undefined,
-        engineContext: {
-          pressureScore: overall.score * 10,
-          regime: regime.label,
-          regimeConfidence: 0.75,
-          narrative: narrative?.summary ?? "Markets are in a period of mixed signals.",
-          trend: overall.delta > 0.3 ? "rising" : overall.delta < -0.3 ? "easing" : "stable",
-          keyDrivers,
-        },
+        // Canonical values only; nothing from the demo baseline and no invented confidence.
+        engineContext: buildBriefingGreetingContext(output, marketMode),
       },
       {
         onSuccess: (data: { greeting: string }) => {
@@ -215,7 +196,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
       }
     );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, overall.score, regime.label]);
+  }, [isLoading, overall.score, output.regime.label, marketMode]);
 
   // Show actions after greeting is done
   const { displayed: greetingText, done: greetingDone } = useTypewriter(
@@ -421,7 +402,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
               color: "rgba(148,163,184,0.45)",
             }}
           >
-            \u00b7 {regime.label}
+            {display.badgeRegime ? `\u00b7 ${display.badgeRegime}` : ""}
           </span>
         </div>
 
@@ -440,13 +421,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.35s both",
           }}
         >
-          {[
-            { label: "STATE", value: regime.label.split(" ")[0] ?? regime.label, color: color },
-            { label: "PRESSURE", value: formatCanonicalScore(overall.score * 10), color: pressureColor },
-            { label: "BULL", value: output.probability?.bullProbability != null ? `${output.probability.bullProbability}%` : "\u2014", color: "#00FF88" },
-            { label: "CRASH", value: output.probability?.crashProbability != null ? `${output.probability.crashProbability}%` : "\u2014", color: "#FF2D55" },
-            { label: "ANALOG", value: analog?.era?.split(" ").slice(0, 2).join(" ") ?? "\u2014", color: "#00E5FF" },
-          ].map((stat, i) => (
+          {display.stats.map((stat, i) => (
             <div
               key={i}
               style={{
@@ -707,7 +682,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.6s both",
           }}
         >
-          <SeismicWave color={color} score={overall.score} idleCalm={idleCalm} />
+          <SeismicWave color={color} score={canonical ? overall.score : 0} idleCalm={idleCalm} />
         </div>
       </div>
       <style>{`

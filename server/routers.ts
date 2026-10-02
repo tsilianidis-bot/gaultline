@@ -3385,15 +3385,17 @@ export const appRouter = router({
     dailyGreeting: protectedProcedure
       .input(z.object({
         userName: z.string().optional(),
+        // Every reading is optional: clients send only canonical values and never a default
+        // pressure or an invented confidence. Absent fields are not passed to the model.
         engineContext: z.object({
-          pressureScore: z.number(),
-          regime: z.string(),
-          regimeConfidence: z.number(),
-          narrative: z.string(),
-          trend: z.string(),
-          keyDrivers: z.array(z.string()),
+          pressureScore: z.number().optional(),
+          regime: z.string().optional(),
+          regimeConfidence: z.number().optional(),
+          narrative: z.string().optional(),
+          trend: z.string().optional(),
+          keyDrivers: z.array(z.string()).optional(),
           previousPressureScore: z.number().optional(),
-        }),
+        }).default({}),
       }))
       .mutation(async ({ input }) => {
         try {

@@ -6,7 +6,6 @@ import {
   isRetryableOnSameModel,
   PlatoRouteError,
   PlatoUnavailableError,
-  redactProviderMessage,
   shouldFallback,
   type PlatoAttemptRecord,
   type PlatoErrorClass,
@@ -224,7 +223,7 @@ export async function routePlatoCompletion(
           completionTokens: null,
           totalTokens: null,
           timestamp: new Date(now()).toISOString(),
-          detail: redactProviderMessage(failure.message),
+          // Class and status only: no upstream message body, redacted or not, is logged.
         });
 
         if (!shouldFallback(failure)) {

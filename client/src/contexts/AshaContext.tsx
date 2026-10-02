@@ -45,7 +45,7 @@ export interface AshaThreadExchange {
   question: string;
   answer: string;
   page: string;
-  confidence: "high" | "moderate" | "low";
+  confidence?: "high" | "moderate" | "low";
   sources: string[];
   enginesConsulted: string[];
 }
