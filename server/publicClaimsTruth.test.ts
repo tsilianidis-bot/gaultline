@@ -129,7 +129,7 @@ describe("public claims truth: server-rendered meta", () => {
   it("market-crash-indicator meta is not a crash probability score", () => {
     const meta = getPageMeta("/market-crash-indicator");
     expect(meta.description).not.toMatch(/12 systemic risk signals|crash probability score/);
-    expect(meta.description).toContain("not a calibrated crash probability");
+    expect(meta.description).toContain("FAULTLINE does not offer a crash probability");
   });
 
   it("liquidity, Fed, volatility, and ETH meta describe only ingested inputs", () => {

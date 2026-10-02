@@ -78,7 +78,7 @@ Stop-Loss Levels: FAULTLINE does not publish price targets or support/resistance
         { label: "AMD SIGNAL", href: "/stock/amd", desc: "AMD — NVDA's primary GPU competitor signal analysis." },
         { label: "META SIGNAL", href: "/stock/meta", desc: "Meta — major NVDA customer signal analysis." },
         { label: "AI STOCKS DASHBOARD", href: "/ai-stocks-dashboard", desc: "All AI-exposed stocks in one dashboard." },
-        { label: "MARKET CRASH PROBABILITY", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger NVDA drawdowns." },
+        { label: "MARKET RISK CONTEXT 2026", href: "/market-crash-probability-2026", desc: "Systemic risk that could trigger NVDA drawdowns." },
       ]}
     />
   );

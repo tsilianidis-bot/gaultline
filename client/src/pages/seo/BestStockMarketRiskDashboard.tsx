@@ -5,7 +5,7 @@ export default function BestStockMarketRiskDashboard() {
     <SEOLandingPage
       seo={{
         title: "Best Stock Market Risk Dashboard 2026 | FAULTLINE",
-        description: "The best stock market risk dashboards track systemic stress, regime, crash probability, and credit conditions. See how FAULTLINE compares and what to look for.",
+        description: "The best stock market risk dashboards track systemic stress, regime, and credit conditions. See how FAULTLINE compares and what to look for.",
         canonical: "/best-stock-market-risk-dashboard",
       }}
       badge="RISK DASHBOARD GUIDE"
