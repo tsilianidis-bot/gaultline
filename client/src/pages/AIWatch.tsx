@@ -10,6 +10,8 @@ import { useSEO, PAGE_SEO } from "@/hooks/useSEO";
 import PageHeader from "@/components/PageHeader";
 import { PreflightTrigger } from "@/components/MarketPreflight";
 import { EarlyWarningPresentationPanel } from "@/components/EarlyWarningPresentationPanel";
+import { trpc } from "@/lib/trpc";
+import { aiWatchTiles, selectAiBubbleRisk, AI_CONCENTRATION_STATIC_BASELINE_PCT } from "@/lib/aiWatchMetrics";
 
 const sentimentConfig = {
   bullish: { color: '#00FF88', label: 'BULLISH', icon: TrendingUp },
@@ -137,13 +139,11 @@ export default function AIWatch() {
     ? aiWatchItems
     : aiWatchItems.filter(item => item.category === activeCategory);
 
-  // AI bubble metrics
-  const aiMetrics = [
-    { label: 'Total AI Capex', value: 'Not tracked', color: '#64748B', delta: 'No sourced figure in the app' },
-    { label: 'AI Concentration (S&P)', value: '32.4%', color: '#FF2D55', delta: '+1.8%' },
-    { label: 'Hyperscaler GPU Orders', value: '2.4M', color: '#FF9500', delta: '+180% YoY' },
-    { label: 'AI Startup Valuations', value: '$890B', color: '#FFD700', delta: '+65% YoY' },
-  ];
+  // AI tiles: static baseline (labelled) or Not tracked; no invented figures or deltas.
+  const aiMetrics = aiWatchTiles().map(t => ({ ...t, color: t.tone === 'baseline' ? '#C084FC' : '#64748B' }));
+  // AI / Speculation vector score: canonical Pressure state only, else Unavailable.
+  const canonicalQuery = trpc.marketState.canonicalCurrent.useQuery(undefined, { refetchInterval: 60_000, staleTime: 30_000 });
+  const aiRisk = selectAiBubbleRisk(canonicalQuery.data ?? null, { isLoading: canonicalQuery.isLoading });
 
   return (
     <div style={{ minHeight: '100vh', background: '#050608', maxWidth: '800px', margin: '0 auto' }}>
@@ -163,8 +163,8 @@ export default function AIWatch() {
         marginBottom: '16px',
         animation: 'fade-slide-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) 60ms both',
       }}>
-        {aiMetrics.map((m, i) => (
-          <div key={i} style={{
+        {aiMetrics.map((m) => (
+          <div key={m.id} data-ai-watch-tile={m.id} style={{
             background: 'rgba(10, 12, 16, 0.9)',
             border: `1px solid ${m.color}20`,
             borderRadius: '4px',
@@ -176,30 +176,32 @@ export default function AIWatch() {
             <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '20px', color: m.color, textShadow: `0 0 12px ${m.color}60`, lineHeight: 1 }}>
               {m.value}
             </div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF9500', marginTop: '2px' }}>
-              {m.delta}
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#64748B', marginTop: '2px' }}>
+              {m.note}
             </div>
           </div>
         ))}
       </div>
 
-      {/* AI Bubble risk indicator */}
-      <div style={{
-        background: 'rgba(255, 45, 85, 0.05)',
-        border: '1px solid rgba(255, 45, 85, 0.2)',
+      {/* AI / Speculation vector: canonical Pressure state with source + ET as-of, else Unavailable */}
+      <div data-ai-bubble-risk={aiRisk.available ? 'canonical' : 'unavailable'} style={{
+        background: 'rgba(10, 12, 16, 0.9)',
+        border: '1px solid rgba(192, 132, 252, 0.2)',
         borderRadius: '6px',
         padding: '12px',
         marginBottom: '16px',
         animation: 'fade-slide-up 0.5s cubic-bezier(0.23, 1, 0.32, 1) 120ms both',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#FF2D55', boxShadow: '0 0 8px rgba(255,45,85,0.8)', animation: 'blink-alert 5s ease-in-out infinite' }} />
-          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF2D55', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
-            AI Bubble Risk: CRITICAL — 8.6/10
+          <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: aiRisk.available ? '#C084FC' : '#64748B', letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 600 }}>
+            {aiRisk.label}: {aiRisk.value}
           </span>
         </div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#64748B', marginBottom: '6px' }}>
+          {aiRisk.basis}
+        </div>
         <p style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: '11px', color: '#94A3B8', lineHeight: 1.5 }}>
-          AI/mega-cap concentration has reached 32.4% of S&P 500 — the highest single-sector concentration in US market history, exceeding both the Nifty Fifty era and the 2000 Dot-com peak. Hyperscaler capex growth rate exceeds the 1999 fiber optic buildout at peak. ROI remains unproven at scale.
+          FAULTLINE uses a static AI-concentration baseline (~{AI_CONCENTRATION_STATIC_BASELINE_PCT.toFixed(1)}% of the S&amp;P 500, a reference value, not a live measurement) in this vector, adjusted by the live 10Y yield and HY spread. It does not ingest AI capex, GPU-order or AI startup valuation data.
         </p>
       </div>
 

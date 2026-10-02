@@ -7,6 +7,10 @@ import {
   getDefaultWatchlist, WATCHLIST_STORAGE_KEY, OVERALL_DEFAULT_THRESHOLD, OVERALL_DEFAULT_BELOW_THRESHOLD,
   LEGACY_OVERALL_SCALE_KEY, overallFallbackThreshold, type WatchlistItem,
 } from "../client/src/lib/watchlist";
+import {
+  aiWatchTiles, selectAiBubbleRisk, AI_CONCENTRATION_STATIC_BASELINE_PCT,
+} from "../client/src/lib/aiWatchMetrics";
+import { PRESSURE_VECTOR_DISPLAY } from "../shared/pressureVectorLabels";
 
 const root = resolve(import.meta.dirname, "..");
 const src = (p: string) => readFileSync(resolve(root, p), "utf8");
@@ -365,7 +369,7 @@ describe("no hard-coded current-looking prices or price levels", () => {
   it("AIWatch: no unsourced $214B capex figure", () => {
     const s = src("client/src/pages/AIWatch.tsx");
     expect(s).not.toMatch(/\$214B/);
-    expect(s).toMatch(/value: 'Not tracked'/);
+    expect(aiWatchTiles().find(t => t.id === "ai-capex")?.value).toBe("Not tracked");
   });
 });
 
@@ -377,5 +381,73 @@ describe("PR #59 r2 nits", () => {
     const s = src("client/src/components/ScoreExplainer.tsx");
     expect(s).not.toMatch(/and\/or a high 10Y/);
     expect(s).toMatch(/A high 10Y alone keeps this vector low/);
+  });
+});
+
+// ── AI Sector Watch (/app/watch/deep): no unsourced tiles ─────────────────────
+describe("AIWatch tiles: canonical, static baseline, or Not tracked", () => {
+  const page = src("client/src/pages/AIWatch.tsx");
+  const lib = src("client/src/lib/aiWatchMetrics.ts");
+  const engine = (over: Record<string, unknown> = {}) => ({
+    engineId: "ai-bubble", engineName: "ai-bubble", value: 44, unit: "score_0_to_100", classification: null,
+    direction: "Unknown", acceleration: null, persistence: null, observedAt: null,
+    calculatedAt: "2026-10-01T18:00:34.034Z", sourceInputIds: ["ai_concentration_static_baseline"],
+    qualityStatus: "PARTIAL", freshnessStatus: "CURRENT", fallbackStatus: "NONE",
+    modelVersion: "m", calculationVersion: "c", contributionToComposite: true, ...over,
+  });
+  const state = (engines: unknown[]) => ({ engines, effectiveAt: "2026-10-01T18:00:34.034Z" }) as never;
+
+  it("no hard-coded AI figures, deltas or bubble grade come back", () => {
+    for (const s of [page, lib]) {
+      expect(s).not.toMatch(/2\.4M|\$890B|\$214B|8\.6\/10|\+42%|\+180%|\+65%|\+1\.8%|YoY/);
+      expect(s).not.toMatch(/Bubble Risk: CRITICAL/);
+    }
+    expect(page).not.toMatch(/32\.4/); // baseline only via the labelled constant
+    expect(page).not.toMatch(/\bdelta:/);
+  });
+
+  it("capex, GPU orders and startup valuations are Not tracked; concentration is a labelled static baseline", () => {
+    const tiles = Object.fromEntries(aiWatchTiles().map(t => [t.id, t]));
+    for (const id of ["ai-capex", "gpu-orders", "ai-startup-valuations"]) expect(tiles[id].value).toBe("Not tracked");
+    expect(tiles["ai-concentration"].label).toMatch(/Static Baseline/);
+    expect(tiles["ai-concentration"].value).toBe("~32.4%");
+    expect(tiles["ai-concentration"].note).toMatch(/not live, no change tracked/);
+    expect(tiles["ai-concentration"].note).not.toMatch(/[+-]\d/);
+    // same reference value the engine and vector label describe
+    expect(PRESSURE_VECTOR_DISPLAY["ai-bubble"].description).toContain(`${AI_CONCENTRATION_STATIC_BASELINE_PCT}%`);
+    expect(src("server/pressure/engine.ts")).toContain(`Static ${AI_CONCENTRATION_STATIC_BASELINE_PCT}% AI-concentration baseline`);
+  });
+
+  it("AI / Speculation score binds to the canonical ai-bubble engine on /100 with source and ET as-of", () => {
+    const v = selectAiBubbleRisk(state([engine()]));
+    expect(v.available).toBe(true);
+    expect(v.value).toBe("44/100");
+    expect(v.label).toBe("AI / Speculation (Static Baseline)");
+    expect(v.basis).toMatch(/^Canonical Pressure Index · AI \/ Speculation vector/);
+    expect(v.basis).toMatch(/as of .* ET/);
+    expect(v.basis).toMatch(/quality PARTIAL/);
+    expect(page).toMatch(/trpc\.marketState\.canonicalCurrent\.useQuery/);
+    expect(page).toMatch(/selectAiBubbleRisk\(canonicalQuery\.data \?\? null/);
+  });
+
+  it("prod fixture ai-bubble value renders as its /100 score", () => {
+    const fx = JSON.parse(src("server/__fixtures__/prod-2026-10-01/canonical-current.json"));
+    const st = fx.state ?? fx;
+    const e = st.engines.find((x: { engineId: string }) => x.engineId === "ai-bubble");
+    expect(selectAiBubbleRisk(st).value).toBe(`${Math.round(e.value)}/100`);
+  });
+
+  it("no state, no engine, null / non-finite / out-of-range value or wrong unit → Unavailable", () => {
+    expect(selectAiBubbleRisk(null).value).toBe("Unavailable");
+    expect(selectAiBubbleRisk(undefined, { isLoading: true }).basis).toMatch(/Loading/);
+    expect(selectAiBubbleRisk(state([])).value).toBe("Unavailable");
+    for (const bad of [null, Number.NaN, Infinity, -1, 101]) {
+      expect(selectAiBubbleRisk(state([engine({ value: bad })])).value).toBe("Unavailable");
+    }
+    expect(selectAiBubbleRisk(state([engine({ unit: "score_0_to_10", value: 8.6 })])).value).toBe("Unavailable");
+  });
+
+  it("non-current freshness is shown, not hidden", () => {
+    expect(selectAiBubbleRisk(state([engine({ freshnessStatus: "STALE" })])).basis).toMatch(/STALE/);
   });
 });
