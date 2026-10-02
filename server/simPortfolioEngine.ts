@@ -161,7 +161,8 @@ async function fetchCryptoQuotes(coinIds: string[], apiKey?: string): Promise<Re
 function extractDomainScores(pressure: FaultlinePressureOutput) {
   const find = (id: string) => pressure.vectors.find(v => v.id === id)?.score ?? 50;
   return {
-    credit:    find("credit-stress"),
+    // HELD methodology change: the engine vector id is "credit-contagion" ("credit-stress" does not exist → always 50).
+    credit:    find("credit-contagion"),
     aiBubble:  find("ai-bubble"),
     treasury:  find("treasury-yield"),
     recession: find("recession-risk"),
