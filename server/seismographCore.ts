@@ -26,6 +26,7 @@
 // The Seismograph is the only synthesis layer.
 // ============================================================
 
+import { SEISMOGRAPH_EVIDENCE_VOTE_V2_SEISMOGRAPH_VERSION } from "../shared/probabilityContract";
 import type {
   EvidencePacket,
   EvidenceSignal,
@@ -439,13 +440,12 @@ export function buildASHAContextBlock(output: SeismographOutput): ASHAContextBlo
 
   const systemPromptBlock = `
 ## FAULTLINE SEISMOGRAPH™ — Current Market State
-**Pressure Score:** ${pressureScore}/10 | **Regime:** ${regime} | **Stress Level:** ${stressLevel}
+**Pressure Score:** ${pressureScore}/100 | **Regime:** ${regime} | **Stress Level:** ${stressLevel}
 **Direction:** ${output.direction} | **Evidence Consensus:** ${output.evidenceConsensus}
 
-**Probability Distribution:**
-- Bull: ${probabilities.bull}% | Neutral: ${probabilities.neutral}% | Bear: ${probabilities.bear}%
-- Primary Driver: ${probabilities.primaryDriver}
-- Confidence: ${probabilities.confidence}%
+**Scenario Weights (faultline-probability-contract-v1):**
+- Bull / Neutral / Bear: Uncalibrated — evidence-vote shares, not probabilities. Do not state or estimate a probability.
+- Strongest evidence family: ${probabilities.primaryDriver}
 
 **Historical Context:**
 - Percentile: ${formatOrdinal(output.historicalPercentile)} (${describeHistoricalPercentile(output.historicalPercentile)})
@@ -457,10 +457,7 @@ export function buildASHAContextBlock(output: SeismographOutput): ASHAContextBlo
 **Market Memory:**
 ${memoryHighlights.map((h) => `- ${h}`).join("\n")}
 
-**Transition Risk:**
-- Remain in regime: ${output.transitionProbabilities.remainInRegime}%
-- Transition to elevated: ${output.transitionProbabilities.transitionToElevated}%
-- Transition to crisis: ${output.transitionProbabilities.transitionToCrisis}%
+**Transition Risk:** Unavailable — transition components are not calibrated and fall back to static defaults. Do not state a transition probability.
 
 Data freshness: ${output.dataFreshness} | Last updated: ${new Date(output.computedAt).toISOString()}
 `.trim();
@@ -706,7 +703,11 @@ export function assembleSeismographOutput(
 
   const computedAt = Date.now();
   const output: SeismographOutput = {
-    version: "2.0",
+    // 2.1 = scenario evidence-vote v2: historical-analog similarity is no longer
+    // voted as stress (server/seismographAdapters.ts). Enters the manifest core
+    // (modelVersion → stateHash), so v2 states are new versioned records and
+    // 2.0 states keep their original v1 values.
+    version: SEISMOGRAPH_EVIDENCE_VOTE_V2_SEISMOGRAPH_VERSION,
     computedAt,
     dataFreshness,
     pressureScore: canonicalPressure,

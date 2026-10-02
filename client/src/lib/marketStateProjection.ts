@@ -4,9 +4,80 @@ import {
   computeEngine,
   type DomainScore,
   type EngineOutput,
+  type ProbabilityOutput,
+  type ProbabilityOutputDisplay,
+  type ProbabilityOutputKey,
   type RawIndicators,
   type RegimeOutput,
 } from "@/lib/engine";
+import {
+  PROBABILITY_DISPLAY_TEXT,
+  type CanonicalProbabilityContract,
+  type ProbabilityDisplay,
+} from "@shared/probabilityContract";
+
+const WITHHELD = (state: Exclude<ProbabilityDisplay["state"], "AVAILABLE">): ProbabilityDisplay => ({
+  state,
+  text: PROBABILITY_DISPLAY_TEXT[state],
+  percent: null,
+});
+
+/** Crash, recession, soft landing and stagflation are not offered in any mode. */
+const NOT_OFFERED_KEYS: ProbabilityOutputKey[] = [
+  "crashProbability",
+  "softLandingProbability",
+  "stagflationProbability",
+  "recessionProbability",
+];
+
+function displayFor(
+  mode: BrowserMarketMode,
+  contract: CanonicalProbabilityContract | null | undefined,
+): ProbabilityOutputDisplay {
+  const notOffered = Object.fromEntries(NOT_OFFERED_KEYS.map(key => [key, WITHHELD("NOT_OFFERED")])) as Record<string, ProbabilityDisplay>;
+  let bull: ProbabilityDisplay;
+  if (mode === "canonical") {
+    // The "bull" field on canonical surfaces is the canonical bull scenario claim.
+    bull = contract?.scenarioSet.scenarios.find(c => c.scenario.scenarioId === "bull")?.display ?? WITHHELD("UNAVAILABLE");
+  } else if (mode === "simulation") {
+    // What-if heuristic from the browser engine: never calibrated.
+    bull = WITHHELD("UNCALIBRATED");
+  } else {
+    // Demo DEFAULT_INDICATORS baseline: no market data behind it.
+    bull = WITHHELD("UNAVAILABLE");
+  }
+  return { ...notOffered, bullProbability: bull } as ProbabilityOutputDisplay;
+}
+
+/** NaN for every field the display withholds; the displayed integer otherwise. */
+function gateProbabilities(display: ProbabilityOutputDisplay): ProbabilityOutput {
+  const out = {} as ProbabilityOutput;
+  (Object.keys(display) as ProbabilityOutputKey[]).forEach(key => {
+    const percent = display[key].state === "AVAILABLE" ? display[key].percent : null;
+    out[key] = percent === null ? Number.NaN : percent;
+  });
+  return out;
+}
+
+/** The only sanctioned text for an EngineOutput probability field. */
+export function engineProbabilityText(output: Pick<EngineOutput, "probabilityDisplay">, key: ProbabilityOutputKey): string {
+  return output.probabilityDisplay?.[key]?.text ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE;
+}
+
+/** Bar/width percent for an EngineOutput probability field, or null when withheld. */
+export function engineProbabilityPercent(output: Pick<EngineOutput, "probabilityDisplay">, key: ProbabilityOutputKey): number | null {
+  const display = output.probabilityDisplay?.[key];
+  return display?.state === "AVAILABLE" ? display.percent : null;
+}
+
+function withProbabilityContract(
+  output: EngineOutput,
+  mode: BrowserMarketMode,
+  contract: CanonicalProbabilityContract | null | undefined,
+): EngineOutput {
+  const probabilityDisplay = displayFor(mode, contract);
+  return { ...output, probability: gateProbabilities(probabilityDisplay), probabilityDisplay };
+}
 
 export type BrowserMarketMode = "canonical" | "simulation" | "deterministic-fallback";
 
@@ -56,7 +127,6 @@ export function projectCanonicalMarketState(
     };
   });
 
-  const probabilities = state.outlook.regimeProbabilities;
   const analogs = state.outlook.topAnalog
     ? [{
         id: `canonical-${state.outlook.topAnalog.period}`,
@@ -93,12 +163,13 @@ export function projectCanonicalMarketState(
       code: regimeCode(canonicalScore),
       description: state.why.whyThisRegime,
     },
+    // Withheld here; withProbabilityContract sets the contract-gated values.
     probability: {
-      bullProbability: normalizeCanonicalMetric(probabilities.bull),
-      crashProbability: normalizeCanonicalMetric(probabilities.crash),
-      softLandingProbability: normalizeCanonicalMetric(probabilities.softLanding),
-      stagflationProbability: normalizeCanonicalMetric(probabilities.stagflation),
-      recessionProbability: normalizeCanonicalMetric(probabilities.recession),
+      bullProbability: Number.NaN,
+      crashProbability: Number.NaN,
+      softLandingProbability: Number.NaN,
+      stagflationProbability: Number.NaN,
+      recessionProbability: Number.NaN,
     },
     analogs,
     narrative: {
@@ -121,15 +192,19 @@ export function selectBrowserMarketOutput(input: {
   });
 
   if (isSimulating) {
-    return { output: deterministicOutput, mode: "simulation" };
+    return { output: withProbabilityContract(deterministicOutput, "simulation", null), mode: "simulation" };
   }
 
   if (input.marketState) {
     return {
-      output: projectCanonicalMarketState(input.marketState, deterministicOutput),
+      output: withProbabilityContract(
+        projectCanonicalMarketState(input.marketState, deterministicOutput),
+        "canonical",
+        input.marketState.outlook.probabilityContract,
+      ),
       mode: "canonical",
     };
   }
 
-  return { output: deterministicOutput, mode: "deterministic-fallback" };
+  return { output: withProbabilityContract(deterministicOutput, "deterministic-fallback", null), mode: "deterministic-fallback" };
 }

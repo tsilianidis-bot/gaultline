@@ -37,17 +37,18 @@ export interface HistoricalMonth {
   month: string;
   score: number;
   regime: string;
-  liquidity: number;
-  credit: number;
-  volatility: number;
-  macro: number;
+  /** Stored sub-scores. null = missing for that month (DB 0 / null sentinel); never a neutral 50. */
+  liquidity: number | null;
+  credit: number | null;
+  volatility: number | null;
+  macro: number | null;
   /**
    * "market-breadth" engine score. It reads unemployment + the 10Y yield
    * (shared/pressureVectorLabels.ts → "Labor & Rates"), NOT market breadth.
    * null = missing for that month; never replaced with a neutral 50.
    */
   breadth: number | null;
-  aiBubble: number;
+  aiBubble: number | null;
   baaSpread: number | null;
   hySpread: number | null;
   tsy10y: number | null;
@@ -286,16 +287,20 @@ export function computeSimilarity(a: HistoricalMonth, b: HistoricalMonth): numbe
   // The Labor & Rates ("market-breadth") term is skipped when either side is
   // missing — never compared as a neutral 50 — and the mean is taken over the
   // remaining terms. With all five present this equals the original sum / 5.
-  const subTerms = [
-    Math.abs((a.liquidity || 50) - (b.liquidity || 50)),
-    Math.abs((a.credit || 50) - (b.credit || 50)),
-    Math.abs((a.volatility || 50) - (b.volatility || 50)),
-    Math.abs((a.macro || 50) - (b.macro || 50)),
-  ];
+  // Every sub-score term (not only Labor & Rates) is skipped when either side
+  // is missing — never compared as a neutral 50 (the former `|| 50` fill made
+  // two months with missing scores look identical). With all five present
+  // this equals the original sum / 5.
   const finiteScore = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
-  if (finiteScore(a.breadth) && finiteScore(b.breadth)) subTerms.push(Math.abs(a.breadth - b.breadth));
+  const subTerms: number[] = [];
+  for (const key of ["liquidity", "credit", "volatility", "macro", "breadth"] as const) {
+    const av = a[key];
+    const bv = b[key];
+    if (finiteScore(av) && finiteScore(bv)) subTerms.push(Math.abs(av - bv));
+  }
   const subDiff = subTerms.reduce((sum, d) => sum + d, 0);
-  const subSimil = Math.max(0, 100 - subDiff / subTerms.length);
+  // No comparable sub-scores → no sub-score evidence of similarity (0), not a perfect match.
+  const subSimil = subTerms.length ? Math.max(0, 100 - subDiff / subTerms.length) : 0;
 
   let macroSimil = 70; // default when data missing
   if (a.tsy10y !== null && b.tsy10y !== null) {
@@ -401,10 +406,11 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   ]);
 
   // ── 2. Normalize history ──────────────────────────────────────
-  // NOTE: Use `|| 50` (not `?? 50`) so that DB rows storing 0 for missing sub-scores
-  // also fall back to the neutral sentinel value of 50. The DB stores 0 when a
-  // sub-score was not computed for that month (e.g. partial live-run rows), not
-  // as a genuine "zero stress" reading — genuine low-stress readings are ~20–30.
+  // The DB stores 0 when a sub-score was not computed for that month (e.g.
+  // partial live-run rows), not as a genuine "zero stress" reading — genuine
+  // low-stress readings are ~20–30. Defect fix: those were filled with a
+  // neutral 50 (`|| 50`), which then fed evidence families, 6-month averages,
+  // analog similarity and the 5-way set as if measured. Missing now stays null.
   // We also track the raw DB values for the last two rows so the second-layer patch
   // below can detect which sub-scores were genuinely missing (raw === 0).
   const rawLatest = allHistory[allHistory.length - 1];
@@ -413,14 +419,14 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
     month: r.month,
     score: r.overallPressure,
     regime: r.regime,
-    liquidity: r.liquidityStress || 50,
-    credit: r.creditContagion || 50,
-    volatility: r.volatilityRegime || 50,
-    macro: r.macroSensitivity || 50,
+    liquidity: normalizeSubScore(r.liquidityStress),
+    credit: normalizeSubScore(r.creditContagion),
+    volatility: normalizeSubScore(r.volatilityRegime),
+    macro: normalizeSubScore(r.macroSensitivity),
     // Fail-closed: a missing (null) or unpopulated (0 sentinel, see note above)
     // market-breadth sub-score stays null instead of becoming a neutral 50.
     breadth: normalizeLaborRatesScore(r.marketBreadth),
-    aiBubble: r.aiBubble || 50,
+    aiBubble: normalizeSubScore(r.aiBubble),
     baaSpread: r.baaSpread !== null ? Number(r.baaSpread) : null,
     hySpread: r.hySpreadProxy !== null ? Number(r.hySpreadProxy) : null,
     tsy10y: r.tsy10y !== null ? Number(r.tsy10y) : null,
@@ -453,8 +459,7 @@ export async function getUnifiedSeismographIntelligence(): Promise<UnifiedSeismo
   // Guard: if the latest DB row has zero sub-scores (partial/incomplete row from a
   // live run that did not fully populate all domain scores), patch each missing score
   // with the previous row's actual value. We detect "missing" by checking the raw DB
-  // value (before the || 50 normalization) so we don't confuse the 50-sentinel with
-  // a genuine prior-row value.
+  // value so a missing sub-score is never confused with a genuine prior-row value.
   const prev = history.length >= 2 ? history[history.length - 2] : null;
   const latestForFamilies: typeof latest = (rawLatest && rawPrev && prev)
     ? {
@@ -709,45 +714,63 @@ export function normalizeLaborRatesScore(raw: number | null | undefined): number
   return typeof raw === "number" && Number.isFinite(raw) && raw !== 0 ? raw : null;
 }
 
+/**
+ * Fail-closed normalisation of every stored vector sub-score: null/undefined,
+ * non-finite or the 0 "not computed" sentinel → null. Never a neutral 50.
+ */
+export function normalizeSubScore(raw: number | null | undefined): number | null {
+  return typeof raw === "number" && Number.isFinite(raw) && raw !== 0 ? raw : null;
+}
+
 export function buildEvidenceFamilies(
   latest: HistoricalMonth,
   history: HistoricalMonth[]
 ): EvidenceFamily[] {
   const last6 = history.slice(-6);
-  const avgLiquidity = last6.reduce((s, h) => s + h.liquidity, 0) / last6.length;
-  const avgCredit = last6.reduce((s, h) => s + h.credit, 0) / last6.length;
-  const avgVol = last6.reduce((s, h) => s + h.volatility, 0) / last6.length;
-  const avgMacro = last6.reduce((s, h) => s + h.macro, 0) / last6.length;
+  // Averages and families use measured sub-scores only. A family whose current
+  // sub-score is missing is omitted (not shown as a neutral 50).
+  const mean = (values: Array<number | null>): number | null => {
+    const finite = values.filter((v): v is number => typeof v === "number" && Number.isFinite(v));
+    return finite.length ? finite.reduce((a, b) => a + b, 0) / finite.length : null;
+  };
+  const lq = latest.liquidity ?? 0;
+  const cr = latest.credit ?? 0;
+  const vo = latest.volatility ?? 0;
+  const mc = latest.macro ?? 0;
+  const avgLiquidity = mean(last6.map(h => h.liquidity)) ?? lq;
+  const avgCredit = mean(last6.map(h => h.credit)) ?? cr;
+  const avgVol = mean(last6.map(h => h.volatility)) ?? vo;
+  const avgMacro = mean(last6.map(h => h.macro)) ?? mc;
   const last6LaborRates = last6.map(h => h.breadth).filter((v): v is number => v != null);
   const avgLaborRates = last6LaborRates.length ? last6LaborRates.reduce((s, v) => s + v, 0) / last6LaborRates.length : null;
 
-  const families: EvidenceFamily[] = [
-    {
+  const coreFamilies: Array<EvidenceFamily | null> = [
+    latest.liquidity == null ? null : {
       name: "Liquidity Conditions",
-      signal: latest.liquidity >= 60 ? "stressed" : latest.liquidity >= 40 ? "neutral" : "recovering",
-      strength: latest.liquidity,
-      currentValue: `${latest.liquidity}/100`,
+      signal: lq >= 60 ? "stressed" : lq >= 40 ? "neutral" : "recovering",
+      strength: lq,
+      currentValue: `${lq}/100`,
       historicalContext: `6-month average: ${Math.round(avgLiquidity)}/100. ${
-        latest.liquidity > avgLiquidity + 10
+        lq > avgLiquidity + 10
           ? "Liquidity stress is accelerating above recent trend."
-          : latest.liquidity < avgLiquidity - 10
+          : lq < avgLiquidity - 10
           ? "Liquidity conditions are improving relative to recent trend."
           : "Liquidity conditions are consistent with recent trend."
       }`,
       trend:
-        latest.liquidity > avgLiquidity + 5
+        lq > avgLiquidity + 5
           ? "deteriorating"
-          : latest.liquidity < avgLiquidity - 5
+          : lq < avgLiquidity - 5
           ? "improving"
           : "stable",
       whyItMatters:
         "Liquidity stress drives credit tightening and forced selling. Elevated readings historically precede broader market dislocations by 2–4 months.",
     },
-    {
+    latest.credit == null ? null : {
       name: "Credit Markets",
-      signal: latest.credit >= 65 ? "stressed" : latest.credit >= 40 ? "neutral" : "bullish",
-      strength: latest.credit,
-      currentValue: `${latest.credit}/100${latest.baaSpread ? ` (BAA spread: ${latest.baaSpread}%)` : ""}`,
+      signal: cr >= 65 ? "stressed" : cr >= 40 ? "neutral" : "bullish",
+      strength: cr,
+      currentValue: `${cr}/100${latest.baaSpread ? ` (BAA spread: ${latest.baaSpread}%)` : ""}`,
       historicalContext: `6-month average: ${Math.round(avgCredit)}/100. ${
         latest.baaSpread
           ? `BAA-Treasury spread at ${latest.baaSpread}% — ${
@@ -760,40 +783,40 @@ export function buildEvidenceFamilies(
           : "Credit contagion index based on composite spread signals."
       }`,
       trend:
-        latest.credit > avgCredit + 5
+        cr > avgCredit + 5
           ? "deteriorating"
-          : latest.credit < avgCredit - 5
+          : cr < avgCredit - 5
           ? "improving"
           : "stable",
       whyItMatters:
         "Credit spreads are the most reliable leading indicator of systemic stress. Widening spreads signal that institutional investors are pricing in elevated default risk.",
     },
-    {
+    latest.volatility == null ? null : {
       name: YIELD_CURVE_FAMILY_NAME,
-      signal: latest.volatility >= 65 ? "stressed" : latest.volatility >= 40 ? "neutral" : "bullish",
-      strength: latest.volatility,
-      currentValue: `${latest.volatility}/100`,
+      signal: vo >= 65 ? "stressed" : vo >= 40 ? "neutral" : "bullish",
+      strength: vo,
+      currentValue: `${vo}/100`,
       historicalContext: `6-month average: ${Math.round(avgVol)}/100. ${
-        latest.volatility > 70
+        vo > 70
           ? "Curve shape and the 10Y level are in a high-pressure band (deep inversion or steep re-steepening)."
-          : latest.volatility > 55
+          : vo > 55
           ? "Curve shape and the 10Y level are adding elevated rate-structure pressure."
           : "Curve shape and the 10Y level are adding limited rate-structure pressure."
       }`,
       trend:
-        latest.volatility > avgVol + 5
+        vo > avgVol + 5
           ? "deteriorating"
-          : latest.volatility < avgVol - 5
+          : vo < avgVol - 5
           ? "improving"
           : "stable",
       whyItMatters:
         "The 10Y–2Y curve and the 10Y level summarize the rate structure facing borrowers and risk assets. This vector does not read VIX or realized volatility.",
     },
-    {
+    latest.macro == null ? null : {
       name: "Macro Sensitivity",
-      signal: latest.macro >= 65 ? "bearish" : latest.macro >= 40 ? "neutral" : "bullish",
-      strength: latest.macro,
-      currentValue: `${latest.macro}/100${latest.cpiYoy ? ` (CPI: ${latest.cpiYoy}% YoY)` : ""}${latest.fedfunds ? ` (Fed Funds: ${latest.fedfunds}%)` : ""}`,
+      signal: mc >= 65 ? "bearish" : mc >= 40 ? "neutral" : "bullish",
+      strength: mc,
+      currentValue: `${mc}/100${latest.cpiYoy ? ` (CPI: ${latest.cpiYoy}% YoY)` : ""}${latest.fedfunds ? ` (Fed Funds: ${latest.fedfunds}%)` : ""}`,
       historicalContext: `6-month average: ${Math.round(avgMacro)}/100. ${
         latest.cpiYoy && latest.fedfunds
           ? `With CPI at ${latest.cpiYoy}% and Fed Funds at ${latest.fedfunds}%, real rates are ${
@@ -808,15 +831,16 @@ export function buildEvidenceFamilies(
           : "Macro sensitivity composite reflects inflation, employment, and monetary policy dynamics."
       }`,
       trend:
-        latest.macro > avgMacro + 5
+        mc > avgMacro + 5
           ? "deteriorating"
-          : latest.macro < avgMacro - 5
+          : mc < avgMacro - 5
           ? "improving"
           : "stable",
       whyItMatters:
         "Macro sensitivity captures how exposed markets are to economic deterioration. High readings mean that negative economic surprises will have outsized market impact.",
     },
   ];
+  const families: EvidenceFamily[] = coreFamilies.filter((f): f is EvidenceFamily => f !== null);
 
   // Labor & Rates — the "market-breadth" engine id reads UNRATE + DGS10, so it
   // is labelled with its canonical display label and never described as market
@@ -878,7 +902,7 @@ export function buildEvidenceFamilies(
           ? "improving"
           : "stable",
       whyItMatters:
-        "The yield curve is the most historically reliable recession predictor. An inverted curve has preceded every US recession since 1955 with no false positives.",
+        "An inverted 10Y–2Y curve has historically preceded most U.S. recessions, with long and variable lead times; it is context, not a recession probability.",
     });
   }
 
@@ -940,7 +964,7 @@ function findHistoricalAnalogs(
       regime: h.regime,
       description: `${periodLabel(h.month)}: Pressure at ${h.score}/100 in ${regimeLabel(h.regime)} regime.${
         event ? ` Context: ${event}.` : ""
-      } Liquidity: ${h.liquidity}, Credit: ${h.credit}, Volatility: ${h.volatility}.`,
+      } Liquidity: ${h.liquidity ?? "n/a"}, Credit: ${h.credit ?? "n/a"}, Volatility: ${h.volatility ?? "n/a"}.`,
       outcome3m:
         fwd.r3m !== null
           ? `${fwd.r3m > 0 ? "+" : ""}${fwd.r3m}% (3 months later)`
@@ -1378,8 +1402,8 @@ function detectActivePatterns(
   }
 
   // Pattern 2: Credit-Liquidity divergence
-  const creditHigh = last6.every((h) => h.credit >= 55);
-  const liquidityLow = last6.every((h) => h.liquidity <= 45);
+  const creditHigh = last6.every((h) => h.credit != null && h.credit >= 55);
+  const liquidityLow = last6.every((h) => h.liquidity != null && h.liquidity <= 45);
   if (creditHigh && liquidityLow) {
     patterns.push({
       name: "Credit-Liquidity Divergence",
@@ -1755,13 +1779,14 @@ function buildMarketNarrative(
     ? `The composite pressure score is accelerating to the upside, suggesting that conditions are building faster than the headline number reflects. Watch for additional engines to shift from neutral to stressed in the coming weeks.`
     : `No clear sub-surface pressure is building at this time. The current reading appears to reflect conditions accurately across all monitored engines.`;
 
-  // 5. Highest probability path forward
+  // 5. Most frequent historical path (probability contract: transition
+  //    frequencies are uncalibrated, so no percentage is stated in copy).
   const topAnalog = analogs[0];
   const highestProbabilityPath = transitionProbabilities.remainInRegime >= 50
-    ? `The highest-probability outcome (${transitionProbabilities.remainInRegime}% historical frequency) is continuation of the current ${currentRegime} regime over the next 30–60 days. ${topAnalog ? `The closest historical analog — ${topAnalog.label} (${topAnalog.similarity}% similarity) — ${topAnalog.resolution}.` : ""} ${transitionProbabilities.historicalBasis}`
+    ? `The most frequent historical outcome (frequency withheld: uncalibrated) is continuation of the current ${currentRegime} regime over the next 30–60 days. ${topAnalog ? `The closest historical analog — ${topAnalog.label} (${topAnalog.similarity}% similarity) — ${topAnalog.resolution}.` : ""} ${transitionProbabilities.historicalBasis}`
     : transitionProbabilities.transitionToElevated > transitionProbabilities.transitionToLow
-    ? `The highest-probability outcome is a transition toward elevated or higher stress (${transitionProbabilities.transitionToElevated}% historical frequency), driven by ${transitionProbabilities.currentEvidence.slice(0, 2).join(" and ")}. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`
-    : `The highest-probability outcome is a transition toward lower pressure (${transitionProbabilities.transitionToLow}% historical frequency), consistent with the current ${currentDirection.toLowerCase()} direction. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`;
+    ? `The most frequent historical outcome is a transition toward elevated or higher stress (frequency withheld: uncalibrated), driven by ${transitionProbabilities.currentEvidence.slice(0, 2).join(" and ")}. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`
+    : `The most frequent historical outcome is a transition toward lower pressure (frequency withheld: uncalibrated), consistent with the current ${currentDirection.toLowerCase()} direction. ${topAnalog ? `The closest analog — ${topAnalog.label} — ${topAnalog.resolution}.` : ""}`;
 
   // 6. What would invalidate the current assessment?
   const whatWouldInvalidate = evolution.invalidationConditions.length > 0

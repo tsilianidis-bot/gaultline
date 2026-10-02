@@ -21,6 +21,7 @@
 
 import { calculateFaultlinePressure, type FaultlinePressureOutput, type RiskVector } from "./pressure/engine";
 import { invokeLLM } from "./_core/llm";
+import { pressureVectorLabel } from "../shared/pressureVectorLabels";
 
 // ── Types ─────────────────────────────────────────────────────
 
@@ -80,11 +81,13 @@ export interface PreFlightOutput {
   regimeLevel: string;
   marketStatus: "Cleared" | "Caution" | "Defensive";
 
-  // Probabilities
-  bullProbability: number;         // 0–100
-  bearProbability: number;         // 0–100
-  recessionProbability: number;    // 0–100
-  crashProbability: number;        // 0–100
+  // Probabilities — withheld (faultline-probability-contract-v1). These were
+  // fixed linear formulas over the Pressure Index (retired "preflight-heuristic"),
+  // not a governed or calibrated model. Always null; render "Not offered".
+  bullProbability: null;
+  bearProbability: null;
+  recessionProbability: null;
+  crashProbability: null;
 
   // Condition panels
   creditCondition: ConditionPanel;
@@ -166,7 +169,7 @@ function getAwarenessLevel(score: number): AwarenessLevel {
 }
 
 function buildCreditCondition(vectors: RiskVector[], pressure: FaultlinePressureOutput): ConditionPanel {
-  const creditScore = getVectorScore(vectors, "credit-stress");
+  const creditScore = getVectorScore(vectors, "credit-contagion");
   const level = scoreToConditionLevel(creditScore);
 
   const spreadLabel = creditScore >= 70 ? "Widening rapidly" : creditScore >= 45 ? "Moderately elevated" : "Contained";
@@ -257,22 +260,24 @@ function buildAIBubbleRisk(vectors: RiskVector[], pressure: FaultlinePressureOut
 }
 
 function buildRecessionRisk(vectors: RiskVector[], pressure: FaultlinePressureOutput): ConditionPanel {
-  const creditScore = getVectorScore(vectors, "credit-stress");
+  const creditScore = getVectorScore(vectors, "credit-contagion");
   const breadthScore = getVectorScore(vectors, "market-breadth");
   const recessionScore = clamp(Math.round(creditScore * 0.35 + breadthScore * 0.35 + pressure.overallPressure * 0.30), 0, 100);
   const level = scoreToConditionLevel(recessionScore);
 
-  const recessionProb = clamp(Math.round(recessionScore * 0.6), 5, 70);
-
+  // No recession probability is offered: the former "~N%" was
+  // clamp(round(recessionScore * 0.6), 5, 70), an invented scaling of this
+  // condition score (and it read a nonexistent "credit-stress" vector, so credit
+  // was always the default 50). The panel reports the 0–100 condition score only.
   return {
     label: "Recession Risk",
     level,
     score: recessionScore,
     summary: recessionScore >= 60
-      ? `Recession probability elevated (~${recessionProb}%) — leading indicators deteriorating.`
+      ? `Recession-risk condition score elevated (${recessionScore}/100) — not a recession probability.`
       : recessionScore >= 35
-      ? `Recession risk moderate (~${recessionProb}%) — watch leading indicators closely.`
-      : `Recession risk low (~${recessionProb}%) — economic expansion intact.`,
+      ? `Recession-risk condition score moderate (${recessionScore}/100) — not a recession probability.`
+      : `Recession-risk condition score low (${recessionScore}/100) — not a recession probability.`,
     detail: `${
       recessionScore >= 60
         ? "Yield curve inversion, credit tightening, and deteriorating breadth are classic pre-recession signals. Corporate earnings guidance turning cautious. Consumer spending showing stress at the margin. Defensive positioning warranted."
@@ -284,36 +289,37 @@ function buildRecessionRisk(vectors: RiskVector[], pressure: FaultlinePressureOu
       { name: "Yield Curve", value: recessionScore >= 60 ? "Inverted" : recessionScore >= 35 ? "Flattening" : "Normal", status: recessionScore >= 60 ? "red" : recessionScore >= 35 ? "yellow" : "green" },
       { name: "Leading Indicators", value: recessionScore >= 60 ? "Declining" : recessionScore >= 35 ? "Mixed" : "Positive", status: recessionScore >= 60 ? "red" : recessionScore >= 35 ? "yellow" : "green" },
       { name: "Labor Market", value: recessionScore >= 60 ? "Softening" : "Resilient", status: recessionScore >= 60 ? "red" : "green" },
-      { name: "12-Month Probability", value: `~${recessionProb}%`, status: recessionProb >= 40 ? "red" : recessionProb >= 20 ? "yellow" : "green" },
+      { name: "12-Month Probability", value: "Not offered", status: "yellow" },
     ],
   };
 }
 
 function buildVolatilityCondition(vectors: RiskVector[], pressure: FaultlinePressureOutput): ConditionPanel {
+  // The "volatility-regime" vector reads the 10Y–2Y Treasury curve and the 10Y
+  // level (DGS10, DGS2). It does not read VIX, options skew or realized
+  // volatility, so this panel describes rate-structure pressure only.
   const volScore = getVectorScore(vectors, "volatility-regime");
   const level = scoreToConditionLevel(volScore);
 
   return {
-    label: "Volatility Regime",
+    label: pressureVectorLabel("volatility-regime"),
     level,
     score: volScore,
     summary: volScore >= 65
-      ? "Elevated volatility regime — VIX elevated, tail risk premium high."
+      ? "Yield-curve and 10Y-level pressure is high (deep inversion or steep re-steepening)."
       : volScore >= 40
-      ? "Moderate volatility — normal market fluctuations with occasional spikes."
-      : "Low volatility regime — complacency risk building.",
+      ? "Yield-curve and 10Y-level pressure is moderate."
+      : "Yield-curve and 10Y-level pressure is limited.",
     detail: `${
       volScore >= 65
-        ? "VIX elevated above 25 signals institutional hedging demand. Options skew pricing in tail risk. Elevated volatility compresses risk-adjusted returns and widens bid-ask spreads. Consider reducing position sizes and adding defined-risk structures."
+        ? "The 10Y–2Y curve and the 10Y level are in a high-pressure band. This vector does not read VIX or options markets."
         : volScore >= 40
-        ? "Volatility within normal ranges. VIX 15–25 zone. Standard position sizing appropriate. Monitor for volatility spikes around macro events (Fed, CPI, earnings)."
-        : "Low VIX environment (< 15). Complacency risk building — markets historically vulnerable to sharp reversals from low-vol regimes. Maintain hedges even when markets feel calm."
+        ? "The curve shape and the 10Y level are adding some rate-structure pressure. This vector does not read VIX or options markets."
+        : "The curve shape and the 10Y level are adding little rate-structure pressure. This vector does not read VIX or options markets."
     }`,
     indicators: [
-      { name: "VIX Level", value: volScore >= 65 ? "> 25" : volScore >= 40 ? "15–25" : "< 15", status: volScore >= 65 ? "red" : volScore >= 40 ? "yellow" : "green" },
-      { name: "Options Skew", value: volScore >= 65 ? "Elevated" : volScore >= 40 ? "Normal" : "Low", status: volScore >= 65 ? "red" : volScore >= 40 ? "yellow" : "green" },
-      { name: "Realized Vol", value: volScore >= 65 ? "High" : volScore >= 40 ? "Moderate" : "Low", status: volScore >= 65 ? "red" : volScore >= 40 ? "yellow" : "green" },
-      { name: "Complacency Risk", value: volScore < 20 ? "High" : volScore < 35 ? "Moderate" : "Low", status: volScore < 20 ? "red" : volScore < 35 ? "yellow" : "green" },
+      { name: "Vector score", value: `${volScore}/100`, status: volScore >= 65 ? "red" : volScore >= 40 ? "yellow" : "green" },
+      { name: "Inputs", value: "DGS10, DGS2", status: "green" },
     ],
   };
 }
@@ -347,7 +353,7 @@ function buildMacroCondition(vectors: RiskVector[], pressure: FaultlinePressureO
 
 function buildMacroDrivers(vectors: RiskVector[], pressure: FaultlinePressureOutput): MacroDriver[] {
   const fedScore = getVectorScore(vectors, "fed-policy");
-  const creditScore = getVectorScore(vectors, "credit-stress");
+  const creditScore = getVectorScore(vectors, "credit-contagion");
   const volScore = getVectorScore(vectors, "volatility-regime");
   const aiScore = getVectorScore(vectors, "ai-speculation");
   const debtScore = getVectorScore(vectors, "debt-fiscal");
@@ -399,15 +405,15 @@ function buildMacroDrivers(vectors: RiskVector[], pressure: FaultlinePressureOut
         : "AI theme valuations reasonable. Concentration risk contained. Broad market participation.",
     },
     {
-      name: "Volatility Regime",
-      value: volScore >= 65 ? "Elevated" : volScore >= 40 ? "Moderate" : "Suppressed",
+      name: pressureVectorLabel("volatility-regime"),
+      value: volScore >= 65 ? "Elevated" : volScore >= 40 ? "Moderate" : "Limited",
       direction: volScore >= 55 ? "bearish" : volScore < 20 ? "neutral" : "bullish",
-      impact: volScore >= 55 ? "Negative" : volScore < 20 ? "Complacency Risk" : "Positive",
+      impact: volScore >= 55 ? "Negative" : volScore < 20 ? "Neutral" : "Positive",
       detail: volScore >= 65
-        ? "VIX elevated. Institutional hedging demand high. Risk-adjusted returns compressed. Reduce position sizes."
+        ? "10Y–2Y curve and 10Y level in a high-pressure band. Not a VIX reading."
         : volScore >= 40
-        ? "Normal volatility. Standard risk management applies. Watch for vol spikes around macro events."
-        : "Low VIX. Complacency risk. Markets historically vulnerable to sharp reversals from suppressed volatility.",
+        ? "Curve shape and 10Y level adding moderate rate-structure pressure. Not a VIX reading."
+        : "Curve shape and 10Y level adding little rate-structure pressure. Not a VIX reading.",
     },
     {
       name: "Fiscal & Debt Backdrop",
@@ -464,7 +470,7 @@ function buildThreatBoard(vectors: RiskVector[], pressure: FaultlinePressureOutp
 function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput): RiskAlert[] {
   const risks: RiskAlert[] = [];
 
-  const creditScore = getVectorScore(vectors, "credit-stress");
+  const creditScore = getVectorScore(vectors, "credit-contagion");
   const liquidityScore = getVectorScore(vectors, "liquidity-risk");
   const aiScore = getVectorScore(vectors, "ai-speculation");
   const volScore = getVectorScore(vectors, "volatility-regime");
@@ -511,11 +517,11 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
   if (volScore >= 50) {
     risks.push({
       id: "volatility-regime",
-      title: "Elevated Volatility Regime",
+      title: "Elevated Yield-Curve / 10Y Pressure",
       severity: volScore >= 70 ? "elevated" : "moderate",
       category: "volatility",
-      summary: `VIX elevated — institutional hedging demand ${volScore >= 70 ? "high" : "moderate"}.`,
-      detail: `Volatility score at ${volScore}/100. Elevated VIX compresses risk-adjusted returns and signals institutional uncertainty. Tail risk premium elevated.`,
+      summary: `Yield-curve and 10Y-level pressure ${volScore >= 70 ? "high" : "building"}.`,
+      detail: `${pressureVectorLabel("volatility-regime")} score at ${volScore}/100 (DGS10, DGS2). This vector does not read VIX.`,
       actionImplication: "Reduce position sizes. Consider defined-risk structures (spreads, collars) over naked long exposure.",
     });
   }
@@ -564,7 +570,7 @@ function buildKeyRisks(vectors: RiskVector[], pressure: FaultlinePressureOutput)
 }
 
 function buildAwarenessChecks(vectors: RiskVector[], pressure: FaultlinePressureOutput): AwarenessCheck[] {
-  const creditScore = getVectorScore(vectors, "credit-stress");
+  const creditScore = getVectorScore(vectors, "credit-contagion");
   const liquidityScore = getVectorScore(vectors, "liquidity-risk");
   const aiScore = getVectorScore(vectors, "ai-speculation");
   const volScore = getVectorScore(vectors, "volatility-regime");
@@ -608,13 +614,13 @@ function buildAwarenessChecks(vectors: RiskVector[], pressure: FaultlinePressure
     },
     {
       id: "volatility-check",
-      question: "Are you positioned for the current volatility regime?",
+      question: "Are you positioned for the current rate-structure (yield-curve) pressure?",
       status: volScore >= 60 ? "warn" : volScore < 20 ? "warn" : "pass",
       explanation: volScore >= 60
-        ? `Elevated volatility at ${volScore}/100. Reduce position sizes and consider defined-risk structures.`
+        ? `Yield-curve / 10Y pressure elevated at ${volScore}/100. Reduce position sizes and consider defined-risk structures.`
         : volScore < 20
-        ? `Very low VIX — complacency risk. Markets historically vulnerable to sharp reversals from suppressed volatility.`
-        : `Volatility normal at ${volScore}/100. Standard position sizing appropriate.`,
+        ? `Yield-curve / 10Y pressure very low at ${volScore}/100. This vector does not measure VIX or complacency.`
+        : `Yield-curve / 10Y pressure moderate at ${volScore}/100. Standard position sizing appropriate.`,
     },
     {
       id: "fed-check",
@@ -651,7 +657,7 @@ async function generateDailyBrief(
   awarenessScore: number,
   marketStatus: "Cleared" | "Caution" | "Defensive",
 ): Promise<string> {
-  const creditScore = getVectorScore(vectors, "credit-stress");
+  const creditScore = getVectorScore(vectors, "credit-contagion");
   const liquidityScore = getVectorScore(vectors, "liquidity-risk");
   const aiScore = getVectorScore(vectors, "ai-speculation");
   const volScore = getVectorScore(vectors, "volatility-regime");
@@ -711,14 +717,12 @@ export async function getPreFlightData(): Promise<PreFlightOutput> {
   const awarenessLevel = getAwarenessLevel(awarenessScore);
   const marketStatus = computeMarketStatus(pressure);
 
-  const creditScore = getVectorScore(vectors, "credit-stress");
-  const breadthScore = getVectorScore(vectors, "market-breadth");
-  const recessionScore = clamp(Math.round(creditScore * 0.35 + breadthScore * 0.35 + pressure.overallPressure * 0.30), 0, 100);
-
-  const bullProbability = clamp(Math.round((100 - pressure.overallPressure) * 0.80 + (100 - creditScore) * 0.20), 5, 95);
-  const bearProbability = clamp(100 - bullProbability, 5, 95);
-  const recessionProbability = clamp(Math.round(recessionScore * 0.6), 5, 70);
-  const crashProbability = clamp(Math.round(pressure.overallPressure * 0.60 + creditScore * 0.40) / 2, 5, 95);
+  // Retired heuristics (bull = f(pressure, credit), recession = 0.6 × score,
+  // crash = blend / 2) are not computed: no governed probability model exists.
+  const bullProbability = null;
+  const bearProbability = null;
+  const recessionProbability = null;
+  const crashProbability = null;
 
   const creditCondition = buildCreditCondition(vectors, pressure);
   const liquidityCondition = buildLiquidityCondition(vectors, pressure);

@@ -6,6 +6,11 @@ import type {
 import { normalizeCanonicalMetric } from "../shared/marketMetrics";
 import { classifyEvidenceFamilies } from "../shared/canonicalReadout";
 import {
+  probabilityPercent,
+  type CanonicalProbabilityContract,
+  type ProbabilityClaim,
+} from "../shared/probabilityContract";
+import {
   getUnifiedSeismographIntelligence,
   type UnifiedSeismographIntelligence,
 } from "./seismographUnified";
@@ -48,6 +53,27 @@ interface AssembleMarketStateOptions {
   cacheStatus: MarketStateCacheStatus;
   cacheAgeMs: number;
   staleReason?: string | null;
+  /**
+   * The stateId-bound probability contract from the authoritative canonical
+   * state. Every probability number below renders only when its contract claim
+   * is AVAILABLE; otherwise it is NaN (withheld) and surfaces render the claim's
+   * display text. Null/undefined (no canonical state) withholds every number.
+   */
+  probabilityContract?: CanonicalProbabilityContract | null;
+}
+
+/** A displayed percent from the contract, or NaN when the contract withholds it. */
+function contractPercent(claim: ProbabilityClaim | null | undefined): number {
+  const percent = probabilityPercent(claim);
+  return percent === null ? Number.NaN : percent;
+}
+
+function scenarioClaim(contract: CanonicalProbabilityContract | null | undefined, id: "bull" | "neutral" | "bear") {
+  return contract?.scenarioSet.scenarios.find(claim => claim.scenario.scenarioId === id) ?? null;
+}
+
+function transitionClaim(contract: CanonicalProbabilityContract | null | undefined, id: string) {
+  return contract?.transitions.find(claim => claim.scenario.scenarioId === id) ?? null;
 }
 
 export interface CanonicalMarketStateProvider<T extends CanonicalMarketStateSource = CanonicalMarketStateSource> {
@@ -127,8 +153,9 @@ function marketPosture(
   stressLevel: CanonicalMarketStateSource["currentStressLevel"],
   probabilities: CanonicalMarketState["outlook"]["probabilities"],
 ): CanonicalMarketState["act"]["marketPosture"] {
-  if (stressLevel === "Crisis" || probabilities.bear >= 55) return "defensive";
-  if (stressLevel === "Low" && probabilities.bull >= 50) return "opportunistic";
+  // Withheld (NaN) scenario numbers never move the posture; NaN comparisons are false.
+  if (stressLevel === "Crisis" || (Number.isFinite(probabilities.bear) && probabilities.bear >= 55)) return "defensive";
+  if (stressLevel === "Low" && Number.isFinite(probabilities.bull) && probabilities.bull >= 50) return "opportunistic";
   return "balanced";
 }
 
@@ -147,12 +174,18 @@ export function assembleCanonicalMarketState(
     .slice(0, 3)
     .map(family => `${family.name}: ${family.currentValue}`);
   const classified = classifyEvidenceFamilies(source.evidenceFamilies);
+  // Probability contract overlay. Applied after (not through)
+  // normalizeCanonicalMetric, which would turn a withheld NaN into 0.
+  // The raw seismographUnified computeProbabilities (64/21/15-style) and the
+  // 5-way regime split are retired generators: they never reach this payload.
+  const contract = options.probabilityContract ?? null;
   const probabilities = {
     ...source.probabilities,
-    bull: normalizeCanonicalMetric(source.probabilities.bull),
-    neutral: normalizeCanonicalMetric(source.probabilities.neutral),
-    bear: normalizeCanonicalMetric(source.probabilities.bear),
-    confidence: normalizeCanonicalMetric(source.probabilities.confidence),
+    bull: contractPercent(scenarioClaim(contract, "bull")),
+    neutral: contractPercent(scenarioClaim(contract, "neutral")),
+    bear: contractPercent(scenarioClaim(contract, "bear")),
+    // Forecast confidence starts from a 50 baseline and is not calibrated.
+    confidence: Number.NaN,
   };
   const posture = marketPosture(source.currentStressLevel, probabilities);
 
@@ -199,22 +232,24 @@ export function assembleCanonicalMarketState(
     },
     outlook: {
       probabilities,
+      // Retired 5-way split (G3): NOT_OFFERED, so every member is withheld.
       regimeProbabilities: {
-        bull: normalizeCanonicalMetric(source.regimeProbabilities5way.bull),
-        softLanding: normalizeCanonicalMetric(source.regimeProbabilities5way.softLanding),
-        stagflation: normalizeCanonicalMetric(source.regimeProbabilities5way.stagflation),
-        recession: normalizeCanonicalMetric(source.regimeProbabilities5way.recession),
-        crash: normalizeCanonicalMetric(source.regimeProbabilities5way.crash),
+        bull: Number.NaN,
+        softLanding: Number.NaN,
+        stagflation: Number.NaN,
+        recession: Number.NaN,
+        crash: Number.NaN,
       },
       transitionProbabilities: {
         ...source.transitionProbabilities,
-        remainInRegime: normalizeCanonicalMetric(source.transitionProbabilities.remainInRegime),
-        transitionToElevated: normalizeCanonicalMetric(source.transitionProbabilities.transitionToElevated),
-        transitionToLow: normalizeCanonicalMetric(source.transitionProbabilities.transitionToLow),
-        transitionToCrisis: normalizeCanonicalMetric(source.transitionProbabilities.transitionToCrisis),
-        confidence: normalizeCanonicalMetric(source.transitionProbabilities.confidence),
+        remainInRegime: contractPercent(transitionClaim(contract, "remainInRegime")),
+        transitionToElevated: contractPercent(transitionClaim(contract, "transitionToElevated")),
+        transitionToLow: contractPercent(transitionClaim(contract, "transitionToLow")),
+        transitionToCrisis: contractPercent(transitionClaim(contract, "transitionToCrisis")),
+        confidence: Number.NaN,
       },
       highestProbabilityPath: source.marketNarrative.highestProbabilityPath,
+      probabilityContract: contract,
       invalidationConditions: source.evolution.invalidationConditions,
       topAnalog: source.topAnalog
         ? {
@@ -290,6 +325,8 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
   provider: CanonicalMarketStateProvider<T>;
   cache: CanonicalMarketStateCachePort<T>;
   now?: () => Date;
+  /** Loads the authoritative canonical probability contract. Failure withholds every number. */
+  loadProbabilityContract?: () => Promise<CanonicalProbabilityContract | null>;
 }) {
   return async function readCanonicalMarketState(
     options: { forceRefresh?: boolean } = {},
@@ -302,7 +339,12 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
       ? `Refresh failed; serving the last known-good MarketState. ${errorMessage(result.error)}`
       : null;
 
+    const probabilityContract = dependencies.loadProbabilityContract
+      ? await dependencies.loadProbabilityContract().catch(() => null)
+      : null;
+
     return assembleCanonicalMarketState(result.value, {
+      probabilityContract,
       generatedAt: (dependencies.now ?? (() => new Date()))().toISOString(),
       cacheStatus: result.status,
       cacheAgeMs: result.ageMs,
@@ -314,4 +356,8 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
 export const getCanonicalMarketState = createCanonicalMarketStateReader({
   provider: canonicalMarketStateProvider,
   cache: canonicalMarketStateCache,
+  loadProbabilityContract: async () => {
+    const { getAuthoritativeCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
+    return (await getAuthoritativeCanonicalIntelligenceState())?.probabilityContract ?? null;
+  },
 });

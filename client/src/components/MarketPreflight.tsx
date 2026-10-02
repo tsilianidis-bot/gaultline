@@ -3,6 +3,7 @@
  * MarketPreflight — the modal, score ring, checklist, and interpretation panel.
  */
 
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -156,14 +157,17 @@ interface MarketScenario {
 }
 
 function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
-  const { probability, overall, domains } = output;
+  const { overall, domains } = output;
   const score = overall.score;
 
-  const bullConf = probability.bullProbability > 50 ? "Elevated" : probability.bullProbability > 30 ? "Moderate" : "Low";
-  const bearConf = probability.crashProbability > 40 ? "Elevated" : probability.crashProbability > 20 ? "Moderate" : "Low";
+  // Probability contract: bull/crash numbers are withheld, so no scenario
+  // likelihood rating is derived from them.
+  const bullConf = "Uncalibrated";
+  const bearConf = "Uncalibrated";
   const systemicConf = score >= 7.0 ? "Elevated" : "Low";
 
   const confColor = (c: string) => {
+    if (c === "Uncalibrated") return "#94A3B8";
     if (c === "Elevated") return "#FF9500";
     if (c === "Moderate") return "#FFD700";
     if (c === "High") return "#FF2D55";
@@ -234,9 +238,9 @@ function buildMarketScenarios(output: EngineOutput): MarketScenario[] {
       color: confColor(bearConf),
       description: "Risk conditions deteriorate. Pressure readings rise. Defensive positioning becomes more relevant.",
       supporting: [
-        `Current regime with Pressure Index at ${score.toFixed(1)} / 10`,
+        `Current regime with Pressure Index at ${Math.round(score * 10)} / 100`,
         topDomains.length > 0 ? `Elevated readings in: ${topDomains.join(", ")}` : "One or more domains at elevated or high risk levels",
-        `Recession probability at ${probability.recessionProbability.toFixed(0)}% — above baseline`,
+        `Recession probability: ${engineProbabilityText(output, "recessionProbability")} (no governed recession model)`,
       ],
       confirmation: [
         "FAULTLINE Pressure Index rising above current level",

@@ -130,7 +130,7 @@ export const macroChartCards: MacroChartCard[] = [
     changeDirection: 'up',
     riskLevel: 'high',
     color: '#FF9500',
-    interpretation: 'Persistent inversion signals recession risk. Spread narrowing from -108bps low but still inverted. Historical: every recession since 1955 preceded by inversion.',
+    interpretation: 'Persistent inversion signals recession risk. Spread narrowing from -108bps low but still inverted. Historically, inversions have preceded most U.S. recessions with long and variable lead times; this is context, not a recession probability.',
     apiSource: 'FRED: T10Y2Y — https://fred.stlouisfed.org/series/T10Y2Y',
     series: {
       '1D': buildSeries(101, 24, -42, 0.1, 1.2, 1),

@@ -48,7 +48,7 @@ export const TRACKED_CRYPTO = [
 
 // ── Internal link map ────────────────────────────────────────────────────────
 const INTERNAL_LINKS = [
-  { text: "FAULTLINE Market Crash Probability", href: "/market-crash-probability-2026" },
+  { text: "FAULTLINE Market Risk Context 2026", href: "/market-crash-probability-2026" },
   { text: "Recession Probability Tracker", href: "/recession-probability" },
   { text: "Federal Reserve Tracker", href: "/federal-reserve-tracker" },
   { text: "Liquidity Monitor", href: "/liquidity-monitor" },

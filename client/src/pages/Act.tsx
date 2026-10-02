@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { probabilityText } from "@shared/probabilityContract";
 import { Link } from "wouter";
 import {
   ArrowRight,
@@ -39,6 +40,8 @@ type MarketPosture = "defensive" | "balanced" | "opportunistic";
 type DecisionScenario = {
   label: string;
   probability: number;
+  /** Probability-contract text shown when probability is withheld (NaN). */
+  withheldText?: string;
   response: string;
   boundary: string;
 };
@@ -292,22 +295,29 @@ export default function Act() {
   const greenFlags = marketState?.now.supports ?? [];
   const redFlags: string[] = Array.from(new Set([...(marketState?.now.threats ?? []), ...(marketState?.watch.whatChanged ?? [])]));
 
+  // Probability contract: a withheld scenario shows its claim's state text.
+  const scenarioContract = marketState?.outlook.probabilityContract ?? null;
+  const scenarioText = (id: "bull" | "neutral" | "bear") =>
+    probabilityText(scenarioContract?.scenarioSet.scenarios.find(claim => claim.scenario.scenarioId === id) ?? null);
   const scenarios: DecisionScenario[] = marketState ? [
     {
       label: "Bull path",
       probability: marketState.outlook.probabilities.bull,
+      withheldText: scenarioText("bull"),
       response: "If bullish evidence strengthens, test opportunity through the specialist decision workflow rather than converting the probability directly into exposure.",
       boundary: marketState.outlook.probabilities.evidenceBasis,
     },
     {
       label: "Neutral path",
       probability: marketState.outlook.probabilities.neutral,
+      withheldText: scenarioText("neutral"),
       response: "If the neutral path persists, avoid forcing conviction and keep the review cadence, controls, and invalidation criteria explicit.",
       boundary: marketState.outlook.highestProbabilityPath,
     },
     {
       label: "Bear path",
       probability: marketState.outlook.probabilities.bear,
+      withheldText: scenarioText("bear"),
       response: "If bearish evidence strengthens, prioritize the canonical risk controls and reassess the decision before introducing new risk.",
       boundary: marketState.outlook.probabilities.historicalBasis,
     },
@@ -462,10 +472,10 @@ export default function Act() {
               <article key={scenario.label} className="rounded-sm border border-white/10 bg-white/[0.025] p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-slate-500">{scenario.label}</div>
-                  <div className="font-['Rajdhani'] text-xl font-semibold text-emerald-200">{Number.isFinite(scenario.probability) ? formatCanonicalPercent(scenario.probability) : "UNAVAILABLE"}</div>
+                  <div className="font-['Rajdhani'] text-xl font-semibold text-emerald-200">{Number.isFinite(scenario.probability) ? formatCanonicalPercent(scenario.probability) : (scenario.withheldText ?? "Unavailable")}</div>
                 </div>
                 <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-emerald-400/60" style={{ width: `${normalizeCanonicalMetric(scenario.probability)}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
+                  <div className="h-full rounded-full bg-emerald-400/60" style={{ width: `${Number.isFinite(scenario.probability) ? normalizeCanonicalMetric(scenario.probability) : 0}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
                 </div>
                 <p className="mt-4 text-sm leading-6 text-slate-300">{scenario.response}</p>
                 <p className="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-slate-600">{scenario.boundary}</p>

@@ -41,7 +41,9 @@ describe("browser MarketState projection", () => {
     const result = selectBrowserMarketOutput({ marketState: marketState(), baselineIndicators: DEFAULT_INDICATORS, simulationOverrides: {} });
     expect(result.mode).toBe("canonical");
     expect(result.output.overall.score).toBe(8.2);
-    expect(result.output.probability.recessionProbability).toBe(30);
+    // Probability contract: recession is not offered — never the 5-way number.
+    expect(result.output.probability.recessionProbability).toBeNaN();
+    expect(result.output.probabilityDisplay?.recessionProbability.text).toBe("Not offered");
     expect(result.output.overall.source).toBe("canonical-market-state");
   });
 

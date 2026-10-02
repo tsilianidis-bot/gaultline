@@ -10,7 +10,8 @@ export interface AshaQuestionAnalysis {
   timeHorizon: string | null;
   probability: number | null;
   complementaryProbability: number | null;
-  confidence: number;
+  /** Null when the probability contract withholds it (uncalibrated). */
+  confidence: number | null;
   riskLevel: string;
   evidence: string[];
   bullishDrivers: string[];
@@ -117,8 +118,13 @@ export function buildAshaQuestionAnalysis(
   // 30–60 day regime transition rates. It does not publish a drawdown-calibrated
   // >10% correction probability for a 6–8 week window, so an exact percentage
   // must remain unavailable instead of being inferred from generated prose.
-  const probability = isExactCorrectionEvent ? null : marketState.outlook.probabilities.bear;
+  // Probability contract: the bear weight is a number only when its contract
+  // claim is AVAILABLE (calibrated, complete, fresh). Otherwise (NaN) it is
+  // withheld and PLATO must say so; it is never labelled CALIBRATED.
+  const bear = marketState.outlook.probabilities.bear;
+  const probability = isExactCorrectionEvent || !Number.isFinite(bear) ? null : bear;
   const availability: AshaProbabilityAvailability = probability === null ? "NOT_CALIBRATED" : "CALIBRATED";
+  const withheldText = marketState.outlook.probabilityContract?.scenarioSet.display.text ?? "Unavailable";
 
   return {
     analysisScope,
@@ -126,7 +132,7 @@ export function buildAshaQuestionAnalysis(
     timeHorizon,
     probability,
     complementaryProbability: probability === null ? null : Math.max(0, 100 - probability),
-    confidence: marketState.outlook.probabilities.confidence,
+    confidence: Number.isFinite(marketState.outlook.probabilities.confidence) ? marketState.outlook.probabilities.confidence : null,
     riskLevel: riskLevel(marketState.now.pressureScore),
     evidence: [
       marketState.outlook?.probabilities?.evidenceBasis,
@@ -141,12 +147,14 @@ export function buildAshaQuestionAnalysis(
     probabilityProvenance: probability === null
       ? {
         availability,
-        source: "Canonical FAULTLINE Probability Engine",
-        explanation: "No calibrated >10% broad-market correction probability exists for the requested 6–8 week window; the system will not substitute a generic bear-scenario weight.",
+        source: "FAULTLINE probability contract",
+        explanation: isExactCorrectionEvent
+          ? "No calibrated >10% broad-market correction probability exists for the requested 6–8 week window; the system will not substitute a generic bear-scenario weight."
+          : `The bear scenario weight is withheld (${withheldText}): it has no defined event, horizon or calibration record.`,
       }
       : {
         availability,
-        source: "Canonical FAULTLINE Probability Engine",
+        source: "FAULTLINE probability contract",
         explanation: `${marketState.outlook.probabilities.evidenceBasis} ${marketState.outlook.probabilities.historicalBasis}`,
       },
   };

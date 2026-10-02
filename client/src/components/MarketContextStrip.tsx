@@ -12,6 +12,7 @@ import { canonicalScenarioLeader, formatScenarioPercent } from "@shared/canonica
 import { getRiskColor } from "@/components/RiskBadge";
 import { trpc } from "@/lib/trpc";
 import { formatCanonicalScore } from "@shared/marketMetrics";
+import { PROBABILITY_DISPLAY_TEXT, probabilityText } from "@shared/probabilityContract";
 import { humanizeQualityStatus } from "@shared/customerIntegrityLabels";
 import { ForecastHorizonDisclosure } from "./ForecastHorizonDisclosure";
 import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
@@ -52,11 +53,6 @@ export default function MarketContextStrip() {
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   });
-  // Seismograph assembled output — enriches the strip with analog + transition data
-  const { data: seismographOutput } = trpc.seismograph.getAssembledOutput.useQuery(undefined, {
-    staleTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("faultline_ctx_strip_collapsed") === "true"; } catch { return false; }
   });
@@ -88,6 +84,7 @@ export default function MarketContextStrip() {
     neutral: { label: "NEUTRAL", color: "#00E5FF" },
     bear: { label: "BEAR", color: "#EF4444" },
   } as const;
+  const probabilityContract = marketState?.outlook.probabilityContract ?? null;
   const probs = (["bull", "neutral", "bear"] as const)
     .map(key => ({ ...SCENARIO_STYLE[key], value: marketState?.outlook.probabilities[key] ?? Number.NaN }))
     .filter(item => Number.isFinite(item.value));
@@ -98,7 +95,15 @@ export default function MarketContextStrip() {
         text: formatScenarioPercent(leader.value),
         color: leader.keys.length === 1 ? SCENARIO_STYLE[leader.keys[0]].color : "#94A3B8",
       }
-    : { label: "UNAVAILABLE", text: "—", color: "#6B7280" };
+    : {
+        // Probability contract: a withheld set shows its state ("Uncalibrated", …), never "—" or a number.
+        label: "BULL · NEUTRAL · BEAR",
+        text: probabilityContract?.scenarioSet.display.text ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
+        color: "#6B7280",
+      };
+  const transitionToCrisisText = probabilityText(
+    probabilityContract?.transitions.find(claim => claim.scenario.scenarioId === "transitionToCrisis") ?? null,
+  );
   // Analog: only the canonical (verified) top analog, the same one NOW/Brief show.
   const verifiedAnalog = marketState?.outlook.topAnalog ?? null;
   const scenarioHorizon = insufficientHorizonMetadata("market-context-derived-scenario", new Date().toISOString(), "Not yet established");
@@ -205,9 +210,11 @@ export default function MarketContextStrip() {
 
             {/* Probability bars */}
             <div style={{ display: "flex", gap: "10px", alignItems: "flex-end", marginLeft: "4px" }}>
-              {probs.map(p => (
+              {probs.length ? probs.map(p => (
                 <ProbBar key={p.label} label={p.label} value={p.value} color={p.color} />
-              ))}
+              )) : (
+                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#6B7280", fontWeight: 600 }}>SCENARIOS {dominant.text}</span>
+              )}
             </div>
 
             {/* Collapse button */}
@@ -260,7 +267,7 @@ export default function MarketContextStrip() {
             )}
 
             {/* Seismograph: Active Analog + Transition Probability */}
-            {(verifiedAnalog || seismographOutput?.transitionProbabilities) && (
+            {(verifiedAnalog || marketState) && (
               <div style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", gap: "2px" }}>
                 <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", letterSpacing: "0.15em", color: "rgba(100,116,139,0.5)", marginBottom: "1px" }}>SEISMOGRAPH</div>
                 {verifiedAnalog && (
@@ -270,10 +277,11 @@ export default function MarketContextStrip() {
                     <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)" }}>{formatScenarioPercent(verifiedAnalog.similarity)}</span>
                   </div>
                 )}
-                {seismographOutput?.transitionProbabilities && (
+                {marketState && (
                   <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)" }}>TRANSITION RISK</span>
-                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: seismographOutput.transitionProbabilities.transitionToCrisis >= 50 ? "#EF4444" : seismographOutput.transitionProbabilities.transitionToCrisis >= 30 ? "#F59E0B" : "#10B981", fontWeight: 600 }}>{seismographOutput.transitionProbabilities.transitionToCrisis}%</span>
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)" }}>TRANSITION TO CRISIS</span>
+                    {/* Contract text only: the assembled seismograph value can be a static 5% default. */}
+                    <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#94A3B8", fontWeight: 600 }}>{transitionToCrisisText}</span>
                   </div>
                 )}
               </div>

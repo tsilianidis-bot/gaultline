@@ -5,6 +5,7 @@
  */
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { getRiskColor } from "@/components/RiskBadge";
 import { TrendingUp, TrendingDown, Minus, ArrowRight } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
@@ -35,7 +36,7 @@ function PressureHero() {
     refetchOnWindowFocus: false,
   });
   if (!canonicalState) return null;
-  const { overall, regime, probability, domains } = output;
+  const { overall, regime, domains } = output;
   const canonicalRiskLevel = canonicalState.regime === "LOW RISK" ? "low" : canonicalState.regime === "MODERATE RISK" ? "moderate" : canonicalState.regime === "ELEVATED RISK" ? "elevated" : canonicalState.regime === "HIGH STRESS" ? "high" : "critical";
   const color = getRiskColor(canonicalRiskLevel);
 
@@ -114,8 +115,8 @@ function PressureHero() {
         {/* 4-stat grid: Bull · Crash · Volatility · Liquidity */}
         <div className="grid grid-cols-2 gap-2 mb-4">
           {[
-            { label: "BULL PROB", value: `${probability.bullProbability}%`, color: "#00FF88" },
-            { label: "CRASH PROB", value: `${probability.crashProbability}%`, color: "#FF2D55" },
+            { label: "BULL SCENARIO", value: engineProbabilityText(output, "bullProbability"), color: "#00FF88" },
+            { label: "CRASH PROB", value: engineProbabilityText(output, "crashProbability"), color: "#94A3B8" },
             {
               label: "VOLATILITY",
               value: volatilityDomain ? riskLabel(volatilityDomain.riskLevel) : "—",

@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { Share2, Copy, Check, X } from "lucide-react";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityPercent, engineProbabilityText } from "@/lib/marketStateProjection";
 
 interface ShareCardProps {
   onClose: () => void;
@@ -14,7 +15,10 @@ interface ShareCardProps {
 
 export default function ShareCard({ onClose }: ShareCardProps) {
   const { output, isLive } = useEngine();
-  const { overall, regime, probability, analogs, narrative } = output;
+  const { overall, regime, analogs, narrative } = output;
+  // Probability contract: share text and card render contract display text only.
+  const pText = (key: Parameters<typeof engineProbabilityText>[1]) => engineProbabilityText(output, key);
+  const bullPct = engineProbabilityPercent(output, 'bullProbability');
   const [copied, setCopied] = useState(false);
 
   const topAnalog = analogs[0];
@@ -23,14 +27,14 @@ export default function ShareCard({ onClose }: ShareCardProps) {
   const shareText = [
     `📊 FAULTLINE Macro Intelligence — ${date}`,
     ``,
-    `Systemic Risk: ${overall.score.toFixed(1)}/10 — ${regime.label}`,
+    `Systemic Risk: ${Math.round(overall.score * 10)}/100 — ${regime.label}`,
     `${regime.sublabel}`,
     ``,
-    `Bull Scenario Score: ${probability.bullProbability}%`,
-    `Bear-Stress Scenario Score: ${probability.crashProbability}%`,
-    `Recession Scenario Score: ${probability.recessionProbability}%`,
+    `Bull Scenario: ${pText('bullProbability')}`,
+    `Crash Probability: ${pText('crashProbability')}`,
+    `Recession Probability: ${pText('recessionProbability')}`,
     ``,
-    `Closest Historical Analog: ${topAnalog.era} ${topAnalog.year} (${topAnalog.similarity}% match)`,
+    topAnalog ? `Closest Historical Analog: ${topAnalog.era} ${topAnalog.year} (${topAnalog.similarity}% match)` : `Closest Historical Analog: Unavailable`,
     ``,
     `${narrative.summary.slice(0, 200)}...`,
     ``,
@@ -135,9 +139,9 @@ export default function ShareCard({ onClose }: ShareCardProps) {
           <div style={{ marginBottom: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginBottom: '4px' }}>
               <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '40px', color: scoreColor, textShadow: `0 0 24px ${scoreColor}60`, lineHeight: 1 }}>
-                {overall.score.toFixed(1)}
+                {Math.round(overall.score * 10)}
               </span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#6B7280' }}>/10</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '12px', color: '#6B7280' }}>/100</span>
             </div>
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', color: scoreColor, letterSpacing: '0.15em', textTransform: 'uppercase' }}>
               {regime.label}
@@ -150,21 +154,22 @@ export default function ShareCard({ onClose }: ShareCardProps) {
           {/* Probability bar */}
           <div style={{ marginBottom: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00FF88' }}>{probability.bullProbability}% BULL SCENARIO</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#FF2D55' }}>{probability.crashProbability}% BEAR-STRESS</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#00FF88' }}>BULL SCENARIO: {pText('bullProbability')}</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: '#94A3B8' }}>CRASH: {pText('crashProbability')}</span>
             </div>
-            <div style={{ height: '4px', borderRadius: '2px', overflow: 'hidden', display: 'flex', gap: '1px' }}>
-              <div style={{ flex: probability.bullProbability, background: 'linear-gradient(90deg, #00FF88, #00CC6A)', boxShadow: '0 0 6px rgba(0,255,136,0.4)' }} />
-              <div style={{ flex: probability.crashProbability, background: 'linear-gradient(90deg, #FF9500, #FF2D55)', boxShadow: '0 0 6px rgba(255,45,85,0.4)' }} />
-            </div>
+            {bullPct !== null && (
+              <div style={{ height: '4px', borderRadius: '2px', overflow: 'hidden', background: 'rgba(255,255,255,0.06)' }}>
+                <div style={{ width: `${bullPct}%`, height: '100%', background: 'linear-gradient(90deg, #00FF88, #00CC6A)', boxShadow: '0 0 6px rgba(0,255,136,0.4)' }} />
+              </div>
+            )}
           </div>
 
           {/* Key metrics row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '14px' }}>
             {[
-              { label: 'Recession Scenario', value: `${probability.recessionProbability}%`, color: '#FF9500' },
-              { label: 'Stagflation Scenario', value: `${probability.stagflationProbability}%`, color: '#FFD700' },
-              { label: 'Soft Landing Scenario', value: `${probability.softLandingProbability}%`, color: '#00D4FF' },
+              { label: 'Recession Probability', value: pText('recessionProbability'), color: '#94A3B8' },
+              { label: 'Stagflation Probability', value: pText('stagflationProbability'), color: '#94A3B8' },
+              { label: 'Soft Landing Probability', value: pText('softLandingProbability'), color: '#94A3B8' },
             ].map(m => (
               <div key={m.label} style={{ textAlign: 'center', padding: '6px', background: 'rgba(255,255,255,0.02)', borderRadius: '3px', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '16px', color: m.color }}>{m.value}</div>

@@ -4,7 +4,7 @@
  *
  * Dynamically derives all content from EngineOutput:
  *   - Pressure Index + Regime from overall + regime
- *   - Bull/Crash probabilities from probability
+ *   - Bull/Crash: probability-contract display text only (no numbers)
  *   - Top threat from highest-scoring domain
  *   - Easing/building signals from domain deltas
  *   - Closest historical analog from analogs[0]
@@ -17,6 +17,7 @@
  */
 import { useMemo } from "react";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { trpc } from "@/lib/trpc";
 import { getRiskColor } from "@/components/RiskBadge";
 
@@ -101,7 +102,7 @@ export function FaultlineInterpretation() {
   });
   const { output, indicators } = useEngine();
   if (!canonicalState) return null;
-  const { overall, regime, probability, domains, analogs } = output;
+  const { overall, regime, domains, analogs } = output;
 
   // Derive key signals dynamically
   const topDomain = useMemo(
@@ -131,8 +132,12 @@ export function FaultlineInterpretation() {
   const aiConcentration = indicators.aiConcentration;
   const pressureScore   = overall.score;
   const regimeLabel     = regime.label;
-  const bullPct         = probability.bullProbability;
-  const crashPct        = probability.crashProbability;
+  // Probability contract: bull/crash numbers are withheld (uncalibrated / not
+  // offered), so guidance keys off the pressure band, never a probability.
+  const bullText        = engineProbabilityText(output, "bullProbability");
+  const crashText       = engineProbabilityText(output, "crashProbability");
+  const fragile         = overall.riskLevel === "critical" || overall.riskLevel === "high";
+  const constructive    = overall.riskLevel === "low" || overall.riskLevel === "moderate";
 
   // Regime-based chip color
   const regimeChipColor: ChipColor =
@@ -148,15 +153,15 @@ export function FaultlineInterpretation() {
     topDomain?.riskLevel === "elevated" ? "amber" : "amber";
 
   // Crash risk chip color
-  const crashChipColor: ChipColor = crashPct >= 50 ? "red" : crashPct >= 35 ? "amber" : "green";
+  const crashChipColor: ChipColor = "cyan";
 
   // Liquidity chip color
   const liquidityChipColor: ChipColor = liquidityDelta === "easing" ? "green" : liquidityDelta === "building" ? "amber" : "cyan";
 
   // Build dynamic narrative paragraphs
-  const para1 = `Overall, FAULTLINE is showing ${regimeLabel.toLowerCase()} systemic risk. The current Pressure Index is ${pressureScore.toFixed(1)}/10, placing the market in a ${regimeLabel} regime. Bull probability ${bullPct > crashPct ? "remains slightly favored" : "is below crash probability"} at ${bullPct}%, while crash/bear probability is ${crashPct >= 40 ? "elevated" : "contained"} at ${crashPct}%.`;
+  const para1 = `Overall, FAULTLINE is showing ${regimeLabel.toLowerCase()} systemic risk. The current Pressure Index is ${Math.round(pressureScore * 10)}/100, placing the market in a ${regimeLabel} regime. Bull scenario weight: ${bullText}. Crash probability: ${crashText} — FAULTLINE has no governed crash model.`;
 
-  const para2 = `The strongest warning is not broad recession pressure. The main risk is ${aiBubbleDomain?.label ?? "speculative concentration"}, scoring ${aiBubbleDomain?.score.toFixed(1) ?? "—"}/10.${aiConcentration > 25 ? ` The model's AI/mega-cap concentration input is a static baseline of ${aiConcentration.toFixed(1)}% of the S&P 500, not a live measurement.` : ""}${closestAnalog ? ` The closest historical analog is the ${closestAnalog.era} (${closestAnalog.year}), with a ${closestAnalog.similarity}% similarity score.` : ""}`;
+  const para2 = `The strongest warning is not broad recession pressure. The main risk is ${aiBubbleDomain?.label ?? "speculative concentration"}, scoring ${aiBubbleDomain ? Math.round(aiBubbleDomain.score * 10) : "—"}/100.${aiConcentration > 25 ? ` The model's AI/mega-cap concentration input is a static baseline of ${aiConcentration.toFixed(1)}% of the S&P 500, not a live measurement.` : ""}${closestAnalog ? ` The closest historical analog is the ${closestAnalog.era} (${closestAnalog.year}), with a ${closestAnalog.similarity}% similarity score.` : ""}`;
 
   const easingZones: string[] = [];
   const dangerZones: string[] = [];
@@ -184,19 +189,19 @@ export function FaultlineInterpretation() {
     : `Risk conditions are broadly contained. Monitor for any deterioration in credit spreads or liquidity metrics.`;
 
   // Takeaway card content — dynamically adapted to regime
-  const cleanReadTitle = crashPct >= 50
-    ? "Elevated crash risk — defensive posture warranted"
+  const cleanReadTitle = fragile
+    ? "High systemic pressure — defensive posture warranted"
     : "Not a 'crash now' signal";
 
-  const cleanReadBody = crashPct >= 50
-    ? `Crash/bear probability has crossed 50%. The market is showing structural fragility. Reduce exposure to high-beta and speculative names.`
+  const cleanReadBody = fragile
+    ? `Systemic pressure is in the high band. The market is showing structural fragility. Reduce exposure to high-beta and speculative names.`
     : `This is not a "crash now" signal. It is a "market is vulnerable if ${aiBubbleDomain?.label ?? "the AI trade"} cracks, credit worsens, or liquidity reverses" signal.`;
 
-  const guidanceBody = bullPct >= 55
+  const guidanceBody = constructive
     ? "Stay invested selectively, but do not ignore risk. Favor stronger assets, avoid chasing weak speculative names, monitor AI concentration, watch credit spreads, track liquidity, and be careful with high-beta stocks that depend on cheap money."
     : "Reduce speculative exposure. Favor quality, cash-flow positive assets. Watch credit spreads and liquidity conditions closely. Avoid adding risk until the regime clarifies.";
 
-  const mostImportantBody = `The market can ${bullPct > 50 ? "keep climbing" : "stabilize"}, but the foundation is fragile. The biggest risk is ${aiBubbleDomain?.label ?? "an AI/mega-cap unwind"}, not a traditional recession shock right now.`;
+  const mostImportantBody = `The market can ${constructive ? "keep climbing" : "stabilize"}, but the foundation is fragile. The biggest risk is ${aiBubbleDomain?.label ?? "an AI/mega-cap unwind"}, not a traditional recession shock right now.`;
 
   return (
     <div style={{
@@ -228,7 +233,7 @@ export function FaultlineInterpretation() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
         <StatusChip label={regimeLabel} color={regimeChipColor} />
         {aiBubbleDomain && (
-          <StatusChip label={`${aiBubbleDomain.label} ${aiBubbleDomain.score.toFixed(1)}/10`} color={topThreatColor} />
+          <StatusChip label={`${aiBubbleDomain.label} ${Math.round(aiBubbleDomain.score * 10)}/100`} color={topThreatColor} />
         )}
         {aiConcentration > 25 && (
           <StatusChip label={`AI Concentration ${aiConcentration.toFixed(1)}% · static baseline`} color="amber" />
@@ -237,7 +242,7 @@ export function FaultlineInterpretation() {
           label={`Liquidity ${liquidityDelta === "easing" ? "Stable" : liquidityDelta === "building" ? "Tightening" : "Neutral"}`}
           color={liquidityChipColor}
         />
-        <StatusChip label={`Crash Risk ${crashPct}%`} color={crashChipColor} />
+        <StatusChip label={`Crash probability: ${crashText}`} color={crashChipColor} />
         {closestAnalog && (
           <StatusChip label={`Analog: ${closestAnalog.era} ${closestAnalog.similarity}%`} color="purple" />
         )}
@@ -263,14 +268,14 @@ export function FaultlineInterpretation() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
         <TakeawayCard
           label="⬡ Clean Read"
-          labelColor={crashPct >= 50 ? "red" : "cyan"}
+          labelColor={fragile ? "red" : "cyan"}
           title={cleanReadTitle}
           body={cleanReadBody}
         />
         <TakeawayCard
           label="◈ Guidance"
           labelColor="amber"
-          title={bullPct >= 55 ? "Stay invested, stay selective" : "Reduce risk exposure"}
+          title={constructive ? "Stay invested, stay selective" : "Reduce risk exposure"}
           body={guidanceBody}
         />
         <TakeawayCard

@@ -1,3 +1,4 @@
+import type { ProbabilityDisplay } from "@shared/probabilityContract";
 // ============================================================
 // FAULTLINE — Reactive Intelligence Engine
 // Single source of truth for all derived scores, regime,
@@ -107,6 +108,14 @@ export interface ProbabilityOutput {
   recessionProbability: number;
 }
 
+export type ProbabilityOutputKey = keyof ProbabilityOutput;
+
+/**
+ * Contract display per ProbabilityOutput field (shared/probabilityContract).
+ * Renderers show `text`; `percent` is non-null only when the number may render.
+ */
+export type ProbabilityOutputDisplay = Record<ProbabilityOutputKey, ProbabilityDisplay>;
+
 export interface AnalogSimilarity {
   id: string;
   era: string;
@@ -125,7 +134,10 @@ export interface EngineOutput {
   overall: DomainScore;
   domains: DomainScore[];
   regime: RegimeOutput;
+  /** Numbers are NaN whenever probabilityDisplay withholds them. */
   probability: ProbabilityOutput;
+  /** Set by selectBrowserMarketOutput for every mode; absent means Unavailable. */
+  probabilityDisplay?: ProbabilityOutputDisplay;
   analogs: AnalogSimilarity[];
   narrative: NarrativeOutput;
   tickerValues: { label: string; value: string; direction: 'up' | 'down' | 'flat' }[];

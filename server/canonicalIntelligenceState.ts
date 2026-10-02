@@ -10,6 +10,7 @@ import {
   type PublicCanonicalIntelligenceState,
 } from "../shared/canonicalIntelligenceState";
 import { getDb } from "./db";
+import { buildCanonicalProbabilityContract } from "./probabilityContract";
 import { compositePressureDirection, engineEvidenceStatus, stressTrendDirection } from "../shared/snapshotEvidence";
 
 type StoredManifest = Record<string, any>;
@@ -127,6 +128,7 @@ export function buildCanonicalIntelligenceState(manifest: StoredManifest, option
     pressureDirection: compositePressureDirection(manifest.pressureIndex, options.priorPressureIndex), pressureAcceleration: null, pressurePersistence: null,
     engines, domains: manifest.domainValues ?? {}, scenarioOutputs: manifest.scenarioOutputs ?? {},
     probabilityClaimIds: manifest.probabilityClaimIds ?? [], analogClaimIds: manifest.analogClaimIds ?? [],
+    probabilityContract: buildCanonicalProbabilityContract(manifest),
     historicalContext: {
       canonicalLiveHistory: "intelligenceStateManifests append-only operational snapshots only",
       reconstructedResearch: "reconstructed-champion-v1-2000-2026-research-only",

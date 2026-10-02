@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 import { getRiskColor } from "@/components/RiskBadge";
 import { ArrowRight, Shield, Zap, TrendingDown } from "lucide-react";
 import { FaultlineInterpretation } from "./FaultlineInterpretation";
@@ -16,7 +17,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 function MacroRegimePanel() {
   const [, navigate] = useLocation();
   const { output } = useEngine();
-  const { regime, overall, domains, probability } = output;
+  const { regime, overall, domains } = output;
   const color = regime.color;
 
   const topDomains = useMemo(
@@ -94,10 +95,10 @@ function MacroRegimePanel() {
           style={{ background: "rgba(0,255,136,0.06)", border: "1px solid rgba(0,255,136,0.15)" }}
         >
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
-            BULL PROBABILITY
+            BULL SCENARIO
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#00FF88" }}>
-            {probability.bullProbability}%
+            {engineProbabilityText(output, "bullProbability")}
           </div>
         </div>
         <div
@@ -107,8 +108,8 @@ function MacroRegimePanel() {
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 8, letterSpacing: "0.2em", color: "rgba(100,116,139,0.5)", marginBottom: 3 }}>
             CRASH PROBABILITY
           </div>
-          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#FF2D55" }}>
-            {probability.crashProbability}%
+          <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 18, fontWeight: 700, color: "#94A3B8" }}>
+            {engineProbabilityText(output, "crashProbability")}
           </div>
         </div>
       </div>
