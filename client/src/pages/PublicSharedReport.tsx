@@ -15,6 +15,7 @@ import {
   Zap, BarChart3, Shield, Activity, Lock, ArrowRight,
   Share2, Calendar
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 // ── Helpers ────────────────────────────────────────────────────
 const REPORT_TYPE_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -245,7 +246,7 @@ export default function PublicSharedReport() {
         <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 flex items-start gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-400 mt-0.5 shrink-0" />
           <p className="text-xs text-amber-200/70 leading-relaxed">
-            <strong className="text-amber-300">Not financial advice.</strong> This is a read-only snapshot shared by a FAULTLINE subscriber for informational and educational purposes only. Always conduct your own research before making investment decisions.
+            <strong className="text-amber-300">{PUBLIC_DISCLAIMER}</strong> This is a read-only snapshot shared by a FAULTLINE user. Always conduct your own research before making investment decisions.
           </p>
         </div>
 
@@ -267,7 +268,7 @@ export default function PublicSharedReport() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-zinc-400 leading-relaxed">
-              This is a snapshot shared by a subscriber. The live FAULTLINE platform gives you regularly refreshed market pressure readings, AI-powered signal intelligence, crypto regime analysis, and shareable reports — updated continuously.
+              This is a snapshot shared by a FAULTLINE user. The FAULTLINE platform shows market pressure readings, signal intelligence, crypto regime analysis, and shareable reports, recalculated as new data is published.
             </p>
             <div className="grid grid-cols-2 gap-2 text-xs text-zinc-400">
               {[
@@ -295,7 +296,7 @@ export default function PublicSharedReport() {
 
         {/* Footer */}
         <div className="text-center text-xs text-zinc-700 font-mono pb-4">
-          FAULTLINE INTELLIGENCE TERMINAL · NOT FINANCIAL ADVICE · EDUCATIONAL USE ONLY
+          FAULTLINE INTELLIGENCE TERMINAL · {PUBLIC_DISCLAIMER}
         </div>
       </div>
     </div>

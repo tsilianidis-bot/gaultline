@@ -25,11 +25,11 @@ export default function AAPLSignal() {
       contentSections={[
         {
           heading: "Understanding FAULTLINE's AAPL Stock Signal",
-          body: "FAULTLINE provides a dynamic, regularly refreshed signal for Apple (AAPL) stock, reflecting a comprehensive analysis of various market and fundamental factors. This signal is designed to offer a data-driven perspective on AAPL's current market posture, moving beyond simple price movements to incorporate deeper insights into underlying trends. Our methodology integrates quantitative models with qualitative assessments, ensuring a robust and nuanced outlook. The signal is regularly updated to reflect the latest market conditions, economic data, and company-specific news, offering users an up-to-the-minute view of AAPL's potential trajectory. It's a tool for understanding market dynamics, not a recommendation to buy or sell. Investors should always conduct their own due diligence and consider their personal financial situation.",
+          body: `FAULTLINE's Apple (AAPL) signal is computed from daily price data together with the current Pressure Index reading, its vectors, and the regime band, and it is recalculated as new data is published. It does not ingest earnings, analyst estimates, fundamentals, or company news. It's a tool for understanding market dynamics, not a recommendation to buy or sell. Investors should always conduct their own due diligence and consider their personal financial situation.`,
         },
         {
           heading: "Macro Sensitivity and Apple's Performance",
-          body: "Apple's performance, while often seen as resilient, is not immune to broader macroeconomic forces. FAULTLINE analyzes AAPL's sensitivity to key macro indicators such as consumer spending, global economic growth, interest rates, and currency fluctuations. For instance, a slowdown in global consumer demand or significant shifts in foreign exchange rates can directly impact Apple's international sales and profitability. Our platform quantifies these sensitivities, providing users with a clearer picture of how different economic regimes might affect AAPL's stock. Understanding these macro linkages is crucial for investors looking to position their portfolios effectively and anticipate potential headwinds or tailwinds for technology giants like Apple.",
+          body: `Apple's performance, while often seen as resilient, is not immune to broader macroeconomic forces. Consumer spending, global growth, interest rates, and currency moves all matter for Apple: a slowdown in global consumer demand or a sharp shift in exchange rates can hit its international sales and profitability. FAULTLINE reads the rate, credit, inflation, and labor side of that picture through the Pressure Index; it does not ingest consumer-spending, global-growth, or currency data for AAPL. Understanding these macro linkages gives investors context for the headwinds or tailwinds facing technology giants like Apple.`,
         },
         {
           heading: "Apple's AI Exposure and Future Growth",
@@ -37,17 +37,17 @@ export default function AAPLSignal() {
         },
         {
           heading: "Key Risk Factors and Outlook Modifiers for AAPL",
-          body: "Investing in any stock, including Apple, involves inherent risks. FAULTLINE identifies and evaluates key risk factors specific to AAPL, such as supply chain disruptions, regulatory scrutiny (antitrust, privacy), intense competition in various product segments, and potential shifts in consumer preferences. We also analyze what conditions would change our outlook for AAPL. For example, a significant product innovation failure, a major data breach, or an unexpected downturn in iPhone sales could lead to a reassessment of the stock's prospects. Conversely, exceeding earnings expectations, successful entry into new markets, or groundbreaking technological advancements could improve the outlook. Our platform provides a framework for understanding these risks and the triggers that could alter AAPL's trajectory.",
+          body: `Investing in any stock, including Apple, involves inherent risks. Key risks specific to AAPL include supply chain disruptions, regulatory scrutiny (antitrust, privacy), intense competition across product segments, and shifts in consumer preferences. A product failure, a major data breach, or an unexpected downturn in iPhone sales could weigh on the stock; strong earnings, successful entry into new markets, or technological breakthroughs could help it. These are context for reading the signal; FAULTLINE does not ingest company-specific news or earnings data.`,
         },
       ]}
       faqs={[
         {
           question: "What is FAULTLINE's regularly refreshed signal for AAPL stock?",
-          answer: "FAULTLINE's regularly refreshed signal for AAPL stock is a dynamic, data-driven assessment of Apple's market posture, integrating quantitative models and qualitative factors. It provides an up-to-the-minute outlook based on market conditions, economic data, and company news, designed for market intelligence and educational purposes.",
+          answer: `FAULTLINE's AAPL signal is computed from daily price data together with the current Pressure Index reading, its vectors, and the regime band, recalculated as new data is published. It does not ingest company news or fundamentals, and it is for market intelligence and educational purposes.`,
         },
         {
           question: "How does FAULTLINE analyze Apple's macro sensitivity?",
-          answer: "We analyze AAPL's sensitivity to key macroeconomic indicators like consumer spending, global growth, interest rates, and currency fluctuations. This helps users understand how broader economic trends might impact Apple's sales and profitability, providing context for investment decisions.",
+          answer: `FAULTLINE reads macro conditions (credit spreads, funding, Treasury yields, inflation, and unemployment) through the Pressure Index and shows how the current regime bears on AAPL's signal. It does not ingest consumer-spending, global-growth, or currency data for AAPL.`,
         },
         {
           question: "What role does AI play in Apple's FAULTLINE outlook?",

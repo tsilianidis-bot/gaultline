@@ -232,13 +232,24 @@ describe("public claims truth: Pressure Index inputs (PR #56 r2)", () => {
     /Pressure Index[^.]{0,80}\b(synthesi[sz]\w*|combin\w*|integrat\w*|incorporat\w*|aggregat\w*|built from|inputs?)\b[^.]{0,160}\b(VIX|breadth)\b/i,
     /\b(VIX|breadth)\b[^.]{0,120}\binto (a |the |its |one |FAULTLINE's )?[^.]{0,30}Pressure Index/i,
   ];
-  const exempt = /\bnot\b|separate|context|proxy/i;
+  // Exempt only sentences that explicitly deny input status (r4: a bare "not"
+  // anywhere in the sentence no longer passes).
+  const exempt = new RegExp(
+    [
+      String.raw`\b(?:is|are)? ?not (?:a |an |one of the |part of the )?(?:live )?(?:Pressure Index |direct |VIX |advance\/decline )?(?:inputs?|vectors?|feeds?|components?|measures?)\b`,
+      String.raw`\bdoes not (?:read|use|ingest|include|incorporate)\b[^.]{0,60}\b(?:VIX|breadth)\b`,
+      String.raw`\bcontext,? not\b`,
+      String.raw`\bshown separately\b`,
+      String.raw`\bproxy\b`,
+    ].join("|"),
+    "i",
+  );
   // "…VIX, credit spreads, …. The Pressure Index synthesizes these…" across two sentences.
   const attributesByReference = /\b(VIX|breadth)\b[\s\S]{0,240}Pressure Index[^.]{0,40}\b(synthesi[sz]\w*|integrat\w*|combin\w*|aggregat\w*) (these|them|this)\b/i;
 
-  it("never lists VIX or market breadth as Pressure Index inputs", () => {
+  function inputHits(pages: { path: string; text: string }[]) {
     const hits: string[] = [];
-    for (const page of [...seoPages, ...publicPages, ...extraPublic]) {
+    for (const page of pages) {
       const sentences = page.text.split(/(?<=[.!?])\s+|\n/);
       sentences.forEach((sentence, i) => {
         const pair = `${sentences[i - 1] ?? ""} ${sentence}`;
@@ -248,7 +259,23 @@ describe("public claims truth: Pressure Index inputs (PR #56 r2)", () => {
         }
       });
     }
-    expect(hits).toEqual([]);
+    return hits;
+  }
+
+  it("never lists VIX or market breadth as Pressure Index inputs", () => {
+    expect(inputHits([...seoPages, ...publicPages, ...extraPublic])).toEqual([]);
+  });
+
+  it("the VIX/breadth exemption requires an explicit negation of input status", () => {
+    const fixture = (text: string) => inputHits([{ path: "fixture", text }]);
+    // A bare "not" elsewhere in the sentence must not exempt an input claim.
+    expect(fixture("The Pressure Index combines credit spreads, VIX, and market breadth, though it is not a forecast.")).toHaveLength(1);
+    expect(fixture("FAULTLINE folds VIX and breadth into the Pressure Index and does not name a date.")).toHaveLength(1);
+    // Explicit negations still pass.
+    expect(fixture("The Pressure Index combines six vectors; VIX is context, not an input.")).toEqual([]);
+    expect(fixture("The Pressure Index combines six FRED-based vectors and does not read VIX or breadth.")).toEqual([]);
+    expect(fixture("The Pressure Index combines a labor-and-rates vector, a market-breadth proxy, and others.")).toEqual([]);
+    expect(fixture("The Pressure Index combines six vectors; VIX is shown separately and is not a Pressure Index input.")).toEqual([]);
   });
 
   it("best-market-risk-indicators and stock-market-risk meta match the engine", () => {
@@ -269,5 +296,134 @@ describe("public claims truth: Pressure Index inputs (PR #56 r2)", () => {
     const trust = read("client/src/pages/TrustCenter.tsx");
     expect(trust).not.toMatch(/Can I cancel my subscription|billed monthly|Lifetime Access/);
     expect(read("client/src/pages/seo/vs/VsBloomberg.tsx")).not.toContain("subscription model is tailored");
+  });
+});
+
+describe("public claims truth: Product-QA r3 follow-ups and full sweep (PR #56 r4)", () => {
+  const sweepExtra = [
+    "client/src/pages/Methodology.tsx",
+    "client/src/pages/MarketingSite.tsx",
+    "client/src/pages/TrackRecord.tsx",
+    "client/src/pages/Analysis.tsx",
+    "client/src/pages/BlogPost.tsx",
+    "client/src/pages/ContactUs.tsx",
+    "client/src/pages/DailyBriefPost.tsx",
+    "client/src/pages/IntelligenceArchive.tsx",
+    "client/src/pages/IntelligenceLibraryPost.tsx",
+    "client/src/pages/PressureHistory.tsx",
+    "client/src/pages/PublicAIBubble.tsx",
+    "client/src/pages/PublicCryptoMarketRisk.tsx",
+    "client/src/pages/PublicCryptoSignals.tsx",
+    "client/src/pages/PublicSharedReport.tsx",
+    "client/src/pages/PublicStockMarketRisk.tsx",
+    "client/src/pages/PublicSituationRoom.tsx",
+    "client/src/pages/PublicDiagnosticAI.tsx",
+    "client/index.html",
+    "server/seoMeta.ts",
+    "server/publicContentSsr.ts",
+  ].map((path) => ({ path, text: read(path) }));
+  const allPublic = [...seoPages, ...publicPages, ...sweepExtra];
+
+  // Each check runs sentence by sentence so a hit names the offending sentence.
+  function sentenceHits(pages: { path: string; text: string }[], pattern: RegExp, allow?: RegExp) {
+    const hits: string[] = [];
+    for (const page of pages) {
+      for (const sentence of page.text.split(/(?<=[.!?])\s+|\n/)) {
+        if (pattern.test(sentence) && !(allow && allow.test(sentence))) hits.push(`${page.path}: ${sentence.trim().slice(0, 140)}`);
+      }
+    }
+    return hits;
+  }
+
+  const inAdvance = /\bdetects? in advance\b|\bin advance\b/i;
+  // Press asset requests and the Track Record limitation sentence are not product claims.
+  const inAdvanceAllow = /in advance of publication|cannot show that FAULTLINE would have warned in advance/i;
+  const currentlyStands = /\bcurrently stands\b|\bCurrently, (the )?FAULTLINE\b|\bmoderate to elevated risk profile\b/i;
+  const percentile = /\bpercentile\b/i;
+  const beforeTheMove = /before the move|before (it|they) unwinds?|Know before the reversal|Know Before the Break|before the market notices|before price confirms/i;
+  const liveLabel = /Live Platform|VIEW LIVE PRESSURE INDEX|View Live Pressure Index|Live and operational|Live crypto market risk|live Pressure Index updates/i;
+
+  const original = {
+    dynamicStock: "In elevated-pressure environments — characterized by credit spread widening, VIX regime elevation, and liquidity tightening — {upper} faces headwinds that FAULTLINE's Pressure Index™ detects in advance.",
+    riskToday: "This proprietary metric, which aggregates various systemic risk vectors, currently stands at a level suggesting increased caution is warranted.",
+    riskTodayProfile: "Today, the stock market exhibits a **moderate to elevated risk profile**, as indicated by FAULTLINE's Pressure Index.",
+    dashboard: "Knowing that today's Pressure Index reading is in the 85th historical percentile — and what typically happened next in similar environments — is far more useful than knowing the VIX is at 22.",
+  };
+
+  it("each new pattern flags the original Product-QA r3 lines", () => {
+    const fixture = (text: string) => [{ path: "fixture", text }];
+    expect(sentenceHits(fixture(original.dynamicStock), inAdvance, inAdvanceAllow)).toHaveLength(1);
+    expect(sentenceHits(fixture(original.riskToday), currentlyStands)).toHaveLength(1);
+    expect(sentenceHits(fixture(original.riskTodayProfile), currentlyStands)).toHaveLength(1);
+    expect(sentenceHits(fixture(original.dashboard), percentile)).toHaveLength(1);
+    expect(original.dashboard).toMatch(/what typically happened next/);
+    expect(sentenceHits(fixture("Know before the reversal."), beforeTheMove)).toHaveLength(1);
+    expect(sentenceHits(fixture("VIEW LIVE PRESSURE INDEX"), liveLabel)).toHaveLength(1);
+  });
+
+  it("makes no 'detects in advance' / 'in advance' claims on public pages or server meta", () => {
+    expect(sentenceHits(allPublic, inAdvance, inAdvanceAllow)).toEqual([]);
+  });
+
+  it("does not hard-code a current reading on public pages", () => {
+    expect(sentenceHits(allPublic, currentlyStands)).toEqual([]);
+    const today = read("client/src/pages/seo/StockMarketRiskToday.tsx");
+    expect(today).toContain('href: "/pressure-index"');
+    expect(today).not.toMatch(/elevated reading|Neutral-to-Cautious/);
+    expect(read("client/src/pages/seo/BullBearConditions.tsx")).not.toMatch(/Neutral-to-Cautious/);
+  });
+
+  it("uses no invented percentiles on public pages or server meta", () => {
+    expect(sentenceHits(allPublic, percentile)).toEqual([]);
+    const dashboard = read("client/src/pages/seo/BestStockMarketRiskDashboard.tsx");
+    expect(dashboard).toContain("as resemblance, not a forecast");
+    expect(dashboard).not.toMatch(/what typically happened next/);
+  });
+
+  it("drops 'before the move' style timing claims and 'Live' labels", () => {
+    expect(sentenceHits(allPublic, beforeTheMove)).toEqual([]);
+    expect(sentenceHits(allPublic, liveLabel)).toEqual([]);
+  });
+
+  it("stock and crypto templates and the public article pages carry PUBLIC_DISCLAIMER", () => {
+    for (const path of [
+      "client/src/pages/seo/DynamicStockPage.tsx",
+      "client/src/pages/seo/DynamicCryptoPage.tsx",
+      "client/src/pages/Analysis.tsx",
+      "client/src/pages/Blog.tsx",
+      "client/src/pages/BlogPost.tsx",
+      "client/src/pages/ContactUs.tsx",
+      "client/src/pages/DailyBriefPost.tsx",
+      "client/src/pages/IntelligenceArchive.tsx",
+      "client/src/pages/IntelligenceLibrary.tsx",
+      "client/src/pages/IntelligenceLibraryPost.tsx",
+      "client/src/pages/PressureHistory.tsx",
+      "client/src/pages/PublicSharedReport.tsx",
+    ]) {
+      expect(read(path), path).toContain("{PUBLIC_DISCLAIMER}");
+    }
+    const stock = read("client/src/pages/seo/DynamicStockPage.tsx");
+    expect(stock).toContain("FAULTLINE's Pressure Index™ shows where systemic pressure is building");
+    // Every SEO page renders through a template that carries the disclaimer, or carries it itself.
+    const missing = seoPages.filter((p) => !/SEOLandingPage|StockSignalPage|PUBLIC_DISCLAIMER/.test(p.text)).map((p) => p.path);
+    expect(missing).toEqual([]);
+    expect(read("client/src/pages/seo/StockSignalPage.tsx")).toContain("SEOLandingPage");
+  });
+
+  it("signal pages do not claim earnings, analyst, news, or options inputs", () => {
+    expect(
+      offenders(seoPages, /analy[sz]\w* (of )?(earnings|analyst|news)|analyst price target clusters|options gamma walls|integrat\w* (of )?(earnings|news|analyst)/i),
+    ).toEqual([]);
+  });
+
+  it("routes /stock/spy and /stock/amzn before the /stock/:symbol catch-all", () => {
+    const app = read("client/src/App.tsx");
+    const catchAll = app.indexOf('path="/stock/:symbol"');
+    expect(catchAll).toBeGreaterThan(0);
+    for (const route of ['path="/stock/spy"', 'path="/stock/amzn"']) {
+      const at = app.indexOf(route);
+      expect(at, route).toBeGreaterThan(0);
+      expect(at, route).toBeLessThan(catchAll);
+    }
   });
 });

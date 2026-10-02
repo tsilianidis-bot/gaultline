@@ -66,7 +66,7 @@ const LearnFedPolicy = () => {
         },
         {
           question: 'How can I use FAULTLINE to track Fed policy?',
-          answer: 'FAULTLINE\'s Federal Reserve Tracker monitors key economic indicators, Fed communications, and market-implied probabilities, offering a comprehensive view of the central bank\'s stance and potential market implications.',
+          answer: 'FAULTLINE\'s Federal Reserve Tracker reads the federal funds rate, SOFR, and the 2-year and 10-year Treasury yields from FRED, offering a view of the central bank\'s stance and how the market is pricing its path. It does not ingest Fed communications or market-implied probabilities.',
         },
       ]}
       internalLinks={[

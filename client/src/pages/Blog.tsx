@@ -9,6 +9,7 @@ import {
   CalendarDays, Clock, Rss, Plus, X, Eye, EyeOff,
   ChevronRight, Loader2, Pencil, Trash2, Check
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const CATEGORIES = [
   "Macro Intelligence",
@@ -871,6 +872,7 @@ export default function Blog() {
           onSaved={handleSaved}
         />
       )}
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

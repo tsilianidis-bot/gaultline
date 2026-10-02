@@ -35,9 +35,9 @@ FAULTLINE's Pressure Index was built around these principles. It combines six we
           heading: "Key Features to Look For",
           body: `When evaluating stock market risk dashboards, look for these capabilities. Systemic risk scoring: a single number that synthesizes multiple risk vectors is more actionable than a wall of disconnected charts. Regime classification: knowing whether you are in a bull, bear, risk-on, or risk-off environment changes how every other signal should be interpreted.
 
-Credit spread monitoring is non-negotiable. High-yield credit spreads have preceded every major equity market dislocation in the past 30 years. A dashboard that does not track credit conditions is missing the most important early-warning signal available. Liquidity monitoring matters equally — the mechanism behind most crashes is liquidity withdrawal, not valuation alone.
+Credit spread monitoring is non-negotiable. High-yield credit spreads have widened during many major equity market dislocations. A dashboard that does not track credit conditions is missing one of the most widely watched stress signals. Liquidity monitoring matters equally — the mechanism behind most crashes is liquidity withdrawal, not valuation alone.
 
-Historical context transforms raw data into actionable intelligence. Knowing that today's Pressure Index reading is in the 85th historical percentile — and what typically happened next in similar environments — is far more useful than knowing the VIX is at 22.`,
+Historical context transforms raw data into actionable intelligence. Knowing how today's vector profile resembles past stress episodes is more useful than knowing the VIX is at 22, as resemblance, not a forecast.`,
         },
         {
           heading: "How FAULTLINE Approaches Market Risk",

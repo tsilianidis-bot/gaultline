@@ -34,7 +34,7 @@ The combination of these three inputs produces FAULTLINE's NVDA regime fit score
 
 Major Support Zones: The 200-day moving average is the primary long-term support for NVDA. Previous all-time highs that became support after being broken are secondary support levels. Major round numbers ($100, $150, $200) attract significant options positioning.
 
-Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back below them. Options gamma walls (large open interest concentrations) create temporary resistance.
+Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back below them.
 
 Entry Zone: FAULTLINE's signal engine identifies optimal entry zones based on the combination of technical support, momentum indicators, and macro regime alignment. Entry zones are not buy recommendations — they are risk-defined areas where the risk/reward profile is most favorable given current conditions.
 

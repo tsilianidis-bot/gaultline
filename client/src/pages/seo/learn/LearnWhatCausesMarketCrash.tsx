@@ -59,7 +59,7 @@ const LearnWhatCausesMarketCrash = () => {
         },
         {
           question: "How can FAULTLINE help me understand crash risks?",
-          answer: "FAULTLINE offers specialized dashboards and analytics that track key indicators related to credit, liquidity, leverage, and sentiment. This provides users with data-driven insights into the current state of market fragility and potential risks.",
+          answer: "FAULTLINE offers specialized dashboards and analytics that track credit spreads, funding conditions, rates, inflation, and labor data. This provides users with data-driven insights into the current state of market fragility and potential risks.",
         },
         {
           question: "Is FAULTLINE's analysis financial advice?",

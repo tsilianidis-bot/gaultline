@@ -14,6 +14,7 @@ import {
   Calendar, Clock, ChevronLeft, ChevronRight, BookOpen,
   ExternalLink, Share2, TrendingUp,
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "macro-analysis": "#00D4FF",
@@ -400,6 +401,7 @@ export default function IntelligenceLibraryPost() {
           </Link>
         </div>
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

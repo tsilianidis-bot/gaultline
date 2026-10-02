@@ -554,11 +554,11 @@ export default function TrackRecord() {
         <div className="border border-zinc-800 rounded-xl p-8 bg-zinc-900/40 text-center">
           <h2 className="text-2xl font-bold text-white mb-3">See Today's Reading</h2>
           <p className="text-zinc-400 mb-6 max-w-lg mx-auto">
-            The live Pressure Index updates daily with the latest published data. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
+            The current Pressure Index is recalculated as new FRED data is published. Access the full platform to see current risk vectors, scenario analysis, and the Aftershock Engine.
           </p>
           <div className="flex items-center justify-center gap-4 flex-wrap">
             <Link href="/pressure-index" className="px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-zinc-200 transition-colors text-sm">
-              View Live Pressure Index
+              View the Pressure Index
             </Link>
             <Link href="/app" className="px-6 py-3 border border-zinc-700 text-white font-semibold rounded-lg hover:border-zinc-500 transition-colors text-sm">
               Explore Free Platform

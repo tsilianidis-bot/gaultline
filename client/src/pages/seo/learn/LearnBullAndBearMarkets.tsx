@@ -43,7 +43,7 @@ FAULTLINE's regime classification system is designed to help investors understan
           heading: "How Investors Misunderstand Bull and Bear Markets",
           body: `The most common misunderstanding is that bull and bear markets are defined solely by price. In reality, price is a lagging indicator. The structural conditions that drive regime transitions — credit deterioration, liquidity withdrawal, breadth deterioration — develop well before prices reflect them.
 
-A second common misunderstanding is that bear markets are caused by unexpected events. In most cases, the structural vulnerabilities that make a market susceptible to a sharp decline are visible in advance. The 2000 crash was preceded by historically extreme valuations and AI/tech concentration. The 2008 crash was preceded by credit spread widening and liquidity stress. The 2022 decline was preceded by the most aggressive Fed tightening cycle in decades.
+A second common misunderstanding is that bear markets are caused by unexpected events. The structural vulnerabilities that make a market susceptible to a sharp decline often build up over months. The 2000 crash was preceded by historically extreme valuations and AI/tech concentration. The 2008 crash was preceded by credit spread widening and liquidity stress. The 2022 decline was preceded by the most aggressive Fed tightening cycle in decades.
 
 FAULTLINE's Pressure Index is designed to measure these structural vulnerabilities as new data is published — not to predict crashes, but to quantify how structurally vulnerable the market is to a rapid decline.`,
         },

@@ -175,7 +175,7 @@ export const PAGE_SEO = {
   report: {
     title: "Daily Intelligence Report — Macro Market Briefing",
     description:
-      "FAULTLINE Daily Intelligence Report: institutional macro briefing covering market regime, systemic pressure readings, key risk events, and forward-looking analytics.",
+      "FAULTLINE Daily Intelligence Report: institutional macro briefing covering market regime, systemic pressure readings, key risk events, and historical context.",
     canonical: "/app/report",
   },
   // 48 chars ✓
@@ -231,7 +231,7 @@ export const PAGE_SEO = {
   trackRecord: {
     title: "Track Record — FAULTLINE Signal Performance",
     description:
-      "FAULTLINE historical signal performance and track record. Transparent documentation of macro calls, regime predictions, and signal accuracy.",
+      "FAULTLINE archived retrospective Pressure Index reconstruction. Retrospective only — not live predictions and not an independently validated backtest.",
     canonical: "/track-record",
   },
   preFlight: {
@@ -250,7 +250,7 @@ export const PAGE_SEO = {
   insiderIntelligence: {
     title: "FAULTLINE Insider Intelligence™ — Smart Money Tracker",
     description:
-      "Track where corporate insiders show conviction before the market notices. Conviction Score, Smart Money Radar, Cluster Buy Alerts, and AI-powered insider analysis.",
+      "Track where corporate insiders are buying and selling, from reported filings. Conviction Score, Smart Money Radar, Cluster Buy Alerts, and AI-powered insider analysis.",
     canonical: "/app/insider-intelligence",
   },
   // 31 chars ✓
@@ -288,7 +288,7 @@ export const PAGE_SEO = {
   publicCryptoSignals: {
     title: "Crypto Signals — Macro-Aligned Digital Asset Intel",
     description:
-      "FAULTLINE Crypto Signals: momentum, liquidity, and macro-regime-aligned trading signals for digital assets. Know which crypto assets fit the current macro environment before the move.",
+      "FAULTLINE Crypto Signals: momentum, liquidity, and macro-regime-aligned trading signals for digital assets. See which crypto assets fit the current macro environment.",
     canonical: "/crypto-signals",
   },
   publicStockMarketRisk: {

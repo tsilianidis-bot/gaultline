@@ -31,7 +31,7 @@ Bitcoin is primarily a store of value and monetary asset. Its price is driven by
 
 This dual nature means Ethereum has higher beta than Bitcoin — it tends to outperform BTC in bull markets and underperform in bear markets. The ETH/BTC ratio is the primary measure of this relative performance, and FAULTLINE tracks it as a core indicator of the crypto rotation cycle.
 
-The introduction of ETH staking (through Ethereum's transition to Proof of Stake in September 2022) added a new dimension to ETH's risk/reward profile. Staked ETH earns yield — currently approximately 3-4% annually — which can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides a fundamental support for ETH demand from institutional investors.`,
+The introduction of ETH staking (through Ethereum's transition to Proof of Stake in September 2022) added a new dimension to ETH's risk/reward profile. Staked ETH earns a yield — roughly 3-4% a year in recent years — which can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides a fundamental support for ETH demand from institutional investors.`,
         },
         {
           heading: "Ethereum's Key Risk Factors in 2026",
@@ -43,9 +43,9 @@ The introduction of ETH staking (through Ethereum's transition to Proof of Stake
 
 3. DeFi Total Value Locked (TVL) — The total value locked in Ethereum-based DeFi protocols reflects the ecosystem's health and ETH demand. TVL declines signal reduced DeFi activity and reduced ETH demand from protocol collateral requirements.
 
-4. Staking Dynamics — ETH staking participation (currently approximately 28% of total ETH supply) reduces circulating supply and creates yield-based demand. Changes in staking yield relative to risk-free rates affect institutional demand for ETH.
+4. Staking Dynamics — ETH staking participation (roughly a quarter or more of total ETH supply in recent years) reduces circulating supply and creates yield-based demand. Changes in staking yield relative to risk-free rates affect institutional demand for ETH.
 
-5. Regulatory Treatment of ETH — The SEC's treatment of ETH as a commodity (following the approval of ETH spot ETFs in May 2024) has significant implications for institutional adoption. FAULTLINE monitors regulatory developments as a qualitative risk factor.`,
+5. Regulatory Treatment of ETH — The SEC's treatment of ETH as a commodity (following the approval of ETH spot ETFs in May 2024) has significant implications for institutional adoption. Regulatory developments are qualitative context; FAULTLINE does not ingest them as data.`,
         },
         {
           heading: "ETH Bull Case and Bear Case Scenarios",
@@ -67,7 +67,7 @@ FAULTLINE's regularly refreshed risk score reflects which scenario conditions ar
         },
         {
           question: "How does Ethereum staking affect ETH's risk profile?",
-          answer: "ETH staking (Proof of Stake) allows ETH holders to earn yield by validating transactions. Currently approximately 28% of total ETH supply is staked, earning approximately 3-4% annually. This staking yield can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides fundamental support for institutional ETH demand. When risk-free rates are significantly higher than staking yield, the relative attractiveness of ETH decreases.",
+          answer: "ETH staking (Proof of Stake) allows ETH holders to earn yield by validating transactions. In recent years roughly a quarter or more of total ETH supply has been staked, earning roughly 3-4% a year. This staking yield can be compared to risk-free rates (U.S. Treasury yields) as a valuation input. When ETH staking yield exceeds risk-free rates, it provides fundamental support for institutional ETH demand. When risk-free rates are significantly higher than staking yield, the relative attractiveness of ETH decreases.",
         },
         {
           question: "What is the biggest risk to Ethereum in 2026?",

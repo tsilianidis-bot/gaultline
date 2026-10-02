@@ -34,7 +34,7 @@ NVDA Competitive Dynamics: AMD's valuation is partially determined by its positi
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous cycle highs that became support. Major psychological levels ($80, $100, $120, $150, $200).
 
-Resistance Clusters: Previous all-time highs before they were broken. Options gamma walls at major strike prices.
+Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
 
 Historical Context: AMD reached its all-time high in late 2021 at approximately $164, then fell approximately 65% to its 2022 low of approximately $57 during the semiconductor bear market driven by inventory correction and macro headwinds. The subsequent recovery was driven by EPYC CPU market share gains and AI accelerator growth expectations.`}
       riskFactors={`AMD faces five primary risk factors that FAULTLINE monitors:

@@ -28,7 +28,7 @@ const LearnMacroInvesting = () => {
         },
         { icon: "⬡",
           title: "Actionable Outlooks",
-          desc: "Understand 'what would change the outlook' for key macro themes, helping you anticipate market shifts.",
+          desc: "Understand 'what would change the outlook' for key macro themes, as context rather than a forecast.",
         },
       ]}
       contentSections={[

@@ -25,7 +25,7 @@ FAULTLINE classifies PLTR as having HIGH AI Software Exposure — meaning its va
 
 Macro Regime Alignment: PLTR has a dual macro sensitivity profile. Its government revenue (approximately 55% of total) is relatively recession-resistant — defense and intelligence spending tends to be maintained even during economic downturns. Its commercial AIP revenue is more cyclically sensitive — enterprise software spending can be deferred during recessions.
 
-Government AI Spending Momentum: PLTR's government business is directly tied to U.S. defense and intelligence AI spending. The U.S. Department of Defense's AI strategy and budget allocations are key drivers. FAULTLINE monitors government contract announcements and defense budget signals as qualitative inputs to the PLTR signal.
+Government AI Spending Momentum: PLTR's government business is directly tied to U.S. defense and intelligence AI spending. The U.S. Department of Defense's AI strategy and budget allocations are key drivers. Government contract and defense budget news is context for PLTR; FAULTLINE does not ingest it as a signal input.
 
 AIP Commercial Adoption: Palantir's AIP (Artificial Intelligence Platform) is the primary commercial growth driver. AIP boot camp adoption rates, net dollar retention, and customer count growth are the key metrics. Strong AIP adoption signals expanding commercial revenue and multiple expansion potential.
 
@@ -34,7 +34,7 @@ The combination of these inputs produces FAULTLINE's PLTR regime fit score (0-10
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels (the price at which PLTR broke out of consolidation ranges) become support after the breakout. Major round numbers ($20, $25, $30, $40, $50) attract significant options positioning.
 
-Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back. Options gamma walls at major strike prices create temporary resistance.
+Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back.
 
 Technical Context: PLTR has historically exhibited high volatility relative to the broader market (beta approximately 1.8-2.2). This means PLTR tends to amplify both upside and downside moves relative to the S&P 500. FAULTLINE's signal engine accounts for this elevated beta in the risk score calculation.`}
       riskFactors={`PLTR faces five primary risk factors that FAULTLINE monitors:

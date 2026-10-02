@@ -53,7 +53,7 @@ FAULTLINE tracks the following key TAO price levels:
 
 Major Support Zones: Previous cycle highs that became support after being broken, major moving averages (50-day, 200-day), and key psychological round numbers.
 
-Resistance Clusters: Previous all-time highs before they were broken, major round numbers, and options gamma walls.
+Resistance Clusters: Previous all-time highs before they were broken, and major round numbers.
 
 Historical Context: TAO reached its all-time high in early 2024 during the convergence of the Bitcoin halving cycle and peak AI narrative momentum. The subsequent correction tested multiple support levels before stabilizing. Understanding these historical levels is essential for positioning in TAO.`,
         },

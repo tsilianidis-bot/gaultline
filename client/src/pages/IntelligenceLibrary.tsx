@@ -15,6 +15,7 @@ import {
   Bitcoin, Globe, Activity, Zap, Clock, ChevronRight, Layers,
   AlertTriangle, DollarSign, Target, RotateCcw,
 } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const CATEGORIES = [
   { id: "macro-analysis",        label: "Macro Analysis",          icon: Globe,         color: "#00D4FF", desc: "Global economic forces, Fed policy, and macro regime analysis" },
@@ -371,6 +372,7 @@ export default function IntelligenceLibrary() {
           </Link>
         </div>
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

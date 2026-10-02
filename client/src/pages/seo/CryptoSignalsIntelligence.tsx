@@ -15,7 +15,7 @@ export default function CryptoSignalsIntelligence() {
       ctaHref="/app/crypto"
       accentColor="#F7931A"
       features={[
-        { icon: "◈", title: "BTC Dominance Tracking", desc: "Monitor Bitcoin dominance cycles as new data is published. Know when capital is rotating into altcoins before the move is obvious." },
+        { icon: "◈", title: "BTC Dominance Tracking", desc: "Monitor Bitcoin dominance cycles as new data is published. See how BTC dominance and altcoin momentum are shifting as new data is published." },
         { icon: "◎", title: "Altcoin Rotation Intelligence", desc: "Identify which altcoin sectors are leading the current rotation — AI tokens, DeFi, Layer-2, gaming, or memes." },
         { icon: "⬡", title: "Macro Regime Alignment", desc: "Each crypto signal classified against the current macro regime. Risk-on vs. risk-off conditions change everything in crypto." },
         { icon: "◈", title: "Liquidity Sensitivity Scoring", desc: "Crypto is the most liquidity-sensitive asset class. FAULTLINE flags which coins are most exposed to liquidity withdrawal." },
@@ -61,7 +61,7 @@ Each asset is scored for momentum, macro alignment, liquidity sensitivity, and s
       faqs={[
         {
           question: "What makes FAULTLINE crypto signals different from other crypto signal services?",
-          answer: "FAULTLINE crypto signals are macro-regime-aware. Most crypto signal services focus exclusively on technical analysis — price patterns, RSI, MACD. FAULTLINE incorporates the broader macro environment: Federal Reserve policy, credit market conditions, global liquidity, and systemic risk. A technically bullish signal in a HIGH STRESS macro regime carries fundamentally different risk than the same signal in a LOW RISK environment.",
+          answer: "FAULTLINE crypto signals are macro-regime-aware. Most crypto signal services focus exclusively on technical analysis — price patterns, RSI, MACD. FAULTLINE incorporates the broader macro environment: Federal Reserve policy, credit market conditions, funding conditions, and systemic risk. A technically bullish signal in a HIGH STRESS macro regime carries fundamentally different risk than the same signal in a LOW RISK environment.",
         },
         {
           question: "How does FAULTLINE track the alt season cycle?",

@@ -9,7 +9,7 @@ export default function MarketCrashIndicator() {
         canonical: "/market-crash-indicator",
       }}
       badge="CRASH RISK INTELLIGENCE"
-      headline={"Market Crash Indicator\nKnow Before the Break"}
+      headline={"Market Crash Indicator\nSee the Pressure Before the Break"}
       subheadline="FAULTLINE's market crash indicator is built on the Pressure Index, which combines credit spreads, funding rates, the Treasury yield curve, inflation, unemployment, and a static AI-concentration baseline into a single systemic stress score."
       ctaLabel="VIEW CRASH RISK"
       ctaHref="/pressure-index"
@@ -29,7 +29,7 @@ export default function MarketCrashIndicator() {
 
 FAULTLINE's crash indicator is built on the FAULTLINE Pressure Index™, which combines six weighted vectors: liquidity stress, credit contagion, the 10Y–2Y yield curve and 10Y level, macro sensitivity, labor and rates, and AI / speculation (a static concentration baseline). Each vector is scored and weighted to produce a single 0-100 systemic pressure score.
 
-The live index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those labels describe modeled stress, not a calibrated crash probability. No independently validated backtest shows that market crashes since 2000 were preceded by any particular Pressure Index reading.`,
+The current index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those labels describe modeled stress, not a calibrated crash probability. No independently validated backtest shows that market crashes since 2000 were preceded by any particular Pressure Index reading.`,
         },
         {
           heading: "The 6 Vectors Behind the Pressure Index",
@@ -43,7 +43,7 @@ The live index labels scores of 65-79 HIGH STRESS and 80+ SYSTEMIC CRISIS. Those
 
 5. Labor & Rates (10%) — The unemployment rate blended with the 10-year yield. This vector was previously labelled "Market Breadth"; it is not an advance/decline or market-participation measure.
 
-6. AI / Speculation (15%) — A static reference value for AI mega-cap concentration (~32.4% of the S&P 500), adjusted by the live 10-year yield and high-yield spread. The concentration baseline is not a live measurement.`,
+6. AI / Speculation (15%) — A static reference value for AI mega-cap concentration (~32.4% of the S&P 500), adjusted by the latest 10-year yield and high-yield spread. The concentration baseline is not a live measurement.`,
         },
         {
           heading: "What the Historical Evidence Shows",

@@ -10,6 +10,7 @@ import { useParams, Link } from "wouter";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { useCallback } from "react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 // ── Per-symbol enrichment data ─────────────────────────────────────────────
 interface SymbolData {
@@ -462,7 +463,7 @@ export default function DynamicStockPage() {
             {upper}'s performance is highly dependent on the prevailing macro regime. FAULTLINE classifies the current market environment as Bull, Bear, Crash, or Recovery — and each regime has distinct implications for {upper} positioning.
           </p>
           <p className="text-[#A8B8CC] leading-relaxed mb-4">
-            In bull regimes with low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments — characterized by credit spread widening, VIX regime elevation, and liquidity tightening — {upper} faces headwinds that FAULTLINE's Pressure Index™ detects in advance.
+            In bull regimes with low systemic pressure, {upper} tends to benefit from risk appetite expansion. In elevated-pressure environments — characterized by credit spread widening, VIX regime elevation, and liquidity tightening — {upper} faces headwinds; FAULTLINE's Pressure Index™ shows where systemic pressure is building.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
             <Link href="/market-regime-tracker" onClick={() => handleCtaClick("related_tool")} className="group p-4 rounded-lg border border-white/8 bg-white/[0.02] hover:border-cyan-400/30 transition-all">
@@ -546,6 +547,9 @@ export default function DynamicStockPage() {
           </div>
           <p className="text-[#64748B] text-xs mt-3 font-mono">No credit card required</p>
         </section>
+        <p className="mt-10 text-center text-xs text-[#64748B]">
+          © {new Date().getFullYear()} FAULTLINE. {PUBLIC_DISCLAIMER}
+        </p>
       </main>
     </div>
   );

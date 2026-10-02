@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Search, ChevronRight, Archive, Clock, Filter, X } from "lucide-react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 const REGIME_OPTIONS = [
   { value: "all", label: "All Regimes" },
@@ -284,6 +285,7 @@ export default function IntelligenceArchive() {
           </>
         )}
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

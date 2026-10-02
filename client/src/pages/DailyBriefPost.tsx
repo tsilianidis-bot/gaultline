@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, ChevronLeft, ChevronRight, Shield, Rss, ExternalLink } from "lucide-react";
 import { buildDailyBriefStructuredData, serializeJsonLd } from "@shared/articleStructuredData";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 function formatDate(d: Date | string | null | undefined): string {
   if (!d) return "—";
@@ -347,6 +348,7 @@ export default function DailyBriefPost() {
           </div>
         </div>
       </div>
+      <p className="mx-auto max-w-5xl px-4 pb-8 pt-6 text-center text-xs text-slate-500">{PUBLIC_DISCLAIMER}</p>
     </div>
   );
 }

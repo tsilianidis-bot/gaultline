@@ -34,7 +34,7 @@ Macro Regime Alignment: TSLA is a high-beta growth stock. In LOW RISK macro envi
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous all-time highs that became support after being broken. Major psychological levels ($150, $200, $250, $300, $400, $500).
 
-Resistance Clusters: Previous all-time highs before they were broken. Options gamma walls at major strike prices. Analyst price target clusters.
+Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
 
 Historical Volatility Context: TSLA is one of the most volatile large-cap stocks in the market, with historical beta of approximately 2.0-2.5 relative to the S&P 500. Drawdowns from cycle highs have exceeded 70% in bear market phases (2022: -73% peak to trough). This elevated volatility is a core feature of TSLA's risk profile.`}
       riskFactors={`TSLA faces five primary risk factors that FAULTLINE monitors:

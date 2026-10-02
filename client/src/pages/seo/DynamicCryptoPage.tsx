@@ -9,6 +9,7 @@ import { useParams, Link } from "wouter";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { useCallback } from "react";
+import { PUBLIC_DISCLAIMER } from "@shared/publicDisclaimer";
 
 interface CryptoData {
   name: string;
@@ -394,6 +395,9 @@ export default function DynamicCryptoPage() {
           </a>
           <p className="text-[#64748B] text-xs mt-3 font-mono">No credit card required</p>
         </section>
+        <p className="mt-10 text-center text-xs text-[#64748B]">
+          © {new Date().getFullYear()} FAULTLINE. {PUBLIC_DISCLAIMER}
+        </p>
       </main>
     </div>
   );

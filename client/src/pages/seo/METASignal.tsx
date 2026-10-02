@@ -32,7 +32,7 @@ Regulatory and Antitrust Risk: Meta faces ongoing regulatory scrutiny in the U.S
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels and all-time highs that became support. Major psychological levels ($400, $500, $600, $700).
 
-Resistance Clusters: Previous all-time highs before they were broken. Options gamma walls at major strike prices.
+Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
 
 Historical Context: META experienced one of the most dramatic large-cap drawdowns in market history in 2022 — falling approximately 77% from its all-time high to its October 2022 low — driven by a combination of revenue deceleration, metaverse spending concerns, and macro headwinds. The subsequent recovery to new all-time highs by 2024 demonstrated the resilience of META's core advertising business.`}
       riskFactors={`META faces five primary risk factors that FAULTLINE monitors:

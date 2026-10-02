@@ -55,7 +55,7 @@ const CreditMarketStress = () => {
         },
         {
           question: "How can FAULTLINE help me monitor credit risk?",
-          answer: "FAULTLINE's Pressure Index provides regularly refreshed data and analysis on credit spreads, funding conditions, and historical patterns. Our platform helps you identify early warning signs of market dislocations and understand the drivers of credit market movements.",
+          answer: "FAULTLINE's Pressure Index provides regularly refreshed data and analysis on credit spreads, funding conditions, and historical patterns. Our platform shows where credit pressure is building and helps you understand the drivers of credit market movements.",
         },
         {
           question: "Is FAULTLINE's credit stress reading a predictive tool?",

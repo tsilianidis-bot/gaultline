@@ -5,7 +5,7 @@ export default function AIStockSignals() {
     <SEOLandingPage
       seo={{
         title: "AI Stock Signals — Machine Learning Market Intelligence | FAULTLINE",
-        description: "AI-powered stock signals combining machine learning, macro regime analysis, and systemic risk scoring. Know which equities are positioned for the current environment before the move.",
+        description: "AI-powered stock signals combining machine learning, macro regime analysis, and systemic risk scoring. See how each equity fits the current macro environment.",
         canonical: "/ai-stock-signals",
       }}
       badge="AI STOCK INTELLIGENCE"

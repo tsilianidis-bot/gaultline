@@ -14,7 +14,7 @@ const LearnTreasuryYields = () => {
       badge="Educational"
       headline="Treasury Yields Explained: Your Comprehensive Guide to Market Dynamics"
       subheadline={
-        "Treasury yields are a critical barometer of economic health and investor sentiment. Currently, FAULTLINE's analysis indicates a \"Cautious\" outlook on long-term yields, reflecting ongoing inflation concerns and Federal Reserve policy uncertainty. Historically, inverted yield curves have often preceded recessions, while rapidly rising yields can signal economic overheating. Understanding these shifts, and what has changed in the current environment, is crucial for investors. This guide explains why treasury yields matter and what would change the outlook, providing the context you need to navigate complex market conditions."
+        "Treasury yields are a critical barometer of economic health and investor sentiment. Historically, inverted yield curves have often preceded recessions, while rapidly rising yields can signal economic overheating. Understanding these shifts, and what has changed in the current environment, is crucial for investors. This guide explains why treasury yields matter and what would change the outlook, providing the context you need to navigate complex market conditions."
       }
       ctaLabel="Explore FAULTLINE Analytics"
       ctaHref="/app"

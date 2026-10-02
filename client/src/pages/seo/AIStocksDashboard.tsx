@@ -55,7 +55,7 @@ AI Bubble Exposure as Risk Filter: Use the AI Bubble Exposure rating to understa
 
 Regime Fit Score as Timing Tool: The regime fit score tells you how well each stock fits the current macro environment. A stock with a high regime fit score in the current environment is better positioned than one with a low score, regardless of its individual fundamentals.
 
-Sector Rotation Signals: Monitor capital flows between AI infrastructure, AI software, and AI-powered platforms. Early rotation signals — when capital begins moving from one sub-sector to another — can provide advance warning of sector-level trend changes.`,
+Sector Rotation Signals: Compare relative price momentum across AI infrastructure, AI software, and AI-powered platforms. Rotation between sub-sectors shows up in relative momentum as it develops; FAULTLINE does not ingest fund-flow data.`,
         },
       ]}
       faqs={[

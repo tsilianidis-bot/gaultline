@@ -41,7 +41,7 @@ FAULTLINE's Bitcoin Risk Dashboard uses the macro framework as the primary analy
 
 2. Global Dollar Liquidity — Bitcoin is priced in dollars and is highly sensitive to global dollar liquidity conditions. A strengthening dollar (which typically accompanies Fed tightening) creates headwinds for BTC. A weakening dollar (which typically accompanies Fed easing) creates tailwinds.
 
-3. Regulatory Environment — Regulatory clarity or uncertainty in major markets (U.S., EU, Asia) affects institutional adoption and capital flows into Bitcoin. FAULTLINE monitors regulatory developments as a qualitative risk factor.
+3. Regulatory Environment — Regulatory clarity or uncertainty in major markets (U.S., EU, Asia) affects institutional adoption and capital flows into Bitcoin. Regulatory developments are qualitative context; FAULTLINE does not ingest them as data.
 
 4. Bitcoin Halving Cycle — Bitcoin's supply issuance halves approximately every four years. Historically, the 12-18 months following a halving have been associated with significant price appreciation. The most recent halving occurred in April 2024, placing the 2025-2026 period in the historically favorable post-halving window.
 
