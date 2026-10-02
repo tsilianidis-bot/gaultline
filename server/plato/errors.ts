@@ -23,6 +23,10 @@ export type PlatoErrorClass =
   | "auth"
   /** 400 / 422: the request itself was rejected. Not retried anywhere. */
   | "bad_request"
+  /** 200 with no usable answer: no choices, empty/null content, or a safety/content-filter block. */
+  | "empty_response"
+  /** 200 with an answer that cannot be used: truncated (finish_reason=length) or not the requested JSON. */
+  | "malformed_response"
   | "provider_error";
 
 /** Final, client-facing reason when PLATO cannot answer. */
@@ -167,4 +171,34 @@ export function redactProviderMessage(message: string): string {
     .replace(/[?&]key=[^&\s"']+/gi, "?key=[redacted]")
     .replace(/\s+/g, " ")
     .slice(0, 240);
+}
+
+/**
+ * Typed failure for a provider answer that reached the caller but cannot be
+ * shown (no reply after parsing, unparseable JSON). The caller must surface
+ * this instead of inventing a reply.
+ */
+export function unusableAnswerError(
+  errorClass: "empty_response" | "malformed_response",
+  provider: string,
+  model: string,
+): PlatoUnavailableError {
+  const failure = new PlatoRouteError(`PLATO provider returned an unusable answer (${errorClass}).`, {
+    httpStatus: 200,
+    errorClass,
+    provider,
+    model,
+  });
+  return new PlatoUnavailableError(failure, [{ provider, model, errorClass, httpStatus: 200 }]);
+}
+
+/** Log-safe summary of any PLATO failure: class and status only, never the upstream body. */
+export function platoErrorSummary(error: unknown): Record<string, unknown> {
+  if (error instanceof PlatoUnavailableError) {
+    return { reason: error.reason, errorClass: error.lastError.errorClass, httpStatus: error.lastError.httpStatus, attempts: error.attempts.length };
+  }
+  if (error instanceof PlatoRouteError) {
+    return { errorClass: error.errorClass, httpStatus: error.httpStatus };
+  }
+  return { errorClass: "non_provider_failure", errorName: error instanceof Error ? error.name : typeof error };
 }

@@ -51,7 +51,7 @@ export default function AshaDailyGreeting() {
       setGreeting(res.greeting);
     }).catch(() => {
       // Never substitute a canned market reading for PLATO's answer.
-      setGreeting("PLATO is temporarily unavailable. The readings on this page are still live; PLATO's greeting will return when the language model is reachable.");
+      setGreeting("PLATO is temporarily unavailable, so there is no PLATO greeting right now. It will return when the language model is reachable.");
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canonicalState, isLoading, dismissed, fetched]);

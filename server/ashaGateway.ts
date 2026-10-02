@@ -15,7 +15,7 @@ import type { CanonicalMarketState } from "../shared/marketState";
 import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { getCanonicalMarketState } from "./marketStateService";
 import type { PlatoConfig } from "./plato/config";
-import { routePlatoCompletion, type RouteDependencies } from "./plato/router";
+import { routePlatoCompletion, type PlatoBudget, type PlatoResponseValidator, type RouteDependencies } from "./plato/router";
 
 type InvokeGatewayModel = (params: InvokeParams) => Promise<InvokeResult>;
 
@@ -131,6 +131,9 @@ export async function invokeAshaGateway(
     invokeModel?: InvokeGatewayModel;
     config?: PlatoConfig;
     sleep?: RouteDependencies["sleep"];
+    /** Shared per-question budget (answer + correction share one 4-call / 100 s budget). */
+    budget?: PlatoBudget;
+    validateResponse?: PlatoResponseValidator;
   } = {},
 ): Promise<{ response: InvokeResult; trace: AshaModelTrace }> {
   const routed = await routePlatoCompletion(
@@ -146,7 +149,13 @@ export async function invokeAshaGateway(
       responseFormat: params.responseFormat,
       response_format: params.response_format,
     },
-    { invoke: dependencies.invokeModel, config: dependencies.config, sleep: dependencies.sleep },
+    {
+      invoke: dependencies.invokeModel,
+      config: dependencies.config,
+      sleep: dependencies.sleep,
+      budget: dependencies.budget,
+      validateResponse: dependencies.validateResponse,
+    },
   );
   return {
     response: routed.response,

@@ -17,7 +17,27 @@ import IntelligenceSynthesis, { SynthesisStep } from "./IntelligenceSynthesis";
 import OracleBriefing, { OracleBriefingData } from "./OracleBriefing";
 import { useIsMobile } from "@/hooks/useMobile";
 import { insufficientHorizonMetadata } from "@shared/forecastMetadata";
-import { reduceAshaAskFailure, type AshaAskFailureState } from "@shared/ashaPanelMachine";
+import { ashaSignInRequiredState, reduceAshaAskFailure, type AshaAskFailureState } from "@shared/ashaPanelMachine";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { navigateToLogin } from "@/const";
+
+/**
+ * Height of anything pinned to the bottom of the viewport. The cookie banner
+ * reserves its height as body padding-bottom while it is visible, so the PLATO
+ * card sits above it instead of under it (no z-index change needed).
+ */
+function useBottomObstructionPx(active: boolean): number {
+  const [px, setPx] = useState(0);
+  useEffect(() => {
+    if (!active || typeof document === "undefined") return;
+    const read = () => setPx(parseFloat(document.body.style.paddingBottom || "0") || 0);
+    read();
+    const observer = typeof MutationObserver !== "undefined" ? new MutationObserver(read) : null;
+    observer?.observe(document.body, { attributes: true, attributeFilter: ["style"] });
+    return () => observer?.disconnect();
+  }, [active]);
+  return px;
+}
 
 // ── Context-aware suggestions per page ───────────────────────
 const PAGE_SUGGESTIONS: Record<string, string[]> = {
@@ -133,6 +153,10 @@ export default function AshaPanel() {
   const synthTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const askMutation = trpc.asha.ask.useMutation();
+  // Read-only use of the existing auth hook. Guests never call asha.ask (it is protected and a 401
+  // would trigger the global redirect); they get the in-panel sign-in card instead.
+  const { user, loading: authLoading } = useAuth();
+  const bottomObstructionPx = useBottomObstructionPx(panelState === "unavailable");
 
   // ── Derive regime state for orb ───────────────────────────
   const regimeState: AshaRegimeState = (() => {
@@ -224,6 +248,11 @@ export default function AshaPanel() {
 
     const question = text.trim();
     setCurrentQuestion(question);
+    if (!authLoading && !user) {
+      setAskFailure(ashaSignInRequiredState());
+      setPanelState("unavailable");
+      return;
+    }
     setAskFailure(null);
     setPanelState("synthesizing");
 
@@ -268,15 +297,16 @@ export default function AshaPanel() {
         directAnswer: response.directAnswer || response.executiveSummary || response.reply.split("\n")[0] || response.reply.slice(0, 200),
         executiveSummary: response.executiveSummary || response.reply.split("\n")[0] || response.reply.slice(0, 200),
         coreThesis: response.coreThesis || response.executiveSummary || response.reply.split("\n")[0],
-        marketBias: response.marketBias || "NEUTRAL",
+        // Missing model fields are shown as not stated, never filled with invented values.
+        marketBias: response.marketBias ?? "NOT STATED",
         confidence: confidenceNum,
         marketRegime: response.marketRegime || fullPageContext.regime || "Unknown",
-        threatLevel: response.threatLevel || "ELEVATED",
-        pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? 50,
-        riskLevel: response.riskLevel || "Moderate",
+        threatLevel: response.threatLevel ?? "NOT STATED",
+        pressureIndex: response.pressureIndex ?? fullPageContext.pressureScore ?? null,
+        riskLevel: response.riskLevel ?? "Not stated",
         suggestedBias: response.suggestedBias,
-        bullProbability: response.bullProbability ?? 50,
-        bearProbability: response.bearProbability ?? 50,
+        bullProbability: response.bullProbability,
+        bearProbability: response.bearProbability,
         keyFindings: response.keyFindings?.length ? response.keyFindings : [response.reply.slice(0, 180)],
         supportingEvidence: response.supportingEvidence?.length ? response.supportingEvidence : response.sources,
         crossEngineSynthesis: response.crossEngineSynthesis,
@@ -287,7 +317,7 @@ export default function AshaPanel() {
         invalidationConditions: response.invalidationConditions?.length ? response.invalidationConditions : [],
         missionRecommendation: response.missionRecommendation || response.reply,
         missionRecommendationStructured: response.missionRecommendationStructured,
-        finalVerdictAction: response.finalVerdictAction || "WATCH",
+        finalVerdictAction: response.finalVerdictAction ?? "NOT STATED",
         expectedTimeframe: undefined,
         forecastMetadata: insufficientHorizonMetadata("oracle-briefing", new Date().toISOString()),
         questionAnalysis: response.questionAnalysis,
@@ -307,7 +337,7 @@ export default function AshaPanel() {
       setSynthSteps([]);
       setPanelState(failure.panelState);
     }
-  }, [askMutation, fullPageContext, threadHistory, appendThreadExchange, advanceSynthesisSteps, suggestions]);
+  }, [askMutation, fullPageContext, threadHistory, appendThreadExchange, advanceSynthesisSteps, suggestions, authLoading, user]);
 
   // ── Ask another question ──────────────────────────────────
   const handleAskAnother = useCallback(() => {
@@ -400,7 +430,9 @@ export default function AshaPanel() {
           style={{
             position: "fixed",
             left: "50%",
-            bottom: isMobile ? "calc(72px + env(safe-area-inset-bottom, 0px))" : "24px",
+            bottom: isMobile
+              ? `calc(${72 + bottomObstructionPx}px + env(safe-area-inset-bottom, 0px))`
+              : `${24 + bottomObstructionPx}px`,
             transform: "translateX(-50%)",
             width: "min(440px, calc(100vw - 32px))",
             zIndex: 1100,
@@ -471,6 +503,27 @@ export default function AshaPanel() {
                 }}
               >
                 Retry
+              </button>
+            )}
+            {askFailure.showSignIn && (
+              <button
+                type="button"
+                onClick={() => { navigateToLogin(); }}
+                style={{
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: "10px",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  color: "#041018",
+                  background: "#00E5FF",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "8px 12px",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                }}
+              >
+                Sign in
               </button>
             )}
             <button

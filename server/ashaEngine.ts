@@ -29,6 +29,8 @@ import { buildCrossEngineSynthesis, buildCrossEngineSynthesisPromptContract } fr
 import { buildEarlyWarningPresentationPromptContract, getCurrentGovernedEarlyWarningPresentation } from "./earlyWarningPresentation";
 import { getLatestSignalConvergence, getLatestSystemicRegimeReading } from "./systemicRegime/reader";
 import { buildSystemicRegimePromptContract } from "./systemicRegime/platoRead";
+import { createPlatoBudget, platoBudgetExhausted, type PlatoResponseValidator } from "./plato/router";
+import { platoErrorSummary, unusableAnswerError } from "./plato/errors";
 
 export type { AshaPageContext } from "../shared/ashaContext";
 
@@ -251,6 +253,41 @@ function stripCodeFences(raw: string): string {
   return raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
 }
 
+/**
+ * PLATO only accepts a 200 that parses to the briefing JSON with a non-empty
+ * `reply`. Anything else is rejected inside the router so the next model is
+ * tried within the same per-question budget; it is never shown as an answer.
+ */
+const oracleAnswerProblem: PlatoResponseValidator = response => {
+  const raw = readString(response.choices?.[0]?.message?.content);
+  if (!raw) return "empty_response";
+  try {
+    const candidate = JSON.parse(stripCodeFences(raw));
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return "malformed_response";
+    return readString((candidate as Record<string, unknown>).reply) ? null : "empty_response";
+  } catch {
+    return "malformed_response";
+  }
+};
+
+function parseOracleAnswer(content: unknown, model: string): Record<string, unknown> {
+  const raw = readString(content);
+  if (!raw) throw unusableAnswerError("empty_response", "openai-compatible", model);
+  let candidate: unknown;
+  try {
+    candidate = JSON.parse(stripCodeFences(raw));
+  } catch {
+    throw unusableAnswerError("malformed_response", "openai-compatible", model);
+  }
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+    throw unusableAnswerError("malformed_response", "openai-compatible", model);
+  }
+  if (!readString((candidate as Record<string, unknown>).reply)) {
+    throw unusableAnswerError("empty_response", "openai-compatible", model);
+  }
+  return candidate as Record<string, unknown>;
+}
+
 function readBoundedScore(value: unknown, fallback: number): number {
   const safeFallback = Number.isFinite(fallback) ? fallback : 50;
   const candidate = typeof value === "number" && Number.isFinite(value) ? value : safeFallback;
@@ -449,6 +486,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     { role: "user", content: req.userMessage },
   ];
 
+  // One budget for the whole question: the answer call and any correction call share it.
+  const questionBudget = createPlatoBudget();
   const { response: llmResponse, trace: initialModelTrace } = await invokeAshaGateway({
     messages,
     response_format: {
@@ -542,18 +581,11 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
         },
       },
     },
-  });
+  }, { budget: questionBudget, validateResponse: oracleAnswerProblem });
 
-  let parsed: Record<string, unknown> = {};
+  // An unparseable, truncated or reply-less answer is a typed failure, never the answer.
+  let parsed: Record<string, unknown> = parseOracleAnswer(llmResponse.choices?.[0]?.message?.content, initialModelTrace.selectedModel);
   let modelTrace = initialModelTrace;
-
-  try {
-  const raw = llmResponse.choices?.[0]?.message?.content as string;
-  parsed = JSON.parse(stripCodeFences(raw));
-} catch {
-    const raw = (llmResponse.choices?.[0]?.message?.content as string) ?? "";
-    parsed = { reply: raw };
-  }
 
   // Run validation — if critical arrays are empty, retry once with a correction prompt
   const validationIssues = validateOracleBriefing(parsed);
@@ -569,7 +601,9 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
           issue.includes("executiveSummary is too long")
   );
 
-  if (criticalFailures.length > 0) {
+  if (criticalFailures.length > 0 && platoBudgetExhausted(questionBudget)) {
+    console.warn("[ASHA Oracle] Correction skipped: the question's provider budget is used up; keeping the validated first answer");
+  } else if (criticalFailures.length > 0) {
     console.warn("[ASHA Oracle] Critical validation failures — retrying:", criticalFailures);
     const correctionMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
       ...messages,
@@ -643,9 +677,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
             },
           },
         },
-      });
-      const retryRaw = retryResponse.choices?.[0]?.message?.content as string;
-      const retryParsed = JSON.parse(stripCodeFences(retryRaw));
+      }, { budget: questionBudget, validateResponse: oracleAnswerProblem });
+      const retryParsed = parseOracleAnswer(retryResponse.choices?.[0]?.message?.content, retryTrace.selectedModel);
       const retryIssues = validateOracleBriefing(retryParsed);
       if (retryIssues.length < validationIssues.length) {
         console.log("[ASHA Oracle] Retry improved quality:", retryIssues);
@@ -655,7 +688,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
         console.warn("[ASHA Oracle] Retry did not improve quality, using original");
       }
     } catch (retryErr) {
-      console.error("[ASHA Oracle] Retry failed:", retryErr);
+      // Class and status only: never the upstream body, prompt or answer.
+      console.warn("[ASHA Oracle] Correction failed; keeping the validated first answer", platoErrorSummary(retryErr));
     }
   } else if (validationIssues.length > 0) {
     console.warn("[ASHA Oracle] Non-critical validation issues:", validationIssues);
@@ -664,7 +698,8 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
   const integrityValidation = validateInterpretationOutput(parsed, transaction);
   parsed = integrityValidation.normalizedOutput;
 
-  const reply = readString(parsed.reply) || "I was unable to generate a response. Please try again.";
+  const reply = readString(parsed.reply);
+  if (!reply) throw unusableAnswerError("empty_response", "openai-compatible", modelTrace.selectedModel);
   const directAnswer = readString(parsed.directAnswer) || readString(parsed.executiveSummary) || reply.split("\n")[0];
   const coreThesis = readString(parsed.coreThesis) || readString(parsed.executiveSummary) || reply;
   const confirmationConditions = readStringArray(parsed.confirmationConditions);
@@ -733,11 +768,11 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     directAnswer,
     executiveSummary: readString(parsed.executiveSummary) || reply.split("\n")[0],
     coreThesis,
-    marketBias: readEnum(parsed.marketBias, ["BULLISH", "BEARISH", "NEUTRAL"] as const) || "NEUTRAL",
+    marketBias: readEnum(parsed.marketBias, ["BULLISH", "BEARISH", "NEUTRAL"] as const),
     marketRegime: readString(parsed.marketRegime) || gatewayContext.marketState.now.regime,
-    threatLevel: readEnum(parsed.threatLevel, ["LOW", "ELEVATED", "HIGH", "CRITICAL"] as const) || "ELEVATED",
+    threatLevel: readEnum(parsed.threatLevel, ["LOW", "ELEVATED", "HIGH", "CRITICAL"] as const),
     pressureIndex: readBoundedScore(parsed.pressureIndex, gatewayContext.marketState.now.pressureScore),
-    riskLevel: readString(parsed.riskLevel) || "Moderate",
+    riskLevel: readString(parsed.riskLevel),
     suggestedBias: readString(parsed.suggestedBias),
     bullProbability: readNullableBoundedScore(parsed.bullProbability),
     bearProbability: readNullableBoundedScore(parsed.bearProbability),
@@ -753,7 +788,7 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
     sourceCitations,
     limitations: allLimitations.length > 0 ? allLimitations : undefined,
     disclaimer: readString(parsed.disclaimer) || "This briefing is for informational purposes only and does not constitute financial advice.",
-    finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const) || "WATCH",
+    finalVerdictAction: readEnum(parsed.finalVerdictAction, ["BUY", "ACCUMULATE", "HOLD", "WATCH", "REDUCE", "SELL", "AVOID"] as const),
     expectedTimeframe: readString(parsed.expectedTimeframe) || "Not established",
     followUpChips: readStringArray(parsed.followUpChips),
     questionAnalysis,
@@ -820,9 +855,10 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
     },
   ];
 
-  const { response: llmResponse } = await invokeAshaGateway({ messages });
-  const candidate = readString(llmResponse.choices?.[0]?.message?.content)
-    ?? "Canonical state unavailable. Insufficient evidence for a current market interpretation.";
+  const { response: llmResponse, trace } = await invokeAshaGateway({ messages });
+  // An empty answer is a typed failure, not a canned "canonical state unavailable" greeting.
+  const candidate = readString(llmResponse.choices?.[0]?.message?.content);
+  if (!candidate) throw unusableAnswerError("empty_response", "openai-compatible", trace.selectedModel);
   return String(validateInterpretationOutput({ reply: candidate }, transaction).normalizedOutput.reply);
 }
 

@@ -15,6 +15,75 @@ import { logPlatoCall, type PlatoTelemetry } from "./telemetry";
 
 export type PlatoCompletionRequest = PlatoAdapterRequest;
 
+/**
+ * One budget per user question. The answer call and any correction call share
+ * it, so a question never exceeds `maxAttempts` provider calls or the total
+ * deadline, however many router calls it makes.
+ */
+export interface PlatoBudget {
+  readonly deadline: number;
+  readonly maxAttempts: number;
+  attemptsUsed: number;
+}
+
+export function createPlatoBudget(config: PlatoConfig = readPlatoConfig(), now: () => number = Date.now): PlatoBudget {
+  return { deadline: now() + config.totalDeadlineMs, maxAttempts: config.maxAttempts, attemptsUsed: 0 };
+}
+
+export function platoBudgetExhausted(budget: PlatoBudget, now: () => number = Date.now): boolean {
+  return budget.attemptsUsed >= budget.maxAttempts || budget.deadline - now() <= 0;
+}
+
+/** Caller-specific acceptance check on a 200 answer. Return a failure class to reject it and try the next model. */
+export type PlatoResponseValidator = (response: InvokeResult) => "empty_response" | "malformed_response" | null;
+
+const BLOCKED_FINISH_REASONS = new Set([
+  "content_filter", "safety", "recitation", "prohibited_content", "blocklist", "spii", "image_safety",
+]);
+
+function stripCodeFences(text: string): string {
+  return text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+}
+
+function wantsJson(request: PlatoCompletionRequest): boolean {
+  const format = request.responseFormat ?? request.response_format;
+  return Boolean(format && (format.type === "json_schema" || format.type === "json_object"))
+    || Boolean(request.outputSchema ?? request.output_schema);
+}
+
+/**
+ * A 200 is only a success when it carries a usable answer. No choices, empty or
+ * null content, a safety/content-filter stop, a truncated (length) stop, or
+ * non-JSON content when JSON was requested are failures that move to the next model.
+ */
+export function checkPlatoResponse(
+  response: InvokeResult,
+  request: PlatoCompletionRequest,
+): "empty_response" | "malformed_response" | null {
+  const choice = response?.choices?.[0];
+  if (!choice || !choice.message) return "empty_response";
+  const finish = typeof choice.finish_reason === "string" ? choice.finish_reason.toLowerCase() : "";
+  if (BLOCKED_FINISH_REASONS.has(finish)) return "empty_response";
+  const content = choice.message.content;
+  const text = typeof content === "string"
+    ? content
+    : Array.isArray(content)
+      ? content.map(part => (part && typeof part === "object" && "text" in part && typeof part.text === "string" ? part.text : "")).join("")
+      : "";
+  const hasToolCalls = Array.isArray(choice.message.tool_calls) && choice.message.tool_calls.length > 0;
+  if (!text.trim() && !hasToolCalls) return "empty_response";
+  if (finish === "length") return "malformed_response";
+  if (wantsJson(request) && !hasToolCalls) {
+    try {
+      const parsed = JSON.parse(stripCodeFences(text));
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return "malformed_response";
+    } catch {
+      return "malformed_response";
+    }
+  }
+  return null;
+}
+
 export interface PlatoCompletion {
   response: InvokeResult;
   trace: {
@@ -35,6 +104,10 @@ export interface RouteDependencies {
   invoke?: (params: InvokeParams) => Promise<InvokeResult>;
   /** Test seam: one adapter per model, in chain order. */
   adapters?: PlatoAdapter[];
+  /** Shared per-question budget. Omitted: a fresh budget for this call only. */
+  budget?: PlatoBudget;
+  /** Extra caller check on a 200 answer (e.g. PLATO requires a non-empty `reply`). */
+  validateResponse?: PlatoResponseValidator;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   random?: () => number;
@@ -68,8 +141,8 @@ export async function routePlatoCompletion(
     invoke: dependencies.invoke,
   }));
 
-  const started = now();
-  const deadline = started + config.totalDeadlineMs;
+  const budget = dependencies.budget ?? createPlatoBudget(config, now);
+  const deadline = budget.deadline;
   const attempts: PlatoAttemptRecord[] = [];
   let fallbackReason: PlatoErrorClass | null = null;
   let lastError: PlatoRouteError | null = null;
@@ -79,17 +152,27 @@ export async function routePlatoCompletion(
     const isFallback = modelIndex > 0;
     let sameModelRetry = 0;
 
-    while (attempts.length < config.maxAttempts) {
+    while (budget.attemptsUsed < budget.maxAttempts) {
       const remaining = deadline - now();
       if (remaining <= 0) break;
       const attemptStarted = now();
-      const attemptNumber = attempts.length + 1;
+      budget.attemptsUsed++;
+      const attemptNumber = budget.attemptsUsed;
       try {
         const result = await runWithDeadline(
           signal => adapter.complete(request, { signal }),
           Math.min(config.attemptTimeoutMs, remaining),
           adapter,
         );
+        const unusable = checkPlatoResponse(result.response, request) ?? dependencies.validateResponse?.(result.response) ?? null;
+        if (unusable) {
+          throw new PlatoRouteError(`PLATO provider returned 200 without a usable answer (${unusable}).`, {
+            httpStatus: 200,
+            errorClass: unusable,
+            provider: result.provider,
+            model: result.model,
+          });
+        }
         const usage = result.response.usage;
         const telemetry: PlatoTelemetry = {
           provider: result.provider,
@@ -164,7 +247,7 @@ export async function routePlatoCompletion(
         break;
       }
     }
-    if (attempts.length >= config.maxAttempts || deadline - now() <= 0) break;
+    if (platoBudgetExhausted(budget, now)) break;
   }
 
   const final = lastError ?? new PlatoRouteError("PLATO deadline elapsed before any provider attempt.", {

@@ -1,4 +1,7 @@
 export const ASHA_UNAVAILABLE_TITLE = "PLATO is temporarily unavailable";
+/** Same wording as the /app/asha guest gate (#55, AshaIntelligenceCenter). */
+export const ASHA_SIGN_IN_TITLE = "Sign in to use PLATO";
+export const ASHA_SIGN_IN_DETAIL = "PLATO conversations, memory and thesis history are tied to your account. Guest access does not include PLATO.";
 
 export type AshaAskFailureKind = "unauthorized" | "rate_limit" | "capacity" | "unavailable";
 
@@ -7,7 +10,10 @@ export interface AshaAskFailureState {
   kind: AshaAskFailureKind;
   title: string;
   detail: string;
+  /** Retry only makes sense when the provider may recover. Never for sign-in. */
   showRetry: boolean;
+  /** Sign in button that redirects only when clicked. */
+  showSignIn: boolean;
 }
 
 function readTrpcCode(error: unknown): string | null {
@@ -16,22 +22,26 @@ function readTrpcCode(error: unknown): string | null {
   return data && typeof data.code === "string" ? data.code : null;
 }
 
+/** Shown before any request when the visitor is not signed in, and for a server UNAUTHORIZED. */
+export function ashaSignInRequiredState(): AshaAskFailureState {
+  return {
+    panelState: "unavailable",
+    kind: "unauthorized",
+    title: ASHA_SIGN_IN_TITLE,
+    detail: ASHA_SIGN_IN_DETAIL,
+    showRetry: false,
+    showSignIn: true,
+  };
+}
+
 /**
- * A failed PLATO ask stays on an unavailable panel with the question intact.
+ * A failed PLATO ask stays on a card with the question intact.
  * It never returns to the summon intro and never shows a synthetic answer.
  * Codes come from server/ashaProcedureError.ts.
  */
 export function reduceAshaAskFailure(error: unknown): AshaAskFailureState {
   const code = readTrpcCode(error);
-  if (code === "UNAUTHORIZED") {
-    return {
-      panelState: "unavailable",
-      kind: "unauthorized",
-      title: ASHA_UNAVAILABLE_TITLE,
-      detail: "Sign in to ask PLATO, then retry your question.",
-      showRetry: true,
-    };
-  }
+  if (code === "UNAUTHORIZED") return ashaSignInRequiredState();
   if (code === "TOO_MANY_REQUESTS") {
     return {
       panelState: "unavailable",
@@ -39,6 +49,7 @@ export function reduceAshaAskFailure(error: unknown): AshaAskFailureState {
       title: ASHA_UNAVAILABLE_TITLE,
       detail: "PLATO's language model has reached its usage limit for now. Your question is kept here so you can retry later.",
       showRetry: true,
+      showSignIn: false,
     };
   }
   if (code === "SERVICE_UNAVAILABLE") {
@@ -46,8 +57,9 @@ export function reduceAshaAskFailure(error: unknown): AshaAskFailureState {
       panelState: "unavailable",
       kind: "capacity",
       title: ASHA_UNAVAILABLE_TITLE,
-      detail: "PLATO's language model is under high demand. Your question is kept here so you can retry in a few minutes.",
+      detail: "PLATO's language model is under high demand or did not return a usable answer. Your question is kept here so you can retry in a few minutes.",
       showRetry: true,
+      showSignIn: false,
     };
   }
   return {
@@ -56,5 +68,6 @@ export function reduceAshaAskFailure(error: unknown): AshaAskFailureState {
     title: ASHA_UNAVAILABLE_TITLE,
     detail: "PLATO could not answer just now. Your question is kept here so you can retry.",
     showRetry: true,
+    showSignIn: false,
   };
 }

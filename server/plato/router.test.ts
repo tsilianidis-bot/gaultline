@@ -3,7 +3,7 @@ import type { InvokeParams, InvokeResult } from "../_core/llm";
 import { log } from "../logger";
 import { readPlatoConfig, type PlatoConfig } from "./config";
 import { classifyTransportError, PlatoUnavailableError, redactProviderMessage } from "./errors";
-import { routePlatoCompletion } from "./router";
+import { createPlatoBudget, platoBudgetExhausted, routePlatoCompletion } from "./router";
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai";
 const CHAIN = ["gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
@@ -251,5 +251,100 @@ describe("PLATO router: telemetry", () => {
 
   it("redacts key-like strings from upstream detail", () => {
     expect(redactProviderMessage("x?key=AIzaSyA1234567890abcdefghijklmnopq&y Bearer abc.def")).not.toMatch(/AIza|abc\.def/);
+  });
+});
+
+describe("PLATO router: a 200 without a usable answer is a failure", () => {
+  const answerless = (choices: InvokeResult["choices"]): InvokeResult => ({ id: "x", created: 1, model: "m", choices });
+  function sequence(responses: InvokeResult[]) {
+    const calls: string[] = [];
+    const invoke = vi.fn(async (params: InvokeParams) => {
+      calls.push(params.model ?? "");
+      return responses.shift() ?? ok(params.model ?? "");
+    });
+    return { invoke, calls };
+  }
+
+  it.each([
+    ["no choices", answerless([])],
+    ["empty content", answerless([{ index: 0, message: { role: "assistant", content: "" }, finish_reason: "stop" }])],
+    ["null content", answerless([{ index: 0, message: { role: "assistant", content: null as unknown as string }, finish_reason: "stop" }])],
+    ["content_filter block", answerless([{ index: 0, message: { role: "assistant", content: "partial" }, finish_reason: "content_filter" }])],
+  ])("%s → empty_response, next model", async (_label, bad) => {
+    const { invoke, calls } = sequence([bad]);
+    const result = await routePlatoCompletion(request, { config: config(), invoke });
+    expect(calls).toEqual(["gemini-3-flash-preview", "gemini-3.1-flash-lite"]);
+    expect(result.trace).toMatchObject({ fallbackUsed: true, fallbackReason: "empty_response" });
+  });
+
+  it("truncated (finish_reason=length) → malformed_response, next model", async () => {
+    const { invoke, calls } = sequence([answerless([{ index: 0, message: { role: "assistant", content: "{\"reply\":\"Cred" }, finish_reason: "length" }])]);
+    const result = await routePlatoCompletion(request, { config: config(), invoke });
+    expect(calls).toHaveLength(2);
+    expect(result.trace.fallbackReason).toBe("malformed_response");
+  });
+
+  it("non-JSON content when JSON was requested → malformed_response", async () => {
+    const { invoke } = sequence([answerless([{ index: 0, message: { role: "assistant", content: "plain prose" }, finish_reason: "stop" }])]);
+    const result = await routePlatoCompletion(
+      { ...request, response_format: { type: "json_object" } },
+      { config: config(), invoke },
+    );
+    expect(result.trace.fallbackReason).toBe("malformed_response");
+  });
+
+  it("caller validator can reject a 200 (e.g. JSON without a reply)", async () => {
+    const { invoke, calls } = sequence([ok("gemini-3-flash-preview", "{}")]);
+    const result = await routePlatoCompletion(request, {
+      config: config(),
+      invoke,
+      validateResponse: response => (String(response.choices[0].message.content).includes("reply") ? null : "empty_response"),
+    });
+    expect(calls).toHaveLength(2);
+    expect(result.trace.fallbackReason).toBe("empty_response");
+  });
+
+  it("every model answerless → typed PlatoUnavailableError, never a response", async () => {
+    const empty = () => answerless([]);
+    const { invoke } = sequence([empty(), empty(), empty()]);
+    const failure = await routePlatoCompletion(request, { config: config(), invoke }).catch(e => e);
+    expect(failure).toBeInstanceOf(PlatoUnavailableError);
+    expect(failure.reason).toBe("provider_error");
+    expect(failure.attempts.map((attempt: { errorClass: string }) => attempt.errorClass)).toEqual(["empty_response", "empty_response", "empty_response"]);
+  });
+});
+
+describe("PLATO router: shared per-question budget", () => {
+  it("two router calls with one budget make at most maxAttempts provider calls", async () => {
+    const budget = createPlatoBudget(config({ maxAttempts: 4 }));
+    const { invoke, calls } = scripted({
+      "gemini-3-flash-preview": [quota(), highDemand(), highDemand(), "ok"],
+      "gemini-3.1-flash-lite": ["ok", highDemand()],
+    });
+    await routePlatoCompletion(request, { config: config(), invoke, budget }); // 2 calls
+    const failure = await routePlatoCompletion(request, { config: config(), invoke, budget }).catch(e => e); // 2 more, then cap
+    expect(calls).toHaveLength(4);
+    expect(failure).toBeInstanceOf(PlatoUnavailableError);
+    expect(platoBudgetExhausted(budget)).toBe(true);
+  });
+
+  it("an exhausted budget makes no provider call", async () => {
+    const budget = createPlatoBudget(config({ maxAttempts: 1 }));
+    budget.attemptsUsed = 1;
+    const { invoke } = scripted({});
+    const failure = await routePlatoCompletion(request, { config: config(), invoke, budget }).catch(e => e);
+    expect(invoke).not.toHaveBeenCalled();
+    expect(failure).toBeInstanceOf(PlatoUnavailableError);
+  });
+
+  it("the shared deadline carries across router calls", async () => {
+    let clock = 0;
+    const now = () => clock;
+    const budget = createPlatoBudget(config({ totalDeadlineMs: 100 }), now);
+    clock = 150;
+    const { invoke } = scripted({});
+    const failure = await routePlatoCompletion(request, { config: config(), invoke, budget, now }).catch(e => e);
+    expect(invoke).not.toHaveBeenCalled();
+    expect(failure.reason).toBe("timeout");
   });
 });

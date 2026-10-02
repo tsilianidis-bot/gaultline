@@ -174,11 +174,6 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
   const pressureColor = getPressureColor(overall.score);
   const pressureLabel = getPressureLabel(overall.score);
 
-  // Top changed domain
-  const topChange = [...domains].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))[0];
-  const topChangeDir = topChange?.delta > 0 ? "increasing" : "decreasing";
-  const topChangeLabel = topChange?.label?.split(" ").slice(0, 2).join(" ") ?? "\u2014";
-
   // Analog
   const analog = analogs[0];
 
@@ -211,7 +206,9 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
           setGreetingReady(true);
         },
         onError: () => {
-          const fallback = `Welcome back${firstName !== "there" ? `, ${firstName}` : ""}. I have been monitoring the markets while you were away. Current systemic pressure is ${pressureLabel.toLowerCase()}. ${topChange ? `The most significant change today is ${topChangeDir} ${topChangeLabel.toLowerCase()}.` : ""}${analog ? ` Historical conditions continue to resemble ${analog.era}.` : ""} Would you like today's complete briefing?`;
+          // Honest unavailable line: no "monitoring" claim, no change narrative and no numbers
+          // (the projection can carry zero deltas or default indicators when PLATO is down).
+          const fallback = `Welcome back${firstName !== "there" ? `, ${firstName}` : ""}. PLATO is temporarily unavailable, so there is no PLATO greeting right now.`;
           setGreeting(fallback);
           setGreetingReady(true);
         },

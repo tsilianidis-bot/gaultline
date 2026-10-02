@@ -19,11 +19,12 @@ export interface OracleBriefingData {
   directAnswer?: string;
   executiveSummary: string;
   coreThesis?: string;
-  marketBias: "BULLISH" | "BEARISH" | "NEUTRAL";
+  /** "NOT STATED" when the model did not supply it; never defaulted to a reading. */
+  marketBias: "BULLISH" | "BEARISH" | "NEUTRAL" | "NOT STATED";
   confidence?: number;
   marketRegime: string;
-  threatLevel: "LOW" | "ELEVATED" | "HIGH" | "CRITICAL";
-  pressureIndex: number;
+  threatLevel: "LOW" | "ELEVATED" | "HIGH" | "CRITICAL" | "NOT STATED";
+  pressureIndex: number | null;
   riskLevel: string;
   suggestedBias?: string;
 
@@ -90,6 +91,7 @@ function biasColor(bias: string) {
   const b = bias.toUpperCase();
   if (b === "BULLISH") return "#00FF88";
   if (b === "BEARISH") return "#FF4444";
+  if (b === "NOT STATED") return "#94A3B8";
   return "#FFD700";
 }
 
@@ -109,6 +111,7 @@ function verdictColor(action: string) {
   if (["SELL", "AVOID"].includes(a)) return "#FF4444";
   if (["REDUCE"].includes(a)) return "#FF8C00";
   if (["HOLD", "WATCH"].includes(a)) return "#FFD700";
+  if (a === "NOT STATED") return "#94A3B8";
   return "#00E5FF";
 }
 
@@ -186,7 +189,7 @@ function CopyButton({ data }: { data: OracleBriefingData }) {
     ``,
     `MISSION SNAPSHOT`,
     `Bias: ${data.marketBias} | Threat: ${data.threatLevel}${data.confidence === undefined ? "" : ` | Response confidence: ${data.confidence}%`}`,
-    `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex}/100 | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
+    `Regime: ${data.marketRegime} | Pressure Index: ${data.pressureIndex === null ? "Not available" : `${data.pressureIndex}/100`} | Time Horizon: ${data.forecastMetadata.expectedHorizon ?? "Not established"}`,
     `Action: ${data.missionRecommendationStructured?.verdict || data.finalVerdictAction}`,
     ...(data.questionAnalysis ? [
       `Scope: ${data.questionAnalysis.analysisScope}`,
@@ -417,7 +420,7 @@ export default function OracleBriefing({ data, visible, onAskAnother }: Props) {
               { label: "THREAT", value: data.threatLevel, color: tColor },
               { label: "RESPONSE CONFIDENCE", value: data.confidence === undefined ? "NOT ESTABLISHED" : `${data.confidence}%`, color: "#E2E8F0" },
               { label: "REGIME", value: data.marketRegime, color: "#E2E8F0" },
-              { label: "PRESSURE INDEX", value: `${data.pressureIndex}/100`, color: "#E2E8F0" },
+              { label: "PRESSURE INDEX", value: data.pressureIndex === null ? "NOT AVAILABLE" : `${data.pressureIndex}/100`, color: "#E2E8F0" },
               { label: "TIME HORIZON", value: missionTimeHorizon, color: "#E2E8F0" },
               { label: "ACTION", value: missionAction, color: vColor },
             ].map(item => (

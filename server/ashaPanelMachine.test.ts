@@ -41,8 +41,7 @@ describe("PLATO unavailable panel state", () => {
 
   it("asks the user to sign in when the ask is unauthorized", () => {
     const failure = reduceAshaAskFailure(clientError("UNAUTHORIZED"));
-    expect(failure.kind).toBe("unauthorized");
-    expect(failure.detail).toMatch(/Sign in/);
+    expect(failure).toMatchObject({ kind: "unauthorized", title: "Sign in to use PLATO", showSignIn: true, showRetry: false });
   });
 });
 
