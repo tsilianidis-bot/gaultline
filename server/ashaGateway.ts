@@ -16,6 +16,7 @@ import { evidenceNarrativePromptContract } from "../shared/evidenceContract";
 import { getCanonicalMarketState } from "./marketStateService";
 import type { PlatoConfig } from "./plato/config";
 import { routePlatoCompletion, type PlatoBudget, type PlatoResponseValidator, type RouteDependencies } from "./plato/router";
+import { PLATO_SCENARIO_WITHHELD, withholdScenarioPercents, withholdScenarioPercentsDeep } from "./plato/scenarioWithholding";
 
 type InvokeGatewayModel = (params: InvokeParams) => Promise<InvokeResult>;
 
@@ -68,50 +69,13 @@ export function getAshaContextProvenance(
   };
 }
 
-/** What the model is told in place of any scenario or probability percent. */
-export const PLATO_SCENARIO_WITHHELD = "Uncalibrated";
+export { PLATO_SCENARIO_WITHHELD, withholdScenarioPercents, withholdScenarioPercentsDeep } from "./plato/scenarioWithholding";
 
 /**
  * Outlook as sent to PLATO: no scenario, regime or transition percent and no confidence number.
  * Owner rule: a scenario/probability % may be shown only when its contract status is AVAILABLE,
  * and none is today, so the model gets the status text and the non-numeric evidence only.
  */
-const PCT = String.raw`\d+(?:\.\d+)?\s*%`;
-const PROBABILITY_WORDS = String.raw`(?:historical frequency|frequency|probability|probabilities|chance|chances|likelihood|odds|confidence)`;
-const SCENARIO_WORDS = String.raw`(?:bull(?:ish)?|bear(?:ish)?|neutral|crash|recession|soft[- ]landing|stagflation|remain(?:ing)? in regime|transition(?: to \w+)?)`;
-const SCENARIO_PERCENT_RULES: Array<[RegExp, string]> = [
-  // "(60% historical frequency)", "(25% probability)", or a bare "(60%)"
-  [new RegExp(String.raw`\(\s*${PCT}(?:\s+${PROBABILITY_WORDS}[^)]*)?\s*\)`, "gi"), "(Uncalibrated)"],
-  // "60% historical frequency", "2.5 % probability", "30% chance"
-  [new RegExp(String.raw`${PCT}\s+${PROBABILITY_WORDS}`, "gi"), "Uncalibrated"],
-  // "probability of 60%", "confidence: 41%", "odds near 20%"
-  [new RegExp(String.raw`(${PROBABILITY_WORDS})((?:\s+(?:of|at|is|was|near|around|about|~|=))*\s*:?\s*)${PCT}`, "gi"), "$1$2Uncalibrated"],
-  // "bull 53%", "crash: 2%", "remain in regime 60%"
-  [new RegExp(String.raw`(\b${SCENARIO_WORDS})(\s*[:=]?\s*)${PCT}`, "gi"), "$1$2Uncalibrated"],
-  // "53% bull", "60% remain in regime"
-  [new RegExp(String.raw`${PCT}(\s+${SCENARIO_WORDS}\b)`, "gi"), "Uncalibrated$1"],
-];
-
-/**
- * Text sent to PLATO can embed a scenario/transition percent (e.g. highestProbabilityPath and the
- * act.decisionSummary built from it: "(60% historical frequency)"). Probability-shaped percents are
- * replaced with the withheld status. Observed values and thresholds ("more than 70% of sectors")
- * and analog "% similarity" (regime resemblance, not a probability) are kept.
- */
-export function withholdScenarioPercents(text: string): string {
-  return SCENARIO_PERCENT_RULES.reduce((out, [pattern, replacement]) => out.replace(pattern, replacement), text);
-}
-
-/** Applies withholdScenarioPercents to every string in a model-bound value. Numbers are untouched. */
-export function withholdScenarioPercentsDeep<T>(value: T): T {
-  if (typeof value === "string") return withholdScenarioPercents(value) as T;
-  if (Array.isArray(value)) return value.map(entry => withholdScenarioPercentsDeep(entry)) as T;
-  if (value && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, withholdScenarioPercentsDeep(entry)])) as T;
-  }
-  return value;
-}
-
 export function outlookForModel(outlook: CanonicalMarketState["outlook"]): Record<string, unknown> {
   const probabilities = outlook.probabilities;
   const transitions = outlook.transitionProbabilities;

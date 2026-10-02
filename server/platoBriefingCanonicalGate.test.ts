@@ -297,7 +297,7 @@ describe("PLATO model context carries no scenario percent", () => {
     expect(withholdScenarioPercents("The highest-probability outcome (60% historical frequency) is continuation. The closest analog — Dot-Com (78% similarity) — resolved."))
       .toBe("The highest-probability outcome (Uncalibrated) is continuation. The closest analog — Dot-Com (78% similarity) — resolved.");
     expect(withholdScenarioPercents("a transition toward elevated stress (25% historical frequency), driven by credit")).not.toMatch(PERCENT);
-    expect(withholdScenarioPercents("bull 53% and crash 2.5 % probability")).toBe("bull Uncalibrated and crash Uncalibrated");
+    expect(withholdScenarioPercents("bull 53% and crash 2.5 % probability")).toBe("bull Uncalibrated and crash Uncalibrated probability");
     expect(withholdScenarioPercents("probability of 60% and confidence: 41%")).toBe("probability of Uncalibrated and confidence: Uncalibrated");
     expect(withholdScenarioPercents("53% bull / 17% bear")).toBe("Uncalibrated bull / Uncalibrated bear");
   });

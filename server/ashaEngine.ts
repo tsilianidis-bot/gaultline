@@ -801,6 +801,14 @@ export async function askAsha(req: AshaRequest): Promise<AshaResponse> {
 }
 
 // ── Daily greeting generator ──────────────────────────────────
+const GREETING_EVIDENCE_QUALITY_LINE = /^Current evidence quality: (healthy|limited|partial|unavailable)$/;
+
+/** The only client greeting narrative forwarded to PLATO: the fixed evidence-quality line. */
+export function greetingNarrativeForModel(narrative: string | undefined): string | undefined {
+  const trimmed = narrative?.trim();
+  return trimmed && GREETING_EVIDENCE_QUALITY_LINE.test(trimmed) ? trimmed : undefined;
+}
+
 export interface AshaDailyGreetingRequest {
   userName?: string;
   /** Optional readings: only values the client actually has (canonical) are sent. */
@@ -826,7 +834,10 @@ export async function generateAshaDailyGreeting(req: AshaDailyGreetingRequest): 
   if (engineContext.pressureScore !== undefined) page.pressureScore = engineContext.pressureScore;
   if (engineContext.regime) page.regime = engineContext.regime;
   // A client-sent regimeConfidence is never forwarded: no real confidence exists for the greeting.
-  if (engineContext.narrative) page.narrative = engineContext.narrative;
+  // Client narrative is not market evidence and could carry a probability: only the fixed
+  // evidence-quality line is kept; any other text is dropped (the block has the canonical story).
+  const narrative = greetingNarrativeForModel(engineContext.narrative);
+  if (narrative) page.narrative = narrative;
   if (engineContext.trend) page.trend = engineContext.trend;
   if (engineContext.keyDrivers && engineContext.keyDrivers.length > 0) page.keyDrivers = engineContext.keyDrivers;
   if (pressureChange !== undefined) page.additionalContext = { pressureChangeSinceLastSession: pressureChange };
