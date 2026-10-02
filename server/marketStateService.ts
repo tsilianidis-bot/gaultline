@@ -12,8 +12,11 @@ import {
 } from "../shared/probabilityContract";
 import {
   getUnifiedSeismographIntelligence,
+  LABOR_RATES_FAMILY_NAME,
+  YIELD_CURVE_FAMILY_NAME,
   type UnifiedSeismographIntelligence,
 } from "./seismographUnified";
+import type { CanonicalDirection } from "../shared/canonicalIntelligenceState";
 import {
   canonicalMarketStateCache,
   type MarketStateCacheOptions,
@@ -60,6 +63,83 @@ interface AssembleMarketStateOptions {
    * display text. Null/undefined (no canonical state) withholds every number.
    */
   probabilityContract?: CanonicalProbabilityContract | null;
+  /**
+   * Engine values from the same authoritative canonical state. Evidence-family
+   * cards show these current values; the monthly history row (and its 6-month
+   * average) is kept only as labelled context. Null withholds the binding and
+   * labels the monthly value as a monthly record.
+   */
+  canonicalEngines?: CanonicalEngineDisplayValue[] | null;
+  /** generatedAt of the canonical state the engine values come from. */
+  canonicalAsOf?: string | null;
+}
+
+export interface CanonicalEngineDisplayValue {
+  engineId: string;
+  value: number | null;
+  direction: CanonicalDirection;
+}
+
+type SourceEvidenceFamily = CanonicalMarketStateSource["evidenceFamilies"][number];
+
+/**
+ * Display binding from evidence family to canonical engine. Signal bands are
+ * the same bands buildEvidenceFamilies applies to the monthly row, so a family
+ * shows the signal its canonical value falls in. Display only: nothing here
+ * feeds the score, consensus, scenarios or posture.
+ */
+const FAMILY_ENGINE_BINDINGS: Record<string, { engineId: string; signal: (v: number) => SourceEvidenceFamily["signal"] }> = {
+  "Liquidity Conditions": { engineId: "liquidity-stress", signal: v => (v >= 60 ? "stressed" : v >= 40 ? "neutral" : "recovering") },
+  "Credit Markets": { engineId: "credit-contagion", signal: v => (v >= 65 ? "stressed" : v >= 40 ? "neutral" : "bullish") },
+  [YIELD_CURVE_FAMILY_NAME]: { engineId: "volatility-regime", signal: v => (v >= 65 ? "stressed" : v >= 40 ? "neutral" : "bullish") },
+  "Macro Sensitivity": { engineId: "macro-sensitivity", signal: v => (v >= 65 ? "bearish" : v >= 40 ? "neutral" : "bullish") },
+  [LABOR_RATES_FAMILY_NAME]: { engineId: "market-breadth", signal: v => (v >= 65 ? "bearish" : v >= 40 ? "neutral" : "bullish") },
+};
+
+const DIRECTION_TREND: Record<CanonicalDirection, SourceEvidenceFamily["trend"] | null> = {
+  Deteriorating: "deteriorating",
+  Improving: "improving",
+  Stable: "stable",
+  Unknown: null,
+};
+
+function formatAsOfEt(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const t = new Date(iso);
+  if (!Number.isFinite(t.getTime())) return null;
+  return `${t.toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} ET`;
+}
+
+/**
+ * Evidence-family cards bound to the canonical engine values. The monthly row's
+ * value and 6-month average stay as labelled context only.
+ */
+export function bindEvidenceFamiliesToCanonical(
+  families: SourceEvidenceFamily[],
+  engines: CanonicalEngineDisplayValue[] | null | undefined,
+  asOf: string | null | undefined,
+  monthLabel: string | null | undefined,
+): SourceEvidenceFamily[] {
+  const byId = new Map((engines ?? []).map(engine => [engine.engineId, engine]));
+  const asOfEt = formatAsOfEt(asOf);
+  const monthly = `Monthly record${monthLabel ? ` (${monthLabel})` : ""}`;
+  return families.map(family => {
+    const binding = FAMILY_ENGINE_BINDINGS[family.name];
+    const engine = binding ? byId.get(binding.engineId) : undefined;
+    const value = engine && typeof engine.value === "number" && Number.isFinite(engine.value) ? Math.round(engine.value) : null;
+    if (!binding || value === null || !engine) {
+      return { ...family, historicalContext: `${monthly}: ${family.currentValue}. ${family.historicalContext}` };
+    }
+    const canonicalTrend = DIRECTION_TREND[engine.direction] ?? null;
+    return {
+      ...family,
+      signal: binding.signal(value),
+      strength: value,
+      currentValue: `${value}/100`,
+      trend: canonicalTrend ?? family.trend,
+      historicalContext: `Current canonical value${asOfEt ? ` as of ${asOfEt}` : ""}. Context only, ${monthly.charAt(0).toLowerCase()}${monthly.slice(1)}: ${family.currentValue}. ${family.historicalContext}${canonicalTrend ? "" : " Trend is from the monthly record."}`,
+    };
+  });
 }
 
 /** A displayed percent from the contract, or NaN when the contract withholds it. */
@@ -168,11 +248,17 @@ export function assembleCanonicalMarketState(
     .map(item => `${item.label}: ${item.detail}`);
   if (options.staleReason) warnings.unshift(options.staleReason);
 
-  const topDrivers = [...source.evidenceFamilies]
+  const displayFamilies = bindEvidenceFamiliesToCanonical(
+    source.evidenceFamilies,
+    options.canonicalEngines ?? null,
+    options.canonicalAsOf ?? null,
+    source.macroTicker?.dataMonth ?? null,
+  );
+  const topDrivers = [...displayFamilies]
     .sort((a, b) => b.strength - a.strength)
     .slice(0, 3)
     .map(family => `${family.name}: ${family.currentValue}`);
-  const classified = classifyEvidenceFamilies(source.evidenceFamilies);
+  const classified = classifyEvidenceFamilies(displayFamilies);
   // Probability contract overlay. Applied after (not through)
   // normalizeCanonicalMetric, which would turn a withheld NaN into 0.
   // The raw seismographUnified computeProbabilities (64/21/15-style) and the
@@ -231,7 +317,7 @@ export function assembleCanonicalMarketState(
         whatHasChanged: source.marketNarrative.whatHasChanged,
         whatIsBuildingBeneathSurface: source.marketNarrative.whatIsBuildingBeneathSurface,
       },
-      evidenceFamilies: source.evidenceFamilies.map(family => ({
+      evidenceFamilies: displayFamilies.map(family => ({
         ...family,
         strength: normalizeCanonicalMetric(family.strength),
       })),
@@ -335,6 +421,15 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
   now?: () => Date;
   /** Loads the authoritative canonical probability contract. Failure withholds every number. */
   loadProbabilityContract?: () => Promise<CanonicalProbabilityContract | null>;
+  /**
+   * Loads the contract and engine values from one authoritative canonical state.
+   * Takes precedence over loadProbabilityContract. Failure withholds both.
+   */
+  loadCanonicalState?: () => Promise<{
+    probabilityContract: CanonicalProbabilityContract | null;
+    engines: CanonicalEngineDisplayValue[];
+    generatedAt: string | null;
+  } | null>;
 }) {
   return async function readCanonicalMarketState(
     options: { forceRefresh?: boolean } = {},
@@ -347,12 +442,19 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
       ? `Refresh failed; serving the last known-good MarketState. ${errorMessage(result.error)}`
       : null;
 
-    const probabilityContract = dependencies.loadProbabilityContract
-      ? await dependencies.loadProbabilityContract().catch(() => null)
+    const canonical = dependencies.loadCanonicalState
+      ? await dependencies.loadCanonicalState().catch(() => null)
       : null;
+    const probabilityContract = dependencies.loadCanonicalState
+      ? canonical?.probabilityContract ?? null
+      : dependencies.loadProbabilityContract
+        ? await dependencies.loadProbabilityContract().catch(() => null)
+        : null;
 
     return assembleCanonicalMarketState(result.value, {
       probabilityContract,
+      canonicalEngines: canonical?.engines ?? null,
+      canonicalAsOf: canonical?.generatedAt ?? null,
       generatedAt: (dependencies.now ?? (() => new Date()))().toISOString(),
       cacheStatus: result.status,
       cacheAgeMs: result.ageMs,
@@ -364,8 +466,14 @@ export function createCanonicalMarketStateReader<T extends CanonicalMarketStateS
 export const getCanonicalMarketState = createCanonicalMarketStateReader({
   provider: canonicalMarketStateProvider,
   cache: canonicalMarketStateCache,
-  loadProbabilityContract: async () => {
+  loadCanonicalState: async () => {
     const { getAuthoritativeCanonicalIntelligenceState } = await import("./canonicalIntelligenceState");
-    return (await getAuthoritativeCanonicalIntelligenceState())?.probabilityContract ?? null;
+    const state = await getAuthoritativeCanonicalIntelligenceState();
+    if (!state) return null;
+    return {
+      probabilityContract: state.probabilityContract ?? null,
+      engines: state.engines.map(engine => ({ engineId: engine.engineId, value: engine.value, direction: engine.direction })),
+      generatedAt: state.generatedAt ?? null,
+    };
   },
 });
