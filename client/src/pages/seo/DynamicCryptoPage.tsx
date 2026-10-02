@@ -46,7 +46,7 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     relatedCrypto: ["eth", "sol", "tao"],
     relatedStocks: ["nvda", "pltr"],
     faqs: [
-      { q: "Is Bitcoin in a bull market in 2025?", a: "FAULTLINE's Bitcoin Risk Dashboard tracks BTC's macro regime as new data is published. The current regime classification — Bull, Bear, or Crash — is updated daily based on liquidity conditions and systemic pressure from the Pressure Index, with CoinGecko market data for context. FAULTLINE does not use on-chain data." },
+      { q: "Is Bitcoin in a bull market?", a: "FAULTLINE's Bitcoin Risk Dashboard tracks BTC's macro regime as new data is published. The current regime classification — Bull, Bear, or Crash — is updated daily based on liquidity conditions and systemic pressure from the Pressure Index, with CoinGecko market data for context. FAULTLINE does not use on-chain data." },
       { q: "What drives Bitcoin's price?", a: "Bitcoin is driven by macro liquidity conditions, institutional demand (ETF flows), halving supply dynamics, regulatory developments, and correlation with broader risk assets during stress events." },
       { q: "How does Bitcoin perform in a market crash?", a: "Bitcoin initially correlates with risk assets during systemic stress events (as seen in COVID crash, 2022 bear market). However, Bitcoin often recovers faster than traditional assets once liquidity conditions stabilize." },
       { q: "What is Bitcoin's risk score?", a: "FAULTLINE's Bitcoin Risk Dashboard generates a daily risk score incorporating macro regime, liquidity conditions, and systemic pressure. Access the latest published score at FAULTLINE." },
@@ -64,7 +64,7 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     relatedCrypto: ["btc", "sol", "tao"],
     relatedStocks: ["nvda"],
     faqs: [
-      { q: "Is Ethereum a good investment in 2025?", a: "Ethereum's investment case depends on macro regime, ETH/BTC ratio trends, and DeFi/Layer 2 adoption. FAULTLINE's Ethereum Risk Dashboard tracks the macro regime and ETH/BTC ratio daily; DeFi and Layer 2 adoption are qualitative context, not data inputs." },
+      { q: "Is Ethereum a good investment?", a: "Ethereum's investment case depends on macro regime, ETH/BTC ratio trends, and DeFi/Layer 2 adoption. FAULTLINE's Ethereum Risk Dashboard tracks the macro regime and ETH/BTC ratio daily; DeFi and Layer 2 adoption are qualitative context, not data inputs." },
       { q: "How does Ethereum compare to Bitcoin?", a: "Ethereum offers higher risk/reward than Bitcoin due to its smart contract utility and DeFi exposure, but also higher volatility and more complex risk factors. FAULTLINE tracks both with separate risk dashboards." },
       { q: "What is the ETH/BTC ratio and why does it matter?", a: "The ETH/BTC ratio measures Ethereum's performance relative to Bitcoin. A rising ratio indicates altcoin season conditions; a falling ratio suggests Bitcoin dominance and risk-off rotation." },
       { q: "What are Ethereum's key risks?", a: "Key risks include L1 competition from Solana, regulatory uncertainty around staking, Layer 2 fee cannibalization, and correlation with Bitcoin during macro risk-off events." },

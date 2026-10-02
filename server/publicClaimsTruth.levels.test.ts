@@ -353,3 +353,82 @@ describe("public claims truth: no time-sensitive record-high or 'trades at' clai
     expect(line).not.toMatch(/\$\d/);
   });
 });
+
+describe("public claims truth: no unsourced present-tense company/market/valuation figures (PR #56 r13)", () => {
+  // MarketCrashProbability2026.tsx is also changed by #60 and the held
+  // methodology branch, so it is left to those PRs here (as PublicSituationRoom).
+  const R13_SKIP = new Set<string>(["client/src/pages/seo/MarketCrashProbability2026.tsx"]);
+  const seoAll = walkRel("client/src/pages/seo").filter((p) => !R13_SKIP.has(p));
+  const files = [...new Set([...seoAll, ...publicSurfaces, "server/seoMeta.ts", "server/publicContentSsr.ts", "server/seoRoutes.ts", "client/src/hooks/useSEO.ts", "client/index.html"])];
+  const lineHits = (paths: string[], re: RegExp, allow?: RegExp) =>
+    paths.flatMap((path) =>
+      read(path).split("\n").flatMap((line, i) => (re.test(line) && !(allow && allow.test(line)) ? [`${path}:${i + 1}`] : [])),
+    );
+
+  // Valuation multiples ("30-50x forward earnings", "100x+ revenue").
+  const multiple = /\b\d+(?:[-–]\d+)?x\+?\s+(?:forward\s+|trailing\s+)?(?:earnings|revenue|sales)\b/i;
+  const ath = /\bATH\b/;
+  const isTrading = /\bis trading (?:at|near)\b/i;
+  const belowPeak = /\bbelow its peak\b/i;
+  const tradingToday = /\bis trading near \$\d[\d,.]*\s*[KMBT]?\s+today\b/i;
+  // Present-tense company metrics with a figure; allowed only with a filing/as-of citation.
+  const fig = String.raw`\d+(?:\.\d+)?\s*(?:%|billion|million|B\b)\+?`;
+  const metric = String.raw`(?:market share|of (?:its |total )?revenue|of total(?=\)| revenue| sales)|margins?|daily active users|annually|advertising-based)`;
+  const companyMetric = new RegExp(String.raw`${fig}[^.\n]{0,60}\b${metric}|\b${metric}\b[^.\n]{0,60}${fig}`, "i");
+  const citation = /results releases? (?:of|\()|\b10-[KQ]\b|annual report|filing|\bas of (?:January|February|March|April|May|June|July|August|September|October|November|December) \d{4}\b/i;
+
+  it("each pattern flags the original 4f66b93 lines and planted variants", () => {
+    expect("NVDA's high valuation multiple (typically 30-50x forward earnings) creates significant downside risk").toMatch(multiple);
+    expect("META's high valuation multiple (typically 20-30x forward earnings) makes it sensitive").toMatch(multiple);
+    expect('bearCase: "Extreme valuation multiples (100x+ revenue), heavy government dependency').toMatch(multiple);
+    expect("NVDA is trading at 45x forward earnings.").toMatch(multiple);
+    expect("trades near 12x trailing sales").toMatch(multiple);
+    expect("BTC is near its ATH").toMatch(ath);
+    expect("NVDA is trading at a discount").toMatch(isTrading);
+    expect("NVDA is trading near $180 today").toMatch(tradingToday);
+    expect("BTC is 20% below its peak").toMatch(belowPeak);
+    for (const line of [
+      "AMD's AI GPU market share remains well below NVIDIA's (approximately 10-15% vs. NVIDIA's 80%+)",
+      "NVIDIA dominates the AI accelerator market with approximately 80%+ market share",
+      "Its government revenue (approximately 55% of total) is relatively recession-resistant",
+      "a profitable automotive manufacturer (gross margins approximately 18-20% on vehicles)",
+      "Azure AI services growing at 30%+ annually.",
+      "Services revenue growing at 15%+ annually.",
+      "with approximately 3.3 billion daily active users across its family of apps.",
+      "Meta generates approximately 98% of its revenue from digital advertising",
+      "The company's revenue is approximately 98% advertising-based",
+      "providing higher gross margins (approximately 80%) and more predictable revenue streams.",
+    ]) {
+      expect(line, line).toMatch(companyMetric);
+    }
+    // A filing-cited line (NVDA:21 style) is allowed.
+    expect("Fiscal 2025 GAAP gross margin was 75.0% (NVIDIA fiscal-year results releases of February 22, 2023 and February 26, 2025)").toMatch(citation);
+  });
+
+  it("scans seo/** (minus the overlap file), Public*, landing, MarketingSite and SSR meta", () => {
+    expect(files).toContain("client/src/pages/seo/DynamicStockPage.tsx");
+    expect(files).toContain("client/src/pages/MarketingSite.tsx");
+    expect(files).not.toContain("client/src/pages/seo/MarketCrashProbability2026.tsx");
+    expect(files.length).toBeGreaterThan(80);
+  });
+
+  it("no valuation multiples, ATH, 'is trading at/near', 'below its peak' or 'trading near $X today'", () => {
+    expect(lineHits(files, multiple)).toEqual([]);
+    expect(lineHits(files, ath)).toEqual([]);
+    expect(lineHits(files, isTrading)).toEqual([]);
+    expect(lineHits(files, belowPeak)).toEqual([]);
+    expect(lineHits(files, tradingToday)).toEqual([]);
+  });
+
+  it("seo/** carries no present-tense company metric figure without a filing/as-of citation", () => {
+    expect(lineHits(seoAll, companyMetric, citation)).toEqual([]);
+    // The cited NVDA:21 / META:21 figures stay.
+    expect(read("client/src/pages/seo/NVDASignal.tsx")).toContain("Fiscal 2025 GAAP gross margin was 75.0%");
+    expect(read("client/src/pages/seo/METASignal.tsx")).toContain("In its fourth-quarter 2024 results release (January 29, 2025)");
+  });
+
+  it("META's 2022 low is not dated to October", () => {
+    expect(read("client/src/pages/seo/METASignal.tsx")).not.toMatch(/October 2022 low/);
+    expect(read("client/src/pages/seo/METASignal.tsx")).toContain("from its then-record high to its 2022 low");
+  });
+});

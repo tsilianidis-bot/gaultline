@@ -33,7 +33,7 @@ export default function QQQSignal() {
         },
         {
           heading: "Key Risk Factors and Conditions for a Shift in QQQ's Outlook",
-          body: "Several critical factors currently influence QQQ's trajectory. FAULTLINE's analysis specifically flags AI concentration risk, given the Nasdaq-100's heavy weighting in technology giants driving the AI revolution. Over-reliance on a few dominant players can introduce systemic vulnerabilities. Furthermore, QQQ's macro sensitivity means it reacts significantly to changes in interest rates, inflation expectations, and economic growth forecasts. FAULTLINE's QQQ signal reflects these exposures through the Pressure Index's static AI-concentration baseline and its rates, inflation, and funding vectors; the signal changes when those vectors or QQQ's own price trend move. It is context for risk, not a forecast of reversals or accelerations.",
+          body: "Several structural factors influence QQQ's trajectory. FAULTLINE's analysis specifically flags AI concentration risk, given the Nasdaq-100's heavy weighting in technology giants driving the AI revolution. Over-reliance on a few dominant players can introduce systemic vulnerabilities. Furthermore, QQQ's macro sensitivity means it reacts significantly to changes in interest rates, inflation expectations, and economic growth forecasts. FAULTLINE's QQQ signal reflects these exposures through the Pressure Index's static AI-concentration baseline and its rates, inflation, and funding vectors; the signal changes when those vectors or QQQ's own price trend move. It is context for risk, not a forecast of reversals or accelerations.",
         },
         {
           heading: "How FAULTLINE Measures QQQ's Outlook and Important Disclaimers",

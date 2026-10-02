@@ -20,10 +20,10 @@ Palantir operates in the AI Software sector, specifically in the Government & En
 
 Palantir's business model is unique in the AI software landscape: it earns revenue through long-term contracts with government agencies (U.S. military, intelligence community, allied governments) and enterprise customers. Government revenue provides stability and predictability; AIP-driven commercial revenue provides growth optionality.
 
-FAULTLINE classifies PLTR as having HIGH AI Software Exposure — meaning its valuation is sensitive to changes in AI software adoption rates, government AI spending, and enterprise digital transformation momentum. Unlike hardware-dependent AI plays (NVDA, AMD), PLTR's revenue is software-based, providing higher gross margins (approximately 80%) and more predictable revenue streams.`}
+FAULTLINE classifies PLTR as having HIGH AI Software Exposure — meaning its valuation is sensitive to changes in AI software adoption rates, government AI spending, and enterprise digital transformation momentum. Unlike hardware-dependent AI plays (NVDA, AMD), PLTR's revenue is software-based, providing higher gross margins and more predictable revenue streams.`}
       signalAnalysis={`FAULTLINE classifies PLTR's signal based on three primary inputs: macro regime alignment, government AI spending momentum, and technical structure.
 
-Macro Regime Alignment: PLTR has a dual macro sensitivity profile. Its government revenue (approximately 55% of total) is relatively recession-resistant — defense and intelligence spending tends to be maintained even during economic downturns. Its commercial AIP revenue is more cyclically sensitive — enterprise software spending can be deferred during recessions.
+Macro Regime Alignment: PLTR has a dual macro sensitivity profile. Its government revenue (a large share of the total) is relatively recession-resistant — defense and intelligence spending tends to be maintained even during economic downturns. Its commercial AIP revenue is more cyclically sensitive — enterprise software spending can be deferred during recessions.
 
 Government AI Spending Momentum: PLTR's government business is directly tied to U.S. defense and intelligence AI spending. The U.S. Department of Defense's AI strategy and budget allocations are key drivers. Government contract and defense budget news is context for PLTR; FAULTLINE does not ingest it as a signal input.
 
@@ -59,7 +59,7 @@ Technical Context: PLTR has historically exhibited high volatility relative to t
         },
         {
           question: "How does PLTR's government revenue affect its risk profile?",
-          answer: "PLTR's government revenue (approximately 55% of total) provides relative stability during economic downturns — defense and intelligence spending tends to be maintained regardless of economic conditions. This makes PLTR's revenue more predictable than pure commercial software companies. However, government contract renewals and budget cycles create their own timing risks.",
+          answer: "PLTR's government revenue (a large share of the total) provides relative stability during economic downturns — defense and intelligence spending tends to be maintained regardless of economic conditions. This makes PLTR's revenue more predictable than pure commercial software companies. However, government contract renewals and budget cycles create their own timing risks.",
         },
         {
           question: "What is PLTR's AI bubble exposure rating?",

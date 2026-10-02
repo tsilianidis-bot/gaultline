@@ -23,7 +23,7 @@ NVIDIA's reported results reflect its market position: revenue grew from $27.0 b
 NVIDIA belongs to the FAULTLINE AI Bubble Exposure category — a designation given to stocks whose valuations are most sensitive to changes in AI narrative momentum and capital allocation toward AI infrastructure. This designation is not a negative judgment; it is a risk classification that reflects NVDA's position as the highest-beta play on the AI infrastructure cycle.`}
       signalAnalysis={`FAULTLINE classifies NVDA's signal based on three primary inputs: macro regime alignment, AI narrative momentum, and technical structure.
 
-Macro Regime Alignment: NVDA performs best in LOW RISK macro environments characterized by expanding liquidity, risk-on sentiment, and growth outperforming value. In HIGH STRESS environments (FAULTLINE Pressure Index 65+), NVDA's high valuation multiple (typically 30-50x forward earnings) creates significant downside risk as investors rotate from growth to defensive assets.
+Macro Regime Alignment: NVDA performs best in LOW RISK macro environments characterized by expanding liquidity, risk-on sentiment, and growth outperforming value. In HIGH STRESS environments (FAULTLINE Pressure Index 65+), NVDA's high valuation multiple creates significant downside risk as investors rotate from growth to defensive assets.
 
 AI Narrative Momentum: NVDA's revenue and valuation are directly tied to AI infrastructure spending by hyperscalers (Microsoft, Amazon, Google, Meta). When AI capex guidance from these companies is strong and rising, NVDA's forward estimates expand and the stock outperforms. When AI capex guidance disappoints or shows signs of peaking, NVDA's forward estimates compress rapidly.
 

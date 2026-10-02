@@ -57,7 +57,7 @@ FAULTLINE's Alt Season Indicator tracks which phase the market is currently in a
         },
         {
           heading: "2024-2025 Alt Season: What Happened and What It Means for 2026",
-          body: `The 2024-2025 crypto cycle provided a textbook example of the alt season rotation pattern. Bitcoin led the cycle, setting then-record highs in late 2024. Ethereum followed, with the ETH/BTC ratio recovering from multi-year lows. AI tokens (TAO, FET, RNDR) and Layer-2 solutions (ARB, OP) outperformed during Phase 3.
+          body: `The 2024-2025 crypto cycle provided a textbook example of the alt season rotation pattern. Bitcoin led the cycle, setting then-record highs in late 2024. Ethereum followed, with the ETH/BTC ratio recovering from multi-year lows. AI tokens (TAO, FET, RNDR) outperformed during Phase 3.
 
 The key lessons from the 2024-2025 cycle for 2026 positioning:
 
