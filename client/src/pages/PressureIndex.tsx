@@ -348,7 +348,7 @@ export default function PressureIndex() {
               />
               <LockedCard
                 title="DIAGNOSTIC AI™ — PRO"
-                description="Full diagnostic report. Identifies the top 3 systemic risks, regime probability, and actionable intelligence for the next 30 days."
+                description="Full diagnostic report. Identifies the top 3 systemic risks and the current regime classification. No regime probability is offered."
                 accentColor="#00E5FF"
               />
               <LockedCard

@@ -64,7 +64,7 @@ Intelligence areas PLATO interprets from one shared market state:
   5. Volatility Engine
   6. Credit Risk Engine
   7. Historical Analog Engine
-  8. Probability Engine
+  8. Scenario Readings
   9. Crypto Intelligence
   10. Signal Intelligence
 
@@ -131,7 +131,7 @@ Intelligence areas PLATO interprets:
 5. Volatility — VIX quotes on the markets board and the VIX close in the separate systemic-regime model (the Pressure Index does not read VIX)
 6. Credit Risk — high-yield spreads in the Pressure Index; investment-grade spreads in the systemic-regime model
 7. Historical Analog Engine — ranks resemblance to hand-set reference profiles of past stress episodes; not a forecast or a return distribution
-8. Probability Engine — assigns regime transition probabilities across 1M/3M/6M/12M horizons
+8. Scenario Readings — bull/neutral/bear evidence-vote shares, shown as Uncalibrated: no defined event, horizon, or calibration record exists, so no probability is published
 9. Crypto Intelligence — CoinGecko prices, Bitcoin dominance, 24-hour ranges, crypto regime, and the Pressure Index
 10. Signal Intelligence — regime-contextualised directional labels across equities and crypto
 
@@ -482,7 +482,7 @@ export default function Press() {
             { label: "THE PROBLEM", body: "Information is abundant. Understanding is scarce. Individual investors lack the structural situational awareness that institutional risk managers use as a matter of course." },
             { label: "WHY NOW", body: "The convergence of AI capability, modern data infrastructure, and retail investor sophistication makes structural market intelligence practical for individual investors." },
             { label: "KEY DIFFERENTIATOR", body: "FAULTLINE begins with the state of the system — not a stock pick. Every surface and every PLATO answer reads the same published market state, and every Pressure Index input, weight, and band is documented." },
-            { label: "CORE TECHNOLOGY", body: "Pressure Index™ · Seismograph™ · Shared market state · Historical Analog Engine · Probability Engine · PLATO interpretation layer." },
+            { label: "CORE TECHNOLOGY", body: "Pressure Index™ · Seismograph™ · Shared market state · Historical Analog Engine · Scenario readings (uncalibrated) · PLATO interpretation layer." },
             { label: "LONG-TERM VISION", body: "To become the world's most trusted AI Market Intelligence Operating System — the platform serious investors rely on to understand what markets are communicating before they move." },
           ].map((item) => (
             <div key={item.label} style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "10px", padding: "24px" }}>
@@ -598,7 +598,7 @@ export default function Press() {
             { name: "PLATO", role: "The unified intelligence interface. Interprets the shared market state and discloses unavailable inputs. Transforms complexity into clarity." },
             { name: "Regime Detection", role: "Classifies current conditions into one of five bands, LOW RISK to SYSTEMIC CRISIS. The equity, crypto, and interpretation layers read it." },
             { name: "Historical Analog Engine", role: "Ranks resemblance to hand-set reference profiles of past stress episodes — precedents, not predictions." },
-            { name: "Probability Engine", role: "Assigns regime transition probabilities across 1M, 3M, 6M, and 12M horizons." },
+            { name: "Scenario Readings", role: "Bull/neutral/bear evidence-vote shares. No defined event, horizon, or calibration record exists, so they are shown as Uncalibrated and no probability is published." },
             { name: "Signal Intelligence", role: "Directional labels across equities and crypto. Always contextualised against the current regime." },
             { name: "Decision Engine", role: "Evaluates trade ideas against the current macro regime, pressure environment, and signal consensus." },
             { name: "Day Trade Intelligence", role: "Intraday intelligence layer for active traders. Regime-aware setups and regularly refreshed PLATO synthesis." },
@@ -751,7 +751,7 @@ export default function Press() {
             },
             {
               q: "How often is intelligence updated?",
-              a: "The Seismograph™, Pressure Index™, and underlying data feeds refresh regularly as new data is published; macro series follow their official publication schedules. PLATO's Daily Intelligence Brief is generated each morning before market open. Signal Intelligence updates as new data is published as market conditions change. Historical Analog and Probability Engine outputs update as new data is incorporated.",
+              a: "The Seismograph™, Pressure Index™, and underlying data feeds refresh regularly as new data is published; macro series follow their official publication schedules. PLATO's Daily Intelligence Brief is generated each morning before market open. Signal Intelligence updates as new data is published as market conditions change. Historical Analog and scenario readings update as new data is incorporated.",
             },
             {
               q: "What data powers the platform?",
