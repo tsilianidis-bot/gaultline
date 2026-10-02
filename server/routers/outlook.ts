@@ -318,9 +318,7 @@ LIVE FAULTLINE DATA
 - Top Stock Opportunities: ${topStocks || "None identified"}
 - Top Crypto Opportunities: ${topCrypto || "None identified"}
 - Historical Analog: ${fmos?.topAnalog?.label ?? pressure.topAnalog.label} (${fmos?.topAnalog?.similarity ?? pressure.topAnalog.similarity}% similarity)
-	- Derived Bull Scenario Score: ${fmos?.probability?.bull ?? 50}% (not a calibrated forecast)
-	- Derived Bear Scenario Score: ${fmos?.probability?.bear ?? 30}% (not a calibrated forecast)
-	- Derived Transition Scenario Score: ${fmos?.transition?.transitionProbability ?? 0}% (not a calibrated forecast)
+	- Scenario, crash, recession and regime-transition probabilities: not offered (FAULTLINE probability contract). Do not state or estimate any probability percentage.
 	- Top Opportunity: ${topOpportunityTicker} (${topOpportunityName}) — ${topOpportunityDir}, Score: ${topOpportunityScore}/100
 		- Data Source: ${pressure.dataSource}
 		- ${forecastHorizonPromptContract()}

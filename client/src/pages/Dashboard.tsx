@@ -490,6 +490,14 @@ export default function Dashboard() {
   const { readings: liveReadings } = useLiveIndicatorReadings();
   const liveValues = useMemo(() => evaluableIndicatorValues(liveReadings), [liveReadings]);
   const { overall, domains, regime, analogs, narrative } = output;
+  // Closest-analog sentence: names a period only when an analog with a finite
+  // 0–100 similarity exists; otherwise says Unavailable (never "0% match").
+  const analogSentence = (lead: string): string => {
+    const top = analogs[0];
+    return top?.era && typeof top.similarity === 'number' && Number.isFinite(top.similarity)
+      ? `${lead} ${top.era} at ${Math.round(top.similarity)}% similarity.`
+      : `${lead} Unavailable.`;
+  };
   const [showShare, setShowShare] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [heroInputFocused, setHeroInputFocused] = useState(false);
@@ -712,7 +720,8 @@ export default function Dashboard() {
           const directionColor = overall.delta > 0.2 ? '#FF9500' : overall.delta < -0.2 ? '#00FF88' : '#B0C4D8';
           const directionLabel = overall.delta > 0.2 ? 'RISING ▲' : overall.delta < -0.2 ? 'FALLING ▼' : 'STABLE —';
           const analogLabel = analogs[0]?.era?.split(' ').slice(0, 3).join(' ') ?? '—';
-          const analogSim = analogs[0]?.similarity ?? 0;
+          // No analog → "Unavailable", never a 0% match.
+          const analogSim = typeof analogs[0]?.similarity === 'number' && Number.isFinite(analogs[0].similarity) ? Math.round(analogs[0].similarity) : null;
           const verdictColor = overall.riskLevel === 'low' ? '#00FF88' : overall.riskLevel === 'moderate' ? '#FFD700' : overall.riskLevel === 'elevated' ? '#FF9500' : '#FF2D55';
           const verdictLabel = overall.riskLevel === 'low' ? 'RISK ON' : overall.riskLevel === 'moderate' ? 'STAY SELECTIVE' : overall.riskLevel === 'elevated' ? 'REDUCE EXPOSURE' : 'STEP ASIDE';
           const cells = [
@@ -721,7 +730,7 @@ export default function Dashboard() {
             { label: 'BULL SCENARIO', value: engineProbabilityText(output, 'bullProbability'), sub: 'scenario weight', valueColor: engineProbabilityPercent(output, 'bullProbability') !== null ? '#00FF88' : '#94A3B8' },
             { label: 'CRASH PROBABILITY', value: engineProbabilityText(output, 'crashProbability'), sub: 'no governed model', valueColor: '#94A3B8' },
             { label: 'DIRECTION', value: directionLabel, sub: `Δ${overall.delta >= 0 ? '+' : ''}${overall.delta.toFixed(1)} vs baseline`, valueColor: directionColor },
-            { label: 'CLOSEST ANALOG', value: analogLabel, sub: `${analogSim}% match`, valueColor: '#00E5FF' },
+            { label: 'CLOSEST ANALOG', value: analogLabel, sub: analogSim !== null ? `${analogSim}% match` : 'Unavailable', valueColor: '#00E5FF' },
             { label: 'TOP THREAT', value: topThreat?.label?.split(' ').slice(0, 2).join(' ') ?? '—', sub: score100(topThreat?.score), valueColor: '#FF2D55' },
             { label: "TODAY'S VERDICT", value: verdictLabel, sub: 'FAULTLINE signal', valueColor: verdictColor },
           ];
@@ -766,12 +775,12 @@ export default function Dashboard() {
           }}>
             <span style={{ color, fontWeight: 600 }}>PLATO:</span>{' '}
             {overall.riskLevel === 'low'
-              ? `Systemic pressure is low at ${score100(overall.score)} — conditions favor risk-taking. The closest historical analog is ${analogs[0]?.era ?? 'a low-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
+              ? `Systemic pressure is low at ${score100(overall.score)} — conditions favor risk-taking. ${analogSentence('The closest historical analog is')}`
               : overall.riskLevel === 'moderate'
-              ? `Systemic pressure is building at ${score100(overall.score)} — mixed signals favor selective positioning. The closest analog is ${analogs[0]?.era ?? 'a moderate-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
+              ? `Systemic pressure is building at ${score100(overall.score)} — mixed signals favor selective positioning. ${analogSentence('The closest analog is')}`
               : overall.riskLevel === 'elevated'
-              ? `Systemic pressure is elevated at ${score100(overall.score)} — reduce exposure and tighten stops. The closest analog is ${analogs[0]?.era ?? 'an elevated-stress period'} at ${analogs[0]?.similarity ?? 0}% similarity.`
-              : `Systemic pressure is at crisis levels — ${score100(overall.score)}. Capital preservation is the trade. Closest analog: ${analogs[0]?.era ?? 'a crisis period'} at ${analogs[0]?.similarity ?? 0}% match.`
+              ? `Systemic pressure is elevated at ${score100(overall.score)} — reduce exposure and tighten stops. ${analogSentence('The closest analog is')}`
+              : `Systemic pressure is at crisis levels — ${score100(overall.score)}. Capital preservation is the trade. ${analogSentence('Closest analog:')}`
             }{' '}Bull scenario: {engineProbabilityText(output, 'bullProbability')}. Crash probability: {engineProbabilityText(output, 'crashProbability')}.
           </p>
         </div>

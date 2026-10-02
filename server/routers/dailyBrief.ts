@@ -46,7 +46,9 @@ const EngineSnapshotSchema = z.object({
   breadth:          z.number(),
   aiConcentration:  z.number(),
   volatility:       z.number(),
-  bullProbability:  z.number(),
+  // Probability contract: the bull scenario is withheld unless AVAILABLE, so the
+  // client sends null. Older stored snapshots may still carry a number.
+  bullProbability:  z.number().nullable().optional(),
   vix:              z.number().nullable().optional(),
   dxy:              z.number().nullable().optional(),
   treasury10y:      z.number().nullable().optional(),
@@ -162,8 +164,12 @@ function computeChanges(
     });
   }
 
-  // Bull probability
-  const bullDelta = current.bullProbability - previous.bullProbability;
+  // Bull probability: compared only when both snapshots carry a displayable number.
+  const currentBull = current.bullProbability;
+  const previousBull = previous.bullProbability;
+  const bullDelta = typeof currentBull === "number" && Number.isFinite(currentBull) && typeof previousBull === "number" && Number.isFinite(previousBull)
+    ? currentBull - previousBull
+    : 0;
   if (Math.abs(bullDelta) >= 4) {
     changes.push({
       label: `Bull probability ${bullDelta > 0 ? "increased" : "decreased"}`,
@@ -323,11 +329,12 @@ export const dailyBriefRouter = router({
 
       const institutionalBias = deriveInstitutionalBias(engineSnapshot.overallPressure, engineSnapshot.regime);
       const marketHealth = deriveMarketHealth(engineSnapshot.overallPressure, engineSnapshot.breadth, engineSnapshot.liquidity);
+      // Probability contract: the uncalibrated bull scenario no longer feeds the
+      // brief's confidence (the client sends null; NaN made zod reject the call).
       const overallConfidence = Math.round(
         (100 - engineSnapshot.overallPressure) * 0.35 +
         engineSnapshot.breadth * 0.25 +
-        engineSnapshot.liquidity * 0.25 +
-        engineSnapshot.bullProbability * 0.15
+        engineSnapshot.liquidity * 0.25
       );
 
       // Build top risks from engine data
@@ -363,7 +370,7 @@ Write exactly 3 sentences in measured language. Do not invent price action, mark
 - Liquidity: ${engineSnapshot.liquidity}/100
 - Credit Stress: ${engineSnapshot.credit}/100
 - Market Breadth: ${engineSnapshot.breadth}/100
-- Bull Probability: ${engineSnapshot.bullProbability}%
+- Scenario probabilities: not offered (FAULTLINE probability contract); do not state any bull, bear, crash or recession percentage
 - VIX: ${engineSnapshot.vix ?? "N/A"}
 - 10Y Treasury: ${engineSnapshot.treasury10y ?? "N/A"}%
 - Investor Type: ${investorType ?? "general"}

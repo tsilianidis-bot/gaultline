@@ -245,15 +245,16 @@ export default function Outlook() {
     }))
     .sort((a, b) => (Number.isFinite(b.probability) ? b.probability : -1) - (Number.isFinite(a.probability) ? a.probability : -1));
 
-  const topFallbackAnalog = output.analogs[0];
   const probabilityDistribution = marketState?.outlook.probabilities ?? {
     bull: Number.NaN,
     neutral: Number.NaN,
     bear: Number.NaN,
     confidence: Number.NaN,
-    primaryDriver: [...output.domains].sort((a, b) => b.score - a.score)[0]?.label ?? "Deterministic engine composite",
-    evidenceBasis: output.narrative.summary,
-    historicalBasis: topFallbackAnalog ? `${topFallbackAnalog.era} ${topFallbackAnalog.year} at ${formatCanonicalPercent(topFallbackAnalog.similarity)} similarity` : "No deterministic analog available",
+    // No canonical state (e.g. a 503): the browser demo baseline is not data, so
+    // no driver, narrative or analog from it is shown.
+    primaryDriver: PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
+    evidenceBasis: PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
+    historicalBasis: PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
   };
   // Forecast confidence starts from a 50 baseline and is uncalibrated.
   const confidenceText = probabilityOrWithheld(
@@ -263,25 +264,14 @@ export default function Outlook() {
   const transitionClaimText = (id: string) =>
     probabilityText(contract?.transitions.find(claim => claim.scenario.scenarioId === id) ?? null);
   const transition = marketState?.outlook.transitionProbabilities ?? null;
-  const topAnalog = marketState?.outlook.topAnalog ?? (topFallbackAnalog ? {
-    period: `${topFallbackAnalog.era} ${topFallbackAnalog.year}`,
-    label: `${topFallbackAnalog.era} analog`,
-    similarity: normalizeCanonicalMetric(topFallbackAnalog.similarity),
-    resolution: "Canonical resolution detail is unavailable in deterministic fallback mode.",
-  } : null);
+  // Without canonical state there is no analog (the demo baseline's analog is not shown).
+  const topAnalog = marketState?.outlook.topAnalog ?? null;
   const highestProbabilityPath = marketState?.outlook.highestProbabilityPath ?? "Canonical outlook is unavailable; no scenario is ranked.";
   const probabilityChanges = marketState?.watch.whatChanged ?? [];
   const invalidationConditions = marketState?.outlook.invalidationConditions ?? [];
-  const triggerEvidence = transition?.currentEvidence ?? marketState?.watch.whatToWatch ?? output.narrative.keyRisks;
-  const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? output.domains.map(domain => ({
-    name: domain.label,
-    signal: domain.score >= 7 ? "stressed" : domain.score >= 5 ? "bearish" : domain.score <= 3 ? "recovering" : "neutral",
-    strength: normalizeCanonicalMetric(domain.score * 10),
-    trend: domain.delta > 0.1 ? "deteriorating" : domain.delta < -0.1 ? "improving" : "stable",
-    currentValue: formatCanonicalScore(domain.score * 10),
-    historicalContext: domain.description,
-    whyItMatters: domain.drivers.join(" · ") || domain.description,
-  }));
+  const triggerEvidence = transition?.currentEvidence ?? marketState?.watch.whatToWatch ?? [];
+  // Without canonical state the demo domains are not shown as evidence.
+  const evidenceFamilies: EvidenceFamily[] = marketState?.why.evidenceFamilies ?? [];
   const developingConditions = marketState?.watch.developingConditions ?? [];
   const ashaPath = PERSISTENT_UTILITY_BY_ID.asha.path ?? "/app/asha";
   const topScenario = rankedScenarios.find(scenario => Number.isFinite(scenario.probability)) ?? null;
@@ -341,7 +331,7 @@ export default function Outlook() {
                   <div className="h-full rounded-full bg-violet-400" style={{ width: `${Number.isFinite(probabilityDistribution.confidence) ? probabilityDistribution.confidence : 0}%`, transition: "width 1s cubic-bezier(0.23,1,0.32,1)" }} />
                 </div>
                 <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.12em] text-violet-300/75">
-                  Pressure {formatCanonicalScore(marketState?.now.pressureScore ?? output.overall.score * 10)}
+                  Pressure {marketState ? formatCanonicalScore(marketState.now.pressureScore) : PROBABILITY_DISPLAY_TEXT.UNAVAILABLE}
                 </p>
                 <p className="mt-4 text-xs leading-5 text-slate-500">Updated {lastUpdated?.toLocaleString() ?? "unavailable"}</p>
                 {/* Top scenario badge */}
@@ -410,7 +400,7 @@ export default function Outlook() {
 
         <Section id="horizons" index="04" eyebrow="Forecast horizons" title="Separate the current state, transition path, and historical resolution" description="The canonical state does not attach arbitrary calendar targets. OUTLOOK therefore labels each available horizon by evidence type rather than inventing dates. Canonical transition timing is unavailable in deterministic fallback mode.">
           <div className="grid gap-3 lg:grid-cols-3">
-            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><Eye size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Current state</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{marketState?.now.regime ?? output.regime.label}</p><p className="mt-2 text-xs leading-5 text-slate-500">Direction: {marketState?.now.direction ?? "Deterministic fallback"}. This is the state from which the forecast begins.</p></div>
+            <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><Eye size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Current state</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{marketState?.now.regime ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE}</p><p className="mt-2 text-xs leading-5 text-slate-500">Direction: {marketState?.now.direction ?? "Deterministic fallback"}. This is the state from which the forecast begins.</p></div>
             <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><GitBranch size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Transition horizon</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{transition ? (Number.isFinite(transition.remainInRegime) ? `${formatCanonicalPercent(transition.remainInRegime)} in current regime` : `Remain-in-regime frequency: ${transitionClaimText("remainInRegime")}`) : "Unavailable"}</p><p className="mt-2 text-xs leading-5 text-slate-500">{transition?.historicalBasis ?? "No canonical transition-horizon record in fallback mode."}</p></div>
             <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5"><div className="flex items-center gap-2 text-violet-300"><Clock3 size={14} /><p className="font-mono text-[9px] uppercase tracking-[0.13em]">Historical resolution</p></div><p className="mt-4 font-['Rajdhani'] text-xl font-semibold text-white">{topAnalog?.period ?? "No analog"}</p><p className="mt-2 text-xs leading-5 text-slate-500">{topAnalog?.resolution ?? "No defensible historical resolution is attached."}</p></div>
           </div>
@@ -453,7 +443,7 @@ export default function Outlook() {
           ) : (
             <div className="rounded-sm border border-white/10 bg-white/[0.02] p-5 text-sm text-slate-500">No historical analog is available for this snapshot.</div>
           )}
-          {output.analogs.length > 1 && (
+          {marketState && output.analogs.length > 1 && (
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {output.analogs.slice(1, 3).map(analog => (
                 <div key={`${analog.era}-${analog.year}`} className="rounded-sm border border-white/10 bg-white/[0.02] p-4">

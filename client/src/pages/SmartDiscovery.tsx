@@ -32,6 +32,7 @@ import OnboardingFlow from "@/components/OnboardingFlow";
 import DisclaimerBanner from "@/components/DisclaimerBanner";
 import { HistoricalContextPanel } from "@/components/HistoricalContextPanel";
 import type { HistoricalIntelligenceData } from "@/components/HistoricalContextPanel";
+import { engineProbabilityText } from "@/lib/marketStateProjection";
 
 // ── Design tokens ─────────────────────────────────────────────
 const BG = "#050608";
@@ -2483,9 +2484,10 @@ function MarketSnapshot({ onQuickAction }: { onQuickAction: (prompt: string) => 
           <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: health.color }}>{health.label}</span>
         </button>
         {/* Bull Probability — clickable */}
-        <button onClick={() => onQuickAction(`Bull probability is ${probability.bullProbability}%. What are the key factors driving this and what is the outlook?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
-          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>BULL PROBABILITY ↗</span>
-          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: probability.bullProbability > 55 ? '#00FF88' : probability.bullProbability > 40 ? '#FFD700' : '#FF4444' }}>{probability.bullProbability}%</span>
+        {/* Probability contract: the bull field renders only its contract display text. */}
+        <button onClick={() => onQuickAction(`FAULTLINE shows the bull scenario as ${engineProbabilityText(output, "bullProbability")}. What are the key factors behind the current Pressure Index and what should I watch?`)} style={{ display: 'flex', flexDirection: 'column', gap: '2px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 6px', borderRadius: '4px', transition: 'background 0.15s' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'none')}>
+          <span style={{ ...MONO_SM, color: 'rgba(255,255,255,0.3)', fontSize: '9px', letterSpacing: '0.1em' }}>BULL SCENARIO ↗</span>
+          <span style={{ ...MONO, fontSize: '11px', fontWeight: 700, color: '#94A3B8' }}>{engineProbabilityText(output, "bullProbability")}</span>
         </button>
       </div>
     </div>
@@ -2511,7 +2513,7 @@ function SinceLastVisit({ onQuickAction }: { onQuickAction: (prompt: string) => 
         breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
         aiConcentration: 32,
         volatility: 40,
-        bullProbability: output.probability.bullProbability,
+        bullProbability: Number.isFinite(output.probability.bullProbability) ? output.probability.bullProbability : null,
         timestamp: Date.now(),
       },
     },
@@ -2646,7 +2648,8 @@ export default function SmartDiscovery() {
         breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
         aiConcentration: 32,
         volatility: 40,
-        bullProbability: probability.bullProbability,
+        // Withheld (NaN) → null; zod rejects NaN.
+        bullProbability: Number.isFinite(probability.bullProbability) ? probability.bullProbability : null,
         timestamp: Date.now(),
       },
     });
@@ -2765,7 +2768,8 @@ export default function SmartDiscovery() {
             breadth: Math.max(0, Math.min(100, Math.round(100 - overall.score * 10))),
             aiConcentration: 32,
             volatility: 40,
-            bullProbability: probability.bullProbability,
+            // Withheld (NaN) → null; zod rejects NaN.
+        bullProbability: Number.isFinite(probability.bullProbability) ? probability.bullProbability : null,
             timestamp: Date.now(),
           },
         });

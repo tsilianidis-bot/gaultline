@@ -316,7 +316,7 @@ const SECTIONS: Section[] = [
         </Panel>
         <div className="space-y-1">
           {[
-            { name: "AI Capex Tracker", desc: "Tracks the aggregate capital expenditure commitments from major AI infrastructure players (Microsoft, Google, Amazon, Meta, NVIDIA). Currently tracking $214B+ in announced AI capex. High capex concentration is a leading indicator of AI bubble risk." },
+            { name: "AI Concentration Baseline", desc: "FAULTLINE uses a static AI-concentration baseline as an input to the AI-concentration vector. It does not ingest AI capital-expenditure data and does not track announced capex totals." },
             { name: "AI Bubble Risk Score", desc: "A 0–10 score updated by the engine estimating the current degree of AI-sector overvaluation. Scores above 7 indicate bubble dynamics; scores above 9 indicate critical bubble risk." },
             { name: "Live Intelligence Feed", desc: "A curated stream of macro and AI-sector news items, each tagged with a relevance score and regime impact assessment. Items are filtered for systemic relevance — not noise." },
             { name: "Sector Concentration Monitor", desc: "Tracks the degree to which the S&P 500 and Nasdaq are concentrated in AI and technology names. High concentration amplifies systemic risk when sentiment reverses." },

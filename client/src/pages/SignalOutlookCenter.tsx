@@ -854,8 +854,9 @@ function FullOutlookView({
             { label: "Pressure Index", value: `${d.environment.pressureIndex}/100`, color: scoreColor(100 - d.environment.pressureIndex), tip: "FAULTLINE composite macro stress score. Higher = more systemic risk." },
             { label: "Trend", value: d.environment.pressureTrend, color: d.environment.pressureTrend === "Rising" ? "#FF2D55" : d.environment.pressureTrend === "Falling" ? "#00FF88" : "#64B5F6", tip: "Direction of recent pressure change." },
             { label: "Regime", value: d.environment.regimeLabel, color: "#94A3B8", tip: "Current FAULTLINE regime classification." },
-            { label: "Bull Probability", value: `${d.environment.bullProbability}%`, color: "#00FF88", tip: "Estimated probability of bullish conditions based on current pressure." },
-            { label: "Bear Probability", value: `${d.environment.bearProbability}%`, color: "#FF2D55", tip: "Estimated probability of bearish conditions based on current pressure." },
+            // Probability contract: no governed bull/bear probability model exists.
+            { label: "Bull Probability", value: "Not offered", color: "#94A3B8", tip: "FAULTLINE does not offer a bull probability: no governed or calibrated model produces one. Read the Pressure Index instead." },
+            { label: "Bear Probability", value: "Not offered", color: "#94A3B8", tip: "FAULTLINE does not offer a bear probability: no governed or calibrated model produces one. Read the Pressure Index instead." },
           ].map(item => (
             <div key={item.label} style={{
               background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)",

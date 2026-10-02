@@ -568,9 +568,9 @@ function generateNarrative(
     : 'All major stress indicators within moderate range.';
 
   const summary = [
-    `Systemic risk composite at ${overall.score.toFixed(1)}/10 — ${overall.riskLevel.toUpperCase()} regime.`,
+    `Systemic risk composite at ${Math.round(overall.score * 10)}/100 — ${overall.riskLevel.toUpperCase()} regime.`,
     domainSummary,
-    `Crash/bear probability at ${prob.crashProbability}%, recession risk at ${prob.recessionProbability}%.`,
+    // Probability contract: no crash, bear or recession probability is stated.
     `Highest historical analog match: ${topAnalog.era} ${topAnalog.year} at ${topAnalog.similarity}% similarity.`,
     regime.description,
   ].join(' ');

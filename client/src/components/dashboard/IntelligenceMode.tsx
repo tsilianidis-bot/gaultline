@@ -45,10 +45,11 @@ function MacroRegimePanel() {
         </div>
         <div className="text-right">
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>
-            {overall.score.toFixed(1)}
+            {/* Pressure Index on its canonical 0–100 scale (engine score is 0–10 internally). */}
+            {Math.round(overall.score * 10)}
           </div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: "rgba(100,116,139,0.5)" }}>
-            / 10.0
+            / 100
           </div>
         </div>
       </div>
@@ -69,7 +70,7 @@ function MacroRegimePanel() {
                   {d.label}
                 </span>
                 <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: dc, fontWeight: 700, flexShrink: 0, marginLeft: 4 }}>
-                  {d.score.toFixed(1)}
+                  {Math.round(d.score * 10)}
                 </span>
               </div>
               <div className="h-0.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.11)" }}>
