@@ -1119,7 +1119,7 @@ export default function Dashboard() {
           <SOBPanel
             canonicalEnvelope={output?.canonicalEnvelope}
             regime={regime?.label}
-            pressureIndex={overall ? Math.round(overall.score * 10) : 30}
+            pressureIndex={finiteOrNull(overall?.score) === null ? null : Math.round(overall.score * 10)}
           />
         </div>
 

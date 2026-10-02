@@ -6,6 +6,7 @@
 // ============================================================
 
 import { EngineOutput, RawIndicators } from './engine';
+import { pointsDeltaText, score100Value } from "@/lib/displayFallbacks";
 
 // ── Alert types ───────────────────────────────────────────────
 export type AlertSeverity = 'critical' | 'high' | 'elevated' | 'moderate';
@@ -254,11 +255,11 @@ export function generateAlerts(
       timestamp: now,
       category: 'threshold_breach',
       severity,
-      title: `${domain.label} at ${domain.score.toFixed(1)}/10`,
-      body: `${domain.label} score has reached ${domain.score.toFixed(1)}/10. ${domain.drivers.slice(0, 2).join('. ')}.`,
+      title: `${domain.label} at ${score100Value(domain.score)}/100`,
+      body: `${domain.label} score has reached ${score100Value(domain.score)}/100. ${domain.drivers.slice(0, 2).join('. ')}.`,
       metric: domain.id,
-      value: domain.score.toFixed(1),
-      threshold: '7.5',
+      value: score100Value(domain.score),
+      threshold: '75',
       acknowledged: false,
       color: domain.score >= 9 ? '#FF2D55' : domain.score >= 8 ? '#FF9500' : '#FFD700',
     });
@@ -273,8 +274,8 @@ export function generateAlerts(
       timestamp: now,
       category: 'directional_change',
       severity: change.severity,
-      title: `${change.label} ${change.direction === 'up' ? 'Escalating' : 'Easing'} (${change.delta > 0 ? '+' : ''}${change.delta.toFixed(1)})`,
-      body: `${change.label} has ${change.direction === 'up' ? 'increased' : 'decreased'} by ${Math.abs(change.delta).toFixed(1)} points. ${change.direction === 'up' ? 'Risk escalation detected.' : 'Pressure easing.'}`,
+      title: `${change.label} ${change.direction === 'up' ? 'Escalating' : 'Easing'} (${pointsDeltaText(change.delta)})`,
+      body: `${change.label} has ${change.direction === 'up' ? 'increased' : 'decreased'} by ${pointsDeltaText(Math.abs(change.delta)).replace(/^\+/, '')}. ${change.direction === 'up' ? 'Risk escalation detected.' : 'Pressure easing.'}`,
       metric: change.domainId,
       direction: change.direction,
       acknowledged: false,

@@ -4,6 +4,7 @@
    Design: Palantir Noir — void black, neon accents, scanlines.
    ============================================================ */
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { Search, X, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap, Activity, BarChart2, Shield, RefreshCw, Bookmark, BookmarkCheck } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -181,8 +182,8 @@ function RiskGauge({ score, size = 80 }: { score: number; size: number }) {
           style={{ transition: "stroke-dasharray 1.4s cubic-bezier(0.23,1,0.32,1)", filter: `drop-shadow(0 0 6px ${color}80)` }} />
       </svg>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 70 ? "22px" : "16px", color, lineHeight: 1 }}>{anim.toFixed(1)}</span>
-        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.06em" }}>/10</span>
+        <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: size > 70 ? "22px" : "16px", color, lineHeight: 1 }}>{score100Value(anim)}</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "7px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.06em" }}>/100</span>
       </div>
     </div>
   );

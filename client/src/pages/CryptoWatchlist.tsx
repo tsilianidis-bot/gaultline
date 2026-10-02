@@ -4,6 +4,7 @@
    side-by-side comparison panel (up to 4 tokens).
    ============================================================ */
 import { useState, useMemo } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -234,7 +235,7 @@ function CompareColumn({ symbol, onRemove }: { symbol: string; onRemove: () => v
     { label: "Signal Bias",        value: asset?.signalBias,           color: biasColor },
     { label: "Signal Score",       value: asset ? `${asset.signalScore}/100` : undefined, color: biasColor },
     { label: "Risk Level",         value: asset?.riskLevel,            color: riskColor },
-    { label: "Risk Score",         value: asset ? `${asset.riskScore.toFixed(1)}/10` : undefined, color: riskColor },
+    { label: "Risk Score",         value: asset ? `${score100Value(asset.riskScore)}/100` : undefined, color: riskColor },
     { label: "Momentum",           value: asset?.momentum,             color: asset ? MOMENTUM_COLORS[asset.momentum] : "#64748B" },
     { label: "Liquidity Sensitivity", value: asset?.liquiditySensitivity, color: "#00D4FF" },
     { label: "Speculative Intensity", value: asset?.speculativeIntensity, color: "#FF9500" },

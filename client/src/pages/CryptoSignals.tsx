@@ -6,6 +6,7 @@
 // ============================================================
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { score100Value } from "@/lib/displayFallbacks";
 import { trpc } from "@/lib/trpc";
 import { useEngine } from "@/contexts/EngineContext";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -880,7 +881,7 @@ function CryptoSignalsInner() {
             <div>
               <div style={{ fontSize: "8px", color: "rgba(100,116,139,0.5)", marginBottom: "2px" }}>REGIME SCORE</div>
               <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: "22px", color: regimeColor }}>
-                {engine?.output?.overall?.score?.toFixed(1) ?? "—"}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/10</span>
+                {score100Value(engine?.output?.overall?.score)}<span style={{ fontSize: "12px", color: "rgba(100,116,139,0.5)" }}>/100</span>
               </div>
             </div>
           </div>
