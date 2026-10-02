@@ -34,9 +34,9 @@ NVDA Competitive Dynamics: AMD's valuation is partially determined by its positi
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous cycle highs that became support. Major round numbers.
 
-Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
+Resistance Clusters: Prior peaks before they were broken, and major psychological round numbers.
 
-Historical Context: AMD reached its all-time high in late 2021 at approximately $164, then fell approximately 65% to its 2022 low of approximately $57 during the semiconductor bear market driven by inventory correction and macro headwinds. The subsequent recovery was driven by EPYC CPU market share gains and AI accelerator growth expectations.`}
+Historical Context: AMD set a then-record high in late 2021, then fell approximately 65% to its 2022 low during the semiconductor bear market driven by inventory correction and macro headwinds. The subsequent recovery was driven by EPYC CPU market share gains and AI accelerator growth expectations.`}
       riskFactors={`AMD faces five primary risk factors that FAULTLINE monitors:
 
 1. NVIDIA Competitive Dominance: NVIDIA's CUDA software ecosystem creates a significant switching cost moat that AMD's ROCm platform has struggled to overcome. If NVIDIA maintains its software ecosystem advantage, AMD's AI accelerator market share gains may be limited.

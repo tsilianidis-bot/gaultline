@@ -34,12 +34,12 @@ The combination of these inputs produces FAULTLINE's PLTR regime fit score (0-10
 
 Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels (the price at which PLTR broke out of consolidation ranges) become support after the breakout. Major round numbers attract significant options positioning.
 
-Resistance Clusters: Previous all-time highs before they were broken become resistance if the stock pulls back.
+Resistance Clusters: Prior peaks before they were broken become resistance if the stock pulls back.
 
 Technical Context: PLTR has historically exhibited high volatility relative to the broader market (beta approximately 1.8-2.2). This means PLTR tends to amplify both upside and downside moves relative to the S&P 500. FAULTLINE's signal engine accounts for this elevated beta in the risk score calculation.`}
       riskFactors={`PLTR faces five primary risk factors that FAULTLINE monitors:
 
-1. Valuation Multiple Risk: PLTR trades at a significant premium to traditional software companies — often 50-100x forward earnings. In a risk-off environment or during periods of software sector multiple compression, PLTR's high valuation creates significant downside risk.
+1. Valuation Multiple Risk: PLTR has historically traded at a significant premium to traditional software companies. In a risk-off environment or during periods of software sector multiple compression, PLTR's high valuation creates significant downside risk.
 
 2. Government Contract Concentration: A significant portion of PLTR's revenue comes from U.S. government contracts. Changes in government spending priorities, contract renewals, or political dynamics could affect revenue predictability.
 

@@ -284,7 +284,7 @@ describe("public claims truth: QA nits on 58bc321 (PR #56 r11)", () => {
   it("AIStocksDashboard describes the 32.4% AI concentration as a static baseline", () => {
     const text = read("client/src/pages/seo/AIStocksDashboard.tsx");
     expect(text).not.toMatch(/AI Bubble Monitor tracks this concentration risk as new data is published/);
-    expect(text).toContain("static 32.4% AI-concentration baseline (a fixed reference value, not a live market-cap feed)");
+    expect(text).toContain("static 32.4% AI-concentration baseline (a fixed reference value with no live source and no published as-of date; not a live market-cap feed)");
   });
 
   it("ValidationLab's evidence-family counts match the FMOS Evidence engine", () => {
@@ -296,5 +296,60 @@ describe("public claims truth: QA nits on 58bc321 (PR #56 r11)", () => {
     expect(counts.length).toBeGreaterThanOrEqual(2);
     expect(new Set(counts)).toEqual(new Set([String(built.size)]));
     expect(lab).toMatch(new RegExp(`id: 'evidence_families',label: 'Evidence Families',\\s+category: 'Architecture', value: '${built.size}'`));
+  });
+});
+
+describe("public claims truth: no time-sensitive record-high or 'trades at' claims (PR #56 r12)", () => {
+  // Every SEO page (incl. learn/**, .ts and .tsx), the Public* pages, landing
+  // components, MarketingSite and the server-rendered meta/SSR.
+  const seoAll = walkRel("client/src/pages/seo");
+  const files = [...new Set([...seoAll, ...publicSurfaces, "server/seoMeta.ts", "server/publicContentSsr.ts", "server/seoRoutes.ts", "client/src/hooks/useSEO.ts", "client/index.html"])];
+  // "all-time high" / "record high" are time-sensitive; only the past-tense
+  // "then-record high(s)" is allowed.
+  const recordHigh = /(?<!then-)\b(?:all[- ]time|record)[- ]highs?\b|\bhighest[- ]ever\b|\bever[- ]highs?\b/i;
+  // Present-tense trading/valuation facts.
+  const tradesAt = /\b(?:currently|now)\s+trad(?:es|ing)\b|\btrades at\b/i;
+
+  it("flags the original 56a387e lines and allows 'then-record'", () => {
+    expect("Historical Context: AMD reached its all-time high in late 2021 at approximately $164, then fell").toMatch(recordHigh);
+    expect("TAO reached its all-time high in early 2024").toMatch(recordHigh);
+    expect("falling approximately 77% from its all-time high to its October 2022 low").toMatch(recordHigh);
+    expect("Bitcoin led the cycle, reaching new all-time highs in late 2024.").toMatch(recordHigh);
+    expect("Previous all-time highs that became support after being broken.").toMatch(recordHigh);
+    expect("BTC hit a record high of $69,000.").toMatch(recordHigh);
+    expect("the highest ever close").toMatch(recordHigh);
+    expect("AMD set a then-record high in late 2021, then fell approximately 65% to its 2022 low").not.toMatch(recordHigh);
+    expect("Bitcoin led the cycle, setting then-record highs in late 2024.").not.toMatch(recordHigh);
+    expect("PLTR trades at a significant premium to traditional software companies — often 50-100x forward earnings.").toMatch(tradesAt);
+    expect("NVDA currently trades near $180.").toMatch(tradesAt);
+    expect("PLTR has historically traded at a significant premium to traditional software companies.").not.toMatch(tradesAt);
+  });
+
+  it("scans the SEO, Public*, landing and MarketingSite surfaces", () => {
+    expect(files).toContain("client/src/pages/seo/AMDSignal.tsx");
+    expect(files).toContain("client/src/pages/MarketingSite.tsx");
+    expect(files.some((f) => f.startsWith("client/src/pages/seo/learn/"))).toBe(true);
+    expect(files.length).toBeGreaterThan(80);
+  });
+
+  it("no surface states an all-time/record high except as past-tense 'then-record'", () => {
+    const hits = files.flatMap((path) =>
+      read(path).split("\n").flatMap((line, i) => (recordHigh.test(line) ? [`${path}:${i + 1}`] : [])),
+    );
+    expect(hits).toEqual([]);
+  });
+
+  it("no surface states a present-tense trading level or multiple", () => {
+    const hits = files.flatMap((path) =>
+      read(path).split("\n").flatMap((line, i) => (tradesAt.test(line) ? [`${path}:${i + 1}`] : [])),
+    );
+    expect(hits).toEqual([]);
+  });
+
+  it("the AMD historical context carries no price figure", () => {
+    const line = read("client/src/pages/seo/AMDSignal.tsx").split("\n").find((l) => l.startsWith("Historical Context: AMD"));
+    expect(line).toBeDefined();
+    expect(line).toContain("AMD set a then-record high in late 2021");
+    expect(line).not.toMatch(/\$\d/);
   });
 });

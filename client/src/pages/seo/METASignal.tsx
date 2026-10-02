@@ -30,11 +30,11 @@ AI Infrastructure ROI: Meta is investing heavily in AI infrastructure. The marke
 Regulatory and Antitrust Risk: Meta faces ongoing regulatory scrutiny in the U.S. and EU, including antitrust investigations, data privacy enforcement, and content moderation requirements. Regulatory developments are a qualitative input to the META signal.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels and all-time highs that became support. Major round numbers.
+Major Support Zones: The 200-day moving average is the primary long-term support. Previous breakout levels and prior peaks that became support. Major round numbers.
 
-Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
+Resistance Clusters: Prior peaks before they were broken, and major psychological round numbers.
 
-Historical Context: META experienced one of the most dramatic large-cap drawdowns in market history in 2022 — falling approximately 77% from its all-time high to its October 2022 low — driven by a combination of revenue deceleration, metaverse spending concerns, and macro headwinds. The subsequent recovery to new all-time highs by 2024 demonstrated the resilience of META's core advertising business.`}
+Historical Context: META experienced one of the most dramatic large-cap drawdowns in market history in 2022 — falling approximately 77% from its then-record high to its October 2022 low — driven by a combination of revenue deceleration, metaverse spending concerns, and macro headwinds. The subsequent recovery to then-record highs by 2024 demonstrated the resilience of META's core advertising business.`}
       riskFactors={`META faces five primary risk factors that FAULTLINE monitors:
 
 1. Advertising Recession Risk: A significant economic slowdown or recession would reduce corporate advertising budgets, directly impressing META's revenue. The 2022 experience demonstrated this vulnerability — META's revenue declined year-over-year for the first time in its history.

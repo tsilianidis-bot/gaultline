@@ -32,9 +32,9 @@ Elon Musk Factor: TSLA's valuation is uniquely tied to Elon Musk's perceived exe
 Macro Regime Alignment: TSLA is a high-beta growth stock. In LOW RISK macro environments (FAULTLINE Pressure Index below 25), TSLA tends to outperform. In HIGH STRESS environments, TSLA's high valuation multiple creates significant downside risk.`}
       keyLevels={`FAULTLINE does not publish price targets or support/resistance levels on this page. How technical levels are commonly read:
 
-Major Support Zones: The 200-day moving average is the primary long-term support. Previous all-time highs that became support after being broken. Major round numbers.
+Major Support Zones: The 200-day moving average is the primary long-term support. Prior peaks that became support after being broken. Major round numbers.
 
-Resistance Clusters: Previous all-time highs before they were broken, and major psychological round numbers.
+Resistance Clusters: Prior peaks before they were broken, and major psychological round numbers.
 
 Historical Volatility Context: TSLA is one of the most volatile large-cap stocks in the market, with historical beta of approximately 2.0-2.5 relative to the S&P 500. Drawdowns from cycle highs have exceeded 70% in bear market phases (2022: -73% peak to trough). This elevated volatility is a core feature of TSLA's risk profile.`}
       riskFactors={`TSLA faces five primary risk factors that FAULTLINE monitors:
