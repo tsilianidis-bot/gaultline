@@ -69,7 +69,7 @@ describe("NOW destination composition", () => {
 
     expect(nowSource).toContain("formatCanonicalScore(pressure)");
     expect(hero).toContain("formatCanonicalScore(score * 10)");
-    expect(briefing).toContain("formatCanonicalScore(overall.score * 10)");
+    expect(briefing).toContain("formatCanonicalScore(score10 * 10)");
     expect(contextStrip).toContain("formatCanonicalScore(canonicalPressure ?? overall.score * 10)");
     expect(synthesis).toContain("formatCanonicalScore(canonicalState.pressureIndex ?? 0)");
     expect(narrativeBanner).toContain("formatCanonicalScore(output.pressureScore)");

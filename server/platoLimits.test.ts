@@ -5,10 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { InvokeParams, InvokeResult } from "./_core/llm";
 import type { TrpcContext } from "./_core/context";
 
-const engine = vi.hoisted(() => ({ ask: vi.fn() }));
+const engine = vi.hoisted(() => ({ ask: vi.fn(), greeting: vi.fn() }));
 vi.mock("./ashaEngine", async importOriginal => ({
   ...(await importOriginal<typeof import("./ashaEngine")>()),
   askAsha: engine.ask,
+  generateAshaDailyGreeting: engine.greeting,
 }));
 
 import { appRouter } from "./routers";
@@ -18,6 +19,7 @@ import { PlatoUnavailableError, unusableAnswerError } from "./plato/errors";
 import {
   PLATO_DEFAULT_GLOBAL_DAILY_CALLS,
   PLATO_DEFAULT_MAX_OUTPUT_TOKENS,
+  PLATO_DEFAULT_USER_DAILY_GREETINGS,
   PLATO_DEFAULT_USER_DAILY_QUESTIONS,
   PlatoUsageCounter,
   platoUsage,
@@ -52,6 +54,7 @@ const askInput = { userMessage: "Is credit stress building?", history: [], pageC
 beforeEach(() => {
   platoUsage.reset();
   engine.ask.mockReset();
+  engine.greeting.mockReset();
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 afterEach(() => {
@@ -61,16 +64,16 @@ afterEach(() => {
 });
 
 describe("PLATO limit defaults and env overrides", () => {
-  it("defaults live in code: 50 questions per user per day, 2000 calls per day, 8192 output tokens", () => {
-    expect(readPlatoLimits({})).toEqual({ userDailyQuestions: 50, globalDailyCalls: 2000, maxOutputTokens: 8192 });
-    expect([PLATO_DEFAULT_USER_DAILY_QUESTIONS, PLATO_DEFAULT_GLOBAL_DAILY_CALLS, PLATO_DEFAULT_MAX_OUTPUT_TOKENS]).toEqual([50, 2000, 8192]);
+  it("defaults live in code: 50 questions and 10 greetings per user per day, 2000 calls per day, 8192 output tokens", () => {
+    expect(readPlatoLimits({})).toEqual({ userDailyQuestions: 50, userDailyGreetings: 10, globalDailyCalls: 2000, maxOutputTokens: 8192 });
+    expect([PLATO_DEFAULT_USER_DAILY_QUESTIONS, PLATO_DEFAULT_USER_DAILY_GREETINGS, PLATO_DEFAULT_GLOBAL_DAILY_CALLS, PLATO_DEFAULT_MAX_OUTPUT_TOKENS]).toEqual([50, 10, 2000, 8192]);
   });
 
   it("reads optional env overrides when present and ignores invalid ones", () => {
-    expect(readPlatoLimits({ PLATO_USER_DAILY_QUESTION_LIMIT: "20", PLATO_GLOBAL_DAILY_CALL_LIMIT: "5000", PLATO_MAX_OUTPUT_TOKENS: "4096" }))
-      .toEqual({ userDailyQuestions: 20, globalDailyCalls: 5000, maxOutputTokens: 4096 });
-    expect(readPlatoLimits({ PLATO_USER_DAILY_QUESTION_LIMIT: "0", PLATO_GLOBAL_DAILY_CALL_LIMIT: "lots", PLATO_MAX_OUTPUT_TOKENS: "-1" }))
-      .toEqual({ userDailyQuestions: 50, globalDailyCalls: 2000, maxOutputTokens: 8192 });
+    expect(readPlatoLimits({ PLATO_USER_DAILY_QUESTION_LIMIT: "20", PLATO_USER_DAILY_GREETING_LIMIT: "3", PLATO_GLOBAL_DAILY_CALL_LIMIT: "5000", PLATO_MAX_OUTPUT_TOKENS: "4096" }))
+      .toEqual({ userDailyQuestions: 20, userDailyGreetings: 3, globalDailyCalls: 5000, maxOutputTokens: 4096 });
+    expect(readPlatoLimits({ PLATO_USER_DAILY_QUESTION_LIMIT: "0", PLATO_USER_DAILY_GREETING_LIMIT: "none", PLATO_GLOBAL_DAILY_CALL_LIMIT: "lots", PLATO_MAX_OUTPUT_TOKENS: "-1" }))
+      .toEqual({ userDailyQuestions: 50, userDailyGreetings: 10, globalDailyCalls: 2000, maxOutputTokens: 8192 });
   });
 
   it("clamps the output-token cap to 1024–32768", () => {
@@ -190,6 +193,48 @@ describe("asha.ask: per-signed-in-user daily question cap", () => {
     await expect(caller.asha.ask(askInput)).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
     await expect(caller.asha.ask(askInput)).resolves.toEqual({ reply: "ok" });
     await expect(caller.asha.ask(askInput)).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+  });
+});
+
+describe("asha.dailyGreeting: per-signed-in-user daily greeting cap", () => {
+  const greetingInput = { engineContext: {} };
+
+  it("defaults to 10 greetings per user per day, then returns the typed limit error without calling PLATO", async () => {
+    engine.greeting.mockResolvedValue("Welcome back.");
+    const caller = appRouter.createCaller(ctx(11));
+    for (let i = 0; i < 10; i++) await expect(caller.asha.dailyGreeting(greetingInput)).resolves.toEqual({ greeting: "Welcome back." });
+    const failure = await caller.asha.dailyGreeting(greetingInput).catch(error => error);
+    expect(engine.greeting).toHaveBeenCalledTimes(10);
+    expect(failure).toMatchObject({ code: "TOO_MANY_REQUESTS", message: PLATO_USER_DAILY_LIMIT_MESSAGE });
+    expect(JSON.stringify(failure)).not.toContain("Welcome back");
+    // Another user has their own allowance, and the greeting cap does not consume questions.
+    await expect(appRouter.createCaller(ctx(12)).asha.dailyGreeting(greetingInput)).resolves.toEqual({ greeting: "Welcome back." });
+    expect(platoUsage.questionsUsed(11)).toBe(0);
+  });
+
+  it("reads the optional PLATO_USER_DAILY_GREETING_LIMIT override", async () => {
+    vi.stubEnv("PLATO_USER_DAILY_GREETING_LIMIT", "2");
+    engine.greeting.mockResolvedValue("Welcome back.");
+    const caller = appRouter.createCaller(ctx(13));
+    await caller.asha.dailyGreeting(greetingInput);
+    await caller.asha.dailyGreeting(greetingInput);
+    await expect(caller.asha.dailyGreeting(greetingInput)).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    expect(engine.greeting).toHaveBeenCalledTimes(2);
+  });
+
+  it("is independent of the question cap, and a greeting PLATO could not produce does not count", async () => {
+    vi.stubEnv("PLATO_USER_DAILY_GREETING_LIMIT", "1");
+    vi.stubEnv("PLATO_USER_DAILY_QUESTION_LIMIT", "1");
+    engine.ask.mockResolvedValue({ reply: "ok" });
+    engine.greeting.mockRejectedValueOnce(unusableAnswerError("empty_response", "openai-compatible", "gemini-3-flash-preview"));
+    engine.greeting.mockResolvedValueOnce("Welcome back.");
+    const caller = appRouter.createCaller(ctx(14));
+    await caller.asha.ask(askInput);
+    await expect(caller.asha.dailyGreeting(greetingInput)).rejects.toMatchObject({ code: "SERVICE_UNAVAILABLE" });
+    await expect(caller.asha.dailyGreeting(greetingInput)).resolves.toEqual({ greeting: "Welcome back." });
+    await expect(caller.asha.dailyGreeting(greetingInput)).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
+    expect(platoUsage.greetingsUsed(14)).toBe(1);
+    expect(platoUsage.questionsUsed(14)).toBe(1);
   });
 });
 

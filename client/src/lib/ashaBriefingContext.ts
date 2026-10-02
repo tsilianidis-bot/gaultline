@@ -11,6 +11,12 @@ import type { BrowserMarketMode } from "@/lib/marketStateProjection";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 
 export const BRIEFING_NOT_AVAILABLE = "NOT AVAILABLE";
+/**
+ * Scenario tiles (BULL, CRASH) never show a raw percent. A scenario or probability % renders only
+ * when its contract status is explicitly AVAILABLE (shared/probabilityContract on the
+ * probability-contract stream); otherwise the tile reads "Uncalibrated".
+ */
+export const BRIEFING_SCENARIO_UNCALIBRATED = "Uncalibrated";
 const UNAVAILABLE_COLOR = "rgba(148,163,184,0.55)";
 const CANONICAL_SOURCE = "canonical-market-state";
 
@@ -27,6 +33,8 @@ export interface BriefingDisplay {
   /** Regime shown next to the badge; null when not canonical. */
   badgeRegime: string | null;
   badgeColor: string;
+  /** Canonical pressure on the engine's 0–10 scale, or null when absent/non-finite (never NaN). */
+  pressureScore10: number | null;
   stats: BriefingStat[];
 }
 
@@ -66,6 +74,22 @@ function finite(value: number | null | undefined): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+type ScenarioKey = "bullProbability" | "crashProbability";
+
+/**
+ * Text for a scenario tile. Only an explicit AVAILABLE contract status with a valid integer
+ * percent renders a number; the raw engine/projection number is never read here.
+ */
+export function briefingScenarioText(output: EngineOutput, key: ScenarioKey): string {
+  const displays = (output as { probabilityDisplay?: Partial<Record<string, { state?: unknown; percent?: unknown }>> }).probabilityDisplay;
+  const display = displays?.[key];
+  const percent = display?.percent;
+  if (display?.state === "AVAILABLE" && typeof percent === "number" && Number.isInteger(percent) && percent >= 0 && percent <= 100) {
+    return `${percent}%`;
+  }
+  return BRIEFING_SCENARIO_UNCALIBRATED;
+}
+
 export function buildBriefingDisplay(output: EngineOutput, mode: BrowserMarketMode | undefined | null): BriefingDisplay {
   if (!isCanonicalMarketMode(mode)) {
     return {
@@ -73,6 +97,7 @@ export function buildBriefingDisplay(output: EngineOutput, mode: BrowserMarketMo
       badgeLabel: BRIEFING_NOT_AVAILABLE,
       badgeRegime: null,
       badgeColor: UNAVAILABLE_COLOR,
+      pressureScore10: null,
       stats: ["STATE", "PRESSURE", "BULL", "CRASH", "ANALOG"].map(label => ({
         label,
         value: BRIEFING_NOT_AVAILABLE,
@@ -81,21 +106,26 @@ export function buildBriefingDisplay(output: EngineOutput, mode: BrowserMarketMo
     };
   }
 
-  const { overall, regime, probability, analogs } = output;
-  const pressureColor = briefingPressureColor(overall.score);
-  const bull = finite(probability?.bullProbability);
-  const crash = finite(probability?.crashProbability);
-  const analog = analogs[0];
+  const { overall, regime, analogs } = output;
+  // Read the canonical pressure robustly: a missing or non-finite score reads NOT AVAILABLE, never NaN.
+  // Same rule as the greeting context: only a score whose source is the canonical MarketState binds.
+  const score10 = overall?.source === CANONICAL_SOURCE ? finite(overall.score) : undefined;
+  const pressureColor = score10 != null ? briefingPressureColor(score10) : UNAVAILABLE_COLOR;
+  const bull = briefingScenarioText(output, "bullProbability");
+  const crash = briefingScenarioText(output, "crashProbability");
+  const regimeLabel = nonEmpty(regime?.label);
+  const analog = analogs?.[0];
   return {
     available: true,
-    badgeLabel: briefingPressureLabel(overall.score),
-    badgeRegime: regime.label,
+    badgeLabel: score10 != null ? briefingPressureLabel(score10) : BRIEFING_NOT_AVAILABLE,
+    badgeRegime: regimeLabel ?? null,
     badgeColor: pressureColor,
+    pressureScore10: score10 ?? null,
     stats: [
-      { label: "STATE", value: regime.label.split(" ")[0] ?? regime.label, color: regime.color },
-      { label: "PRESSURE", value: formatCanonicalScore(overall.score * 10), color: pressureColor },
-      { label: "BULL", value: bull != null ? `${bull}%` : "\u2014", color: "#00FF88" },
-      { label: "CRASH", value: crash != null ? `${crash}%` : "\u2014", color: "#FF2D55" },
+      { label: "STATE", value: regimeLabel ? (regimeLabel.split(" ")[0] ?? regimeLabel) : BRIEFING_NOT_AVAILABLE, color: regimeLabel ? regime.color : UNAVAILABLE_COLOR },
+      { label: "PRESSURE", value: score10 != null ? formatCanonicalScore(score10 * 10) : BRIEFING_NOT_AVAILABLE, color: pressureColor },
+      { label: "BULL", value: bull, color: bull === BRIEFING_SCENARIO_UNCALIBRATED ? UNAVAILABLE_COLOR : "#00FF88" },
+      { label: "CRASH", value: crash, color: crash === BRIEFING_SCENARIO_UNCALIBRATED ? UNAVAILABLE_COLOR : "#FF2D55" },
       { label: "ANALOG", value: analog?.era?.split(" ").slice(0, 2).join(" ") ?? "\u2014", color: "#00E5FF" },
     ],
   };
@@ -103,7 +133,8 @@ export function buildBriefingDisplay(output: EngineOutput, mode: BrowserMarketMo
 
 /**
  * Context for the post-login briefing greeting. Non-canonical: nothing (the server reads its own
- * canonical state). Canonical: canonical values only, and never a confidence (none exists here).
+ * canonical state). Canonical: canonical values only, and never a confidence (none exists here)
+ * and never a scenario or probability percent.
  */
 export function buildBriefingGreetingContext(
   output: EngineOutput,

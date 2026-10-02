@@ -68,6 +68,54 @@ export function getAshaContextProvenance(
   };
 }
 
+/** What the model is told in place of any scenario or probability percent. */
+export const PLATO_SCENARIO_WITHHELD = "Uncalibrated";
+
+/**
+ * Outlook as sent to PLATO: no scenario, regime or transition percent and no confidence number.
+ * Owner rule: a scenario/probability % may be shown only when its contract status is AVAILABLE,
+ * and none is today, so the model gets the status text and the non-numeric evidence only.
+ */
+/**
+ * Outlook prose can embed a scenario/transition percent (e.g. "(60% historical frequency)").
+ * Every percent is replaced with the withheld status, except an analog similarity, which is
+ * regime resemblance, not a probability.
+ */
+export function withholdScenarioPercents(text: string): string {
+  return text
+    .replace(/\(\s*\d+(?:\.\d+)?\s*%(?!\s*similarity)[^)]*\)/gi, `(${PLATO_SCENARIO_WITHHELD})`)
+    .replace(/\d+(?:\.\d+)?\s*%(?!\s*similarity)(?:\s+(?:historical frequency|probability|chance|likelihood|odds))?/gi, PLATO_SCENARIO_WITHHELD);
+}
+
+export function outlookForModel(outlook: CanonicalMarketState["outlook"]): Record<string, unknown> {
+  const probabilities = outlook.probabilities;
+  const transitions = outlook.transitionProbabilities;
+  return {
+    scenarioProbabilities: PLATO_SCENARIO_WITHHELD,
+    scenarioBasis: {
+      primaryDriver: probabilities?.primaryDriver,
+      evidenceBasis: probabilities?.evidenceBasis,
+      historicalBasis: probabilities?.historicalBasis,
+    },
+    transitionProbabilities: PLATO_SCENARIO_WITHHELD,
+    transitionBasis: {
+      historicalBasis: transitions?.historicalBasis,
+      currentEvidence: transitions?.currentEvidence,
+    },
+    highestProbabilityPath: typeof outlook.highestProbabilityPath === "string"
+      ? withholdScenarioPercents(outlook.highestProbabilityPath)
+      : outlook.highestProbabilityPath,
+    invalidationConditions: outlook.invalidationConditions,
+    topAnalog: outlook.topAnalog,
+  };
+}
+
+/** Client page supplement without any probability number. */
+function pageSupplementForModel(page: AshaPageContext): AshaPageContext {
+  const { transitionProbability: _withheld, ...rest } = page;
+  return rest;
+}
+
 export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): string {
   const { marketState } = context;
   const destination = context.destination
@@ -94,7 +142,7 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
       evidenceConsensus: marketState.why.evidenceConsensus,
       evidenceFamilies: marketState.why.evidenceFamilies.slice(0, 10),
     },
-    outlook: marketState.outlook,
+    outlook: outlookForModel(marketState.outlook),
     watch: {
       developingConditions: marketState.watch.developingConditions.slice(0, 6),
       activePatterns: marketState.watch.activePatterns.slice(0, 6),
@@ -106,7 +154,7 @@ export function buildAshaCanonicalContextBlock(context: AshaGatewayContext): str
     act: marketState.act,
     history: marketState.history,
     questionAnalysis: context.questionAnalysis ?? null,
-    pageSupplement: context.page,
+    pageSupplement: pageSupplementForModel(context.page),
   };
 
   const scopeRule = context.questionAnalysis?.analysisScope === "MARKET"

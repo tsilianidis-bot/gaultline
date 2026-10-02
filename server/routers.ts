@@ -3408,7 +3408,15 @@ export const appRouter = router({
           previousPressureScore: z.number().optional(),
         }).default({}),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        // Per-signed-in-user daily greeting cap, so one user cannot drain the global PLATO cap
+        // (in-memory, per process; see server/plato/limits.ts).
+        const userDailyGreetings = readPlatoLimits().userDailyGreetings;
+        if (!platoUsage.tryReserveUserGreeting(ctx.user.id, userDailyGreetings)) {
+          const mapped = mapAshaProcedureError(platoDailyLimitError("user"));
+          log.warn("[PLATO] daily greeting unavailable", { code: mapped.code, reason: "user_daily_greeting_limit", limit: userDailyGreetings });
+          throw mapped;
+        }
         try {
           const greeting = await generateAshaDailyGreeting({
             userName: input.userName,
@@ -3416,6 +3424,8 @@ export const appRouter = router({
           });
           return { greeting };
         } catch (error) {
+          // PLATO produced no greeting: it does not count against the user's daily greeting cap.
+          if (error instanceof PlatoUnavailableError) platoUsage.releaseUserGreeting(ctx.user.id);
           const mapped = mapAshaProcedureError(error);
           log.warn("[PLATO] daily greeting unavailable", { code: mapped.code, ...platoFailureLogFields(error) });
           throw mapped;

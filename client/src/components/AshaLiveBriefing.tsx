@@ -164,7 +164,8 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
   const color = canonical ? output.regime.color : "#00E5FF";
   const ashaRegimeState: AshaRegimeState = !canonical
     ? "calm"
-    : overall.score >= 7 ? "critical" : overall.score >= 4.5 ? "rising" : "calm";
+    : display.pressureScore10 == null ? "calm"
+    : display.pressureScore10 >= 7 ? "critical" : display.pressureScore10 >= 4.5 ? "rising" : "calm";
   const pressureColor = display.badgeColor;
   const pressureLabel = display.badgeLabel;
 
@@ -682,7 +683,7 @@ export default function AshaLiveBriefing({ onContinue }: AshaLiveBriefingProps) 
             animation: "asha-briefing-in 0.5s cubic-bezier(0.23,1,0.32,1) 0.6s both",
           }}
         >
-          <SeismicWave color={color} score={canonical ? overall.score : 0} idleCalm={idleCalm} />
+          <SeismicWave color={color} score={canonical ? (display.pressureScore10 ?? 0) : 0} idleCalm={idleCalm} />
         </div>
       </div>
       <style>{`

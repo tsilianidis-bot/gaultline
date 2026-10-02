@@ -4,6 +4,7 @@
  * Defaults live here; each can be overridden by an optional env variable when it is
  * set (none are set in production today, and setting them is James's call):
  * - PLATO_USER_DAILY_QUESTION_LIMIT  per signed-in user, asha.ask questions per UTC day (default 50)
+ * - PLATO_USER_DAILY_GREETING_LIMIT per signed-in user, asha.dailyGreeting calls per UTC day (default 10)
  * - PLATO_GLOBAL_DAILY_CALL_LIMIT    all PLATO provider calls per UTC day, retries, fallbacks,
  *                                    corrections and greetings included (default 2000)
  * - PLATO_MAX_OUTPUT_TOKENS          max_tokens sent on every PLATO call (default 8192, clamped 1024–32768).
@@ -15,6 +16,7 @@
 import { log } from "../logger";
 
 export const PLATO_DEFAULT_USER_DAILY_QUESTIONS = 50;
+export const PLATO_DEFAULT_USER_DAILY_GREETINGS = 10;
 export const PLATO_DEFAULT_GLOBAL_DAILY_CALLS = 2000;
 export const PLATO_DEFAULT_MAX_OUTPUT_TOKENS = 8192;
 export const PLATO_MIN_OUTPUT_TOKENS = 1024;
@@ -22,6 +24,7 @@ export const PLATO_MAX_OUTPUT_TOKENS_CEILING = 32768;
 
 export interface PlatoLimits {
   userDailyQuestions: number;
+  userDailyGreetings: number;
   globalDailyCalls: number;
   maxOutputTokens: number;
 }
@@ -38,6 +41,7 @@ export function readPlatoLimits(env: NodeJS.ProcessEnv = process.env): PlatoLimi
   const tokens = readPositiveInt(env.PLATO_MAX_OUTPUT_TOKENS) ?? PLATO_DEFAULT_MAX_OUTPUT_TOKENS;
   return {
     userDailyQuestions: readPositiveInt(env.PLATO_USER_DAILY_QUESTION_LIMIT) ?? PLATO_DEFAULT_USER_DAILY_QUESTIONS,
+    userDailyGreetings: readPositiveInt(env.PLATO_USER_DAILY_GREETING_LIMIT) ?? PLATO_DEFAULT_USER_DAILY_GREETINGS,
     globalDailyCalls: readPositiveInt(env.PLATO_GLOBAL_DAILY_CALL_LIMIT) ?? PLATO_DEFAULT_GLOBAL_DAILY_CALLS,
     maxOutputTokens: Math.min(PLATO_MAX_OUTPUT_TOKENS_CEILING, Math.max(PLATO_MIN_OUTPUT_TOKENS, tokens)),
   };
@@ -53,6 +57,7 @@ export class PlatoUsageCounter {
   private day = "";
   private globalCalls = 0;
   private readonly userQuestions = new Map<string, number>();
+  private readonly userGreetings = new Map<string, number>();
 
   constructor(private readonly now: () => number = Date.now) {}
 
@@ -62,7 +67,28 @@ export class PlatoUsageCounter {
       this.day = today;
       this.globalCalls = 0;
       this.userQuestions.clear();
+      this.userGreetings.clear();
     }
+  }
+
+  private tryReserve(map: Map<string, number>, scope: string, userId: string | number, limit: number): boolean {
+    this.roll();
+    const key = String(userId);
+    const used = map.get(key) ?? 0;
+    if (used >= limit) {
+      log.warn("[PLATO] daily limit reached", { scope, limit });
+      return false;
+    }
+    map.set(key, used + 1);
+    return true;
+  }
+
+  private release(map: Map<string, number>, userId: string | number): void {
+    this.roll();
+    const key = String(userId);
+    const used = map.get(key) ?? 0;
+    if (used <= 1) map.delete(key);
+    else map.set(key, used - 1);
   }
 
   /** Counts one provider call. False (nothing counted) when today's global cap is reached. */
@@ -78,24 +104,22 @@ export class PlatoUsageCounter {
 
   /** Reserves one question for this user. False (nothing reserved) when the user's cap is reached. */
   tryReserveUserQuestion(userId: string | number, limit: number): boolean {
-    this.roll();
-    const key = String(userId);
-    const used = this.userQuestions.get(key) ?? 0;
-    if (used >= limit) {
-      log.warn("[PLATO] daily limit reached", { scope: "user", limit });
-      return false;
-    }
-    this.userQuestions.set(key, used + 1);
-    return true;
+    return this.tryReserve(this.userQuestions, "user", userId, limit);
   }
 
   /** Gives a reserved question back (PLATO could not answer it). */
   releaseUserQuestion(userId: string | number): void {
-    this.roll();
-    const key = String(userId);
-    const used = this.userQuestions.get(key) ?? 0;
-    if (used <= 1) this.userQuestions.delete(key);
-    else this.userQuestions.set(key, used - 1);
+    this.release(this.userQuestions, userId);
+  }
+
+  /** Reserves one daily greeting for this user. False (nothing reserved) when the user's greeting cap is reached. */
+  tryReserveUserGreeting(userId: string | number, limit: number): boolean {
+    return this.tryReserve(this.userGreetings, "user_greeting", userId, limit);
+  }
+
+  /** Gives a reserved greeting back (PLATO could not produce it). */
+  releaseUserGreeting(userId: string | number): void {
+    this.release(this.userGreetings, userId);
   }
 
   snapshot(): { day: string; globalCalls: number; users: number } {
@@ -108,10 +132,16 @@ export class PlatoUsageCounter {
     return this.userQuestions.get(String(userId)) ?? 0;
   }
 
+  greetingsUsed(userId: string | number): number {
+    this.roll();
+    return this.userGreetings.get(String(userId)) ?? 0;
+  }
+
   reset(): void {
     this.day = "";
     this.globalCalls = 0;
     this.userQuestions.clear();
+    this.userGreetings.clear();
   }
 }
 
