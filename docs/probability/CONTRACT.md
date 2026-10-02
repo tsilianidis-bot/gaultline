@@ -87,3 +87,6 @@ After #58 merges:
 3. `AshaLiveBriefing.tsx`: tiles render only canonical values (Unavailable when no canonical state; never DEFAULT_INDICATORS engine output); remove the hardcoded `regimeConfidence: 0.75` prompt input; bull/crash tiles → `engineProbabilityText`.
 4. `AshaPanel.tsx`, `OracleBriefing.tsx`: replace `${...Probability}%` with `engineProbabilityText` / `probabilityText(claim)`.
 5. Tests: PLATO context snapshot contains "Uncalibrated"/"Not offered" and no `\d+%` next to bull/bear/crash/recession.
+
+## Yield Curve (10Y–2Y) & 10Y Level vector: reachable range
+The engine (`server/pressure/engine.ts` `scoreVolatilityRegime`) scores `0.6 × spreadScore + 0.4 × rateScore`, where spreadScore is 90 at most (10Y–2Y below −1 pp) and rateScore is 50 at most (10Y ≥ 6%). The highest reachable score is therefore **74**, so any band at ≥75 can never show for this vector. A steep, positive curve scores 20 on spread (low pressure). The copy in `seismographUnified.ts` and `preFlight.ts` used to say "steep re-steepening" means high pressure. It now matches the engine: the top band means a deeply inverted curve plus an elevated 10Y yield. Rescaling the vector, or dropping the unreachable band, is a model change and needs James.

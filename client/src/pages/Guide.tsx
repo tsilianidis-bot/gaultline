@@ -216,7 +216,7 @@ const SECTIONS: Section[] = [
             {[
               { name: "Regime Banner", desc: "Shows the current macro regime label (e.g. 'Late Cycle Stress', 'Expansion', 'Crisis Mode') with a 0–10 systemic risk score and a colour-coded severity indicator. The regime is recalculated every time FRED data refreshes." },
               { name: "Live FRED Ticker", desc: "A scrolling marquee at the top of the screen showing the latest available values for 10Y yield, 30Y yield, HY spread, CPI, SOFR, and unemployment rate. Values update automatically." },
-              { name: "Bull vs Crash Probability", desc: "A probability gauge showing the engine's current estimate of bullish continuation vs systemic crash risk, expressed as a percentage split. Derived from the composite regime score." },
+              { name: "Scenario Readings", desc: "Bull/neutral/bear scenario weights are evidence-vote shares with no defined event, horizon, or calibration record, so they show as Uncalibrated. Crash, recession, stagflation, and soft-landing probabilities are Not offered." },
               { name: "Risk Domain Heatmap", desc: "A 6-cell grid showing the stress level for each domain: Treasury Stress, Inflation Pressure, Credit Risk, AI Bubble Risk, Liquidity Stress, and Recession Risk. Each cell is colour-coded from green (low) to red (critical)." },
               { name: "AI Intelligence Narrative", desc: "A live AI-generated paragraph summarising the current macro environment in institutional language. Updates with the regime engine on each data refresh." },
               { name: "Top Signals Today", desc: "A curated list of the highest-scoring tickers from the Signals screener given the current regime, surfaced automatically by the engine." },

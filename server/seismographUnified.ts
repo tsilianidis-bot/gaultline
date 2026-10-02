@@ -798,10 +798,10 @@ export function buildEvidenceFamilies(
       currentValue: `${vo}/100`,
       historicalContext: `6-month average: ${Math.round(avgVol)}/100. ${
         vo > 70
-          ? "Curve shape and the 10Y level are in a high-pressure band (deep inversion or steep re-steepening)."
+          ? "Curve shape and the 10Y level are in the engine's highest band: a deeply inverted 10Y–2Y curve (below −1 pp) with an elevated 10Y yield. A steep curve scores low in this engine."
           : vo > 55
-          ? "Curve shape and the 10Y level are adding elevated rate-structure pressure."
-          : "Curve shape and the 10Y level are adding limited rate-structure pressure."
+          ? "Curve shape and the 10Y level are adding elevated rate-structure pressure (an inverted 10Y–2Y curve and/or a high 10Y yield)."
+          : "Curve shape and the 10Y level are adding limited rate-structure pressure (a flat-to-positive 10Y–2Y curve scores low)."
       }`,
       trend:
         vo > avgVol + 5

@@ -306,7 +306,7 @@ function buildVolatilityCondition(vectors: RiskVector[], pressure: FaultlinePres
     level,
     score: volScore,
     summary: volScore >= 65
-      ? "Yield-curve and 10Y-level pressure is high (deep inversion or steep re-steepening)."
+      ? "Yield-curve and 10Y-level pressure is high (an inverted 10Y–2Y curve with an elevated 10Y yield; a steep curve scores low)."
       : volScore >= 40
       ? "Yield-curve and 10Y-level pressure is moderate."
       : "Yield-curve and 10Y-level pressure is limited.",
