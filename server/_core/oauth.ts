@@ -65,10 +65,34 @@ async function runOAuthStep<T>(
   }
 }
 
-function respondOAuthCallbackFailure(res: Response, error: unknown): void {
+/** Browser-facing callback failure: a static page with a way back to sign-in (no raw JSON dead end).
+ * Clears the post-auth flag so "Sign in again" at /app shows the sign-in gate rather than guest mode. */
+export function renderOAuthCallbackFailurePage(errorCode: OAuthCallbackErrorCode): string {
+  const message = SAFE_OAUTH_CALLBACK_MESSAGES[errorCode];
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Sign-in did not complete | FAULTLINE</title></head>
+<body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#000;color:rgba(255,255,255,0.8);font-family:system-ui,sans-serif;text-align:center;padding:24px">
+<main style="max-width:420px">
+<h1 style="font-size:20px;letter-spacing:0.12em;color:#00E5FF">SIGN-IN DID NOT COMPLETE</h1>
+<p>${message} Please sign in again.</p>
+<p style="font-size:12px;opacity:0.5">Error code: ${errorCode}</p>
+<p><a href="/app" style="color:#00E5FF">Sign in again</a> &middot; <a href="/" style="color:rgba(255,255,255,0.6)">Back to FAULTLINE</a></p>
+</main>
+<script>try{sessionStorage.removeItem("fl_post_auth_asha")}catch(e){}</script>
+</body></html>`;
+}
+
+function respondOAuthCallbackFailure(req: Request, res: Response, error: unknown): void {
   const errorCode = resolveOAuthCallbackErrorCode(error);
   console.error(`[OAuth] Callback failed (${errorCode})`, error);
-  res.status(500).json(publicOAuthCallbackFailure(errorCode));
+  res.status(500).set("Cache-Control", "no-store");
+  // Browser navigations (Accept: text/html) get a page with a link back; API clients keep the JSON body.
+  if (req.accepts(["json", "html"]) === "html") {
+    res.type("html").send(renderOAuthCallbackFailurePage(errorCode));
+    return;
+  }
+  res.json(publicOAuthCallbackFailure(errorCode));
 }
 
 function getQueryParam(req: Request, key: string): string | undefined {
@@ -87,7 +111,7 @@ export function registerOAuthRoutes(app: Express) {
     }
 
     if (!isOAuthConfigured()) {
-      respondOAuthCallbackFailure(res, new OAuthCallbackStepError("token_exchange_failed", new OAuthInactiveError()));
+      respondOAuthCallbackFailure(req, res, new OAuthCallbackStepError("token_exchange_failed", new OAuthInactiveError()));
       return;
     }
 
@@ -142,7 +166,7 @@ export function registerOAuthRoutes(app: Express) {
 
       res.redirect(302, "/app");
     } catch (error) {
-      respondOAuthCallbackFailure(res, error);
+      respondOAuthCallbackFailure(req, res, error);
     }
   });
 }
