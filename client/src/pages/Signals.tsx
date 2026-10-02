@@ -45,9 +45,14 @@ interface LiveQuote {
   changePercent: number;
   volume: number;
   volumeMillions: number;
-  timestamp: number;
+  /** Market time of the quote (ms); null when the server has none — the as-of is then omitted. */
+  timestamp: number | null;
   marketStatus: 'open' | 'closed' | 'extended' | 'unknown';
   isLive: boolean;
+  /** Server delay flag (Yahoo ~15-min delayed): a delayed quote is DELAYED, never LIVE. */
+  isDelayed?: boolean;
+  /** Response source stamped on by the page (see quoteMap). */
+  feedSource?: 'live' | 'stale' | 'fallback' | null;
   sparkline: number[];
 }
 
@@ -126,12 +131,9 @@ function volumeSurge(s: SignalStock, liveVol?: number) {
   const vol = liveVol !== undefined ? liveVol : s.volume;
   return (vol / s.avgVolume).toFixed(1);
 }
+/** Feed fetch time, in ET with its label (never an unlabelled browser-local time). */
 function fmtTimestamp(ts: string | null): string {
-  if (!ts) return '—';
-  try {
-    const d = new Date(ts);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch { return '—'; }
+  return formatEt(ts) ?? '—';
 }
 
 /**
@@ -141,7 +143,8 @@ function fmtTimestamp(ts: string | null): string {
  */
 export function priceLevelsBasis(quote: LiveQuote | undefined, badge: string): string {
   const asOf = quote ? formatEt(quote.timestamp) : null;
-  return `Computed from ${badge} Signals quote · as of ${asOf ?? '—'}`;
+  // As-of is the quote's market time; omitted (never the fetch time) when unknown.
+  return `Computed from ${badge} Signals quote${asOf ? ` · as of ${asOf}` : ''}`;
 }
 
 // ── Trading Action Colors ─────────────────────────────────────
@@ -255,6 +258,16 @@ function RegimeAlignmentBadge({ alignment, score }: {
 }
 
 // ── Signal Tag ────────────────────────────────────────────────
+/** Static catalog tags (signalsData.ts) are descriptors, not signals computed from the quote. */
+function CatalogTagsLabel() {
+  return (
+    <span data-catalog-tags-label style={{
+      fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', letterSpacing: '0.1em',
+      color: 'rgba(100,116,139,0.75)', textTransform: 'uppercase',
+    }}>Catalog tag · static</span>
+  );
+}
+
 function SignalTag({ signal }: { signal: FaultlineSignal }) {
   const c = SIGNAL_COLORS[signal];
   return (
@@ -556,8 +569,10 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
       )}
 
       {/* Signal tags — static catalog descriptors; withheld when there is no quote
-          so an UNAVAILABLE card never shows momentum/breakout-style tags. */}
-      {quote.available && <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: expanded ? '8px' : 0 }}>
+          so an UNAVAILABLE card never shows momentum/breakout-style tags, and
+          labelled static so they never read as a signal computed from the live price. */}
+      {quote.available && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px', marginBottom: expanded ? '8px' : 0 }}>
+        <CatalogTagsLabel />
         {stock.signals.slice(0, 2).map(sig => (
           <SignalTag key={sig} signal={sig} />
         ))}
@@ -569,6 +584,22 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           }}>+{stock.signals.length - 2}</span>
         )}
       </div>}
+
+      {/* Details toggle: the expanded panel (KEY PRICE LEVELS, catalog notes) is
+          reachable without leaving the card; the card body still opens the ticker page. */}
+      <button
+        type="button"
+        data-card-details-toggle
+        aria-expanded={expanded}
+        onClick={e => { e.stopPropagation(); setExpanded(x => !x); }}
+        onKeyDown={e => e.stopPropagation()}
+        style={{
+          marginTop: '6px', padding: '2px 6px', cursor: 'pointer',
+          fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px', letterSpacing: '0.12em',
+          color: 'rgba(148,163,184,0.85)', background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)', borderRadius: '2px',
+        }}
+      >{expanded ? 'HIDE DETAILS ▴' : 'DETAILS ▾'}</button>
 
       {/* Expanded details */}
       {expanded && (
@@ -1010,8 +1041,9 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             </div>
           )}
 
-          {/* All signals */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+          {/* All signals — static catalog tags, labelled as such (not computed from the quote) */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px' }}>
+            <CatalogTagsLabel />
             {stock.signals.map(sig => <SignalTag key={sig} signal={sig} />)}
           </div>
 
@@ -1443,8 +1475,9 @@ function SignalsInner() {
 
   const quoteMap = useMemo(() => {
     const map = new Map<string, LiveQuote>();
+    // Each quote carries the response source, so a stale-cache quote is never badged LIVE.
     for (const q of quotesData?.quotes ?? []) {
-      map.set(q.ticker, q);
+      map.set(q.ticker, { ...q, feedSource: quotesData?.source ?? null });
     }
     return map;
   }, [quotesData]);
@@ -1641,7 +1674,7 @@ function SignalsInner() {
   );
 
   // Header badge reflects quote freshness, never the pressure-engine integrity.
-  const pricesBadge = useMemo(() => signalsPriceBadge(quotesData?.quotes), [quotesData?.quotes]);
+  const pricesBadge = useMemo(() => signalsPriceBadge(quotesData?.quotes, quotesData?.source ?? null), [quotesData?.quotes, quotesData?.source]);
 
   // ── Regime color ───────────────────────────────────────────
   const regimeColor = useMemo(() => {

@@ -12,12 +12,25 @@ export interface SignalQuoteLike {
   price: number;
   changePercent: number;
   isLive: boolean;
+  /**
+   * Provider delay flag from the server. Yahoo's chart feed is ~15-min delayed
+   * (the same flag that makes the header strip read OPEN · DELAYED), so a
+   * delayed quote in an open session is DELAYED, never LIVE.
+   */
+  isDelayed?: boolean;
+  /**
+   * The /api/signals/quotes response `source` this quote came in. A quote served
+   * from the stale cache (or as fallback) is never LIVE, whatever its own
+   * isLive flag said when it was cached.
+   */
+  feedSource?: SignalFeedSource | null;
   marketStatus: "open" | "closed" | "extended" | "unknown" | string;
   sparkline?: number[];
   volumeMillions?: number;
 }
 
-export type SignalQuoteBadge = "LIVE" | "DELAYED" | "LAST CLOSE" | "UNAVAILABLE";
+export type SignalQuoteBadge = "LIVE" | "DELAYED" | "LAST CLOSE" | "STALE" | "UNAVAILABLE";
+export type SignalFeedSource = "live" | "stale" | "fallback";
 
 export interface SignalQuoteView {
   available: boolean;
@@ -38,14 +51,27 @@ export function hasUsableSignalQuote(quote: SignalQuoteLike | null | undefined):
   return !!quote && finite(quote.price) && quote.price > 0 && finite(quote.changePercent);
 }
 
-export function signalQuoteBadge(quote: SignalQuoteLike | null | undefined): SignalQuoteBadge {
+/**
+ * Per-quote freshness badge. `source` is the response source (defaults to the
+ * quote's own feedSource): "stale" → STALE, "fallback" → UNAVAILABLE, never LIVE.
+ * LIVE needs a live, non-delayed quote in an open session from a live response.
+ */
+export function signalQuoteBadge(
+  quote: SignalQuoteLike | null | undefined,
+  source: SignalFeedSource | null | undefined = quote?.feedSource,
+): SignalQuoteBadge {
   if (!hasUsableSignalQuote(quote)) return "UNAVAILABLE";
-  if (quote.isLive && quote.marketStatus === "open") return "LIVE";
+  if (source === "fallback") return "UNAVAILABLE";
+  if (source === "stale") return "STALE";
+  if (quote.isLive && quote.marketStatus === "open" && quote.isDelayed !== true) return "LIVE";
   if (quote.marketStatus === "closed") return "LAST CLOSE";
   return "DELAYED";
 }
 
-export function signalQuoteView(quote: SignalQuoteLike | null | undefined): SignalQuoteView {
+export function signalQuoteView(
+  quote: SignalQuoteLike | null | undefined,
+  source: SignalFeedSource | null | undefined = quote?.feedSource,
+): SignalQuoteView {
   if (!hasUsableSignalQuote(quote)) {
     return { available: false, price: null, changePercent: null, priceText: "—", changeText: "—", badge: "UNAVAILABLE", sparkline: [], volumeMillions: null };
   }
@@ -56,7 +82,7 @@ export function signalQuoteView(quote: SignalQuoteLike | null | undefined): Sign
     changePercent: change,
     priceText: `$${quote.price.toFixed(2)}`,
     changeText: `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`,
-    badge: signalQuoteBadge(quote),
+    badge: signalQuoteBadge(quote, source),
     sparkline: Array.isArray(quote.sparkline) ? quote.sparkline : [],
     volumeMillions: finite(quote.volumeMillions) ? quote.volumeMillions : null,
   };
@@ -76,7 +102,7 @@ export function signalsFeedLabel(input: {
   const coverage = `${usable.length}/${input.tickerCount} TICKERS QUOTED${usable.length < input.tickerCount ? " · OTHERS UNAVAILABLE" : ""}`;
   if (input.source === "stale") return { label: "STALE CACHE", coverage };
   if (input.source !== "live" || usable.length === 0) return { label: "FALLBACK MODE", coverage };
-  if (usable.some(q => signalQuoteBadge(q) === "LIVE")) return { label: "YAHOO FINANCE LIVE", coverage };
+  if (usable.some(q => signalQuoteBadge(q, input.source) === "LIVE")) return { label: "YAHOO FINANCE LIVE", coverage };
   if (usable.every(q => q.marketStatus === "closed")) return { label: "YAHOO FINANCE · LAST CLOSE", coverage };
   return { label: "YAHOO FINANCE · DELAYED", coverage };
 }
@@ -87,11 +113,15 @@ export function signalsFeedLabel(input: {
  * quote available, or UNAVAILABLE when there are no usable quotes at all.
  * (The pressure-engine integrity label is NOT a statement about quote freshness.)
  */
-export function signalsPriceBadge(quotes: readonly SignalQuoteLike[] | null | undefined): {
-  label: "LIVE PRICES" | "LAST CLOSE" | "DELAYED" | "UNAVAILABLE";
+export function signalsPriceBadge(
+  quotes: readonly SignalQuoteLike[] | null | undefined,
+  source?: SignalFeedSource | null,
+): {
+  label: "LIVE PRICES" | "LAST CLOSE" | "DELAYED" | "STALE" | "UNAVAILABLE";
   color: "green" | "amber" | "gray";
 } {
-  const badges = new Set((quotes ?? []).map(q => signalQuoteBadge(q)));
+  const badges = new Set((quotes ?? []).map(q => signalQuoteBadge(q, source ?? q?.feedSource)));
+  if (badges.has("STALE")) return { label: "STALE", color: "amber" };
   if (badges.has("LIVE")) return { label: "LIVE PRICES", color: "green" };
   if (badges.has("LAST CLOSE")) return { label: "LAST CLOSE", color: "amber" };
   if (badges.has("DELAYED")) return { label: "DELAYED", color: "amber" };

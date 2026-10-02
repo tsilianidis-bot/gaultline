@@ -9,6 +9,7 @@ import {
   useState, useRef, useEffect, useCallback, useMemo,
 } from 'react';
 import { trpc } from '@/lib/trpc';
+import { signalQuoteBadge } from '@/lib/signalQuoteView';
 import { LineChart, Line, ResponsiveContainer } from 'recharts';
 import { RiskFramework, type RiskLevels } from '@/components/RiskFramework';
 import { trackSignalSearch, trackWatchlistAction } from '@/hooks/useAnalytics';
@@ -33,6 +34,8 @@ interface TickerProfile {
   tradeDate: string;
   marketStatus: 'open' | 'closed' | 'extended' | 'unknown';
   isLive: boolean;
+  /** Server delay flag (Yahoo ~15-min delayed / Polygon prior close). */
+  isDelayed?: boolean;
   source: 'live' | 'stale' | 'fallback';
   cached?: boolean;
   error?: string;
@@ -304,13 +307,15 @@ function StockIntelligenceCard({
                 color: '#F0F4FF', letterSpacing: '0.06em',
               }}>{profile.ticker}</span>
               {profile.isLive && (
+                // Real freshness: Yahoo/Polygon quotes carry isDelayed → DELAYED, not LIVE.
                 <span style={{
                   fontSize: '11px', letterSpacing: '0.1em',
-                  color: '#00D4FF', background: 'rgba(0,212,255,0.08)',
+                  color: signalQuoteBadge(profile) === 'LIVE' ? '#00D4FF' : '#94A3B8',
+                  background: signalQuoteBadge(profile) === 'LIVE' ? 'rgba(0,212,255,0.08)' : 'rgba(255,255,255,0.04)',
                   padding: '2px 5px', borderRadius: '2px',
-                  border: '1px solid rgba(0,212,255,0.15)',
+                  border: `1px solid ${signalQuoteBadge(profile) === 'LIVE' ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.1)'}`,
                   fontFamily: "'IBM Plex Mono', monospace",
-                }}>LIVE</span>
+                }}>{signalQuoteBadge(profile)}</span>
               )}
               {profile.source === 'stale' && (
                 <span style={{
