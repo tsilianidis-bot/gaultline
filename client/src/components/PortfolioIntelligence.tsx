@@ -18,7 +18,8 @@ type IntelMetric = {
   score: number | null;
   level: string;
   driver: string;
-  trend: "rising" | "falling" | "stable";
+  /** null when the input is missing: no trend icon is shown. */
+  trend: "rising" | "falling" | "stable" | null;
   color: string;
 };
 
@@ -69,7 +70,7 @@ function MetricCard({ metric }: { metric: IntelMetric }) {
       {/* Row 1: label + score + trend */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <TrendIcon trend={metric.trend} color={metric.color} />
+          {metric.score !== null && metric.trend !== null && <TrendIcon trend={metric.trend} color={metric.color} />}
           <span style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: "10px",
@@ -107,7 +108,9 @@ function MetricCard({ metric }: { metric: IntelMetric }) {
       </div>
 
       {/* Gauge bar */}
-      <GaugeBar score={metric.score ?? 0} color={metric.color} />
+      {metric.score === null
+        ? <div data-gauge="unavailable" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", lineHeight: "4px", color: "#64748B" }}>—</div>
+        : <GaugeBar score={metric.score} color={metric.color} />}
 
       {/* Expanded: driver + description */}
       {expanded && (

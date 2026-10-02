@@ -26,17 +26,18 @@ const ctx = (): TrpcContext => ({
   res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
 });
 
-const vector = (id: string, score: number) => ({ id, label: id, score, driver: `${id} driver`, trend: "stable" });
-const pressure = (vectors: unknown[]) => ({
+const vector = (id: string, score: number, trend = "stable") => ({ id, label: id, score, driver: `${id} driver`, trend });
+const pressure = (vectors: unknown[], overrides: Record<string, unknown> = {}) => ({
   overallPressure: 33, regime: "Moderate Risk", level: "MODERATE", vectors, alerts: [],
   topAnalog: { label: "2019", description: "Mid-cycle", similarity: 40 }, analogs: [],
   timestamp: "2026-10-02T12:00:00.000Z", dataSource: "live", lastUpdated: "2026-10-02T12:00:00.000Z", priorPressure: null,
+  ...overrides,
 });
 const ALL = ["ai-bubble", "volatility-regime", "macro-sensitivity", "liquidity-stress", "credit-contagion"];
 const VECTOR_METRICS = ["ai-bubble-exposure", "rate-sensitivity", "liquidity-risk", "recession-exposure"];
 
-async function metrics(vectors: unknown[]) {
-  mocks.pressure.mockResolvedValue(pressure(vectors));
+async function metrics(vectors: unknown[], overrides: Record<string, unknown> = {}) {
+  mocks.pressure.mockResolvedValue(pressure(vectors, overrides));
   const result = await appRouter.createCaller(ctx()).portfolio.getIntelligence();
   return Object.fromEntries(result.metrics.map(m => [m.id, m]));
 }
@@ -54,9 +55,10 @@ describe("portfolio.getIntelligence fails closed on missing vector scores", () =
       expect(byId[id].level).toBe("Unavailable");
       expect(byId[id].color).toBe("#64748B");
     }
+    // A missing vector has no trend (no icon), never a "stable" default.
+    for (const id of VECTOR_METRICS) expect(byId[id].trend).toBeNull();
     // Metrics not built from vectors are unchanged.
     expect(byId["portfolio-pressure"].score).toBe(33);
-    expect(byId["concentration-risk"].score).toBe(50); // 0 positions: the position-count heuristic, not a vector default
   });
 
   it("a non-finite vector score is treated as missing", async () => {
@@ -85,5 +87,65 @@ describe("portfolio.getIntelligence fails closed on missing vector scores", () =
     const byId = await metrics(ALL.map(id => vector(id, 60)));
     expect(VECTOR_METRICS.map(id => byId[id].score)).toEqual([60, 60, 60, 60]);
     expect(VECTOR_METRICS.map(id => byId[id].level)).toEqual(["High", "High", "High", "High"]);
+  });
+
+  it("a vector's own trend still passes through when it is present", async () => {
+    const byId = await metrics(ALL.map(id => vector(id, 60, "rising")));
+    expect(VECTOR_METRICS.map(id => byId[id].trend)).toEqual(["rising", "rising", "rising", "rising"]);
+  });
+});
+
+const positions = (n: number) => Array.from({ length: n }, (_, k) => ({ id: k, ticker: `T${k}`, assetType: "Stock" }));
+
+describe("portfolio.getIntelligence: concentration with no positions (r10)", () => {
+  it("0 positions gives null / No positions / neutral colour, never 50 Elevated", async () => {
+    const c = (await metrics(ALL.map(id => vector(id, 60))))["concentration-risk"];
+    expect(c.score).toBeNull();
+    expect(c.level).toBe("No positions");
+    expect(c.color).toBe("#64748B");
+    expect(c.driver).toBe("No positions tracked");
+  });
+
+  it("the position-count heuristic is unchanged for 1 or more positions", async () => {
+    const expected: Array<[number, number, string]> = [[1, 90, "Critical"], [3, 75, "Critical"], [6, 55, "Elevated"], [10, 35, "Moderate"], [11, 20, "Moderate"]];
+    for (const [n, score, level] of expected) {
+      mocks.positions.mockResolvedValue(positions(n));
+      const c = (await metrics(ALL.map(id => vector(id, 60))))["concentration-risk"];
+      expect([c.score, c.level]).toEqual([score, level]);
+    }
+  });
+});
+
+describe("portfolio.getIntelligence: crash vulnerability and regime alignment fail closed (r10)", () => {
+  const BAD = [null, undefined, Number.NaN, Number.POSITIVE_INFINITY, "40"];
+
+  it("a missing or non-finite analog similarity makes crash vulnerability null / Unavailable", async () => {
+    for (const similarity of BAD) {
+      const byId = await metrics(ALL.map(id => vector(id, 60)), { topAnalog: { label: "2019", description: "Mid-cycle", similarity } });
+      const crash = byId["crash-vulnerability"];
+      expect([crash.score, crash.level, crash.color, crash.trend, crash.driver]).toEqual([null, "Unavailable", "#64748B", null, ""]);
+      expect(crash.description).not.toMatch(/NaN|undefined|null|Infinity/);
+      expect(byId["regime-alignment"].score).toBe(67); // pressure 33 is present
+    }
+    const noAnalog = await metrics(ALL.map(id => vector(id, 60)), { topAnalog: undefined });
+    expect(noAnalog["crash-vulnerability"].score).toBeNull();
+  });
+
+  it("a missing or non-finite overall pressure makes crash vulnerability and regime alignment null / Unavailable", async () => {
+    for (const overallPressure of BAD) {
+      const byId = await metrics(ALL.map(id => vector(id, 60)), { overallPressure });
+      for (const id of ["crash-vulnerability", "regime-alignment"]) {
+        const m = byId[id];
+        expect([m.score, m.level, m.color, m.trend, m.driver]).toEqual([null, "Unavailable", "#64748B", null, ""]);
+      }
+    }
+  });
+
+  it("with full inputs both still score as before", async () => {
+    const byId = await metrics(ALL.map(id => vector(id, 60)));
+    // round(40 * 0.85 + 33 * 0.15) = 39; max(0, 100 - 33) = 67
+    expect([byId["crash-vulnerability"].score, byId["crash-vulnerability"].level, byId["crash-vulnerability"].trend]).toEqual([39, "Moderate", "stable"]);
+    expect(byId["crash-vulnerability"].description).toBe("Current conditions match 2019 (40% similarity)");
+    expect([byId["regime-alignment"].score, byId["regime-alignment"].level, byId["regime-alignment"].trend]).toEqual([67, "High", "rising"]);
   });
 });

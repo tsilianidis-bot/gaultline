@@ -597,7 +597,9 @@ export const appRouter = router({
         };
         const UNAVAILABLE_COLOR = "#64748B";
         const vd = (id: string) => vectors.find(v => v.id === id)?.driver ?? "";
-        const vt = (id: string) => vectors.find(v => v.id === id)?.trend ?? "stable";
+        // A missing vector has no trend: null (no trend icon), never a "stable" default.
+        const vt = (id: string) => vectors.find(v => v.id === id)?.trend ?? null;
+        const finite = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 
         // Analyse position composition
         const totalPositions = rows.length;
@@ -611,7 +613,8 @@ export const appRouter = router({
         const stockRatio  = totalPositions > 0 ? stockCount  / totalPositions : 0;
 
         // Concentration: Herfindahl-style — if < 5 positions, concentration is high
-        const concentrationScore = totalPositions === 0 ? 50
+        // No positions: there is nothing to measure, so null ("No positions"), never a 50 default.
+        const concentrationScore = totalPositions === 0 ? null
           : totalPositions === 1 ? 90
           : totalPositions <= 3 ? 75
           : totalPositions <= 6 ? 55
@@ -642,11 +645,15 @@ export const appRouter = router({
         const recessionScore = creditContagion === null || macroSens === null ? null : Math.min(100, Math.round(creditContagion * 0.6 + macroSens * 0.4));
 
         // 7. Historical Crash Vulnerability — top analog similarity as proxy
-        const crashVulnScore = Math.min(100, Math.round(pressure.topAnalog.similarity * 0.85 + portfolioPressureScore * 0.15));
+        // Fail closed: a missing or non-finite input gives null ("Unavailable").
+        const analogSimilarity = pressure.topAnalog?.similarity;
+        const crashVulnScore = finite(analogSimilarity) && finite(portfolioPressureScore)
+          ? Math.min(100, Math.round(analogSimilarity * 0.85 + portfolioPressureScore * 0.15))
+          : null;
 
         // 8. Regime Alignment — how well-positioned the portfolio is for the current regime
         // Low pressure = good alignment; high pressure = poor alignment
-        const regimeAlignmentScore = Math.max(0, 100 - portfolioPressureScore);
+        const regimeAlignmentScore = finite(portfolioPressureScore) ? Math.max(0, 100 - portfolioPressureScore) : null;
 
         const scoreToLevel = (s: number | null) =>
           s === null ? "Unavailable" : s >= 75 ? "Critical" : s >= 60 ? "High" : s >= 40 ? "Elevated" : s >= 20 ? "Moderate" : "Low";
@@ -692,10 +699,10 @@ export const appRouter = router({
               label: "Concentration Risk",
               description: `Portfolio spread across ${totalPositions} position${totalPositions !== 1 ? "s" : ""}`,
               score: concentrationRiskScore,
-              level: scoreToLevel(concentrationRiskScore),
+              level: concentrationRiskScore === null ? "No positions" : scoreToLevel(concentrationRiskScore),
               driver: totalPositions === 0 ? "No positions tracked" : totalPositions <= 3 ? `Only ${totalPositions} position${totalPositions !== 1 ? "s" : ""} — high single-name risk` : `${totalPositions} positions — diversification improving`,
               trend: "stable" as const,
-              color: concentrationRiskScore >= 75 ? "#FF2D55" : concentrationRiskScore >= 55 ? "#FF6B35" : concentrationRiskScore >= 35 ? "#FFD60A" : "#00FF88",
+              color: concentrationRiskScore === null ? UNAVAILABLE_COLOR : concentrationRiskScore >= 75 ? "#FF2D55" : concentrationRiskScore >= 55 ? "#FF6B35" : concentrationRiskScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "liquidity-risk",
@@ -720,12 +727,14 @@ export const appRouter = router({
             {
               id: "crash-vulnerability",
               label: "Historical Crash Vulnerability",
-              description: `Current conditions match ${pressure.topAnalog.label} (${pressure.topAnalog.similarity}% similarity)`,
+              description: finite(analogSimilarity)
+                ? `Current conditions match ${pressure.topAnalog.label} (${pressure.topAnalog.similarity}% similarity)`
+                : `Closest historical analog similarity unavailable`,
               score: crashVulnScore,
               level: scoreToLevel(crashVulnScore),
-              driver: `Closest analog: ${pressure.topAnalog.label} — ${pressure.topAnalog.description}`,
-              trend: "stable" as const,
-              color: crashVulnScore >= 75 ? "#FF2D55" : crashVulnScore >= 55 ? "#FF6B35" : crashVulnScore >= 35 ? "#FFD60A" : "#00FF88",
+              driver: crashVulnScore === null ? "" : `Closest analog: ${pressure.topAnalog.label} — ${pressure.topAnalog.description}`,
+              trend: crashVulnScore === null ? null : "stable" as const,
+              color: crashVulnScore === null ? UNAVAILABLE_COLOR : crashVulnScore >= 75 ? "#FF2D55" : crashVulnScore >= 55 ? "#FF6B35" : crashVulnScore >= 35 ? "#FFD60A" : "#00FF88",
             },
             {
               id: "regime-alignment",
@@ -733,9 +742,9 @@ export const appRouter = router({
               description: "How well your portfolio is positioned for the current macro regime",
               score: regimeAlignmentScore,
               level: scoreToLevel(regimeAlignmentScore),
-              driver: regimeAlignmentScore >= 60 ? `Portfolio well-aligned with ${pressure.regime} regime` : `Portfolio exposed to ${pressure.regime} headwinds`,
-              trend: pressure.overallPressure > 60 ? "falling" : "rising" as const,
-              color: regimeAlignmentScore >= 60 ? "#00FF88" : regimeAlignmentScore >= 40 ? "#FFD60A" : regimeAlignmentScore >= 20 ? "#FF6B35" : "#FF2D55",
+              driver: regimeAlignmentScore === null ? "" : regimeAlignmentScore >= 60 ? `Portfolio well-aligned with ${pressure.regime} regime` : `Portfolio exposed to ${pressure.regime} headwinds`,
+              trend: regimeAlignmentScore === null ? null : pressure.overallPressure > 60 ? "falling" : "rising" as const,
+              color: regimeAlignmentScore === null ? UNAVAILABLE_COLOR : regimeAlignmentScore >= 60 ? "#00FF88" : regimeAlignmentScore >= 40 ? "#FFD60A" : regimeAlignmentScore >= 20 ? "#FF6B35" : "#FF2D55",
             },
           ],
         };

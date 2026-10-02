@@ -266,7 +266,9 @@ export function InstitutionalCommentary() {
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(100,116,139,0.5)", letterSpacing: "0.08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100px" }}>{m.label.toUpperCase()}</span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", fontWeight: 700, color }}>{score === null ? "—" : score}</span>
                 </div>
-                <MiniBar pct={score ?? 0} color={color} />
+                {score === null
+                  ? <div data-gauge="unavailable" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", lineHeight: "4px", color: "#64748B" }}>—</div>
+                  : <MiniBar pct={score} color={color} />}
                 {m.driver && <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(148,163,184,0.5)", marginTop: "4px", lineHeight: 1.3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.driver}</div>}
               </div>
             );

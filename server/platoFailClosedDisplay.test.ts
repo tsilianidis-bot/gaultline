@@ -203,9 +203,10 @@ describe("2. PLATO briefing: no 50 default for pressure, bull or bear", () => {
   });
 });
 
-const metric = (id: string, score: number | null, level: string, color = "#64748B") => ({
-  id, label: id.toUpperCase(), description: `${id} description`, score, level, driver: "", trend: "stable" as const, color,
+const metric = (id: string, score: number | null, level: string, color = "#64748B", trend: "rising" | "falling" | "stable" | null = "stable") => ({
+  id, label: id.toUpperCase(), description: `${id} description`, score, level, driver: "", trend, color,
 });
+const TREND_ICON = /lucide-(minus|trending-up|trending-down)/g;
 
 describe("3. /app/portfolio intelligence consumers render a null score as —", () => {
   const data = {
@@ -243,5 +244,26 @@ describe("3. /app/portfolio intelligence consumers render a null score as —", 
     const html = renderToStaticMarkup(createElement(InstitutionalCommentary));
     expect(html).not.toContain("Highest risk factor");
     expect(html).not.toMatch(/\/100/);
+  });
+
+  it("r10: a null score or null trend shows no trend icon, and — instead of an empty bar", () => {
+    state.intelligence = {
+      regime: "Moderate Risk",
+      metrics: [
+        metric("ai-bubble-exposure", null, "Unavailable", "#64748B", null),
+        metric("crash-vulnerability", null, "Unavailable", "#64748B", "stable"),
+        metric("concentration-risk", null, "No positions", "#64748B", "stable"),
+        metric("liquidity-risk", 40, "Elevated", "#FFD60A", null),
+        metric("regime-alignment", 67, "High", "#FF6B35", "rising"),
+      ],
+    };
+    const html = renderToStaticMarkup(createElement(PortfolioIntelligence));
+    expect(html.match(TREND_ICON)).toEqual(["lucide-trending-up"]); // only the scored metric with a trend
+    expect(html.split('data-gauge="unavailable"').length - 1).toBe(3);
+    expect(html).toContain(">No positions</span>");
+    expect(html).not.toContain("width:0%");
+    const commentary = renderToStaticMarkup(createElement(InstitutionalCommentary));
+    expect(commentary.split('data-gauge="unavailable"').length - 1).toBe(3);
+    expect(commentary).not.toContain("width:0%");
   });
 });
