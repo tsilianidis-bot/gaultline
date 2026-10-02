@@ -277,18 +277,25 @@ function scoreToStressLevel(score: number): "Low" | "Elevated" | "High" | "Crisi
   return "Low";
 }
 
-function computeSimilarity(a: HistoricalMonth, b: HistoricalMonth): number {
+export function computeSimilarity(a: HistoricalMonth, b: HistoricalMonth): number {
   // Multi-factor similarity: score (40%), sub-scores (40%), macro indicators (20%)
   const scoreDiff = Math.abs(a.score - b.score);
   const scoreSimil = Math.max(0, 100 - scoreDiff * 2);
 
-  const subDiff =
-    Math.abs((a.liquidity || 50) - (b.liquidity || 50)) +
-    Math.abs((a.credit || 50) - (b.credit || 50)) +
-    Math.abs((a.volatility || 50) - (b.volatility || 50)) +
-    Math.abs((a.macro || 50) - (b.macro || 50)) +
-    Math.abs((a.breadth || 50) - (b.breadth || 50));
-  const subSimil = Math.max(0, 100 - subDiff / 5);
+  // Sub-score distance = mean absolute difference over the compared terms.
+  // The Labor & Rates ("market-breadth") term is skipped when either side is
+  // missing — never compared as a neutral 50 — and the mean is taken over the
+  // remaining terms. With all five present this equals the original sum / 5.
+  const subTerms = [
+    Math.abs((a.liquidity || 50) - (b.liquidity || 50)),
+    Math.abs((a.credit || 50) - (b.credit || 50)),
+    Math.abs((a.volatility || 50) - (b.volatility || 50)),
+    Math.abs((a.macro || 50) - (b.macro || 50)),
+  ];
+  const finiteScore = (v: number | null | undefined): v is number => typeof v === "number" && Number.isFinite(v);
+  if (finiteScore(a.breadth) && finiteScore(b.breadth)) subTerms.push(Math.abs(a.breadth - b.breadth));
+  const subDiff = subTerms.reduce((sum, d) => sum + d, 0);
+  const subSimil = Math.max(0, 100 - subDiff / subTerms.length);
 
   let macroSimil = 70; // default when data missing
   if (a.tsy10y !== null && b.tsy10y !== null) {
@@ -1047,7 +1054,7 @@ function computeTransitionProbabilities(
 
 // ─── Evolution analysis ───────────────────────────────────────────────────────
 
-function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis {
+export function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis {
   const recent = history.slice(-90);
   const last7 = recent.slice(-7);
   const last30 = recent.slice(-30);
@@ -1140,14 +1147,14 @@ function computeEvolution(history: HistoricalMonth[]): EvolutionAnalysis {
       "Credit spread direction — widening accelerates systemic pressure, narrowing provides relief",
       "Treasury market volatility — elevated MOVE index sustains stress conditions",
       "Liquidity conditions — tightening amplifies all other risk factors",
-      "Breadth divergence — narrow market leadership historically precedes reversals",
+      "10Y–2Y Treasury curve — a move back below 0 bp (re-inversion) would add rate pressure",
       "Fed communication — any shift in rate expectations will reprice risk assets immediately",
     ],
     invalidationConditions: [
       `Pressure drops below ${Math.max(20, currentScore - 20)} for 3+ consecutive months`,
       "Credit spreads narrow by 50+ basis points",
       "Regime stabilizes for 3+ consecutive months",
-      "Breadth expands materially — more than 70% of sectors participating",
+      "HY credit spread (ICE BofA US High Yield OAS) holds below 300 bp for 3+ consecutive months",
     ],
     sparkline90d,
   };

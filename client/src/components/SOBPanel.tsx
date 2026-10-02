@@ -15,6 +15,7 @@ import { ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus, AlertTriangle,
 import FaultlineTerm from "./FaultlineTerm";
 import type { CanonicalConsumerEnvelope } from "@shared/canonicalConsumerEnvelope";
 import type { CanonicalMarketState } from "@shared/marketState";
+import { sobConfidenceDisplay } from "@shared/confidenceDisplay";
 
 interface SOBPanelProps {
   /** Current state provenance travels with compatibility inputs but is not sent to the legacy S.O.B. procedure. */
@@ -71,6 +72,8 @@ export default function SOBPanel({
   }
 
   if (!sob) return null;
+
+  const confidenceDisplay = sobConfidenceDisplay(sob);
 
   const activePillars = sob.pillars.filter(p => p.active);
   // Only pillars with valid input can be "clear"; missing-input pillars are UNAVAILABLE.
@@ -172,9 +175,12 @@ export default function SOBPanel({
           ))}
         </div>
 
-        {/* Confidence */}
-        <div style={{ marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#4B5563" }}>
-          {sob.confidence}% confidence
+        {/* Confidence — a % only when every required pillar has valid data */}
+        <div
+          data-sob-confidence={confidenceDisplay.state}
+          style={{ marginLeft: "auto", fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: confidenceDisplay.percent == null ? "#9CA3AF" : "#4B5563" }}
+        >
+          {confidenceDisplay.text}
         </div>
 
         {expanded

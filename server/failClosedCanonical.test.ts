@@ -6,13 +6,15 @@
  * captured during that QA pass (deployment da863238 / d3cce2a).
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 
 import { computeSOB, SOB_INSUFFICIENT_LABEL, SOB_UNAVAILABLE_VALUE } from "./sobEngine";
 import { collectAllEvidence, isSOBEvidenceEligible } from "./seismographAdapters";
 import {
   buildEvidenceFamilies,
+  computeEvolution,
+  computeSimilarity,
   LABOR_RATES_FAMILY_NAME,
   normalizeLaborRatesScore,
   type HistoricalMonth,
@@ -37,6 +39,12 @@ import {
   formatScenarioPercent,
 } from "@shared/canonicalReadout";
 import { directionDisplay } from "@shared/snapshotEvidence";
+import {
+  CONFIDENCE_INSUFFICIENT_TEXT,
+  CONFIDENCE_UNAVAILABLE_TEXT,
+  gatedConfidence,
+  sobConfidenceDisplay,
+} from "@shared/confidenceDisplay";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const FIX = path.join(import.meta.dirname, "__fixtures__", "prod-2026-10-01");
@@ -189,9 +197,60 @@ describe("Labor & Rates (engine id market-breadth)", () => {
     expect(all).not.toMatch(/Market breadth is moderate|neither confirming nor contradicting/i);
   });
 
+  it("source: no `breadth || 50` / `?? 50` fallback anywhere in server, client or shared", () => {
+    const offenders: string[] = [];
+    const walk = (dir: string) => {
+      for (const name of readdirSync(path.join(ROOT, dir))) {
+        if (name === "node_modules" || name === "__fixtures__" || name === "dist") continue;
+        const rel = path.join(dir, name);
+        if (statSync(path.join(ROOT, rel)).isDirectory()) { walk(rel); continue; }
+        if (!/\.(ts|tsx)$/.test(name) || /\.test\.ts$/.test(name)) continue;
+        const text = readFileSync(path.join(ROOT, rel), "utf8");
+        text.split("\n").forEach((line, i) => {
+          if (/breadth\w*\)?\s*(\|\||\?\?)\s*50\b/i.test(line)) offenders.push(`${rel}:${i + 1}: ${line.trim()}`);
+        });
+      }
+    };
+    ["server", "client/src", "shared"].forEach(walk);
+    expect(offenders).toEqual([]);
+  });
+
+  it("analog similarity ignores the Labor & Rates term when either side is missing", () => {
+    const a = month({ breadth: null });
+    const b = month({ breadth: 90 });
+    // null vs 90 must equal the comparison with the term removed entirely:
+    // all other terms identical → identical sub-score → perfect similarity.
+    expect(computeSimilarity(a, b)).toBe(100);
+    expect(computeSimilarity(b, a)).toBe(100);
+    expect(computeSimilarity(month({ breadth: Number.NaN }), b)).toBe(100);
+    // the old `|| 50` math would have scored |50 - 90| / 5 = 8 points of distance
+    expect(computeSimilarity(month({ breadth: 50 }), b)).toBeLessThan(100);
+    // all five present → unchanged math (mean abs diff over 5 terms)
+    const x = month({ liquidity: 20, credit: 30, volatility: 40, macro: 50, breadth: 60 });
+    const y = month({ liquidity: 30, credit: 30, volatility: 40, macro: 50, breadth: 70 });
+    const sub = 100 - (10 + 0 + 0 + 0 + 10) / 5;
+    expect(computeSimilarity(x, y)).toBe(Math.round(100 * 0.4 + sub * 0.4 + 100 * 0.2));
+    // breadth missing → mean over the 4 remaining terms
+    const sub4 = 100 - (10 + 0 + 0 + 0) / 4;
+    expect(computeSimilarity({ ...x, breadth: null }, y)).toBe(Math.round(100 * 0.4 + sub4 * 0.4 + 100 * 0.2));
+  });
+
+  it("watch / invalidation lists carry no breadth claims, only measurable conditions", () => {
+    const history = Array.from({ length: 24 }, (_, i) => month({ month: `2025-${String((i % 12) + 1).padStart(2, "0")}`, score: 30 + (i % 5) }));
+    const evo = computeEvolution(history);
+    const all = [...evo.whatToWatch, ...evo.invalidationConditions];
+    for (const line of all) expect(line).not.toMatch(/breadth|sectors participating|market leadership/i);
+    expect(evo.whatToWatch).toContain("10Y–2Y Treasury curve — a move back below 0 bp (re-inversion) would add rate pressure");
+    expect(evo.invalidationConditions).toContain("HY credit spread (ICE BofA US High Yield OAS) holds below 300 bp for 3+ consecutive months");
+    const s = src("server/seismographUnified.ts");
+    expect(s).not.toMatch(/Breadth divergence — narrow market leadership/);
+    expect(s).not.toMatch(/Breadth expands materially/);
+  });
+
   it("source: the `marketBreadth || 50` fallback and the old label are gone", () => {
     const s = src("server/seismographUnified.ts");
     expect(s).not.toMatch(/marketBreadth\s*\|\|\s*50/);
+    expect(s).not.toMatch(/breadth\s*\|\|\s*50/i);
     expect(s).not.toMatch(/name:\s*"Market Breadth"/);
     expect(s).not.toMatch(/Market breadth is moderate/);
     expect(s).not.toMatch(/primary pressure driver is \$\{topFamily\.name\.toLowerCase\(\)\}/);
@@ -355,5 +414,52 @@ describe("canonical consistency (one source)", () => {
     const now = src("client/src/pages/Now.tsx");
     expect(now).toMatch(/marketState\?\.now\.threats/);
     expect(src("server/marketStateService.ts")).toMatch(/classifyEvidenceFamilies\(/);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Confidence % only when enough valid data supports it (display gating)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("confidence display gating", () => {
+  it("S.O.B. with insufficient inputs → no confidence %, 'Insufficient data'", () => {
+    // the prod case: 4 of 6 pillars, engine confidence still computes 90
+    const sob = computeSOB({ pressureIndex: 33, creditSpread: 312, yieldSpread: 0.41, fedFundsRate: 3.75, vix: 16.39 });
+    expect(sob.coverage).toBe("PARTIAL");
+    expect(sob.confidence).toBe(90); // engine calculation preserved
+    const d = sobConfidenceDisplay(sob);
+    expect(d.state).toBe("INSUFFICIENT");
+    expect(d.percent).toBeNull();
+    expect(d.text).toBe(CONFIDENCE_INSUFFICIENT_TEXT);
+    expect(d.text).not.toMatch(/\d+\s*%/);
+  });
+
+  it("S.O.B. with no inputs → 'Unavailable', no %", () => {
+    const d = sobConfidenceDisplay(computeSOB({}));
+    expect(d.state).toBe("UNAVAILABLE");
+    expect(d.percent).toBeNull();
+    expect(d.text).toBe(CONFIDENCE_UNAVAILABLE_TEXT);
+    expect(d.text).not.toMatch(/%/);
+  });
+
+  it("complete coverage → the engine's confidence % is shown", () => {
+    const d = sobConfidenceDisplay({ confidence: 90, coverage: "COMPLETE" });
+    expect(d).toEqual({ state: "AVAILABLE", text: "90% confidence", percent: 90 });
+    expect(gatedConfidence({ confidence: 72.4, sufficient: true }).text).toBe("72% confidence");
+  });
+
+  it("sufficient but invalid value → Unavailable, never a made-up %", () => {
+    for (const c of [null, undefined, Number.NaN, -1, 101]) {
+      const d = gatedConfidence({ confidence: c as never, sufficient: true });
+      expect(d.percent).toBeNull();
+      expect(d.text).not.toMatch(/%/);
+    }
+  });
+
+  it("source: SOBPanel renders the gated text, not the raw confidence", () => {
+    const panel = src("client/src/components/SOBPanel.tsx");
+    expect(panel).not.toMatch(/\{sob\.confidence\}%/);
+    expect(panel).toMatch(/sobConfidenceDisplay\(sob\)/);
+    expect(panel).toMatch(/\{confidenceDisplay\.text\}/);
   });
 });

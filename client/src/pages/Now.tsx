@@ -1181,7 +1181,7 @@ export default function Now() {
           </div>
         </Section>
 
-        <Section id="breadth" index="03" eyebrow="Domains" title="Where pressure is concentrated" description="Every domain is normalized to the same 0–100 scale so concentration and breadth can be compared directly.">
+        <Section id="breadth" index="03" eyebrow="Domains" title="Where pressure is concentrated" description="Every domain is normalized to the same 0–100 scale so concentration across domains can be compared directly.">
           <div className="grid gap-3 md:grid-cols-2">
             {evidenceFamilies.map(family => (
               <div key={family.name} className="rounded border border-white/10 bg-white/[0.025] p-4">
