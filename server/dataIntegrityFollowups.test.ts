@@ -917,6 +917,37 @@ describe("no hard-coded $ figures in quote surfaces; NOW example price/change ar
     expect(offenders(src(f))).toEqual([]);
   });
 
+  // N1: other ways to spell a hard-coded price. SVG geometry (path d=, x1=, points=…) is excluded.
+  const SVG_GEOMETRY = /<(?:path|line|circle|rect|polyline|polygon|svg|ellipse)\b|\b(?:d|points|viewBox|x[12]?|y[12]?|cx|cy|r|rx|ry)=["{]/;
+  const PRICE_SPELLINGS: Array<[string, RegExp]> = [
+    ["price-like decimal literal", /\b\d{2,6}\.\d{2}\b/],
+    ["'$' + concatenation", /['"`]\$['"`]\s*\+/],
+    ["${'$'} interpolation", /\$\{\s*['"`]\$['"`]\s*\}/],
+    ["String.fromCharCode(36)", /fromCharCode\(\s*36\s*\)/],
+    ["escaped dollar (\\u0024 / &#36; / &dollar;)", /\\u0024|&#36;|&dollar;/],
+  ];
+  const spellingOffenders = (text: string) =>
+    text.split("\n").flatMap((l, i) => SVG_GEOMETRY.test(l) ? [] : PRICE_SPELLINGS.filter(([, re]) => re.test(l)).map(([name]) => `${i + 1}: ${name}: ${l.trim()}`));
+
+  it.each(QUOTE_SURFACES)("%s has no price-like decimal, '$' +, ${'$'}, fromCharCode(36) or escaped $ (N1)", f => {
+    expect(spellingOffenders(src(f))).toEqual([]);
+  });
+
+  it.each([
+    ["price-like decimal", "<span>924.58</span>"],
+    ["price-like decimal in a string", "const BTC = '64250.12';"],
+    ["'$' + concatenation", "const p = '$' + 924;"],
+    ["${'$'} interpolation", "const p = `${'$'}924`;"],
+    ["String.fromCharCode(36)", "const p = String.fromCharCode(36) + 924;"],
+    ["\\u0024", "const p = '\\u0024924';"],
+  ])("N1 mutation: %s is caught", (_name, line) => {
+    expect(spellingOffenders(`x\n${line}\n`).length).toBeGreaterThan(0);
+  });
+
+  it("N1: SVG geometry decimals are not flagged", () => {
+    expect(spellingOffenders(`<line x1="21" y1="21" x2="16.65" y2="16.65"/>\n<path d="M12.50 10.25"/>`)).toEqual([]);
+  });
+
   const PRICE_CELL = /<div data-preview-price style=\{\{[^}]*\}\}>—<\/div>/;
   const CHANGE_CELL = /<div data-preview-change style=\{\{[^}]*\}\}>—<\/div>/;
   const previewCellsAreDashes = (text: string) =>
@@ -1000,10 +1031,11 @@ describe("QA r7 blockers: Simulate probability NaN%, Charts legend/ribbon/footer
     for (const v of [Number.NaN, null, undefined, Infinity, -Infinity, -1, 101, "34"]) expect(probabilityPercentText(v)).toBe("—");
   });
 
-  it("SimulatePressure probability row renders through the guard, never a raw {p.value}%", () => {
-    expect(sim).not.toMatch(/\{p\.value\}%/);
+  it("SimulatePressure probability row renders through the contract-aware guard, never a raw {p.value}%", () => {
+    expect(sim).not.toMatch(/\{p\.value\}%|probability\.(crash|recession|stagflation)Probability/);
     expect(sim).toMatch(/data-sim-probability=\{p\.label\}/);
-    expect(sim).toMatch(/\{probabilityPercentText\(p\.value\)\}/);
+    expect(sim).toMatch(/text: probabilityCellText\(output, p\.key, isSimulating\)/);
+    expect(sim).toMatch(/\{p\.text\}/);
   });
 
   // Runs against whatever engine/projection is in the tree: at #59's base the
@@ -1177,5 +1209,47 @@ describe("missing delta renders '—' / Unavailable, never 'Stable' or '0 vs bas
     expect(s).toMatch(/engine\.direction === "Stable" \? "stable" : "unavailable"/);
     expect(s).not.toMatch(/\{domain\.score\.toFixed\(1\)\}/);
     expect(s).toMatch(/Math\.round\(domain\.score \* 10\)/);
+  });
+});
+
+describe("B1: Simulate probability row never shows a withheld probability as 0% (with and without #60)", async () => {
+  const { probabilityCellText } = await import("../client/src/lib/simulatePressureView");
+  const { selectBrowserMarketOutput } = await import("../client/src/lib/marketStateProjection");
+  const { DEFAULT_INDICATORS } = await import("../client/src/lib/engine");
+  const base = JSON.parse(src("server/__fixtures__/prod-2026-10-01/market-state-current.json"));
+  const KEYS = ["crashProbability", "recessionProbability", "stagflationProbability"] as const;
+  const withProbs = (v: number) => ({ ...base, outlook: { ...base.outlook, regimeProbabilities: { bull: v, softLanding: v, stagflation: v, recession: v, crash: v } } });
+  const cells = (marketState: unknown, overrides: Record<string, number> = {}) => {
+    const { output } = selectBrowserMarketOutput({ marketState: marketState as never, baselineIndicators: DEFAULT_INDICATORS, simulationOverrides: overrides });
+    return KEYS.map(k => probabilityCellText(output as never, k, Object.keys(overrides).length > 0));
+  };
+
+  it("NaN fixture (withheld) through selectBrowserMarketOutput → — / — / —", () => {
+    expect(cells(withProbs(Number.NaN))).toEqual(["—", "—", "—"]);
+  });
+  it("server-zeroed fixture (marketStateService normalizes NaN → 0 without #60) → — / — / —, never 0%", () => {
+    expect(cells(withProbs(0))).toEqual(["—", "—", "—"]);
+    expect(cells(withProbs(0)).join(" ")).not.toMatch(/0%/);
+  });
+  it("canonical 503 → deterministic demo baseline → — / — / —", () => {
+    expect(cells(null)).toEqual(["—", "—", "—"]);
+  });
+  it("sandbox: a number only from a finite result without a contract; with a contract only when AVAILABLE", () => {
+    const { output } = selectBrowserMarketOutput({ marketState: null, baselineIndicators: DEFAULT_INDICATORS, simulationOverrides: { vix: 35 } });
+    const o = output as unknown as { probability: Record<string, number>; probabilityDisplay?: Record<string, { state: string; percent: number | null }> };
+    for (const k of KEYS) {
+      const t = probabilityCellText(o as never, k, true);
+      if (o.probabilityDisplay) expect(t).toBe(o.probabilityDisplay[k]?.state === "AVAILABLE" ? `${o.probabilityDisplay[k].percent}%` : "—");
+      else expect(t).toBe(Number.isFinite(o.probability[k]) ? `${o.probability[k]}%` : "—");
+      expect(t).not.toMatch(/NaN/);
+    }
+  });
+  it("contract entries: AVAILABLE → N%; withheld / NOT_OFFERED / missing → —", () => {
+    const out = (state: string, percent: number | null) => ({ probability: { crashProbability: 7 }, probabilityDisplay: { crashProbability: { state, percent } } });
+    expect(probabilityCellText(out("AVAILABLE", 12), "crashProbability", false)).toBe("12%");
+    expect(probabilityCellText(out("NOT_OFFERED", null), "crashProbability", true)).toBe("—");
+    expect(probabilityCellText(out("UNCALIBRATED", 7), "crashProbability", true)).toBe("—");
+    expect(probabilityCellText({ probability: {}, probabilityDisplay: {} }, "crashProbability", true)).toBe("—");
+    expect(probabilityCellText(null, "crashProbability", true)).toBe("—");
   });
 });
