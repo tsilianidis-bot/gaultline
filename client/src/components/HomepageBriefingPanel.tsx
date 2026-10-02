@@ -13,6 +13,8 @@
 
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { formatEt } from "@shared/credibilityLabels";
+import { formatOrdinal } from "@shared/historicalPercentile";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -173,7 +175,7 @@ export default function HomepageBriefingPanel() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#475569", letterSpacing: "0.08em" }}>
-              {new Date(data.computedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · CANONICAL{data.canonicalStateId ? ` · ${data.canonicalStateId}` : ""}
+              {formatEt(data.computedAt) ?? "Time unavailable"} · CANONICAL
             </span>
             <button
               onClick={() => navigate("/app/pressure?tab=context")}
@@ -233,7 +235,7 @@ export default function HomepageBriefingPanel() {
           {metrics.pressureIndex.historicalPercentile !== null && (
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>PERCENTILE</span>
-              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#C084FC", fontWeight: 600 }}>{metrics.pressureIndex.historicalPercentile}th</span>
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "12px", color: "#C084FC", fontWeight: 600 }}>{formatOrdinal(metrics.pressureIndex.historicalPercentile)}</span>
             </div>
           )}
         </div>
@@ -334,7 +336,7 @@ export default function HomepageBriefingPanel() {
             <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>HISTORICAL PERCENTILE</span>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "16px", color: "#C084FC", fontWeight: 700 }}>
-                {historySays.historicalPercentile}th
+                {historySays.historicalPercentile !== null ? formatOrdinal(historySays.historicalPercentile) : "Unavailable"}
               </span>
               <span style={{ fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "10px", color: "#64748B" }}>
                 {historySays.percentileLabel}

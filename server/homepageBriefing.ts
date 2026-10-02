@@ -63,7 +63,8 @@ export interface HomepageBriefingResult {
 
   // ── Section 3: History Says ───────────────────────────────────────────────
   historySays: {
-    historicalPercentile: number;
+    /** Canonical historical percentile (the Now reading); null when unavailable. */
+    historicalPercentile: number | null;
     percentileLabel: string;
     closestAnalogs: Array<{
       label: string;
@@ -178,7 +179,7 @@ function unavailableHomepageBriefing(
       previousReadingAge: null,
     },
     historySays: {
-      historicalPercentile: 0,
+      historicalPercentile: null,
       percentileLabel: "UNAVAILABLE",
       closestAnalogs: [],
       currentRegimeDuration: 0,
@@ -233,11 +234,21 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     );
   }
 
-  const [histContext, recentRuns, historyRows] = await Promise.all([
+  const [histContext, recentRuns, historyRows, marketState] = await Promise.all([
     computeHistoricalContext(pressure).catch(() => null),
     getRecentPressureRuns(90),
     getPressureHistory({ limit: 36 }),
+    // Canonical Now reading: percentile and governed top analog (display only).
+    import("./marketStateService").then(m => m.getCanonicalMarketState()).catch(() => null),
   ]);
+  const canonicalPercentileRaw = marketState?.now.historicalPercentile;
+  const canonicalPercentile = typeof canonicalPercentileRaw === "number" && Number.isFinite(canonicalPercentileRaw)
+    ? Math.round(canonicalPercentileRaw)
+    : null;
+  // The reference-library analog ranking is shown only when the canonical
+  // outlook has a top analog (fail closed when MarketState is unavailable).
+  const canonicalTopAnalogAvailable = marketState?.outlook.topAnalog != null;
+  const governedAnalogMatches = canonicalTopAnalogAvailable ? histContext?.analogMatches ?? [] : [];
   // Probability contract: bull continuation renders only its contract claim;
   // crash / drawdown has no governed model (NOT_OFFERED). The stored scenario
   // outputs are not read for display.
@@ -341,8 +352,10 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
 
   if (N < INSUFFICIENT_THRESHOLD) {
     historySays = {
-      historicalPercentile: 0,
-      percentileLabel: "Insufficient data",
+      historicalPercentile: canonicalPercentile,
+      percentileLabel: canonicalPercentile !== null
+        ? `${describeHistoricalPercentile(canonicalPercentile)} (canonical reading; monthly history sample insufficient)`
+        : "Insufficient data",
       closestAnalogs: [],
       currentRegimeDuration: 0,
       consecutiveElevatedStreak: 0,
@@ -361,7 +374,7 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     // Percentile: rank current pressure among all historical months
     const sorted = [...histRows].sort((a, b) => a.overallPressure - b.overallPressure);
     const rank = sorted.filter(r => r.overallPressure <= currentOverall).length;
-    const percentile = Math.round((rank / N) * 100);
+    const percentile = canonicalPercentile ?? Math.round((rank / N) * 100);
 
     // Regime duration: count consecutive months ending at latest with same regime
     const latestRegime = pressure.regime;
@@ -380,7 +393,7 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     }
 
     // Historical rates from analog context
-    const analogMatches = histContext?.analogMatches ?? [];
+    const analogMatches = governedAnalogMatches;
     const analogs = analogMatches.slice(0, 3).map(a => ({
       label: a.label,
       year: a.year,
@@ -406,8 +419,8 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     const confidence: "high" | "medium" | "low" = N >= 60 ? "high" : N >= 24 ? "medium" : "low";
 
     const plainEnglishSummary = analogMatches.length > 0
-      ? `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)}) of all ${N} historical months analyzed. The closest historical analog is ${analogMatches[0].label} (${analogMatches[0].similarity}% similarity). Current conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`
-      : `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)}) of all ${N} historical months analyzed. Current ${latestRegime} conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`;
+      ? `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)})${canonicalPercentile !== null ? " on the canonical reading" : ` of all ${N} historical months analyzed`}. The closest historical analog is ${analogMatches[0].label} (${analogMatches[0].similarity}% similarity). Current conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`
+      : `Today's pressure reading of ${currentOverall}/100 ranks at the ${formatOrdinal(percentile)} percentile (${describeHistoricalPercentile(percentile)})${canonicalPercentile !== null ? " on the canonical reading" : ` of all ${N} historical months analyzed`}. Current ${latestRegime} conditions have persisted for approximately ${regimeDuration} month${regimeDuration !== 1 ? "s" : ""}.`;
 
     historySays = {
       historicalPercentile: percentile,
@@ -462,7 +475,13 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
   // Daily/7d/30d changes from pressureRuns
   const runs = recentRuns;
   const todayPressure = runs[0]?.overallPressure ?? currentOverall;
-  const ydayPressure = runs[1]?.overallPressure ?? null;
+  // "1D" compares with a run 20–36 hours old (the canonical prior-reading
+  // window starts at 20 h); an older or newer previous run is not a 1D change.
+  const oneDayRun = runs.find(r => {
+    const ageHours = (Date.now() - new Date(r.computedAt).getTime()) / 3600000;
+    return ageHours >= 20 && ageHours <= 36;
+  });
+  const ydayPressure = oneDayRun?.overallPressure ?? null;
   const sevenDayRun = runs.find(r => {
     const age = (Date.now() - new Date(r.computedAt).getTime()) / 86400000;
     return age >= 6.5 && age <= 8;
@@ -484,16 +503,27 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
       else break;
     }
   }
+  // The run streak is shown only when it agrees with the canonical composite
+  // direction (rising = Deteriorating, falling = Improving); otherwise none.
+  const canonicalDirection = canonical.pressureDirection;
+  const streakAgrees = (streakDir === "rising" && canonicalDirection === "Deteriorating")
+    || (streakDir === "falling" && canonicalDirection === "Improving");
+  if (!streakAgrees) {
+    streak = 0;
+    streakDir = "stable";
+  }
 
-  const percentileForMetric = histRows.length >= INSUFFICIENT_THRESHOLD
+  const percentileForMetric = canonicalPercentile ?? (histRows.length >= INSUFFICIENT_THRESHOLD
     ? Math.round((histRows.filter(r => r.overallPressure <= currentOverall).length / histRows.length) * 100)
-    : null;
+    : null);
 
-  const historicalComparison = histContext?.analogMatches?.[0]
-    ? `Most similar to ${histContext.analogMatches[0].label}`
-    : "Insufficient historical data for comparison";
+  const historicalComparison = governedAnalogMatches[0]
+    ? `Most similar to ${governedAnalogMatches[0].label}`
+    : canonicalTopAnalogAvailable ? "Insufficient historical data for comparison" : "No governed historical analog for the current state";
 
-  const institutionalInterpretation = histContext?.institutionalInterpretation
+  // The engine's interpretation names the closest reference period, so it is
+  // used only when the canonical outlook has a top analog.
+  const institutionalInterpretation = canonicalTopAnalogAvailable && histContext?.institutionalInterpretation
     ? histContext.institutionalInterpretation.slice(0, 200)
     : `${pressure.regime} conditions. ${pressure.vectors.sort((a, b) => b.score - a.score)[0]?.label ?? "Macro"} is the primary driver.`;
 
@@ -520,8 +550,9 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
 
   // ── Section 1: Today's Market Story (LLM) ─────────────────────────────────
   const topVector = [...pressure.vectors].sort((a, b) => b.score - a.score)[0];
-  const analogLabel = histContext?.analogMatches?.[0]?.label ?? "no close historical match";
-  const analogSim = histContext?.analogMatches?.[0]?.similarity ?? 0;
+  const analogText = governedAnalogMatches[0]
+    ? `${governedAnalogMatches[0].label} (${governedAnalogMatches[0].similarity}% similarity)`
+    : "none (no governed analog for the current state; do not name one)";
   const bullLabel = bullProb !== null ? `${bullProb}%` : `${bullText} (not a probability; do not state a percentage)`;
   const crashLabel = `${crashText} (no crash or drawdown probability is offered; do not state one)`;
   const percentileLabel = percentileForMetric !== null
@@ -535,7 +566,7 @@ Current data (canonical state ${canonical.stateId}):
 - Primary driver: ${topVector?.label ?? "UNAVAILABLE"} at ${topVector?.score?.toFixed(1) ?? "N/A"}/100
 - Bull continuation: ${bullLabel} | Crash / drawdown: ${crashLabel}
 - Historical percentile: ${percentileLabel} (N=${histRows.length} months)
-- Closest historical analog: ${analogLabel} (${analogSim}% similarity)
+- Closest historical analog: ${analogText}
 - Pressure trend: ${streakDir} for ${streak} consecutive readings
 ${whyTodayIsDifferent.biggestDeteriorating ? `- Biggest deteriorating factor: ${whyTodayIsDifferent.biggestDeteriorating.label}` : ""}
 ${whyTodayIsDifferent.biggestImproving ? `- Biggest improving factor: ${whyTodayIsDifferent.biggestImproving.label}` : ""}

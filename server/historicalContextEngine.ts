@@ -50,9 +50,9 @@ export interface PressureTimeline {
   consecutiveElevatedMonths: number;
   /** Consecutive months at or above threshold (65) */
   consecutiveHighMonths: number;
-  /** Highest pressure reading in current cycle (since regime started) */
+  /** Highest stored monthly reading since the regime started (excludes today's reading) */
   cycleHigh: number;
-  /** Lowest pressure reading in current cycle */
+  /** Lowest stored monthly reading since the regime started (excludes today's reading) */
   cycleLow: number;
   /** 7-day trend: change in pressure over last 7 runs */
   trend7d: number | null;
@@ -71,8 +71,8 @@ export interface PressureTimeline {
 }
 
 export interface HistoricalRarityContext {
-  /** Exact percentile of today's reading vs all historical months (0–100) */
-  percentile: number;
+  /** Exact percentile of today's reading vs all historical months (0–100); null when fewer than 10 months are recorded. */
+  percentile: number | null;
   /** Number of historical months in the dataset */
   sampleSize: number;
   /** Earliest month in the dataset */
@@ -460,9 +460,11 @@ export async function computeHistoricalContext(
 
   // ── Section 4: Historical Rarity Context ──────────────────
   const sortedPressures = [...allPressureScores].sort((a, b) => a - b);
+  // Fewer than 10 recorded months: no percentile (shown as Insufficient data).
+  // Display only — no calculation reads this percentile.
   const percentile = historyN >= 10
     ? computePercentile(pressure.overallPressure, sortedPressures)
-    : 50;
+    : null;
 
   const monthsAtOrAbove = allPressureScores.filter(
     s => s >= pressure.overallPressure
@@ -472,7 +474,8 @@ export async function computeHistoricalContext(
     : 0;
 
   let rarityLabel: string;
-  if (percentile >= 95) rarityLabel = "Extreme — top 5% of all historical readings";
+  if (percentile === null) rarityLabel = `Insufficient data — ${historyN} recorded monthly observation${historyN === 1 ? "" : "s"} (10 required)`;
+  else if (percentile >= 95) rarityLabel = "Extreme — top 5% of all historical readings";
   else if (percentile >= 85) rarityLabel = "Very High — top 15% of all historical readings";
   else if (percentile >= 70) rarityLabel = "High — top 30% of all historical readings";
   else if (percentile >= 50) rarityLabel = "Above Average — upper half of historical readings";
@@ -569,7 +572,7 @@ export async function computeHistoricalContext(
   // Narrative is intentionally assembled from the calculated contract. It must
   // never delay the canonical history endpoint or introduce unobservable claims.
   const topDriver = drivers[0];
-  const sampleReference = historyN >= 10
+  const sampleReference = percentile !== null
     ? `the ${ordinal(percentile)} percentile of ${historyN} recorded monthly observations since ${dataStartMonth}`
     : `an insufficient historical sample (${historyN} recorded monthly observations)`;
   const marketStory = `Market pressure is currently ${pressure.overallPressure}/100 (${pressure.regime}), placing it in ${sampleReference}. ` +
