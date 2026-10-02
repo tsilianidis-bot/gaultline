@@ -17,9 +17,9 @@ import { invokeLLM } from "./_core/llm";
 import { getAuthoritativeCanonicalIntelligenceState } from "./canonicalIntelligenceState";
 import {
   projectPressureFromCanonical,
-  selectScenarioProbabilities,
 } from "./canonicalPressureProjection";
 import { describeHistoricalPercentile, formatOrdinal } from "../shared/historicalPercentile";
+import { PROBABILITY_DISPLAY_TEXT, probabilityPercent, probabilityText } from "../shared/probabilityContract";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -108,8 +108,13 @@ export interface HomepageBriefingResult {
     };
     regime: string | null;
     regimeLevel: string | null;
+    /** Contract percent (null unless the claim is AVAILABLE). Render bullProbabilityText. */
     bullProbability: number | null;
+    /** Crash / drawdown is NOT_OFFERED: always null. Render crashProbabilityText. */
     crashProbability: number | null;
+    /** Probability-contract display text ("Uncalibrated", "Not offered", "Unavailable" or "NN%"). */
+    bullProbabilityText: string;
+    crashProbabilityText: string;
     opportunityScore: number | null;
   };
 }
@@ -207,6 +212,8 @@ function unavailableHomepageBriefing(
       regimeLevel: null,
       bullProbability: null,
       crashProbability: null,
+      bullProbabilityText: PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
+      crashProbabilityText: PROBABILITY_DISPLAY_TEXT.UNAVAILABLE,
       opportunityScore: null,
     },
   };
@@ -231,7 +238,14 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     getRecentPressureRuns(90),
     getPressureHistory({ limit: 36 }),
   ]);
-  const scenarios = selectScenarioProbabilities(canonical);
+  // Probability contract: bull continuation renders only its contract claim;
+  // crash / drawdown has no governed model (NOT_OFFERED). The stored scenario
+  // outputs are not read for display.
+  const contract = canonical.probabilityContract ?? null;
+  const bullClaim = contract?.scenarioSet.scenarios.find(claim => claim.scenario.scenarioId === "bull") ?? null;
+  const crashClaim = contract?.notOffered.find(claim => claim.scenario.scenarioId === "crash") ?? null;
+  const bullText = probabilityText(bullClaim);
+  const crashText = crashClaim ? probabilityText(crashClaim) : PROBABILITY_DISPLAY_TEXT.NOT_OFFERED;
 
   // ── Section 2: Why Today Is Different ──────────────────────────────────────
   // Use pressureRuns for recent delta (last run vs current)
@@ -269,8 +283,8 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     .filter(d => d.direction === "up" && d.change !== null)
     .sort((a, b) => parseFloat(b.change!) - parseFloat(a.change!));
 
-  const bullProb = scenarios.bull;
-  const crashProb = scenarios.crash;
+  const bullProb = probabilityPercent(bullClaim);
+  const crashProb: number | null = null;
 
   const whyTodayIsDifferent = {
     pressureDelta: {
@@ -293,7 +307,7 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     },
     bullProbDelta: {
       label: "Bull Continuation",
-      current: bullProb !== null ? `${Math.round(bullProb)}%` : "UNAVAILABLE",
+      current: bullText,
       previous: null,
       change: null,
       direction: "neutral" as const,
@@ -302,7 +316,7 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     },
     crashProbDelta: {
       label: "Crash / Drawdown",
-      current: crashProb !== null ? `${Math.round(crashProb)}%` : "UNAVAILABLE",
+      current: crashText,
       previous: null,
       change: null,
       direction: "neutral" as const,
@@ -497,8 +511,10 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
     },
     regime: pressure.regime,
     regimeLevel: pressure.level,
-    bullProbability: bullProb !== null ? Math.round(bullProb) : null,
-    crashProbability: crashProb !== null ? Math.round(crashProb) : null,
+    bullProbability: bullProb,
+    crashProbability: crashProb,
+    bullProbabilityText: bullText,
+    crashProbabilityText: crashText,
     opportunityScore: null,
   };
 
@@ -506,8 +522,8 @@ export async function computeHomepageBriefing(): Promise<HomepageBriefingResult>
   const topVector = [...pressure.vectors].sort((a, b) => b.score - a.score)[0];
   const analogLabel = histContext?.analogMatches?.[0]?.label ?? "no close historical match";
   const analogSim = histContext?.analogMatches?.[0]?.similarity ?? 0;
-  const bullLabel = bullProb !== null ? `${Math.round(bullProb)}%` : "UNAVAILABLE";
-  const crashLabel = crashProb !== null ? `${Math.round(crashProb)}%` : "UNAVAILABLE";
+  const bullLabel = bullProb !== null ? `${bullProb}%` : `${bullText} (not a probability; do not state a percentage)`;
+  const crashLabel = `${crashText} (no crash or drawdown probability is offered; do not state one)`;
   const percentileLabel = percentileForMetric !== null
     ? `${formatOrdinal(percentileForMetric)} (${describeHistoricalPercentile(percentileForMetric)})`
     : "UNAVAILABLE";

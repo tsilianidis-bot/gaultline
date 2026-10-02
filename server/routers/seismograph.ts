@@ -24,6 +24,21 @@ import { desc, eq, and, notLike } from "drizzle-orm";
 import { getLatestSeismographOutput, runSeismographPipeline } from "../scheduledSeismograph";
 import { runSeismographBackfill, RECONSTRUCTED_RECORD_CLASS } from "../seismographBackfill";
 import { getUnifiedSeismographIntelligence } from "../seismographUnified";
+import { overlayAssembledSeismographOutput, overlayUnifiedSeismographIntelligence } from "../probabilityContract";
+import type { CanonicalProbabilityContract } from "../../shared/probabilityContract";
+
+/**
+ * The stateId-bound probability contract from the authoritative canonical
+ * state. Any failure returns null, which withholds every number (fail closed).
+ */
+async function loadProbabilityContract(): Promise<CanonicalProbabilityContract | null> {
+  try {
+    const { getAuthoritativeCanonicalIntelligenceState } = await import("../canonicalIntelligenceState");
+    return (await getAuthoritativeCanonicalIntelligenceState())?.probabilityContract ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export const seismographRouter = router({
   /**
@@ -113,7 +128,11 @@ export const seismographRouter = router({
    * Returns null if no daily job has run yet.
    */
   getAssembledOutput: publicProcedure.query(async () => {
-    return getLatestSeismographOutput();
+    const output = await getLatestSeismographOutput();
+    if (!output) return null;
+    // Probability contract: scenario and transition numbers are overlaid with
+    // the contract display (null unless AVAILABLE). Calculation is unchanged.
+    return overlayAssembledSeismographOutput(output, await loadProbabilityContract());
   }),
 
   /**
@@ -152,7 +171,11 @@ export const seismographRouter = router({
    */
   getUnifiedIntelligence: publicProcedure.query(async () => {
     try {
-      return await getUnifiedSeismographIntelligence();
+      const intel = await getUnifiedSeismographIntelligence();
+      // Probability contract: bull/neutral/bear, the retired 5-way split and the
+      // transition components are overlaid before returning (null unless the
+      // contract claim is AVAILABLE). How they are calculated is unchanged.
+      return overlayUnifiedSeismographIntelligence(intel, await loadProbabilityContract());
     } catch (err) {
       // Return null so the client renders an empty-state instead of crashing
       console.warn('[SeismographRouter] getUnifiedIntelligence failed — no historical data yet:', err);

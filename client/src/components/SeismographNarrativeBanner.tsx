@@ -18,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import { formatCanonicalScore } from "@shared/marketMetrics";
 import { formatOrdinal } from "@shared/historicalPercentile";
+import { PROBABILITY_DISPLAY_TEXT } from "@shared/probabilityContract";
 import { useEngine } from "@/contexts/EngineContext";
 import { customerIntegrityChipLevel, customerIntegrityColor } from "@shared/customerIntegrityLabels";
 
@@ -294,8 +295,9 @@ export default function SeismographNarrativeBanner({
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: stressColor, letterSpacing: "0.15em", marginBottom: "5px" }}>WHAT IS HAPPENING</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "11px", color: "#E2E8F0", lineHeight: 1.6 }}>
             The market is in a <strong style={{ color: stressColor }}>{output.stressLevel}</strong> stress regime — <strong style={{ color: "#E2E8F0" }}>{output.regime}</strong>.
-            {" "}Conditions are <strong style={{ color: dirColor }}>{output.direction.toLowerCase()}</strong> with a {output.probabilities.bull}% probability of a bullish outcome
-            and {output.probabilities.bear}% probability of a bearish outcome.
+            {" "}Conditions are <strong style={{ color: dirColor }}>{output.direction.toLowerCase()}</strong>.
+            {/* Probability contract: bull/bear weights render only the contract display text. */}
+            {" "}Bull / bear scenario weights: <strong style={{ color: "#E2E8F0" }}>{output.probabilityContract?.scenarioSet.display.text ?? PROBABILITY_DISPLAY_TEXT.UNAVAILABLE}</strong>.
             {output.evidenceConsensus === "strong" && " Evidence across all measurement systems is in strong agreement."}
             {output.evidenceConsensus === "divergent" && " Evidence is divergent — different measurement systems are sending conflicting signals."}
           </div>
@@ -332,7 +334,7 @@ export default function SeismographNarrativeBanner({
                 <div key={p.patternId} style={{ padding: "4px 8px", background: "rgba(255,149,0,0.06)", border: "1px solid rgba(255,149,0,0.15)", borderRadius: "3px" }}>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#FF9500", marginBottom: "2px" }}>{p.name}</div>
                   <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(148,163,184,0.7)" }}>
-                    {p.daysActive}d active · {Math.round(p.confidence * 100)}% confidence
+                    {p.daysActive}d active · {Math.round(p.confidence)}% confidence
                     {p.historicalOutcome && <> · Hist: {p.historicalOutcome}</>}
                   </div>
                 </div>
@@ -348,7 +350,7 @@ export default function SeismographNarrativeBanner({
             <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
               <strong style={{ color: "#E2E8F0" }}>{output.topAnalog.label}</strong>
               {output.topAnalog.period && <> ({output.topAnalog.period})</>}
-              {" "}— {Math.round(output.topAnalog.similarity * 100)}% similarity.
+              {" "}— {Math.round(output.topAnalog.similarity)}% similarity.
               {" "}{output.topAnalog.description}
               {output.topAnalog.outcome && (
                 <> Historical outcome: <strong style={{ color: "#E2E8F0" }}>{output.topAnalog.outcome}</strong>.</>
@@ -369,7 +371,7 @@ export default function SeismographNarrativeBanner({
         <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)", borderRadius: "4px", borderLeft: "2px solid rgba(0,229,255,0.45)" }}>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "rgba(0,212,255,0.7)", letterSpacing: "0.15em", marginBottom: "5px" }}>WHAT TO MONITOR NEXT</div>
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "10px", color: "#94A3B8", lineHeight: 1.6 }}>
-            {output.transitionProbabilities.transitionToCrisis > 20 && (
+            {output.transitionProbabilities.transitionToCrisis != null && output.transitionProbabilities.transitionToCrisis > 20 && (
               <><strong style={{ color: "#FF2D55" }}>Crisis transition risk: {output.transitionProbabilities.transitionToCrisis}%.</strong>{" "}</>
             )}
             {output.marketMemory.keyMemoryPoints.slice(0, 2).map((pt, i) => (

@@ -211,8 +211,9 @@ export default function HomepageBriefingPanel() {
           {[
             { label: "PRESSURE", value: pressureValue !== null ? `${pressureValue}/100` : "UNAVAILABLE", color: pressureValue == null ? "#64748B" : pressureValue >= 65 ? "#FF2D55" : pressureValue >= 45 ? "#FF9500" : "#00FF88" },
             { label: "REGIME", value: metrics.regime ?? "UNAVAILABLE", color: "#00E5FF" },
-            { label: "BULL CONTINUATION", value: bullValue !== null ? `${bullValue}%` : "UNAVAILABLE", color: "#00FF88" },
-            { label: "CRASH / DRAWDOWN", value: crashValue !== null ? `${crashValue}%` : "UNAVAILABLE", color: "#FF2D55" },
+            // Probability contract: render only the contract display text.
+            { label: "BULL CONTINUATION", value: bullValue !== null ? `${bullValue}%` : (metrics.bullProbabilityText ?? "Unavailable"), color: "#00FF88" },
+            { label: "CRASH / DRAWDOWN", value: crashValue !== null ? `${crashValue}%` : (metrics.crashProbabilityText ?? "Not offered"), color: "#FF2D55" },
           ].map(m => (
             <div key={m.label} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "8px", color: "#475569", letterSpacing: "0.12em" }}>{m.label}</span>
