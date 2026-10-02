@@ -556,7 +556,7 @@ const SCORE_REGISTRY: Record<ScoreKey, ScoreMeta> = {
     },
     meaning: (v) => {
       if (v >= 75) return "The curve is deeply inverted and the 10Y yield is high. A normal or steep curve scores low on this vector.";
-      if (v >= 55) return "An inverted curve and/or a high 10Y yield are adding meaningful rate-structure pressure.";
+      if (v >= 55) return "An inverted curve together with an elevated 10Y yield is adding meaningful rate-structure pressure. A high 10Y alone keeps this vector low.";
       if (v >= 35) return "The curve shape and the 10Y level are adding some rate-structure pressure.";
       return "The curve shape and the 10Y level are adding little rate-structure pressure.";
     },

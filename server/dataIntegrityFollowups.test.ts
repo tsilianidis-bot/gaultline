@@ -4,7 +4,8 @@ import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   INDICATOR_MAP, migrateOverallScale, evaluateBreach, loadWatchlist, saveWatchlist,
-  getDefaultWatchlist, WATCHLIST_STORAGE_KEY, OVERALL_DEFAULT_THRESHOLD, type WatchlistItem,
+  getDefaultWatchlist, WATCHLIST_STORAGE_KEY, OVERALL_DEFAULT_THRESHOLD, OVERALL_DEFAULT_BELOW_THRESHOLD,
+  LEGACY_OVERALL_SCALE_KEY, overallFallbackThreshold, type WatchlistItem,
 } from "../client/src/lib/watchlist";
 
 const root = resolve(import.meta.dirname, "..");
@@ -135,7 +136,8 @@ describe("loadWatchlist schema marker (inside faultline_watchlist_v1)", () => {
     for (const items of Object.values(r)) expect(overall(items)).toEqual(expected);
     expect(overall(stored())).toEqual(expected);
     expect(stored().filter(i => i.indicatorKey === "score_overall").every(i => i.overallScale === 100)).toBe(true);
-    for (const v of overall(stored())) { expect(v).not.toBeNull(); expect(v).toBeGreaterThan(0); }
+    for (const v of overall(stored())) { expect(typeof v).toBe("number"); expect(Number.isFinite(v)).toBe(true); expect(v).toBeGreaterThanOrEqual(0); }
+    expect(mem.getItem(LEGACY_OVERALL_SCALE_KEY)).toBeNull();
   };
 
   it("no key: stores fresh defaults already marked /100 (70 never becomes 700)", () => {
@@ -211,9 +213,58 @@ describe("loadWatchlist schema marker (inside faultline_watchlist_v1)", () => {
     expectStable([70, 70, 70]);
   });
 
-  it("0, negative and missing thresholds fall back to 70 (never store 0)", () => {
+  it("0 is a legitimate threshold (edit-dialog minimum) and is kept; negative and missing fall back", () => {
     mem.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([legacy(0), legacy(-3), legacy(undefined), legacy(0, { overallScale: 100 })]));
-    expectStable([70, 70, 70, 70]);
+    expectStable([0, 70, 70, 0]);
+  });
+
+  it("saving 0 from the edit dialog stays 0 (not silently 70)", () => {
+    loadWatchlist();
+    const zero: WatchlistItem = { id: "z", indicatorKey: "score_overall", thresholdValue: 0, condition: "below", severity: "moderate", createdAt: 3, breachCount: 0 };
+    saveWatchlist([...loadWatchlist(), zero]);
+    expectStable([70, 0]);
+  });
+
+  it("fallback respects direction: invalid 'below' items become below 20, never below 70", () => {
+    expect(overallFallbackThreshold("above")).toBe(OVERALL_DEFAULT_THRESHOLD);
+    expect(overallFallbackThreshold("below")).toBe(OVERALL_DEFAULT_BELOW_THRESHOLD);
+    mem.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([
+      legacy(null, { condition: "below" }), legacy(-1, { condition: "below" }), legacy("x", { condition: "below", overallScale: 100 }),
+      legacy(null, { condition: "above" }),
+    ]));
+    expectStable([20, 20, 20, 70]);
+    // A normal 33/100 reading does not breach any of the fallbacks.
+    for (const item of loadWatchlist()) expect(evaluateBreach(item, 33)).toBe(false);
+    // saveWatchlist applies the same direction-aware fallback.
+    saveWatchlist([{ id: "b", indicatorKey: "score_overall", thresholdValue: Number.NaN, condition: "below", severity: "high", createdAt: 4, breachCount: 0 }]);
+    expect(overall(stored())).toEqual([20]);
+  });
+
+  it("legacy 0.5 / 1.0 (old 0–10 scale) convert once to 5 / 10 across six loads", () => {
+    mem.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([legacy(0.5), legacy(1), legacy(0.5, { condition: "below" })]));
+    expectStable([5, 10, 5]);
+  });
+
+  it("leftover 96c3256 flag: unmarked values were already /100, so they are not scaled again; the flag is removed", () => {
+    mem.setItem(LEGACY_OVERALL_SCALE_KEY, "100");
+    mem.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([legacy(5), legacy(70), legacy(0.5)]));
+    expectStable([5, 70, 0.5]);
+  });
+
+  it("leftover 96c3256 flag is kept if the marked list could not be persisted (no double ×10 later)", () => {
+    mem.setItem(LEGACY_OVERALL_SCALE_KEY, "100");
+    mem.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([legacy(5)]));
+    const realSet = mem.setItem.bind(mem);
+    mem.setItem = () => { throw new Error("QuotaExceededError"); };
+    expect(overall(loadWatchlist())).toEqual([5]);
+    expect(mem.getItem(LEGACY_OVERALL_SCALE_KEY)).toBe("100");
+    mem.setItem = realSet;
+    expectStable([5]);
+  });
+
+  it("leftover flag with no list: defaults stored, flag removed", () => {
+    mem.setItem(LEGACY_OVERALL_SCALE_KEY, "100");
+    expectStable([70]);
   });
 
   it("> 10 values are left as they are", () => {
@@ -242,5 +293,89 @@ describe("loadWatchlist schema marker (inside faultline_watchlist_v1)", () => {
     loadWatchlist();
     mem.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify([legacy(7)])); // old bundle rewrites without marker
     expectStable([70]);
+  });
+});
+
+// ── Launch blocker: no hard-coded prices / levels (James, Oct 2 11:42 AM ET) ──
+describe("no hard-coded current-looking prices or price levels", () => {
+  // Numeric literal on a price/level key, or a $-figure on any target key.
+  const PRICE_LEVEL_KEYS = /\b(price|currentPrice|lastPrice|support|resistance|targetPrice|priceTarget|stopLoss|entryZone|invalidationLevel|profitTargets|riskReward)\s*:\s*(\[\s*)?['"`]?\$?[0-9]|\b(target|stop|entry|invalidation)\w*\s*:\s*(\[\s*)?['"`]\$[0-9]/;
+  const DOLLAR_LEVEL = /(support|resistance|target|stop|entry|invalidat|close (above|below))[^'"`\n]{0,40}\$[0-9]/i;
+
+  it("signalsData.ts catalog has no price, level, target, stop or invalidation literals", async () => {
+    const s = src("client/src/lib/signalsData.ts");
+    expect(s).not.toMatch(PRICE_LEVEL_KEYS);
+    expect(s).not.toMatch(DOLLAR_LEVEL);
+    // Only market-cap bucket labels may contain a $ figure.
+    const dollarLines = s.split("\n").filter(l => /\$[0-9]/.test(l));
+    expect(dollarLines.every(l => /marketCapRange:/.test(l))).toBe(true);
+    const { SIGNAL_STOCKS } = await import("../client/src/lib/signalsData");
+    for (const st of SIGNAL_STOCKS as unknown as Record<string, unknown>[]) {
+      for (const k of ["price", "support", "resistance", "entryZone", "stopLoss", "profitTargets", "riskReward", "invalidationLevel"]) {
+        expect(st[k], `${st.ticker}.${k}`).toBeUndefined();
+      }
+    }
+  });
+
+  it("client/shared app code (outside public SEO pages owned by Claims) has no hard-coded price levels", () => {
+    const { readdirSync, statSync } = require("node:fs") as typeof import("node:fs");
+    const files: string[] = [];
+    const walk = (d: string) => {
+      for (const n of readdirSync(d)) {
+        const p = resolve(d, n);
+        if (statSync(p).isDirectory()) { if (n !== "seo" && n !== "node_modules") walk(p); }
+        else if (/\.(ts|tsx)$/.test(n) && !/\.test\./.test(n)) files.push(p);
+      }
+    };
+    walk(resolve(root, "client/src")); walk(resolve(root, "shared"));
+    const offenders = files.flatMap(f => readFileSync(f, "utf8").split("\n").map((l, i) => ({ f, i: i + 1, l })))
+      .filter(({ l }) => PRICE_LEVEL_KEYS.test(l) || DOLLAR_LEVEL.test(l))
+      // Subscription plan prices ('$0' FREE tier) are not market prices.
+      .filter(({ f, l }) => !(/ProductExperience\.tsx$/.test(f) && /price: '\$0'/.test(l)))
+      .map(({ f, i, l }) => `${f.replace(root + "/", "")}:${i}: ${l.trim().slice(0, 100)}`);
+    expect(offenders).toEqual([]);
+  });
+
+  it("Signals card: static catalog block shows no levels; levels carry source + ET as-of or are UNAVAILABLE", () => {
+    const s = src("client/src/pages/Signals.tsx");
+    expect(s).not.toMatch(/stock\.(entryZone|support|resistance|stopLoss|profitTargets|riskReward|invalidationLevel|price)\b/);
+    expect(s).toMatch(/CATALOG NOTES · STATIC REFERENCE, NOT MARKET DATA/);
+    expect(s).toMatch(/KEY PRICE LEVELS · UNAVAILABLE/);
+    expect((s.match(/priceLevelsBasis\(liveQuote, quote\.badge\)/g) ?? []).length).toBe(2);
+    expect(s).toMatch(/const asOf = quote \? formatEt\(quote\.timestamp\) : null;/);
+  });
+
+  it("NOW deep-view stock preview: price only from the Signals quote feed, else UNAVAILABLE", () => {
+    const s = src("client/src/components/HomeStockIntelSection.tsx");
+    expect(s).not.toMatch(/price: [0-9]/);
+    expect(s).not.toMatch(/change: [+-]?[0-9]/);
+    expect(s).not.toMatch(/Live Signal Preview/);
+    expect(s).toMatch(/fetch\('\/api\/signals\/quotes'\)/);
+    expect(s).toMatch(/const quote = signalQuoteView\(liveQuote\);/);
+    expect(s).toMatch(/: 'UNAVAILABLE'\}/);
+  });
+
+  it("dashboard search panels label quote/screener times in ET with their source", () => {
+    const s = src("client/src/components/DashboardSearchPanels.tsx");
+    expect(s).not.toMatch(/toLocaleTimeString\(/);
+    expect(s).toMatch(/Signals quote · as of \{formatEt\(liveQ\.timestamp \?\? null\)/);
+    expect(s).toMatch(/Crypto screener · as of \{lastUpdated\}/);
+  });
+
+  it("AIWatch: no unsourced $214B capex figure", () => {
+    const s = src("client/src/pages/AIWatch.tsx");
+    expect(s).not.toMatch(/\$214B/);
+    expect(s).toMatch(/value: 'Not tracked'/);
+  });
+});
+
+describe("PR #59 r2 nits", () => {
+  it("Watchlist card falls back on an unknown severity instead of crashing", () => {
+    expect(src("client/src/pages/Watchlist.tsx")).toMatch(/SEVERITY_CONFIG\[item\.severity\] \?\? SEVERITY_CONFIG\.moderate/);
+  });
+  it("ScoreExplainer 55+ band no longer says a high 10Y alone ('and/or') adds meaningful pressure", () => {
+    const s = src("client/src/components/ScoreExplainer.tsx");
+    expect(s).not.toMatch(/and\/or a high 10Y/);
+    expect(s).toMatch(/A high 10Y alone keeps this vector low/);
   });
 });

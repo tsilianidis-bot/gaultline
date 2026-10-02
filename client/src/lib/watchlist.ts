@@ -331,52 +331,79 @@ export const INDICATOR_MAP = Object.fromEntries(INDICATOR_CATALOG.map(d => [d.ke
 // ── Persistence ───────────────────────────────────────────────
 const STORAGE_KEY = 'faultline_watchlist_v1';
 export const WATCHLIST_STORAGE_KEY = STORAGE_KEY;
-/** Fallback for a missing / invalid score_overall threshold (never null or 0). */
+/** Fallback for a missing / invalid 'above' score_overall threshold (the stress level). */
 export const OVERALL_DEFAULT_THRESHOLD = 70;
+/** Fallback for a missing / invalid 'below' threshold: bottom of the normal range, so it doesn't fire at a normal reading. */
+export const OVERALL_DEFAULT_BELOW_THRESHOLD = 20;
+/**
+ * Flag key written only by the pre-release 96c3256 build of this PR. When it is
+ * '100', unmarked items were already converted to /100 by that build and must not
+ * be scaled again. It is removed after the first successful load.
+ */
+export const LEGACY_OVERALL_SCALE_KEY = 'faultline_watchlist_overall_scale';
 
+/** Direction-aware fallback: never 'below 70', which would breach at a normal 33. */
+export function overallFallbackThreshold(condition: unknown): number {
+  // evaluateBreach treats anything other than 'above' as 'below'.
+  return condition === 'above' ? OVERALL_DEFAULT_THRESHOLD : OVERALL_DEFAULT_BELOW_THRESHOLD;
+}
+
+/** 0 is a legitimate threshold (the edit dialog's minimum); negatives / non-finite are not. */
 function validOverallThreshold(v: unknown): v is number {
-  return typeof v === 'number' && Number.isFinite(v) && v > 0;
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0;
 }
 
 /**
  * Normalize one stored item to the canonical 0–100 overall-score scale.
  * The scale marker lives on the item itself, so every read and write path
  * agrees without a separate flag key:
- *  - overallScale === 100 → already /100; kept (invalid → default 70).
- *  - unmarked, finite and ≤ 10 → old 0–10 value; ×10 exactly once.
+ *  - overallScale === 100 → already /100; kept.
+ *  - unmarked, finite, 0–10 → old 0–10 value; ×10 exactly once.
  *  - unmarked and > 10 → already /100; kept as is.
- *  - null / NaN / non-finite / ≤ 0 → default 70.
+ *  - null / NaN / non-number / negative → direction-aware fallback
+ *    (above → 70, below → 20). Never null.
  * The result is always marked, so normalizing again is a no-op (idempotent).
+ * `alreadyScaled` (legacy 96c3256 flag present) keeps unmarked values unscaled.
  */
-export function normalizeOverallItem(item: WatchlistItem): WatchlistItem {
+export function normalizeOverallItem(item: WatchlistItem, alreadyScaled = false): WatchlistItem {
   if (item.indicatorKey !== 'score_overall') return item;
   const v = item.thresholdValue as unknown;
   let thresholdValue: number;
-  if (!validOverallThreshold(v)) thresholdValue = OVERALL_DEFAULT_THRESHOLD;
-  else if (item.overallScale === 100 || v > 10) thresholdValue = v;
+  if (!validOverallThreshold(v)) thresholdValue = overallFallbackThreshold(item.condition);
+  else if (item.overallScale === 100 || alreadyScaled || v > 10) thresholdValue = v;
   else thresholdValue = Math.round(v * 100) / 10;
   return { ...item, thresholdValue, overallScale: 100 };
 }
 
 /** Pure migration of a stored list (idempotent). */
-export function migrateOverallScale(items: WatchlistItem[]): WatchlistItem[] {
+export function migrateOverallScale(items: WatchlistItem[], alreadyScaled = false): WatchlistItem[] {
   return items
     .filter((item): item is WatchlistItem => !!item && typeof item === 'object' && typeof (item as WatchlistItem).indicatorKey === 'string')
-    .map(normalizeOverallItem);
+    .map(item => normalizeOverallItem(item, alreadyScaled));
 }
 
-/** Items written by this bundle are /100: mark them (invalid → default 70), never ×10. */
+/** Items written by this bundle are /100: mark them (invalid → direction-aware fallback), never ×10. */
 function markForSave(items: WatchlistItem[]): WatchlistItem[] {
   return items.map(item => item.indicatorKey === 'score_overall'
-    ? { ...item, thresholdValue: validOverallThreshold(item.thresholdValue) ? item.thresholdValue : OVERALL_DEFAULT_THRESHOLD, overallScale: 100 as const }
+    ? { ...item, thresholdValue: validOverallThreshold(item.thresholdValue) ? item.thresholdValue : overallFallbackThreshold(item.condition), overallScale: 100 as const }
     : item);
 }
 
-function writeItems(items: WatchlistItem[]): void {
+function readLegacyScaleFlag(): boolean {
+  try { return localStorage.getItem(LEGACY_OVERALL_SCALE_KEY) === '100'; } catch { return false; }
+}
+
+function removeLegacyScaleFlag(): void {
+  try { localStorage.removeItem(LEGACY_OVERALL_SCALE_KEY); } catch { /* unavailable */ }
+}
+
+function writeItems(items: WatchlistItem[]): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    return true;
   } catch {
     // Storage full or unavailable — fail silently
+    return false;
   }
 }
 
@@ -396,11 +423,13 @@ export function loadWatchlist(): WatchlistItem[] {
     // No key, corrupt JSON or wrong shape: store marked /100 defaults so no
     // later load (e.g. AppLayout) can mistake them for 0–10 values.
     const defaults = getDefaultWatchlist();
-    writeItems(defaults);
+    if (writeItems(defaults)) removeLegacyScaleFlag();
     return defaults;
   }
-  const next = migrateOverallScale(parsed as WatchlistItem[]);
-  if (JSON.stringify(next) !== raw) writeItems(next);
+  const next = migrateOverallScale(parsed as WatchlistItem[], readLegacyScaleFlag());
+  // Remove the legacy flag only once the marked list is persisted, so a failed
+  // write can't cause a second ×10 on the next load.
+  if (JSON.stringify(next) === raw || writeItems(next)) removeLegacyScaleFlag();
   return next;
 }
 

@@ -86,7 +86,8 @@ function WatchlistCard({ item, reading, def, onEdit, onDelete, index }: Watchlis
   const liveValue = reading.value;
   const isBreached = reading.evaluable && liveValue != null && evaluateBreach(item, liveValue);
   const proximity = reading.evaluable && liveValue != null ? getBreachDistance(item, liveValue, def) : 0;
-  const sevCfg = SEVERITY_CONFIG[item.severity];
+  // Hand-edited storage can carry an unknown severity; fall back instead of crashing the card.
+  const sevCfg = SEVERITY_CONFIG[item.severity] ?? SEVERITY_CONFIG.moderate;
   const catColor = CATEGORY_COLORS[def.category] ?? '#00D4FF';
 
   const borderColor = isBreached ? sevCfg.color : proximity > 0.6 ? sevCfg.color + '60' : 'rgba(255,255,255,0.06)';
