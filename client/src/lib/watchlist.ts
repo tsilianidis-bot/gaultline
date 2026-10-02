@@ -482,7 +482,7 @@ export function getDefaultWatchlist(): WatchlistItem[] {
       thresholdValue: -200,
       condition: 'below',
       severity: 'high',
-      note: 'Deep inversion — recession probability >80%',
+      note: 'Deep inversion — historically a recession warning sign',
       createdAt: now,
       breachCount: 0,
     },

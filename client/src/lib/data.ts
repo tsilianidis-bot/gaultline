@@ -352,33 +352,8 @@ export const riskScores: RiskScore[] = [
   },
 ];
 
-// ---- Scenario Probabilities ----
-export const scenarios: ScenarioProbability[] = [
-  {
-    id: 'melt-up',
-    label: 'Bullish Melt-Up',
-    probability: 22,
-    trend: 'falling',
-    description: 'AI productivity boom materializes, soft landing achieved, Fed pivots successfully. Speculative excess continues.',
-    color: '#00FF88',
-  },
-  {
-    id: 'bear',
-    label: 'Recessionary Bear Market',
-    probability: 48,
-    trend: 'rising',
-    description: 'Credit stress triggers corporate defaults, unemployment rises above 5%, earnings collapse 20-30%. Orderly decline.',
-    color: '#FF9500',
-  },
-  {
-    id: 'crisis',
-    label: 'Severe Systemic Crisis',
-    probability: 30,
-    trend: 'rising',
-    description: 'Treasury auction failure, regional bank cascade, AI bubble implosion, and sovereign debt crisis converge simultaneously.',
-    color: '#FF2D55',
-  },
-];
+// Scenario probabilities: the unimported static set with fixed percentages was
+// removed; scenario output comes only from the canonical snapshot.
 
 // ---- Historical Analogs ----
 export const historicalAnalogs: HistoricalAnalog[] = [
@@ -474,26 +449,5 @@ export const aiWatchItems: AIWatchItem[] = [];
 // stamps and no source. It rendered on no route; alerts come from the canonical
 // state (Pressure: canonicalState.conflicts / warnings).
 
-// ---- Market Regime ----
-export const marketRegime = {
-  label: 'LATE-CYCLE FRAGILITY',
-  sublabel: 'Elevated Systemic Stress',
-  color: '#FF9500',
-  description: 'Multiple fault lines converging. Credit stress, AI speculation, sovereign debt pressure, and liquidity deterioration creating compound risk.',
-  bullProbability: 22,
-  crashProbability: 78,
-};
-
-// ---- Daily Report ----
-export const dailyReport = {
-  date: 'May 13, 2026',
-  regimeAssessment: 'LATE-CYCLE FRAGILITY — ELEVATED SYSTEMIC STRESS',
-  summary: `Multiple systemic fault lines are converging simultaneously. The AI concentration bubble has reached historic extremes with the top-7 technology names comprising 32.4% of the S&P 500 — a level that exceeds both the Nifty Fifty era and the 2000 Dot-com peak. Treasury auction demand is deteriorating as foreign buyers reduce exposure, while the $1.2T corporate refinancing wall approaches at rates 2-3x higher than original issuance. Commercial real estate stress is cascading through regional bank balance sheets, and consumer delinquencies are at 12-year highs. The Fed remains trapped between persistent inflation and a softening labor market. The probability of a severe systemic event has risen to 30% — the highest reading since the 2020 COVID shock.`,
-  keyRisks: [
-    'Treasury auction failure risk rising — foreign demand softening',
-    'AI bubble concentration at historic extremes — monetization gap widening',
-    'Regional bank CRE cascade — systemic contagion pathway open',
-    'Corporate refinancing wall — $1.2T maturing at 2-3x higher rates',
-    'Consumer delinquency surge — lower-income cohort under severe stress',
-  ],
-};
+// Market regime / daily report: the unimported static copies with fixed bull /
+// crash percentages and a stated systemic-event probability were removed.

@@ -52,7 +52,7 @@ const SLIDERS: SliderConfig[] = [
     min: -300, max: 200, step: 5, defaultVal: -42, stressVal: -250,
     color: '#FF2D55', category: 'rates',
     description: 'Deep inversion historically precedes recession by 12–18 months.',
-    stressNote: 'Below -200bps: deep inversion, recession probability >80%',
+    stressNote: 'Below -200bps: deep inversion, historically a recession warning sign',
   },
   {
     key: 'hySpread', label: 'HY Credit Spread', sublabel: 'BAMLH0A0HYM2', unit: 'bps',
