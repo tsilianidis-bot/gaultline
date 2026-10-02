@@ -1072,3 +1072,110 @@ describe("claims sweep: no unsourced present-tense valuation / record claims in 
     expect(claimLines(`x\n${line}\n`).length).toBe(1);
   });
 });
+
+describe("Watchlist domain scores on the 0–100 display scale (stored 0–10 unchanged)", async () => {
+  const { INDICATOR_MAP: MAP, thresholdSlider } = await import("../client/src/lib/watchlist");
+  const { buildWatchlistItem } = await import("../client/src/components/watchlist/WatchlistEditModel");
+  const DOMAIN = ["score_credit", "score_ai", "score_treasury", "score_recession"] as const;
+
+  it.each(DOMAIN)("%s: shown /100 (×10), stored scale and defaults unchanged", (key) => {
+    const def = MAP[key];
+    expect(def.unit).toBe("/100");
+    expect([def.min, def.max, def.step]).toEqual([0, 10, 0.1]);
+    expect(def.defaultThreshold).toBeGreaterThan(0);
+    expect(def.defaultThreshold).toBeLessThanOrEqual(10);
+    expect(def.format(7)).toBe("70");
+    expect(def.format(7.5)).toBe("75");
+    expect(def.format(def.stressLevel)).toBe(String(Math.round(def.stressLevel * 10)));
+  });
+
+  it.each(DOMAIN)("%s: slider runs 0–100 step 10 and saves the stored 0–10 value", (key) => {
+    const sl = thresholdSlider(MAP[key]);
+    expect([sl.min, sl.max, sl.step]).toEqual([0, 100, 10]);
+    expect(sl.toDisplay(7)).toBe(70);
+    expect(sl.toStored(80)).toBe(8);
+    expect(sl.toStored(sl.toDisplay(7.5))).toBe(7.5);
+    const saved = buildWatchlistItem({ indicatorKey: key, thresholdValue: sl.toStored(80), condition: "above", severity: "high", note: "" }, null, () => 1, () => "id");
+    expect(saved.thresholdValue).toBe(8);
+  });
+
+  it("score_overall slider stays on its canonical 0–100 scale (step 1); raw indicators keep their own scale", () => {
+    expect(thresholdSlider(MAP.score_overall)).toMatchObject({ min: 0, max: 100, step: 1 });
+    expect(thresholdSlider(MAP.score_overall).toStored(70)).toBe(70);
+    const vix = thresholdSlider(MAP.vix);
+    expect([vix.min, vix.max, vix.step]).toEqual([MAP.vix.min, MAP.vix.max, MAP.vix.step]);
+  });
+
+  it("no /10 unit left in the watchlist catalog; 0–10 indicator inputs say 'index 0–10'", () => {
+    const lib = src("client/src/lib/watchlist.ts");
+    expect(lib).not.toMatch(/unit: '\/10'/);
+    expect(MAP.bankLiquidityStress.unit).toBe("index 0–10");
+    expect(MAP.creStress.unit).toBe("index 0–10");
+  });
+
+  it("WatchlistEditModal slider is bound through thresholdSlider (display ↔ stored)", () => {
+    const m = src("client/src/components/watchlist/WatchlistEditModal.tsx");
+    expect(m).toMatch(/const slider = thresholdSlider\(def\);/);
+    expect(m).toMatch(/value=\{slider\.toDisplay\(threshold\)\}/);
+    expect(m).toMatch(/setThreshold\(slider\.toStored\(parseFloat\(event\.target\.value\)\)\)/);
+    expect(m).not.toMatch(/max=\{def\?\.max \?\? 10\}|value=\{threshold\}/);
+    for (const f of ["client/src/components/watchlist/WatchlistEditModal.tsx", "client/src/pages/Watchlist.tsx"]) {
+      expect(src(f)).not.toMatch(/\/\s?10(?:\.0)?\b/);
+    }
+  });
+});
+
+describe("missing delta renders '—' / Unavailable, never 'Stable' or '0 vs baseline' (works with and without #60)", async () => {
+  const { knownDelta, deltaTrend, deltaDirection, vsBaselineText } = await import("../client/src/lib/deltaAvailability");
+  const { projectCanonicalMarketState, selectBrowserMarketOutput } = await import("../client/src/lib/marketStateProjection");
+  const { DEFAULT_INDICATORS } = await import("../client/src/lib/engine");
+  const marketState = JSON.parse(src("server/__fixtures__/prod-2026-10-01/market-state-current.json"));
+
+  it("helpers: flagged-unavailable or non-finite delta → null / unavailable; a known delta still reads", () => {
+    for (const item of [{ delta: 0, deltaAvailable: false }, { delta: 0.4, deltaAvailable: false }, { delta: Number.NaN }, { delta: undefined }, null, undefined]) {
+      expect(knownDelta(item)).toBeNull();
+      expect(deltaTrend(item)).toBe("unavailable");
+      expect(deltaDirection(item)).toBe("Unavailable");
+      expect(vsBaselineText(item)).toBe("Δ unavailable");
+    }
+    expect(deltaTrend({ delta: 0 })).toBe("stable");
+    expect(deltaDirection({ delta: 0.35 })).toBe("Deteriorating");
+    expect(deltaDirection({ delta: -0.35, deltaAvailable: true })).toBe("Improving");
+    expect(vsBaselineText({ delta: 0.35 })).toBe("+3.5 pts vs baseline");
+    expect(vsBaselineText({ delta: -0.2 })).toBe("-2.0 pts vs baseline");
+  });
+
+  it("canonical projection (prod fixture): any delta flagged unavailable renders Unavailable", () => {
+    const fb = selectBrowserMarketOutput({ marketState: null, baselineIndicators: DEFAULT_INDICATORS, simulationOverrides: {} }).output;
+    const out = projectCanonicalMarketState(marketState, fb);
+    for (const item of [out.overall, ...out.domains] as Array<{ delta: number; deltaAvailable?: boolean }>) {
+      if (item.deltaAvailable === false) {
+        expect(deltaTrend(item)).toBe("unavailable");
+        expect(deltaDirection(item)).toBe("Unavailable");
+        expect(vsBaselineText(item)).not.toMatch(/\d|stable/i);
+      } else {
+        expect(deltaTrend(item)).toBe(item.delta > 0.1 ? "deteriorating" : item.delta < -0.1 ? "improving" : "stable");
+      }
+    }
+  });
+
+  it("Now.tsx: fallback trend / direction / what-changed read the delta through the helpers", () => {
+    const s = src("client/src/pages/Now.tsx");
+    expect(s).toMatch(/trend: deltaTrend\(domain\),/);
+    expect(s).toMatch(/\?\? deltaDirection\(output\.overall\);/);
+    expect(s).toMatch(/const d = knownDelta\(domain\);/);
+    expect(s).not.toMatch(/domain\.delta > 0\.1|output\.overall\.delta > 0\.1|Math\.abs\(domain\.delta\)/);
+    expect(s).toMatch(/trend === "stable" \? "Stable" : "Unavailable"/);
+  });
+
+  it("Pressure.tsx: domain delta via vsBaselineText, no raw '0 vs baseline'; unknown direction has no 'stable' icon; domain score /100", () => {
+    const s = src("client/src/pages/Pressure.tsx");
+    expect(s).toMatch(/const d = knownDelta\(domain\);/);
+    expect(s).toMatch(/\{vsBaselineText\(domain\)\}/);
+    expect(s).not.toMatch(/domain\.delta\.toFixed|domain\.delta !== 0/);
+    expect(s).not.toMatch(/trend \?\? "stable"/);
+    expect(s).toMatch(/engine\.direction === "Stable" \? "stable" : "unavailable"/);
+    expect(s).not.toMatch(/\{domain\.score\.toFixed\(1\)\}/);
+    expect(s).toMatch(/Math\.round\(domain\.score \* 10\)/);
+  });
+});
