@@ -122,15 +122,6 @@ interface TradingSignalResult {
 function fmt(n: number, decimals = 2) {
   return n.toFixed(decimals);
 }
-function fmtCap(billions: number) {
-  if (billions >= 1000) return `$${(billions / 1000).toFixed(1)}T`;
-  if (billions >= 1) return `$${billions.toFixed(1)}B`;
-  return `$${(billions * 1000).toFixed(0)}M`;
-}
-function volumeSurge(s: SignalStock, liveVol?: number) {
-  const vol = liveVol !== undefined ? liveVol : s.volume;
-  return (vol / s.avgVolume).toFixed(1);
-}
 /** Feed fetch time, in ET with its label (never an unlabelled browser-local time). */
 function fmtTimestamp(ts: string | null): string {
   return formatEt(ts) ?? '—';
@@ -369,8 +360,6 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
   const isLiveData = quote.available;
 
   const positive = (changePercent ?? 0) >= 0;
-  const surge = quote.volumeMillions != null ? parseFloat(volumeSurge(stock, quote.volumeMillions)) : null;
-  const highSurge = surge != null && surge >= 1.5;
 
   // Trading signal colors for card border
   const actionColor = tradingSignal
@@ -444,15 +433,7 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
               padding: '1px 4px', borderRadius: '2px',
               border: `1px solid ${quote.badge === 'LIVE' ? 'rgba(0,212,255,0.15)' : 'rgba(255,255,255,0.1)'}`,
             }}>{quote.badge}</span>
-            {stock.earningsDaysAway !== undefined && stock.earningsDaysAway <= 14 && (
-              <span style={{
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: '12px', letterSpacing: '0.08em',
-                color: '#FFD700', background: 'rgba(255,215,0,0.1)',
-                padding: '1px 5px', borderRadius: '2px',
-                border: '1px solid rgba(255,215,0,0.2)',
-              }}>EARN {stock.earningsDaysAway}d</span>
-            )}
+            {/* No "EARN nd" badge: earningsDaysAway is a static catalog count with no as-of date. */}
           </div>
           <div style={{
             fontFamily: "'IBM Plex Mono', monospace",
@@ -530,7 +511,8 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
           // RSI only from a computed trading signal. The static signalsData
           // relativeStrength catalog value is never shown as an RSI reading.
           { label: tradingSignal ? (tradingSignal.technicals.rsiIsTrue ? 'RSI(14)' : 'RSI~') : 'RSI', value: tradingSignal ? tradingSignal.technicals.rsiEstimate.toFixed(0) : '—', color: tradingSignal ? (tradingSignal.technicals.rsiEstimate > 70 ? '#FF2D55' : tradingSignal.technicals.rsiEstimate < 30 ? '#00D4FF' : '#94A3B8') : '#64748B' },
-          { label: 'VOL', value: surge != null ? `${surge}x` : '—', color: highSurge ? '#FFD700' : '#94A3B8' },
+          // Quote volume itself; no ratio against the static catalog average volume.
+          { label: 'VOL', value: quote.volumeMillions != null ? `${quote.volumeMillions.toFixed(1)}M` : '—', color: '#94A3B8' },
           { label: tradingSignal ? 'TREND' : 'SECTOR', value: tradingSignal ? tradingSignal.technicals.trend.split('trend')[0].toUpperCase() || tradingSignal.technicals.trend.toUpperCase() : stock.sector.split(' ')[0], color: tradingSignal?.technicals.trend === 'Uptrend' ? '#00D4FF' : tradingSignal?.technicals.trend === 'Downtrend' ? '#FF2D55' : '#94A3B8' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{
@@ -753,18 +735,25 @@ function StockCard({ stock, regimeScore, liveQuote, tradingSignal, signalBlocked
             </div>
           )}
 
-          {/* Fundamentals grid */}
+          {/* Fundamentals grid. Market cap, short interest, debt/equity and average
+              volume in signalsData.ts are static catalog figures with no source or
+              as-of date, so they are shown as Unavailable (never as current figures).
+              AI exposure / recession sensitivity are catalog descriptors, labelled static.
+              Day open / high / low come from this card's Signals quote, with its badge. */}
+          <div data-fundamentals-basis style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '9px', color: 'rgba(100,116,139,0.7)', letterSpacing: '0.06em', marginBottom: '4px' }}>
+            FUNDAMENTALS · NO CURRENT SOURCE CONNECTED · descriptors are catalog · static
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '8px' }}>
             {[
-              { label: 'Market Cap', value: fmtCap(stock.marketCapValue) },
-              { label: 'Short Interest', value: stock.shortInterest ? `${stock.shortInterest}%` : 'N/A' },
-              { label: 'Debt/Equity', value: stock.debtToEquity !== undefined ? stock.debtToEquity.toFixed(1) : 'N/A' },
-              { label: 'Avg Volume', value: `${stock.avgVolume.toFixed(1)}M` },
-              { label: 'AI Exposure', value: stock.aiExposure },
-              { label: 'Recession Sens.', value: stock.recessionSensitivity },
-              ...(liveQuote?.price && liveQuote.price > 0 ? [
-                { label: 'Day Open', value: `$${fmt(liveQuote.open)}` },
-                { label: 'Day High/Low', value: `$${fmt(liveQuote.high)} / $${fmt(liveQuote.low)}` },
+              { label: 'Market Cap', value: 'Unavailable' },
+              { label: 'Short Interest', value: 'Unavailable' },
+              { label: 'Debt/Equity', value: 'Unavailable' },
+              { label: 'Avg Volume', value: 'Unavailable' },
+              { label: 'AI Exposure · static', value: stock.aiExposure },
+              { label: 'Recession Sens. · static', value: stock.recessionSensitivity },
+              ...(quote.available && liveQuote ? [
+                { label: `Day Open · ${quote.badge}`, value: `$${fmt(liveQuote.open)}` },
+                { label: `Day High/Low · ${quote.badge}`, value: `$${fmt(liveQuote.high)} / $${fmt(liveQuote.low)}` },
               ] : []),
             ].map(({ label, value }) => (
               <div key={label}>

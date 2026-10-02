@@ -470,72 +470,9 @@ export const historicalAnalogs: HistoricalAnalog[] = [
 export const aiWatchItems: AIWatchItem[] = [];
 
 // ---- Alerts ----
-export const alerts: AlertItem[] = [
-  {
-    id: 'alert-1',
-    trigger: 'Treasury Auction Demand Deterioration',
-    severity: 'critical',
-    description: '30Y auction bid-to-cover fell to 2.24x — lowest since 2019. Primary dealer absorption at 42%. Foreign demand declining.',
-    timestamp: '1h ago',
-    status: 'active',
-  },
-  {
-    id: 'alert-2',
-    trigger: 'CRE Default Cascade — Regional Banks',
-    severity: 'critical',
-    description: 'New York Community Bancorp CRE loss provisions surge 400%. 5 regional banks flagged for elevated CRE concentration.',
-    timestamp: '3h ago',
-    status: 'active',
-  },
-  {
-    id: 'alert-3',
-    trigger: 'HY Credit Spread Widening',
-    severity: 'high',
-    description: 'High-yield spreads +18bps in 48 hours. Energy and real estate sectors leading widening. Contagion risk to IG.',
-    timestamp: '5h ago',
-    status: 'active',
-  },
-  {
-    id: 'alert-4',
-    trigger: 'AI Earnings Disappointment Signal',
-    severity: 'high',
-    description: 'Microsoft Azure AI growth deceleration. Alphabet AI revenue miss. Pattern suggests monetization gap widening.',
-    timestamp: '6h ago',
-    status: 'monitoring',
-  },
-  {
-    id: 'alert-5',
-    trigger: 'Liquidity Freeze Signal — Repo Market',
-    severity: 'elevated',
-    description: 'Overnight repo rates spiking above Fed Funds. Reserve scarcity signal. SOFR-OIS spread widening.',
-    timestamp: '8h ago',
-    status: 'monitoring',
-  },
-  {
-    id: 'alert-6',
-    trigger: 'Fed Policy Error Risk Elevated',
-    severity: 'elevated',
-    description: 'CPI re-acceleration forces Fed to hold longer. Unemployment rising simultaneously. Stagflation probability increasing.',
-    timestamp: '12h ago',
-    status: 'monitoring',
-  },
-  {
-    id: 'alert-7',
-    trigger: 'Sovereign Debt Instability — Japan',
-    severity: 'elevated',
-    description: 'JGB yields at 15-year highs. BoJ yield curve control abandonment creating global bond market volatility.',
-    timestamp: '1d ago',
-    status: 'monitoring',
-  },
-  {
-    id: 'alert-8',
-    trigger: 'Oil Shock Risk — Middle East Escalation',
-    severity: 'moderate',
-    description: 'Strait of Hormuz shipping disruption probability rising. 20% of global oil supply at risk. Stagflation amplifier.',
-    timestamp: '2d ago',
-    status: 'monitoring',
-  },
-];
+// Removed: an unimported static alert list with relative "1h ago" … "2d ago"
+// stamps and no source. It rendered on no route; alerts come from the canonical
+// state (Pressure: canonicalState.conflicts / warnings).
 
 // ---- Market Regime ----
 export const marketRegime = {
