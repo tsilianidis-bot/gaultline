@@ -91,7 +91,7 @@ PLATO explains FAULTLINE's systemic-pressure readings in plain language, so indi
 
 Unlike AI assistants that answer questions in isolation, PLATO answers from the same persisted market state every FAULTLINE surface reads: the Pressure Index and its vectors, regime readings, historical resemblance, crypto context, and signals. PLATO explains what those readings mean together and states plainly when an input is unavailable or not supported by governed evidence — delivering an interpretation rather than a raw data output.
 
-"Most investors see price action. PLATO sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+"Most investors see price action. PLATO sees the structural conditions beneath it," said JT, Founder of Phoenix Systems. "FAULTLINE synthesizes multiple market-risk engines into one decision framework. That is not a chatbot. That is an intelligence layer."
 
 FAULTLINE's Seismograph™ records Pressure Index readings over time and gives PLATO the path behind today's level. The platform also includes a Historical Analog Engine, Decision Engine, Day Trade Intelligence, Pre-Flight Briefing, Symbol Intelligence, Crypto Hub, Aftershock Engine, and Portfolio Intelligence tools.
 
@@ -455,7 +455,7 @@ export default function Press() {
             That asymmetry is not a feature of markets. It is a failure of infrastructure. And it is the problem FAULTLINE was built to solve.
           </p>
           <p style={prose}>
-            We built PLATO — our AI intelligence layer — to do what no single analyst can: read ten live market engines simultaneously, identify where they agree, surface where they diverge, and synthesise everything into a single coherent picture of what is building beneath the surface. Not a prediction. Not a recommendation. A clear, evidence-based understanding of the current state of the system.
+            FAULTLINE synthesizes multiple market-risk engines into one decision framework. Not a prediction. Not a recommendation. A clear, evidence-based understanding of the current state of the system.
           </p>
           <p style={prose}>
             Our mission is straightforward: to help every investor understand markets with greater clarity through evidence-based intelligence. Not to replace human judgment — to make it better informed.
@@ -519,7 +519,7 @@ export default function Press() {
         </div>
         <div style={{ ...card, borderColor: "rgba(0,212,255,0.12)", background: "rgba(0,212,255,0.02)" }}>
           <blockquote style={{ borderLeft: "2px solid rgba(0,212,255,0.5)", paddingLeft: "24px", margin: 0, fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "16px", color: "#CBD5E1", fontStyle: "italic", lineHeight: 1.75 }}>
-            "Most investors see price action. PLATO sees the structural conditions beneath it. Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+            "Most investors see price action. PLATO sees the structural conditions beneath it. FAULTLINE synthesizes multiple market-risk engines into one decision framework. That is not a chatbot. That is an intelligence layer."
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "12px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
         </div>
@@ -705,7 +705,7 @@ export default function Press() {
             Unlike AI assistants that answer questions in isolation, PLATO answers from the same persisted market state every FAULTLINE surface reads: the Pressure Index and its vectors, regime readings, historical resemblance, crypto context, and signals. PLATO explains what those readings mean together and states plainly when an input is unavailable or not supported by governed evidence — delivering an interpretation rather than a raw data output.
           </p>
           <blockquote style={{ borderLeft: "2px solid rgba(0,212,255,0.4)", paddingLeft: "20px", margin: "24px 0", fontFamily: "'IBM Plex Sans', sans-serif", fontSize: "15px", color: "#CBD5E1", fontStyle: "italic", lineHeight: 1.7 }}>
-            "Most investors see price action. PLATO sees the structural conditions beneath it. Every time a user asks PLATO a question, she has already read the full market context across ten live engines. That is not a chatbot. That is an intelligence layer."
+            "Most investors see price action. PLATO sees the structural conditions beneath it. FAULTLINE synthesizes multiple market-risk engines into one decision framework. That is not a chatbot. That is an intelligence layer."
             <div style={{ fontStyle: "normal", fontSize: "11px", color: "#64748B", marginTop: "8px", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>JT · FOUNDER · PHOENIX SYSTEMS</div>
           </blockquote>
           <p style={prose}>

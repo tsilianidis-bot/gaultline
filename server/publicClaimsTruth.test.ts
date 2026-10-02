@@ -484,3 +484,33 @@ describe("public claims truth: Product-QA r4 follow-ups (PR #56 r5)", () => {
     expect(read("client/src/hooks/useSEO.ts")).toContain("does not ingest AI capex data");
   });
 });
+
+describe("public claims truth: engine count (James, Oct 2 11:42 AM ET)", () => {
+  const engineCount = /\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|\d+)[- ](?:live |market |market-risk |intelligence |analytical |independent |proprietary |FMOS )*engines?\b/i;
+
+  it("flags the original 'ten live engines' founder lines", () => {
+    expect("read ten live market engines simultaneously").toMatch(engineCount);
+    expect("she has already read the full market context across ten live engines.").toMatch(engineCount);
+    expect("All 14 engines in the pipeline").toMatch(engineCount);
+  });
+
+  it("public copy states no exact engine count", () => {
+    const pages = [
+      ...seoPages,
+      ...publicPages,
+      ...[
+        "client/src/pages/Methodology.tsx",
+        "client/src/pages/MarketingSite.tsx",
+        "client/src/pages/TrackRecord.tsx",
+        "client/src/pages/PublicAIBubble.tsx",
+        "client/index.html",
+        "server/seoMeta.ts",
+        "server/publicContentSsr.ts",
+      ].map((path) => ({ path, text: read(path) })),
+    ];
+    expect(offenders(pages, engineCount)).toEqual([]);
+    const press = read("client/src/pages/Press.tsx");
+    expect(press).toContain("FAULTLINE synthesizes multiple market-risk engines into one decision framework.");
+    expect(press).not.toMatch(/ten live (market )?engines/i);
+  });
+});
