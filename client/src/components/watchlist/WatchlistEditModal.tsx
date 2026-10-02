@@ -3,6 +3,7 @@ import { Bell, Check, TrendingDown, TrendingUp, X } from 'lucide-react';
 import {
   INDICATOR_CATALOG,
   INDICATOR_MAP,
+  thresholdSlider,
   type AlertCondition,
   type AlertSeverity,
   type WatchlistItem,
@@ -26,6 +27,8 @@ export function WatchlistEditModal({ item, onSave, onClose, liveValues }: Watchl
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
   const def = INDICATOR_MAP[indicatorKey];
+  // Slider on the display scale (domain scores 0–100, step 10); saves the stored value.
+  const slider = thresholdSlider(def);
 
   useEffect(() => {
     if (!item) {
@@ -169,11 +172,12 @@ export function WatchlistEditModal({ item, onSave, onClose, liveValues }: Watchl
               <div style={{ flex: 1 }}>
                 <input
                   type="range"
-                  min={def?.min ?? 0}
-                  max={def?.max ?? 10}
-                  step={def?.step ?? 0.1}
-                  value={threshold}
-                  onChange={event => setThreshold(parseFloat(event.target.value))}
+                  data-watchlist-threshold-slider={indicatorKey}
+                  min={slider.min}
+                  max={slider.max}
+                  step={slider.step}
+                  value={slider.toDisplay(threshold)}
+                  onChange={event => setThreshold(slider.toStored(parseFloat(event.target.value)))}
                   style={{ width: '100%', accentColor: '#00D4FF', cursor: 'pointer' }}
                 />
               </div>

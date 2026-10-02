@@ -40,6 +40,13 @@ export interface IndicatorDef {
   max: number;
   step: number;
   format: (v: number) => string;
+  /**
+   * Display only. Stored thresholds stay on the def's own min/max/step scale
+   * (localStorage / API / DB unchanged); the UI shows value × displayFactor and
+   * the slider moves in displayStep units on that display scale.
+   */
+  displayFactor?: number;
+  displayStep?: number;
   // API source for future live data wiring
   apiSource?: string;
   stressLevel: number;        // value at which this is "stressed"
@@ -69,14 +76,16 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'score_credit',
     label: 'Credit Risk Score',
     sublabel: 'Domain Score',
-    unit: '/10',
+    unit: '/100',
     category: 'score',
     color: '#FF9500',
     description: 'Credit market stress composite: HY spreads, CRE, bank liquidity.',
     defaultThreshold: 7.5,
     defaultCondition: 'above',
     min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
+    // Stored 0–10 (unchanged); shown on the 0–100 display scale.
+    format: (v) => (v * 10).toFixed(0),
+    displayFactor: 10, displayStep: 10,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },
@@ -84,14 +93,16 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'score_ai',
     label: 'AI Bubble Score',
     sublabel: 'Speculation Domain',
-    unit: '/10',
+    unit: '/100',
     category: 'score',
     color: '#C084FC',
     description: 'AI/mega-cap concentration and speculation index.',
     defaultThreshold: 8.0,
     defaultCondition: 'above',
     min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
+    // Stored 0–10 (unchanged); shown on the 0–100 display scale.
+    format: (v) => (v * 10).toFixed(0),
+    displayFactor: 10, displayStep: 10,
     stressLevel: 7.5,
     normalRange: [2, 5],
   },
@@ -99,14 +110,16 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'score_treasury',
     label: 'Treasury Stress Score',
     sublabel: 'Fiscal Domain',
-    unit: '/10',
+    unit: '/100',
     category: 'score',
     color: '#FFD700',
     description: 'Sovereign debt, auction demand, and fiscal trajectory.',
     defaultThreshold: 7.0,
     defaultCondition: 'above',
     min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
+    // Stored 0–10 (unchanged); shown on the 0–100 display scale.
+    format: (v) => (v * 10).toFixed(0),
+    displayFactor: 10, displayStep: 10,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },
@@ -114,14 +127,16 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'score_recession',
     label: 'Recession Risk Score',
     sublabel: 'Economic Domain',
-    unit: '/10',
+    unit: '/100',
     category: 'score',
     color: '#FF2D55',
     description: 'Yield curve, unemployment, and leading indicator composite.',
     defaultThreshold: 7.0,
     defaultCondition: 'above',
     min: 0, max: 10, step: 0.1,
-    format: (v) => v.toFixed(1),
+    // Stored 0–10 (unchanged); shown on the 0–100 display scale.
+    format: (v) => (v * 10).toFixed(0),
+    displayFactor: 10, displayStep: 10,
     stressLevel: 7.0,
     normalRange: [2, 5],
   },
@@ -213,7 +228,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'bankLiquidityStress',
     label: 'Bank Liquidity Stress',
     sublabel: 'NFCI proxy',
-    unit: '/10',
+    unit: 'index 0–10',
     category: 'liquidity',
     color: '#FF9500',
     description: 'Bank stress triggers credit contraction and systemic contagion risk.',
@@ -229,7 +244,7 @@ export const INDICATOR_CATALOG: IndicatorDef[] = [
     key: 'creStress',
     label: 'CRE Stress Index',
     sublabel: 'CRE composite',
-    unit: '/10',
+    unit: 'index 0–10',
     category: 'credit',
     color: '#FF2D55',
     description: 'Commercial real estate distress cascades through regional banks and CMBS.',
@@ -482,6 +497,27 @@ export function getDefaultWatchlist(): WatchlistItem[] {
       breachCount: 0,
     },
   ];
+}
+
+// ── Threshold slider (display scale ↔ stored scale) ───────────
+export interface ThresholdSlider {
+  min: number; max: number; step: number;
+  /** stored value → slider position */
+  toDisplay: (stored: number) => number;
+  /** slider position → stored value (what is saved) */
+  toStored: (display: number) => number;
+}
+
+export function thresholdSlider(def: Pick<IndicatorDef, 'min' | 'max' | 'step' | 'displayFactor' | 'displayStep'> | undefined): ThresholdSlider {
+  if (!def) return { min: 0, max: 10, step: 0.1, toDisplay: v => v, toStored: v => v };
+  const f = def.displayFactor ?? 1;
+  return {
+    min: def.min * f,
+    max: def.max * f,
+    step: def.displayStep ?? def.step * f,
+    toDisplay: v => Math.round(v * f * 1000) / 1000,
+    toStored: v => Math.round((v / f) * 1000) / 1000,
+  };
 }
 
 // ── Breach evaluation ─────────────────────────────────────────
