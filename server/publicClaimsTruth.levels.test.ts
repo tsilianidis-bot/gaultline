@@ -432,3 +432,36 @@ describe("public claims truth: no unsourced present-tense company/market/valuati
     expect(read("client/src/pages/seo/METASignal.tsx")).toContain("from its then-record high to its 2022 low");
   });
 });
+
+describe("public claims truth: templated S/R strings in the Dynamic stock/crypto data (PR #56 r13)", () => {
+  // The Dynamic templates render data.keyLevels for every symbol; base d1834a5
+  // carried "Key support: $… Key resistance: $… (all-time high zone)" strings
+  // there, which ship in the built SEO chunks.
+  const dynamic = ["client/src/pages/seo/DynamicStockPage.tsx", "client/src/pages/seo/DynamicCryptoPage.tsx"];
+  const keyLevelsField = /^\s*keyLevels:\s*(["'`])(.*)\1,?\s*$/;
+  const srDollar = /\bKey (?:support|resistance)\s*:|\b(?:support|resistance)\s*:\s*\$\d|\(\s*all[- ]time high zone\s*\)|\$\d[\d,.]*\s*[–-]\s*\$?\d/i;
+
+  it("flags the original base d1834a5 strings", () => {
+    expect("Key support: $120 (major structural support). Key resistance: $140–$145 (all-time high zone).").toMatch(srDollar);
+    expect('resistance: "$950 (all-time high zone)"').toMatch(srDollar);
+    expect("Key resistance: $125–$130 (recent highs).").toMatch(srDollar);
+    expect(NO_LEVELS).not.toMatch(srDollar);
+  });
+
+  it("every symbol's keyLevels string is the no-levels line", () => {
+    for (const path of dynamic) {
+      const lines = read(path).split("\n").filter((l) => /^\s*keyLevels:\s*["'`]/.test(l));
+      expect(lines.length, path).toBeGreaterThanOrEqual(5);
+      for (const line of lines) expect(line.match(keyLevelsField)?.[2], `${path}: ${line.trim()}`).toBe(NO_LEVELS);
+    }
+  });
+
+  it("no data or template string in the Dynamic pages carries a $ level or S/R zone", () => {
+    for (const path of dynamic) {
+      const text = read(path);
+      expect(text, path).not.toMatch(srDollar);
+      // Any literal dollar figure (template interpolation `${…}` excluded).
+      expect(text.match(/\$\d[\d,.]*/g), path).toBeNull();
+    }
+  });
+});
