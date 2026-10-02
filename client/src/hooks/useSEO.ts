@@ -98,7 +98,7 @@ export const PAGE_SEO = {
   aiWatch: {
     title: "AI Watch — AI Bubble & Concentration Monitor",
     description:
-      "Monitor AI sector concentration risk, bubble exposure, and systemic fragility in AI-driven equities. Track $214B+ in AI capex commitments and mega-cap concentration.",
+      "Monitor AI sector concentration risk, bubble exposure, and systemic fragility in AI-driven equities. FAULTLINE uses a static AI-concentration baseline and does not ingest AI capex data.",
     canonical: "/app/ai-watch",
   },
   // 47 chars ✓

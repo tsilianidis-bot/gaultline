@@ -41,7 +41,7 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     description: "Bitcoin (BTC) is the original cryptocurrency and the dominant digital store of value. Bitcoin's fixed supply of 21 million coins, decentralized network, and institutional adoption have established it as the benchmark asset for the entire crypto market.",
     bullCase: "Bitcoin ETF inflows driving institutional adoption, halving supply reduction creating scarcity premium, macro liquidity expansion supporting risk assets, and growing sovereign reserve interest create a strong bull case.",
     bearCase: "Macro risk-off environments, regulatory crackdowns, Mt. Gox and government wallet selling pressure, and correlation with risk assets during systemic stress events create significant downside risk.",
-    keyLevels: "Key support: $85,000–$90,000 (major support zone), $70,000 (structural floor). Key resistance: $110,000–$115,000 (all-time high zone). Bitcoin's 200-week MA is the ultimate long-term support level.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels.",
     riskFactors: ["Macro risk-off correlation", "Regulatory crackdown risk", "Government wallet selling", "Mt. Gox distribution", "Liquidity tightening"],
     relatedCrypto: ["eth", "sol", "tao"],
     relatedStocks: ["nvda", "pltr"],
@@ -59,7 +59,7 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     description: "Ethereum (ETH) is the leading smart contract platform, powering DeFi, NFTs, stablecoins, and Layer 2 ecosystems. Ethereum's transition to Proof of Stake and EIP-1559 fee burning have transformed its tokenomics.",
     bullCase: "ETH ETF approval and institutional adoption, Layer 2 ecosystem growth driving fee revenue, staking yield attracting institutional capital, and DeFi TVL expansion create a strong bull case.",
     bearCase: "Competition from Solana and other L1s, regulatory uncertainty around staking and DeFi, ETH underperformance vs BTC in risk-off environments, and Layer 2 fee cannibalization create headwinds.",
-    keyLevels: "Key support: $2,200–$2,400 (major support zone), $1,800 (structural floor). Key resistance: $4,000–$4,200 (previous cycle highs). ETH/BTC ratio is a key indicator of altcoin cycle health.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels.",
     riskFactors: ["L1 competition (Solana, Avalanche)", "Regulatory staking uncertainty", "ETH/BTC ratio deterioration", "DeFi regulatory risk", "Layer 2 fee cannibalization"],
     relatedCrypto: ["btc", "sol", "tao"],
     relatedStocks: ["nvda"],
@@ -77,7 +77,7 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     description: "Solana (SOL) is a high-performance Layer 1 blockchain known for fast transaction speeds and low fees. Solana has emerged as a leading platform for DeFi, NFTs, memecoins, and consumer crypto applications.",
     bullCase: "Solana's developer ecosystem growth, DeFi TVL expansion, institutional ETF interest, and performance advantages over Ethereum create a strong bull case in risk-on environments.",
     bearCase: "Network outage history, competition from Ethereum Layer 2s, memecoin cycle dependency, and high beta to BTC in risk-off environments create significant downside risk.",
-    keyLevels: "Key support: $130–$140 (major support), $100 (structural floor). Key resistance: $200–$220 (previous highs). SOL is highly correlated with BTC and ETH.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels.",
     riskFactors: ["Network outage risk", "Memecoin cycle dependency", "High BTC correlation", "Ethereum L2 competition", "Regulatory risk"],
     relatedCrypto: ["btc", "eth", "tao"],
     relatedStocks: ["nvda"],
@@ -95,7 +95,7 @@ const CRYPTO_DATA: Record<string, CryptoData> = {
     description: "Bittensor (TAO) is a decentralized machine learning network that creates a marketplace for AI models. TAO rewards validators and miners for contributing AI compute and model quality to the network.",
     bullCase: "AI narrative tailwind, decentralized AI infrastructure demand, subnet ecosystem expansion, and correlation with AI stock bull markets create a strong bull case for TAO.",
     bearCase: "Extreme volatility, thin liquidity, AI narrative dependency, regulatory uncertainty around AI tokens, and correlation with BTC in risk-off environments create significant downside risk.",
-    keyLevels: "Key support: $250–$280 (major support zone), $200 (structural floor). Key resistance: $500–$600 (previous highs). TAO is highly volatile and should be sized accordingly.",
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels.",
     riskFactors: ["Extreme volatility", "AI narrative dependency", "Thin liquidity", "Regulatory uncertainty", "BTC correlation in risk-off"],
     relatedCrypto: ["btc", "eth", "sol"],
     relatedStocks: ["nvda", "pltr"],
@@ -120,7 +120,7 @@ function getCryptoData(symbol: string): CryptoData {
     description: `${upper} is a cryptocurrency tracked by FAULTLINE's crypto intelligence engine. FAULTLINE monitors ${upper}'s macro regime fit, momentum score, and systemic risk alignment to generate daily signals.`,
     bullCase: `${upper} outperforms when macro regime is bullish, Bitcoin is in a bull trend, and systemic pressure is low. Monitor FAULTLINE's Bitcoin Risk Dashboard and Pressure Index™ for regime confirmation.`,
     bearCase: `${upper} faces elevated risk in high-pressure macro environments and Bitcoin bear markets. FAULTLINE's crypto risk dashboards track the key warning signals.`,
-    keyLevels: `Key levels for ${upper} are updated dynamically based on price action and macro regime. FAULTLINE tracks support, resistance, and regime-aligned entry zones.`,
+    keyLevels: "FAULTLINE does not publish price targets or support/resistance levels.",
     riskFactors: ["BTC correlation risk", "Macro risk-off sensitivity", "Liquidity tightening", "Regulatory uncertainty", "Altcoin cycle dependency"],
     relatedCrypto: ["btc", "eth", "sol"],
     relatedStocks: ["nvda"],
@@ -289,7 +289,7 @@ export default function DynamicCryptoPage() {
 
         {/* Key Levels */}
         <section className="mb-12">
-          <h2 className="text-2xl font-bold text-white mb-4">{upper} Key Price Levels</h2>
+          <h2 className="text-2xl font-bold text-white mb-4">{upper} Price Levels</h2>
           <p className="text-[#A8B8CC] leading-relaxed">{data.keyLevels}</p>
         </section>
 

@@ -228,24 +228,27 @@ describe("public claims truth: Pressure Index inputs (PR #56 r2)", () => {
     "client/src/pages/TrackRecord.tsx",
     "server/seoMeta.ts",
   ].map((path) => ({ path, text: read(path) }));
+  // Subject: the Pressure Index, or "FAULTLINE's score/index/composite".
+  const subject = String.raw`(?:Pressure Index|FAULTLINE'?s (?:score|index|composite))`;
+  const verbs = String.raw`synthesi[sz]\w*|combin\w*|integrat\w*|incorporat\w*|aggregat\w*|blend\w*|built from|inputs?|reads?|uses?|includes?|weights?|draws? on`;
   const attributesInput = [
-    /Pressure Index[^.]{0,80}\b(synthesi[sz]\w*|combin\w*|integrat\w*|incorporat\w*|aggregat\w*|built from|inputs?)\b[^.]{0,160}\b(VIX|breadth)\b/i,
-    /\b(VIX|breadth)\b[^.]{0,120}\binto (a |the |its |one |FAULTLINE's )?[^.]{0,30}Pressure Index/i,
+    new RegExp(String.raw`${subject}[^.]{0,80}\b(?:${verbs})\b[^.]{0,160}\b(?:VIX|breadth)\b`, "i"),
+    new RegExp(String.raw`\b(?:VIX|breadth)\b[^.]{0,120}\b(?:into|feeds?|fed|drives?|enters?|powers?)\b[^.]{0,40}${subject}`, "i"),
   ];
-  // Exempt only sentences that explicitly deny input status (r4: a bare "not"
-  // anywhere in the sentence no longer passes).
-  const exempt = new RegExp(
-    [
-      String.raw`\b(?:is|are)? ?not (?:a |an |one of the |part of the )?(?:live )?(?:Pressure Index |direct |VIX |advance\/decline )?(?:inputs?|vectors?|feeds?|components?|measures?)\b`,
-      String.raw`\bdoes not (?:read|use|ingest|include|incorporate)\b[^.]{0,60}\b(?:VIX|breadth)\b`,
-      String.raw`\bcontext,? not\b`,
-      String.raw`\bshown separately\b`,
-      String.raw`\bproxy\b`,
-    ].join("|"),
-    "i",
-  );
+  // r5: each VIX / breadth mention in an attributing sentence must itself be
+  // explicitly denied input status (or be a labelled "breadth proxy" vector).
+  // A bare "not", "context, not …", "proxy" elsewhere, or "is not a measure"
+  // no longer exempts the sentence.
+  const termQualifiers = (t: string) => [
+    new RegExp(String.raw`\b${t}[- ]proxy\b`, "i"),
+    new RegExp(String.raw`\bdoes not (?:read|use|ingest|include|incorporate)\b[^.]{0,60}\b${t}\b`, "i"),
+    new RegExp(String.raw`\bnot (?:a |an )?(?:live |direct )?(?:advance\/decline )?${t}\b(?: \w+)? (?:inputs?|feeds?)\b`, "i"),
+    new RegExp(String.raw`\b${t}\b[^.]{0,60}\bnot (?:a |an )?(?:Pressure Index )?inputs?\b`, "i"),
+  ];
+  const unqualifiedTerm = (text: string) =>
+    ["VIX", "breadth"].some((t) => new RegExp(String.raw`\b${t}\b`, "i").test(text) && !termQualifiers(t).some((re) => re.test(text)));
   // "…VIX, credit spreads, …. The Pressure Index synthesizes these…" across two sentences.
-  const attributesByReference = /\b(VIX|breadth)\b[\s\S]{0,240}Pressure Index[^.]{0,40}\b(synthesi[sz]\w*|integrat\w*|combin\w*|aggregat\w*) (these|them|this)\b/i;
+  const attributesByReference = /\b(VIX|breadth)\b[\s\S]{0,240}Pressure Index[^.]{0,40}\b(synthesi[sz]\w*|integrat\w*|combin\w*|aggregat\w*|blend\w*) (these|them|this)\b/i;
 
   function inputHits(pages: { path: string; text: string }[]) {
     const hits: string[] = [];
@@ -253,8 +256,9 @@ describe("public claims truth: Pressure Index inputs (PR #56 r2)", () => {
       const sentences = page.text.split(/(?<=[.!?])\s+|\n/);
       sentences.forEach((sentence, i) => {
         const pair = `${sentences[i - 1] ?? ""} ${sentence}`;
-        const hit = attributesInput.some((re) => re.test(sentence)) || attributesByReference.test(pair);
-        if (hit && !exempt.test(sentence)) {
+        const direct = attributesInput.some((re) => re.test(sentence)) && unqualifiedTerm(sentence);
+        const byReference = attributesByReference.test(pair) && unqualifiedTerm(pair);
+        if (direct || byReference) {
           hits.push(`${page.path}: ${sentence.trim().slice(0, 120)}`);
         }
       });
@@ -271,11 +275,24 @@ describe("public claims truth: Pressure Index inputs (PR #56 r2)", () => {
     // A bare "not" elsewhere in the sentence must not exempt an input claim.
     expect(fixture("The Pressure Index combines credit spreads, VIX, and market breadth, though it is not a forecast.")).toHaveLength(1);
     expect(fixture("FAULTLINE folds VIX and breadth into the Pressure Index and does not name a date.")).toHaveLength(1);
+    // Product-QA r4 exemption probe: every genuine attribution must fail.
+    for (const sentence of [
+      "The Pressure Index combines VIX, credit spreads, and market breadth — context, not a forecast.",
+      "The Pressure Index integrates VIX and a breadth proxy.",
+      "The Pressure Index aggregates VIX and breadth; it is not a measure of sentiment.",
+      "Our Pressure Index is built from VIX, breadth, and credit spreads.",
+      "FAULTLINE's score blends VIX and market breadth into one number.",
+      "VIX and breadth feed the Pressure Index.",
+    ]) {
+      expect(fixture(sentence), sentence).toHaveLength(1);
+    }
     // Explicit negations still pass.
     expect(fixture("The Pressure Index combines six vectors; VIX is context, not an input.")).toEqual([]);
     expect(fixture("The Pressure Index combines six FRED-based vectors and does not read VIX or breadth.")).toEqual([]);
     expect(fixture("The Pressure Index combines a labor-and-rates vector, a market-breadth proxy, and others.")).toEqual([]);
     expect(fixture("The Pressure Index combines six vectors; VIX is shown separately and is not a Pressure Index input.")).toEqual([]);
+    expect(fixture("The Pressure Index does not read VIX or breadth.")).toEqual([]);
+    expect(fixture("The Pressure Index combines a yield-curve vector; it is not a live VIX input.")).toEqual([]);
   });
 
   it("best-market-risk-indicators and stock-market-risk meta match the engine", () => {
@@ -425,5 +442,45 @@ describe("public claims truth: Product-QA r3 follow-ups and full sweep (PR #56 r
       expect(at, route).toBeGreaterThan(0);
       expect(at, route).toBeLessThan(catchAll);
     }
+  });
+});
+
+describe("public claims truth: Product-QA r4 follow-ups (PR #56 r5)", () => {
+  const templates = ["client/src/pages/seo/DynamicStockPage.tsx", "client/src/pages/seo/DynamicCryptoPage.tsx"];
+  // Hard-coded support/resistance price levels presented as current.
+  const priceLevel = /\b(support|resistance)\b[^"`\n]{0,80}\$\d|\$\d[\d,.]*\s*[–-]\s*\$\d[^"`\n]{0,60}\b(support|resistance|all-time high|ATH)\b/i;
+  const capexFigure = /\$\d[\d,.]*\s*[BT]\+?\s+(in\s+)?(announced\s+)?AI capex|\$214B/i;
+
+  it("each new pattern flags the original Product-QA r4 lines", () => {
+    // a1e912b DynamicCryptoPage:44 and DynamicStockPage:126, PublicAIBubble:16 and useSEO:101.
+    expect("Key support: $85,000–$90,000 (major support zone), $70,000 (structural floor). Key resistance: $110,000–$115,000 (all-time high zone).").toMatch(priceLevel);
+    expect("Key support: $380–$400 (200-day MA zone), $350 (structural support). Key resistance: $450–$470 (all-time high zone).").toMatch(priceLevel);
+    expect("Monitor $214B+ in AI capex commitments and the equities most exposed to AI infrastructure spending cycles.").toMatch(capexFigure);
+    expect("Track $214B+ in AI capex commitments and mega-cap concentration.").toMatch(capexFigure);
+  });
+
+  it("stock and crypto templates publish no hard-coded support/resistance price levels", () => {
+    for (const path of templates) {
+      const text = read(path);
+      const levels = text.match(/^\s+keyLevels: ["`].*$/gm) ?? [];
+      expect(levels.length, path).toBeGreaterThan(0);
+      for (const line of levels) {
+        expect(line, path).not.toMatch(/\$\d/);
+        expect(line, path).toContain("FAULTLINE does not publish price targets or support/resistance levels.");
+      }
+      expect(text, path).not.toMatch(priceLevel);
+      expect(text, path).not.toMatch(/updated dynamically based on price action|regime-aligned entry zones/);
+    }
+  });
+
+  it("public copy carries no AI capex dollar figure", () => {
+    const pages = [
+      ...seoPages,
+      ...publicPages,
+      ...["client/src/pages/PublicAIBubble.tsx", "server/seoMeta.ts", "client/index.html"].map((path) => ({ path, text: read(path) })),
+    ];
+    expect(offenders(pages, capexFigure)).toEqual([]);
+    expect(read("client/src/pages/PublicAIBubble.tsx")).toContain("static AI-concentration baseline");
+    expect(read("client/src/hooks/useSEO.ts")).toContain("does not ingest AI capex data");
   });
 });

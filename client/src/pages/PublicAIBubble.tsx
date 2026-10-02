@@ -13,7 +13,7 @@ export default function PublicAIBubble() {
       accentColor="#FF6B35"
       features={[
         { icon: "◈", title: "Index Concentration Monitor", desc: "Track mega-cap AI concentration as new data is published. Know when the top 7 stocks represent an outsized share of index risk." },
-        { icon: "◎", title: "AI Capex Exposure", desc: "Monitor $214B+ in AI capex commitments and the equities most exposed to AI infrastructure spending cycles." },
+        { icon: "◎", title: "AI Concentration Baseline", desc: "FAULTLINE uses a static AI-concentration baseline (AI mega-cap share of the S&P 500) adjusted by rates and credit. AI capex is context; FAULTLINE does not ingest capex data." },
         { icon: "⬡", title: "Crowded Trade Signals", desc: "See when AI-driven trades look crowded. Context, not a reversal forecast." },
         { icon: "◈", title: "Valuation Stress Score", desc: "Quantified valuation stress for AI-exposed equities. Know when valuations have disconnected from fundamentals." },
         { icon: "◎", title: "Sector Concentration Risk", desc: "Track sector-level concentration risk across technology, semiconductors, and AI infrastructure plays." },
