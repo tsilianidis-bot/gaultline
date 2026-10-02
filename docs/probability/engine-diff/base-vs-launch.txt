@@ -1,0 +1,115 @@
+base vs launch: 238 fields compared, 38 differ
+  fixtures.oct01.canonical.contractScenarioText
+    base: null
+    launch: "Uncalibrated"
+  fixtures.oct01.marketState.displayed5way.bull
+    base: 53
+    launch: "NaN"
+  fixtures.oct01.marketState.displayed5way.crash
+    base: 2
+    launch: "NaN"
+  fixtures.oct01.marketState.displayed5way.recession
+    base: 4
+    launch: "NaN"
+  fixtures.oct01.marketState.displayed5way.softLanding
+    base: 33
+    launch: "NaN"
+  fixtures.oct01.marketState.displayed5way.stagflation
+    base: 8
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedProbabilities.bear
+    base: 15
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedProbabilities.bull
+    base: 64
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedProbabilities.confidence
+    base: 50
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedProbabilities.neutral
+    base: 21
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedTransitions.confidence
+    base: 41
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedTransitions.remainInRegime
+    base: 60
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedTransitions.transitionToCrisis
+    base: 0
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedTransitions.transitionToElevated
+    base: 20
+    launch: "NaN"
+  fixtures.oct01.marketState.displayedTransitions.transitionToLow
+    base: 20
+    launch: "NaN"
+  fixtures.oct01.preflight.displayedProbabilities.bear
+    base: 36
+    launch: null
+  fixtures.oct01.preflight.displayedProbabilities.bull
+    base: 64
+    launch: null
+  fixtures.oct01.preflight.displayedProbabilities.crash
+    base: 20
+    launch: null
+  fixtures.oct01.preflight.displayedProbabilities.recession
+    base: 22
+    launch: null
+  fixtures.oct02_1401.canonical.contractScenarioText
+    base: null
+    launch: "Uncalibrated"
+  fixtures.oct02_1401.marketState.displayed5way.bull
+    base: 53
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayed5way.crash
+    base: 2
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayed5way.recession
+    base: 4
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayed5way.softLanding
+    base: 33
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayed5way.stagflation
+    base: 8
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedProbabilities.bear
+    base: 15
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedProbabilities.bull
+    base: 64
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedProbabilities.confidence
+    base: 50
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedProbabilities.neutral
+    base: 21
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedTransitions.confidence
+    base: 41
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedTransitions.remainInRegime
+    base: 60
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedTransitions.transitionToCrisis
+    base: 0
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedTransitions.transitionToElevated
+    base: 20
+    launch: "NaN"
+  fixtures.oct02_1401.marketState.displayedTransitions.transitionToLow
+    base: 20
+    launch: "NaN"
+  fixtures.oct02_1401.preflight.displayedProbabilities.bear
+    base: 37
+    launch: null
+  fixtures.oct02_1401.preflight.displayedProbabilities.bull
+    base: 63
+    launch: null
+  fixtures.oct02_1401.preflight.displayedProbabilities.crash
+    base: 20
+    launch: null
+  fixtures.oct02_1401.preflight.displayedProbabilities.recession
+    base: 23
+    launch: null

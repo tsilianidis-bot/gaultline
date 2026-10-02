@@ -1,0 +1,97 @@
+launch vs held: 238 fields compared, 32 differ
+  fixtures.oct01.claims
+    launch: ["seismograph.scenario.bull=43@seismograph-core-v1", "seismograph.scenario.neutral=43@seismograph-core-v1", "seismograph.scenario.bear=14@seismograph-core-v1", "seismograph.transition.remainInRegime=70@seismograph-core-v1", "seismograph.transition.transitionToElevated=15@seismograph-core-v1", "seism
+    held: ["seismograph.scenario.bull=43@seismograph-core-v1", "seismograph.scenario.neutral=57@seismograph-core-v1", "seismograph.scenario.bear=0@seismograph-core-v1", "seismograph.transition.remainInRegime=70@seismograph-core-v1", "seismograph.transition.transitionToElevated=15@seismograph-core-v1", "seismo
+  fixtures.oct01.manifest.modelVersion
+    launch: "2.0"
+    held: "2.1"
+  fixtures.oct01.manifest.scenarioOutputs.bear
+    launch: 14
+    held: 0
+  fixtures.oct01.manifest.scenarioOutputs.neutral
+    launch: 43
+    held: 57
+  fixtures.oct01.manifest.stateHash
+    launch: "dbb3ba5213d2951709c04e411bdf556782647ec321ca9387906a00346829e002"
+    held: "11bba85f9f6259a92febe68200fb2d6940f4d9d1f7a8f5a8c3fc3ac08f5217c3"
+  fixtures.oct01.preflight.awarenessChecks
+    launch: ["regime-check:pass", "credit-check:warn", "liquidity-check:pass", "breadth-check:pass", "volatility-check:pass", "fed-check:pass", "ai-check:warn", "thesis-check:pass"]
+    held: ["regime-check:pass", "credit-check:pass", "liquidity-check:pass", "breadth-check:pass", "volatility-check:pass", "fed-check:pass", "ai-check:warn", "thesis-check:pass"]
+  fixtures.oct01.preflight.conditions
+    launch: ["creditCondition:Caution:50", "liquidityCondition:Caution:50", "aiBubbleRisk:Caution:50", "recessionRisk:Stable:37", "volatilityCondition:Caution:40", "macroCondition:Caution:50"]
+    held: ["creditCondition:Stable:22", "liquidityCondition:Caution:50", "aiBubbleRisk:Caution:50", "recessionRisk:Stable:27", "volatilityCondition:Caution:40", "macroCondition:Caution:50"]
+  fixtures.oct01.preflight.keyRisks
+    launch: ["credit-stress:moderate", "liquidity-risk:moderate", "ai-concentration:moderate", "fed-policy:moderate"]
+    held: ["liquidity-risk:moderate", "ai-concentration:moderate", "fed-policy:moderate"]
+  fixtures.oct01.preflight.macroDrivers
+    launch: ["neutral:Neutral:Neutral", "neutral:Neutral:Moderate", "bullish:Positive:Broad", "neutral:Watch:Elevated", "bullish:Positive:Moderate", "neutral:Watch:Elevated"]
+    held: ["neutral:Neutral:Neutral", "bullish:Positive:Benign", "bullish:Positive:Broad", "neutral:Watch:Elevated", "bullish:Positive:Moderate", "neutral:Watch:Elevated"]
+  fixtures.oct01.seismograph.analogPacketSignal
+    launch: "stressed"
+    held: "neutral"
+  fixtures.oct01.seismograph.families
+    launch: ["Historical Context:stressed:91", "Cross-Market:bullish:90", "Probability:bullish:62", "Market Regime:neutral:50", "Macro Pressure:neutral:33", "Regime Transition:neutral:0", "Breakdown Signals:bullish:0"]
+    held: ["Historical Context:neutral:91", "Cross-Market:bullish:90", "Probability:bullish:62", "Market Regime:neutral:50", "Macro Pressure:neutral:33", "Regime Transition:neutral:0", "Breakdown Signals:bullish:0"]
+  fixtures.oct01.seismograph.probabilities.bear
+    launch: 14
+    held: 0
+  fixtures.oct01.seismograph.probabilities.neutral
+    launch: 43
+    held: 57
+  fixtures.oct01.seismograph.version
+    launch: "2.0"
+    held: "2.1"
+  fixtures.oct02_1401.claims
+    launch: ["seismograph.scenario.bull=33@seismograph-core-v1", "seismograph.scenario.neutral=50@seismograph-core-v1", "seismograph.scenario.bear=17@seismograph-core-v1", "seismograph.transition.remainInRegime=70@seismograph-core-v1", "seismograph.transition.transitionToElevated=15@seismograph-core-v1", "seism
+    held: ["seismograph.scenario.bull=33@seismograph-core-v1", "seismograph.scenario.neutral=67@seismograph-core-v1", "seismograph.scenario.bear=0@seismograph-core-v1", "seismograph.transition.remainInRegime=70@seismograph-core-v1", "seismograph.transition.transitionToElevated=15@seismograph-core-v1", "seismo
+  fixtures.oct02_1401.manifest.modelVersion
+    launch: "2.0"
+    held: "2.1"
+  fixtures.oct02_1401.manifest.scenarioOutputs.bear
+    launch: 17
+    held: 0
+  fixtures.oct02_1401.manifest.scenarioOutputs.neutral
+    launch: 50
+    held: 67
+  fixtures.oct02_1401.manifest.stateHash
+    launch: "03520e2e7f00cfae3f84c120b00577a56a724a7189facb4afebc96fb655a56ef"
+    held: "06020e6ab949b30b191b916f4aa94a78d6cfe3825b8503adcee16fcfad7af13a"
+  fixtures.oct02_1401.preflight.awarenessChecks
+    launch: ["regime-check:pass", "credit-check:warn", "liquidity-check:pass", "breadth-check:pass", "volatility-check:pass", "fed-check:pass", "ai-check:warn", "thesis-check:pass"]
+    held: ["regime-check:pass", "credit-check:pass", "liquidity-check:pass", "breadth-check:pass", "volatility-check:pass", "fed-check:pass", "ai-check:warn", "thesis-check:pass"]
+  fixtures.oct02_1401.preflight.conditions
+    launch: ["creditCondition:Caution:50", "liquidityCondition:Caution:50", "aiBubbleRisk:Caution:50", "recessionRisk:Stable:38", "volatilityCondition:Caution:40", "macroCondition:Caution:50"]
+    held: ["creditCondition:Stable:23", "liquidityCondition:Caution:50", "aiBubbleRisk:Caution:50", "recessionRisk:Stable:28", "volatilityCondition:Caution:40", "macroCondition:Caution:50"]
+  fixtures.oct02_1401.preflight.keyRisks
+    launch: ["credit-stress:moderate", "liquidity-risk:moderate", "ai-concentration:moderate", "fed-policy:moderate"]
+    held: ["liquidity-risk:moderate", "ai-concentration:moderate", "fed-policy:moderate"]
+  fixtures.oct02_1401.preflight.macroDrivers
+    launch: ["neutral:Neutral:Neutral", "neutral:Neutral:Moderate", "bullish:Positive:Broad", "neutral:Watch:Elevated", "bullish:Positive:Moderate", "neutral:Watch:Elevated"]
+    held: ["neutral:Neutral:Neutral", "bullish:Positive:Benign", "bullish:Positive:Broad", "neutral:Watch:Elevated", "bullish:Positive:Moderate", "neutral:Watch:Elevated"]
+  fixtures.oct02_1401.seismograph.analogPacketSignal
+    launch: "stressed"
+    held: "neutral"
+  fixtures.oct02_1401.seismograph.families
+    launch: ["Historical Context:stressed:91", "Cross-Market:bullish:90", "Probability:bullish:62", "Market Regime:neutral:53", "Macro Pressure:neutral:34", "Regime Transition:neutral:0"]
+    held: ["Historical Context:neutral:91", "Cross-Market:bullish:90", "Probability:bullish:62", "Market Regime:neutral:53", "Macro Pressure:neutral:34", "Regime Transition:neutral:0"]
+  fixtures.oct02_1401.seismograph.probabilities.bear
+    launch: 17
+    held: 0
+  fixtures.oct02_1401.seismograph.probabilities.neutral
+    launch: 50
+    held: 67
+  fixtures.oct02_1401.seismograph.version
+    launch: "2.0"
+    held: "2.1"
+  fixtures.unified_sentinel.analogs
+    launch: ["2019-01:97", "2022-06:97", "2025-10:97", "2018-06:95", "2021-10:95"]
+    held: ["2018-12:98", "2022-05:97", "2025-09:97", "2018-06:96", "2021-10:95"]
+  fixtures.unified_sentinel.evidenceFamilies
+    launch: ["Treasury Yield Curve:neutral:50:stable | 6-month average spread: 0.02%. Flattenin", "Labor & Rates (Unemployment, 10Y):neutral:45:deteriorating | 6-month average: 37/100. Labor-and-rates", "Yield Curve (10Y–2Y) & 10Y Level:neutral:40:improving | 6-month average: 49/100. Curve shape and", "Macro Se
+    held: ["Treasury Yield Curve:neutral:50:stable | 6-month average spread: 0.02%. Flattenin", "Labor & Rates (Unemployment, 10Y):neutral:45:deteriorating | 6-month average: 37/100. Labor-and-rates", "Yield Curve (10Y–2Y) & 10Y Level:neutral:40:improving | 6-month average: 49/100. Curve shape and", "Macro Se
+  fixtures.unified_sentinel.probabilities.historicalBasis
+    launch: "Based on 5 historical analog periods with 97%+ similarity. Average S&P 500 return 3 months after similar conditions: +3%."
+    held: "Based on 5 historical analog periods with 98%+ similarity. Average S&P 500 return 3 months after similar conditions: +3%."
+  fixtures.unified_sentinel.topAnalog
+    launch: "2019-01:97"
+    held: "2018-12:98"
