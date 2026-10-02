@@ -26,6 +26,7 @@ import { useEngine } from "@/contexts/EngineContext";
 import ScoreExplainer from "@/components/ScoreExplainer";
 import { customerIntegrityBadgeColor, customerPressureBadge, customerPressureUnavailableCopy, humanizeConflictType, type CustomerIntegrityLabel } from "@shared/customerIntegrityLabels";
 import { pressureVectorLabel } from "@shared/pressureVectorLabels";
+import { pressureVectorLevel, pressureVectorWeight } from "@/lib/pressureVectorWeights";
 import { canonicalDirectionTrend, canonicalHistoricalPercentile } from "@shared/canonicalReadout";
 import { directionDisplay } from "@shared/snapshotEvidence";
 import { canonicalRunBasisNote } from "@shared/dataIntegrityReadout";
@@ -75,6 +76,8 @@ interface RiskVector {
   trend: "rising" | "falling" | "stable";
   /** Composite weight (0–1); null when the source does not publish one. */
   weight: number | null;
+  /** False when the vector has no valid own score: no level label is shown. */
+  levelKnown?: boolean;
   rawInputs: Record<string, number | null>;
 }
 
@@ -335,7 +338,7 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
       <ScoreBar score={vector.score} level={vector.level} />
 
       <div style={{ marginTop: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{
+        {vector.levelKnown !== false ? <div data-vector-level={vector.level} style={{
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: "9px",
           color: colors.text,
@@ -347,7 +350,7 @@ function VectorCard({ vector, index }: { vector: RiskVector; index: number }) {
           textTransform: "uppercase",
         }}>
           {vector.level}
-        </div>
+        </div> : <div />}
         {vector.weight != null && Number.isFinite(vector.weight) && (
           <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: "9px", color: "#4B5563", letterSpacing: "0.06em" }}>
             WT {Math.round(vector.weight * 100)}%
@@ -1016,12 +1019,14 @@ export default function Pressure() {
       label: pressureVectorLabel(engine.engineId, engine.engineName),
       description: `Canonical engine ${engine.engineId}.`,
       score: engine.value ?? 0,
-      level: pressureLevel,
+      // The vector's own level from its own score (engine thresholds), not the composite's.
+      level: pressureVectorLevel(engine.value) ?? "Low",
+      levelKnown: pressureVectorLevel(engine.value) != null,
       driver: engine.sourceInputIds.length ? `Inputs: ${engine.sourceInputIds.join(", ")}` : "Canonical input detail unavailable.",
       trend: engine.direction === "Improving" ? "falling" : engine.direction === "Deteriorating" ? "rising" : "stable",
-      // The canonical contract publishes only whether a vector contributes, not
-      // its weight: no weight is shown rather than a false "WT 0%".
-      weight: null,
+      // The canonical contract publishes only whether a vector contributes; the
+      // weight is the engine's own composite weight for that vector id (never "WT 0%").
+      weight: pressureVectorWeight(engine.engineId, engine.contributionToComposite),
       rawInputs: {},
     }));
     return {
