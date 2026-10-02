@@ -41,6 +41,21 @@ const srMetaPhrase = /key support and resistance levels/i;
 const unsourcedFigure = /\$130B\+|over \$130 billion|as of mid-2026|\$60-65 billion (annually|annual)|spending \$60-65 billion|\$60B\+ annual/i;
 const engineCount = /\b(?:1[0-9]|ten|eleven|twelve|thirteen|fourteen)\s+(?:FMOS\s+)?engines\b|label: 'Active Engines', value: '\d+'|engineCount \?\? \d+/i;
 
+// r11: Public* pages, landing components and MarketingSite for the key-levels
+// scan. PublicSituationRoom.tsx is also changed by #60 and the held
+// methodology branch, so it is left to those PRs (it carries no levels copy).
+const SKIP_OVERLAP = new Set<string>(["client/src/pages/PublicSituationRoom.tsx"]);
+const walkRel = (dir: string): string[] =>
+  readdirSync(join(root, dir)).flatMap((name) => {
+    const rel = `${dir}/${name}`;
+    return statSync(join(root, rel)).isDirectory() ? walkRel(rel) : /\.tsx?$/.test(name) ? [rel] : [];
+  });
+const publicSurfaces = [
+  ...readdirSync(join(root, "client/src/pages")).filter((n) => /^Public\w*\.tsx$/.test(n)).map((n) => `client/src/pages/${n}`),
+  ...walkRel("client/src/components/landing"),
+  "client/src/pages/MarketingSite.tsx",
+].filter((path) => !SKIP_OVERLAP.has(path));
+
 const offenders = (pages: { path: string; text: string }[], re: RegExp) => pages.filter((p) => re.test(p.text)).map((p) => p.path);
 
 describe("public claims truth: price levels, figures, engine counts (PR #56 r7)", () => {
@@ -185,9 +200,10 @@ describe("public claims truth: no '$214B' AI capex figure on public pages or SEO
 
 describe("public claims truth: no 'key levels' claims in SSR meta, JSON-LD, titles or headings (PR #56 r10)", () => {
   // Scanned set: every SEO page (incl. the JSON-LD in the Dynamic stock/crypto
-  // templates), the server-rendered meta and SSR, and client meta.
+  // templates), the server-rendered meta and SSR, and client meta; r11 adds
+  // every Public*.tsx page, the landing components and MarketingSite.
   const metaFiles = ["server/seoMeta.ts", "server/publicContentSsr.ts", "server/seoRoutes.ts", "client/src/hooks/useSEO.ts", "client/index.html"];
-  const scanned = [...seoPages, ...metaFiles.map((path) => ({ path, text: read(path) }))];
+  const scanned = [...seoPages, ...[...metaFiles, ...publicSurfaces].map((path) => ({ path, text: read(path) }))];
 
   // 'FAULTLINE tracks … key (price) levels' style claims.
   const keyLevelsTracking = /FAULTLINE (?:tracks|monitors|covers|provides|publishes|identifies)\b[^.]{0,160}\bkey (?:price )?levels/i;
@@ -238,5 +254,47 @@ describe("public claims truth: no 'key levels' claims in SSR meta, JSON-LD, titl
     expect(read("client/src/pages/seo/StockSignalPage.tsx")).toContain("heading: `How Technical Levels Are Read: ${ticker}`");
     expect(read("client/src/pages/seo/TAOSignal.tsx")).toContain('heading: "How Technical Levels Are Read: TAO, and Its Historical Volatility"');
     expect(read("client/src/pages/seo/BitcoinRiskDashboard.tsx")).toContain('heading: "How Technical Levels Are Read: Bitcoin"');
+  });
+});
+
+describe("public claims truth: QA nits on 58bc321 (PR #56 r11)", () => {
+  const read2 = (path: string) => ({ path, text: read(path) });
+  const surfaces = [...seoPages, ...publicSurfaces.map(read2)];
+  const priceLevelsHeading = /<h[1-6][^>]*>[^<]*\bPrice Levels\s*<\/h[1-6]>/;
+
+  it("flags the original 58bc321 lines", () => {
+    expect('<h2 className="text-2xl font-bold text-white mb-4">{upper} Price Levels</h2>').toMatch(priceLevelsHeading);
+    expect('<h2 className="text-2xl font-bold text-white mb-4">How Technical Levels Are Read: {upper}</h2>').not.toMatch(priceLevelsHeading);
+  });
+
+  it("the key-levels scan covers Public* pages, landing components and MarketingSite", () => {
+    expect(publicSurfaces).toContain("client/src/pages/MarketingSite.tsx");
+    expect(publicSurfaces).toContain("client/src/pages/PublicLandingPage.tsx");
+    expect(publicSurfaces.filter((p) => p.startsWith("client/src/components/landing/")).length).toBeGreaterThan(3);
+    expect(publicSurfaces.filter((p) => /pages\/Public\w*\.tsx$/.test(p)).length).toBeGreaterThan(5);
+  });
+
+  it("no SEO or public page heading advertises '{SYM} Price Levels'", () => {
+    expect(offenders(surfaces, priceLevelsHeading)).toEqual([]);
+    for (const path of ["client/src/pages/seo/DynamicStockPage.tsx", "client/src/pages/seo/DynamicCryptoPage.tsx"]) {
+      expect(read(path), path).toContain(">How Technical Levels Are Read: {upper}</h2>");
+    }
+  });
+
+  it("AIStocksDashboard describes the 32.4% AI concentration as a static baseline", () => {
+    const text = read("client/src/pages/seo/AIStocksDashboard.tsx");
+    expect(text).not.toMatch(/AI Bubble Monitor tracks this concentration risk as new data is published/);
+    expect(text).toContain("static 32.4% AI-concentration baseline (a fixed reference value, not a live market-cap feed)");
+  });
+
+  it("ValidationLab's evidence-family counts match the FMOS Evidence engine", () => {
+    const engine = read("server/fmos/engines/evidence.ts");
+    const built = new Set([...engine.matchAll(/^\s+build(\w+)Family\(/gm)].map((m) => m[1]));
+    const lab = read("client/src/pages/ValidationLab.tsx");
+    const counts = [...lab.matchAll(/\b(\d+|eight|fourteen)\s+(?:independent\s+)?(?:evidence\s+)?families\b/gi)].map((m) => m[1]);
+    expect(built.size).toBeGreaterThan(0);
+    expect(counts.length).toBeGreaterThanOrEqual(2);
+    expect(new Set(counts)).toEqual(new Set([String(built.size)]));
+    expect(lab).toMatch(new RegExp(`id: 'evidence_families',label: 'Evidence Families',\\s+category: 'Architecture', value: '${built.size}'`));
   });
 });

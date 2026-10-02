@@ -41,7 +41,7 @@ AI-Adjacent (Moderate AI Exposure): Companies that benefit from AI adoption with
 
 When concentrated positions unwind, the cascade effect on index-level returns is severe. The 2000 dot-com bubble provides the historical precedent: the top 10 S&P 500 stocks in March 2000 represented approximately 25% of the index. When technology stocks began to fall, the concentration amplified the index-level decline.
 
-FAULTLINE's AI Bubble Monitor tracks this concentration risk as new data is published, measuring the degree to which the current market concentration resembles historical bubble periods. The AI Stocks Dashboard provides the stock-level view of this systemic risk — showing which individual stocks are most exposed and how their signals are evolving.
+FAULTLINE's AI Bubble Monitor assesses this concentration risk from a static 32.4% AI-concentration baseline (a fixed reference value, not a live market-cap feed), adjusted by the latest 10-year yield and high-yield spread, and compares it with historical bubble periods. The AI Stocks Dashboard provides the stock-level view of this systemic risk — showing which individual stocks are most exposed and how their signals are evolving.
 
 The key insight is that AI stock analysis cannot be done in isolation from the systemic concentration risk. A stock that looks attractive on individual metrics may still be a poor risk-adjusted investment if it is part of a highly concentrated sector that is vulnerable to a systemic unwind.`,
         },
