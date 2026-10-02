@@ -349,14 +349,17 @@ describe("no hard-coded current-looking prices or price levels", () => {
     expect(s).toMatch(/const asOf = quote \? formatEt\(quote\.timestamp\) : null;/);
   });
 
-  it("NOW deep-view stock preview: price only from the Signals quote feed, else UNAVAILABLE", () => {
+  it("NOW deep-view illustrative example binds no real quote (QA gate r3 D4)", () => {
     const s = src("client/src/components/HomeStockIntelSection.tsx");
     expect(s).not.toMatch(/price: [0-9]/);
     expect(s).not.toMatch(/change: [+-]?[0-9]/);
     expect(s).not.toMatch(/Live Signal Preview/);
-    expect(s).toMatch(/fetch\('\/api\/signals\/quotes'\)/);
-    expect(s).toMatch(/const quote = signalQuoteView\(liveQuote\);/);
-    expect(s).toMatch(/: 'UNAVAILABLE'\}/);
+    // A real live quote beside a static BUY / 84% reads as a current call: no quote feed in the example.
+    expect(s).not.toMatch(/\/api\/signals\/quotes/);
+    expect(s).not.toMatch(/signalQuoteView|liveQuote/);
+    expect(s).toMatch(/EXAMPLE · NO QUOTE/);
+    expect(s).toMatch(/data-example-label/);
+    expect(s).toMatch(/Illustrative Example, Not Current Signals/);
   });
 
   it("dashboard search panels label quote/screener times in ET with their source", () => {
@@ -548,5 +551,234 @@ describe("Charts Market Intelligence Ribbon (no fixed values, no MODEL lines)", 
   it("quoteAsOf never turns a FRED date into a clock time", () => {
     expect(quoteAsOf({ observedAt: Date.parse("2026-10-01T00:00:00Z"), source: "fred" })).toBe("2026-10-01 (FRED observation date)");
     expect(quoteAsOf({ observedAt: null, source: "yahoo" })).toMatch(/no observation time/);
+  });
+});
+
+// ── PR #59 r5: QA prod consistency (snapshot-1401) + gate r3/r4 D1–D5 ─────────
+import { signalQuoteBadge, signalQuoteView, signalsFeedLabel, signalsPriceBadge, signalsFooter } from "../client/src/lib/signalQuoteView";
+import { pressureVectorWeight, pressureVectorLevel } from "../client/src/lib/pressureVectorWeights";
+import { canonicalSummary, sandboxScoreOn100, SANDBOX_BASIS } from "../client/src/lib/simulatePressureView";
+import { canonicalFreshnessReadout } from "../shared/dataIntegrityReadout";
+
+describe("composite is the canonical /100 Pressure Index, never a 0–10 score", () => {
+  it("Charts: canonical displayScore / 100 with the header integrity label, no '/ 10.0', no 'Composite Score · Live'", () => {
+    const s = src("client/src/pages/Charts.tsx");
+    expect(s).not.toMatch(/\/ 10\.0/);
+    expect(s).not.toMatch(/Composite Score · Live/);
+    expect(s).not.toMatch(/getSystemicPressureData|getSystemicPressureSnapshot|output\.overall\.score/);
+    expect(s).toMatch(/const view = usePressureSnapshot\(\);/);
+    expect(s).toMatch(/\{ready \? '\/ 100' :/);
+    expect(s).toMatch(/`\$\{integrityLabel\} · Canonical Pressure Index · as of \$\{asOf \?\? '—'\} · evidence/);
+  });
+
+  it("SimulatePressure: canonical score when not simulating, sandbox ×10 labelled SANDBOX when simulating", () => {
+    const s = src("client/src/pages/SimulatePressure.tsx");
+    // Slider inputs keep their own 0–10 unit (unit: '/10'); no score is shown on /10.
+    expect(s.replace(/unit: '\/10'/g, "")).not.toMatch(/\/ 10\.0|\/ ?10\b/);
+    expect(s).not.toMatch(/Live market conditions/);
+    expect(s).toMatch(/label: 'Example Defaults'/);
+    expect(s).toMatch(/EXAMPLE DEFAULTS · NOT LIVE/);
+    expect(s).toMatch(/SIMULATED REGIME \(SANDBOX\)/);
+    expect(s).not.toMatch(/buildScoreHistory|Math\.random/);
+    expect(sandboxScoreOn100(3.4)).toBe(34);
+    expect(sandboxScoreOn100(4.5)).toBe(45);
+    expect(sandboxScoreOn100(NaN)).toBeNull();
+    expect(SANDBOX_BASIS).toMatch(/not live/);
+    const engines = [
+      { engineId: "liquidity-stress", engineName: "liquidity-stress", value: 23, unit: "score_0_to_100" },
+      { engineId: "labor-rates", engineName: "labor-rates", value: 29, unit: "score_0_to_100" },
+      { engineId: "x", engineName: "x", value: null, unit: "score_0_to_100" },
+    ];
+    const sum = canonicalSummary({ pressureIndex: 34, regime: "MODERATE RISK", effectiveAt: "2026-10-02T18:01:25.427Z", engines, confidenceOrEvidenceQuality: "PARTIAL" } as never);
+    expect(sum).toMatchObject({ available: true, score: 34, regime: "MODERATE RISK" });
+    if (sum.available) {
+      expect(sum.vectors.map(v => v.value)).toEqual([23, 29]);
+      expect(sum.basis).toMatch(/ET · evidence PARTIAL$/);
+    }
+    expect(canonicalSummary(null).available).toBe(false);
+    expect(canonicalSummary({ pressureIndex: 34, confidenceOrEvidenceQuality: "UNAVAILABLE", engines: [] } as never).available).toBe(false);
+  });
+
+  it("Signals regime-score is already the canonical /100 (QA ref 1804 is prod ce491b3)", () => {
+    const s = src("client/src/pages/Signals.tsx");
+    expect(s).not.toMatch(/regime-score[\s\S]{0,200}\/10\b/);
+  });
+});
+
+describe("Pressure vectors: the engine's real weights and each vector's own level", () => {
+  it("weights by engine id match the engine (20/20/15/20/10/15) and sum to 1", () => {
+    const ids = ["liquidity-stress", "credit-contagion", "volatility-regime", "macro-sensitivity", "market-breadth", "ai-bubble"];
+    expect(ids.map(id => pressureVectorWeight(id))).toEqual([0.2, 0.2, 0.15, 0.2, 0.1, 0.15]);
+    expect(ids.reduce((a, id) => a + (pressureVectorWeight(id) ?? 0), 0)).toBeCloseTo(1, 10);
+    expect(pressureVectorWeight("unknown-engine")).toBeNull();
+    expect(pressureVectorWeight("liquidity-stress", false)).toBeNull();
+    // Same id → weight pairs as the engine's own vector table.
+    const engine = src("server/pressure/engine.ts");
+    const pairs = [...engine.matchAll(/id: "([a-z-]+)",[\s\S]{0,600}?weight: ([0-9.]+),/g)].map(m => [m[1], Number(m[2])]);
+    expect(pairs).toEqual(ids.map(id => [id, pressureVectorWeight(id)]));
+  });
+
+  it("each vector's level is its own score on the engine thresholds (80/65/45/25), not the composite's", () => {
+    expect([23, 29, 40, 44, 45, 65, 80].map(pressureVectorLevel)).toEqual(["Low", "Moderate", "Moderate", "Moderate", "Elevated", "High", "Critical"]);
+    expect(pressureVectorLevel(null)).toBeNull();
+    expect(pressureVectorLevel(Number.NaN)).toBeNull();
+    const engine = src("server/pressure/engine.ts");
+    expect(engine).toMatch(/score >= 80[\s\S]{0,80}score >= 65[\s\S]{0,80}score >= 45[\s\S]{0,80}score >= 25/);
+    const p = src("client/src/pages/Pressure.tsx");
+    expect(p).toMatch(/weight: pressureVectorWeight\(engine\.engineId, engine\.contributionToComposite\)/);
+    expect(p).toMatch(/level: pressureVectorLevel\(engine\.value\) \?\? "Low",\s*levelKnown: pressureVectorLevel\(engine\.value\) != null,/);
+    expect(p).not.toMatch(/weight: null,/);
+  });
+});
+
+describe("Signals quote freshness follows the feed (QA D1, strip says DELAYED)", () => {
+  const open = { price: 100, changePercent: 1, isLive: true, marketStatus: "open" };
+  it("a delayed (Yahoo) open-session quote is DELAYED, never LIVE; the footer is not 'LIVE DATA'", () => {
+    const yahoo = { ...open, isDelayed: true };
+    expect(signalQuoteBadge(yahoo)).toBe("DELAYED");
+    const feed = signalsFeedLabel({ source: "live", quotes: [yahoo], tickerCount: 1 });
+    expect(feed.label).toBe("YAHOO FINANCE · DELAYED");
+    expect(signalsFooter(feed).title).toBe("DELAYED");
+    expect(signalsPriceBadge([yahoo]).label).toBe("DELAYED");
+  });
+
+  it("a stale-cache response is STALE per quote and in the header, even if the cached quote says isLive", () => {
+    expect(signalQuoteBadge(open, "stale")).toBe("STALE");
+    expect(signalQuoteBadge({ ...open, feedSource: "stale" })).toBe("STALE");
+    expect(signalQuoteView({ ...open, feedSource: "stale" }).badge).toBe("STALE");
+    expect(signalQuoteBadge(open, "fallback")).toBe("UNAVAILABLE");
+    expect(signalsPriceBadge([open], "stale").label).toBe("STALE");
+    expect(signalsFeedLabel({ source: "stale", quotes: [open], tickerCount: 1 }).label).toBe("STALE CACHE");
+  });
+
+  it("Signals page stamps the response source on every quote and passes it to the header badge", () => {
+    const s = src("client/src/pages/Signals.tsx");
+    expect(s).toMatch(/map\.set\(q\.ticker, \{ \.\.\.q, feedSource: quotesData\?\.source \?\? null \}\);/);
+    expect(s).toMatch(/signalsPriceBadge\(quotesData\?\.quotes, quotesData\?\.source \?\? null\)/);
+    expect(s).toMatch(/function fmtTimestamp\(ts: string \| null\): string \{\s*return formatEt\(ts\) \?\? '—';/);
+    expect(s).not.toMatch(/toLocaleTimeString\(/);
+  });
+
+  it("server: Yahoo quotes carry isDelayed, the stale cache is served not-live, quote time is market time", () => {
+    const s = src("server/signalsProxy.ts");
+    expect(s).toMatch(/isLive: true,\s*isDelayed: yahooQ\.isDelayed \?\? true,/);
+    expect(s).toMatch(/quotes: quotesCache\.quotes\.map\(q => \(\{ \.\.\.q, isLive: false \}\)\),\s*timestamp: new Date\(quotesCache\.fetchedAt\)\.toISOString\(\),\s*marketStatus: quotesCache\.marketStatus,\s*tradeDate: quotesCache\.tradeDate,\s*source: "stale"/);
+    // QA D2: no quote is stamped with the fetch time.
+    expect(s).not.toMatch(/^\s+timestamp: Date\.now\(\),$/m);
+    expect(s).not.toMatch(/bar\.t \?\? Date\.now\(\)/);
+    expect((s.match(/timestamp: yahooQ\.observedAt \?\? null,/g) ?? []).length).toBe(3);
+    const signals = src("client/src/pages/Signals.tsx");
+    expect(signals).toMatch(/Signals quote\$\{asOf \? ` · as of \$\{asOf\}` : ''\}/);
+  });
+
+  it("ticker search shows the real freshness badge, not a bare LIVE", () => {
+    const s = src("client/src/components/TickerSearch.tsx");
+    expect(s).toMatch(/\}\}>\{signalQuoteBadge\(profile\)\}<\/span>/);
+    expect(s).not.toMatch(/\}\}>LIVE<\/span>/);
+  });
+});
+
+describe("Signals card: details reachable, catalog tags labelled static (QA D3, D5)", () => {
+  const s = src("client/src/pages/Signals.tsx");
+  it("a details toggle sets expanded without navigating", () => {
+    expect(s).toMatch(/data-card-details-toggle[\s\S]{0,80}aria-expanded=\{expanded\}[\s\S]{0,40}onClick=\{e => \{ e\.stopPropagation\(\); setExpanded\(x => !x\); \}\}/);
+  });
+  it("every catalog tag list carries the 'Catalog tag · static' label", () => {
+    expect((s.match(/<CatalogTagsLabel \/>/g) ?? []).length).toBe(2);
+    expect(s).toMatch(/>Catalog tag · static</);
+    const tagSites = s.match(/<SignalTag key=\{sig\} signal=\{sig\} \/>/g) ?? [];
+    expect(tagSites.length).toBe(2);
+  });
+});
+
+describe("WATCH / ACT freshness states the evidence grade", () => {
+  it("DELAYED label, delayed-input count and PARTIAL grade; never 'source state is live'", () => {
+    const r = canonicalFreshnessReadout({
+      integrityLabel: "DELAYED",
+      canonical: { generatedAt: "2026-10-02T18:01:25.427Z", delayedInputs: ["a", "b", "c", "d", "e"], staleInputs: [], fallbackInputs: [], unavailableInputs: [], confidenceOrEvidenceQuality: "PARTIAL" },
+    });
+    expect(r.label).toBe("DELAYED");
+    expect(r.detail).toMatch(/Evidence quality: PARTIAL\./);
+    expect(r.detail).toMatch(/5 inputs delayed/);
+    for (const f of ["client/src/pages/Watch.tsx", "client/src/pages/Act.tsx"]) {
+      expect(src(f)).not.toMatch(/source state is/);
+    }
+  });
+});
+
+// ── Extended price-level guard + in-suite mutation test (QA gate r3: 3/11 bypassed) ──
+describe("price-level guard covers bare numeric levels and level tiles", () => {
+  const PRICE_LEVEL_KEYS = /\b(price|currentPrice|lastPrice|support|resistance|targetPrice|priceTarget|stopLoss|entryZone|invalidationLevel|profitTargets|riskReward)\s*:\s*(\[\s*)?['"`]?\$?[0-9]|\b(target|stop|entry|invalidation)\w*\s*:\s*(\[\s*)?['"`]\$[0-9]/;
+  const DOLLAR_LEVEL = /(support|resistance|target|stop|entry|invalidat|close (above|below))[^'"`\n]{0,40}\$[0-9]/i;
+  // New: numeric literal on any level-ish key (pivot: 820, keyLevels: '820 / 950').
+  const NUM_LEVEL_KEY = /\b(pivot\w*|keyLevels?|levels?|support\w*|resistance\w*|breakout(Level|Price)|breakdown(Level|Price)|trigger(Level|Price)|floor|ceiling)\s*:\s*(\[\s*)?['"`]?\$?[0-9]/i;
+  // New: a level word next to a bare 2+ digit number in prose ("Holding 820 support"); percentages excluded.
+  const LEVEL_WORD_NUMBER = /\b(support|resistance|pivot|breakout|breakdown|floor|ceiling|stop|target|entry|invalidat\w*)\b[^\n'"`]{0,24}?\b[0-9]{2,}(\.[0-9]+)?\b(?!\s*%)|\b[0-9]{2,}(\.[0-9]+)?\s*(support|resistance|pivot|floor|ceiling)\b/i;
+  // New: a level-label tile with a literal value ({ label: 'SUPPORT', value: '$820' }).
+  const LEVEL_TILE = /label:\s*['"`](SUPPORT|RESISTANCE|ENTRY|STOP(\s|_)?LOSS|STOP|TARGET|PIVOT|INVALIDATION)['"`]\s*,\s*value:\s*['"`]?\$?[0-9]/i;
+
+  const catalogOffenders = (text: string) => text.split("\n").filter(l =>
+    PRICE_LEVEL_KEYS.test(l) || DOLLAR_LEVEL.test(l) || NUM_LEVEL_KEY.test(l) || LEVEL_WORD_NUMBER.test(l) || LEVEL_TILE.test(l));
+  const appOffenders = (text: string) => text.split("\n").filter(l =>
+    PRICE_LEVEL_KEYS.test(l) || DOLLAR_LEVEL.test(l) || LEVEL_TILE.test(l) || /\bpivot\w*\s*:\s*['"`]?\$?[0-9]/i.test(l));
+
+  const catalog = src("client/src/lib/signalsData.ts");
+
+  it("signalsData.ts passes the extended guard", () => {
+    expect(catalogOffenders(catalog)).toEqual([]);
+  });
+
+  it("client/shared app code has no level tiles or pivot literals", () => {
+    const { readdirSync, statSync } = require("node:fs") as typeof import("node:fs");
+    const files: string[] = [];
+    const walk = (d: string) => {
+      for (const n of readdirSync(d)) {
+        const p = resolve(d, n);
+        if (statSync(p).isDirectory()) { if (n !== "seo" && n !== "node_modules") walk(p); }
+        else if (/\.(ts|tsx)$/.test(n) && !/\.test\./.test(n)) files.push(p);
+      }
+    };
+    walk(resolve(root, "client/src")); walk(resolve(root, "shared"));
+    const offenders = files.flatMap(f => readFileSync(f, "utf8").split("\n")
+      .filter(l => LEVEL_TILE.test(l) || /\bpivot\w*\s*:\s*['"`]?\$?[0-9]/i.test(l))
+      .map(l => `${f.replace(root + "/", "")}: ${l.trim().slice(0, 100)}`));
+    expect(offenders).toEqual([]);
+  });
+
+  // Each of QA's 11 re-injections must be caught.
+  const anchor = "ticker: 'NVDA',";
+  const catalogInjections: Array<[string, string]> = [
+    ["M1 support $820", "support: '$820',"],
+    ["M2 price 875.40", "price: 875.40,"],
+    ["M3 invalidationLevel", "invalidationLevel: 'Close below $780',"],
+    ["M4 profitTargets", "profitTargets: ['$920'],"],
+    ["M5 riskReward", "riskReward: '3.4:1',"],
+    ["M6 keyLevels", "keyLevels: '$820 / $950',"],
+    ["M7 whyAppearing bare levels", "whyAppearing: 'Holding 820 support, 950 resistance',"],
+    ["M8 pivot", "pivot: 820,"],
+    ["M8b pivotPoint string", "pivotPoint: '820',"],
+    ["M8c bare resistance number", "notes: 'resistance near 950 then 1020',"],
+  ];
+  it.each(catalogInjections)("mutation %s in signalsData.ts is caught", (_name, line) => {
+    expect(catalog).toContain(anchor);
+    const mutated = catalog.replace(anchor, `${anchor}\n    ${line}`);
+    expect(catalogOffenders(mutated).length).toBeGreaterThan(catalogOffenders(catalog).length);
+  });
+
+  const appInjections: Array<[string, string, string]> = [
+    ["M9 preview price", "client/src/components/HomeStockIntelSection.tsx", "  price: 924.58,"],
+    ["M11 static SUPPORT tile", "client/src/pages/Signals.tsx", "  { label: 'SUPPORT', value: '$820', color: '#22C55E' },"],
+    ["M11b bare RESISTANCE tile", "client/src/pages/Signals.tsx", "  { label: \"RESISTANCE\", value: 950 },"],
+    ["M11c pivot literal", "client/src/pages/Signals.tsx", "  pivot: 820,"],
+  ];
+  it.each(appInjections)("mutation %s in app code is caught", (_name, file, line) => {
+    const text = src(file);
+    expect(appOffenders(`${text}\n${line}`).length).toBeGreaterThan(appOffenders(text).length);
+  });
+
+  it("M10: Signals levels basis never hard-codes LIVE", () => {
+    const s = src("client/src/pages/Signals.tsx");
+    expect(s).not.toMatch(/Computed from LIVE/);
+    expect((s.match(/priceLevelsBasis\(liveQuote, quote\.badge\)/g) ?? []).length).toBe(2);
   });
 });
